@@ -23,10 +23,12 @@ import javax.persistence.OneToMany;
 public class VersionGroup implements Serializable {
     private static final long serialVersionUID = 1L;
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
     @OneToMany(mappedBy="versionGroup", cascade = {CascadeType.ALL})
-    List<VersionItem> versionItems;
+    private List<VersionItem> versionItems;
+    
+    private String status;
     
     public Long getId() {
         return id;
@@ -64,9 +66,17 @@ public class VersionGroup implements Serializable {
         this.versionItems = versionItems;
     }
 
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     @Override
     public String toString() {
-        return "net.maxgigapop.mrs.bean.ModelVersionGroup[ id=" + id + " ]";
+        return "net.maxgigapop.mrs.bean.VersionGroup[ id=" + id + " ]";
     }
     
 }

@@ -6,10 +6,12 @@
 
 package net.maxgigapop.mrs.bean;
 
-import net.maxgigapop.mrs.bean.persist.PersistentEntity;
 import com.hp.hpl.jena.ontology.OntModel;
+import com.hp.hpl.jena.ontology.OntModelSpec;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
 import java.io.Serializable;
 import java.sql.Date;
+import javax.ejb.EJBException;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -22,6 +24,8 @@ import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
 import javax.persistence.Table;
 import javax.persistence.Transient;
+import net.maxgigapop.mrs.bean.persist.PersistentEntity;
+import net.maxgigapop.mrs.common.ModelUtil;
 
 
 /**
@@ -157,5 +161,83 @@ public class ModelBase extends PersistentEntity implements Serializable {
               // logging
             }
          }
+    }
+    
+    public OntModel applyDelta(DeltaBase delta) {
+        if (this.ontModel == null) {
+            throw new EJBException("applyDelta encounters null this.ontModel");            
+        }
+        if (delta == null || (delta.getModelReduction() == null && delta.getModelAddition() == null)) {
+            throw new EJBException("applyDelta encounters null/empty delta");
+        }
+        if (delta.getModelReduction() != null && delta.getModelReduction().getOntModel() !=null) {
+            this.ontModel.remove(delta.getModelReduction().getOntModel());
+        }
+        if (delta.getModelAddition() != null && delta.getModelAddition().getOntModel() !=null) {
+            this.ontModel.add(delta.getModelAddition().getOntModel());
+        }
+        return this.ontModel;
+    }
+    
+    public OntModel dryrunDelta(DeltaBase delta) {
+        if (this.ontModel == null) {
+            throw new EJBException("dryrunDelta encounters null this.ontModel");            
+        }
+        if (delta == null || (delta.getModelReduction() == null && delta.getModelAddition() == null)) {
+            throw new EJBException("dryrunDelta encounters null/empty delta");
+        }
+        OntModel ontModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        ontModel.add(this.ontModel);
+        if (delta.getModelReduction() != null && delta.getModelReduction().getOntModel() !=null) {
+            ontModel.remove(delta.getModelReduction().getOntModel());
+        }
+        if (delta.getModelAddition() != null && delta.getModelAddition().getOntModel() !=null) {
+            ontModel.add(delta.getModelAddition().getOntModel());
+        }
+        return ontModel;
+    }
+    
+    //calculate the delta that makes the otherOntModel become this.ontModel
+    public DeltaBase diffFromModel(OntModel otherOntModel) {
+        DeltaBase delta = new DeltaBase();
+        OntModel modelA = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        modelA.add(this.ontModel);
+        modelA = (OntModel)modelA.remove(otherOntModel);
+        OntModel modelR = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        modelR.add(otherOntModel);
+        modelR = (OntModel)modelR.remove(this.ontModel);
+        DeltaModel deltaModelA = new DeltaModel();
+        deltaModelA.setOntModel(modelA);
+        DeltaModel deltaModelR = new DeltaModel();
+        deltaModelR.setOntModel(modelR);
+        delta.setModelAddition(deltaModelA);
+        delta.setModelReduction(deltaModelR);
+        deltaModelA.setIsAddition(true);
+        deltaModelA.setDelta(delta);
+        deltaModelR.setIsAddition(false);
+        deltaModelR.setDelta(delta);
+        return delta;
+    }
+    
+    //calculate the delta that makes this.ontModel becomes the otherOntModel 
+    public DeltaBase diffToModel(OntModel otherOntModel) {
+        DeltaBase delta = new DeltaBase();
+        OntModel modelR = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        modelR.add(this.ontModel);
+        modelR = (OntModel)modelR.remove(otherOntModel);
+        OntModel modelA = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        modelA.add(otherOntModel);
+        modelA = (OntModel)modelR.remove(this.ontModel);
+        DeltaModel deltaModelA = new DeltaModel();
+        deltaModelA.setOntModel(modelA);
+        DeltaModel deltaModelR = new DeltaModel();
+        deltaModelR.setOntModel(modelR);
+        delta.setModelAddition(deltaModelA);
+        delta.setModelReduction(deltaModelR);
+        deltaModelA.setIsAddition(true);
+        deltaModelA.setDelta(delta);
+        deltaModelR.setIsAddition(false);
+        deltaModelR.setDelta(delta);
+        return delta;
     }
 }

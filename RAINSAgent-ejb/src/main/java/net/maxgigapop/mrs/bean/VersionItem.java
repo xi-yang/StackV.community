@@ -23,13 +23,21 @@ import javax.persistence.OneToOne;
 public class VersionItem implements Serializable {
     private static final long serialVersionUID = 1L;
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
+    
     @ManyToOne
     @JoinColumn(name = "versionGroupId")
-    VersionGroup versionGroup;
+    private VersionGroup versionGroup;
+    
     @OneToOne
-    ModelBase modelRef;
+    @JoinColumn(name = "modelRefId")
+    private ModelBase modelRef;
+    
+    @OneToOne
+    @JoinColumn(name = "driverInstanceId")
+    private DriverInstance driverInstance;
+    
     public Long getId() {
         return id;
     }
@@ -74,9 +82,17 @@ public class VersionItem implements Serializable {
         this.modelRef = modelRef;
     }
 
+    public DriverInstance getDriverInstance() {
+        return driverInstance;
+    }
+
+    public void setDriverInstance(DriverInstance driverInstance) {
+        this.driverInstance = driverInstance;
+    }
+
     @Override
     public String toString() {
-        return "net.maxgigapop.mrs.bean.ModelVersionItem[ id=" + id + " ]";
+        return "net.maxgigapop.mrs.bean.VersionItem[ id=" + id + " ]";
     }
     
 }

@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-package net.maxgigapop.mrs.bean;
+package net.maxgigapop.mrs.common;
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.query.Query;
@@ -22,6 +22,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import net.maxgigapop.mrs.bean.DeltaBase;
+import net.maxgigapop.mrs.bean.ModelBase;
 /**
  *
  * @author xyang
@@ -48,6 +50,21 @@ public class ModelUtil {
         }
         String ttl = out.toString();
         return ttl;
+    }
+
+    static public boolean isEmptyOntModel(OntModel model) {
+        if (model == null) {
+            return true;
+        }
+        StmtIterator stmts = model.listStatements();
+        while (stmts.hasNext()) {
+            Statement stmt = stmts.next();
+            // check subject will be enough
+            if (stmt.getSubject().isResource() && stmt.getSubject().toString().contains("ogf.org")) {
+                return false;
+            }
+        }
+        return true;
     }
 
     static public Map<String, OntModel> splitOntModelByTopology (OntModel model) throws Exception {

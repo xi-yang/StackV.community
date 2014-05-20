@@ -17,8 +17,7 @@ import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.EJB;
 import javax.ejb.EJBException;
-import javax.ejb.Remove;
-import javax.ejb.Stateful;
+import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
@@ -26,14 +25,16 @@ import net.maxgigapop.mrs.bean.*;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
+import net.maxgigapop.mrs.common.ModelUtil;
 
 /**
  *
  * @author xyang
  */
 
+@LocalBean
 @Stateless
-public class HandleSystem implements HandleSystemLocal {
+public class HandleSystem {
  
     public SystemInstance createInstance() {
         SystemInstance systemInstance = new SystemInstance();
@@ -52,10 +53,49 @@ public class HandleSystem implements HandleSystemLocal {
     
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(SystemInstance systemInstance, SystemDelta aDelta) {
-        if (systemInstance == null)
-            systemInstance = this.createInstance();
+        if (systemInstance == null) {
+            throw new EJBException(String.format("null systemInstance"));
+        }
+        if (systemInstance.getVersionGroup() == null) {
+            throw new EJBException(String.format("systemInstance{%s} has null versionGroup", systemInstance));
+        }
+        /*
+        if (systemInstance.getSystemDeltas() != null && systemInstance.getSystemDeltas().size() > 0) {
+            SystemDelta lastDelta = systemInstance.getSystemDeltas().get(systemInstance.getSystemDeltas().size()-1);
+        }
+        */
+        //## Step 1. create reference model and target model 
         //EJBExeption will be thrown upon fault
-        systemInstance.addSystemDelta(aDelta);5
+        //@@@@ systemInstance.createReferenceModel();
+        OntModel referenceOntModel = systemInstance.getReferenceModel().getOntModel();
+        OntModel targetOntModel = systemInstance.getReferenceModel().dryrunDelta(aDelta);
+        systemInstance.addSystemDelta(aDelta);
+        
+        //## Step 2. verify model change
+        // 2.1. get current head versionGroup
+        // 2.2. if the head VG is newer than the current/reference VG
+        //          create headOntModel. get D12=headModel.diffFromModel(refeneceOntModel)
+        // ?? Should head model use committed (driverDeltas) or propagated (driverSystemDeltas).
+        //    The later could be newer. To use the latter, we must persist target model VG after propagated. (add VG status?)
+        //          verify D12.getModelAddition().getOntModel().intersection(aDelta.getModelReduction().getOntModel()) == empty
+        //          verify D12.getModelReduction().getOntModel().intersection(aDelta.getModelAddiction().getOntModel()) == empty
+        //          if either verification fails throw EJBException("version conflict");
+        //          otherwise update systemInstance.versionGroup to head VG and Transient referenceModel = headModel
+
+        //## Step 3. decompose aDelta into driverSystemDeltas by <Topology>
+        // 3.1. split targetOntModel to otain list of target driver topologies
+        // 3.2. split referenceOntModel to otain list of reference driver topologies 
+        // 3.3. create list of non-empty driverSystemDeltas by diff referenceOntModel components to targetOntModel
+        // 3.4. create list of corresponding driverInstances by topology URI.
+
+        //## Step 4. propagate driverSystemDeltas 
+        // 4.1. save driverSystemDeltas, systemInstance and VG
+        // 4.2. push driverSystemDeltas to driverInstances
+        // ?? versioning ?
+        //## Finish transaction
+
+        
+        /* below to be deleted
         //decompose systemDelta into driverSystemDeltas
         //alway create new
         Map<String, DriverInstance> driverInstanceMap = new HashMap<String, DriverInstance>();
@@ -97,7 +137,6 @@ public class HandleSystem implements HandleSystemLocal {
             //$$$$ save dsd, aDelta  
             dsd.saveAll();
             aDelta.saveAll();
-
             //    @EJB private HandleDriver driverHandler
 
             //$$$$ driverHandler.provisionDelta(driverInstance, dsd);
@@ -107,15 +146,21 @@ public class HandleSystem implements HandleSystemLocal {
             //driverInstance.getDriverSystemDeltas().add(dsd);
         }
         
+        */
         //$$ update systemInstance with versioning handling (and model commited?)
     }
     
     @Asynchronous
-    public Future<String> provisionDelta(SystemInstance systemInstance, SystemDelta aDelta) {
-        String status = "";
-        String transactionUUID = UUID.randomUUID().toString();
-        //$$ TODO: start async trasaction to wait for updates for driverModels
-        //$$ return async transaction ID
+    public Future<String> commitDelta(SystemInstance systemInstance, SystemDelta aDelta) {
+        String status = "INIT";
+        
+        // 1. Get target VG
+        // 2. Get list of driverInstances
+        // 3. Call Async commitDelta to each driverInstance with the VersionItem number.
+        // 4. Qury for status in a loop bounded by timeout.
+        // 5. return status
+        
+        //$$ catch exception to create abnormal FAILED status
         return new AsyncResult<String>(status);
     }
     

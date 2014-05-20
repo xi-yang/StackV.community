@@ -29,6 +29,8 @@ public class DriverInstance implements Serializable {
     private Long id;
     
     private String topologyUri;
+    
+    private String driverEjbUrl;
 
     // incoming from subsystems
     @OneToMany(mappedBy="driverInstance", cascade = {CascadeType.ALL})
@@ -70,6 +72,13 @@ public class DriverInstance implements Serializable {
         this.driverSystemDeltas = driverSystemDeltas;
     }
 
+    public String getDriverEjbUrl() {
+        return driverEjbUrl;
+    }
+
+    public void setDriverEjbUrl(String driverEjbUrl) {
+        this.driverEjbUrl = driverEjbUrl;
+    }
 
     @Override
     public int hashCode() {

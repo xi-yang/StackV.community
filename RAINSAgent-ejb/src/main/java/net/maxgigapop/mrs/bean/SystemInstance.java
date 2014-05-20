@@ -19,6 +19,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 import net.maxgigapop.mrs.bean.persist.*;
 
 /**
@@ -39,6 +40,9 @@ public class SystemInstance extends PersistentEntity implements Serializable {
     @OneToOne
     @JoinColumn(name="versionGroupId")
     VersionGroup versionGroup;
+    
+    @Transient
+    protected ModelBase referenceModel;
     
     public Long getId() {
         return id;
@@ -93,6 +97,14 @@ public class SystemInstance extends PersistentEntity implements Serializable {
 
     public void setVersionGroup(VersionGroup versionGroup) {
         this.versionGroup = versionGroup;
+    }
+
+    public ModelBase getReferenceModel() {
+        return referenceModel;
+    }
+
+    public void setReferenceModel(ModelBase referenceModel) {
+        this.referenceModel = referenceModel;
     }
     
     @Override
