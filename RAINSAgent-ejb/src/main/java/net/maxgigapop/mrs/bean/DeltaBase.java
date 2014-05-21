@@ -34,16 +34,15 @@ public class DeltaBase extends PersistentEntity implements Serializable {
     @GeneratedValue(strategy = GenerationType.AUTO)
     protected Long id;
 
-    //@OneToMany(mappedBy="delta", cascade = {CascadeType.ALL})
-    //protected List<DeltaModel> deltaModels;    
+    protected Long versionRef; // VersionItem or VersionGroup ID depending on context
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "modelAdditionId")
-    DeltaModel modelAddition;
+    protected DeltaModel modelAddition;
     
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "modelReductionId")
-    DeltaModel modelReduction;
+    protected DeltaModel modelReduction;
 
     public Long getId() {
         return id;
@@ -58,6 +57,14 @@ public class DeltaBase extends PersistentEntity implements Serializable {
         int hash = 0;
         hash += (id != null ? id.hashCode() : 0);
         return hash;
+    }
+
+    public Long getVersionRef() {
+        return versionRef;
+    }
+
+    public void setVersionRef(Long versionRef) {
+        this.versionRef = versionRef;
     }
 
     public DeltaModel getModelAddition() {

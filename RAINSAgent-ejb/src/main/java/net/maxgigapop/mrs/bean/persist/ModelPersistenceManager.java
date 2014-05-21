@@ -20,6 +20,4 @@ public class ModelPersistenceManager extends PersistenceManager {
     public static List<ModelBase> retrieveAll() {
         return createQuery("FROM " + ModelBase.class.getSimpleName()).getResultList();
     }
-    
-    //getHeadVersion
 }

@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.ejb.EJBException;
 import net.maxgigapop.mrs.bean.DeltaBase;
 import net.maxgigapop.mrs.bean.ModelBase;
 /**
@@ -52,7 +53,7 @@ public class ModelUtil {
         return ttl;
     }
 
-    static public boolean isEmptyOntModel(OntModel model) {
+    static public boolean isEmptyModel(Model model) {
         if (model == null) {
             return true;
         }
@@ -67,18 +68,30 @@ public class ModelUtil {
         return true;
     }
 
-    static public Map<String, OntModel> splitOntModelByTopology (OntModel model) throws Exception {
+    static public OntModel createUnionOntModel(List<OntModel> modelList) {
+        OntModel ontModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        for (OntModel model: modelList) {
+            ontModel.addSubModel(model);
+        }
+        // rebind and run inference?
+        return ontModel;
+    }
+            
+    static public Map<String, OntModel> splitOntModelByTopology (OntModel model) {
         Map<String, OntModel> topoModelMap = new HashMap<String, OntModel>();
         List<RDFNode> listTopo = getTopologyList(model);
         if (listTopo == null) {
-        	throw new Exception("getTopologyList returns null");
+        	throw new EJBException("ModelUtil.splitOntModelByTopology getTopologyList returns on " + model);
         }
         for (RDFNode topoNode: listTopo) {
         	OntModel modelTopology = getTopology(model, topoNode);
         	model.remove(modelTopology);
                 topoModelMap.put(topoNode.asResource().getURI(), modelTopology);
         }
-        //$$ TODO: verify full decomposition (no nml: mrs: namespace objects left, otherwise thrown exception)
+        //verify full decomposition (no nml: mrs: namespace objects left, otherwise thrown exception)
+        if (isEmptyModel(model)) {
+        	throw new EJBException("ModelUtil.splitOntModelByTopology encounters non-dispatchable nml/mrs objects in " + model);
+        }
         return topoModelMap;
     }
     private static List<RDFNode> getTopologyList(Model model) {

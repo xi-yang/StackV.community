@@ -6,21 +6,25 @@
 
 package net.maxgigapop.mrs.bean;
 
+import com.hp.hpl.jena.ontology.OntModelSpec;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
 import java.io.Serializable;
 import java.util.List;
+import javax.ejb.EJBException;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
+import net.maxgigapop.mrs.bean.persist.PersistentEntity;
 
 /**
  *
  * @author xyang
  */
 @Entity
-public class VersionGroup implements Serializable {
+public class VersionGroup extends PersistentEntity implements Serializable {
     private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
@@ -78,5 +82,20 @@ public class VersionGroup implements Serializable {
     public String toString() {
         return "net.maxgigapop.mrs.bean.VersionGroup[ id=" + id + " ]";
     }
-    
+
+    public ModelBase createUnionModel() {
+        ModelBase newModel = new ModelBase();
+        newModel.setOntModel(ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF));
+        if (this.getVersionItems() == null || this.getVersionItems().isEmpty()) {
+            throw new EJBException(String.format("%s is empty when calling method createUnionModel", this));
+        }
+        for (VersionItem vi: this.getVersionItems()) {
+            if (vi.getModelRef() == null || vi.getModelRef().getOntModel() == null) {
+                throw new EJBException(String.format("%s method createUnionModel encounters empty %s", this, vi));
+            }
+            newModel.getOntModel().addSubModel(vi.getModelRef().getOntModel());
+        }
+        //?? rebind / rerun inference for referenceModel
+        return newModel;
+    }
 }

@@ -6,6 +6,8 @@
 
 package net.maxgigapop.mrs.bean;
 
+import com.hp.hpl.jena.ontology.OntModelSpec;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -99,6 +101,14 @@ public class SystemInstance extends PersistentEntity implements Serializable {
         this.versionGroup = versionGroup;
     }
 
+    public void updateReferenceModel() {
+        if (versionGroup == null) {
+            throw new EJBException(String.format("%s method updateReferenceModel encounters null versionGroup", this));
+        }
+        this.referenceModel = versionGroup.createUnionModel();
+        //?? rebind / rerun inference for referenceModel
+    }
+    
     public ModelBase getReferenceModel() {
         return referenceModel;
     }

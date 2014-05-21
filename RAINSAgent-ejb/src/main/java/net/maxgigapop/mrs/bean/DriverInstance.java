@@ -30,7 +30,7 @@ public class DriverInstance implements Serializable {
     
     private String topologyUri;
     
-    private String driverEjbUrl;
+    private String driverEjbPath;
 
     // incoming from subsystems
     @OneToMany(mappedBy="driverInstance", cascade = {CascadeType.ALL})
@@ -72,12 +72,12 @@ public class DriverInstance implements Serializable {
         this.driverSystemDeltas = driverSystemDeltas;
     }
 
-    public String getDriverEjbUrl() {
-        return driverEjbUrl;
+    public String getDriverEjbPath() {
+        return driverEjbPath;
     }
 
-    public void setDriverEjbUrl(String driverEjbUrl) {
-        this.driverEjbUrl = driverEjbUrl;
+    public void setDriverEjbPath(String driverEjbPath) {
+        this.driverEjbPath = driverEjbPath;
     }
 
     @Override

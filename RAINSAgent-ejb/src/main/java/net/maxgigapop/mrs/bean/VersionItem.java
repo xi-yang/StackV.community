@@ -14,13 +14,14 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
+import net.maxgigapop.mrs.bean.persist.PersistentEntity;
 
 /**
  *
  * @author xyang
  */
 @Entity
-public class VersionItem implements Serializable {
+public class VersionItem extends PersistentEntity implements Serializable {
     private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
