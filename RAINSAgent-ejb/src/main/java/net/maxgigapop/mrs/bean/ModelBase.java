@@ -39,7 +39,7 @@ public class ModelBase extends PersistentEntity implements Serializable {
     protected static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    protected Long id;
+    protected Long id; //@TODO: init to null?
     protected java.sql.Date creationTime;
     protected Long cxtVersion = 0L;
     protected String cxtVersionTag = "";

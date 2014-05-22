@@ -23,7 +23,7 @@ import javax.persistence.OneToOne;
 public class DriverModel extends ModelBase {
     @OneToOne     
     @JoinColumn(name = "driverDeltaId")
-    protected DriverDelta driverDelta;
+    protected DriverDelta driverDelta = null;
 
     @Override
     public String toString() {

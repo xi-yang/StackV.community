@@ -37,14 +37,14 @@ public class SystemInstance extends PersistentEntity implements Serializable {
     private Long id;
 
     @OneToMany(mappedBy="systemInstance", cascade = {CascadeType.ALL})
-    protected List<SystemDelta> systemDeltas;    
+    protected List<SystemDelta> systemDeltas = null;    
     
     @OneToOne
     @JoinColumn(name="versionGroupId")
-    VersionGroup versionGroup;
+    VersionGroup versionGroup = null;
     
     @Transient
-    protected ModelBase referenceModel;
+    protected ModelBase referenceModel = null;
     
     public Long getId() {
         return id;

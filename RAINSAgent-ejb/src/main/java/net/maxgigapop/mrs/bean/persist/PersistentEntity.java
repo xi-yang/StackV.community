@@ -15,7 +15,7 @@ import javax.annotation.PostConstruct;
 @SuppressWarnings("unchecked")
 public class PersistentEntity {
 
-	boolean persistent;
+	boolean persistent = false;
 
 	public boolean isPersistent() {
 		return persistent;
@@ -23,10 +23,5 @@ public class PersistentEntity {
 
 	public void setPersistent(boolean aValue) {
 		this.persistent = aValue;
-	}
-
-        @PostConstruct 
-	public void init() {
-		persistent = true;
 	}
 }

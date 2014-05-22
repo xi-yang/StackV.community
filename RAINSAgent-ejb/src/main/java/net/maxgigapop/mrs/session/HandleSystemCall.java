@@ -21,6 +21,8 @@ import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
+import javax.naming.Context;
+import javax.naming.InitialContext;
 import net.maxgigapop.mrs.bean.*;
 import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
@@ -57,24 +59,27 @@ public class HandleSystemCall {
         if (systemInstance == null) {
             throw new EJBException(String.format("null systemInstance"));
         }
+        // use VG from systemInstance.versionGroup or based on aDelta.versionReferenceId
+        // Note 1: a defaut VG (#1) must exist the first time the system starts.
+        // Note 2: the VG below must contain versionItems for committed models only.
+        if (aDelta.getReferenceVersionGroup() != null) {
+            systemInstance.setVersionGroup(aDelta.getReferenceVersionGroup());
+        }
         if (systemInstance.getVersionGroup() == null) {
-            throw new EJBException(String.format("systemInstance{%s} has null versionGroup", systemInstance));
+            throw new EJBException(String.format("%s has no reference versionGroup to work with", systemInstance));
         }
 
         //EJBExeption may be thrown upon fault from subroutine of each step below
         
         //## Step 1. create reference model and target model 
-        //@TODO: use aDelta.versionRef instead
         systemInstance.updateReferenceModel();
         OntModel referenceOntModel = systemInstance.getReferenceModel().getOntModel();
         OntModel targetOntModel = systemInstance.getReferenceModel().dryrunDelta(aDelta);
         systemInstance.addSystemDelta(aDelta);
 
         //## Step 2. verify model change
-        // 2.1. get current head versionGroup 
-        //@TODO: Note that a defaut VG (#1) must exist the first time the system starts!
-        //@TODO: Use refreshToHeadGroup(systemInstance.getVersionGroup()) to get an updated one based on just-propagated versionItems
-        VersionGroup headVG = VersionGroupPersistenceManager.getHeadGroup();
+        // 2.1. get head/lastest VG based on the current versionGroup 
+        VersionGroup headVG = VersionGroupPersistenceManager.refreshToHead(systemInstance.getVersionGroup());
         // 2.2. if the head VG is newer than the current/reference VG
         if (headVG != null && !headVG.equals(systemInstance.getVersionGroup())) {
             //          create headOntModel. get D12=headModel.diffFromModel(refeneceOntModel)
@@ -90,8 +95,7 @@ public class HandleSystemCall {
             if (!ModelUtil.isEmptyModel(reductionConflict) || !ModelUtil.isEmptyModel(additionConflict)) {
                 throw new EJBException(String.format("%s %s based on %s conflicts with current head %s", systemInstance, aDelta, systemInstance.getVersionGroup(), headVG));
             }
-            //          otherwise update systemInstance.versionGroup to head VG and Transient referenceModel = headModel
-            systemInstance.setVersionGroup(headVG);
+            // Note: no need to update current VG to head as the targetDSD will be based the current VG and driverSystem will verify contention on its own.
         }
 
         //## Step 3. decompose aDelta into driverSystemDeltas by <Topology>
@@ -103,38 +107,50 @@ public class HandleSystemCall {
         List<DriverSystemDelta> targetDriverSystemDeltas = new ArrayList<DriverSystemDelta>();
         VersionGroup targetVG = new VersionGroup();
         targetVG.setStatus("INIT");
-        targetVG.setVersionItems(new ArrayList<VersionItem>());
+        VersionGroupPersistenceManager.save(targetVG);
         for (String driverSystemTopoUri : targetDriverSystemModels.keySet()) {
             if (!referenceDriverSystemModels.containsKey(driverSystemTopoUri)) {
-                throw new EJBException(String.format("%s cannot decompose %s due to unexpected target topology: %s", systemInstance, aDelta, driverSystemTopoUri));
+                throw new EJBException(String.format("%s cannot decompose %s due to unexpected target topology [uri=%s]", systemInstance, aDelta, driverSystemTopoUri));
             }
-            OntModel tom = targetDriverSystemModels.get(driverSystemTopoUri);
             DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(driverSystemTopoUri);
-            // version items using targetDSM as temporary modelRef
-            //@TODO: some VersionItems should reuse existing ones in ManyToMany relation to VersionGroup
-            ModelBase targetDSM = new ModelBase();
-            targetDSM.setOntModel(tom);
-            VersionItem newVI = new VersionItem();
-            newVI.setDriverInstance(driverInstance);
-            newVI.setModelRef(targetDSM);
-            newVI.setVersionGroup(targetVG);
-            targetVG.getVersionItems().add(newVI);
-            VersionGroupPersistenceManager.save(newVI);
-            targetDSM.setCxtVersion(newVI.getId());
-            ModelPersistenceManager.save(targetDSM);
-            // create targetDSD only if there is a change. 
+            if (driverInstance == null) {
+                throw new EJBException(String.format("%s cannot find driverInstance for target topology [uri=%s]", systemInstance, driverSystemTopoUri));
+            }
+            //get old versionItem for reference model
+            VersionItem oldVI = systemInstance.getVersionGroup().getVersionItemByDriverInstance(driverInstance);
+            OntModel tom = targetDriverSystemModels.get(driverSystemTopoUri);
             OntModel rom = referenceDriverSystemModels.get(driverSystemTopoUri);
             ModelBase referenceDSM = new ModelBase();
             referenceDSM.setOntModel(rom);
+            // check diff from refrence model (tom) to target model (rom)
             DeltaBase delta = referenceDSM.diffToModel(tom);
             if (ModelUtil.isEmptyModel(delta.getModelAddition().getOntModel()) && ModelUtil.isEmptyModel(delta.getModelReduction().getOntModel())) {
+                // no diff, use existing verionItem
+                targetVG.addVersionItem(oldVI);
                 continue;
             }
+            // create targetDSM and targetDSD only if there is a change. 
+            ModelBase targetDSM = new ModelBase();
+            targetDSM.setOntModel(tom);
+            // new versionItem using targetDSM as temporary modelRef
+            VersionItem newVI = new VersionItem();
+            newVI.setDriverInstance(driverInstance);
+            newVI.setModelRef(targetDSM);
+            newVI.addVersionGroup(targetVG);
+            targetVG.addVersionItem(newVI);
+            VersionGroupPersistenceManager.save(newVI);
+            // target model has a new version ID
+            targetDSM.setCxtVersion(newVI.getId());
+            ModelPersistenceManager.save(targetDSM);
+            // create targetDSD 
             DriverSystemDelta targetDSD = new DriverSystemDelta();
             targetDSD.setPersistent(true);
             targetDSD.setModelAddition(delta.getModelAddition());
             targetDSD.setModelReduction(delta.getModelReduction());
             targetDSD.setSystemDelta(null);
+            // target delta uses version reference ID of committed model that corresponds to a known version in driverSystem.
+            targetDSD.setReferenceVersionItem(oldVI);
+            targetDSD.setTargetVersionItem(newVI);
             if (driverInstance == null) {
                 throw new EJBException(String.format("%s cannot find a dirverInstance for topology: %s", systemInstance, driverSystemTopoUri));
             }
@@ -147,30 +163,42 @@ public class HandleSystemCall {
             // 4.1. save driverSystemDeltas
             DeltaPersistenceManager.save(targetDSD);
             // 4.2. push driverSystemDeltas to driverInstances
-            String driverEjbPath = targetDSD.getDriverInstance().getDriverEjbPath();
-            //@TODO make driverSystem propagateDelta call with reference DSM versionID and targetDSD
+            DriverInstance driverInstance = targetDSD.getDriverInstance();
+            String driverEjbPath = driverInstance.getDriverEjbPath();
+            // make driverSystem propagateDelta call with targetDSD
+            try {
+                Context ctx = new InitialContext();
+                HandleDriverSystemCall = (HandleDriverSystemCall) ctx.lookup(driverEjbPath);
+                HandleDriverSystemCall.propagateDelta(driverInstance, targetDSD);
+            } catch (NamingException e) {
+                throw new EJBException(e);
+            }
         }
         // 4.3 save systemInstance and VG
         SystemInstancePersistenceManager.save(systemInstance);
         targetVG.setStatus("PROPAGATED");
         VersionGroupPersistenceManager.save(targetVG);
+        // Note: driverSystem will save the targetDSD to driverInstance and extract refrerence version ID 
 
         //## End of propagtion
     }
 
     @Asynchronous
-    public Future<String> commitDelta(SystemInstance systemInstance, SystemDelta aDelta) {
+    public Future<String> commitDelta(SystemInstance systemInstance) {
         String status = "INIT";
 
         // 1. Get target VG
         // 2. Get list of driverInstances
-        // 3. Call Async commitDelta to each driverInstance with the VersionItem number.
+        // 3. Call Async commitDelta to each driverInstance based on versionItems in VG.
         // 4. Qury for status in a loop bounded by timeout.
         // 5. return status
         //$$ catch exception to create abnormal FAILED status
         return new AsyncResult<String>(status);
     }
 
-    //public ModelBase retrieveHeadModel(String statusFilter)
+    //public VersionGroup retrieveHeadVersionGroup()
+    //public ModelBase retrieveHeadModel()
+
+    //public VersionGroup retrieveVersionGroup(Long vgId)
     //public ModelBase retrieveVersionModel(Long vgId)
 }

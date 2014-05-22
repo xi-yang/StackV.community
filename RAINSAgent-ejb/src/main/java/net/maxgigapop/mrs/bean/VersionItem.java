@@ -7,12 +7,14 @@
 package net.maxgigapop.mrs.bean;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
+import javax.persistence.ManyToMany;
 import javax.persistence.OneToOne;
 import net.maxgigapop.mrs.bean.persist.PersistentEntity;
 
@@ -27,17 +29,19 @@ public class VersionItem extends PersistentEntity implements Serializable {
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
     
-    @ManyToOne
-    @JoinColumn(name = "versionGroupId")
-    private VersionGroup versionGroup;
+    // reference ID for the callee
+    private Long referenceId = 0L;
     
+    @ManyToMany(mappedBy="versionItems")
+    private List<VersionGroup> versionGroups = null;
+
     @OneToOne
     @JoinColumn(name = "modelRefId")
-    private ModelBase modelRef;
+    private ModelBase modelRef = null;
     
     @OneToOne
     @JoinColumn(name = "driverInstanceId")
-    private DriverInstance driverInstance;
+    private DriverInstance driverInstance = null;
     
     public Long getId() {
         return id;
@@ -45,6 +49,14 @@ public class VersionItem extends PersistentEntity implements Serializable {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getReferenceId() {
+        return referenceId;
+    }
+
+    public void setReferenceId(Long referenceId) {
+        this.referenceId = referenceId;
     }
 
     @Override
@@ -67,12 +79,19 @@ public class VersionItem extends PersistentEntity implements Serializable {
         return true;
     }
 
-    public VersionGroup getVersionGroup() {
-        return versionGroup;
+    public List<VersionGroup> getVersionGroups() {
+        return versionGroups;
     }
 
-    public void setVersionGroup(VersionGroup versionGroup) {
-        this.versionGroup = versionGroup;
+    public void setVersionGroups(List<VersionGroup> versionGroups) {
+        this.versionGroups = versionGroups;
+    }
+
+    public void addVersionGroup(VersionGroup versionGroup) {
+        if (this.versionGroups == null) {
+            this.versionGroups = new ArrayList<VersionGroup>();
+        }
+        this.versionGroups.add(versionGroup);
     }
 
     public ModelBase getModelRef() {
@@ -82,7 +101,7 @@ public class VersionItem extends PersistentEntity implements Serializable {
     public void setModelRef(ModelBase modelRef) {
         this.modelRef = modelRef;
     }
-
+    
     public DriverInstance getDriverInstance() {
         return driverInstance;
     }

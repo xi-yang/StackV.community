@@ -30,7 +30,7 @@ public class ServiceInstance extends PersistentEntity implements Serializable {
     private Long id;
 
     @OneToMany(mappedBy="serviceInstance", cascade = {CascadeType.ALL})
-    protected List<ServiceModel> serviceModels;    
+    protected List<ServiceModel> serviceModels = null;    
     
     public Long getId() {
         return id;

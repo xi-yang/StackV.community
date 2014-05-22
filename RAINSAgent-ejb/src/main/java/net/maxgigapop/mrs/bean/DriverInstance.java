@@ -28,9 +28,9 @@ public class DriverInstance implements Serializable {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
     
-    private String topologyUri;
+    private String topologyUri = "";
     
-    private String driverEjbPath;
+    private String driverEjbPath = "";
 
     // incoming from subsystems
     @OneToMany(mappedBy="driverInstance", cascade = {CascadeType.ALL})

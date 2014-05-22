@@ -24,9 +24,10 @@ import javax.persistence.OneToOne;
 @Entity
 @Inheritance(strategy=InheritanceType.SINGLE_TABLE)
 public class DeltaModel extends ModelBase {
-    protected boolean isAddition; // true = addition; false = reduction
+    protected boolean isAddition = true; // true = addition; false = reduction
+    
     @OneToOne
-    protected DeltaBase delta;
+    protected DeltaBase delta = null;
 
     public boolean isIsAddition() {
         return isAddition;

@@ -11,6 +11,7 @@ import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
 
 /**
  *
@@ -22,11 +23,19 @@ import javax.persistence.ManyToOne;
 public class DriverSystemDelta extends DeltaBase {
     @ManyToOne
     @JoinColumn(name = "systemDeltaId")
-    protected SystemDelta systemDelta;
+    protected SystemDelta systemDelta = null;
 
     @ManyToOne
     @JoinColumn(name = "driverInstanceId")
-    protected DriverInstance driverInstance;
+    protected DriverInstance driverInstance = null;
+
+    @OneToOne
+    @JoinColumn(name = "referenceVersionItemId")
+    protected VersionItem referenceVersionItem = null;
+    
+    @OneToOne
+    @JoinColumn(name = "targetVersionItemId")
+    protected VersionItem targetVersionItem = null;
 
     public SystemDelta getSystemDelta() {
         return systemDelta;
@@ -42,6 +51,22 @@ public class DriverSystemDelta extends DeltaBase {
 
     public void setDriverInstance(DriverInstance driverInstance) {
         this.driverInstance = driverInstance;
+    }
+
+    public VersionItem getReferenceVersionItem() {
+        return referenceVersionItem;
+    }
+
+    public void setReferenceVersionItem(VersionItem referenceVersionItem) {
+        this.referenceVersionItem = referenceVersionItem;
+    }
+
+    public VersionItem getTargetVersionItem() {
+        return targetVersionItem;
+    }
+
+    public void setTargetVersionItem(VersionItem targetVersionItem) {
+        this.targetVersionItem = targetVersionItem;
     }
 
     @Override

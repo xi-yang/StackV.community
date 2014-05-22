@@ -20,7 +20,7 @@ import javax.persistence.OneToOne;
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 public class ServiceDelta extends DeltaBase {
     @OneToOne(mappedBy = "serviceDelta", cascade = {CascadeType.ALL})
-    protected ServiceModel serviceModel;
+    protected ServiceModel serviceModel = null;
 
     public ServiceModel getServiceModel() {
         return serviceModel;

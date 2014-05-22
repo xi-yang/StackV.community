@@ -26,11 +26,15 @@ import javax.persistence.OneToOne;
 public class SystemDelta extends DeltaBase {
     @ManyToOne
     @JoinColumn(name = "systemInstanceId")
-    protected SystemInstance systemInstance;
+    protected SystemInstance systemInstance = null;
 
     @OneToMany(mappedBy="systemDelta", cascade = {CascadeType.ALL})
-    protected List<DriverSystemDelta> driverSystemDeltas;    
-        
+    protected List<DriverSystemDelta> driverSystemDeltas = null;    
+
+    @OneToOne
+    @JoinColumn(name = "referenceVersionGroupId")
+    protected VersionGroup referenceVersionGroup;
+
     public SystemInstance getSystemInstance() {
         return systemInstance;
     }
@@ -45,6 +49,14 @@ public class SystemDelta extends DeltaBase {
 
     public void setDriverSystemDeltas(List<DriverSystemDelta> driverSystemDeltas) {
         this.driverSystemDeltas = driverSystemDeltas;
+    }
+
+    public VersionGroup getReferenceVersionGroup() {
+        return referenceVersionGroup;
+    }
+
+    public void setReferenceVersionGroup(VersionGroup referenceVersionGroup) {
+        this.referenceVersionGroup = referenceVersionGroup;
     }
 
     @Override

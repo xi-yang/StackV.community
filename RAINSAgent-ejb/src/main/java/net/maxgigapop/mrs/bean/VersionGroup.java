@@ -9,6 +9,7 @@ package net.maxgigapop.mrs.bean;
 import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import javax.ejb.EJBException;
 import javax.persistence.CascadeType;
@@ -16,7 +17,9 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.OneToMany;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import net.maxgigapop.mrs.bean.persist.PersistentEntity;
 
 /**
@@ -29,10 +32,20 @@ public class VersionGroup extends PersistentEntity implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
-    @OneToMany(mappedBy="versionGroup", cascade = {CascadeType.ALL})
-    private List<VersionItem> versionItems;
+
+    //reference ID for the caller
+    private Long referenceId = 0L;
     
-    private String status;
+    @ManyToMany
+    @JoinTable(
+            name = "version_group_item",
+            joinColumns = {
+                @JoinColumn(name = "group_id", referencedColumnName = "id")},
+            inverseJoinColumns = {
+                @JoinColumn(name = "item_id", referencedColumnName = "id")})
+    private List<VersionItem> versionItems = null;
+
+    private String status = "";
     
     public Long getId() {
         return id;
@@ -40,6 +53,14 @@ public class VersionGroup extends PersistentEntity implements Serializable {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getReferenceId() {
+        return referenceId;
+    }
+
+    public void setReferenceId(Long referenceId) {
+        this.referenceId = referenceId;
     }
 
     @Override
@@ -56,8 +77,17 @@ public class VersionGroup extends PersistentEntity implements Serializable {
             return false;
         }
         VersionGroup other = (VersionGroup) object;
-        if ((this.id == null && other.id != null) || (this.id != null && !this.id.equals(other.id))) {
+        if ((this.id != null && other.id != null) || (this.id.equals(other.id))) {
+            return true;
+        } else if (this.getVersionItems() == null || other.getVersionItems() == null) {
             return false;
+        } else if (this.getVersionItems().size() != other.getVersionItems().size()) {
+            return false;
+        }
+        for (int i = 0; i < this.getVersionItems().size(); i++) {
+            if (!this.getVersionItems().get(i).equals(other.getVersionItems().get(i))) {
+                return false;
+            }
         }
         return true;
     }
@@ -70,6 +100,22 @@ public class VersionGroup extends PersistentEntity implements Serializable {
         this.versionItems = versionItems;
     }
 
+    public void addVersionItem(VersionItem versionItem) {
+        if (this.versionItems == null) {
+            this.versionItems = new ArrayList<VersionItem>();
+        }
+        this.versionItems.add(versionItem);
+    }
+    
+    public VersionItem getVersionItemByDriverInstance(DriverInstance di) {
+        for (VersionItem vi: this.getVersionItems()) {
+            if (vi.getDriverInstance().equals(di)) {
+                return vi;
+            }
+        }
+        return null;
+    }
+    
     public String getStatus() {
         return status;
     }

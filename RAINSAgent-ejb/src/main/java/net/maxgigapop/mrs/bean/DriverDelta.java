@@ -24,10 +24,10 @@ import javax.persistence.OneToOne;
 public class DriverDelta extends DeltaBase {
     @ManyToOne
     @JoinColumn(name = "driverInstanceId")
-    protected DriverInstance driverInstance;
+    protected DriverInstance driverInstance = null;
 
     @OneToOne(mappedBy = "driverDelta", cascade = {CascadeType.ALL})
-    protected DriverModel driverModel;
+    protected DriverModel driverModel = null;
 
     public DriverInstance getDriverInstance() {
         return driverInstance;

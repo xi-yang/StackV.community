@@ -24,11 +24,11 @@ import javax.persistence.OneToOne;
 public class ServiceModel extends ModelBase {
     @ManyToOne
     @JoinColumn(name = "serviceInstanceId")
-    protected ServiceInstance serviceInstance;
+    protected ServiceInstance serviceInstance = null;
 
     @OneToOne     
     @JoinColumn(name = "serviceDeltaId")
-    protected ServiceDelta serviceDelta;
+    protected ServiceDelta serviceDelta = null;
 
     public ServiceInstance getServiceInstance() {
         return serviceInstance;
