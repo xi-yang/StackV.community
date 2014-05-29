@@ -7,6 +7,7 @@
 package net.maxgigapop.mrs.session;
 
 import com.hp.hpl.jena.ontology.OntModel;
+import static java.lang.Thread.sleep;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -23,6 +24,7 @@ import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.naming.Context;
 import javax.naming.InitialContext;
+import javax.naming.NamingException;
 import net.maxgigapop.mrs.bean.*;
 import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
@@ -35,8 +37,8 @@ import net.maxgigapop.mrs.common.ModelUtil;
  *
  * @author xyang
  */
-@LocalBean
 @Stateless
+@LocalBean
 public class HandleSystemCall {
 
     public SystemInstance createInstance() {
@@ -159,6 +161,7 @@ public class HandleSystemCall {
         }
 
         //## Step 4. propagate driverSystemDeltas 
+        Context ejbCxt = null;
         for (DriverSystemDelta targetDSD : targetDriverSystemDeltas) {
             // 4.1. save driverSystemDeltas
             DeltaPersistenceManager.save(targetDSD);
@@ -167,17 +170,20 @@ public class HandleSystemCall {
             String driverEjbPath = driverInstance.getDriverEjbPath();
             // make driverSystem propagateDelta call with targetDSD
             try {
-                Context ctx = new InitialContext();
-                HandleDriverSystemCall = (HandleDriverSystemCall) ctx.lookup(driverEjbPath);
-                HandleDriverSystemCall.propagateDelta(driverInstance, targetDSD);
+                if (ejbCxt == null) {
+                    ejbCxt = new InitialContext();
+                }
+                HandleDriverSystemCall driverSystemHandler = (HandleDriverSystemCall) ejbCxt.lookup(driverEjbPath);
+                driverSystemHandler.propagateDelta(driverInstance, targetDSD);
             } catch (NamingException e) {
                 throw new EJBException(e);
             }
         }
         // 4.3 save systemInstance and VG
-        SystemInstancePersistenceManager.save(systemInstance);
+        systemInstance.setVersionGroup(targetVG);
         targetVG.setStatus("PROPAGATED");
         VersionGroupPersistenceManager.save(targetVG);
+        SystemInstancePersistenceManager.save(systemInstance);
         // Note: driverSystem will save the targetDSD to driverInstance and extract refrerence version ID 
 
         //## End of propagtion
@@ -186,13 +192,66 @@ public class HandleSystemCall {
     @Asynchronous
     public Future<String> commitDelta(SystemInstance systemInstance) {
         String status = "INIT";
-
-        // 1. Get target VG
-        // 2. Get list of driverInstances
-        // 3. Call Async commitDelta to each driverInstance based on versionItems in VG.
-        // 4. Qury for status in a loop bounded by timeout.
-        // 5. return status
-        //$$ catch exception to create abnormal FAILED status
+        try {
+            // 1. Get target VG
+            VersionGroup targetVG = systemInstance.getVersionGroup();
+            if (targetVG == null || targetVG.getVersionItems() == null || targetVG.getVersionItems().isEmpty()) {
+                throw new EJBException(String.format("%s has null or empty versionGroup", systemInstance));
+            }
+            Context ejbCxt = null;
+            // 2. Get list of versionItem, driverInstances and DSD
+            Map<VersionItem, Future<String>> commitResultMap = new HashMap<VersionItem, Future<String>>();
+            for (VersionItem targetVI : targetVG.getVersionItems()) {
+                DriverInstance driverInstance = targetVI.getDriverInstance();
+                if (driverInstance == null) {
+                    throw new EJBException(String.format("%s in %s has null driverInstance ", targetVI, systemInstance));
+                }
+                try {
+                    if (ejbCxt == null) {
+                        ejbCxt = new InitialContext();
+                    }
+                    String driverEjbPath = driverInstance.getDriverEjbPath();
+                    HandleDriverSystemCall driverSystemHandler = (HandleDriverSystemCall) ejbCxt.lookup(driverEjbPath);
+                    // 3. Call Async commitDelta to each driverInstance based on versionItems in VG.
+                    Future<String> result = driverSystemHandler.commitDelta(driverInstance, targetVI);
+                    // 4. add AsyncResult to resultMap
+                    commitResultMap.put(targetVI, result);
+                } catch (NamingException e) {
+                    throw new EJBException(e);
+                }
+            }
+            // 4. Qury for status in a loop bounded by timeout.
+            int timeoutMinutes = 10; // 10 minutes 
+            //@ TODO: make this configurable
+            for (int minute = 0; minute < timeoutMinutes; minute++) {
+                boolean doneSucessful = true;
+                for (VersionItem targetVI : commitResultMap.keySet()) {
+                    Future<String> asyncResult = commitResultMap.get(targetVI);
+                    if (!asyncResult.isDone()) {
+                        doneSucessful = false;
+                        break;
+                    }
+                    String resultStatus = asyncResult.get();
+                    // done but failed
+                    if (!resultStatus.contains("SUCCESS")) {
+                        status = "FAILED";
+                        return new AsyncResult<String>(status);
+                    }
+                }
+                if (doneSucessful) {
+                    status = "SUCCESS";
+                    return new AsyncResult<String>(status);
+                }
+            }
+            status = "TIMEOUT";
+            sleep(60000); // wait for 1 minute
+        } catch (Exception e) {
+            //@TODO: add error message to result
+            status = "FALIED";
+            // logging
+        }
+        if (status.equals("INIT")) {
+        }
         return new AsyncResult<String>(status);
     }
 

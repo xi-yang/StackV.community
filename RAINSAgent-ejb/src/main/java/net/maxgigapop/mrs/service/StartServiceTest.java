@@ -25,7 +25,7 @@ import net.maxgigapop.mrs.bean.persist.PersistenceManager;
 @Singleton
 @LocalBean
 @Startup
-public class StartService {
+public class StartServiceTest {
     private @PersistenceContext(unitName="RAINSAgentPU")    
     EntityManager entityManager;
 
