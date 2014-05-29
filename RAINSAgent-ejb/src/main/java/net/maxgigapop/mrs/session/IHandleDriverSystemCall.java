@@ -9,8 +9,7 @@ package net.maxgigapop.mrs.session;
 import java.util.concurrent.Future;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
-import javax.ejb.LocalBean;
-import javax.ejb.Stateless;
+import javax.ejb.Local;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import net.maxgigapop.mrs.bean.DriverInstance;
@@ -23,19 +22,12 @@ import net.maxgigapop.mrs.bean.VersionItem;
  *
  * @author xyang
  */
-@Stateless
-@LocalBean
-public class HandleDriverSystemCall {
+@Local
+public interface IHandleDriverSystemCall {
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
-    public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
-        // place holder
-    }
+    public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta);
 
     @Asynchronous
-    public Future<String> commitDelta(DriverInstance driverInstance, VersionItem targetVI) {
-        String status = "INIT";
-        // place holder
-        return new AsyncResult<String>(status);
-    }
+    public Future<String> commitDelta(DriverInstance driverInstance, VersionItem targetVI);
 }

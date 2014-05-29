@@ -173,7 +173,7 @@ public class HandleSystemCall {
                 if (ejbCxt == null) {
                     ejbCxt = new InitialContext();
                 }
-                HandleDriverSystemCall driverSystemHandler = (HandleDriverSystemCall) ejbCxt.lookup(driverEjbPath);
+                IHandleDriverSystemCall driverSystemHandler = (IHandleDriverSystemCall) ejbCxt.lookup(driverEjbPath);
                 driverSystemHandler.propagateDelta(driverInstance, targetDSD);
             } catch (NamingException e) {
                 throw new EJBException(e);
@@ -211,7 +211,7 @@ public class HandleSystemCall {
                         ejbCxt = new InitialContext();
                     }
                     String driverEjbPath = driverInstance.getDriverEjbPath();
-                    HandleDriverSystemCall driverSystemHandler = (HandleDriverSystemCall) ejbCxt.lookup(driverEjbPath);
+                    IHandleDriverSystemCall driverSystemHandler = (IHandleDriverSystemCall) ejbCxt.lookup(driverEjbPath);
                     // 3. Call Async commitDelta to each driverInstance based on versionItems in VG.
                     Future<String> result = driverSystemHandler.commitDelta(driverInstance, targetVI);
                     // 4. add AsyncResult to resultMap
