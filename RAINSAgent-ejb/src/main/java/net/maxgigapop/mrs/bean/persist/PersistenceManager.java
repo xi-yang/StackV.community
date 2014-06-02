@@ -18,7 +18,7 @@ import javax.persistence.Query;
 
 @SuppressWarnings("unchecked")
 public class PersistenceManager {
-    private static EntityManager entityManager;
+    protected static EntityManager entityManager;
    
     public static void initialize(EntityManager anEntityManager) {
         entityManager = anEntityManager;

@@ -15,14 +15,17 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
+import javax.persistence.Transient;
+import net.maxgigapop.mrs.bean.persist.PersistentEntity;
 
 /**
  *
  * @author xyang
  */
+//@TODO: create a POJO to hold static list of DriverInstance. All access to the list has to go though this POJO.
 @Entity
 @Table(name = "driver_instance")
-public class DriverInstance implements Serializable {
+public class DriverInstance extends PersistentEntity implements Serializable {
     private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -32,7 +35,15 @@ public class DriverInstance implements Serializable {
     
     private String driverEjbPath = "";
 
+    @Transient
+    private VersionItem headVersionItem = null;
+    
     // incoming from subsystems
+    //@TODO: change to list of driverModels instead
+    // - remove the DriverDelta entity
+    // - each model has versionId assigned by driverSystem
+    // - new and persist viewItem only if a Model is pulled to upper layer
+    // - use cached head driverModel to create union instead of create headVG
     @OneToMany(mappedBy="driverInstance", cascade = {CascadeType.ALL})
     private List<DriverDelta> driverDeltas;    
     
@@ -78,6 +89,17 @@ public class DriverInstance implements Serializable {
 
     public void setDriverEjbPath(String driverEjbPath) {
         this.driverEjbPath = driverEjbPath;
+    }
+
+    //@TODO: used by Union model logic
+    public VersionItem getHeadVersionItem() {
+        //@TODO: create currentVersionItem from DB if null
+        return headVersionItem;
+    }
+
+    //@TODO: used by DriverModelPuller to cache VI
+    public void setHeadVersionItem(VersionItem currentVersionItem) {
+        this.headVersionItem = headVersionItem;
     }
 
     @Override

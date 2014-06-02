@@ -192,6 +192,10 @@ public class HandleSystemCall {
     @Asynchronous
     public Future<String> commitDelta(SystemInstance systemInstance) {
         String status = "INIT";
+        //@TODO: erase targetVG and targetVIs at exit as we need not persist them
+        //@TODO: make this bean Stateful and leave these as bean variables so later methods can examine them
+        // - no need to create headVG, targetVG and new VIs
+        // - create headSystemModel directly from POJO driverInstance manager
         try {
             // 1. Get target VG
             VersionGroup targetVG = systemInstance.getVersionGroup();
@@ -222,7 +226,7 @@ public class HandleSystemCall {
             }
             // 4. Qury for status in a loop bounded by timeout.
             int timeoutMinutes = 10; // 10 minutes 
-            //@ TODO: make this configurable
+            //@TODO: make this configurable
             for (int minute = 0; minute < timeoutMinutes; minute++) {
                 boolean doneSucessful = true;
                 for (VersionItem targetVI : commitResultMap.keySet()) {
@@ -260,4 +264,6 @@ public class HandleSystemCall {
 
     //public VersionGroup retrieveVersionGroup(Long vgId)
     //public ModelBase retrieveVersionModel(Long vgId)
+
+    //driver instance management methods (plug, unplug)
 }

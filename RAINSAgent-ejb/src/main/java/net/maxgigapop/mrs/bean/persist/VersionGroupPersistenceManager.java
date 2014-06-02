@@ -42,14 +42,16 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
 		}
     }
     
-    public static VersionGroup refreshToHead(VersionGroup aVG) {
+     public static VersionGroup refreshToHead(VersionGroup aVG) {
         VersionGroup newVG = new VersionGroup();
         for (VersionItem vi : aVG.getVersionItems()) {
             if (vi.getDriverInstance() == null) {
                 throw new EJBException(String.format("%s falied to refresh on %s which has null driverInstance", aVG, vi));
             }
             try {
-                Query q = createQuery(String.format("FROM %s WHERE id = (SELECT MAX(id) FROM %s WHERE driverInstanceId = %d)", VersionItem.class.getSimpleName(), VersionItem.class.getSimpleName(), vi.getDriverInstance().getId()));
+                //@TBD: max(id) includes populated VIs while max(referenceId) only includes commited/pulled VIs 
+                //Query q = createQuery(String.format("FROM %s WHERE id = (SELECT MAX(id) FROM %s WHERE driverInstanceId = %d)", VersionItem.class.getSimpleName(), VersionItem.class.getSimpleName(), vi.getDriverInstance().getId()));
+                Query q = createQuery(String.format("FROM %s WHERE referenceId = (SELECT MAX(referenceId) FROM %s WHERE driverInstanceId = %d)", VersionItem.class.getSimpleName(), VersionItem.class.getSimpleName(), vi.getDriverInstance().getId()));
                 // refresh
                 vi = (VersionItem) q.getSingleResult();
             } catch (Exception e) {
