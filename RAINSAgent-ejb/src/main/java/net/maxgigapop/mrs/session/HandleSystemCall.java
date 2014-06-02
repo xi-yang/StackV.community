@@ -260,10 +260,10 @@ public class HandleSystemCall {
     }
 
     //public VersionGroup retrieveHeadVersionGroup()
-    //public ModelBase retrieveHeadModel()
-
     //public VersionGroup retrieveVersionGroup(Long vgId)
     //public ModelBase retrieveVersionModel(Long vgId)
+    //public ModelBase retrieveVersionDelta(Long vgId)
 
+    //
     //driver instance management methods (plug, unplug)
 }

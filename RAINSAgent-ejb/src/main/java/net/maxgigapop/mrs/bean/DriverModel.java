@@ -6,13 +6,11 @@
 
 package net.maxgigapop.mrs.bean;
 
-import com.hp.hpl.jena.ontology.OntModel;
-import java.sql.Date;
 import javax.persistence.Entity;
 import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
 import javax.persistence.JoinColumn;
-import javax.persistence.OneToOne;
+import javax.persistence.ManyToOne;
 
 /**
  *
@@ -21,9 +19,9 @@ import javax.persistence.OneToOne;
 @Entity
 @Inheritance(strategy=InheritanceType.SINGLE_TABLE)
 public class DriverModel extends ModelBase {
-    @OneToOne     
-    @JoinColumn(name = "driverDeltaId")
-    protected DriverDelta driverDelta = null;
+    @ManyToOne
+    @JoinColumn(name = "driverInstanceId")
+    protected DriverInstance driverInstance = null;
 
     @Override
     public String toString() {

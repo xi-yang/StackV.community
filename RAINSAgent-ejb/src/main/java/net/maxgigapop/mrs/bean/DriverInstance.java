@@ -39,13 +39,8 @@ public class DriverInstance extends PersistentEntity implements Serializable {
     private VersionItem headVersionItem = null;
     
     // incoming from subsystems
-    //@TODO: change to list of driverModels instead
-    // - remove the DriverDelta entity
-    // - each model has versionId assigned by driverSystem
-    // - new and persist viewItem only if a Model is pulled to upper layer
-    // - use cached head driverModel to create union instead of create headVG
     @OneToMany(mappedBy="driverInstance", cascade = {CascadeType.ALL})
-    private List<DriverDelta> driverDeltas;    
+    private List<DriverModel> driverModels;
     
     // outgoing to subsystems
     @OneToMany(mappedBy="driverInstance", cascade = {CascadeType.ALL})
@@ -67,12 +62,12 @@ public class DriverInstance extends PersistentEntity implements Serializable {
         this.topologyUri = topologyUri;
     }
 
-    public List<DriverDelta> getDriverDeltas() {
-        return driverDeltas;
+    public List<DriverModel> getDriverModels() {
+        return driverModels;
     }
 
-    public void setDriverDeltas(List<DriverDelta> driverDeltas) {
-        this.driverDeltas = driverDeltas;
+    public void setDriverModels(List<DriverModel> driverModels) {
+        this.driverModels = driverModels;
     }
 
     public List<DriverSystemDelta> getDriverSystemDeltas() {
