@@ -12,14 +12,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.Future;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
-import javax.ejb.EJB;
 import javax.ejb.EJBException;
 import javax.ejb.LocalBean;
-import javax.ejb.Stateless;
+import javax.ejb.Stateful;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.naming.Context;
@@ -37,10 +35,11 @@ import net.maxgigapop.mrs.common.ModelUtil;
  *
  * @author xyang
  */
-@Stateless
+@Stateful
 @LocalBean
-public class HandleSystemCall {
-
+public class HandleSystemPushCall {
+    private VersionGroup targetVG = null;
+    
     public SystemInstance createInstance() {
         SystemInstance systemInstance = new SystemInstance();
         SystemInstancePersistenceManager.save(systemInstance);
@@ -64,26 +63,24 @@ public class HandleSystemCall {
         // use VG from systemInstance.versionGroup or based on aDelta.versionReferenceId
         // Note 1: a defaut VG (#1) must exist the first time the system starts.
         // Note 2: the VG below must contain versionItems for committed models only.
-        if (aDelta.getReferenceVersionGroup() != null) {
-            systemInstance.setVersionGroup(aDelta.getReferenceVersionGroup());
-        }
-        if (systemInstance.getVersionGroup() == null) {
+        VersionGroup referenceVG = aDelta.getReferenceVersionGroup();
+        if (referenceVG == null) {
             throw new EJBException(String.format("%s has no reference versionGroup to work with", systemInstance));
         }
 
         //EJBExeption may be thrown upon fault from subroutine of each step below
         
         //## Step 1. create reference model and target model 
-        systemInstance.updateReferenceModel();
-        OntModel referenceOntModel = systemInstance.getReferenceModel().getOntModel();
-        OntModel targetOntModel = systemInstance.getReferenceModel().dryrunDelta(aDelta);
+        ModelBase referenceModel = referenceVG.createUnionModel();
+        OntModel referenceOntModel = referenceModel.getOntModel();
+        OntModel targetOntModel = referenceModel.dryrunDelta(aDelta);
         systemInstance.addSystemDelta(aDelta);
 
         //## Step 2. verify model change
         // 2.1. get head/lastest VG based on the current versionGroup 
-        VersionGroup headVG = VersionGroupPersistenceManager.refreshToHead(systemInstance.getVersionGroup());
+        VersionGroup headVG = VersionGroupPersistenceManager.refreshToHead(referenceVG);
         // 2.2. if the head VG is newer than the current/reference VG
-        if (headVG != null && !headVG.equals(systemInstance.getVersionGroup())) {
+        if (headVG != null && !headVG.equals(referenceVG)) {
             //          create headOntModel. get D12=headModel.diffFromModel(refeneceOntModel)
             ModelBase headSystemModel = headVG.createUnionModel();
             // Note: The head model has committed (driverDeltas) or propagated (driverSystemDeltas if available) to reduce contention.
@@ -95,7 +92,7 @@ public class HandleSystemCall {
             com.hp.hpl.jena.rdf.model.Model additionConflict = D12.getModelReduction().getOntModel().intersection(aDelta.getModelAddition().getOntModel());
             //          if either verification fails throw EJBException("version conflict");
             if (!ModelUtil.isEmptyModel(reductionConflict) || !ModelUtil.isEmptyModel(additionConflict)) {
-                throw new EJBException(String.format("%s %s based on %s conflicts with current head %s", systemInstance, aDelta, systemInstance.getVersionGroup(), headVG));
+                throw new EJBException(String.format("%s %s based on %s conflicts with current head %s", systemInstance, aDelta, referenceVG, headVG));
             }
             // Note: no need to update current VG to head as the targetDSD will be based the current VG and driverSystem will verify contention on its own.
         }
@@ -107,9 +104,10 @@ public class HandleSystemCall {
         Map<String, OntModel> referenceDriverSystemModels = ModelUtil.splitOntModelByTopology(referenceOntModel);
         // 3.3. create list of non-empty driverSystemDeltas by diff referenceOntModel components to targetOntModel
         List<DriverSystemDelta> targetDriverSystemDeltas = new ArrayList<DriverSystemDelta>();
-        VersionGroup targetVG = new VersionGroup();
-        targetVG.setStatus("INIT");
-        VersionGroupPersistenceManager.save(targetVG);
+        this.targetVG = new VersionGroup();
+        this.targetVG.setStatus("INIT");
+        //transient - do not save
+        //VersionGroupPersistenceManager.save(this.targetVG);
         for (String driverSystemTopoUri : targetDriverSystemModels.keySet()) {
             if (!referenceDriverSystemModels.containsKey(driverSystemTopoUri)) {
                 throw new EJBException(String.format("%s cannot decompose %s due to unexpected target topology [uri=%s]", systemInstance, aDelta, driverSystemTopoUri));
@@ -119,7 +117,7 @@ public class HandleSystemCall {
                 throw new EJBException(String.format("%s cannot find driverInstance for target topology [uri=%s]", systemInstance, driverSystemTopoUri));
             }
             //get old versionItem for reference model
-            VersionItem oldVI = systemInstance.getVersionGroup().getVersionItemByDriverInstance(driverInstance);
+            VersionItem oldVI = referenceVG.getVersionItemByDriverInstance(driverInstance);
             OntModel tom = targetDriverSystemModels.get(driverSystemTopoUri);
             OntModel rom = referenceDriverSystemModels.get(driverSystemTopoUri);
             ModelBase referenceDSM = new ModelBase();
@@ -128,7 +126,7 @@ public class HandleSystemCall {
             DeltaBase delta = referenceDSM.diffToModel(tom);
             if (ModelUtil.isEmptyModel(delta.getModelAddition().getOntModel()) && ModelUtil.isEmptyModel(delta.getModelReduction().getOntModel())) {
                 // no diff, use existing verionItem
-                targetVG.addVersionItem(oldVI);
+                this.targetVG.addVersionItem(oldVI);
                 continue;
             }
             // create targetDSM and targetDSD only if there is a change. 
@@ -138,12 +136,14 @@ public class HandleSystemCall {
             VersionItem newVI = new VersionItem();
             newVI.setDriverInstance(driverInstance);
             newVI.setModelRef(targetDSM);
-            newVI.addVersionGroup(targetVG);
-            targetVG.addVersionItem(newVI);
-            VersionGroupPersistenceManager.save(newVI);
+            newVI.addVersionGroup(this.targetVG);
+            this.targetVG.addVersionItem(newVI);
+            //transient - do not save
+            //VersionGroupPersistenceManager.save(newVI);
             // target model has a new version ID
             targetDSM.setCxtVersion(newVI.getId());
-            ModelPersistenceManager.save(targetDSM);
+            //transient - do not save
+            //ModelPersistenceManager.save(targetDSM);
             // create targetDSD 
             DriverSystemDelta targetDSD = new DriverSystemDelta();
             targetDSD.setPersistent(true);
@@ -167,6 +167,7 @@ public class HandleSystemCall {
             DeltaPersistenceManager.save(targetDSD);
             // 4.2. push driverSystemDeltas to driverInstances
             DriverInstance driverInstance = targetDSD.getDriverInstance();
+            driverInstance.addDriverSystemDelta(targetDSD);
             String driverEjbPath = driverInstance.getDriverEjbPath();
             // make driverSystem propagateDelta call with targetDSD
             try {
@@ -180,11 +181,10 @@ public class HandleSystemCall {
             }
         }
         // 4.3 save systemInstance and VG
-        systemInstance.setVersionGroup(targetVG);
-        targetVG.setStatus("PROPAGATED");
-        VersionGroupPersistenceManager.save(targetVG);
+        this.targetVG.setStatus("PROPAGATED");
+        //transient - do not save
+        //VersionGroupPersistenceManager.save(this.targetVG);
         SystemInstancePersistenceManager.save(systemInstance);
-        // Note: driverSystem will save the targetDSD to driverInstance and extract refrerence version ID 
 
         //## End of propagtion
     }
@@ -192,20 +192,15 @@ public class HandleSystemCall {
     @Asynchronous
     public Future<String> commitDelta(SystemInstance systemInstance) {
         String status = "INIT";
-        //@TODO: erase targetVG and targetVIs at exit as we need not persist them
-        //@TODO: make this bean Stateful and leave these as bean variables so later methods can examine them
-        // - no need to create headVG, targetVG and new VIs
-        // - create headSystemModel directly from POJO driverInstance manager
         try {
-            // 1. Get target VG
-            VersionGroup targetVG = systemInstance.getVersionGroup();
-            if (targetVG == null || targetVG.getVersionItems() == null || targetVG.getVersionItems().isEmpty()) {
+            // 1. Get target VG from this stateful bean
+            if (this.targetVG == null || this.targetVG.getVersionItems() == null || this.targetVG.getVersionItems().isEmpty()) {
                 throw new EJBException(String.format("%s has null or empty versionGroup", systemInstance));
             }
             Context ejbCxt = null;
             // 2. Get list of versionItem, driverInstances and DSD
             Map<VersionItem, Future<String>> commitResultMap = new HashMap<VersionItem, Future<String>>();
-            for (VersionItem targetVI : targetVG.getVersionItems()) {
+            for (VersionItem targetVI : this.targetVG.getVersionItems()) {
                 DriverInstance driverInstance = targetVI.getDriverInstance();
                 if (driverInstance == null) {
                     throw new EJBException(String.format("%s in %s has null driverInstance ", targetVI, systemInstance));
@@ -225,8 +220,8 @@ public class HandleSystemCall {
                 }
             }
             // 4. Qury for status in a loop bounded by timeout.
+            //@TODO: make timeout and interval values configurable
             int timeoutMinutes = 10; // 10 minutes 
-            //@TODO: make this configurable
             for (int minute = 0; minute < timeoutMinutes; minute++) {
                 boolean doneSucessful = true;
                 for (VersionItem targetVI : commitResultMap.keySet()) {
@@ -258,12 +253,4 @@ public class HandleSystemCall {
         }
         return new AsyncResult<String>(status);
     }
-
-    //public VersionGroup retrieveHeadVersionGroup()
-    //public VersionGroup retrieveVersionGroup(Long vgId)
-    //public ModelBase retrieveVersionModel(Long vgId)
-    //public ModelBase retrieveVersionDelta(Long vgId)
-
-    //
-    //driver instance management methods (plug, unplug)
 }

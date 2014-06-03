@@ -30,4 +30,7 @@ public interface IHandleDriverSystemCall {
 
     @Asynchronous
     public Future<String> commitDelta(DriverInstance driverInstance, VersionItem targetVI);
+
+    @Asynchronous
+    public Future<String> pullModel(DriverInstance driverInstance);
 }

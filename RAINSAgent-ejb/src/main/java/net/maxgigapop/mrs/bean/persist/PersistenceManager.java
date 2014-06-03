@@ -16,6 +16,7 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 
+//@TODO: change into Singleton with READ and WRITE locks ? 
 @SuppressWarnings("unchecked")
 public class PersistenceManager {
     protected static EntityManager entityManager;

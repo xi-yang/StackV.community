@@ -39,13 +39,6 @@ public class SystemInstance extends PersistentEntity implements Serializable {
     @OneToMany(mappedBy="systemInstance", cascade = {CascadeType.ALL})
     protected List<SystemDelta> systemDeltas = null;    
     
-    @OneToOne
-    @JoinColumn(name="versionGroupId")
-    VersionGroup versionGroup = null;
-    
-    @Transient
-    protected ModelBase referenceModel = null;
-    
     public Long getId() {
         return id;
     }
@@ -91,30 +84,6 @@ public class SystemInstance extends PersistentEntity implements Serializable {
             //$$ catch and throw exception
             ModelPersistenceManager.delete(aDelta);
         }
-    }
-
-    public VersionGroup getVersionGroup() {
-        return versionGroup;
-    }
-
-    public void setVersionGroup(VersionGroup versionGroup) {
-        this.versionGroup = versionGroup;
-    }
-
-    public void updateReferenceModel() {
-        if (versionGroup == null) {
-            throw new EJBException(String.format("%s method updateReferenceModel encounters null versionGroup", this));
-        }
-        this.referenceModel = versionGroup.createUnionModel();
-        //?? rebind / rerun inference for referenceModel
-    }
-    
-    public ModelBase getReferenceModel() {
-        return referenceModel;
-    }
-
-    public void setReferenceModel(ModelBase referenceModel) {
-        this.referenceModel = referenceModel;
     }
     
     @Override

@@ -7,15 +7,25 @@
 package net.maxgigapop.mrs.bean;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import javax.ejb.EJBException;
 import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.MapKeyColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Transient;
+import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.PersistentEntity;
 
 /**
@@ -44,7 +54,12 @@ public class DriverInstance extends PersistentEntity implements Serializable {
     
     // outgoing to subsystems
     @OneToMany(mappedBy="driverInstance", cascade = {CascadeType.ALL})
-    private List<DriverSystemDelta> driverSystemDeltas;    
+    private List<DriverSystemDelta> driverSystemDeltas;
+
+    @ElementCollection
+    @JoinTable(name = "driver_instance_property", joinColumns = @JoinColumn(name = "id"))
+    @MapKeyColumn(name = "property_id")
+    private Map<String, String> properties = new HashMap<String, String>();
 
     public Long getId() {
         return id;
@@ -78,6 +93,29 @@ public class DriverInstance extends PersistentEntity implements Serializable {
         this.driverSystemDeltas = driverSystemDeltas;
     }
 
+    public boolean hasDriverSystemDelta(DriverSystemDelta aDelta) {
+        if (driverSystemDeltas == null || driverSystemDeltas.isEmpty())
+            return false;
+        for (DriverSystemDelta delta: driverSystemDeltas) {
+            if (delta.equals(aDelta)) 
+                return true;
+        }
+        return false;
+    }
+    
+    public void addDriverSystemDelta(DriverSystemDelta aDelta) {
+        if (driverSystemDeltas == null)
+            driverSystemDeltas = new ArrayList<>();
+        if (!hasDriverSystemDelta(aDelta)) {
+            try {
+                ModelPersistenceManager.save(aDelta);
+            } catch (Exception e) {
+                throw new EJBException(String.format("%s faled to save %s, due to %s", this.toString(), aDelta.toString(), e.getMessage()));
+            }
+            driverSystemDeltas.add(aDelta);
+        }
+    }
+    
     public String getDriverEjbPath() {
         return driverEjbPath;
     }
@@ -95,6 +133,14 @@ public class DriverInstance extends PersistentEntity implements Serializable {
     //@TODO: used by DriverModelPuller to cache VI
     public void setHeadVersionItem(VersionItem currentVersionItem) {
         this.headVersionItem = headVersionItem;
+    }
+
+    public Map<String, String> getProperties() {
+        return properties;
+    }
+
+    public void setProperties(Map<String, String> properties) {
+        this.properties = properties;
     }
 
     @Override
