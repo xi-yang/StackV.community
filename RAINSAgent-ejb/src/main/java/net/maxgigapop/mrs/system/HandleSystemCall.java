@@ -4,19 +4,20 @@
  * and open the template in the editor.
  */
 
-package net.maxgigapop.mrs.session;
+package net.maxgigapop.mrs.system;
 
 import java.util.List;
 import java.util.Map;
 import javax.ejb.EJBException;
-import javax.ejb.Stateless;
 import javax.ejb.LocalBean;
+import javax.ejb.Stateless;
 import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.bean.VersionItem;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
+import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 
 /**
  *
@@ -24,7 +25,7 @@ import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
  */
 @Stateless
 @LocalBean
-public class HandleSystemPullCall {    
+public class HandleSystemCall {    
     public VersionGroup createHeadVersionGroup(Long refId) {
         Map<String, DriverInstance> ditMap = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
         if (ditMap == null) {
@@ -88,5 +89,28 @@ public class HandleSystemPullCall {
         return vg.createUnionModel();        
     }
     
-    //@TODO: add driver instance management methods (plug, unplug etc.)}
+    public void plugDriverInstance(Map<String, String> properties) {
+        if (!properties.containsKey("topologyUri") || !properties.containsKey("driverEjbPath")) {
+           throw new EJBException(String.format("plugDriverInstance must provide both topologyUri and driverEjbPath properties"));
+        }
+        if (DriverInstancePersistenceManager.findByTopologyUri(properties.get("topologyUri")) != null) {
+           throw new EJBException(String.format("A driverInstance has existed for topologyUri=%s", properties.get("topologyUri")));
+        }
+        DriverInstance newDI = new DriverInstance();
+        newDI.setProperties(properties);
+        newDI.setTopologyUri(properties.get("topologyUri"));
+        newDI.setDriverEjbPath(properties.get("driverEjbPath"));
+        DriverInstancePersistenceManager.save(newDI);
+    }
+    
+    public void unplugDriverInstance(String topoUri) {
+        DriverInstance di = DriverInstancePersistenceManager.findByTopologyUri(topoUri);
+        if (di == null) {
+           throw new EJBException(String.format("unplugDriverInstance cannot find the driverInstance for topologyUri=%s", topoUri));
+        }
+        // remove all related versionItems
+        VersionItemPersistenceManager.deleteByDriverInstance(di);
+        DriverInstancePersistenceManager.delete(di);
+    }
+
 }

@@ -9,11 +9,13 @@ package net.maxgigapop.mrs.bean;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.OneToOne;
 import net.maxgigapop.mrs.bean.persist.PersistentEntity;
@@ -32,7 +34,14 @@ public class VersionItem extends PersistentEntity implements Serializable {
     // reference ID for the callee
     private Long referenceId = 0L;
     
-    @ManyToMany(mappedBy="versionItems")
+
+    @ManyToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
+    @JoinTable(
+            name = "version_group_item",
+            joinColumns = {
+                @JoinColumn(name = "item_id", referencedColumnName = "id")},
+            inverseJoinColumns = {
+                @JoinColumn(name = "group_id", referencedColumnName = "id")})    
     private List<VersionGroup> versionGroups = null;
 
     @OneToOne

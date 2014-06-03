@@ -36,7 +36,7 @@ public class VersionGroup extends PersistentEntity implements Serializable {
     //reference ID for the caller
     private Long referenceId = 0L;
     
-    @ManyToMany
+    @ManyToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
     @JoinTable(
             name = "version_group_item",
             joinColumns = {
@@ -141,7 +141,7 @@ public class VersionGroup extends PersistentEntity implements Serializable {
             }
             newModel.getOntModel().addSubModel(vi.getModelRef().getOntModel());
         }
-        //?? rebind / rerun inference for referenceModel
+        //@TBD: rebind / rerun inference for referenceModel
         return newModel;
     }
 }

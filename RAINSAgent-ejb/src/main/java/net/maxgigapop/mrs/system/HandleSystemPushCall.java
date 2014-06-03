@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-package net.maxgigapop.mrs.session;
+package net.maxgigapop.mrs.system;
 
 import com.hp.hpl.jena.ontology.OntModel;
 import static java.lang.Thread.sleep;
@@ -39,33 +39,34 @@ import net.maxgigapop.mrs.common.ModelUtil;
 @LocalBean
 public class HandleSystemPushCall {
     private VersionGroup targetVG = null;
+    private SystemInstance systemInstance = null;
     
     public SystemInstance createInstance() {
-        SystemInstance systemInstance = new SystemInstance();
+        this.systemInstance = new SystemInstance();
         SystemInstancePersistenceManager.save(systemInstance);
-        return systemInstance;
+        return this.systemInstance;
     }
 
     public void terminateInstance(SystemInstance systemInstance) {
-        if (systemInstance != null) {
+        if (this.systemInstance != null) {
             for (SystemDelta aDelta : systemInstance.getSystemDeltas()) {
                 ModelPersistenceManager.delete(aDelta);
             }
-            SystemInstancePersistenceManager.delete(systemInstance);
+            SystemInstancePersistenceManager.delete(this.systemInstance);
         }
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
-    public void propagateDelta(SystemInstance systemInstance, SystemDelta aDelta) {
-        if (systemInstance == null) {
-            throw new EJBException(String.format("null systemInstance"));
+    public void propagateDelta(SystemDelta aDelta) {
+        if (this.systemInstance == null) {
+            this.createInstance();
         }
-        // use VG from systemInstance.versionGroup or based on aDelta.versionReferenceId
+        // use VG from this.systemInstance.versionGroup or based on aDelta.versionReferenceId
         // Note 1: a defaut VG (#1) must exist the first time the system starts.
         // Note 2: the VG below must contain versionItems for committed models only.
         VersionGroup referenceVG = aDelta.getReferenceVersionGroup();
         if (referenceVG == null) {
-            throw new EJBException(String.format("%s has no reference versionGroup to work with", systemInstance));
+            throw new EJBException(String.format("%s has no reference versionGroup to work with", this.systemInstance));
         }
 
         //EJBExeption may be thrown upon fault from subroutine of each step below
@@ -74,7 +75,7 @@ public class HandleSystemPushCall {
         ModelBase referenceModel = referenceVG.createUnionModel();
         OntModel referenceOntModel = referenceModel.getOntModel();
         OntModel targetOntModel = referenceModel.dryrunDelta(aDelta);
-        systemInstance.addSystemDelta(aDelta);
+        this.systemInstance.addSystemDelta(aDelta);
 
         //## Step 2. verify model change
         // 2.1. get head/lastest VG based on the current versionGroup 
@@ -92,7 +93,7 @@ public class HandleSystemPushCall {
             com.hp.hpl.jena.rdf.model.Model additionConflict = D12.getModelReduction().getOntModel().intersection(aDelta.getModelAddition().getOntModel());
             //          if either verification fails throw EJBException("version conflict");
             if (!ModelUtil.isEmptyModel(reductionConflict) || !ModelUtil.isEmptyModel(additionConflict)) {
-                throw new EJBException(String.format("%s %s based on %s conflicts with current head %s", systemInstance, aDelta, referenceVG, headVG));
+                throw new EJBException(String.format("%s %s based on %s conflicts with current head %s", this.systemInstance, aDelta, referenceVG, headVG));
             }
             // Note: no need to update current VG to head as the targetDSD will be based the current VG and driverSystem will verify contention on its own.
         }
@@ -110,11 +111,11 @@ public class HandleSystemPushCall {
         //VersionGroupPersistenceManager.save(this.targetVG);
         for (String driverSystemTopoUri : targetDriverSystemModels.keySet()) {
             if (!referenceDriverSystemModels.containsKey(driverSystemTopoUri)) {
-                throw new EJBException(String.format("%s cannot decompose %s due to unexpected target topology [uri=%s]", systemInstance, aDelta, driverSystemTopoUri));
+                throw new EJBException(String.format("%s cannot decompose %s due to unexpected target topology [uri=%s]", this.systemInstance, aDelta, driverSystemTopoUri));
             }
             DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(driverSystemTopoUri);
             if (driverInstance == null) {
-                throw new EJBException(String.format("%s cannot find driverInstance for target topology [uri=%s]", systemInstance, driverSystemTopoUri));
+                throw new EJBException(String.format("%s cannot find driverInstance for target topology [uri=%s]", this.systemInstance, driverSystemTopoUri));
             }
             //get old versionItem for reference model
             VersionItem oldVI = referenceVG.getVersionItemByDriverInstance(driverInstance);
@@ -154,7 +155,7 @@ public class HandleSystemPushCall {
             targetDSD.setReferenceVersionItem(oldVI);
             targetDSD.setTargetVersionItem(newVI);
             if (driverInstance == null) {
-                throw new EJBException(String.format("%s cannot find a dirverInstance for topology: %s", systemInstance, driverSystemTopoUri));
+                throw new EJBException(String.format("%s cannot find a dirverInstance for topology: %s", this.systemInstance, driverSystemTopoUri));
             }
             // prepare to dispatch to driverInstance
             targetDSD.setDriverInstance(driverInstance);
@@ -180,22 +181,26 @@ public class HandleSystemPushCall {
                 throw new EJBException(e);
             }
         }
-        // 4.3 save systemInstance and VG
+        // 4.3 save this.systemInstance and VG
         this.targetVG.setStatus("PROPAGATED");
         //transient - do not save
         //VersionGroupPersistenceManager.save(this.targetVG);
-        SystemInstancePersistenceManager.save(systemInstance);
+        SystemInstancePersistenceManager.save(this.systemInstance);
 
         //## End of propagtion
     }
 
+    //@TODO: trigger pullModel upon success or failure?
     @Asynchronous
-    public Future<String> commitDelta(SystemInstance systemInstance) {
+    public Future<String> commitDelta() {
         String status = "INIT";
         try {
+            if (this.systemInstance == null) {
+                throw new EJBException(String.format("cannot run commitDelta with null systemInstance"));
+            }
             // 1. Get target VG from this stateful bean
             if (this.targetVG == null || this.targetVG.getVersionItems() == null || this.targetVG.getVersionItems().isEmpty()) {
-                throw new EJBException(String.format("%s has null or empty versionGroup", systemInstance));
+                throw new EJBException(String.format("%s has null or empty versionGroup", this.systemInstance));
             }
             Context ejbCxt = null;
             // 2. Get list of versionItem, driverInstances and DSD
@@ -203,7 +208,7 @@ public class HandleSystemPushCall {
             for (VersionItem targetVI : this.targetVG.getVersionItems()) {
                 DriverInstance driverInstance = targetVI.getDriverInstance();
                 if (driverInstance == null) {
-                    throw new EJBException(String.format("%s in %s has null driverInstance ", targetVI, systemInstance));
+                    throw new EJBException(String.format("%s in %s has null driverInstance ", targetVI, this.systemInstance));
                 }
                 try {
                     if (ejbCxt == null) {
@@ -247,7 +252,7 @@ public class HandleSystemPushCall {
         } catch (Exception e) {
             //@TODO: add error message to result
             status = "FALIED";
-            // logging
+            //@TODO: logging
         }
         if (status.equals("INIT")) {
         }

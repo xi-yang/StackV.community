@@ -18,34 +18,25 @@ import static net.maxgigapop.mrs.bean.persist.PersistenceManager.createQuery;
  *
  * @author xyang
  */
-
 @SuppressWarnings("unchecked")
 public class VersionGroupPersistenceManager extends PersistenceManager {
+
     public static VersionGroup findById(Long id) {
         return PersistenceManager.find(VersionGroup.class, id);
     }
 
     public static VersionGroup findByReferenceId(Long refId) {
-		try {
-			Query q = createQuery(String.format("FROM %s WHERE referenceId = %d", VersionGroup.class.getSimpleName(), refId));
-            return (VersionGroup)q.getSingleResult(); 
-		} catch (Exception e) {
-			return null;
-		}
-    }    
-    
-    public static VersionGroup getHeadGroup() {
-		try {
-			Query q = createQuery(String.format("FROM %s WHERE id = (SELECT MAX(id) FROM %s)", VersionGroup.class.getSimpleName(), VersionGroup.class.getSimpleName()));
-            return (VersionGroup)q.getSingleResult(); 
-		} catch (Exception e) {
-			return null;
-		}
+        try {
+            Query q = createQuery(String.format("FROM %s WHERE referenceId = %d", VersionGroup.class.getSimpleName(), refId));
+            return (VersionGroup) q.getSingleResult();
+        } catch (Exception e) {
+            throw new EJBException(String.format("VersionGroupPersistenceManager::findByReferenceId raised exception: %s", e.getMessage()));
+        }
     }
-    
-     public static VersionGroup refreshToHead(VersionGroup vg) {
+
+    public static VersionGroup refreshToHead(VersionGroup vg) {
         if (vg == null) {
-           throw new EJBException(String.format("VersionGroup::refreshToHead encounters null VG"));
+            throw new EJBException(String.format("VersionGroupPersistenceManager::refreshToHead encounters null VG"));
         }
         Map<String, DriverInstance> ditMap = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
         if (ditMap == null) {
@@ -53,10 +44,10 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
             ditMap = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
         }
         if (ditMap.isEmpty()) {
-           throw new EJBException(String.format("VersionGroup::refreshToHead canont find driverInstance in the system"));
+            throw new EJBException(String.format("VersionGroupPersistenceManager::refreshToHead canont find driverInstance in the system"));
         }
         VersionGroup vgNew = null;
-        for (VersionItem vi: vg.getVersionItems()) {
+        for (VersionItem vi : vg.getVersionItems()) {
             DriverInstance di = vi.getDriverInstance();
             if (di != null && !di.getHeadVersionItem().equals(vi)) {
                 if (vgNew == null) {
@@ -72,5 +63,5 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
             return vgNew;
         }
         return vg;
-    }    
+    }
 }

@@ -27,6 +27,7 @@ import javax.persistence.Table;
 import javax.persistence.Transient;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.PersistentEntity;
+import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 
 /**
  *
@@ -39,7 +40,7 @@ public class DriverInstance extends PersistentEntity implements Serializable {
     private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
+    private Long id = 0L;
     
     private String topologyUri = "";
     
@@ -124,13 +125,16 @@ public class DriverInstance extends PersistentEntity implements Serializable {
         this.driverEjbPath = driverEjbPath;
     }
 
-    //@TODO: used by Union model logic
     public VersionItem getHeadVersionItem() {
-        //@TODO: create currentVersionItem from DB if null
+        if (this.id == 0L) {
+            throw new EJBException(String.format("call getHeadVersionItem from unpersisted %s", this));
+        }
+        if (this.headVersionItem == null) {
+            this.headVersionItem = VersionItemPersistenceManager.getHeadByDriverInstance(this);
+        }
         return headVersionItem;
     }
 
-    //@TODO: used by DriverModelPuller to cache VI
     public void setHeadVersionItem(VersionItem currentVersionItem) {
         this.headVersionItem = headVersionItem;
     }

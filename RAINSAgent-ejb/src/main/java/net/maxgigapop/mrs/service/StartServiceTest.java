@@ -31,7 +31,9 @@ public class StartServiceTest {
 
     @PostConstruct
     public void init() {
-        PersistenceManager.initialize(entityManager);
+        if (PersistenceManager.getEntityManager() == null) {
+            PersistenceManager.initialize(entityManager);
+        }
         ModelBase model1 = new ModelBase();
         model1.setTtlModel("@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.\n" +
 "@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.\n" +

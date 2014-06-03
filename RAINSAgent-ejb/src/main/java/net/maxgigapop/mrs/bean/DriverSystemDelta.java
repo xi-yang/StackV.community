@@ -74,8 +74,4 @@ public class DriverSystemDelta extends DeltaBase {
         return "net.maxgigapop.mrs.model.DriverSystemDelta[ id=" + id + " ]";
     }
     
-    //$$ TODO
-    public void saveAll() {
-        
-    }
  }

@@ -26,7 +26,7 @@ import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.VersionItem;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.PersistenceManager;
-import net.maxgigapop.mrs.session.IHandleDriverSystemCall;
+import net.maxgigapop.mrs.system.IHandleDriverSystemCall;
 
 /**
  *
@@ -43,7 +43,9 @@ public class DriverModelPuller {
     
     @PostConstruct
     public void init() {
-        PersistenceManager.initialize(entityManager);
+        if (PersistenceManager.getEntityManager() == null) {
+            PersistenceManager.initialize(entityManager);
+        }
         DriverInstancePersistenceManager.refreshAll();
     }
     
@@ -63,11 +65,11 @@ public class DriverModelPuller {
                     if (previousResult.isDone()) {
                         String status = previousResult.get();
                         if (status.contains("FAILED")) {
-                            //@TODO: pull error handling (retry in this current pull, then exception if still failed)
+                            //@TODO: error handling: retry in this current pull, then exception if still failed
                         }
                     } else {
-                        //@TODO: pull timeout handling (skip this current pull and allow one more cycle)
-                        previousResult.cancel(true);
+                        //@TODO: timeout handling: skip this current pull and check after one more cycle, then do
+                        //previousResult.cancel(true); // assume the underlying driverSystem puller is cooperative
                     }
                 }
                 if (ejbCxt == null) {
