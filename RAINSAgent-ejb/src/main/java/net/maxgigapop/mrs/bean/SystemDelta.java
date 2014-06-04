@@ -63,9 +63,4 @@ public class SystemDelta extends DeltaBase {
     public String toString() {
         return "net.maxgigapop.mrs.model.SystemDelta[ id=" + id + " ]";
     }
-    
-    //--> save this and driverSystemDeltas
-    public void saveAll () {
-        
-    }
  }

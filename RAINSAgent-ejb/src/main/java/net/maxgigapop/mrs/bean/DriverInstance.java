@@ -146,7 +146,17 @@ public class DriverInstance extends PersistentEntity implements Serializable {
     public void setProperties(Map<String, String> properties) {
         this.properties = properties;
     }
+    
+    public String getProperty(String key) {
+        if (!this.properties.containsKey(key))
+            return null;
+        return this.properties.get(key);
+    }
 
+    public void putProperty(String key, String value) {
+        this.properties.put(key, value);
+    }
+    
     @Override
     public int hashCode() {
         int hash = 0;

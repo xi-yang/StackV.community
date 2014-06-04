@@ -15,7 +15,7 @@ import javax.annotation.PostConstruct;
 @SuppressWarnings("unchecked")
 public class PersistentEntity {
 
-	boolean persistent = false;
+	boolean persistent = true;
 
 	public boolean isPersistent() {
 		return persistent;

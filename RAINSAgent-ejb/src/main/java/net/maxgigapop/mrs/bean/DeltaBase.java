@@ -91,9 +91,4 @@ public class DeltaBase extends PersistentEntity implements Serializable {
     public String toString() {
         return "net.maxgigapop.mrs.model.DeltaBase[ id=" + id + " ]";
     }
-    
-    //$$
-    public void saveAll() {
-        
-    }
 }
