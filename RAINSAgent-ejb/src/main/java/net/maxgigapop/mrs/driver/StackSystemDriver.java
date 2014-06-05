@@ -62,7 +62,6 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
             SystemInstance si = ejbSystemPushHandler.createInstance();
             VersionGroup vg = ejbSystemHandler.updateHeadVersionGroup(aDelta.getReferenceVersionItem().getReferenceId());
             SystemDelta sysDelta = new SystemDelta();
-            sysDelta.setPersistent(true);
             sysDelta.setSystemInstance(si);
             sysDelta.setReferenceVersionGroup(vg);
             sysDelta.setModelAddition(aDelta.getModelAddition());
@@ -92,7 +91,8 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
         status = "SUCCESS";
         return new AsyncResult<String>(status);
     }
-
+    // TODO: terminate or reuse sessions in driverSystemSessionMap after commit
+    
     @Override
     @Asynchronous
     public Future<String> pullModel(DriverInstance driverInstance) {

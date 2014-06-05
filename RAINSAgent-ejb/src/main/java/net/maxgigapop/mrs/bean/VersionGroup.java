@@ -20,6 +20,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
+import javax.persistence.Table;
 import net.maxgigapop.mrs.bean.persist.PersistentEntity;
 
 /**
@@ -27,6 +28,7 @@ import net.maxgigapop.mrs.bean.persist.PersistentEntity;
  * @author xyang
  */
 @Entity
+@Table(name = "version_group")
 public class VersionGroup extends PersistentEntity implements Serializable {
     private static final long serialVersionUID = 1L;
     @Id

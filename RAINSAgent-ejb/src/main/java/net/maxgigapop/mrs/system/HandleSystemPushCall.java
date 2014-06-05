@@ -147,7 +147,6 @@ public class HandleSystemPushCall {
             //ModelPersistenceManager.save(targetDSM);
             // create targetDSD 
             DriverSystemDelta targetDSD = new DriverSystemDelta();
-            targetDSD.setPersistent(true);
             targetDSD.setModelAddition(delta.getModelAddition());
             targetDSD.setModelReduction(delta.getModelReduction());
             targetDSD.setSystemDelta(null);

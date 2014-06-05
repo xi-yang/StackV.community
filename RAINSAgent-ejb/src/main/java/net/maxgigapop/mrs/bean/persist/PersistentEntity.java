@@ -14,8 +14,8 @@ import javax.annotation.PostConstruct;
  */
 @SuppressWarnings("unchecked")
 public class PersistentEntity {
-
-	boolean persistent = true;
+    // for most use cases, we keep this to false so the original entity instance got managed and we see instant ID change
+	boolean persistent = false; 
 
 	public boolean isPersistent() {
 		return persistent;

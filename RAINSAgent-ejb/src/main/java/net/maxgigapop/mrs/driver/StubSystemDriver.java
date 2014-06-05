@@ -76,12 +76,10 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
         try {
             OntModel ontModel = ModelUtil.unmarshalOntModel(ttlModel);
             DriverModel dm = new DriverModel();
-            dm.setPersistent(true);
             dm.setCommitted(true);
             dm.setOntModel(ontModel);
             ModelPersistenceManager.save(dm);
             VersionItem vi = new VersionItem();
-            vi.setPersistent(true);
             vi.setModelRef(dm);
             vi.setReferenceId(stubModelVersionId++);
             VersionItemPersistenceManager.save(vi);

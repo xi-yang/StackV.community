@@ -21,6 +21,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
+import javax.persistence.Lob;
 import javax.persistence.MapKeyColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
@@ -58,8 +59,9 @@ public class DriverInstance extends PersistentEntity implements Serializable {
     private List<DriverSystemDelta> driverSystemDeltas;
 
     @ElementCollection
-    @JoinTable(name = "driver_instance_property", joinColumns = @JoinColumn(name = "id"))
-    @MapKeyColumn(name = "property_id")
+    @JoinTable(name = "driver_instance_property", joinColumns = @JoinColumn(name = "driverInstanceId"))
+    @MapKeyColumn(name = "property")
+    @Lob @Column(name="value")
     private Map<String, String> properties = new HashMap<String, String>();
 
     public Long getId() {
