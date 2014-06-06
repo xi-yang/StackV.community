@@ -13,6 +13,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.EJBException;
@@ -192,69 +194,62 @@ public class HandleSystemPushCall {
     //@TODO: trigger pullModel upon success or failure?
     @Asynchronous
     public Future<String> commitDelta() {
-        String status = "INIT";
-        try {
-            if (this.systemInstance == null) {
-                throw new EJBException(String.format("cannot run commitDelta with null systemInstance"));
+        if (this.systemInstance == null) {
+            throw new EJBException(String.format("cannot run commitDelta with null systemInstance"));
+        }
+        // 1. Get target VG from this stateful bean
+        if (this.targetVG == null || this.targetVG.getVersionItems() == null || this.targetVG.getVersionItems().isEmpty()) {
+            throw new EJBException(String.format("%s has null or empty versionGroup", this.systemInstance));
+        }
+        Context ejbCxt = null;
+        // 2. Get list of versionItem, driverInstances and DSD
+        Map<VersionItem, Future<String>> commitResultMap = new HashMap<VersionItem, Future<String>>();
+        for (VersionItem targetVI : this.targetVG.getVersionItems()) {
+            DriverInstance driverInstance = targetVI.getDriverInstance();
+            if (driverInstance == null) {
+                throw new EJBException(String.format("%s in %s has null driverInstance ", targetVI, this.systemInstance));
             }
-            // 1. Get target VG from this stateful bean
-            if (this.targetVG == null || this.targetVG.getVersionItems() == null || this.targetVG.getVersionItems().isEmpty()) {
-                throw new EJBException(String.format("%s has null or empty versionGroup", this.systemInstance));
+            try {
+                if (ejbCxt == null) {
+                    ejbCxt = new InitialContext();
+                }
+                String driverEjbPath = driverInstance.getDriverEjbPath();
+                IHandleDriverSystemCall driverSystemHandler = (IHandleDriverSystemCall) ejbCxt.lookup(driverEjbPath);
+                // 3. Call Async commitDelta to each driverInstance based on versionItems in VG.
+                Future<String> result = driverSystemHandler.commitDelta(driverInstance.getId(), targetVI.getId());
+                // 4. add AsyncResult to resultMap
+                commitResultMap.put(targetVI, result);
+            } catch (NamingException e) {
+                throw new EJBException(e);
             }
-            Context ejbCxt = null;
-            // 2. Get list of versionItem, driverInstances and DSD
-            Map<VersionItem, Future<String>> commitResultMap = new HashMap<VersionItem, Future<String>>();
-            for (VersionItem targetVI : this.targetVG.getVersionItems()) {
-                DriverInstance driverInstance = targetVI.getDriverInstance();
-                if (driverInstance == null) {
-                    throw new EJBException(String.format("%s in %s has null driverInstance ", targetVI, this.systemInstance));
+        }
+        // 4. Qury for status in a loop bounded by timeout.
+        //@TODO: make timeout and interval values configurable
+        int timeoutMinutes = 10; // 10 minutes 
+        for (int minute = 0; minute < timeoutMinutes; minute++) {
+            boolean doneSucessful = true;
+            for (VersionItem targetVI : commitResultMap.keySet()) {
+                Future<String> asyncResult = commitResultMap.get(targetVI);
+                if (!asyncResult.isDone()) {
+                    doneSucessful = false;
+                    break;
                 }
                 try {
-                    if (ejbCxt == null) {
-                        ejbCxt = new InitialContext();
-                    }
-                    String driverEjbPath = driverInstance.getDriverEjbPath();
-                    IHandleDriverSystemCall driverSystemHandler = (IHandleDriverSystemCall) ejbCxt.lookup(driverEjbPath);
-                    // 3. Call Async commitDelta to each driverInstance based on versionItems in VG.
-                    Future<String> result = driverSystemHandler.commitDelta(driverInstance, targetVI);
-                    // 4. add AsyncResult to resultMap
-                    commitResultMap.put(targetVI, result);
-                } catch (NamingException e) {
-                    throw new EJBException(e);
-                }
-            }
-            // 4. Qury for status in a loop bounded by timeout.
-            //@TODO: make timeout and interval values configurable
-            int timeoutMinutes = 10; // 10 minutes 
-            for (int minute = 0; minute < timeoutMinutes; minute++) {
-                boolean doneSucessful = true;
-                for (VersionItem targetVI : commitResultMap.keySet()) {
-                    Future<String> asyncResult = commitResultMap.get(targetVI);
-                    if (!asyncResult.isDone()) {
-                        doneSucessful = false;
-                        break;
-                    }
                     String resultStatus = asyncResult.get();
-                    // done but failed
-                    if (!resultStatus.contains("SUCCESS")) {
-                        status = "FAILED";
-                        return new AsyncResult<String>(status);
-                    }
-                }
-                if (doneSucessful) {
-                    status = "SUCCESS";
-                    return new AsyncResult<String>(status);
+                } catch (Exception e) {
+                    throw new EJBException(String.format("commitDelta for %s raised exception from %s ", this.systemInstance, targetVI.getDriverInstance()));
                 }
             }
-            status = "TIMEOUT";
-            sleep(60000); // wait for 1 minute
-        } catch (Exception e) {
-            //@TODO: add error message to result
-            status = "FALIED";
-            //@TODO: logging
+            if (doneSucessful) {
+                return new AsyncResult<String>("SUCCESS");
+            }
+            try {
+                sleep(60000); // wait for 1 minute
+            } catch (InterruptedException ex) {
+                //Logger.getLogger(HandleSystemPushCall.class.getName()).log(Level.SEVERE, null, ex);
+                throw new EJBException(String.format("commitDelta for %s in %s is interrupted before timed out ", this.targetVG, this.systemInstance));
+            }
         }
-        if (status.equals("INIT")) {
-        }
-        return new AsyncResult<String>(status);
+        throw new EJBException(String.format("commitDelta for %s in %s has timed out ", this.targetVG, this.systemInstance));
     }
 }

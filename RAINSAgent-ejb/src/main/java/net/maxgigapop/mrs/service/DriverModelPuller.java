@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
 import javax.annotation.PostConstruct;
+import javax.ejb.AsyncResult;
 import javax.ejb.EJBException;
 import javax.ejb.LocalBean;
 import javax.ejb.Lock;
@@ -50,7 +51,7 @@ public class DriverModelPuller {
     }
     
     @Lock(READ)
-    @Schedule(minute = "*/3", hour = "*", persistent = false)
+    @Schedule(minute = "*", hour = "*", persistent = false)
     public void run() {
         if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null
             || DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().isEmpty()) {
@@ -60,11 +61,11 @@ public class DriverModelPuller {
         for (String topoUri : DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().keySet()) {
             DriverInstance driverInstance = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().get(topoUri);
             Future<String> previousResult = pullResultMap.get(driverInstance);
-            try {
                 if (previousResult != null) {
                     if (previousResult.isDone()) {
-                        String status = previousResult.get();
-                        if (status.contains("FAILED")) {
+                        try {
+                            String status = previousResult.get();
+                        } catch (Exception e) {
                             //@TODO: error handling: retry in this current pull, then exception if still failed
                         }
                     } else {
@@ -72,16 +73,18 @@ public class DriverModelPuller {
                         //previousResult.cancel(true); // assume the underlying driverSystem puller is cooperative
                     }
                 }
+            try {
                 if (ejbCxt == null) {
                     ejbCxt = new InitialContext();
                 }
                 String driverEjbPath = driverInstance.getDriverEjbPath();
                 IHandleDriverSystemCall driverSystemHandler = (IHandleDriverSystemCall) ejbCxt.lookup(driverEjbPath);
-                // Call Async pullModel
-                Future<String> result = driverSystemHandler.pullModel(driverInstance);
+                // Call async pullModel -> the driverInstance persistence session will be invalid in another session bean / thread
+                Future<String> result = driverSystemHandler.pullModel(driverInstance.getId());
                 pullResultMap.put(driverInstance, result);
             } catch (Exception e) {
-                throw new EJBException(e);
+                // exception handling without destroying the puller session by throwing EJBException to container
+                // throw new EJBException(e);
             }
         }
     }

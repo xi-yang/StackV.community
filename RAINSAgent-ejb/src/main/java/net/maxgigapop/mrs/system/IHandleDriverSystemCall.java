@@ -28,9 +28,11 @@ public interface IHandleDriverSystemCall {
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta);
 
+    // Use ID to avoid passing entity bean between threads, which breaks persistence session
     @Asynchronous
-    public Future<String> commitDelta(DriverInstance driverInstance, VersionItem targetVI);
+    public Future<String> commitDelta(Long driverInstanceId, Long targetVIId);
 
+    // Use ID to avoid passing entity bean between threads, which breaks persistence session
     @Asynchronous
-    public Future<String> pullModel(DriverInstance driverInstance);
+    public Future<String> pullModel(Long driverInstanceId);    
 }

@@ -28,6 +28,8 @@ import net.maxgigapop.mrs.bean.SystemDelta;
 import net.maxgigapop.mrs.bean.SystemInstance;
 import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.bean.VersionItem;
+import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
+import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.PersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
@@ -49,6 +51,8 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
     @Override
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
+        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
+        aDelta = (DriverSystemDelta)DeltaPersistenceManager.findById(aDelta.getId());
         String driverSystemEjbBase = driverInstance.getProperty("driverSystemPath");
         if (driverSystemEjbBase == null) {
             throw new EJBException(String.format("%s has no property key=driverSystemPath"));
@@ -75,33 +79,38 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
 
     @Override
     @Asynchronous
-    public Future<String> commitDelta(DriverInstance driverInstance, VersionItem targetVI) {
-        String status = "INIT";
+    public Future<String> commitDelta(Long driverInstanceId, Long targetVIId) {
+        DriverInstance driverInstance = DriverInstancePersistenceManager.findById(driverInstanceId);
+        if (driverInstance == null) {
+            throw new EJBException(String.format("commitDelta cannot find driverInance(id=%d)", driverInstanceId));
+        }
+        VersionItem targetVI = (VersionItem)VersionItemPersistenceManager.findById(targetVIId);
+        if (targetVI == null) {
+            throw new EJBException(String.format("commitDelta cannot find target VersionItem(id=%d)", targetVIId));
+        }
         if (!driverSystemSessionMap.containsKey(targetVI)) {
-            status = "FAILED";
-            return new AsyncResult<String>(status);
+            throw new EJBException(String.format("commitDelta cannot associate %s with a driverSystemSession", targetVI));
         }
         try {
             HandleSystemPushCall ejbSystemPushHandler = driverSystemSessionMap.get(targetVI);
             ejbSystemPushHandler.commitDelta();
         } catch (Exception e) {
-            status = "FAILED";
-            return new AsyncResult<String>(status);
+            throw new EJBException(String.format("commitDelta cannot find target VersionItem(id=%d)", targetVIId));
         }
-        status = "SUCCESS";
-        return new AsyncResult<String>(status);
+        return new AsyncResult<String>("SUCCESS");
     }
     // TODO: terminate or reuse sessions in driverSystemSessionMap after commit
     
     @Override
     @Asynchronous
-    public Future<String> pullModel(DriverInstance driverInstance) {
-        String status = "INIT";
+    public Future<String> pullModel(Long driverInstanceId) {
+        DriverInstance driverInstance = DriverInstancePersistenceManager.findById(driverInstanceId);
+        if (driverInstance == null) {
+            throw new EJBException(String.format("pullModel cannot find driverInance(id=%d)", driverInstanceId));
+        }
         String driverSystemEjbBase = driverInstance.getProperty("driverSystemPath");
         if (driverSystemEjbBase == null) {
-            status = "FAILED";
-            //@TODO: log and errorMessage
-            return new AsyncResult<String>(status);
+            throw new EJBException(String.format("%s has no driverSystemPath property configured", driverInstance));
         }
         String ejbPathHandleSystemCall = driverSystemEjbBase + "HandleSystemCall";
         VersionItem vi = null;
@@ -132,10 +141,12 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
             } catch (Exception ex) {
                 ; // do nothing (loggin?)
             }
-            status = "FAILED";
-            return new AsyncResult<String>(status);
+            throw new EJBException(String.format("pullModel on %s raised exception[%s]", driverInstance, e.getMessage()));
         }
-        status = "SUCCESS";
-        return new AsyncResult<String>(status);
+        return new AsyncResult<String>("SUCCESS");
+    }
+    
+    public void pullModelSync(DriverInstance driverInstance) {
+        
     }
 }

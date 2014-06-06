@@ -6,17 +6,25 @@
 
 package net.maxgigapop.mrs.service;
 
-import net.maxgigapop.mrs.bean.ModelBase;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.ejb.LocalBean;
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import net.maxgigapop.mrs.bean.ModelBase;
 
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.PersistenceManager;
+import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
  *
@@ -26,7 +34,7 @@ import net.maxgigapop.mrs.bean.persist.PersistenceManager;
 @LocalBean
 @Startup
 public class StartServiceTest {
-    private @PersistenceContext(unitName="RAINSAgentPU")    
+    private @PersistenceContext(unitName="RAINSAgentPU")
     EntityManager entityManager;
 
     @PostConstruct
@@ -49,9 +57,23 @@ public class StartServiceTest {
 "    nml:hasNode\n" +
 "        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1>,\n" +
 "        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-4>.");
-        ModelPersistenceManager.save(model1);
-        ModelBase model2 = ModelPersistenceManager.find(ModelBase.class, model1.getId());
-        List<ModelBase> listModels = ModelPersistenceManager.retrieveAll();
-        System.out.println(listModels.toString());
+            /*
+            ModelPersistenceManager.save(model1);
+            ModelBase model2 = ModelPersistenceManager.find(ModelBase.class, model1.getId());
+            List<ModelBase> listModels = ModelPersistenceManager.retrieveAll();
+            System.out.println(listModels.toString());
+            */
+        try {
+            Context ejbCxt = new InitialContext();
+            HandleSystemCall systemCallHandler = (HandleSystemCall) ejbCxt.lookup("java:global/RAINSAgent-ear-1.0-SNAPSHOT/RAINSAgent-ejb-1.0-SNAPSHOT/HandleSystemCall");
+            Map<String, String> driverProperties = new HashMap<>();
+            driverProperties.put("topologyUri", "testdomain1.org");
+            driverProperties.put("driverEjbPath", "java:global/RAINSAgent-ear-1.0-SNAPSHOT/RAINSAgent-ejb-1.0-SNAPSHOT/StubSystemDriver");
+            driverProperties.put("stubModelTtl", model1.getTtlModel());
+            systemCallHandler.plugDriverInstance(driverProperties);
+            //systemCallHandler.unplugDriverInstance("testdomain1.org");
+        } catch (NamingException ex) {
+            Logger.getLogger(StartServiceTest.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 }
