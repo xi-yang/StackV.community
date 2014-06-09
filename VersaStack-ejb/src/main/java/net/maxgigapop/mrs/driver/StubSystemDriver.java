@@ -96,6 +96,7 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
             VersionItem vi = new VersionItem();
             vi.setModelRef(dm);
             vi.setReferenceId(stubModelVersionId++);
+            vi.setDriverInstance(driverInstance);
             VersionItemPersistenceManager.save(vi);
             driverInstance.setHeadVersionItem(vi);
         } catch (Exception e) {

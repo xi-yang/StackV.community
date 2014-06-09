@@ -65,10 +65,10 @@ public class StartServiceTest {
             */
         try {
             Context ejbCxt = new InitialContext();
-            HandleSystemCall systemCallHandler = (HandleSystemCall) ejbCxt.lookup("java:global/RAINSAgent-ear-1.0-SNAPSHOT/RAINSAgent-ejb-1.0-SNAPSHOT/HandleSystemCall");
+            HandleSystemCall systemCallHandler = (HandleSystemCall) ejbCxt.lookup("java:global/VersaStack-ear-1.0-SNAPSHOT/VersaStack-ejb-1.0-SNAPSHOT/HandleSystemCall");
             Map<String, String> driverProperties = new HashMap<>();
             driverProperties.put("topologyUri", "testdomain1.org");
-            driverProperties.put("driverEjbPath", "java:global/RAINSAgent-ear-1.0-SNAPSHOT/RAINSAgent-ejb-1.0-SNAPSHOT/StubSystemDriver");
+            driverProperties.put("driverEjbPath", "java:global/VersaStack-ear-1.0-SNAPSHOT/VersaStack-ejb-1.0-SNAPSHOT/StubSystemDriver");
             driverProperties.put("stubModelTtl", model1.getTtlModel());
             systemCallHandler.plugDriverInstance(driverProperties);
             //systemCallHandler.unplugDriverInstance("testdomain1.org");
