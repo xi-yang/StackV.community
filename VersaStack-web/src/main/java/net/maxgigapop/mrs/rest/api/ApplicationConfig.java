@@ -31,6 +31,25 @@ public class ApplicationConfig extends Application {
      */
     private void addRestResourceClasses(Set<Class<?>> resources) {
         resources.add(net.maxgigapop.mrs.rest.api.GenericResource.class);
+        resources.add(org.jboss.resteasy.client.exception.mapper.ApacheHttpClient4ExceptionMapper.class);
+        resources.add(org.jboss.resteasy.core.AcceptHeaderByFileSuffixFilter.class);
+        resources.add(org.jboss.resteasy.core.AsynchronousDispatcher.class);
+        resources.add(org.jboss.resteasy.plugins.interceptors.encoding.AcceptEncodingGZIPFilter.class);
+        resources.add(org.jboss.resteasy.plugins.interceptors.encoding.AcceptEncodingGZIPInterceptor.class);
+        resources.add(org.jboss.resteasy.plugins.interceptors.encoding.GZIPDecodingInterceptor.class);
+        resources.add(org.jboss.resteasy.plugins.interceptors.encoding.GZIPEncodingInterceptor.class);
+        resources.add(org.jboss.resteasy.plugins.providers.DataSourceProvider.class);
+        resources.add(org.jboss.resteasy.plugins.providers.DefaultTextPlain.class);
+        resources.add(org.jboss.resteasy.plugins.providers.DocumentProvider.class);
+        resources.add(org.jboss.resteasy.plugins.providers.FileProvider.class);
+        resources.add(org.jboss.resteasy.plugins.providers.FormUrlEncodedProvider.class);
+        resources.add(org.jboss.resteasy.plugins.providers.IIOImageProvider.class);
+        resources.add(org.jboss.resteasy.plugins.providers.InputStreamProvider.class);
+        resources.add(org.jboss.resteasy.plugins.providers.JaxrsFormProvider.class);
+        resources.add(org.jboss.resteasy.plugins.providers.ReaderProvider.class);
+        resources.add(org.jboss.resteasy.plugins.providers.SerializableProvider.class);
+        resources.add(org.jboss.resteasy.plugins.providers.SourceProvider.class);
+        resources.add(org.jboss.resteasy.plugins.providers.StringTextStar.class);
     }
     
 }
