@@ -1,0 +1,307 @@
+{ 
+  "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:openstack-nova" : { 
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" : [ { 
+      "type" : "uri" ,
+      "value" : "http://www.w3.org/2002/07/owl#NamedIndividual"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "http://schemas.ogf.org/mrs/2013/12/topology#HypervisorService"
+    }
+     ]
+  }
+   ,
+  "http://www.maxgigapop.net/mrs/2013/topology#" : { 
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" : [ { 
+      "type" : "uri" ,
+      "value" : "http://www.w3.org/2002/07/owl#Ontology"
+    }
+     ] ,
+    "http://www.w3.org/2000/01/rdf-schema#label" : [ { 
+      "type" : "literal" ,
+      "value" : "NML-MRS Description of the MAX Research Infrastructure"
+    }
+     ]
+  }
+   ,
+  "_:db663d97b2f0f8f030364856ff82f4e8" : { 
+    "http://schemas.ogf.org/nml/2013/03/base#labeltype" : [ { 
+      "type" : "uri" ,
+      "value" : "http://schemas.ogf.org/nml/2012/10/ethernet#vlan"
+    }
+     ] ,
+    "http://schemas.ogf.org/nml/2013/03/base#values" : [ { 
+      "type" : "literal" ,
+      "value" : "2000-2099"
+    }
+     ] ,
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" : [ { 
+      "type" : "uri" ,
+      "value" : "http://schemas.ogf.org/nml/2013/03/base#LabelGroup"
+    }
+     ]
+  }
+   ,
+  "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:sriov-vm-fex" : { 
+    "http://schemas.ogf.org/mrs/2013/12/topology#providesVNic" : [ { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:vm-fex:static0"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:vm-fex:static2"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:vm-fex:static1"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:vm-fex:static3"
+    }
+     ] ,
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" : [ { 
+      "type" : "uri" ,
+      "value" : "http://schemas.ogf.org/mrs/2013/12/topology#HypervisorBypassInterfaceService"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "http://www.w3.org/2002/07/owl#NamedIndividual"
+    }
+     ]
+  }
+   ,
+  "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:eth0" : { 
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" : [ { 
+      "type" : "uri" ,
+      "value" : "http://www.w3.org/2002/07/owl#NamedIndividual"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort"
+    }
+     ] ,
+    "http://schemas.ogf.org/nml/2013/03/base#hasLabelGroup" : [ { 
+      "type" : "bnode" ,
+      "value" : "_:db663d97b2f0f8f030364856ff82f4e8"
+    }
+     ] ,
+    "http://schemas.ogf.org/nml/2013/03/base#isAlias" : [ { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:openstack-neutron:public"
+    }
+     ]
+  }
+   ,
+  "urn:ogf:network:rains.maxgigapop.net:2013:topology" : { 
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" : [ { 
+      "type" : "uri" ,
+      "value" : "http://www.w3.org/2002/07/owl#NamedIndividual"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "http://schemas.ogf.org/nml/2013/03/base#Topology"
+    }
+     ] ,
+    "http://schemas.ogf.org/nml/2013/03/base#hasNode" : [ { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-sw"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-6509"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-4"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-ceph"
+    }
+     ]
+  }
+   ,
+  "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:openstack-neutron:ovs" : { 
+    "http://schemas.ogf.org/nml/2013/03/base#encoding" : [ { 
+      "type" : "uri" ,
+      "value" : "http://schemas.ogf.org/nml/2012/10/ethernet#vlan"
+    }
+     ] ,
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" : [ { 
+      "type" : "uri" ,
+      "value" : "http://schemas.ogf.org/nml/2013/03/base#SwitchingService"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "http://www.w3.org/2002/07/owl#NamedIndividual"
+    }
+     ] ,
+    "http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort" : [ { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:eth0"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:openstack-neutron:public"
+    }
+     ] ,
+    "http://schemas.ogf.org/nml/2013/03/base#labelSwapping" : [ { 
+      "type" : "literal" ,
+      "value" : "false"
+    }
+     ]
+  }
+   ,
+  "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:vm-fex:static1" : { 
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" : [ { 
+      "type" : "uri" ,
+      "value" : "http://www.w3.org/2002/07/owl#NamedIndividual"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort"
+    }
+     ] ,
+    "http://schemas.ogf.org/nml/2013/03/base#isAlias" : [ { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-sw:1-4"
+    }
+     ]
+  }
+   ,
+  "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:40g1" : { 
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" : [ { 
+      "type" : "uri" ,
+      "value" : "http://www.w3.org/2002/07/owl#NamedIndividual"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort"
+    }
+     ] ,
+    "http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort" : [ { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:eth0"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:vm-fex:static0"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:vm-fex:static1"
+    }
+     ]
+  }
+   ,
+  "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:vm-fex:static3" : { 
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" : [ { 
+      "type" : "uri" ,
+      "value" : "http://www.w3.org/2002/07/owl#NamedIndividual"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort"
+    }
+     ] ,
+    "http://schemas.ogf.org/nml/2013/03/base#isAlias" : [ { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-sw:5-8"
+    }
+     ]
+  }
+   ,
+  "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:openstack-neutron" : { 
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" : [ { 
+      "type" : "uri" ,
+      "value" : "http://www.w3.org/2002/07/owl#NamedIndividual"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "http://schemas.ogf.org/mrs/2013/12/topology#VirtualSwitchService"
+    }
+     ] ,
+    "http://schemas.ogf.org/nml/2013/03/base#providesPort" : [ { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:openstack-neutron:public"
+    }
+     ] ,
+    "http://schemas.ogf.org/nml/2013/03/base#hasService" : [ { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:openstack-neutron:ovs"
+    }
+     ]
+  }
+   ,
+  "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:40g2" : { 
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" : [ { 
+      "type" : "uri" ,
+      "value" : "http://www.w3.org/2002/07/owl#NamedIndividual"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort"
+    }
+     ] ,
+    "http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort" : [ { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:vm-fex:static2"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:vm-fex:static3"
+    }
+     ]
+  }
+   ,
+  "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1" : { 
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" : [ { 
+      "type" : "uri" ,
+      "value" : "http://www.w3.org/2002/07/owl#NamedIndividual"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "http://schemas.ogf.org/nml/2013/03/base#Node"
+    }
+     ] ,
+    "http://schemas.ogf.org/nml/2013/03/base#hasService" : [ { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:sriov-vm-fex"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:openstack-nova"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:openstack-neutron"
+    }
+     ] ,
+    "http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort" : [ { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:40g1"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:40g2"
+    }
+     ]
+  }
+   ,
+  "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-4" : { 
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" : [ { 
+      "type" : "uri" ,
+      "value" : "http://www.w3.org/2002/07/owl#NamedIndividual"
+    }
+    , { 
+      "type" : "uri" ,
+      "value" : "http://schemas.ogf.org/nml/2013/03/base#Node"
+    }
+     ]
+  }
+}

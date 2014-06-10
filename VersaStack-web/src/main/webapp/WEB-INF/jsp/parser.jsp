@@ -2,7 +2,7 @@
 <%@page import="com.hp.hpl.jena.ontology.OntModel"%>
 <%@page import="com.hp.hpl.jena.rdf.model.*"%>
 <%
-    String in = application.getRealPath("/WEB-INF/data/max-nml-mrs-v1.ttl");
+    String in = application.getRealPath("/data/max-nml-mrs-v1.ttl");
 
     // read the turtle file into a model
     OntModel model = ModelFactory.createOntologyModel();
