@@ -28,21 +28,35 @@
                 stroke: #999;
                 stroke-width: 1.5px;
             }
+            
+            .floatTL{
+                position: fixed;
+                top: 0px;
+                left: 0px;
+            }
         </style>
     </head>
     <body>
-        <div id ="slider"></div>
+        <div style="width:100%" class="floatTL">
+            Zoom: <span id="sliderValue">50</span>
+            <div id ="slider" style="width:20%"></div>
+        </div>
+
 
         <script src="http://d3js.org/d3.v3.min.js"></script>
         <script src="js/d3.slider.js"></script>
 
         <script>
+            var BASE_FONT_SIZE = 12;
+
             // Zoom level slider
             d3.select('#slider').call(
                     d3.slider()
-                    .orientation("vertical")
+                    .value(50)
+//                    .orientation("vertical")
                     .on("slide", function(evt, value) {
-
+                        d3.select('#sliderValue').text(Math.round(value));
+                        resize(BASE_FONT_SIZE * (value / 50));
                     }));
         </script>
 
@@ -83,11 +97,17 @@
                 console.log(json);
 
                 for (var obj in json) {
-                    console.log("Processing object: " + obj);
+//                    console.log("Processing object: " + obj);
                     var display = false; //Whether this obj is displayed
 
-                    for (var property in obj) {
-                        if (property.indexOf("http://schemas.ogf.org/") < 0) {
+                    for (var property in json[obj]) {
+//                        console.log(property);
+                        //Do not show labelgroups
+                        if (property.indexOf("labeltype") >= 0) {
+                            console.log("Ignored labelgroup " + obj);
+                            display = false;
+                            break;
+                        } else if (property.indexOf("http://schemas.ogf.org/") >= 0) {
                             display = true;
                         }
                     }

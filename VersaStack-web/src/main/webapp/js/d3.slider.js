@@ -152,7 +152,7 @@ d3.slider = function module() {
         // Horizontal axis
         if (orientation === "horizontal") {
 
-          svg.style("left", -margin + "px");
+          svg.style("margin-left", -margin + "px");
 
           svg.attr({
             width: sliderLength + margin * 2,
@@ -192,7 +192,7 @@ d3.slider = function module() {
       // Move slider handle on click/drag
       function moveHandle(pos) {
 
-        var newValue = stepValue(scale.invert(pos / containerSize())),
+        var newValue = stepValue(scale.invert(pos / sliderLength)),
             currentValue = value.length ? value[active - 1]: value;
 
         if (currentValue !== newValue) {
