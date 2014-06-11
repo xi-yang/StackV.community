@@ -5,8 +5,7 @@
         <meta charset="utf-8">
         <title>Administrator View</title>
         <meta name="viewport" content="initial-scale=1">
-        <script src="http://d3js.org/d3.v3.min.js"></script>
-        <link href="css/styles.css" rel="stylesheet">
+        <link rel="stylesheet" href="css/d3.slider.css" />  
 
         <style>
             .node {
@@ -32,6 +31,21 @@
         </style>
     </head>
     <body>
+        <div id ="slider"></div>
+
+        <script src="http://d3js.org/d3.v3.min.js"></script>
+        <script src="js/d3.slider.js"></script>
+
+        <script>
+            // Zoom level slider
+            d3.select('#slider').call(
+                    d3.slider()
+                    .orientation("vertical")
+                    .on("slide", function(evt, value) {
+
+                    }));
+        </script>
+
         <script>
             var width = document.documentElement.clientWidth;
             var height = document.documentElement.clientHeight;
@@ -59,7 +73,7 @@
                     .on("mousemove", mousemove)
                     .on("mousedown", mousedown);
 
-            //Circle around cursor makes it easier to see
+            // Circle around cursor makes it easier to see
             var cursor = svg.append("circle")
                     .attr("r", 30)
                     .attr("class", "cursor");
@@ -81,20 +95,20 @@
                     if (display) {
                         //Add new node
                         var source = {name: obj};
-                        console.log("Adding object");
-                        console.log(source);
+//                        console.log("Adding object");
+//                        console.log(source);
                         nodesList.push(source);
 
                         //Add any links that exist
                         for (var property in json[obj]) {
                             if (property.indexOf("isAlias") >= 0) {
-                                console.log("Found links from object");
+//                                console.log("Found links from object");
 
                                 for (var i = 0; i < json[obj][property].length; ++i) {
                                     var index = indexOf(nodesList, json[obj][property][i].value);
                                     if (index >= 0) {
-                                        console.log("Adding link to");
-                                        console.log(nodesList[index].name);
+//                                        console.log("Adding link to");
+//                                        console.log(nodesList[index].name);
                                         linksList.push({source: source, target: nodesList[index]});
                                     }
                                 }
