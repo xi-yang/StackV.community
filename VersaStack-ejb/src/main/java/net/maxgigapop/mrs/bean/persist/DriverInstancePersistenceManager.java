@@ -46,7 +46,7 @@ public class DriverInstancePersistenceManager extends PersistenceManager{
     }    
 
     public static DriverInstance findByTopologyUri(String uri) {
-        if (driverInstanceByTopologyMap.containsKey(uri)) {
+        if (driverInstanceByTopologyMap != null && driverInstanceByTopologyMap.containsKey(uri)) {
             return driverInstanceByTopologyMap.get(uri);
         }
         Query q = PersistenceManager.createQuery(String.format("FROM %s WHERE topologyUri='%s'", DriverInstance.class.getSimpleName(), uri));

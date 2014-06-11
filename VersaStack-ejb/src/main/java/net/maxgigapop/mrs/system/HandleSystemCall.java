@@ -70,6 +70,7 @@ public class HandleSystemCall {
                 throw new EJBException(String.format("createHeadVersionGroup encounters null head versionItem in %s", di));
             }
             vg.addVersionItem(vi);
+            vi.addVersionGroup(vg);
         }
         vg.setReferenceId(refId);
         VersionGroupPersistenceManager.save(vg);

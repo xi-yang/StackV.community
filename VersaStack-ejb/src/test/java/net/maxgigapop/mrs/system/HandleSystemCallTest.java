@@ -17,8 +17,11 @@ import javax.persistence.PersistenceContext;
 import static junit.framework.Assert.assertFalse;
 import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.VersionGroup;
+import net.maxgigapop.mrs.bean.VersionItem;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.PersistenceManager;
+import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
+import net.maxgigapop.mrs.driver.StubSystemDriver;
 import net.maxgigapop.mrs.service.DriverModelPuller;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
@@ -50,24 +53,9 @@ public class HandleSystemCallTest {
 
     @Inject
     HandleSystemCall systemCallHandler;
-
-    private @PersistenceContext(unitName = "RAINSAgentPU")
+    
+    @PersistenceContext(unitName = "RAINSAgentPU")
     EntityManager entityManager;
-
-    private final String ttlModelDriver1 = "@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.\n"
-            + "@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.\n"
-            + "@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.\n"
-            + "@prefix owl: <http://www.w3.org/2002/07/owl#>.\n"
-            + "@prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>.\n"
-            + "@prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>.\n"
-            + "<http://www.maxgigapop.net/mrs/2013/topology#> a owl:Ontology;\n"
-            + "    rdfs:label \"NML-MRS Description of the MAX Research Infrastructure\".\n"
-            + "<urn:ogf:network:rains.maxgigapop.net:2013:topology>\n"
-            + "    a   nml:Topology,\n"
-            + "        owl:NamedIndividual;\n"
-            + "    nml:hasNode\n"
-            + "        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1>,\n"
-            + "        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-4>.";
 
     /**
      * Test of createHeadVersionGroup method, of class HandleSystemCall.
@@ -78,6 +66,7 @@ public class HandleSystemCallTest {
         if (PersistenceManager.getEntityManager() == null) {
             PersistenceManager.initialize(entityManager);
         }
+        
         Long refId = 1L;
         VersionGroup expResult = null;
         VersionGroup result = systemCallHandler.createHeadVersionGroup(refId);

@@ -37,9 +37,10 @@ public class VersionItemPersistenceManager extends PersistenceManager {
     
     public static VersionItem getHeadByDriverInstance(DriverInstance di) {
 		try {
-			Query q = createQuery(String.format("FROM %s WHERE id = (SELECT MAX(id) FROM %s WHERE driverInstanceId=%d)", 
+			Query q = createQuery(String.format("FROM %s vi WHERE vi.id=(SELECT MAX(rec.id) FROM %s rec WHERE rec.driverInstance=%d)", 
                     VersionItem.class.getSimpleName(), VersionItem.class.getSimpleName(), di.getId()));
-            return (VersionItem)q.getSingleResult(); 
+            Object viObj = q.getSingleResult();
+            return (VersionItem)viObj;
 		} catch (Exception e) {
             throw new EJBException(String.format("VersionItemPersistenceManager::getHeadByDriverInstance raised exception: %s", e.getMessage()));
 		}
