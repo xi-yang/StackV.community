@@ -64,20 +64,50 @@
             var cursor = svg.append("circle")
                     .attr("r", 30)
                     .attr("class", "cursor");
-            
-                        d3.json("graph.json", function(error, json) {
+
+            d3.json("data/graph.json", function(error, json) {
+                var jsonNodes = [];
+                var jsonLinks = [];
+                var query = "schemas.ogf.org";
+                for (var obj in json) {
+                    query = "schemas.ogf.org";
+                    var add = false;
+                    for (var key in json[obj]) {
+                        if (key.indexOf(query) > -1) {
+                            add = true;
+                        }
+                    }
+                    if (add) {
+                        console.log("Adding: " + obj);
+                        var addedNode = jsonNodes.push({name: obj});
+                        query = "isAlias";
+                        for (var key in json[obj]) {
+                            if (key.indexOf(query) > -1) {
+                                for (var n in nodes) {
+                                    if (n.name === json[obj][key]) {
+                                        console.log("Found link to " + json[obj][key]);
+                                        jsonLinks.push({source: addedNode, target: n});
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                console.log(jsonNodes);
+
                 force
-                        .nodes(json.nodes)
-                        .links(json.links)
+                        .nodes(jsonNodes)
+                        .links(jsonLinks)
                         .start();
 
                 link = svg.selectAll(".link")
-                        .data(json.links)
+                        .data(jsonLinks)
                         .enter().append("line")
                         .attr("class", "link");
 
                 node = svg.selectAll(".node")
-                        .data(json.nodes)
+                        .data(jsonNodes)
                         .enter().append("g") //or "circle"?
                         .attr("class", "node")
                         .on("dblclick", dblclick)
@@ -139,7 +169,7 @@
 //
 //                restart();
             }
-            
+
             function dblclick(d) {
                 d3.select(this).classed("fixed", d.fixed = false);
             }

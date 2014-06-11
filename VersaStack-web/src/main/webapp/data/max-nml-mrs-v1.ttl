@@ -32,7 +32,8 @@
         <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:40g2>;
     nml:hasService <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:openstack-neutron>,
         <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:openstack-nova>,
-        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:sriov-vm-fex>.
+        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:sriov-vm-fex>;
+    nml:isAlias <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-sw:1-4>.
                             
 <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-4>
     a   nml:Node,
@@ -47,22 +48,26 @@
         <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:vm-fex:static0>,
         <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:vm-fex:static1>.
             
-<urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:40g2>
+<urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-sw:1-4>
     a   nml:BidirectionalPort,
         owl:NamedIndividual;
     nml:hasBidirectionalPort
         <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:vm-fex:static2>,
-        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:vm-fex:static3>.
-            
+        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:vm-fex:static3>;
+    nml:isAlias 
+        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:vm-fex:static1>,
+        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1>.    
 
-<urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:eth0>
+<urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-sw:5-8>
     a   nml:BidirectionalPort,
     owl:NamedIndividual;
     nml:hasLabelGroup [
             a   nml:LabelGroup;
             nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>;
             nml:values "2000-2099"];
-    nml:isAlias <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:openstack-neutron:public>.
+    nml:isAlias 
+        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:vm-fex:static1>,
+        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:vm-fex:static3>.
 
 
 <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:openstack-neutron>
@@ -80,7 +85,8 @@
     nml:labelSwapping "false";
     nml:hasBidirectionalPort
         <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:eth0>,
-        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:openstack-neutron:public>.
+        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:openstack-neutron:public>;
+    nml:isAlias <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:vm-fex:static1>.
 
 
 <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:openstack-nova>
@@ -101,9 +107,15 @@
 <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:vm-fex:static1>
     a   nml:BidirectionalPort,
         owl:NamedIndividual;
-    nml:isAlias <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-sw:1-4>.
+    nml:isAlias 
+        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-sw:1-4>,
+        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:vm-fex:static3>,
+        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-sw:5-8>,
+        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:openstack-neutron:ovs>.
 
 <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:vm-fex:static3>
     a   nml:BidirectionalPort,
         owl:NamedIndividual;
-    nml:isAlias <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-sw:5-8>.
+    nml:isAlias 
+        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:vm-fex:static1>,
+        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-sw:5-8>.

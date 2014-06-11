@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+        <meta charset="utf-8">
+        <title>Administrator View</title>
+        <meta name="viewport" content="initial-scale=1">
+        <script src="http://d3js.org/d3.v3.min.js"></script>
+        <link href="css/styles.css" rel="stylesheet">
+
+        <style>
+            .node {
+                cursor: move;
+            }
+
+            .node text {
+                pointer-events: none;
+                font-family: sans-serif;
+                font-size: 12px;
+            }
+
+            .cursor {
+                fill: none;
+                stroke: brown;
+                pointer-events: none;
+            }
+
+            .link {
+                stroke: #999;
+                stroke-width: 1.5px;
+            }
+        </style>
+    </head>
+    <body>
+        <script>
+            var width = document.documentElement.clientWidth;
+            var height = document.documentElement.clientHeight;
+            var canvasWidth = width * 2;
+            var canvasHeight = height * 2;
+
+            var nodesList = [];
+            var linksList = [];
+            var node = [];
+            var link = [];
+
+            var force = d3.layout.force()
+                    .size([canvasWidth, canvasHeight])
+                    .charge(-300)
+                    .gravity(.05)
+                    .distance(150)
+                    .on("tick", tick);
+
+            var drag = force.drag()
+                    .on("dragstart", dragstart);
+
+            var svg = d3.select("body").append("svg")
+                    .attr("width", canvasWidth)
+                    .attr("height", canvasHeight)
+                    .on("mousemove", mousemove)
+                    .on("mousedown", mousedown);
+
+            //Circle around cursor makes it easier to see
+            var cursor = svg.append("circle")
+                    .attr("r", 30)
+                    .attr("class", "cursor");
+
+            d3.json("data/graph-full.json", function(error, json) {
+                console.log("Populating node and link lists from json");
+                console.log(json);
+
+                for (var obj in json) {
+                    console.log("Processing object: " + obj);
+                    var display = false; //Whether this obj is displayed
+
+                    for (var property in obj) {
+                        if (property.indexOf("http://schemas.ogf.org/") < 0) {
+                            display = true;
+                        }
+                    }
+
+                    if (display) {
+                        //Add new node
+                        var source = {name: obj};
+                        console.log("Adding object");
+                        console.log(source);
+                        nodesList.push(source);
+
+                        //Add any links that exist
+                        for (var property in json[obj]) {
+                            if (property.indexOf("isAlias") >= 0) {
+                                console.log("Found links from object");
+
+                                for (var i = 0; i < json[obj][property].length; ++i) {
+                                    var index = indexOf(nodesList, json[obj][property][i].value);
+                                    if (index >= 0) {
+                                        console.log("Adding link to");
+                                        console.log(nodesList[index].name);
+                                        linksList.push({source: source, target: nodesList[index]});
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                force
+                        .nodes(nodesList)
+                        .links(linksList)
+                        .start();
+
+                link = svg.selectAll(".link")
+                        .data(linksList)
+                        .enter().append("line")
+                        .attr("class", "link");
+
+                node = svg.selectAll(".node")
+                        .data(nodesList)
+                        .enter().append("g") //or "circle"?
+                        .attr("class", "node")
+                        .on("dblclick", dblclick)
+                        .call(drag);
+
+                node.append("image")
+                        .attr("xlink:href", "app.gif")
+                        .attr("x", -8)
+                        .attr("y", -8)
+                        .attr("width", 16)
+                        .attr("height", 16);
+
+                node.append("text")
+                        .attr("dx", 12)
+                        .attr("dy", ".35em")
+                        .text(function(d) {
+                            return d.name;
+                        });
+            });
+
+            function indexOf(array, search) {
+                for (var i = 0; i < array.length; ++i) {
+                    if (array[i].name === search) {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
+
+            function mousemove() {
+                cursor.attr("transform", "translate(" + d3.mouse(this) + ")");
+            }
+
+            function mousedown() {
+//                var point = d3.mouse(this);
+//                var n = {x: point[0], y: point[1], name: "hello"};
+//                nodesList.push(n);
+//
+////                 add links to any nearby nodes
+//                nodesList.forEach(function(target) {
+//                    var x = target.x - n.x,
+//                            y = target.y - n.y;
+//                    if (Math.sqrt(x * x + y * y) < 30) {
+//                        linksList.push({source: n, target: target});
+//                    }
+//                });
+//
+//                restart();
+            }
+
+            function dblclick(d) {
+                d3.select(this).classed("fixed", d.fixed = false);
+            }
+
+            function dragstart(d) {
+                d3.select(this).classed("fixed", d.fixed = true);
+            }
+
+            function tick() {
+                link.attr("x1", function(d) {
+                    return d.source.x;
+                })
+                        .attr("y1", function(d) {
+                            return d.source.y;
+                        })
+                        .attr("x2", function(d) {
+                            return d.target.x;
+                        })
+                        .attr("y2", function(d) {
+                            return d.target.y;
+                        });
+
+                node.attr("transform", function(d) {
+                    return "translate(" + d.x + "," + d.y + ")";
+                });
+            }
+
+//            function restart() {
+//                link = link.data(linksList);
+//                link.enter().append("line")
+//                        .attr("class", "link");
+//
+//                node = node.data(nodesList);
+//
+//                node.enter().append("g") //or "circle"?
+//                        .attr("class", "node")
+//                        .on("dblclick", dblclick)
+//                        .call(drag);
+//
+//                node.append("image")
+//                        .attr("xlink:href", "app.gif")
+//                        .attr("x", -8)
+//                        .attr("y", -8)
+//                        .attr("width", 16)
+//                        .attr("height", 16);
+//
+//                node.append("text")
+//                        .attr("dx", 12)
+//                        .attr("dy", ".35em")
+//                        .text(function(d) {
+//                            return d.name;
+//                        });
+//
+//                force.start();
+//            }
+
+            function resize(size) {
+                svg.selectAll(".node text").style('font-size', size + 'px');
+            }
+        </script>
+    </body>
+</html>
