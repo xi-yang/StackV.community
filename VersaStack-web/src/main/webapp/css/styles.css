@@ -1,0 +1,77 @@
+html,body {
+    height:100%;
+}
+
+h1 {
+    font-family: Arial,sans-serif;
+    font-size: 80px;
+    color: #DDCCEE;
+}
+
+.lead {
+    color:#DDCCEE;
+}
+
+/* Custom container */
+.container-full {
+    margin: 0 auto;
+    width: 100%;
+    min-height:100%;
+    background-color:#110022;
+    color:#eee;
+    overflow:hidden;
+}
+
+.container-full a {
+    color:#efefef;
+    text-decoration:none;
+}
+
+.v-center {
+    margin-top:7%;
+}
+
+/* Input Labels */
+.input-group-addon {
+    border: 1px solid;
+}
+
+#email_label {
+    color: rgba(47,130,194,.8);
+}
+
+#password_label {
+    color: rgba(255,167,48,.8);
+}
+
+/* Input field*/
+input[type="email"]{color: rgba(47,130,194,.8);}
+input[type="password"]{color: rgba(255,167,48,.8);}
+
+.form-control {	
+    -moz-border-radius: 3px; 
+    -webkit-border-radius: 3px; 
+    border-radius: 3px;
+
+    -moz-transition: 0.3s all ease;
+    -ms-transition: 0.3s all ease;
+    -o-transition: 0.3s all ease;
+    -webkit-transition: 0.3s all ease;
+    transition: 0.3s all ease;
+
+    border: 2px solid;
+}
+
+.form-control:focus {
+    border-color: black;
+    border-width: 3px;
+}
+
+/* Placeholders */
+input[type="email"]::-moz-placeholder{color: rgba(47,130,194,.6);}
+input[type="email"]:-ms-input-placeholder{color: rgba(47,130,194,.6);}
+input[type="email"]::-webkit-input-placeholder{color: rgba(47,130,194,.6);}
+
+input[type="password"]::-moz-placeholder{color: rgba(255,167,48,.6);}
+input[type="password"]:-ms-input-placeholder{color: rgba(255,167,48,.6);}
+input[type="password"]::-webkit-input-placeholder{color: rgba(255,167,48,.6);}
