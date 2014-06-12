@@ -18,17 +18,17 @@
                 font-size: 12px;
             }
 
-            .cursor {
+            /*.cursor {
                 fill: none;
                 stroke: brown;
                 pointer-events: none;
-            }
+            }*/
 
             .link {
                 stroke: #999;
                 stroke-width: 1.5px;
             }
-            
+
             .floatTL{
                 position: fixed;
                 top: 0px;
@@ -38,7 +38,7 @@
     </head>
     <body>
         <div style="width:100%" class="floatTL">
-            Zoom: <span id="sliderValue">50</span>
+            Scale: <span id="sliderValue">50</span>
             <div id ="slider" style="width:20%"></div>
         </div>
 
@@ -47,17 +47,26 @@
         <script src="js/d3.slider.js"></script>
 
         <script>
+            var BASE_VALUE = 50;
             var BASE_FONT_SIZE = 12;
 
             // Zoom level slider
             d3.select('#slider').call(
                     d3.slider()
-                    .value(50)
+                    .value(BASE_VALUE)
 //                    .orientation("vertical")
                     .on("slide", function(evt, value) {
                         d3.select('#sliderValue').text(Math.round(value));
-                        resize(BASE_FONT_SIZE * (value / 50));
+                        resize(value);
                     }));
+
+            function resize(size) {
+                var scaling = size / BASE_VALUE;
+
+                svg.selectAll(".node text").style('font-size', BASE_FONT_SIZE * scaling + 'px');
+                svg.selectAll(".node image").attr("transform", "scale(" + scaling + ")");
+                svg.selectAll(".link").style('stroke-width', scaling);
+            }
         </script>
 
         <script>
@@ -71,16 +80,6 @@
             var node = [];
             var link = [];
 
-            var force = d3.layout.force()
-                    .size([canvasWidth, canvasHeight])
-                    .charge(-300)
-                    .gravity(.05)
-                    .distance(150)
-                    .on("tick", tick);
-
-            var drag = force.drag()
-                    .on("dragstart", dragstart);
-
             var svg = d3.select("body").append("svg")
                     .attr("width", canvasWidth)
                     .attr("height", canvasHeight)
@@ -88,12 +87,12 @@
                     .on("mousedown", mousedown);
 
             // Circle around cursor makes it easier to see
-            var cursor = svg.append("circle")
-                    .attr("r", 30)
-                    .attr("class", "cursor");
+//            var cursor = svg.append("circle")
+//                    .attr("r", 30)
+//                    .attr("class", "cursor");
 
-            d3.json("data/graph-full.json", function(error, json) {
-                console.log("Populating node and link lists from json");
+            d3.json("data/graph.json", function(error, json) {
+                console.log("Generating node and link lists from json");
                 console.log(json);
 
                 for (var obj in json) {
@@ -137,10 +136,29 @@
                     }
                 }
 
-                force
+                console.log("Initializing force graph");
+
+                /**
+                 * k is porportional to the square root of the graph density
+                 * and is used as a heuristic to set appropriate values for the
+                 * charge and gravity of the force graph
+                 * credit to mbostock on Stack Overflow for the idea
+                 */
+                var k = Math.sqrt(nodesList.length / (canvasWidth * canvasHeight));
+                console.log("Calculated k-value " + k); // Heuristic for graph density
+
+                var force = d3.layout.force()
+                        .size([canvasWidth, canvasHeight])
+                        .charge(-10 / k)
+                        .gravity(100 * k)
+                        .distance(150)
+                        .on("tick", tick)
                         .nodes(nodesList)
                         .links(linksList)
                         .start();
+
+                var drag = force.drag()
+                        .on("dragstart", dragstart);
 
                 link = svg.selectAll(".link")
                         .data(linksList)
@@ -167,6 +185,8 @@
                         .text(function(d) {
                             return d.name;
                         });
+
+                console.log("Success");
             });
 
             function indexOf(array, search) {
@@ -180,7 +200,7 @@
             }
 
             function mousemove() {
-                cursor.attr("transform", "translate(" + d3.mouse(this) + ")");
+//                cursor.attr("transform", "translate(" + d3.mouse(this) + ")");
             }
 
             function mousedown() {
@@ -255,10 +275,6 @@
 //
 //                force.start();
 //            }
-
-            function resize(size) {
-                svg.selectAll(".node text").style('font-size', size + 'px');
-            }
         </script>
     </body>
 </html>
