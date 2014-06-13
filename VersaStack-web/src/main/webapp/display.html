@@ -73,6 +73,8 @@
             var OWL_PREFIX = "http://www.w3.org/2002/07/owl#";
             var NML_PREFIX = "http://schemas.ogf.org/nml/2013/03/base#";
             var MRS_PREFIX = "http://schemas.ogf.org/mrs/2013/12/topology#";
+            
+            var ICON_PATH = "resources/";
 
             var width = document.documentElement.clientWidth;
             var height = document.documentElement.clientHeight;
@@ -126,7 +128,6 @@
                             }
                         } else if (property.indexOf("http://schemas.ogf.org/") >= 0) {
                             display = true;
-                            console.log("display");
                         }
 
                         if (done) {
@@ -134,72 +135,42 @@
                         }
                     }
 
-                    if (display) {
-                        //Add new node
-                        var imagePath;
-                        for (var property in json[obj]) {
-                            var done = false;
-                            switch (property) {
-                                case RDF_PREFIX + "type":
+                    if (display) { // Add new node
+                        var iconPath = (function() { // Find icon based on type
+                            for (var property in json[obj]) {
+                                if (property === RDF_PREFIX + "type") {
                                     for (var type in json[obj][property]) {
                                         switch (json[obj][property][type].value) {
                                             case NML_PREFIX + "Topology":
-                                                imagePath = "resources/topology.jpg";
-                                                done = true;
-                                                break;
+                                                return ICON_PATH + "topology.jpg";
                                             case NML_PREFIX + "BidirectionalPort":
-                                                imagePath = "resources/bidirectional_port.jpg";
-                                                done = true;
-                                                break;
+                                                return ICON_PATH + "bidirectional_port.jpg";
                                             case MRS_PREFIX + "StorageService":
-                                                imagePath = "resources/storage_service.jpg";
-                                                done = true;
-                                                break;
+                                                return ICON_PATH + "storage_service.jpg";
                                             case NML_PREFIX + "Node":
-                                                imagePath = "resources/node.jpg";
-                                                done = true;
-                                                break;
+                                                return ICON_PATH + "node.jpg";
                                             case MRS_PREFIX + "BlockStorageService":
-                                                imagePath = "resources/block_storage_service.jpg";
-                                                done = true;
-                                                break;
+                                                return ICON_PATH + "block_storage_service.jpg";
                                             case MRS_PREFIX + "Route":
-                                                imagePath = "resources/route.jpg";
-                                                done = true;
-                                                break;
+                                                return ICON_PATH + "route.jpg";
                                             case MRS_PREFIX + "HypervisorBypassInterfaceService":
-                                                imagePath = "resources/hypervisor_bypass_interface_service.jpg";
-                                                done = true;
-                                                break;
-                                            case NML_PREFIX + "switchingService":
-                                                imagePath = "resources/switching_service.jpg";
-                                                done = true;
-                                                break;
+                                                return ICON_PATH + "hypervisor_bypass_interface_service.jpg";
+                                            case NML_PREFIX + "SwitchingService":
+                                                return ICON_PATH + "switching_service.jpg";
                                             case MRS_PREFIX + "VirtualSwitchService":
-                                                imagePath = "resources/virtual_switch_service.jpg";
-                                                done = true;
-                                                break;
+                                                return ICON_PATH + "virtual_switch_service.jpg";
                                             case MRS_PREFIX + "RoutingService":
-                                                imagePath = "resources/routing_service.jpg";
-                                                done = true;
-                                                break;
+                                                return ICON_PATH + "routing_service.jpg";
                                             case MRS_PREFIX + "IOPerformanceMeasurementService":
-                                                imagePath = "resources/io_perf_service.jpg";
-                                                done = true;
-                                                break;
+                                                return ICON_PATH + "io_perf_service.jpg";
                                         }
                                     }
-                                    break;
-                                default:
-                                    imagePath = "resources/default.png";
+                                }
                             }
+                            return ICON_PATH + "default.png";
+                        })();
 
-                            if (done) {
-                                break;
-                            }
-                        }
-
-                        var source = {name: obj, image: imagePath};
+                        var source = {name: obj, icon: iconPath};
 //                        console.log("Adding object");
 //                        console.log(source);
                         nodesList.push(source);
@@ -254,7 +225,7 @@
                         .call(drag);
                 node.append("image")
                         .attr("xlink:href", function(d) {
-                            return d.image;
+                            return d.icon;
                         })
                         .attr("x", -20)
                         .attr("y", -15)
@@ -268,6 +239,7 @@
                         });
                 console.log("Success");
             });
+            
             function indexOf(array, search) {
                 for (var i = 0; i < array.length; ++i) {
                     if (array[i].name === search) {
