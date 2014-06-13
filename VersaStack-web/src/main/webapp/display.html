@@ -5,8 +5,7 @@
         <meta charset="utf-8">
         <title>Administrator View</title>
         <meta name="viewport" content="initial-scale=1">
-        <script src="http://d3js.org/d3.v3.min.js"></script>
-        <link href="css/styles.css" rel="stylesheet">
+        <link rel="stylesheet" href="css/d3.slider.css" />  
 
         <style>
             .node {
@@ -15,78 +14,199 @@
 
             .node text {
                 pointer-events: none;
-                font: 12px sans-serif;
+                font-family: sans-serif;
+                font-size: 12px;
             }
 
-            .cursor {
+            /*.cursor {
                 fill: none;
                 stroke: brown;
                 pointer-events: none;
-            }
+            }*/
 
             .link {
                 stroke: #999;
                 stroke-width: 1.5px;
             }
+
+            .floatTL{
+                position: fixed;
+                top: 0px;
+                left: 0px;
+            }
         </style>
     </head>
     <body>
+        <div style="width:100%" class="floatTL">
+            Scale: <span id="sliderValue">50</span>
+            <div id ="slider" style="width:20%"></div>
+        </div>
+
+
+        <script src="http://d3js.org/d3.v3.min.js"></script>
+        <script src="js/d3.slider.js"></script>
+
+        <script>
+            var BASE_VALUE = 50;
+            var BASE_FONT_SIZE = 12;
+            // Zoom level slider
+            d3.select('#slider').call(
+                    d3.slider()
+                    .value(BASE_VALUE)
+//                    .orientation("vertical")
+                    .on("slide", function(evt, value) {
+                        d3.select('#sliderValue').text(Math.round(value));
+                        resize(value);
+                    }));
+            function resize(size) {
+                var scaling = size / BASE_VALUE;
+                svg.selectAll(".node text").style('font-size', BASE_FONT_SIZE * scaling + 'px');
+                svg.selectAll(".node image").attr("transform", "scale(" + scaling + ")");
+                svg.selectAll(".link").style('stroke-width', scaling);
+            }
+        </script>
+
         <script>
             var width = document.documentElement.clientWidth;
             var height = document.documentElement.clientHeight;
             var canvasWidth = width * 2;
             var canvasHeight = height * 2;
-
-//            What is this used for?
-            var fill = d3.scale.category20();
-
-            var force = d3.layout.force()
-                    .size([width, height])
-                    .charge(-400)
-                    .gravity(.05)
-                    .distance(150)
-                    .on("tick", tick);
-
-            var drag = force.drag()
-                    .on("dragstart", dragstart);
-
+            var nodesList = [];
+            var linksList = [];
+            var node = [];
+            var link = [];
             var svg = d3.select("body").append("svg")
                     .attr("width", canvasWidth)
                     .attr("height", canvasHeight)
                     .on("mousemove", mousemove)
                     .on("mousedown", mousedown);
+            // Circle around cursor makes it easier to see
+//            var cursor = svg.append("circle")
+//                    .attr("r", 30)
+//                    .attr("class", "cursor");
 
-            var nodes = force.nodes(),
-                    links = force.links(),
-                    node = svg.selectAll(".node"),
-                    link = svg.selectAll(".link");
-
-            var cursor = svg.append("circle")
-                    .attr("r", 30)
-                    .attr("class", "cursor");
-
-            d3.json("data/graph.json", function(error, json) {
-                var jsonNodes = [];
-                var jsonLinks = [];
-                var query = "schemas.ogf.org";
+            d3.json("data/graph-full.json", function(error, json) {
+                console.log("Generating node and link lists from json");
+                console.log(json);
                 for (var obj in json) {
-                    query = "schemas.ogf.org";
-                    var add = false;
-                    for (var key in json[obj]) {
-                        if (key.indexOf(query) > -1) {
-                            add = true;
+//                    console.log("Processing object: " + obj);
+                    var display = false; //Whether this obj is displayed
+
+                    for (var property in json[obj]) {
+                        var done = false;
+                        
+                        //Do not show labelgroups or addresses
+                        if (property.indexOf("labeltype") >= 0) {
+                            console.log("Ignored labelgroup " + obj);
+                            done = true;
+                            display = false;
+                            break;
+                        } else if (property.indexOf("type") >= 0) {
+                            var ignore = false;
+
+                            for (var type in json[obj][property]) {
+                                if (json[obj][property][type].value === "http://schemas.ogf.org/mrs/2013/12/topology#Address") {
+                                    console.log("Ignored address " + obj);
+                                    ignore = true;
+                                    break;
+                                }
+                            }
+
+                            if (ignore) {
+                                display = false;
+                                done = true;
+                                break;
+                            }
+                        } else if (property.indexOf("http://schemas.ogf.org/") >= 0) {
+                            display = true;
+                            console.log("display");
+                        }
+                        
+                        if(done) {
+                            break;
                         }
                     }
-                    if (add) {
-                        console.log("Adding: " + obj);
-                        var addedNode = jsonNodes.push({name: obj});
-                        query = "isAlias";
-                        for (var key in json[obj]) {
-                            if (key.indexOf(query) > -1) {
-                                for (var n in nodes) {
-                                    if (n.name === json[obj][key]) {
-                                        console.log("Found link to " + json[obj][key]);
-                                        jsonLinks.push({source: addedNode, target: n});
+
+                    if (display) {
+                        //Add new node
+                        var imagePath;
+                        for (var property in json[obj]) {
+                            var done = false;
+                            switch (property) {
+                                case "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":
+                                    for (var type in json[obj][property]) {
+                                        switch (json[obj][property][type].value) {
+                                            case "http://schemas.ogf.org/nml/2013/03/base#Topology":
+                                                imagePath = "resources/topology.jpg";
+                                                done = true;
+                                                break;
+                                            case "http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort":
+                                                imagePath = "resources/bidirectional_port.jpg";
+                                                done = true;
+                                                break;
+                                            case "http://schemas.ogf.org/mrs/2013/12/topology#StorageService":
+                                                imagePath = "resources/storage_service.jpg";
+                                                done = true;
+                                                break;
+                                            case "http://schemas.ogf.org/nml/2013/03/base#Node":
+                                                imagePath = "resources/node.jpg";
+                                                done = true;
+                                                break;
+                                            case "http://schemas.ogf.org/mrs/2013/12/topology#BlockStorageService":
+                                                imagePath = "resources/block_storage_service.jpg";
+                                                done = true;
+                                                break;
+                                            case "http://schemas.ogf.org/mrs/2013/12/topology#Route":
+                                                imagePath = "resources/route.jpg";
+                                                done = true;
+                                                break;
+                                            case "http://schemas.ogf.org/mrs/2013/12/topology#HypervisorBypassInterfaceService":
+                                                imagePath = "resources/hypervisor_bypass_interface_service.jpg";
+                                                done = true;
+                                                break;
+                                            case "http://schemas.ogf.org/nml/2013/03/base#SwitchingService":
+                                                imagePath = "resources/switching_service.jpg";
+                                                done = true;
+                                                break;
+                                            case "http://schemas.ogf.org/mrs/2013/12/topology#VirtualSwitchService":
+                                                imagePath = "resources/virtual_switch_service.jpg";
+                                                done = true;
+                                                break;
+                                            case "http://schemas.ogf.org/mrs/2013/12/topology#RoutingService":
+                                                imagePath = "resources/routing_service.jpg";
+                                                done = true;
+                                                break;
+                                            case "http://schemas.ogf.org/mrs/2013/12/topology#IOPerformanceMeasurementService":
+                                                imagePath = "resources/io_perf_service.jpg";
+                                                done = true;
+                                                break;
+                                        }
+                                    }
+                                    break;
+                                default:
+                                    imagePath = "resources/default.png";
+                            }
+
+                            if (done) {
+                                break;
+                            }
+                        }
+
+                        var source = {name: obj, image: imagePath};
+//                        console.log("Adding object");
+//                        console.log(source);
+                        nodesList.push(source);
+                        //Add any links that exist
+                        for (var property in json[obj]) {
+                            if (property.indexOf("isAlias") >= 0) {
+//                                console.log("Found links from object");
+
+                                for (var i = 0; i < json[obj][property].length; ++i) {
+                                    var index = indexOf(nodesList, json[obj][property][i].value);
+                                    if (index >= 0) {
+//                                        console.log("Adding link to");
+//                                        console.log(nodesList[index].name);
+                                        linksList.push({source: source, target: nodesList[index]});
                                     }
                                 }
                             }
@@ -94,76 +214,78 @@
                     }
                 }
 
-                console.log(jsonNodes);
+                console.log("Initializing force graph");
+                /**
+                 * k is porportional to the square root of the graph density
+                 * and is used as a heuristic to set appropriate values for the
+                 * charge and gravity of the force graph
+                 * credit to mbostock on Stack Overflow for the idea
+                 */
+                var k = Math.sqrt(nodesList.length / (canvasWidth * canvasHeight));
+                console.log("Calculated k-value " + k); // Heuristic for graph density
 
-                force
-                        .nodes(jsonNodes)
-                        .links(jsonLinks)
+                var force = d3.layout.force()
+                        .size([canvasWidth, canvasHeight])
+                        .charge(-10 / k)
+                        .gravity(100 * k)
+                        .distance(150)
+                        .on("tick", tick)
+                        .nodes(nodesList)
+                        .links(linksList)
                         .start();
-
+                var drag = force.drag()
+                        .on("dragstart", dragstart);
                 link = svg.selectAll(".link")
-                        .data(jsonLinks)
+                        .data(linksList)
                         .enter().append("line")
                         .attr("class", "link");
-
                 node = svg.selectAll(".node")
-                        .data(jsonNodes)
+                        .data(nodesList)
                         .enter().append("g") //or "circle"?
                         .attr("class", "node")
                         .on("dblclick", dblclick)
                         .call(drag);
-
                 node.append("image")
-                        .attr("xlink:href", "app.gif")
-                        .attr("x", -8)
-                        .attr("y", -8)
-                        .attr("width", 16)
-                        .attr("height", 16);
-
+                        .attr("xlink:href", function(d) {
+                            return d.image;
+                        })
+                        .attr("x", -20)
+                        .attr("y", -15)
+                        .attr("width", 30)
+                        .attr("height", 30);
                 node.append("text")
                         .attr("dx", 12)
                         .attr("dy", ".35em")
                         .text(function(d) {
-                            return d.name
+                            return d.name;
                         });
-
-                force.on("tick", function() {
-                    link.attr("x1", function(d) {
-                        return d.source.x;
-                    })
-                            .attr("y1", function(d) {
-                                return d.source.y;
-                            })
-                            .attr("x2", function(d) {
-                                return d.target.x;
-                            })
-                            .attr("y2", function(d) {
-                                return d.target.y;
-                            });
-
-                    node.attr("transform", function(d) {
-                        return "translate(" + d.x + "," + d.y + ")";
-                    });
-                });
+                console.log("Success");
             });
+            function indexOf(array, search) {
+                for (var i = 0; i < array.length; ++i) {
+                    if (array[i].name === search) {
+                        return i;
+                    }
+                }
 
-//            restart();
+                return -1;
+            }
 
             function mousemove() {
-                cursor.attr("transform", "translate(" + d3.mouse(this) + ")");
+//                cursor.attr("transform", "translate(" + d3.mouse(this) + ")");
             }
 
             function mousedown() {
-//                var point = d3.mouse(this),
-//                        node = {x: point[0], y: point[1]},
-//                n = nodes.push(node);
-
-                // add links to any nearby nodes
-//                nodes.forEach(function(target) {
-//                    var x = target.x - node.x,
-//                            y = target.y - node.y;
+//                var point = d3.mouse(this);
+//                var n = {x: point[0], y: point[1], name: "hello"};
+//                nodesList.push(n);
+//
+////                 add links to any nearby nodes
+//                nodesList.forEach(function(target) {
+//                    var x = target.x - n.x,
+//                            y = target.y - n.y;
 //                    if (Math.sqrt(x * x + y * y) < 30) {
-//                        links.push({source: node, target: target});
+//                        linksList.push({source: n, target: target});
 //                    }
 //                });
 //
@@ -191,30 +313,39 @@
                         .attr("y2", function(d) {
                             return d.target.y;
                         });
-
-                node.attr("cx", function(d) {
-                    return d.x;
-                })
-                        .attr("cy", function(d) {
-                            return d.y;
-                        });
+                node.attr("transform", function(d) {
+                    return "translate(" + d.x + "," + d.y + ")";
+                });
             }
 
-            function restart() {
-                link = link.data(links);
-
-                link.enter().insert("line", ".node")
-                        .attr("class", "link");
-
-                node = node.data(nodes);
-
-                node.enter().insert("circle", ".cursor")
-                        .attr("class", "node")
-                        .attr("r", 5)
-                        .call(force.drag);
-
-                force.start();
-            }
+//            function restart() {
+//                link = link.data(linksList);
+//                link.enter().append("line")
+//                        .attr("class", "link");
+//
+//                node = node.data(nodesList);
+//
+//                node.enter().append("g") //or "circle"?
+//                        .attr("class", "node")
+//                        .on("dblclick", dblclick)
+//                        .call(drag);
+//
+//                node.append("image")
+//                        .attr("xlink:href", "app.gif")
+//                        .attr("x", -8)
+//                        .attr("y", -8)
+//                        .attr("width", 16)
+//                        .attr("height", 16);
+//
+//                node.append("text")
+//                        .attr("dx", 12)
+//                        .attr("dy", ".35em")
+//                        .text(function(d) {
+//                            return d.name;
+//                        });
+//
+//                force.start();
+//            }
         </script>
     </body>
 </html>
