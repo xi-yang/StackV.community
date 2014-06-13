@@ -73,7 +73,7 @@
             var OWL_PREFIX = "http://www.w3.org/2002/07/owl#";
             var NML_PREFIX = "http://schemas.ogf.org/nml/2013/03/base#";
             var MRS_PREFIX = "http://schemas.ogf.org/mrs/2013/12/topology#";
-            
+
             var ICON_PATH = "resources/";
 
             var width = document.documentElement.clientWidth;
@@ -163,6 +163,8 @@
                                                 return ICON_PATH + "routing_service.jpg";
                                             case MRS_PREFIX + "IOPerformanceMeasurementService":
                                                 return ICON_PATH + "io_perf_service.jpg";
+                                            case MRS_PREFIX + "POSIX_IOBenchmark":
+                                                return ICON_PATH + "io_benchmark.jpg";
                                         }
                                     }
                                 }
@@ -239,7 +241,7 @@
                         });
                 console.log("Success");
             });
-            
+
             function indexOf(array, search) {
                 for (var i = 0; i < array.length; ++i) {
                     if (array[i].name === search) {
