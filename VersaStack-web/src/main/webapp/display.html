@@ -67,6 +67,13 @@
         </script>
 
         <script>
+            var RDFS_PREFIX = "http://www.w3.org/2000/01/rdf-schema#";
+            var RDF_PREFIX = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
+            var XSD_PREFIX = "http://www.w3.org/2001/XMLSchema#";
+            var OWL_PREFIX = "http://www.w3.org/2002/07/owl#";
+            var NML_PREFIX = "http://schemas.ogf.org/nml/2013/03/base#";
+            var MRS_PREFIX = "http://schemas.ogf.org/mrs/2013/12/topology#";
+
             var width = document.documentElement.clientWidth;
             var height = document.documentElement.clientHeight;
             var canvasWidth = width * 2;
@@ -94,7 +101,7 @@
 
                     for (var property in json[obj]) {
                         var done = false;
-                        
+
                         //Do not show labelgroups or addresses
                         if (property.indexOf("labeltype") >= 0) {
                             console.log("Ignored labelgroup " + obj);
@@ -105,7 +112,7 @@
                             var ignore = false;
 
                             for (var type in json[obj][property]) {
-                                if (json[obj][property][type].value === "http://schemas.ogf.org/mrs/2013/12/topology#Address") {
+                                if (json[obj][property][type].value === MRS_PREFIX + "Address") {
                                     console.log("Ignored address " + obj);
                                     ignore = true;
                                     break;
@@ -121,8 +128,8 @@
                             display = true;
                             console.log("display");
                         }
-                        
-                        if(done) {
+
+                        if (done) {
                             break;
                         }
                     }
@@ -133,50 +140,50 @@
                         for (var property in json[obj]) {
                             var done = false;
                             switch (property) {
-                                case "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":
+                                case RDF_PREFIX + "type":
                                     for (var type in json[obj][property]) {
                                         switch (json[obj][property][type].value) {
-                                            case "http://schemas.ogf.org/nml/2013/03/base#Topology":
+                                            case NML_PREFIX + "Topology":
                                                 imagePath = "resources/topology.jpg";
                                                 done = true;
                                                 break;
-                                            case "http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort":
+                                            case NML_PREFIX + "BidirectionalPort":
                                                 imagePath = "resources/bidirectional_port.jpg";
                                                 done = true;
                                                 break;
-                                            case "http://schemas.ogf.org/mrs/2013/12/topology#StorageService":
+                                            case MRS_PREFIX + "StorageService":
                                                 imagePath = "resources/storage_service.jpg";
                                                 done = true;
                                                 break;
-                                            case "http://schemas.ogf.org/nml/2013/03/base#Node":
+                                            case NML_PREFIX + "Node":
                                                 imagePath = "resources/node.jpg";
                                                 done = true;
                                                 break;
-                                            case "http://schemas.ogf.org/mrs/2013/12/topology#BlockStorageService":
+                                            case MRS_PREFIX + "BlockStorageService":
                                                 imagePath = "resources/block_storage_service.jpg";
                                                 done = true;
                                                 break;
-                                            case "http://schemas.ogf.org/mrs/2013/12/topology#Route":
+                                            case MRS_PREFIX + "Route":
                                                 imagePath = "resources/route.jpg";
                                                 done = true;
                                                 break;
-                                            case "http://schemas.ogf.org/mrs/2013/12/topology#HypervisorBypassInterfaceService":
+                                            case MRS_PREFIX + "HypervisorBypassInterfaceService":
                                                 imagePath = "resources/hypervisor_bypass_interface_service.jpg";
                                                 done = true;
                                                 break;
-                                            case "http://schemas.ogf.org/nml/2013/03/base#SwitchingService":
+                                            case NML_PREFIX + "switchingService":
                                                 imagePath = "resources/switching_service.jpg";
                                                 done = true;
                                                 break;
-                                            case "http://schemas.ogf.org/mrs/2013/12/topology#VirtualSwitchService":
+                                            case MRS_PREFIX + "VirtualSwitchService":
                                                 imagePath = "resources/virtual_switch_service.jpg";
                                                 done = true;
                                                 break;
-                                            case "http://schemas.ogf.org/mrs/2013/12/topology#RoutingService":
+                                            case MRS_PREFIX + "RoutingService":
                                                 imagePath = "resources/routing_service.jpg";
                                                 done = true;
                                                 break;
-                                            case "http://schemas.ogf.org/mrs/2013/12/topology#IOPerformanceMeasurementService":
+                                            case MRS_PREFIX + "IOPerformanceMeasurementService":
                                                 imagePath = "resources/io_perf_service.jpg";
                                                 done = true;
                                                 break;
