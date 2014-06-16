@@ -58,6 +58,7 @@
                         d3.select('#sliderValue').text(Math.round(value));
                         resize(value);
                     }));
+
             function resize(size) {
                 var scaling = size / BASE_VALUE;
                 svg.selectAll(".node text").style('font-size', BASE_FONT_SIZE * scaling + 'px');
@@ -80,15 +81,17 @@
             var height = document.documentElement.clientHeight;
             var canvasWidth = width * 2;
             var canvasHeight = height * 2;
+
             var nodesList = [];
             var linksList = [];
+            var topologyList = [];
             var node = [];
             var link = [];
+
             var svg = d3.select("body").append("svg")
                     .attr("width", canvasWidth)
-                    .attr("height", canvasHeight)
-                    .on("mousemove", mousemove)
-                    .on("mousedown", mousedown);
+                    .attr("height", canvasHeight);
+
             // Circle around cursor makes it easier to see
 //            var cursor = svg.append("circle")
 //                    .attr("r", 30)
@@ -97,14 +100,16 @@
             d3.json("data/graph-full.json", function(error, json) {
                 console.log("Generating node and link lists from json");
                 console.log(json);
+
                 for (var obj in json) {
-//                    console.log("Processing object: " + obj);
+//                    console.log("Processing object:");
+//                    console.log(obj);
                     var display = false; //Whether this obj is displayed
 
                     for (var property in json[obj]) {
                         var done = false;
-
-                        //Do not show labelgroups or addresses
+                        // Do not show labelgroups or addresses
+                        // TODO: This code can be refactored by conversion to function
                         if (property.indexOf("labeltype") >= 0) {
                             console.log("Ignored labelgroup " + obj);
                             done = true;
@@ -118,6 +123,8 @@
                                     console.log("Ignored address " + obj);
                                     ignore = true;
                                     break;
+                                } else if (json[obj][property][type].value.indexOf("http://schemas.ogf.org/") >= 0) {
+                                    display = true;
                                 }
                             }
 
@@ -126,8 +133,6 @@
                                 done = true;
                                 break;
                             }
-                        } else if (property.indexOf("http://schemas.ogf.org/") >= 0) {
-                            display = true;
                         }
 
                         if (done) {
@@ -165,31 +170,67 @@
                                                 return ICON_PATH + "io_perf_service.jpg";
                                             case MRS_PREFIX + "POSIX_IOBenchmark":
                                                 return ICON_PATH + "io_benchmark.jpg";
+                                            case MRS_PREFIX + "HypervisorService":
+                                                return ICON_PATH + "hypervisor_service.jpg";
                                         }
                                     }
                                 }
                             }
                             return ICON_PATH + "default.png";
                         })();
-
-                        var source = {name: obj, icon: iconPath};
+                        var source = {name: obj, icon: iconPath, visible: true};
 //                        console.log("Adding object");
 //                        console.log(source);
                         nodesList.push(source);
-                        //Add any links that exist
-                        for (var property in json[obj]) {
-                            if (property.indexOf("isAlias") >= 0) {
-//                                console.log("Found links from object");
+                    }
+                }
 
-                                for (var i = 0; i < json[obj][property].length; ++i) {
-                                    var index = indexOf(nodesList, json[obj][property][i].value);
-                                    if (index >= 0) {
-//                                        console.log("Adding link to");
-//                                        console.log(nodesList[index].name);
-                                        linksList.push({source: source, target: nodesList[index]});
+                for (var obj in json) {
+                    // Store topology objects and relations
+                    if (obj.indexOf("topology") >= 0) {
+                        for (var property in json[obj]) {
+                            if (property === NML_PREFIX + "hasNode" || property === NML_PREFIX + "hasService") {
+                                var topology = {name: obj, nodes: json[obj][property]};
+                                console.log("Adding topology");
+                                console.log(topology);
+                                topologyList.push(topology);
+                                for (var node in json[obj][property]) {
+                                    var index = indexOf(nodesList, json[obj][property][node].value);
+                                    var sourceIndex = indexOf(nodesList, obj);
+                                    if (index >= 0 && sourceIndex >= 0) {
+                                        linksList.push({source: nodesList[sourceIndex], target: nodesList[index], visible: false});
                                     }
                                 }
                             }
+                        }
+                    }
+
+                    // Add any alias links that exist
+                    for (var property in json[obj]) {
+                        if (property.indexOf("isAlias") >= 0) {
+//                                console.log("Found links from object");
+
+                            for (var i = 0; i < json[obj][property].length; ++i) {
+                                var index = indexOf(nodesList, json[obj][property][i].value);
+                                var sourceIndex = indexOf(nodesList, obj);
+                                if (index >= 0 && sourceIndex >= 0) {
+//                                        console.log("Adding link to");
+//                                        console.log(nodesList[index].name);
+
+                                    linksList.push({source: nodesList[sourceIndex], target: nodesList[index], visible: true});
+                                }
+                            }
+                        }
+                    }
+                }
+
+
+                // Hide topology nodes by default
+                for (var topology in topologyList) {
+                    for (var node in topologyList[topology].nodes) {
+                        var index = indexOf(nodesList, topologyList[topology].nodes[node].value);
+                        if (index >= 0) {
+                            nodesList[index].visible = false;
                         }
                     }
                 }
@@ -213,18 +254,23 @@
                         .nodes(nodesList)
                         .links(linksList)
                         .start();
+
                 var drag = force.drag()
-                        .on("dragstart", dragstart);
+                        .on("drag", ondrag)
+
                 link = svg.selectAll(".link")
                         .data(linksList)
                         .enter().append("line")
-                        .attr("class", "link");
+                        .attr("class", "link")
+
                 node = svg.selectAll(".node")
                         .data(nodesList)
                         .enter().append("g") //or "circle"?
                         .attr("class", "node")
                         .on("dblclick", dblclick)
+                        .on("click", click)
                         .call(drag);
+
                 node.append("image")
                         .attr("xlink:href", function(d) {
                             return d.icon;
@@ -233,12 +279,14 @@
                         .attr("y", -15)
                         .attr("width", 30)
                         .attr("height", 30);
+
                 node.append("text")
                         .attr("dx", 12)
                         .attr("dy", ".35em")
                         .text(function(d) {
                             return d.name;
                         });
+
                 console.log("Success");
             });
 
@@ -252,11 +300,66 @@
                 return -1;
             }
 
-            function mousemove() {
+//            function linkIndexOf(array, search) {
+//                for (var i = 0; i < array.length; ++i) {
+//                    if (array[i].source.name === search.source.name
+//                            && array[i].target.name === search.target.name) {
+//                        return i;
+//                    }
+//                }
+//
+//                return -1;
+//            }
+//
+//            function mousemove() {
 //                cursor.attr("transform", "translate(" + d3.mouse(this) + ")");
+//            }
+//
+//            function mousedown() {
+//                console.log("mousedown");
+//            }
+//
+//            function mouseup() {
+//                console.log("mouseup");
+//            }
+
+            function click(d) {
+                if (d3.event.defaultPrevented) {
+                    return; // click suppressed
+                }
+
+                console.log("Clicked on");
+                console.log(d);
+                var index = indexOf(topologyList, d.name);
+                if (index >= 0) {
+                    for (var node in topologyList[index].nodes) {
+                        var nodeIndex = indexOf(nodesList, topologyList[index].nodes[node].value);
+                        console.log(topologyList[index].nodes[node].value);
+                        console.log(nodeIndex);
+                        if (nodeIndex >= 0) {
+                            console.log("Toggle " + !nodesList[nodeIndex].visible);
+                            nodesList[nodeIndex].visible = !nodesList[nodeIndex].visible;
+//                            if (nodesList[nodeIndex].visible) {
+//                                d3.select(nodesList[nodeIndex])
+//                                        .attr("opacity", 0)
+//                                        .transition()
+//                                        .ease(Math.sqrt)
+//                                        .attr("opacity", 100)
+//                            } else {
+//                                d3.select(nodesList[nodeIndex])
+//                                        .attr("opacity", 100)
+//                                        .transition()
+//                                        .ease(Math.sqrt)
+//                                        .attr("opacity", 0)
+//                                        .remove();
+//                            }
+                        }
+                    }
+                }
+                tick();
             }
 
-            function mousedown() {
+//            function svgmousedown() {
 //                var point = d3.mouse(this);
 //                var n = {x: point[0], y: point[1], name: "hello"};
 //                nodesList.push(n);
@@ -271,20 +374,31 @@
 //                });
 //
 //                restart();
-            }
+//            }
 
             function dblclick(d) {
                 d3.select(this).classed("fixed", d.fixed = false);
             }
 
-            function dragstart(d) {
+//            function dragstart(d) {
+//                console.log("dragstart");
+//            }
+
+            function ondrag(d) {
+//                console.log("drag");
                 d3.select(this).classed("fixed", d.fixed = true);
             }
 
+//            function dragend(d) {
+//                console.log("dragend");
+//            }
+
             function tick() {
-                link.attr("x1", function(d) {
-                    return d.source.x;
-                })
+                link = svg.selectAll(".link");
+                link
+                        .attr("x1", function(d) {
+                            return d.source.x;
+                        })
                         .attr("y1", function(d) {
                             return d.source.y;
                         })
@@ -294,8 +408,25 @@
                         .attr("y2", function(d) {
                             return d.target.y;
                         });
+                link
+                        .attr("opacity", function(d) {
+                            if (d.visible) {
+                                return 100;
+                            } else {
+                                return 0;
+                            }
+                        });
+
+                node = svg.selectAll(".node");
                 node.attr("transform", function(d) {
                     return "translate(" + d.x + "," + d.y + ")";
+                });
+                node.attr("opacity", function(d) {
+                    if (d.visible) {
+                        return 100;
+                    } else {
+                        return 0;
+                    }
                 });
             }
 
