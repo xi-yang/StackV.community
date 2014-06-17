@@ -86,13 +86,55 @@
                      * percentage of the base zoom value. 
                      **/
                     baseZoomValue: 50,
+                    /** Font size in px **/
                     baseFontSize: 12,
+                    /** Resource paths **/
                     baseIconPath: 'resources/',
+                    defaultIcon: 'default.png',
                     defaultGraphPath: 'data/graph-full.json',
+                    /** Icon image size in px **/
+                    iconWidth: 30,
+                    iconHeight: 30,
+                    /** Node text offsets **/
+                    nodeTextOffsetX: 15,
+                    nodeTextOffsetY: '.35em',
                     /** Force graph fundamental values **/
                     baseCharge: -20, // node-node force strength
                     baseGravity: 80, // node-center force strength
                     baseDistance: 75 // distance between linked nodes
+                };
+
+                var nodeTypes = {
+                    typeNames: [
+                        NML_PREFIX + 'Topology',
+                        NML_PREFIX + 'BidirectionalPort',
+                        MRS_PREFIX + 'StorageService',
+                        NML_PREFIX + 'Node',
+                        MRS_PREFIX + 'BlockStorageService',
+                        MRS_PREFIX + 'Route',
+                        MRS_PREFIX + 'HypervisorBypassInterfaceService',
+                        NML_PREFIX + 'SwitchingService',
+                        MRS_PREFIX + 'VirtualSwitchService',
+                        MRS_PREFIX + 'RoutingService',
+                        MRS_PREFIX + 'IOPerformanceMeasurementService',
+                        MRS_PREFIX + 'POSIX_IOBenchmark',
+                        MRS_PREFIX + 'HypervisorService'
+                    ],
+                    iconNames: [
+                        'topology.jpg',
+                        'bidirectional_port.jpg',
+                        'storage_service.jpg',
+                        'node.jpg',
+                        'block_storage_service.jpg',
+                        'route.jpg',
+                        'hypervisor_bypass_interface_service.jpg',
+                        'switching_service.jpg',
+                        'virtual_switch_service.jpg',
+                        'routing_service.jpg',
+                        'io_perf_service.jpg',
+                        'io_benchmark.jpg',
+                        'hypervisor_service.jpg'
+                    ]
                 };
 
                 function main() {
@@ -134,44 +176,7 @@
                         })();
 
                         if (display) { // add new node
-                            var iconPath = (function() { // find icon based on type
-                                for (var property in json[obj]) {
-                                    if (property === RDF_PREFIX + 'type') {
-                                        for (var type in json[obj][property]) {
-                                            switch (json[obj][property][type].value) {
-                                                case NML_PREFIX + 'Topology':
-                                                    return getIconPath('topology.jpg');
-                                                case NML_PREFIX + 'BidirectionalPort':
-                                                    return getIconPath('bidirectional_port.jpg');
-                                                case MRS_PREFIX + 'StorageService':
-                                                    return getIconPath('storage_service.jpg');
-                                                case NML_PREFIX + 'Node':
-                                                    return getIconPath('node.jpg');
-                                                case MRS_PREFIX + 'BlockStorageService':
-                                                    return getIconPath('block_storage_service.jpg');
-                                                case MRS_PREFIX + 'Route':
-                                                    return getIconPath('route.jpg');
-                                                case MRS_PREFIX + 'HypervisorBypassInterfaceService':
-                                                    return getIconPath('hypervisor_bypass_interface_service.jpg');
-                                                case NML_PREFIX + 'SwitchingService':
-                                                    return getIconPath('switching_service.jpg');
-                                                case MRS_PREFIX + 'VirtualSwitchService':
-                                                    return getIconPath('virtual_switch_service.jpg');
-                                                case MRS_PREFIX + 'RoutingService':
-                                                    return getIconPath('routing_service.jpg');
-                                                case MRS_PREFIX + 'IOPerformanceMeasurementService':
-                                                    return getIconPath('io_perf_service.jpg');
-                                                case MRS_PREFIX + 'POSIX_IOBenchmark':
-                                                    return getIconPath('io_benchmark.jpg');
-                                                case MRS_PREFIX + 'HypervisorService':
-                                                    return getIconPath('hypervisor_service.jpg');
-                                            }
-                                        }
-                                    }
-                                }
-                                return getIconPath('default.png');
-                            })();
-
+                            var iconPath = getIconPath(json[obj]); // find icon based on type
                             var source = {name: obj, icon: iconPath, visible: true};
                             nodesList.push(source);
                         }
@@ -214,10 +219,10 @@
 
                     // Hide topology nodes by default
                     for (var topology in topologyList) {
-                        for (var node in topologyList[topology].nodes) {
-                            var index = indexOfName(nodesList, topologyList[topology].nodes[node].value);
-                            if (index >= 0) {
-                                nodesList[index].visible = false;
+                        for (var key in topologyList[topology].nodes) {
+                            var node = findByName(nodesList, topologyList[topology].nodes[key].value);
+                            if (node) {
+                                node.visible = false;
                             }
                         }
                     }
@@ -271,14 +276,14 @@
                             .attr('xlink:href', function(d) {
                                 return d.icon;
                             })
-                            .attr('x', -20)
-                            .attr('y', -15)
-                            .attr('width', 30)
-                            .attr('height', 30);
+                            .attr('x', -settings.iconWidth / 2)
+                            .attr('y', -settings.iconHeight / 2)
+                            .attr('width', settings.iconWidth)
+                            .attr('height', settings.iconHeight);
 
                     node.append('text')
-                            .attr('dx', 12)
-                            .attr('dy', '.35em')
+                            .attr('dx', settings.nodeTextOffsetX)
+                            .attr('dy', settings.nodeTextOffsetY)
                             .text(function(d) {
                                 return d.name;
                             });
@@ -325,8 +330,42 @@
                     }
                 }
 
-                function getIconPath(iconName) {
-                    return settings.baseIconPath + iconName;
+                /************************************************************
+                 * TypeEnum is created on first call if not already defined.
+                 * TypeEnum is a constant static hash such that:
+                 * The keys of TypeEnum are fully expanded type names
+                 * The values of TypeEnum are corresponding icon paths
+                 * 
+                 * If TypeEnum holds an icon path for a type it is returned,
+                 * otherwise a default icon path is returned.
+                 ************************************************************/
+                function getIconPath(obj) {
+                    if (getIconPath.TypeEnum === undefined) {
+                        var types = nodeTypes.typeNames;
+                        var icons = nodeTypes.iconNames;
+                        getIconPath.TypeEnum = {};
+
+                        for (var i = 0, l = types.length; i < l; ++i) {
+                            getIconPath.TypeEnum[types[i]] = settings.baseIconPath + icons[i];
+                        }
+
+                        Object.freeze(getIconPath.TypeEnum);
+                    }
+
+                    for (var property in obj) {
+                        if (property === RDF_PREFIX + 'type') {
+                            for (var key in obj[property]) {
+                                var type = obj[property][key].value;
+                                var path = getIconPath.TypeEnum[type];
+
+                                if (path) {
+                                    return path;
+                                }
+                            }
+                        }
+                    }
+
+                    return settings.baseIconPath + settings.defaultIcon;
                 }
 
                 /** EVENT HANDLER FUNCTIONS **/
@@ -402,7 +441,8 @@
                 return {
                     main: main,
                     css: css,
-                    settings: settings
+                    settings: settings,
+                    types: nodeTypes
                 };
             }(); // end adminView module
 
