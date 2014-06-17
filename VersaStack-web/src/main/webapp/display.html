@@ -18,18 +18,12 @@
                 font-size: 12px;
             }
 
-            /*.cursor {
-                fill: none;
-                stroke: brown;
-                pointer-events: none;
-            }*/
-
             .link {
                 stroke: #999;
                 stroke-width: 1.5px;
             }
 
-            .floatTL{
+            .floatTL {
                 position: fixed;
                 top: 0px;
                 left: 0px;
@@ -47,20 +41,20 @@
         <script src="js/d3.slider.js"></script>
 
         <script>
-            var BASE_VALUE = 50;
+            var BASE_SLIDER_VALUE = 50;
             var BASE_FONT_SIZE = 12;
-            // Zoom level slider
+
+            /** Zoom level slider control **/
             d3.select('#slider').call(
                     d3.slider()
-                    .value(BASE_VALUE)
-//                    .orientation("vertical")
-                    .on("slide", function(evt, value) {
+                    .value(BASE_SLIDER_VALUE)
+                    .on("slide", function(value) {
                         d3.select('#sliderValue').text(Math.round(value));
                         resize(value);
                     }));
 
             function resize(size) {
-                var scaling = size / BASE_VALUE;
+                var scaling = size / BASE_SLIDER_VALUE;
                 svg.selectAll(".node text").style('font-size', BASE_FONT_SIZE * scaling + 'px');
                 svg.selectAll(".node image").attr("transform", "scale(" + scaling + ")");
                 svg.selectAll(".link").style('stroke-width', scaling);
@@ -68,6 +62,7 @@
         </script>
 
         <script>
+            /** Namespace prefix constants **/
             var RDFS_PREFIX = "http://www.w3.org/2000/01/rdf-schema#";
             var RDF_PREFIX = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
             var XSD_PREFIX = "http://www.w3.org/2001/XMLSchema#";
@@ -75,8 +70,15 @@
             var NML_PREFIX = "http://schemas.ogf.org/nml/2013/03/base#";
             var MRS_PREFIX = "http://schemas.ogf.org/mrs/2013/12/topology#";
 
+            // Base path of icons
             var ICON_PATH = "resources/";
 
+            /** Force graph fundamental values **/
+            var BASE_CHARGE = -20;
+            var BASE_GRAVITY = 80;
+            var BASE_DISTANCE = 75;
+
+            /** Document and canvas sizes **/
             var width = document.documentElement.clientWidth;
             var height = document.documentElement.clientHeight;
             var canvasWidth = width * 2;
@@ -92,53 +94,34 @@
                     .attr("width", canvasWidth)
                     .attr("height", canvasHeight);
 
-            // Circle around cursor makes it easier to see
-//            var cursor = svg.append("circle")
-//                    .attr("r", 30)
-//                    .attr("class", "cursor");
+            var graph = prompt("Enter path of JSON to graph", "data/graph-full.json");
 
-            d3.json("data/graph-full.json", function(error, json) {
+            // Process graph JSON into data structures and objects
+            d3.json(graph, function(error, json) {
                 console.log("Generating node and link lists from json");
                 console.log(json);
 
                 for (var obj in json) {
-//                    console.log("Processing object:");
-//                    console.log(obj);
-                    var display = false; //Whether this obj is displayed
+                    var display = (function() { // Whether to show obj on graph
+                        for (var property in json[obj]) {
+                            // Do not show labelgroups or addresses
+                            if (property === NML_PREFIX + "labeltype") {
+                                console.log("Ignored labelgroup " + obj);
+                                return false;
+                            } else if (property === RDF_PREFIX + "type") {
+                                for (var type in json[obj][property]) {
+                                    var typeValue = json[obj][property][type].value;
 
-                    for (var property in json[obj]) {
-                        var done = false;
-                        // Do not show labelgroups or addresses
-                        // TODO: This code can be refactored by conversion to function
-                        if (property.indexOf("labeltype") >= 0) {
-                            console.log("Ignored labelgroup " + obj);
-                            done = true;
-                            display = false;
-                            break;
-                        } else if (property.indexOf("type") >= 0) {
-                            var ignore = false;
-
-                            for (var type in json[obj][property]) {
-                                if (json[obj][property][type].value === MRS_PREFIX + "Address") {
-                                    console.log("Ignored address " + obj);
-                                    ignore = true;
-                                    break;
-                                } else if (json[obj][property][type].value.indexOf("http://schemas.ogf.org/") >= 0) {
-                                    display = true;
+                                    if (typeValue === MRS_PREFIX + "Address") {
+                                        console.log("Ignored address " + obj);
+                                        return false;
+                                    } else if (typeValue.indexOf("http://schemas.ogf.org/") >= 0) {
+                                        return true;
+                                    }
                                 }
                             }
-
-                            if (ignore) {
-                                display = false;
-                                done = true;
-                                break;
-                            }
                         }
-
-                        if (done) {
-                            break;
-                        }
-                    }
+                    })();
 
                     if (display) { // Add new node
                         var iconPath = (function() { // Find icon based on type
@@ -178,9 +161,8 @@
                             }
                             return ICON_PATH + "default.png";
                         })();
+
                         var source = {name: obj, icon: iconPath, visible: true};
-//                        console.log("Adding object");
-//                        console.log(source);
                         nodesList.push(source);
                     }
                 }
@@ -207,16 +189,11 @@
 
                     // Add any alias links that exist
                     for (var property in json[obj]) {
-                        if (property.indexOf("isAlias") >= 0) {
-//                                console.log("Found links from object");
-
+                        if (property === NML_PREFIX + "isAlias") {
                             for (var i = 0; i < json[obj][property].length; ++i) {
                                 var index = indexOf(nodesList, json[obj][property][i].value);
                                 var sourceIndex = indexOf(nodesList, obj);
                                 if (index >= 0 && sourceIndex >= 0) {
-//                                        console.log("Adding link to");
-//                                        console.log(nodesList[index].name);
-
                                     linksList.push({source: nodesList[sourceIndex], target: nodesList[index], visible: true});
                                 }
                             }
@@ -236,32 +213,41 @@
                 }
 
                 console.log("Initializing force graph");
+
                 /**
                  * k is porportional to the square root of the graph density
                  * and is used as a heuristic to set appropriate values for the
                  * charge and gravity of the force graph
                  * credit to mbostock on Stack Overflow for the idea
                  */
-                var k = Math.sqrt(nodesList.length / (canvasWidth * canvasHeight));
-                console.log("Calculated k-value " + k); // Heuristic for graph density
+                var k = Math.sqrt(nodesList.length / (width * height));
+                var charge = BASE_CHARGE / k;
+                var gravity = BASE_GRAVITY * k;
+                var distance = BASE_DISTANCE + (10 * k * BASE_DISTANCE);
+
+                console.log("Calculated k-value " + k);
+                console.log("Calculated charge " + charge);
+                console.log("Calculated gravity " + gravity);
+                console.log("Calculated distance " + distance);
+
 
                 var force = d3.layout.force()
                         .size([canvasWidth, canvasHeight])
-                        .charge(-10 / k)
-                        .gravity(100 * k)
-                        .distance(150)
+                        .charge(charge)
+                        .gravity(gravity)
+                        .linkDistance(distance)
                         .on("tick", tick)
                         .nodes(nodesList)
                         .links(linksList)
                         .start();
 
                 var drag = force.drag()
-                        .on("drag", ondrag)
+                        .on("drag", ondrag);
 
                 link = svg.selectAll(".link")
                         .data(linksList)
                         .enter().append("line")
-                        .attr("class", "link")
+                        .attr("class", "link");
 
                 node = svg.selectAll(".node")
                         .data(nodesList)
@@ -300,29 +286,6 @@
                 return -1;
             }
 
-//            function linkIndexOf(array, search) {
-//                for (var i = 0; i < array.length; ++i) {
-//                    if (array[i].source.name === search.source.name
-//                            && array[i].target.name === search.target.name) {
-//                        return i;
-//                    }
-//                }
-//
-//                return -1;
-//            }
-//
-//            function mousemove() {
-//                cursor.attr("transform", "translate(" + d3.mouse(this) + ")");
-//            }
-//
-//            function mousedown() {
-//                console.log("mousedown");
-//            }
-//
-//            function mouseup() {
-//                console.log("mouseup");
-//            }
-
             function click(d) {
                 if (d3.event.defaultPrevented) {
                     return; // click suppressed
@@ -339,59 +302,19 @@
                         if (nodeIndex >= 0) {
                             console.log("Toggle " + !nodesList[nodeIndex].visible);
                             nodesList[nodeIndex].visible = !nodesList[nodeIndex].visible;
-//                            if (nodesList[nodeIndex].visible) {
-//                                d3.select(nodesList[nodeIndex])
-//                                        .attr("opacity", 0)
-//                                        .transition()
-//                                        .ease(Math.sqrt)
-//                                        .attr("opacity", 100)
-//                            } else {
-//                                d3.select(nodesList[nodeIndex])
-//                                        .attr("opacity", 100)
-//                                        .transition()
-//                                        .ease(Math.sqrt)
-//                                        .attr("opacity", 0)
-//                                        .remove();
-//                            }
                         }
                     }
                 }
                 tick();
             }
 
-//            function svgmousedown() {
-//                var point = d3.mouse(this);
-//                var n = {x: point[0], y: point[1], name: "hello"};
-//                nodesList.push(n);
-//
-////                 add links to any nearby nodes
-//                nodesList.forEach(function(target) {
-//                    var x = target.x - n.x,
-//                            y = target.y - n.y;
-//                    if (Math.sqrt(x * x + y * y) < 30) {
-//                        linksList.push({source: n, target: target});
-//                    }
-//                });
-//
-//                restart();
-//            }
-
             function dblclick(d) {
                 d3.select(this).classed("fixed", d.fixed = false);
             }
 
-//            function dragstart(d) {
-//                console.log("dragstart");
-//            }
-
             function ondrag(d) {
-//                console.log("drag");
                 d3.select(this).classed("fixed", d.fixed = true);
             }
-
-//            function dragend(d) {
-//                console.log("dragend");
-//            }
 
             function tick() {
                 link = svg.selectAll(".link");
@@ -429,35 +352,6 @@
                     }
                 });
             }
-
-//            function restart() {
-//                link = link.data(linksList);
-//                link.enter().append("line")
-//                        .attr("class", "link");
-//
-//                node = node.data(nodesList);
-//
-//                node.enter().append("g") //or "circle"?
-//                        .attr("class", "node")
-//                        .on("dblclick", dblclick)
-//                        .call(drag);
-//
-//                node.append("image")
-//                        .attr("xlink:href", "app.gif")
-//                        .attr("x", -8)
-//                        .attr("y", -8)
-//                        .attr("width", 16)
-//                        .attr("height", 16);
-//
-//                node.append("text")
-//                        .attr("dx", 12)
-//                        .attr("dy", ".35em")
-//                        .text(function(d) {
-//                            return d.name;
-//                        });
-//
-//                force.start();
-//            }
         </script>
     </body>
 </html>
