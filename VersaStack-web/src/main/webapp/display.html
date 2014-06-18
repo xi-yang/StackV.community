@@ -62,6 +62,8 @@
                 var node = [];
                 var link = [];
 
+                var owns = Object.prototype.hasOwnProperty;
+
                 var svg = d3.select('body').append('svg')
                         .attr('width', canvasWidth)
                         .attr('height', canvasHeight);
@@ -105,37 +107,47 @@
                 };
 
                 var nodeTypes = {
-                    typeNames: [
-                        NML_PREFIX + 'Topology',
-                        NML_PREFIX + 'BidirectionalPort',
-                        MRS_PREFIX + 'StorageService',
-                        NML_PREFIX + 'Node',
-                        MRS_PREFIX + 'BlockStorageService',
-                        MRS_PREFIX + 'Route',
-                        MRS_PREFIX + 'HypervisorBypassInterfaceService',
-                        NML_PREFIX + 'SwitchingService',
-                        MRS_PREFIX + 'VirtualSwitchService',
-                        MRS_PREFIX + 'RoutingService',
-                        MRS_PREFIX + 'IOPerformanceMeasurementService',
-                        MRS_PREFIX + 'POSIX_IOBenchmark',
-                        MRS_PREFIX + 'HypervisorService'
-                    ],
-                    iconNames: [
-                        'topology.jpg',
-                        'bidirectional_port.jpg',
-                        'storage_service.jpg',
-                        'node.jpg',
-                        'block_storage_service.jpg',
-                        'route.jpg',
-                        'hypervisor_bypass_interface_service.jpg',
-                        'switching_service.jpg',
-                        'virtual_switch_service.jpg',
-                        'routing_service.jpg',
-                        'io_perf_service.jpg',
-                        'io_benchmark.jpg',
-                        'hypervisor_service.jpg'
-                    ]
+                    typeNames: {
+                        topology: NML_PREFIX + 'Topology',
+                        bidirectionalPort: NML_PREFIX + 'BidirectionalPort',
+                        storageService: MRS_PREFIX + 'StorageService',
+                        node: NML_PREFIX + 'Node',
+                        blockStorageService: MRS_PREFIX + 'BlockStorageService',
+                        route: MRS_PREFIX + 'Route',
+                        hypervisorBypassInterfaceService: MRS_PREFIX + 'HypervisorBypassInterfaceService',
+                        switchingService: NML_PREFIX + 'SwitchingService',
+                        virtualSwitchService: MRS_PREFIX + 'VirtualSwitchService',
+                        routingService: MRS_PREFIX + 'RoutingService',
+                        ioPerformanceMeasurementService: MRS_PREFIX + 'IOPerformanceMeasurementService',
+                        posixIOBenchmark: MRS_PREFIX + 'POSIX_IOBenchmark',
+                        hypervisorService: MRS_PREFIX + 'HypervisorService',
+                        address: MRS_PREFIX + 'Address'
+                    },
+                    iconNames: {
+                        topology: 'topology.jpg',
+                        bidirectionalPort: 'bidirectional_port.jpg',
+                        storageService: 'storage_service.jpg',
+                        node: 'node.jpg',
+                        blockStorageService: 'block_storage_service.jpg',
+                        route: 'route.jpg',
+                        hypervisonBypassInterfaceService: 'hypervisor_bypass_interface_service.jpg',
+                        switchingService: 'switching_service.jpg',
+                        virtualSwitchService: 'virtual_switch_service.jpg',
+                        routingService: 'routing_service.jpg',
+                        ioPerformanceMeasurementService: 'io_perf_service.jpg',
+                        posixIOBenchmark: 'io_benchmark.jpg',
+                        hypervisorService: 'hypervisor_service.jpg'
+                    }
                 };
+
+                var properties = {
+                    hasNode: NML_PREFIX + 'hasNode',
+                    hasService: NML_PREFIX + 'hasService',
+                    isAlias: NML_PREFIX + 'isAlias',
+                    topology: NML_PREFIX + 'Topology',
+                    type: RDF_PREFIX + 'type',
+                    labelType: NML_PREFIX + 'labeltype'
+                }
 
                 function main() {
                     createZoomSlider();
@@ -150,67 +162,48 @@
                     console.log('Generating node and link lists from json');
                     console.log(json);
 
-                    for (var obj in json) {
-                        var display = (function() { // whether to show obj on graph
-                            for (var property in json[obj]) {
-                                /** 
-                                 * Display elements from NML or MRS namesapce
-                                 * Except, do not display labeltypes or addresses
-                                 */
-                                if (property === NML_PREFIX + 'labeltype') {
-                                    console.log('Ignored labelgroup ' + obj);
-                                    return false;
-                                } else if (property === RDF_PREFIX + 'type') {
-                                    for (var type in json[obj][property]) {
-                                        var typeValue = json[obj][property][type].value;
+                    for (var key in json) {
+                        var obj = json[key];
 
-                                        if (typeValue === MRS_PREFIX + 'Address') {
-                                            console.log('Ignored address ' + obj);
-                                            return false;
-                                        } else if (typeValue.indexOf('http://schemas.ogf.org/') >= 0) {
-                                            return true;
-                                        }
-                                    }
-                                }
-                            }
-                        })();
-
-                        if (display) { // add new node
-                            var iconPath = getIconPath(json[obj]); // find icon based on type
-                            var source = {name: obj, icon: iconPath, visible: true};
-                            nodesList.push(source);
+                        if (shouldBeDisplayed(obj)) {
+                            var iconPath = getIconPath(obj); // find icon based on type
+                            var source = {name: key, icon: iconPath, visible: true};
+                            nodesList.push(source); // add new node
+                        } else {
+                            console.log("Ignored element " + key);
                         }
                     }
 
-                    for (var obj in json) {
-                        // Store topology objects and relations
-                        if (obj.indexOf('topology') >= 0) {
-                            for (var property in json[obj]) {
-                                if (property === NML_PREFIX + 'hasNode' || property === NML_PREFIX + 'hasService') {
-                                    var topology = {name: obj, nodes: json[obj][property]};
-                                    console.log('Adding topology');
-                                    console.log(topology);
-                                    topologyList.push(topology);
-                                    for (var node in json[obj][property]) {
-                                        var index = indexOfName(nodesList, json[obj][property][node].value);
-                                        var sourceIndex = indexOfName(nodesList, obj);
-                                        if (index >= 0 && sourceIndex >= 0) {
-                                            linksList.push({source: nodesList[sourceIndex], target: nodesList[index], visible: false});
-                                        }
+                    // Store topology objects and relations
+                    for (var key in json) {
+                        var obj = json[key];
+
+                        if (isTopology(obj)) {
+                            if (hasProperty(obj, properties.hasNode) || hasProperty(obj, properties.hasService)) {
+                                var nodes = mergeProperties(obj[properties.hasNode], obj[properties.hasService]);
+                                var topology = {name: key, nodes: nodes};
+                                console.log('Adding topology');
+                                console.log(topology);
+                                topologyList.push(topology);
+
+                                for (var node in nodes) {
+                                    var target = findByName(nodesList, nodes[node].value);
+                                    var source = findByName(nodesList, key);
+                                    if (source && target) {
+                                        linksList.push({source: source, target: target, visible: false});
                                     }
                                 }
                             }
                         }
 
+
                         // Add any alias links that exist
-                        for (var property in json[obj]) {
-                            if (property === NML_PREFIX + 'isAlias') {
-                                for (var i = 0; i < json[obj][property].length; ++i) {
-                                    var index = indexOfName(nodesList, json[obj][property][i].value);
-                                    var sourceIndex = indexOfName(nodesList, obj);
-                                    if (index >= 0 && sourceIndex >= 0) {
-                                        linksList.push({source: nodesList[sourceIndex], target: nodesList[index], visible: true});
-                                    }
+                        if (hasProperty(obj, properties.isAlias)) {
+                            for (var i = 0, l = obj[properties.isAlias].length; i < l; ++i) {
+                                var target = findByName(nodesList, obj[properties.isAlias][i].value);
+                                var source = findByName(nodesList, key);
+                                if (source && target) {
+                                    linksList.push({source: source, target: target, visible: true});
                                 }
                             }
                         }
@@ -227,6 +220,29 @@
                         }
                     }
 
+                    initForceGraph(); // generate the parsed graph
+                }
+
+                /** FUNCTIONALITY **/
+                /** Slider control for graph zoom level **/
+                function createZoomSlider() {
+                    d3.select(css.IDs.zoomSlider).call(
+                            d3.slider()
+                            .value(settings.baseZoomValue)
+                            .on('slide', function(evt, value) {
+                                d3.select(css.IDs.zoomValue).text(Math.round(value));
+                                resize(value);
+                            }));
+                }
+
+                function resize(size) {
+                    var scaling = size / settings.baseZoomValue;
+                    svg.selectAll(css.classes.nodeText).style('font-size', settings.baseFontSize * scaling + 'px');
+                    svg.selectAll(css.classes.nodeImage).attr('transform', 'scale(' + scaling + ')');
+                    svg.selectAll(css.classes.link).style('stroke-width', scaling);
+                }
+
+                function initForceGraph() {
                     console.log('Initializing force graph');
 
                     /**
@@ -238,7 +254,7 @@
                     var k = Math.sqrt(nodesList.length / (width * height));
                     var charge = settings.baseCharge / k;
                     var gravity = settings.baseGravity * k;
-                    var distance = settings.baseDistance * (1 + 10 * k);
+                    var distance = settings.baseDistance * (1 + (10 * k));
 
                     console.log('Calculated k-value ' + k);
                     console.log('Calculated charge ' + charge);
@@ -291,25 +307,6 @@
                     console.log('Success');
                 }
 
-                /** FUNCTIONALITY **/
-                /** Slider control for graph zoom level **/
-                function createZoomSlider() {
-                    d3.select(css.IDs.zoomSlider).call(
-                            d3.slider()
-                            .value(settings.baseZoomValue)
-                            .on('slide', function(evt, value) {
-                                d3.select(css.IDs.zoomValue).text(Math.round(value));
-                                resize(value);
-                            }));
-                }
-
-                function resize(size) {
-                    var scaling = size / settings.baseZoomValue;
-                    svg.selectAll(css.classes.nodeText).style('font-size', settings.baseFontSize * scaling + 'px');
-                    svg.selectAll(css.classes.nodeImage).attr('transform', 'scale(' + scaling + ')');
-                    svg.selectAll(css.classes.link).style('stroke-width', scaling);
-                }
-
                 /** PRIVATE UTILITY FUNCTIONS **/
                 function indexOfName(array, search) {
                     for (var i = 0; i < array.length; ++i) {
@@ -330,6 +327,40 @@
                     }
                 }
 
+                function  mergeProperties(p1, p2) {
+                    var p3 = p1 || {};
+
+                    for (var property in p2) {
+                        if (owns.call(p2, property)) {
+                            p3[property] = p2[property];
+                        }
+                    }
+
+                    return p3;
+                }
+
+
+                function hasProperty(obj, property) {
+                    for (var objProperty in obj) {
+                        if (owns.call(obj, objProperty) && objProperty === property) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+
+                function hasType(obj, type) {
+                    for (var objType in obj) {
+                        var typeValue = obj[objType].value;
+                        if (owns.call(obj, objType) && typeValue === type) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+
                 /************************************************************
                  * TypeEnum is created on first call if not already defined.
                  * TypeEnum is a constant static hash such that:
@@ -345,27 +376,61 @@
                         var icons = nodeTypes.iconNames;
                         getIconPath.TypeEnum = {};
 
-                        for (var i = 0, l = types.length; i < l; ++i) {
-                            getIconPath.TypeEnum[types[i]] = settings.baseIconPath + icons[i];
+                        for (var key in types) {
+                            if (owns.call(types, key)) {
+                                getIconPath.TypeEnum[types[key]] = settings.baseIconPath + icons[key];
+                            }
                         }
 
                         Object.freeze(getIconPath.TypeEnum);
                     }
 
-                    for (var property in obj) {
-                        if (property === RDF_PREFIX + 'type') {
-                            for (var key in obj[property]) {
-                                var type = obj[property][key].value;
-                                var path = getIconPath.TypeEnum[type];
+                    if (hasProperty(obj, properties.type)) {
+                        for (var key in obj[properties.type]) {
+                            var type = obj[properties.type][key].value;
+                            var path = getIconPath.TypeEnum[type];
 
-                                if (path) {
-                                    return path;
-                                }
+                            if (path) {
+                                return path;
                             }
                         }
                     }
 
+
                     return settings.baseIconPath + settings.defaultIcon;
+                }
+
+                /** 
+                 * Display elements from NML or MRS namesapce
+                 * Except, do not display labeltypes or addresses
+                 */
+                function shouldBeDisplayed(obj) {
+                    if (hasProperty(obj, properties.labelType)) {
+                        return false;
+                    } else if (hasProperty(obj, properties.type)) {
+                        for (var type in obj[properties.type]) {
+                            var typeValue = obj[properties.type][type].value;
+
+                            if (typeValue === MRS_PREFIX + 'Address') {
+                                return false;
+                            } else if (typeValue.indexOf('http://schemas.ogf.org/') >= 0) {
+                                return true;
+                            }
+                        }
+                    }
+
+                    console.log("Could not decide whether to display an object, defaulted to false");
+                    return false;
+                }
+
+                function isTopology(obj) {
+                    if (hasProperty(obj, properties.type)) {
+                        if (hasType(obj[properties.type], nodeTypes.typeNames.topology)) {
+                            return true;
+                        }
+                    }
+
+                    return false;
                 }
 
                 /** EVENT HANDLER FUNCTIONS **/
@@ -379,16 +444,18 @@
 
                     var key, node, nodeName;
                     var topology = findByName(topologyList, d.name);
-                    for (key in topology.nodes) {
-                        nodeName = topology.nodes[key].value;
-                        node = findByName(nodesList, nodeName);
+                    if (topology) {
+                        for (key in topology.nodes) {
+                            nodeName = topology.nodes[key].value;
+                            node = findByName(nodesList, nodeName);
 
-                        if (node) {
-                            console.log('Toggle ' + nodeName + ' visible:' + !node.visible);
-                            node.visible = !node.visible;
+                            if (node) {
+                                console.log('Toggle ' + nodeName + ' visible:' + !node.visible);
+                                node.visible = !node.visible;
+                            }
                         }
+                        tick();
                     }
-                    tick();
                 }
 
                 function dblclick(d) {
