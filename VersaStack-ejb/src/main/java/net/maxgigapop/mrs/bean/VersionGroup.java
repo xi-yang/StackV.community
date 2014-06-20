@@ -36,7 +36,7 @@ public class VersionGroup extends PersistentEntity implements Serializable {
     private Long id;
 
     //reference ID for the caller
-    private Long referenceId = 0L;
+    private String refUuid = null;
     
     @ManyToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
     @JoinTable(
@@ -57,12 +57,12 @@ public class VersionGroup extends PersistentEntity implements Serializable {
         this.id = id;
     }
 
-    public Long getReferenceId() {
-        return referenceId;
+    public String getRefUuid() {
+        return refUuid;
     }
 
-    public void setReferenceId(Long referenceId) {
-        this.referenceId = referenceId;
+    public void setRefUuid(String refUuid) {
+        this.refUuid = refUuid;
     }
 
     @Override

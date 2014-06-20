@@ -64,7 +64,8 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
             HandleSystemCall ejbSystemHandler = (HandleSystemCall)ejbCxt.lookup(ejbPathHandleSystemCall);
             HandleSystemPushCall ejbSystemPushHandler = (HandleSystemPushCall)ejbCxt.lookup(ejbPathHandleSystemPushCall);
             SystemInstance si = ejbSystemPushHandler.createInstance();
-            VersionGroup vg = ejbSystemHandler.updateHeadVersionGroup(aDelta.getReferenceVersionItem().getReferenceId());
+            //@TODO: use random UUID and add a versioItem.id -> uuid HashMap
+            VersionGroup vg = ejbSystemHandler.updateHeadVersionGroup(aDelta.getReferenceVersionItem().getReferenceId().toString());
             SystemDelta sysDelta = new SystemDelta();
             sysDelta.setSystemInstance(si);
             sysDelta.setReferenceVersionGroup(vg);
@@ -121,9 +122,9 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
             vi = new VersionItem();
             vi.setDriverInstance(driverInstance);
             VersionItemPersistenceManager.save(vi);
-            VersionGroup vg = ejbSystemHandler.createHeadVersionGroup(vi.getId());
+            VersionGroup vg = ejbSystemHandler.createHeadVersionGroup(vi.getReferenceId().toString());
             vi.setReferenceId(vg.getId());
-            ModelBase model = ejbSystemHandler.retrieveVersionGroupModel(vg.getReferenceId());
+            ModelBase model = ejbSystemHandler.retrieveVersionGroupModel(vg.getRefUuid());
             dm = new DriverModel();
             dm.setCommitted(true);
             dm.setOntModel(model.getOntModel());

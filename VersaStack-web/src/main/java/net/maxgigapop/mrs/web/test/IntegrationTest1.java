@@ -7,6 +7,7 @@
 package net.maxgigapop.mrs.web.test;
 
 import static java.lang.Thread.sleep;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
@@ -38,7 +39,7 @@ public class IntegrationTest1 {
             //HandleSystemCall systemCallHandler = (HandleSystemCall) ejbCxt.lookup("java:module/HandleSystemCall");
             sleep(90000L);
             Long refId = 1L;
-            VersionGroup vg = systemCallHandler.createHeadVersionGroup(refId);
+            VersionGroup vg = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
         } catch (Exception ex) {
             Logger.getLogger(IntegrationTest1.class.getName()).log(Level.SEVERE, null, ex);
         }

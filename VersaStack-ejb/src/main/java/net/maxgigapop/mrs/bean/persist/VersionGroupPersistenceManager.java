@@ -25,9 +25,9 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
         return PersistenceManager.find(VersionGroup.class, id);
     }
 
-    public static VersionGroup findByReferenceId(Long refId) {
+    public static VersionGroup findByReferenceId(String uuid) {
         try {
-            Query q = createQuery(String.format("FROM %s WHERE referenceId = %d", VersionGroup.class.getSimpleName(), refId));
+            Query q = createQuery(String.format("FROM %s WHERE refUuid = '%s'", VersionGroup.class.getSimpleName(), uuid));
             return (VersionGroup) q.getSingleResult();
         } catch (Exception e) {
             throw new EJBException(String.format("VersionGroupPersistenceManager::findByReferenceId raised exception: %s", e.getMessage()));
@@ -57,7 +57,7 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
             }
         }
         if (vgNew != null) {
-            vgNew.setReferenceId(vg.getReferenceId());
+            vgNew.setRefUuid(vg.getRefUuid());
             VersionGroupPersistenceManager.save(vgNew);
             VersionGroupPersistenceManager.delete(vg);
             return vgNew;

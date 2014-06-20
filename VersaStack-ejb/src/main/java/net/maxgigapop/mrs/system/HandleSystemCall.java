@@ -26,7 +26,7 @@ import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 @Stateless
 @LocalBean
 public class HandleSystemCall {    
-    public VersionGroup createHeadVersionGroup(Long refId) {
+    public VersionGroup createHeadVersionGroup(String refUuid) {
         Map<String, DriverInstance> ditMap = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
         if (ditMap == null) {
             DriverInstancePersistenceManager.refreshAll();
@@ -44,13 +44,13 @@ public class HandleSystemCall {
             }
             vg.addVersionItem(vi);
         }
-        vg.setReferenceId(refId);
+        vg.setRefUuid(refUuid);
         VersionGroupPersistenceManager.save(vg);
         return vg;
     }
 
     
-    public VersionGroup createHeadVersionGroup(Long refId, List<String> topoURIs) {
+    public VersionGroup createHeadVersionGroup(String refUuid, List<String> topoURIs) {
         Map<String, DriverInstance> ditMap = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
         if (ditMap == null) {
             DriverInstancePersistenceManager.refreshAll();
@@ -72,20 +72,20 @@ public class HandleSystemCall {
             vg.addVersionItem(vi);
             vi.addVersionGroup(vg);
         }
-        vg.setReferenceId(refId);
+        vg.setRefUuid(refUuid);
         VersionGroupPersistenceManager.save(vg);
         return vg;
     }
 
-    public VersionGroup updateHeadVersionGroup(Long refId) {
-        VersionGroup vg = VersionGroupPersistenceManager.findByReferenceId(refId);
+    public VersionGroup updateHeadVersionGroup(String refUuid) {
+        VersionGroup vg = VersionGroupPersistenceManager.findByReferenceId(refUuid);
         return VersionGroupPersistenceManager.refreshToHead(vg);        
     }
     
-    public ModelBase retrieveVersionGroupModel(Long refId) {
-        VersionGroup vg = VersionGroupPersistenceManager.findByReferenceId(refId);
+    public ModelBase retrieveVersionGroupModel(String refUuid) {
+        VersionGroup vg = VersionGroupPersistenceManager.findByReferenceId(refUuid);
         if (vg == null) {
-           throw new EJBException(String.format("retrieveVersionModel cannot find a VG with referenceId=%d", refId));
+           throw new EJBException(String.format("retrieveVersionModel cannot find a VG with refUuid=%s", refUuid));
         }
         return vg.createUnionModel();        
     }

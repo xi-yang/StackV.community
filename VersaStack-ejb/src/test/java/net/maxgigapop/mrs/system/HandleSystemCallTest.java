@@ -9,6 +9,7 @@ package net.maxgigapop.mrs.system;
 import static java.lang.Thread.sleep;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import javax.inject.Inject;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -69,7 +70,7 @@ public class HandleSystemCallTest {
         
         Long refId = 1L;
         VersionGroup expResult = null;
-        VersionGroup result = systemCallHandler.createHeadVersionGroup(refId);
+        VersionGroup result = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
         System.out.println("createHeadVersionGroup result=" + result);
         assertFalse("createHeadVersionGroup results in null VersionGroup", expResult == null);
         //fail("The test case is a prototype.");
