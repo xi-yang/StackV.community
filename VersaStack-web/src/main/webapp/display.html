@@ -34,24 +34,49 @@
                 top: 0px;
                 left: 0px;
             }
+
+            .loading-div {
+                width: 100%;
+                height: 100%;
+                display: none;
+                z-index: 999;
+            }
+
+            .loading-image {
+                margin: auto;
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 1000;
+            }
         </style>
     </head>
     <body>
-        <div class="floatTL">
+        <div style="width:100%;" class="floatTL">
             Scale: <span id="zoomValue">50</span>
             <div id ="zoomSlider" style="width:20%"></div>
         </div>
 
+        <div id="json-loading" class="loading-div">
+            <img src="resources/loading-indicator-large.gif" alt="loading..." class="loading-image" />
+        </div>
 
         <script src="http://d3js.org/d3.v3.min.js"></script>
         <script src="js/d3.slider.js"></script>
         <script src="js/versastack.model.js"></script>
+        <script src="js/versastack.loading.js"></script>
         <script src="js/versastack.adminview.js"></script>
-        
+
         <script>
             var graph = prompt('Enter path to graph JSON file', versastack.model.settings.defaultGraphPath);
-            versastack.model.createModel(graph);
-            versastack.adminview.display();
+            
+            versastack.loading.createItem('json');
+            versastack.loading.attach('json', '#json-loading', 'display');
+
+            versastack.model.createModel(graph, 'json');
+            versastack.adminview.display('json');
         </script>
     </body>
 </html>

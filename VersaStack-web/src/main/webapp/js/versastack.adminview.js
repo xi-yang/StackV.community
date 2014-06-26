@@ -53,9 +53,17 @@ versastack.adminview = function() {
     };
 
     // Module execution starts here
-    function main() {
-        createZoomSlider();
-        initForceGraph();
+    function main(loadingItem) {
+        // Wait for json model to finish loading before displaying graph
+        if (versastack.loading.finished(loadingItem)) {
+            createZoomSlider();
+            initForceGraph();
+
+        } else {
+            setTimeout(function() {
+                main(loadingItem);
+            }, 250);
+        }
     }
 
     /** FUNCTIONALITY **/
@@ -104,7 +112,7 @@ versastack.adminview = function() {
         link = svg.selectAll('.link')
                 .data(versastack.model.links)
                 .enter().append('line')
-                .attr('class', 'link');
+                .classed('link', true);
 
         node = svg.selectAll('.node')
                 .data(versastack.model.nodes);
@@ -112,7 +120,7 @@ versastack.adminview = function() {
         // Enter
         node.enter()
                 .append('g')
-                .attr('class', 'node')
+                .classed('node', true)
                 .on('dblclick', dblclick)
                 .on('click', click)
                 .call(drag);

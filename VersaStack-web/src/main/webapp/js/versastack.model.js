@@ -95,9 +95,15 @@ versastack.model = function() {
     };
 
     // Module execution starts here
-    function main(path) {
+    function main(jsonPath, loadingItem) {
+        // Activate loading indicator if specified
+        if (loadingItem) {
+            settings.loadingItem = loadingItem;
+            versastack.loading.start(loadingItem);
+        }
+
         // Load graph JSON at specified path (if exists) and process it
-        var graph = path || settings.defaultGraphPath;
+        var graph = jsonPath || settings.defaultGraphPath;
         d3.json(graph, processJSON);
     }
 
@@ -168,6 +174,10 @@ versastack.model = function() {
                     nodesList.splice(indexOfName(nodesList, node.name), 1);
                 }
             }
+        }
+
+        if (settings.loadingItem) {
+            versastack.loading.end(settings.loadingItem); // finished loading
         }
     }
 
