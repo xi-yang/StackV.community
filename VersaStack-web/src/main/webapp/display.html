@@ -18,6 +18,12 @@
                 font-size: 12px;
             }
 
+            .node rect {
+                pointer-events: none;
+                stroke: black;
+                stroke-width: 4px;
+            }
+
             .link {
                 stroke: #999;
                 stroke-width: 1.5px;
@@ -55,18 +61,16 @@
                 var height = document.documentElement.clientHeight;
                 var canvasWidth = width * 2;
                 var canvasHeight = height * 2;
+                var svg, drag, force;
 
-                var nodesList = [];
+                var nodesDictionary = [];
                 var linksList = [];
+                var nodesList = [];
                 var topologyList = [];
                 var node = [];
                 var link = [];
 
                 var owns = Object.prototype.hasOwnProperty;
-
-                var svg = d3.select('body').append('svg')
-                        .attr('width', canvasWidth)
-                        .attr('height', canvasHeight);
 
                 var css = {
                     classes: {
@@ -94,14 +98,18 @@
                     baseIconPath: 'resources/',
                     defaultIcon: 'default.png',
                     defaultGraphPath: 'data/graph-full.json',
-                    /** Icon image size in px **/
+                    /** Icon image size **/
                     iconWidth: 30,
                     iconHeight: 30,
                     /** Node text offsets **/
-                    nodeTextOffsetX: 15,
-                    nodeTextOffsetY: '.35em',
+//                    nodeTextOffsetX: 30,
+//                    nodeTextOffsetY: 15,
+                    /** Topology panel attributes **/
+                    topologyPanelWidth: 370,
+                    topologyPanelHeight: 50,
+                    topologyPanelBorderRounding: 5,
                     /** Force graph fundamental values **/
-                    baseCharge: -20, // node-node force strength
+                    baseCharge: -10, // node-node force strength
                     baseGravity: 80, // node-center force strength
                     baseDistance: 75 // distance between linked nodes
                 };
@@ -130,7 +138,7 @@
                         node: 'node.jpg',
                         blockStorageService: 'block_storage_service.jpg',
                         route: 'route.jpg',
-                        hypervisonBypassInterfaceService: 'hypervisor_bypass_interface_service.jpg',
+                        hypervisorBypassInterfaceService: 'hypervisor_bypass_interface_service.jpg',
                         switchingService: 'switching_service.jpg',
                         virtualSwitchService: 'virtual_switch_service.jpg',
                         routingService: 'routing_service.jpg',
@@ -147,8 +155,9 @@
                     topology: NML_PREFIX + 'Topology',
                     type: RDF_PREFIX + 'type',
                     labelType: NML_PREFIX + 'labeltype'
-                }
+                };
 
+                // Module execution starts here
                 function main() {
                     createZoomSlider();
 
@@ -157,65 +166,71 @@
                     d3.json(graph, processJSON);
                 }
 
-                // Parse graph JSON into data structures and objects
                 function processJSON(error, json) {
-                    console.log('Generating node and link lists from json');
+                    console.log("Processing json...");
                     console.log(json);
 
-                    for (var key in json) {
-                        var obj = json[key];
+                    // Create a lookup dictionary of all nodes
+                    populateNodesDictionary(json);
 
-                        if (shouldBeDisplayed(obj)) {
-                            var iconPath = getIconPath(obj); // find icon based on type
-                            var source = {name: key, icon: iconPath, visible: true};
-                            nodesList.push(source); // add new node
-                        } else {
-                            console.log("Ignored element " + key);
-                        }
-                    }
+                    // Parse graph JSON into data structures and objects
+                    console.log('Generating nodes and links from json...');
+                    for (var key in nodesDictionary) {
+                        var node = nodesDictionary[key];
+                        console.log('Processing node: ', node);
+                        if (isTopology(node.jsonObj)) { // store topology objects and relations
+                            var children = mergeProperties(node.jsonObj[properties.hasNode], node.jsonObj[properties.hasService]);
+                            var childrenNodes = [];
 
-                    // Store topology objects and relations
-                    for (var key in json) {
-                        var obj = json[key];
+                            for (var key in children) {
+                                if (!owns.call(children, key)) {
+                                    continue;
+                                }
 
-                        if (isTopology(obj)) {
-                            if (hasProperty(obj, properties.hasNode) || hasProperty(obj, properties.hasService)) {
-                                var nodes = mergeProperties(obj[properties.hasNode], obj[properties.hasService]);
-                                var topology = {name: key, nodes: nodes};
-                                console.log('Adding topology');
-                                console.log(topology);
-                                topologyList.push(topology);
-
-                                for (var node in nodes) {
-                                    var target = findByName(nodesList, nodes[node].value);
-                                    var source = findByName(nodesList, key);
-                                    if (source && target) {
-                                        linksList.push({source: source, target: target, visible: false});
-                                    }
+                                var target = findByName(nodesDictionary, removePrefix(children[key].value, 'urn:ogf:network:'));
+                                if (target) {
+                                    childrenNodes.push(target);
                                 }
                             }
+
+                            node.nodes = childrenNodes;
+                            node.visible = true;
+
+                            console.log('Adding topology');
+                            console.log(node);
+
+                            topologyList.push(node);
+                            nodesList.push(node);
+
+                            // Add any topology links
+                            for (var key in childrenNodes) {
+//                                linksList.push({source: node, target: childrenNodes[key], visible: false});
+                            }
+                        } else if (shouldBeDisplayed(node.jsonObj)) { // store all other nodes that are displayed
+                            node.visible = true;
+                            nodesList.push(node);
+                        } else { // ignored nodes
+                            console.log('Ignored element ' + node.name);
                         }
 
 
                         // Add any alias links that exist
-                        if (hasProperty(obj, properties.isAlias)) {
-                            for (var i = 0, l = obj[properties.isAlias].length; i < l; ++i) {
-                                var target = findByName(nodesList, obj[properties.isAlias][i].value);
-                                var source = findByName(nodesList, key);
-                                if (source && target) {
-                                    linksList.push({source: source, target: target, visible: true});
+                        if (hasProperty(node.jsonObj, properties.isAlias)) {
+                            for (var i = 0, l = node.jsonObj[properties.isAlias].length; i < l; ++i) {
+                                var target = findByName(nodesDictionary, node.jsonObj[properties.isAlias][i].value);
+                                if (target) {
+//                                    linksList.push({source: node, target: target, visible: true});
                                 }
                             }
                         }
                     }
 
-
-                    // Hide topology nodes by default
+                    // Hide topology children nodes
                     for (var topology in topologyList) {
                         for (var key in topologyList[topology].nodes) {
-                            var node = findByName(nodesList, topologyList[topology].nodes[key].value);
+                            var node = findByName(nodesList, topologyList[topology].nodes[key].name);
                             if (node) {
-                                node.visible = false;
+                                nodesList.splice(indexOfName(nodesList, node.name), 1);
                             }
                         }
                     }
@@ -223,7 +238,111 @@
                     initForceGraph(); // generate the parsed graph
                 }
 
+                function populateNodesDictionary(json) {
+                    console.log("Creating lookup dictionary...");
+                    for (var key in json) {
+                        var obj = json[key];
+                        var name = removePrefix(key, 'urn:ogf:network:');
+                        var iconPath = getIconPath(obj);
+
+                        var node = {name: name, jsonObj: obj, icon: iconPath};
+                        nodesDictionary.push(node);
+                    }
+                }
+
                 /** FUNCTIONALITY **/
+                function initForceGraph() {
+                    console.log('Initializing force graph');
+
+                    /**
+                     * k is porportional to the square root of the graph density
+                     * and is used as a heuristic to set appropriate values for the
+                     * charge and gravity of the force graph
+                     * credit to mbostock on Stack Overflow for the idea
+                     */
+                    var k = Math.sqrt(nodesList.length / (canvasWidth * canvasHeight));
+                    var charge = settings.baseCharge / k;
+                    var gravity = settings.baseGravity * k;
+                    var distance = settings.baseDistance * (1 + (100 * k));
+
+                    console.log('Calculated k-value ' + k);
+                    console.log('Calculated charge ' + charge);
+                    console.log('Calculated gravity ' + gravity);
+                    console.log('Calculated distance ' + distance);
+
+
+                    force = d3.layout.force()
+                            .size([canvasWidth, canvasHeight])
+                            .charge(charge)
+                            .gravity(gravity)
+                            .linkDistance(distance)
+                            .nodes(nodesList)
+                            .links(linksList)
+                            .on('tick', tick);
+
+                    svg = d3.select('body').append('svg')
+                            .attr('width', canvasWidth)
+                            .attr('height', canvasHeight);
+
+                    drag = force.drag()
+                            .on('drag', ondrag);
+
+                    console.log('Success');
+
+                    restart();
+                }
+
+                function restart() {
+                    link = svg.selectAll('.link')
+                            .data(linksList)
+                            .enter().append('line')
+                            .attr('class', 'link');
+
+                    node = svg.selectAll('.node')
+                            .data(nodesList);
+
+                    console.log(node.enter());
+                    console.log(node.exit());
+
+                    // Enter
+                    node.enter()
+                            .append('g')
+                            .attr('class', 'node')
+                            .on('dblclick', dblclick)
+                            .on('click', click)
+                            .call(drag);
+
+                    node.append('rect')
+                            .style({'stroke': 'black', 'stroke-width': '4', 'opacity': '0.5', 'fill': randomRGB})
+                            .attr('width', settings.topologyPanelWidth)
+                            .attr('height', settings.topologyPanelHeight)
+                            .attr('x', 0)
+                            .attr('y', -settings.topologyPanelHeight / 2 + settings.iconHeight / 2)
+                            .attr('rx', settings.topologyPanelBorderRounding)
+                            .attr('ry', settings.topologyPanelBorderRounding);
+
+                    node.append('image')
+                            .attr('xlink:href', function(d) {
+                                return d.icon;
+                            })
+                            .attr('x', 0)
+                            .attr('y', 0)
+                            .attr('width', settings.iconWidth)
+                            .attr('height', settings.iconHeight);
+
+                    node.append('text')
+                            .attr('x', settings.iconWidth)
+                            .attr('y', settings.iconHeight / 2)
+                            .text(function(d) {
+                                return d.name;
+                            });
+
+                    // Exit
+                    node.exit().remove();
+
+                    force.start();
+                }
+
                 /** Slider control for graph zoom level **/
                 function createZoomSlider() {
                     d3.select(css.IDs.zoomSlider).call(
@@ -242,71 +361,6 @@
                     svg.selectAll(css.classes.link).style('stroke-width', scaling);
                 }
 
-                function initForceGraph() {
-                    console.log('Initializing force graph');
-
-                    /**
-                     * k is porportional to the square root of the graph density
-                     * and is used as a heuristic to set appropriate values for the
-                     * charge and gravity of the force graph
-                     * credit to mbostock on Stack Overflow for the idea
-                     */
-                    var k = Math.sqrt(nodesList.length / (width * height));
-                    var charge = settings.baseCharge / k;
-                    var gravity = settings.baseGravity * k;
-                    var distance = settings.baseDistance * (1 + (10 * k));
-
-                    console.log('Calculated k-value ' + k);
-                    console.log('Calculated charge ' + charge);
-                    console.log('Calculated gravity ' + gravity);
-                    console.log('Calculated distance ' + distance);
-
-
-                    var force = d3.layout.force()
-                            .size([canvasWidth, canvasHeight])
-                            .charge(charge)
-                            .gravity(gravity)
-                            .linkDistance(distance)
-                            .on('tick', tick)
-                            .nodes(nodesList)
-                            .links(linksList)
-                            .start();
-
-                    var drag = force.drag()
-                            .on('drag', ondrag);
-
-                    link = svg.selectAll('.link')
-                            .data(linksList)
-                            .enter().append('line')
-                            .attr('class', 'link');
-
-                    node = svg.selectAll('.node')
-                            .data(nodesList)
-                            .enter().append('g')
-                            .attr('class', 'node')
-                            .on('dblclick', dblclick)
-                            .on('click', click)
-                            .call(drag);
-
-                    node.append('image')
-                            .attr('xlink:href', function(d) {
-                                return d.icon;
-                            })
-                            .attr('x', -settings.iconWidth / 2)
-                            .attr('y', -settings.iconHeight / 2)
-                            .attr('width', settings.iconWidth)
-                            .attr('height', settings.iconHeight);
-
-                    node.append('text')
-                            .attr('dx', settings.nodeTextOffsetX)
-                            .attr('dy', settings.nodeTextOffsetY)
-                            .text(function(d) {
-                                return d.name;
-                            });
-
-                    console.log('Success');
-                }
-
                 /** PRIVATE UTILITY FUNCTIONS **/
                 function indexOfName(array, search) {
                     for (var i = 0; i < array.length; ++i) {
@@ -319,7 +373,7 @@
                 }
 
                 function findByName(array, name) {
-                    var index = indexOfName(array, name);
+                    var index = indexOfName(array, removePrefix(name, 'urn:ogf:network:'));
                     if (index >= 0) {
                         return array[index];
                     } else {
@@ -359,6 +413,27 @@
                     }
 
                     return false;
+                }
+
+                function randomRGB() {
+                    return 'rgb(' + randomInt(255) + ',' + randomInt(255) + ',' + randomInt(255) + ')';
+                }
+
+                function randomInt(int) {
+                    return Math.floor(Math.random() * int);
+                }
+
+                function removePrefix(string, prefix) {
+                    var regexp = new RegExp(escapeRegExp(prefix), 'ig');
+                    return string.replace(regexp, '');
+                }
+
+                /**
+                 * bobince
+                 * stackoverflow.com/questions/3561493/is-there-a-regexp-escape-function-in-javascript
+                 */
+                function escapeRegExp(s) {
+                    return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
                 }
 
                 /************************************************************
@@ -419,7 +494,42 @@
                         }
                     }
 
-                    console.log("Could not decide whether to display an object, defaulted to false");
+                    console.log('Could not decide whether to display an object, defaulted to false');
+                    return false;
+                }
+
+                function getNonTopologyNodes(nodes) {
+                    var ret = [];
+                    for (var node in nodes) {
+                        if (owns.call(nodes, node) && !isTopologyNode(nodes[node])) {
+                            ret.push(nodes[node]);
+                        }
+                    }
+
+                    return ret;
+                }
+
+                function isTopologyNode(node) {
+                    var topology, key, nodeName, topologyNode;
+
+                    for (key in topologyList) {
+                        if (!owns.call(topologyList, key)) {
+                            continue;
+                        }
+
+                        topology = topologyList[key];
+                        for (topologyNode in topology.nodes) {
+                            if (!owns.call(topology.nodes, topologyNode)) {
+                                continue;
+                            }
+
+                            nodeName = topology.nodes[topologyNode].name;
+                            if (node.name === nodeName) {
+                                return true;
+                            }
+                        }
+                    }
+
                     return false;
                 }
 
@@ -442,16 +552,23 @@
                     console.log('Clicked on');
                     console.log(d);
 
-                    var key, node, nodeName;
+                    var key, node, index;
                     var topology = findByName(topologyList, d.name);
                     if (topology) {
                         for (key in topology.nodes) {
-                            nodeName = topology.nodes[key].value;
-                            node = findByName(nodesList, nodeName);
+                            if (owns.call(topology.nodes, key)) {
+                                node = topology.nodes[key];
 
-                            if (node) {
-                                console.log('Toggle ' + nodeName + ' visible:' + !node.visible);
+                                console.log('Toggle ' + node.name + ' visible:' + !node.visible);
                                 node.visible = !node.visible;
+
+                                index = indexOfName(node.name);
+
+                                if (index < 0) {
+                                    nodesList.push(node);
+                                } else {
+//                                    nodesList.splice(index, 1);
+                                }
                             }
                         }
                         tick();
@@ -471,16 +588,16 @@
                     link = svg.selectAll('.link');
                     link
                             .attr('x1', function(d) {
-                                return d.source.x;
+                                return d.source.x + settings.iconWidth / 2;
                             })
                             .attr('y1', function(d) {
-                                return d.source.y;
+                                return d.source.y + settings.iconHeight / 2;
                             })
                             .attr('x2', function(d) {
-                                return d.target.x;
+                                return d.target.x + settings.iconWidth / 2;
                             })
                             .attr('y2', function(d) {
-                                return d.target.y;
+                                return d.target.y + settings.iconHeight / 2;
                             });
                     link
                             .attr('opacity', function(d) {
