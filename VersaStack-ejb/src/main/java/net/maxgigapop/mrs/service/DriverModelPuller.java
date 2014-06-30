@@ -27,7 +27,7 @@ import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.VersionItem;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.PersistenceManager;
-import net.maxgigapop.mrs.system.IHandleDriverSystemCall;
+import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 
 /**
  *

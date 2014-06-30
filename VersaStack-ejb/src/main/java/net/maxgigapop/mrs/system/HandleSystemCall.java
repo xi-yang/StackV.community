@@ -114,4 +114,15 @@ public class HandleSystemCall {
         DriverInstancePersistenceManager.delete(di);
     }
 
+    public DriverInstance retrieveDriverInstance(String topoUri) {
+        DriverInstance di = DriverInstancePersistenceManager.findByTopologyUri(topoUri);
+        if (di == null) {
+           throw new EJBException(String.format("retrieveDriverInstance cannot find the driverInstance for topologyUri=%s", topoUri));
+        }
+        return di;
+    }
+    
+    public Map<String, DriverInstance> retrieveAllDriverInstanceMap() {
+        return DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
+    }
 }

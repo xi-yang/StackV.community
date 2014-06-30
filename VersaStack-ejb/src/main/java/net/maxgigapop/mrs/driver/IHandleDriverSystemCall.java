@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-package net.maxgigapop.mrs.system;
+package net.maxgigapop.mrs.driver;
 
 import java.util.concurrent.Future;
 import javax.ejb.AsyncResult;

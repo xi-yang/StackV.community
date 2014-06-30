@@ -35,7 +35,6 @@ import net.maxgigapop.mrs.bean.persist.PersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 import net.maxgigapop.mrs.system.HandleSystemPushCall;
-import net.maxgigapop.mrs.system.IHandleDriverSystemCall;
 
 /**
  *
