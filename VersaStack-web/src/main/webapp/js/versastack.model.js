@@ -13,7 +13,7 @@ versastack.model = function() {
         /** Resource paths **/
         baseIconPath: 'resources/',
         defaultIcon: 'default.png',
-        defaultGraphPath: 'data/graph.json'
+        defaultGraphPath: 'data/graph-full.json'
     };
 
     /** Namespace prefix constants **/
@@ -108,7 +108,7 @@ versastack.model = function() {
     }
 
     function processJSON(error, json) {
-        console.log("Processing json...");
+        console.log('Processing json...');
         console.log(json);
 
         // Create a lookup dictionary of all nodes
@@ -118,7 +118,7 @@ versastack.model = function() {
         console.log('Generating nodes and links from json...');
         for (var key in nodeDictionary) {
             var node = nodeDictionary[key];
-            console.log('Processing node: ', node);
+//            console.log('Processing node: ', node);
             if (isTopology(node.jsonObj)) { // store topology objects and relations
                 var children = mergeProperties(node.jsonObj[properties.hasNode], node.jsonObj[properties.hasService]);
                 var childrenNodes = [];
@@ -160,7 +160,7 @@ versastack.model = function() {
                 for (var i = 0, l = node.jsonObj[properties.isAlias].length; i < l; ++i) {
                     var target = findByName(nodeDictionary, node.jsonObj[properties.isAlias][i].value);
                     if (target) {
-//                                    linksList.push({source: node, target: target, visible: true});
+                        linksList.push({source: node, target: target, visible: true});
                     }
                 }
             }
@@ -171,7 +171,7 @@ versastack.model = function() {
             for (var key in topologyList[topology].nodes) {
                 var node = findByName(nodesList, topologyList[topology].nodes[key].name);
                 if (node) {
-                    nodesList.splice(indexOfName(nodesList, node.name), 1);
+                    node.group = topology.group;
                 }
             }
         }
@@ -182,13 +182,13 @@ versastack.model = function() {
     }
 
     function populateNodesDictionary(json) {
-        console.log("Creating lookup dictionary...");
+        console.log('Creating lookup dictionary...');
         for (var key in json) {
             var obj = json[key];
             var name = removePrefix(key, prefix.base);
             var iconPath = getIconPath(obj);
 
-            var node = {name: name, jsonObj: obj, icon: iconPath};
+            var node = {name: name, jsonObj: obj, icon: iconPath, group: Math.floor(Math.random() * 20)};
             nodeDictionary.push(node);
         }
     }
@@ -365,6 +365,10 @@ versastack.model = function() {
         return false;
     }
 
+    function getData() {
+        return {nodes: nodesList, links: linksList};
+    }
+
     /** PUBLIC INTERFACE **/
     return {
         createModel: main,
@@ -375,7 +379,8 @@ versastack.model = function() {
         settings: settings,
         prefix: prefix,
         type: types,
-        property: properties
+        property: properties,
+        data: getData
 
     };
 }(); // end versastack.mode module
