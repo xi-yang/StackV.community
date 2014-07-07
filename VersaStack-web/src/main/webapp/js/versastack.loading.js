@@ -11,15 +11,16 @@ versastack.loading = function() {
 
     var items = {};
 
-    var createItem = function(name) {
+    /** ITEM OPERATIONS **/
+    function createItem(name) {
         items[name] = {};
-    };
+    }
 
-    var isFinished = function(name) {
+    function isFinished(name) {
         return (items[name] && items[name].loading === false);
-    };
+    }
 
-    var startLoading = function(name) {
+    function startLoading(name) {
         items[name].loading = true;
         for (var indicator in items[name].indicators) {
             var method = items[name].indicators[indicator];
@@ -31,9 +32,9 @@ versastack.loading = function() {
                 console.log('Invalid method for displaying loader ', indicator, ' for item ', name);
             }
         }
-    };
+    }
 
-    var endLoading = function(name) {
+    function endLoading(name) {
         items[name].loading = false;
         for (var indicator in items[name].indicators) {
             var method = items[name].indicators[indicator];
@@ -45,41 +46,41 @@ versastack.loading = function() {
                 console.log('Invalid method for displaying loader ', indicator, ' for item ', name);
             }
         }
-    };
+    }
+    /** END ITEM OPERATIONS **/
 
-    var attachIndicator = function(itemName, indicator, method) {
+
+    /** INDICATOR OPERATIONS **/
+    function attachIndicator(itemName, indicator, method) {
         items[itemName].indicators = items[itemName].indicators || {};
         items[itemName].indicators[indicator] = method;
-    };
+    }
 
-    var createIndicator = function(element, indicatorID, imageSource) {
-        var div = d3.select(element)
-                .append('div')
-                .attr('id', indicatorID)
-                .classed(css.classes.indicatorDiv, true);
+    function createIndicator(element, indicatorID, imageSource) {
+        var div = d3.select(element).append('div').attr('id', indicatorID).classed(css.classes.indicatorDiv, true);
 
-        div.append('img')
-                .attr('src', imageSource)
-                .attr('alt', 'loading...')
-                .classed(css.classes.indicatorImage, true);
-    };
+        div.append('img').attr('src', imageSource).attr('alt', 'loading...').classed(css.classes.indicatorImage, true);
+    }
 
-    var display = function(selector, boolean) {
-        if (boolean) {
+    function display(selector, isDisplayed) {
+        if (isDisplayed) {
             d3.selectAll(selector).style('display', 'block');
         } else {
             d3.selectAll(selector).style('display', 'none');
         }
-    };
+    }
 
-    var visible = function(selector, boolean) {
-        if (boolean) {
+    function visible(selector, isVisible) {
+        if (isVisible) {
             d3.selectAll(selector).style('visibility', 'visible');
         } else {
             d3.selectAll(selector).style('visibility', 'hidden');
         }
-    };
+    }
+    /** END INDICATOR OPERATIONS **/
 
+
+    /** PUBLIC INTERFACE **/
     return {
         css: css,
         start: startLoading,
@@ -89,4 +90,6 @@ versastack.loading = function() {
         attach: attachIndicator,
         finished: isFinished
     };
-}(); // end loadindicator module
+    /** END PUBLIC INTERFACE **/
+
+}(); // end versastack.loading module
