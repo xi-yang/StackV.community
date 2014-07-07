@@ -210,7 +210,7 @@ versastack.model = function () {
         }
     }
 
-    /** 
+    /**
      * Display elements from NML or MRS namesapce only.
      * Except, do not display labeltypes or addresses.
      */
