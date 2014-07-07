@@ -1,7 +1,7 @@
 // Get existing versastack namespace, or define new one
 var versastack = versastack || {};
 
-versastack.model = function() {
+versastack.model = function () {
     var nodeDictionary = [];
     var linksList = [];
     var nodesList = [];
@@ -102,100 +102,144 @@ versastack.model = function() {
             versastack.loading.start(loadingItem);
         }
 
-        // Load graph JSON at specified path (if exists) and process it
+        // Load JSON at specified path (if exists) and process it into graph
         var graph = jsonPath || settings.defaultGraphPath;
         d3.json(graph, processJSON);
     }
 
+    /** DATA PROCESSING **/
     function processJSON(error, json) {
-        console.log('Processing json...');
-        console.log(json);
+        console.info('Processing json...', json);
 
-        // Create a lookup dictionary of all nodes
+        // Create a lookup dictionary of JSON nodes
         populateNodesDictionary(json);
 
-        // Parse graph JSON into data structures and objects
-        console.log('Generating nodes and links from json...');
+        // Parse JSON into graph data structures and objects
+        console.info('Generating nodes and links from json...');
         for (var key in nodeDictionary) {
             var node = nodeDictionary[key];
-//            console.log('Processing node: ', node);
-            if (isTopology(node.jsonObj)) { // store topology objects and relations
-                var children = mergeProperties(node.jsonObj[properties.hasNode], node.jsonObj[properties.hasService]);
-                var childrenNodes = [];
 
-                for (var key in children) {
-                    if (!owns.call(children, key)) {
-                        continue;
-                    }
-
-                    var target = findByName(nodeDictionary, removePrefix(children[key].value, prefix.base));
-                    if (target) {
-                        childrenNodes.push(target);
-                    }
-                }
-
-                node.nodes = childrenNodes;
-                node.visible = true;
-
-                console.log('Adding topology');
-                console.log(node);
-
-                topologyList.push(node);
-                nodesList.push(node);
-
-                // Add any topology links
-                for (var key in childrenNodes) {
-                    linksList.push({source: node, target: childrenNodes[key], visible: false});
-                }
+            if (isTopology(node.jsonObj)) { // store topology nodes
+                processTopology(node);
             } else if (shouldBeDisplayed(node.jsonObj)) { // store all other nodes that are displayed
-                node.visible = true;
                 nodesList.push(node);
             } else { // ignored nodes
                 console.log('Ignored element ' + node.name);
             }
 
-
             // Add any alias links that exist
             if (hasProperty(node.jsonObj, properties.isAlias)) {
-                for (var i = 0, l = node.jsonObj[properties.isAlias].length; i < l; ++i) {
-                    var target = findByName(nodeDictionary, node.jsonObj[properties.isAlias][i].value);
-                    if (target) {
-                        linksList.push({source: node, target: target, visible: true});
-                    }
-                }
-            }
-        }
-
-        // Hide topology children nodes
-        for (var topology in topologyList) {
-            for (var key in topologyList[topology].nodes) {
-                var node = findByName(nodesList, topologyList[topology].nodes[key].name);
-                if (node) {
-                    node.group = topology.group;
-                }
+                var aliasList = node.jsonObj[properties.isAlias];
+                processLinks(node, aliasList, true); // add visible link from node to each element of aliasList
             }
         }
 
         if (settings.loadingItem) {
             versastack.loading.end(settings.loadingItem); // finished loading
         }
+
+        console.info('Finished processing', 'nodes', nodesList, 'links', linksList);
     }
 
     function populateNodesDictionary(json) {
-        console.log('Creating lookup dictionary...');
+        console.info('Creating lookup dictionary...');
+        var i = 0; // used to assign unique node ids
         for (var key in json) {
             var obj = json[key];
             var name = removePrefix(key, prefix.base);
             var iconPath = getIconPath(obj);
 
-            var node = {name: name, jsonObj: obj, icon: iconPath, group: Math.floor(Math.random() * 20)};
+            var node = {
+                name: name,
+                jsonObj: obj,
+                icon: iconPath,
+                id: i++
+            };
+
             nodeDictionary.push(node);
         }
     }
 
+    // Store topology node and relations
+    function processTopology(node) {
+        // foo (hasNode | hasService) bar => bar is a child of foo,
+        // so merge both properties to get a full list of children nodes
+        var children = mergeObjects(node.jsonObj[properties.hasNode], node.jsonObj[properties.hasService]);
+        var childrenNodes = [];
 
+        // Add relationship between topology and each child
+        for (var key in children) {
+            if (!owns.call(children, key)) {
+                continue;
+            }
+
+            // Lookup direct reference to the child node in node dictionary
+            var child = findByName(nodeDictionary, removePrefix(children[key].value, prefix.base));
+            if (child != null) {
+                child.parent = node.id; // add parent relationship to child node
+                childrenNodes.push(child); // add child relationship to parent node
+            } else {
+                console.error('Trying to add nonexistent child', children[key].value, 'to topology', node.name);
+            }
+        }
+
+        node.children = childrenNodes;
+
+        console.info('Adding topology', node);
+        topologyList.push(node);
+        nodesList.push(node);
+
+        processLinks(node, children, false); // add invisible link from topology to each children
+    }
+
+    // Adds a link from source to each element in targetList with chosen visibility
+    function processLinks(source, targetList, isVisible) {
+        for (var key in targetList) {
+            if (owns.call(targetList, key)) {
+                var target = findByName(nodeDictionary, removePrefix(targetList[key].value, prefix.base));
+                if (target != null) {
+                    linksList.push({
+                        source: source,
+                        target: target,
+                        visible: isVisible
+                    });
+                } else {
+                    console.error('Trying to link', source, 'to nonexistent target', target);
+                }
+            }
+        }
+    }
+
+    /** 
+     * Display elements from NML or MRS namesapce only.
+     * Except, do not display labeltypes or addresses.
+     */
+    function shouldBeDisplayed(obj) {
+        if (hasProperty(obj, properties.labelType)) {
+            return false;
+        }
+
+        if (hasProperty(obj, properties.type)) {
+            for (var type in obj[properties.type]) {
+                var typeValue = obj[properties.type][type].value;
+
+                if (typeValue === types.address.name) {
+                    return false;
+                } else if (typeValue.indexOf(prefix.nml) >= 0 || typeValue.indexOf(prefix.mrs) >= 0) {
+                    return true;
+                }
+            }
+        }
+
+        console.warn('Could not explicitly decide whether to display an object', obj, 'defaulted to false');
+        return false;
+    }
+    /** END DATA PROCESSING **/
+
+
+    /** UTILITY FUNCTIONS **/
     function indexOfName(array, search) {
-        for (var i = 0; i < array.length; ++i) {
+        for (var i = 0, l = array.length; i < l; ++i) {
             if (array[i].name === search) {
                 return i;
             }
@@ -205,7 +249,7 @@ versastack.model = function() {
     }
 
     function findByName(array, name) {
-        var index = indexOfName(array, removePrefix(name, prefix.base));
+        var index = indexOfName(array, name);
         if (index >= 0) {
             return array[index];
         } else {
@@ -213,16 +257,16 @@ versastack.model = function() {
         }
     }
 
-    function  mergeProperties(p1, p2) {
-        var p3 = p1 || {};
+    function mergeObjects(o1, o2) {
+        var o3 = o1 || {};
 
-        for (var property in p2) {
-            if (owns.call(p2, property)) {
-                p3[property] = p2[property];
+        for (var element in o2) {
+            if (owns.call(o2, element)) {
+                o3[element] = o2[element];
             }
         }
 
-        return p3;
+        return o3;
     }
 
 
@@ -237,116 +281,15 @@ versastack.model = function() {
     }
 
     function hasType(obj, type) {
-        for (var objType in obj) {
-            var typeValue = obj[objType].value;
-            if (owns.call(obj, objType) && typeValue === type) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    function removePrefix(string, prefix) {
-        var regexp = new RegExp(escapeRegExp(prefix), 'ig');
-        return string.replace(regexp, '');
-    }
-
-    /**
-     * bobince
-     * stackoverflow.com/questions/3561493/is-there-a-regexp-escape-function-in-javascript
-     */
-    function escapeRegExp(s) {
-        return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-    }
-
-    /************************************************************
-     * TypeEnum is created on first call if not already defined.
-     * TypeEnum is a constant static hash such that:
-     * The keys of TypeEnum are fully expanded type names
-     * The values of TypeEnum are corresponding icon paths
-     * 
-     * If TypeEnum holds an icon path for a type it is returned,
-     * otherwise a default icon path is returned.
-     ************************************************************/
-    function getIconPath(obj) {
-        if (getIconPath.TypeEnum === undefined) {
-            getIconPath.TypeEnum = {};
-
-            for (var key in types) {
-                if (owns.call(types, key)) {
-                    getIconPath.TypeEnum[types[key].name] = settings.baseIconPath + types[key].iconName;
-                }
-            }
-
-            Object.freeze(getIconPath.TypeEnum);
-        }
-
+        // obj hasType foo => obj hasProperty type
+        // so check that obj has a type property first
         if (hasProperty(obj, properties.type)) {
-            for (var key in obj[properties.type]) {
-                var type = obj[properties.type][key].value;
-                var path = getIconPath.TypeEnum[type];
+            var objTypeProperty = obj[properties.type];
 
-                if (path) {
-                    return path;
-                }
-            }
-        }
-
-
-        return settings.baseIconPath + settings.defaultIcon;
-    }
-
-    /** 
-     * Display elements from NML or MRS namesapce
-     * Except, do not display labeltypes or addresses
-     */
-    function shouldBeDisplayed(obj) {
-        if (hasProperty(obj, properties.labelType)) {
-            return false;
-        } else if (hasProperty(obj, properties.type)) {
-            for (var type in obj[properties.type]) {
-                var typeValue = obj[properties.type][type].value;
-
-                if (typeValue === types.address.name) {
-                    return false;
-                } else if (typeValue.indexOf('http://schemas.ogf.org/') >= 0) {
-                    return true;
-                }
-            }
-        }
-
-        console.log('Could not decide whether to display an object, defaulted to false');
-        return false;
-    }
-
-    function getNonTopologyNodes(nodes) {
-        var ret = [];
-        for (var node in nodes) {
-            if (owns.call(nodes, node) && !isTopologyNode(nodes[node])) {
-                ret.push(nodes[node]);
-            }
-        }
-
-        return ret;
-    }
-
-    function isTopologyNode(node) {
-        var topology, key, nodeName, topologyNode;
-
-        for (key in topologyList) {
-            if (!owns.call(topologyList, key)) {
-                continue;
-            }
-
-            topology = topologyList[key];
-            for (topologyNode in topology.nodes) {
-                if (!owns.call(topology.nodes, topologyNode)) {
-                    continue;
-                }
-
-                nodeName = topology.nodes[topologyNode].name;
-                if (node.name === nodeName) {
+            // obj can have multiple types so check each against the target type
+            for (var objType in objTypeProperty) {
+                var typeValue = objTypeProperty[objType].value;
+                if (owns.call(objTypeProperty, objType) && typeValue === type) {
                     return true;
                 }
             }
@@ -356,31 +299,83 @@ versastack.model = function() {
     }
 
     function isTopology(obj) {
+        return hasType(obj, types.topology.name);
+    }
+
+    function removePrefix(string, prefix) {
+        var regexp = new RegExp(escapeRegExp(prefix), 'ig');
+        return string.replace(regexp, '');
+    }
+
+    /**
+     * escapes all special characters in a regular expression
+     * by bobince from
+     * stackoverflow.com/questions/3561493/is-there-a-regexp-escape-function-in-javascript
+     */
+    function escapeRegExp(s) {
+        return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    }
+
+    /**
+     * TypeEnum is created on first call if not already defined.
+     * TypeEnum is a constant static hash such that:
+     * The keys of TypeEnum are fully expanded type names
+     * The values of TypeEnum are corresponding icon paths
+     * 
+     * If TypeEnum holds an icon path for a type it is returned,
+     * otherwise a default icon path is returned.
+     */
+    function getIconPath(obj) {
+        // Create TypeEnum if undefined
+        if (getIconPath.TypeEnum === undefined) {
+            getIconPath.TypeEnum = {};
+
+            for (var key in types) {
+                if (owns.call(types, key)) {
+                    getIconPath.TypeEnum[types[key].name] = settings.baseIconPath + types[key].iconName;
+                }
+            }
+
+            Object.freeze(getIconPath.TypeEnum); // make TypeEnum constant
+        }
+
+        // A node can have multiple types so if the object has a type property,
+        // check each type for a corresponding icon and return the first icon found
         if (hasProperty(obj, properties.type)) {
-            if (hasType(obj[properties.type], types.topology.name)) {
-                return true;
+            for (var key in obj[properties.type]) {
+                var type = obj[properties.type][key].value;
+                var path = getIconPath.TypeEnum[type];
+
+                if (path != null) {
+                    return path;
+                } else {
+                    console.warn('No icon path found for type', type);
+                }
             }
         }
 
-        return false;
+        // If no icon is found return a default
+        return settings.baseIconPath + settings.defaultIcon;
     }
+    /** END UTILITY FUNCTIONS **/
 
-    function getData() {
-        return {nodes: nodesList, links: linksList};
-    }
 
     /** PUBLIC INTERFACE **/
     return {
         createModel: main,
-        dictionary: nodeDictionary,
-        links: linksList,
-        nodes: nodesList,
-        topologies: topologyList,
         settings: settings,
         prefix: prefix,
         type: types,
         property: properties,
-        data: getData
-
+        dictionary: nodeDictionary,
+        links: linksList,
+        nodes: nodesList,
+        topologies: topologyList,
+        data: {
+            nodes: nodesList,
+            links: linksList
+        }
     };
-}(); // end versastack.mode module
+    /** END PUBLIC INTERFACE **/
+
+}(); // end versastack.model module

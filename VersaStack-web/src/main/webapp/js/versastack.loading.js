@@ -1,7 +1,7 @@
 // Get existing versastack namespace, or define new one
 var versastack = versastack || {};
 
-versastack.loading = function() {
+versastack.loading = function () {
     var css = {
         classes: {
             indicatorDiv: 'loading-div',
@@ -29,7 +29,7 @@ versastack.loading = function() {
             } else if (method === 'visibility') {
                 visible(indicator, true);
             } else {
-                console.log('Invalid method for displaying loader ', indicator, ' for item ', name);
+                console.error('Invalid method for displaying loader ', indicator, ' for item ', name);
             }
         }
     }
@@ -43,7 +43,7 @@ versastack.loading = function() {
             } else if (method === 'visibility') {
                 visible(indicator, false);
             } else {
-                console.log('Invalid method for displaying loader ', indicator, ' for item ', name);
+                console.error('Invalid method for displaying loader ', indicator, ' for item ', name);
             }
         }
     }
