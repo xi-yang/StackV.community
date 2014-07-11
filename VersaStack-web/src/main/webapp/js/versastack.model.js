@@ -176,7 +176,7 @@ versastack.model = function () {
             // Lookup direct reference to the child node in node dictionary
             var child = findByName(nodeDictionary, removePrefix(children[key].value, prefix.base));
             if (child != null) {
-                child.parent = node.id; // add parent relationship to child node
+                child.parent = node; // add parent relationship to child node
                 childrenNodes.push(child); // add child relationship to parent node
             } else {
                 console.error('Trying to add nonexistent child', children[key].value, 'to topology', node.name);
