@@ -128,15 +128,7 @@
     }
     , { 
       "type" : "uri" ,
-      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1"
-    }
-    , { 
-      "type" : "uri" ,
       "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-6509"
-    }
-    , { 
-      "type" : "uri" ,
-      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-4"
     }
     , { 
       "type" : "uri" ,
@@ -292,57 +284,6 @@
     "http://schemas.ogf.org/nml/2013/03/base#hasService" : [ { 
       "type" : "uri" ,
       "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:openstack-neutron:ovs"
-    }
-     ]
-  }
-   ,
-  "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1" : { 
-    "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" : [ { 
-      "type" : "uri" ,
-      "value" : "http://www.w3.org/2002/07/owl#NamedIndividual"
-    }
-    , { 
-      "type" : "uri" ,
-      "value" : "http://schemas.ogf.org/nml/2013/03/base#Node"
-    }
-     ] ,
-    "http://schemas.ogf.org/nml/2013/03/base#isAlias" : [ { 
-      "type" : "uri" ,
-      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-sw:1-4"
-    }
-     ] ,
-    "http://schemas.ogf.org/nml/2013/03/base#hasService" : [ { 
-      "type" : "uri" ,
-      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:sriov-vm-fex"
-    }
-    , { 
-      "type" : "uri" ,
-      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:openstack-nova"
-    }
-    , { 
-      "type" : "uri" ,
-      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:openstack-neutron"
-    }
-     ] ,
-    "http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort" : [ { 
-      "type" : "uri" ,
-      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:40g1"
-    }
-    , { 
-      "type" : "uri" ,
-      "value" : "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1:40g2"
-    }
-     ]
-  }
-   ,
-  "urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-4" : { 
-    "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" : [ { 
-      "type" : "uri" ,
-      "value" : "http://www.w3.org/2002/07/owl#NamedIndividual"
-    }
-    , { 
-      "type" : "uri" ,
-      "value" : "http://schemas.ogf.org/nml/2013/03/base#Node"
     }
      ]
   }
