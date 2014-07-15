@@ -13,7 +13,7 @@ versastack.adminview = function () {
     var expand = {};
 
     var svg, hullg, nodeg, linkg;
-    var force, drag, data, map, hull, link, node, curve, tip;
+    var force, drag, data, map, hull, link, node, curve, tip, lastClicked;
     var fill = d3.scale.category20();
 
     var owns = Object.prototype.hasOwnProperty;
@@ -27,7 +27,8 @@ versastack.adminview = function () {
         },
         IDs: {
             zoomSlider: '#zoomSlider',
-            zoomValue: '#zoomValue'
+            zoomValue: '#zoomValue',
+            infobox: '#infobox'
         }
     };
 
@@ -150,6 +151,7 @@ versastack.adminview = function () {
         }).on('click', function (d) {
             console.log('hull click', d, arguments, this, expand[d.group]);
             cycleState(getGroupID(d));
+            updateInfobox(d);
             restart();
         }).on('mousemove', tip.show).on('mouseout', tip.hide);
 
@@ -420,6 +422,7 @@ versastack.adminview = function () {
         }
 
         cycleState(getGroupID(d));
+        updateInfobox(d);
         restart();
 
         //        var key, node, index;
@@ -444,6 +447,26 @@ versastack.adminview = function () {
         //            }
         //            tick();
         //        }
+    }
+
+    function updateInfobox(d) {
+        if (updateInfobox.open === undefined) {
+            updateInfobox.open = false;
+        }
+
+        if (lastClicked === d && updateInfobox.open) {
+            d3.select(css.IDs.infobox).style({
+                'margin-left': '-180px'
+            }).html('');
+            updateInfobox.open = false;
+        } else {
+            d3.select(css.IDs.infobox).style({
+                'margin-left': '0px'
+            }).html('<strong>Clicked!</strong><br /><b>Name: <span style="color:#e9e8dd">' + d.name + '</span><br />ID: <span style="color:#e9e8dd">' + d.id + '</span></b>');
+            updateInfobox.open = true;
+        }
+
+        lastClicked = d;
     }
 
     function dblclick(d) {

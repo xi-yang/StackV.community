@@ -67,6 +67,26 @@
                 top: 100%;
                 left: 0;
             }
+
+            /* player-one http://stackoverflow.com/a/6161358 */
+            #infobox {
+                position:fixed;
+                width:200px;
+                height:200px;
+                background-color: #718087;
+
+                margin-left: -180px;
+                top:200px;
+                left:0px;
+                color: #fff;
+
+                -moz-transition: all 1s ease-in-out;
+                -webkit-transition: all 1s ease-in-out;
+                -o-transition: all 1s ease-in-out;
+                transition: all 1s ease-in-out;
+                
+                word-wrap: break-word;
+            }                       
         </style>
     </head>
     <body>
@@ -88,6 +108,8 @@
                 <li><a href="logout.jsp">Logout</a></li>
             </ul> 
         </div>
+
+        <div id="infobox"></div>
 
         <script src="http://d3js.org/d3.v3.min.js"></script>
         <script src="js/d3.slider.js"></script>
