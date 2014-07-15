@@ -13,7 +13,7 @@ versastack.adminview = function () {
     var expand = {};
 
     var svg, hullg, nodeg, linkg;
-    var force, drag, data, map, hull, link, node, curve;
+    var force, drag, data, map, hull, link, node, curve, tip;
     var fill = d3.scale.category20();
 
     var owns = Object.prototype.hasOwnProperty;
@@ -22,6 +22,7 @@ versastack.adminview = function () {
         classes: {
             nodeText: '.node text',
             nodeImage: '.node image',
+            nodeCircle: '.node circle',
             link: 'line.link'
         },
         IDs: {
@@ -56,12 +57,12 @@ versastack.adminview = function () {
          * gravity - node-center force strength
          * distance - minimum distance between linked nodes
          */
-        baseCharge: -3000,
+        baseCharge: -5000,
         baseGravity: .2,
         baseDistance: 100,
-        baseFriction: .3,
+        baseFriction: .2,
         /** Circle size **/
-        baseRadius: 8,
+        baseRadius: 10,
         /** Hull size **/
         hullOffset: 15
     };
@@ -110,6 +111,12 @@ versastack.adminview = function () {
         linkg = svg.append('g');
         nodeg = svg.append('g');
 
+        tip = d3.tip().attr('class', 'd3-tip').offset([-10, 0]).html(function (d) {
+            return "<strong>" + d.name + "</strong>";
+        });
+
+        svg.call(tip);
+
         curve = d3.svg.line().interpolate('cardinal-closed').tension(.85);
 
         data = versastack.model.data;
@@ -144,7 +151,7 @@ versastack.adminview = function () {
             console.log('hull click', d, arguments, this, expand[d.group]);
             cycleState(getGroupID(d));
             restart();
-        });
+        }).on('mousemove', tip.show).on('mouseout', tip.hide);
 
         link = linkg.selectAll(css.classes.link).data(map.links, getLinkID);
         link.exit().remove();
@@ -160,7 +167,7 @@ versastack.adminview = function () {
         // if (d.size) -- d.size > 0 when d is a group node.
         .attr('class', function (d) {
             return 'node' + (d.size > 0 ? '' : ' leaf');
-        }).on('dblclick', dblclick).on('click', click).call(drag);
+        }).on('dblclick', dblclick).on('click', click).call(drag).on('mousemove', tip.show).on('mouseout', tip.hide);
 
         nodeEnter.append('circle').style('fill', function (d) {
             return fill(getGroupID(d));
@@ -185,13 +192,13 @@ versastack.adminview = function () {
         //                .attr('y', 0)
         //                .attr('width', settings.iconWidth)
         //                .attr('height', settings.iconHeight);
-        nodeEnter.append('text').attr('x', function (d) {
-            return radius(d) / 2 + settings.nodeTextOffsetX;
-        }).attr('y', function (d) {
-            return radius(d) / 2 + settings.nodeTextOffsetY;
-        }).text(function (d) {
-            return d.name || getUID(d);
-        });
+        //        nodeEnter.append('text').attr('x', function (d) {
+        //            return radius(d) / 2 + settings.nodeTextOffsetX;
+        //        }).attr('y', function (d) {
+        //            return radius(d) / 2 + settings.nodeTextOffsetY;
+        //        }).text(function (d) {
+        //            return d.name || getUID(d);
+        //        });
         force.start();
     }
 
@@ -308,7 +315,7 @@ versastack.adminview = function () {
     /** Slider control for graph zoom level **/
     function createZoomSlider() {
         d3.select(css.IDs.zoomSlider).call(
-        d3.slider().value(settings.baseZoomValue).on('slide', function (evt, value) {
+        d3.slider().value(settings.baseZoomValue).orientation("vertical").on('slide', function (evt, value) {
             d3.select(css.IDs.zoomValue).text(Math.round(value));
             resize(value);
         }));
@@ -319,6 +326,7 @@ versastack.adminview = function () {
         svg.selectAll(css.classes.nodeText).style('font-size', settings.baseFontSize * scaling + 'px');
         svg.selectAll(css.classes.nodeImage).attr('transform', 'scale(' + scaling + ')');
         svg.selectAll(css.classes.link).style('stroke-width', scaling);
+        svg.selectAll(css.classes.nodeCircle).attr('transform', 'scale(' + scaling + ')');
     }
 
     function convexHulls(nodes, index, offset, expand) {
@@ -346,7 +354,8 @@ versastack.adminview = function () {
         for (i in hulls) {
             hullset.push({
                 id: i,
-                path: d3.geom.hull(hulls[i])
+                path: d3.geom.hull(hulls[i]),
+                name: getNodeWithID(parseInt(i)).name
             });
         }
 
@@ -362,6 +371,16 @@ versastack.adminview = function () {
 
 
     /** UTILITY FUNCTIONS **/
+    function getNodeWithID(id) {
+        for (var node in data.nodes) {
+            if (data.nodes[node].id === id) {
+                return data.nodes[node];
+            }
+        }
+
+        return null;
+    }
+
     function isTopology(node) {
         return node.children != null;
     }
