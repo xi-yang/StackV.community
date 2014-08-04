@@ -7,513 +7,125 @@
         <meta name="viewport" content="initial-scale=1">
         <link rel="stylesheet" href="css/d3.slider.css" />  
 
+        <link href="css/navigation.css" rel="stylesheet">
+        <link href="css/topology.css" rel="stylesheet">
         <style>
-            .node {
-                cursor: move;
-            }
-
-            .node text {
-                pointer-events: none;
-                font-family: sans-serif;
-                font-size: 12px;
-            }
-
-            .link {
-                stroke: #999;
-                stroke-width: 1.5px;
-            }
-
             .floatTL {
                 position: fixed;
                 top: 0px;
                 left: 0px;
             }
+
+            .floatTR {
+                position: fixed;
+                top: 0px;
+                right: 15px;
+            }
+
+            .loading-div {
+                width: 100%;
+                height: 100%;
+                display: none;
+                z-index: 999;
+            }
+
+            .loading-image {
+                margin: auto;
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 1000;
+            }
+
+            .d3-tip {
+                line-height: 1;
+                font-weight: bold;
+                padding: 12px;
+                background: rgba(0, 0, 0, 0.8);
+                color: #fff;
+                border-radius: 3px;
+            }
+
+            /* Creates a small triangle extender for the tooltip */
+            .d3-tip:after {
+                box-sizing: border-box;
+                display: inline;
+                font-size: 10px;
+                width: 100%;
+                line-height: 1;
+                color: rgba(0, 0, 0, 0.8);
+                content: "\25BC";
+                position: absolute;
+                text-align: center;
+            }
+
+            /* Style northward tooltips differently */
+            .d3-tip.n:after {
+                margin: -1px 0 0 0;
+                top: 100%;
+                left: 0;
+            }
+
+            /* player-one http://stackoverflow.com/a/6161358 */
+            #infobox {
+                position:fixed;
+                width:200px;
+                height:200px;
+                background-color: #718087;
+
+                margin-left: -180px;
+                top:200px;
+                left:0px;
+                color: #fff;
+
+                -moz-transition: all 1s ease-in-out;
+                -webkit-transition: all 1s ease-in-out;
+                -o-transition: all 1s ease-in-out;
+                transition: all 1s ease-in-out;
+                
+                word-wrap: break-word;
+            }                       
         </style>
     </head>
     <body>
-        <div style="width:100%" class="floatTL">
-            Scale: <span id="zoomValue">50</span>
-            <div id ="zoomSlider" style="width:20%"></div>
+        <div class="floatTR">
+            Scale: <span id="zoomValue">50</span><br />
+            <div id ="zoomSlider" style="margin: 0 auto"></div>
         </div>
 
+        <div id="json-loading" class="loading-div">
+            <img src="resources/loading-indicator-large.gif" alt="loading..." class="loading-image" />
+        </div>
+
+        <div class="floatTL">
+            <ul>
+                <li><a href="overview.html">Overview</a></li>
+                <li><a href="display.html">Networks</a></li>
+                <li><a href="users.html">Users</a></li>
+                <li><a href="settings.html">Settings</a></li>
+                <li><a href="logout.jsp">Logout</a></li>
+            </ul> 
+        </div>
+
+        <div id="infobox"></div>
 
         <script src="http://d3js.org/d3.v3.min.js"></script>
         <script src="js/d3.slider.js"></script>
+        <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+        <script src="js/versastack.model.js"></script>
+        <script src="js/versastack.loading.js"></script>
+        <script src="js/versastack.adminview.js"></script>
 
         <script>
-            adminView = function() {
-                /** Namespace prefix constants **/
-                var RDFS_PREFIX = 'http://www.w3.org/2000/01/rdf-schema#';
-                var RDF_PREFIX = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
-                var XSD_PREFIX = 'http://www.w3.org/2001/XMLSchema#';
-                var OWL_PREFIX = 'http://www.w3.org/2002/07/owl#';
-                var NML_PREFIX = 'http://schemas.ogf.org/nml/2013/03/base#';
-                var MRS_PREFIX = 'http://schemas.ogf.org/mrs/2013/12/topology#';
+            var graph = prompt('Enter path to graph JSON file', versastack.model.settings.defaultGraphPath);
 
-                /** Document and canvas sizes **/
-                var width = document.documentElement.clientWidth;
-                var height = document.documentElement.clientHeight;
-                var canvasWidth = width * 2;
-                var canvasHeight = height * 2;
+            versastack.loading.createItem('json');
+            versastack.loading.attach('json', '#json-loading', 'display');
 
-                var nodesList = [];
-                var linksList = [];
-                var topologyList = [];
-                var node = [];
-                var link = [];
-
-                var owns = Object.prototype.hasOwnProperty;
-
-                var svg = d3.select('body').append('svg')
-                        .attr('width', canvasWidth)
-                        .attr('height', canvasHeight);
-
-                var css = {
-                    classes: {
-                        nodeText: '.node text',
-                        nodeImage: '.node image',
-                        link: '.link'
-                    },
-                    IDs: {
-                        zoomSlider: '#zoomSlider',
-                        zoomValue: '#zoomValue'
-                    }
-                };
-
-                var settings = {
-                    /** 
-                     * Zoom takes on values in the range [0, 100].
-                     * The base zoom value defines 1x zoom.
-                     * Any other zoom value causes a scaling equal to a
-                     * percentage of the base zoom value. 
-                     **/
-                    baseZoomValue: 50,
-                    /** Font size in px **/
-                    baseFontSize: 12,
-                    /** Resource paths **/
-                    baseIconPath: 'resources/',
-                    defaultIcon: 'default.png',
-                    defaultGraphPath: 'data/graph-full.json',
-                    /** Icon image size in px **/
-                    iconWidth: 30,
-                    iconHeight: 30,
-                    /** Node text offsets **/
-                    nodeTextOffsetX: 15,
-                    nodeTextOffsetY: '.35em',
-                    /** Force graph fundamental values **/
-                    baseCharge: -20, // node-node force strength
-                    baseGravity: 80, // node-center force strength
-                    baseDistance: 75 // distance between linked nodes
-                };
-
-                var nodeTypes = {
-                    typeNames: {
-                        topology: NML_PREFIX + 'Topology',
-                        bidirectionalPort: NML_PREFIX + 'BidirectionalPort',
-                        storageService: MRS_PREFIX + 'StorageService',
-                        node: NML_PREFIX + 'Node',
-                        blockStorageService: MRS_PREFIX + 'BlockStorageService',
-                        route: MRS_PREFIX + 'Route',
-                        hypervisorBypassInterfaceService: MRS_PREFIX + 'HypervisorBypassInterfaceService',
-                        switchingService: NML_PREFIX + 'SwitchingService',
-                        virtualSwitchService: MRS_PREFIX + 'VirtualSwitchService',
-                        routingService: MRS_PREFIX + 'RoutingService',
-                        ioPerformanceMeasurementService: MRS_PREFIX + 'IOPerformanceMeasurementService',
-                        posixIOBenchmark: MRS_PREFIX + 'POSIX_IOBenchmark',
-                        hypervisorService: MRS_PREFIX + 'HypervisorService',
-                        address: MRS_PREFIX + 'Address'
-                    },
-                    iconNames: {
-                        topology: 'topology.jpg',
-                        bidirectionalPort: 'bidirectional_port.jpg',
-                        storageService: 'storage_service.jpg',
-                        node: 'node.jpg',
-                        blockStorageService: 'block_storage_service.jpg',
-                        route: 'route.jpg',
-                        hypervisonBypassInterfaceService: 'hypervisor_bypass_interface_service.jpg',
-                        switchingService: 'switching_service.jpg',
-                        virtualSwitchService: 'virtual_switch_service.jpg',
-                        routingService: 'routing_service.jpg',
-                        ioPerformanceMeasurementService: 'io_perf_service.jpg',
-                        posixIOBenchmark: 'io_benchmark.jpg',
-                        hypervisorService: 'hypervisor_service.jpg'
-                    }
-                };
-
-                var properties = {
-                    hasNode: NML_PREFIX + 'hasNode',
-                    hasService: NML_PREFIX + 'hasService',
-                    isAlias: NML_PREFIX + 'isAlias',
-                    topology: NML_PREFIX + 'Topology',
-                    type: RDF_PREFIX + 'type',
-                    labelType: NML_PREFIX + 'labeltype'
-                }
-
-                function main() {
-                    createZoomSlider();
-
-                    // Load graph JSON at user specified path and process it
-                    var graph = prompt('Enter path to graph JSON file', settings.defaultGraphPath);
-                    d3.json(graph, processJSON);
-                }
-
-                // Parse graph JSON into data structures and objects
-                function processJSON(error, json) {
-                    console.log('Generating node and link lists from json');
-                    console.log(json);
-
-                    for (var key in json) {
-                        var obj = json[key];
-
-                        if (shouldBeDisplayed(obj)) {
-                            var iconPath = getIconPath(obj); // find icon based on type
-                            var source = {name: key, icon: iconPath, visible: true};
-                            nodesList.push(source); // add new node
-                        } else {
-                            console.log("Ignored element " + key);
-                        }
-                    }
-
-                    // Store topology objects and relations
-                    for (var key in json) {
-                        var obj = json[key];
-
-                        if (isTopology(obj)) {
-                            if (hasProperty(obj, properties.hasNode) || hasProperty(obj, properties.hasService)) {
-                                var nodes = mergeProperties(obj[properties.hasNode], obj[properties.hasService]);
-                                var topology = {name: key, nodes: nodes};
-                                console.log('Adding topology');
-                                console.log(topology);
-                                topologyList.push(topology);
-
-                                for (var node in nodes) {
-                                    var target = findByName(nodesList, nodes[node].value);
-                                    var source = findByName(nodesList, key);
-                                    if (source && target) {
-                                        linksList.push({source: source, target: target, visible: false});
-                                    }
-                                }
-                            }
-                        }
-
-
-                        // Add any alias links that exist
-                        if (hasProperty(obj, properties.isAlias)) {
-                            for (var i = 0, l = obj[properties.isAlias].length; i < l; ++i) {
-                                var target = findByName(nodesList, obj[properties.isAlias][i].value);
-                                var source = findByName(nodesList, key);
-                                if (source && target) {
-                                    linksList.push({source: source, target: target, visible: true});
-                                }
-                            }
-                        }
-                    }
-
-
-                    // Hide topology nodes by default
-                    for (var topology in topologyList) {
-                        for (var key in topologyList[topology].nodes) {
-                            var node = findByName(nodesList, topologyList[topology].nodes[key].value);
-                            if (node) {
-                                node.visible = false;
-                            }
-                        }
-                    }
-
-                    initForceGraph(); // generate the parsed graph
-                }
-
-                /** FUNCTIONALITY **/
-                /** Slider control for graph zoom level **/
-                function createZoomSlider() {
-                    d3.select(css.IDs.zoomSlider).call(
-                            d3.slider()
-                            .value(settings.baseZoomValue)
-                            .on('slide', function(evt, value) {
-                                d3.select(css.IDs.zoomValue).text(Math.round(value));
-                                resize(value);
-                            }));
-                }
-
-                function resize(size) {
-                    var scaling = size / settings.baseZoomValue;
-                    svg.selectAll(css.classes.nodeText).style('font-size', settings.baseFontSize * scaling + 'px');
-                    svg.selectAll(css.classes.nodeImage).attr('transform', 'scale(' + scaling + ')');
-                    svg.selectAll(css.classes.link).style('stroke-width', scaling);
-                }
-
-                function initForceGraph() {
-                    console.log('Initializing force graph');
-
-                    /**
-                     * k is porportional to the square root of the graph density
-                     * and is used as a heuristic to set appropriate values for the
-                     * charge and gravity of the force graph
-                     * credit to mbostock on Stack Overflow for the idea
-                     */
-                    var k = Math.sqrt(nodesList.length / (width * height));
-                    var charge = settings.baseCharge / k;
-                    var gravity = settings.baseGravity * k;
-                    var distance = settings.baseDistance * (1 + (10 * k));
-
-                    console.log('Calculated k-value ' + k);
-                    console.log('Calculated charge ' + charge);
-                    console.log('Calculated gravity ' + gravity);
-                    console.log('Calculated distance ' + distance);
-
-
-                    var force = d3.layout.force()
-                            .size([canvasWidth, canvasHeight])
-                            .charge(charge)
-                            .gravity(gravity)
-                            .linkDistance(distance)
-                            .on('tick', tick)
-                            .nodes(nodesList)
-                            .links(linksList)
-                            .start();
-
-                    var drag = force.drag()
-                            .on('drag', ondrag);
-
-                    link = svg.selectAll('.link')
-                            .data(linksList)
-                            .enter().append('line')
-                            .attr('class', 'link');
-
-                    node = svg.selectAll('.node')
-                            .data(nodesList)
-                            .enter().append('g')
-                            .attr('class', 'node')
-                            .on('dblclick', dblclick)
-                            .on('click', click)
-                            .call(drag);
-
-                    node.append('image')
-                            .attr('xlink:href', function(d) {
-                                return d.icon;
-                            })
-                            .attr('x', -settings.iconWidth / 2)
-                            .attr('y', -settings.iconHeight / 2)
-                            .attr('width', settings.iconWidth)
-                            .attr('height', settings.iconHeight);
-
-                    node.append('text')
-                            .attr('dx', settings.nodeTextOffsetX)
-                            .attr('dy', settings.nodeTextOffsetY)
-                            .text(function(d) {
-                                return d.name;
-                            });
-
-                    console.log('Success');
-                }
-
-                /** PRIVATE UTILITY FUNCTIONS **/
-                function indexOfName(array, search) {
-                    for (var i = 0; i < array.length; ++i) {
-                        if (array[i].name === search) {
-                            return i;
-                        }
-                    }
-
-                    return -1;
-                }
-
-                function findByName(array, name) {
-                    var index = indexOfName(array, name);
-                    if (index >= 0) {
-                        return array[index];
-                    } else {
-                        return null;
-                    }
-                }
-
-                function  mergeProperties(p1, p2) {
-                    var p3 = p1 || {};
-
-                    for (var property in p2) {
-                        if (owns.call(p2, property)) {
-                            p3[property] = p2[property];
-                        }
-                    }
-
-                    return p3;
-                }
-
-
-                function hasProperty(obj, property) {
-                    for (var objProperty in obj) {
-                        if (owns.call(obj, objProperty) && objProperty === property) {
-                            return true;
-                        }
-                    }
-
-                    return false;
-                }
-
-                function hasType(obj, type) {
-                    for (var objType in obj) {
-                        var typeValue = obj[objType].value;
-                        if (owns.call(obj, objType) && typeValue === type) {
-                            return true;
-                        }
-                    }
-
-                    return false;
-                }
-
-                /************************************************************
-                 * TypeEnum is created on first call if not already defined.
-                 * TypeEnum is a constant static hash such that:
-                 * The keys of TypeEnum are fully expanded type names
-                 * The values of TypeEnum are corresponding icon paths
-                 * 
-                 * If TypeEnum holds an icon path for a type it is returned,
-                 * otherwise a default icon path is returned.
-                 ************************************************************/
-                function getIconPath(obj) {
-                    if (getIconPath.TypeEnum === undefined) {
-                        var types = nodeTypes.typeNames;
-                        var icons = nodeTypes.iconNames;
-                        getIconPath.TypeEnum = {};
-
-                        for (var key in types) {
-                            if (owns.call(types, key)) {
-                                getIconPath.TypeEnum[types[key]] = settings.baseIconPath + icons[key];
-                            }
-                        }
-
-                        Object.freeze(getIconPath.TypeEnum);
-                    }
-
-                    if (hasProperty(obj, properties.type)) {
-                        for (var key in obj[properties.type]) {
-                            var type = obj[properties.type][key].value;
-                            var path = getIconPath.TypeEnum[type];
-
-                            if (path) {
-                                return path;
-                            }
-                        }
-                    }
-
-
-                    return settings.baseIconPath + settings.defaultIcon;
-                }
-
-                /** 
-                 * Display elements from NML or MRS namesapce
-                 * Except, do not display labeltypes or addresses
-                 */
-                function shouldBeDisplayed(obj) {
-                    if (hasProperty(obj, properties.labelType)) {
-                        return false;
-                    } else if (hasProperty(obj, properties.type)) {
-                        for (var type in obj[properties.type]) {
-                            var typeValue = obj[properties.type][type].value;
-
-                            if (typeValue === MRS_PREFIX + 'Address') {
-                                return false;
-                            } else if (typeValue.indexOf('http://schemas.ogf.org/') >= 0) {
-                                return true;
-                            }
-                        }
-                    }
-
-                    console.log("Could not decide whether to display an object, defaulted to false");
-                    return false;
-                }
-
-                function isTopology(obj) {
-                    if (hasProperty(obj, properties.type)) {
-                        if (hasType(obj[properties.type], nodeTypes.typeNames.topology)) {
-                            return true;
-                        }
-                    }
-
-                    return false;
-                }
-
-                /** EVENT HANDLER FUNCTIONS **/
-                function click(d) {
-                    if (d3.event.defaultPrevented) {
-                        return; // click suppressed
-                    }
-
-                    console.log('Clicked on');
-                    console.log(d);
-
-                    var key, node, nodeName;
-                    var topology = findByName(topologyList, d.name);
-                    if (topology) {
-                        for (key in topology.nodes) {
-                            nodeName = topology.nodes[key].value;
-                            node = findByName(nodesList, nodeName);
-
-                            if (node) {
-                                console.log('Toggle ' + nodeName + ' visible:' + !node.visible);
-                                node.visible = !node.visible;
-                            }
-                        }
-                        tick();
-                    }
-                }
-
-                function dblclick(d) {
-                    d3.select(this).classed('fixed', d.fixed = false);
-                }
-
-                function ondrag(d) {
-                    d3.select(this).classed('fixed', d.fixed = true);
-                }
-
-                /** GRAPH UPDATE **/
-                function tick() {
-                    link = svg.selectAll('.link');
-                    link
-                            .attr('x1', function(d) {
-                                return d.source.x;
-                            })
-                            .attr('y1', function(d) {
-                                return d.source.y;
-                            })
-                            .attr('x2', function(d) {
-                                return d.target.x;
-                            })
-                            .attr('y2', function(d) {
-                                return d.target.y;
-                            });
-                    link
-                            .attr('opacity', function(d) {
-                                if (d.visible) {
-                                    return 100;
-                                } else {
-                                    return 0;
-                                }
-                            });
-
-                    node = svg.selectAll('.node');
-                    node.attr('transform', function(d) {
-                        return 'translate(' + d.x + ',' + d.y + ')';
-                    });
-                    node.attr('opacity', function(d) {
-                        if (d.visible) {
-                            return 100;
-                        } else {
-                            return 0;
-                        }
-                    });
-                }
-
-                /** PUBLIC INTERFACE **/
-                return {
-                    main: main,
-                    css: css,
-                    settings: settings,
-                    types: nodeTypes
-                };
-            }(); // end adminView module
-
-            adminView.main(); // execute adminView module
+            versastack.model.createModel(graph, 'json');
+            versastack.adminview.display('json');
         </script>
     </body>
 </html>
