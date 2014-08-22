@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
@@ -21,6 +23,8 @@ import org.json.simple.JSONValue;
  * @author james
  */
 public class OpenStackRESTClient {
+    
+    private static Logger logger = Logger.getLogger(OpenStackModelBuilder.class.getName());
     
         // Authorize with OpenStack and get a token id
     public static String getToken(String host, String tenant, String username, String password) throws IOException {
@@ -107,7 +111,6 @@ public class OpenStackRESTClient {
         HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
         String responseStr = sendGET(obj, con, "", token);
-        //System.out.println(responseStr);
         
         JSONObject responseJSON = (JSONObject) JSONValue.parse(responseStr);
         JSONArray servers = (JSONArray) responseJSON.get("servers");
@@ -122,21 +125,18 @@ public class OpenStackRESTClient {
         HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
         String responseStr = sendGET(obj, con, "", token);
-        System.out.println(responseStr);
               
         url = String.format("http://%s:9696/v2.0/networks", host, tenantId);
         obj = new URL(url);
         con = (HttpURLConnection) obj.openConnection();
 
         responseStr = sendGET(obj, con, "", token);
-        System.out.println(responseStr);
         
         url = String.format("http://%s:9696/v2.0/ports", host, tenantId);
         obj = new URL(url);
         con = (HttpURLConnection) obj.openConnection();
 
         responseStr = sendGET(obj, con, "", token);
-        System.out.println(responseStr);
         JSONObject ports = (JSONObject) JSONValue.parse(responseStr);
        
         return ports;
@@ -155,8 +155,9 @@ public class OpenStackRESTClient {
         wr.close();
 
         int responseCode = con.getResponseCode();
-        System.out.println("\nSending 'POST' request to URL : " + url);
-        System.out.println("Response Code : " + responseCode);
+        
+        logger.log(Level.INFO, "Sending POST request to URL : {0}", url);
+        logger.log(Level.INFO, "Response Code : {0}", responseCode);
 
         BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
         String inputLine;
@@ -178,8 +179,9 @@ public class OpenStackRESTClient {
         con.setRequestProperty("X-Auth-Token", tokenId);
 
         int responseCode = con.getResponseCode();
-        System.out.println("\nSending 'GET' request to URL : " + url);
-        System.out.println("Response Code : " + responseCode);
+ 
+        logger.log(Level.INFO, "Sending GET request to URL : {0}", url);
+        logger.log(Level.INFO, "Response Code : {0}", responseCode);
         
         BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
         String inputLine;

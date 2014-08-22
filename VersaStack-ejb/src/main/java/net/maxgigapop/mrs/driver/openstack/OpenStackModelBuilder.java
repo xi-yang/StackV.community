@@ -13,6 +13,8 @@ import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -28,6 +30,8 @@ public class OpenStackModelBuilder {
         String tenant = "admin";
         String tenantId;
         String token;
+        
+        Logger logger = Logger.getLogger(OpenStackModelBuilder.class.getName());
     
         OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF); 
         
@@ -130,7 +134,7 @@ public class OpenStackModelBuilder {
             
         }
         
-        model.write(System.out, "TURTLE");
+        logger.log(Level.INFO, "Ontology model for OpenStack driver rewritten");
         
         return model;       
     }
