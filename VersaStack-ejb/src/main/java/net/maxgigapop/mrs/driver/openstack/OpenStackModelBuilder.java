@@ -71,7 +71,6 @@ public class OpenStackModelBuilder {
         token = OpenStackRESTClient.getToken(host, tenant, "admin", "admin");
         tenantId = OpenStackRESTClient.getTenantId(host, tenant, token);
         JSONArray novaDescription = OpenStackRESTClient.pullNovaConfig(host, tenantId, token); 
-        //JSONArray ports = (JSONArray) OpenStackRESTClient.pullNeutron(host, tenantId, token).get("ports");
                
         for(Object o : novaDescription) {
             
@@ -115,7 +114,6 @@ public class OpenStackModelBuilder {
         tenantId = OpenStackRESTClient.getTenantId(host, "demo", token);
         token = OpenStackRESTClient.getToken(host, "demo", "demo", "demo");
         JSONArray vms = OpenStackRESTClient.pullNovaVM(host, tenantId, token);
-        JSONArray ports = (JSONArray) OpenStackRESTClient.pullNeutron(host, tenantId, token).get("ports");
         
         for(Object o : vms) {
             
@@ -129,10 +127,13 @@ public class OpenStackModelBuilder {
 
         }
         
+        /* 
+        JSONArray ports = (JSONArray) OpenStackRESTClient.pullNeutron(host, tenantId, token).get("ports");        
         for(Object o : ports) {
             
             
-        }
+        } */
+                
         
         logger.log(Level.INFO, "Ontology model for OpenStack driver rewritten");
         
