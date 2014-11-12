@@ -73,7 +73,9 @@ public class Mrs {
     
     public static final Property providesVolume = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#providesVolume" );
     
-    public static final Resource Address = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#Address" );
+    public static final Property routeFrom = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#routeFrom" );
+    
+    public static final Property routeTo = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#routeTo" );
     
     public static final Resource BlockStorageService = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#BlockStorageService" );
     
@@ -89,13 +91,13 @@ public class Mrs {
     
     public static final Resource IOPerformanceMeasurementService = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#IOPerformanceMeasurementService" );
     
+    public static final Resource NetworkAddress = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress" );
+    
     public static final Resource ObjectStorageService = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#ObjectStorageService" );
     
     public static final Resource POSIX_IOBenchmark = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#POSIX_IOBenchmark" );
     
     public static final Resource Route = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#Route" );
-    
-    public static final Resource RoutingInstance = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#RoutingInstance" );
     
     public static final Resource RoutingService = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#RoutingService" );
     
@@ -103,11 +105,9 @@ public class Mrs {
     
     public static final Resource StorageService = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#StorageService" );
     
-    public static final Resource SwitchingInstance = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#SwitchingInstance" );
+    public static final Resource SwitchingSubnet = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#SwitchingSubnet" );
     
     public static final Resource VirtualCloudService = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#VirtualCloudService" );
-    
-    public static final Resource VirtualSwitchService = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#VirtualSwitchService" );
     
     public static final Resource Volume = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#Volume" );
     
