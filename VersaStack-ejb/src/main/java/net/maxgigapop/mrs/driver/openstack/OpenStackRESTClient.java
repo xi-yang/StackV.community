@@ -125,6 +125,21 @@ public class OpenStackRESTClient {
         return ports;
     }
     
+        public static String addServer(String host, String tenantId, String token, String serverName, String imageRef, String flavorRef) throws IOException {
+        
+        String url = String.format("http://%s:8774/v2/%s/servers", host, tenantId);
+        String body = String.format("{ \"server\": { \"name\": \"%s\", \"imageRef\": \"%s\", \"flavorRef\": \"%s\" } }", serverName, imageRef, flavorRef);
+        
+        URL obj = new URL(url);
+        HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+        
+        String responseStr = sendPOST(obj, con, body);
+        System.out.println(responseStr);
+        
+        return responseStr;
+        
+    }
+    
     private static String sendPOST(URL url, HttpURLConnection con, String body) throws IOException {
         
         con.setRequestMethod("POST");
