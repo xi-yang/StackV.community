@@ -125,7 +125,7 @@ public class OpenStackRESTClient {
         return ports;
     }
     
-        public static String addServer(String host, String tenantId, String token, String serverName, String imageRef, String flavorRef) throws IOException {
+    public static String addServer(String host, String tenantId, String token, String serverName, String imageRef, String flavorRef) throws IOException {
         
         String url = String.format("http://%s:8774/v2/%s/servers", host, tenantId);
         String body = String.format("{ \"server\": { \"name\": \"%s\", \"imageRef\": \"%s\", \"flavorRef\": \"%s\" } }", serverName, imageRef, flavorRef);
@@ -134,6 +134,23 @@ public class OpenStackRESTClient {
         HttpURLConnection con = (HttpURLConnection) obj.openConnection();
         
         String responseStr = sendPOST(obj, con, body);
+        System.out.println(responseStr);
+        
+        return responseStr;
+        
+    }
+        
+    public static String deleteServer(String host, String tenantId, String token, String serverId) throws IOException {
+        
+        String url = String.format("http://%s:8774/v2/%s/servers", host, tenantId);
+        
+        URL obj = new URL(url);
+        HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+        con.setRequestMethod("DELETE");        
+        con.setRequestProperty("tenant_id", tenantId);
+        con.setRequestProperty("server_id", serverId);
+        
+        String responseStr = sendDELETE(obj, con);
         System.out.println(responseStr);
         
         return responseStr;
@@ -189,6 +206,25 @@ public class OpenStackRESTClient {
         in.close();
         
         return responseStr.toString();
+    }
+    
+    private static String sendDELETE(URL url, HttpURLConnection con) throws IOException {
+        
+        logger.log(Level.INFO, "Sending DELETE request to URL : {0}", url);
+        int responseCode = con.getResponseCode();
+        logger.log(Level.INFO, "Response Code : {0}", responseCode);
+        
+        BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+        String inputLine;
+        StringBuilder responseStr = new StringBuilder();
+
+        while ((inputLine = in.readLine()) != null) {
+            responseStr.append(inputLine);
+        }
+        in.close();
+        
+        return responseStr.toString();
+        
     }
 
 }
