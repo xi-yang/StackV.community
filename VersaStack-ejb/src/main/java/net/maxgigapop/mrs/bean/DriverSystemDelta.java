@@ -33,10 +33,6 @@ public class DriverSystemDelta extends DeltaBase {
     @JoinColumn(name = "referenceVersionItemId")
     protected VersionItem referenceVersionItem = null;
     
-    @OneToOne
-    @JoinColumn(name = "targetVersionItemId")
-    protected VersionItem targetVersionItem = null;
-
     public SystemDelta getSystemDelta() {
         return systemDelta;
     }
@@ -59,14 +55,6 @@ public class DriverSystemDelta extends DeltaBase {
 
     public void setReferenceVersionItem(VersionItem referenceVersionItem) {
         this.referenceVersionItem = referenceVersionItem;
-    }
-
-    public VersionItem getTargetVersionItem() {
-        return targetVersionItem;
-    }
-
-    public void setTargetVersionItem(VersionItem targetVersionItem) {
-        this.targetVersionItem = targetVersionItem;
     }
 
     @Override

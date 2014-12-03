@@ -8,6 +8,7 @@ package net.maxgigapop.mrs.driver.openstack;
 
 import com.hp.hpl.jena.ontology.OntModel;
 import java.io.IOException;
+import java.util.UUID;
 import java.util.concurrent.Future;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
@@ -32,8 +33,6 @@ import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 @Stateless
 public class OpenStackDriver implements IHandleDriverSystemCall {
     
-    private static Long versionId = 1L;
-    
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
@@ -44,7 +43,7 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
     @Asynchronous
     @Override
-    public Future<String> commitDelta(Long driverInstanceId, Long targetVIId) {
+    public Future<String> commitDelta(DriverSystemDelta aDelta) {
         
         throw new EJBException("Not implemented.");
     }
@@ -70,7 +69,7 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
             
             VersionItem vi = new VersionItem();
             vi.setModelRef(dm);
-            vi.setReferenceId(versionId++);
+            vi.setReferenceUUID(UUID.randomUUID().toString());
             vi.setDriverInstance(driverInstance);
             VersionItemPersistenceManager.save(vi);
             driverInstance.setHeadVersionItem(vi);

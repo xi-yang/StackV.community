@@ -11,8 +11,10 @@ import com.hp.hpl.jena.ontology.OntModel;
 import static java.lang.Thread.sleep;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -29,7 +31,6 @@ import javax.naming.NamingException;
 import net.maxgigapop.mrs.bean.*;
 import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
-import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
@@ -41,7 +42,6 @@ import net.maxgigapop.mrs.common.ModelUtil;
 @Stateful
 @LocalBean
 public class HandleSystemPushCall {
-    private VersionGroup targetVG = null;
     private SystemInstance systemInstance = null;
     
     public SystemInstance createInstance() {
@@ -52,8 +52,14 @@ public class HandleSystemPushCall {
 
     public void terminateInstance(SystemInstance systemInstance) {
         if (this.systemInstance != null) {
-            for (SystemDelta aDelta : systemInstance.getSystemDeltas()) {
-                ModelPersistenceManager.delete(aDelta);
+            if (systemInstance.getSystemDelta() != null) {
+                DeltaPersistenceManager.delete(systemInstance.getSystemDelta());
+                if (systemInstance.getSystemDelta().getDriverSystemDeltas() != null) {
+                    for (Iterator<DriverSystemDelta> it = systemInstance.getSystemDelta().getDriverSystemDeltas().iterator(); it.hasNext();) {
+                        DriverSystemDelta dsd = it.next();
+                        DeltaPersistenceManager.delete(dsd);
+                    }
+                }
             }
             SystemInstancePersistenceManager.delete(this.systemInstance);
         }
@@ -78,7 +84,6 @@ public class HandleSystemPushCall {
         ModelBase referenceModel = referenceVG.createUnionModel();
         OntModel referenceOntModel = referenceModel.getOntModel();
         OntModel targetOntModel = referenceModel.dryrunDelta(aDelta);
-        this.systemInstance.addSystemDelta(aDelta);
 
         //## Step 2. verify model change
         // 2.1. get head/lastest VG based on the current versionGroup 
@@ -107,9 +112,7 @@ public class HandleSystemPushCall {
         // 3.2. split referenceOntModel to otain list of reference driver topologies 
         Map<String, OntModel> referenceDriverSystemModels = ModelUtil.splitOntModelByTopology(referenceOntModel);
         // 3.3. create list of non-empty driverSystemDeltas by diff referenceOntModel components to targetOntModel
-        List<DriverSystemDelta> targetDriverSystemDeltas = new ArrayList<DriverSystemDelta>();
-        this.targetVG = new VersionGroup();
-        this.targetVG.setStatus("INIT");
+        List<DriverSystemDelta> targetDriverSystemDeltas = new ArrayList<>();
         //transient - do not save
         //VersionGroupPersistenceManager.save(this.targetVG);
         for (String driverSystemTopoUri : targetDriverSystemModels.keySet()) {
@@ -130,24 +133,11 @@ public class HandleSystemPushCall {
             DeltaBase delta = referenceDSM.diffToModel(tom);
             if (ModelUtil.isEmptyModel(delta.getModelAddition().getOntModel()) && ModelUtil.isEmptyModel(delta.getModelReduction().getOntModel())) {
                 // no diff, use existing verionItem
-                this.targetVG.addVersionItem(oldVI);
                 continue;
             }
             // create targetDSM and targetDSD only if there is a change. 
             ModelBase targetDSM = new ModelBase();
             targetDSM.setOntModel(tom);
-            // new versionItem using targetDSM as temporary modelRef
-            VersionItem newVI = new VersionItem();
-            newVI.setDriverInstance(driverInstance);
-            newVI.setModelRef(targetDSM);
-            newVI.addVersionGroup(this.targetVG);
-            this.targetVG.addVersionItem(newVI);
-            //transient - do not save
-            //VersionGroupPersistenceManager.save(newVI);
-            // target model has a new version ID
-            targetDSM.setCxtVersion(newVI.getId());
-            //transient - do not save
-            //ModelPersistenceManager.save(targetDSM);
             // create targetDSD 
             DriverSystemDelta targetDSD = new DriverSystemDelta();
             targetDSD.setModelAddition(delta.getModelAddition());
@@ -155,14 +145,14 @@ public class HandleSystemPushCall {
             targetDSD.setSystemDelta(null);
             // target delta uses version reference ID of committed model that corresponds to a known version in driverSystem.
             targetDSD.setReferenceVersionItem(oldVI);
-            targetDSD.setTargetVersionItem(newVI);
             if (driverInstance == null) {
                 throw new EJBException(String.format("%s cannot find a dirverInstance for topology: %s", this.systemInstance, driverSystemTopoUri));
             }
             // prepare to dispatch to driverInstance
             targetDSD.setDriverInstance(driverInstance);
+            targetDriverSystemDeltas.add(targetDSD);
         }
-
+        
         //## Step 4. propagate driverSystemDeltas 
         Context ejbCxt = null;
         for (DriverSystemDelta targetDSD : targetDriverSystemDeltas) {
@@ -183,12 +173,13 @@ public class HandleSystemPushCall {
                 throw new EJBException(e);
             }
         }
-        // 4.3 save this.systemInstance and VG
-        this.targetVG.setStatus("PROPAGATED");
-        //transient - do not save
-        //VersionGroupPersistenceManager.save(this.targetVG);
+        // 4.3 save this.systemInstance and targetDSD
+        for (DriverSystemDelta targetDSD : targetDriverSystemDeltas) {
+            DeltaPersistenceManager.save(targetDSD);
+        }
+        aDelta.setDriverSystemDeltas(targetDriverSystemDeltas);
+        this.systemInstance.setSystemDelta(aDelta);
         SystemInstancePersistenceManager.save(this.systemInstance);
-
         //## End of propagtion
     }
 
@@ -199,16 +190,17 @@ public class HandleSystemPushCall {
             throw new EJBException(String.format("cannot run commitDelta with null systemInstance"));
         }
         // 1. Get target VG from this stateful bean
-        if (this.targetVG == null || this.targetVG.getVersionItems() == null || this.targetVG.getVersionItems().isEmpty()) {
-            throw new EJBException(String.format("%s has null or empty versionGroup", this.systemInstance));
+        if (systemInstance.getSystemDelta() == null || systemInstance.getSystemDelta().getDriverSystemDeltas() == null 
+                || systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
+            throw new EJBException(String.format("%s has no systemDelta or driverSystemDeltas to commit", this.systemInstance));
         }
         Context ejbCxt = null;
         // 2. Get list of versionItem, driverInstances and DSD
-        Map<VersionItem, Future<String>> commitResultMap = new HashMap<VersionItem, Future<String>>();
-        for (VersionItem targetVI : this.targetVG.getVersionItems()) {
-            DriverInstance driverInstance = targetVI.getDriverInstance();
+        Map<DriverSystemDelta, Future<String>> commitResultMap = new HashMap<>();
+        for (DriverSystemDelta dsd : systemInstance.getSystemDelta().getDriverSystemDeltas()) {
+            DriverInstance driverInstance = dsd.getDriverInstance();
             if (driverInstance == null) {
-                throw new EJBException(String.format("%s in %s has null driverInstance ", targetVI, this.systemInstance));
+                throw new EJBException(String.format("%s in %s has null driverInstance ", dsd, this.systemInstance));
             }
             try {
                 if (ejbCxt == null) {
@@ -217,9 +209,9 @@ public class HandleSystemPushCall {
                 String driverEjbPath = driverInstance.getDriverEjbPath();
                 IHandleDriverSystemCall driverSystemHandler = (IHandleDriverSystemCall) ejbCxt.lookup(driverEjbPath);
                 // 3. Call Async commitDelta to each driverInstance based on versionItems in VG.
-                Future<String> result = driverSystemHandler.commitDelta(driverInstance.getId(), targetVI.getId());
+                Future<String> result = driverSystemHandler.commitDelta(dsd);
                 // 4. add AsyncResult to resultMap
-                commitResultMap.put(targetVI, result);
+                commitResultMap.put(dsd, result);
             } catch (NamingException e) {
                 throw new EJBException(e);
             }
@@ -229,28 +221,28 @@ public class HandleSystemPushCall {
         int timeoutMinutes = 10; // 10 minutes 
         for (int minute = 0; minute < timeoutMinutes; minute++) {
             boolean doneSucessful = true;
-            for (VersionItem targetVI : commitResultMap.keySet()) {
-                Future<String> asyncResult = commitResultMap.get(targetVI);
+            for (DriverSystemDelta dsd : commitResultMap.keySet()) {
+                Future<String> asyncResult = commitResultMap.get(dsd);
                 if (!asyncResult.isDone()) {
                     doneSucessful = false;
                     break;
                 }
                 try {
                     String resultStatus = asyncResult.get();
-                } catch (Exception e) {
-                    throw new EJBException(String.format("commitDelta for %s raised exception from %s ", this.systemInstance, targetVI.getDriverInstance()));
+                } catch (InterruptedException | ExecutionException e) {
+                    throw new EJBException(String.format("commitDelta for %s raised exception from %s ", this.systemInstance, dsd.getDriverInstance()));
                 }
             }
             if (doneSucessful) {
-                return new AsyncResult<String>("SUCCESS");
+                return new AsyncResult<>("SUCCESS");
             }
             try {
                 sleep(60000); // wait for 1 minute
             } catch (InterruptedException ex) {
                 //Logger.getLogger(HandleSystemPushCall.class.getName()).log(Level.SEVERE, null, ex);
-                throw new EJBException(String.format("commitDelta for %s in %s is interrupted before timed out ", this.targetVG, this.systemInstance));
+                throw new EJBException(String.format("commitDelta for %s is interrupted before timed out ", this.systemInstance));
             }
         }
-        throw new EJBException(String.format("commitDelta for %s in %s has timed out ", this.targetVG, this.systemInstance));
+        throw new EJBException(String.format("commitDelta for %s has timed out ", this.systemInstance));
     }
 }

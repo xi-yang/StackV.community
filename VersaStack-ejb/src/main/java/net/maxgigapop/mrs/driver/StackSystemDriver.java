@@ -8,6 +8,7 @@ package net.maxgigapop.mrs.driver;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -45,7 +46,7 @@ import net.maxgigapop.mrs.system.HandleSystemPushCall;
 
 @Stateless
 public class StackSystemDriver implements IHandleDriverSystemCall{
-    private static Map<VersionItem, HandleSystemPushCall> driverSystemSessionMap = new HashMap<VersionItem, HandleSystemPushCall>();
+    private static Map<DriverSystemDelta, HandleSystemPushCall> driverSystemSessionMap = new HashMap<DriverSystemDelta, HandleSystemPushCall>();
             
     @Override
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
@@ -54,7 +55,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
         aDelta = (DriverSystemDelta)DeltaPersistenceManager.findById(aDelta.getId());
         String driverSystemEjbBase = driverInstance.getProperty("driverSystemPath");
         if (driverSystemEjbBase == null) {
-            throw new EJBException(String.format("%s has no property key=driverSystemPath"));
+            throw new EJBException(String.format("%s has no property key=driverSystemPath", driverInstance));
         }
         String ejbPathHandleSystemCall = driverSystemEjbBase + "HandleSystemCall";
         String ejbPathHandleSystemPushCall = driverSystemEjbBase + "HandleSystemPushCall";
@@ -64,14 +65,14 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
             HandleSystemPushCall ejbSystemPushHandler = (HandleSystemPushCall)ejbCxt.lookup(ejbPathHandleSystemPushCall);
             SystemInstance si = ejbSystemPushHandler.createInstance();
             //@TODO: use random UUID and add a versioItem.id -> uuid HashMap
-            VersionGroup vg = ejbSystemHandler.updateHeadVersionGroup(aDelta.getReferenceVersionItem().getReferenceId().toString());
+            VersionGroup vg = ejbSystemHandler.updateHeadVersionGroup(aDelta.getReferenceVersionItem().getReferenceUUID());
             SystemDelta sysDelta = new SystemDelta();
             sysDelta.setSystemInstance(si);
             sysDelta.setReferenceVersionGroup(vg);
             sysDelta.setModelAddition(aDelta.getModelAddition());
             sysDelta.setModelReduction(aDelta.getModelReduction());
             ejbSystemPushHandler.propagateDelta(sysDelta);
-            driverSystemSessionMap.put(aDelta.getTargetVersionItem(), ejbSystemPushHandler);
+            driverSystemSessionMap.put(aDelta, ejbSystemPushHandler);
         } catch (Exception e) {
             throw new EJBException(String.format("propagateDelta failed for %s with %s due to exception (%s)", driverInstance, aDelta, e.getMessage()));
         }
@@ -79,23 +80,19 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
 
     @Override
     @Asynchronous
-    public Future<String> commitDelta(Long driverInstanceId, Long targetVIId) {
-        DriverInstance driverInstance = DriverInstancePersistenceManager.findById(driverInstanceId);
+    public Future<String> commitDelta(DriverSystemDelta aDelta) {
+        DriverInstance driverInstance = aDelta.getDriverInstance();
         if (driverInstance == null) {
-            throw new EJBException(String.format("commitDelta cannot find driverInance(id=%d)", driverInstanceId));
+            throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
         }
-        VersionItem targetVI = (VersionItem)VersionItemPersistenceManager.findById(targetVIId);
-        if (targetVI == null) {
-            throw new EJBException(String.format("commitDelta cannot find target VersionItem(id=%d)", targetVIId));
+        if (!driverSystemSessionMap.containsKey(aDelta)) {
+            throw new EJBException(String.format("commitDelta cannot associate %s with a driverSystemSession", aDelta));
         }
-        if (!driverSystemSessionMap.containsKey(targetVI)) {
-            throw new EJBException(String.format("commitDelta cannot associate %s with a driverSystemSession", targetVI));
-        }
+        HandleSystemPushCall ejbSystemPushHandler = driverSystemSessionMap.get(aDelta);
         try {
-            HandleSystemPushCall ejbSystemPushHandler = driverSystemSessionMap.get(targetVI);
             ejbSystemPushHandler.commitDelta();
         } catch (Exception e) {
-            throw new EJBException(String.format("commitDelta cannot find target VersionItem(id=%d)", targetVIId));
+            throw new EJBException(String.format("commitDelta failed for %s", aDelta));
         }
         return new AsyncResult<String>("SUCCESS");
     }
@@ -119,10 +116,10 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
             Context ejbCxt = new InitialContext();
             HandleSystemCall ejbSystemHandler = (HandleSystemCall)ejbCxt.lookup(ejbPathHandleSystemCall);
             vi = new VersionItem();
+            vi.setReferenceUUID(UUID.randomUUID().toString());
             vi.setDriverInstance(driverInstance);
             VersionItemPersistenceManager.save(vi);
-            VersionGroup vg = ejbSystemHandler.createHeadVersionGroup(vi.getReferenceId().toString());
-            vi.setReferenceId(vg.getId());
+            VersionGroup vg = ejbSystemHandler.createHeadVersionGroup(vi.getReferenceUUID());
             ModelBase model = ejbSystemHandler.retrieveVersionGroupModel(vg.getRefUuid());
             dm = new DriverModel();
             dm.setCommitted(true);

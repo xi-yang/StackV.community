@@ -24,7 +24,7 @@ import javax.persistence.OneToOne;
 @Entity
 @Inheritance(strategy=InheritanceType.SINGLE_TABLE)
 public class SystemDelta extends DeltaBase {
-    @ManyToOne
+    @OneToOne
     @JoinColumn(name = "systemInstanceId")
     protected SystemInstance systemInstance = null;
 

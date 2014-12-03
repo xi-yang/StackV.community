@@ -26,9 +26,9 @@ public class VersionItemPersistenceManager extends PersistenceManager {
         return PersistenceManager.find(VersionItem.class, id);
     }
 
-    public static VersionItem findByReferenceId(Long refId) {
+    public static VersionItem findByReferenceUUID(String uuid) {
 		try {
-			Query q = createQuery(String.format("FROM %s WHERE referenceId = %d", VersionItem.class.getSimpleName(), refId));
+			Query q = createQuery(String.format("FROM %s WHERE referenceUUID = %d", VersionItem.class.getSimpleName(), uuid));
             return (VersionItem)q.getSingleResult(); 
 		} catch (Exception e) {
             throw new EJBException(String.format("VersionItemPersistenceManager::findByReferenceId raised exception: %s", e.getMessage()));

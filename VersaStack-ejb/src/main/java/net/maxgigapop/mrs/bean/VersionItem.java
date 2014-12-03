@@ -34,7 +34,7 @@ public class VersionItem extends PersistentEntity implements Serializable {
     private Long id;
     
     // reference ID for the callee
-    private Long referenceId = 0L;
+    private String referenceUUID = null;
     
 
     @ManyToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
@@ -62,12 +62,12 @@ public class VersionItem extends PersistentEntity implements Serializable {
         this.id = id;
     }
 
-    public Long getReferenceId() {
-        return referenceId;
+    public String getReferenceUUID() {
+        return referenceUUID;
     }
 
-    public void setReferenceId(Long referenceId) {
-        this.referenceId = referenceId;
+    public void setReferenceUUID(String referenceUUID) {
+        this.referenceUUID = referenceUUID;
     }
 
     @Override

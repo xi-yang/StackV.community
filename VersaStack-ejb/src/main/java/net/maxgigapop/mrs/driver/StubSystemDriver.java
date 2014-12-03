@@ -7,6 +7,7 @@
 package net.maxgigapop.mrs.driver;
 
 import com.hp.hpl.jena.ontology.OntModel;
+import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -35,9 +36,7 @@ import net.maxgigapop.mrs.common.ModelUtil;
 //use properties: stubModelTtl
 
 @Stateless
-public class StubSystemDriver implements IHandleDriverSystemCall {
-    private static Long stubModelVersionId = 1L;
-    
+public class StubSystemDriver implements IHandleDriverSystemCall {   
     @Override
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
@@ -61,14 +60,10 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
 
     @Override
     @Asynchronous
-    public Future<String> commitDelta(Long driverInstanceId, Long targetVIId) {
-        DriverInstance driverInstance = DriverInstancePersistenceManager.findById(driverInstanceId);
+    public Future<String> commitDelta(DriverSystemDelta aDelta) {
+        DriverInstance driverInstance = aDelta.getDriverInstance();
         if (driverInstance == null) {
-            throw new EJBException(String.format("commitDelta cannot find driverInance(id=%d)", driverInstanceId));
-        }
-        VersionItem targetVI = (VersionItem)VersionItemPersistenceManager.findById(targetVIId);
-        if (targetVI == null) {
-            throw new EJBException(String.format("commitDelta cannot find target VersionItem(id=%d)", targetVIId));
+            throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
         }
         return new AsyncResult<String>("SUCCESS");
     }
@@ -94,7 +89,7 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
             ModelPersistenceManager.save(dm);
             VersionItem vi = new VersionItem();
             vi.setModelRef(dm);
-            vi.setReferenceId(stubModelVersionId++);
+            vi.setReferenceUUID(UUID.randomUUID().toString());
             vi.setDriverInstance(driverInstance);
             VersionItemPersistenceManager.save(vi);
             driverInstance.setHeadVersionItem(vi);

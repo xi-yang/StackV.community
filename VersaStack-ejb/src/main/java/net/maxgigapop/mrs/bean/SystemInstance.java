@@ -37,8 +37,8 @@ public class SystemInstance extends PersistentEntity implements Serializable {
     private Long id;
 
     @OneToMany(mappedBy="systemInstance", cascade = {CascadeType.ALL})
-    protected List<SystemDelta> systemDeltas = null;    
-    
+    protected SystemDelta systemDelta = null;    
+
     public Long getId() {
         return id;
     }
@@ -47,45 +47,14 @@ public class SystemInstance extends PersistentEntity implements Serializable {
         this.id = id;
     }
 
-    public List<SystemDelta> getSystemDeltas() {
-        return systemDeltas;
+    public SystemDelta getSystemDelta() {
+        return systemDelta;
     }
 
-    public void setSystemDeltas(List<SystemDelta> systemDeltas) {
-        this.systemDeltas = systemDeltas;
+    public void setSystemDelta(SystemDelta systemDelta) {
+        this.systemDelta = systemDelta;
     }
 
-    public boolean hasSystemDelta(SystemDelta aDelta) {
-        if (systemDeltas == null || systemDeltas.isEmpty())
-            return false;
-        for (SystemDelta delta: systemDeltas) {
-            if (delta.equals(aDelta)) 
-                return true;
-        }
-        return false;
-    }
-    
-    public void addSystemDelta(SystemDelta aDelta) {
-        if (systemDeltas == null)
-            systemDeltas = new ArrayList<>();
-        if (!hasSystemDelta(aDelta)) {
-            try {
-                ModelPersistenceManager.save(aDelta);
-            } catch (Exception e) {
-                throw new EJBException(String.format("%s faled to save %s, due to %s", this.toString(), aDelta.toString(), e.getMessage()));
-            }
-            systemDeltas.add(aDelta);
-        }
-    }
-
-    public void removeSystemDelta(SystemDelta aDelta) {
-        if (systemDeltas != null) {
-            systemDeltas.remove(aDelta);
-            //$$ catch and throw exception
-            ModelPersistenceManager.delete(aDelta);
-        }
-    }
-    
     @Override
     public int hashCode() {
         int hash = 0;
