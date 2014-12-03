@@ -145,6 +145,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
         if (subsystemBaseUrl == null) {
             throw new EJBException(String.format("%s has no property key=subsystemBaseUrl", driverInstance));
         }
+        
         String version = null;
         String ttlModel = null;
         String creationTimestamp = null;
@@ -171,41 +172,49 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
         } catch (ParseException ex) {
             throw new EJBException(String.format("%s failed to parse pulled information from subsystem with exception (%s)", driverInstance, ex));
         }
-        VersionItem vi = null;
-        DriverModel dm = null;
-        try {
-            // check if this version has been pulled before
-            vi = VersionItemPersistenceManager.findByReferenceUUID(version);
-            if (vi != null) {
-                return new AsyncResult<>("SUCCESS");
-            }
-            // create new driverDelta and versioItem
-            OntModel ontModel = ModelUtil.unmarshalOntModel(ttlModel);
-            dm = new DriverModel();
-            dm.setCommitted(true);
-            dm.setOntModel(ontModel);
-            Date creationTime = new Date(Long.parseLong(creationTimestamp));
-            dm.setCreationTime(creationTime);
-            ModelPersistenceManager.save(dm);
-            vi = new VersionItem();
-            vi.setModelRef(dm);
-            vi.setReferenceUUID(version);
-            vi.setDriverInstance(driverInstance);
-            VersionItemPersistenceManager.save(vi);
-            driverInstance.setHeadVersionItem(vi);
-            VersionItemPersistenceManager.save(vi);
-        } catch (Exception e) {
+        DriverInstance cachedDriverInstance = driverInstance; // sync on local object = do nothing
+        if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() != null 
+                && DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().containsKey(driverInstance.getTopologyUri())) {
+            // sync on cached object = once per driverInstance to avoid write multiple vi of same version 
+            cachedDriverInstance = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().get(driverInstance.getTopologyUri());
+        }
+        synchronized (cachedDriverInstance) {
+            VersionItem vi = null;
+            DriverModel dm = null;
             try {
-                if (dm != null) {
-                    ModelPersistenceManager.delete(dm);
-                }
+                // check if this version has been pulled before
+                vi = VersionItemPersistenceManager.findByReferenceUUID(version);
                 if (vi != null) {
-                    VersionItemPersistenceManager.delete(vi);
+                    return new AsyncResult<>("SUCCESS");
                 }
-            } catch (Exception ex) {
-                ; // do nothing (logging?)
+                // create new driverDelta and versioItem
+                OntModel ontModel = ModelUtil.unmarshalOntModel(ttlModel);
+                dm = new DriverModel();
+                dm.setCommitted(true);
+                dm.setOntModel(ontModel);
+                Date creationTime = new Date(Long.parseLong(creationTimestamp));
+                dm.setCreationTime(creationTime);
+                ModelPersistenceManager.save(dm);
+                vi = new VersionItem();
+                vi.setModelRef(dm);
+                vi.setReferenceUUID(version);
+                vi.setDriverInstance(driverInstance);
+                VersionItemPersistenceManager.save(vi);
+                driverInstance.setHeadVersionItem(vi);
+                VersionItemPersistenceManager.save(vi);
+            } catch (Exception e) {
+                try {
+                    if (dm != null) {
+                        ModelPersistenceManager.delete(dm);
+                    }
+                    if (vi != null) {
+                        VersionItemPersistenceManager.delete(vi);
+                    }
+                } catch (Exception ex) {
+                    ; // do nothing (logging?)
+                }
+                throw new EJBException(String.format("pullModel on %s raised exception[%s]", driverInstance, e.getMessage()));
             }
-            throw new EJBException(String.format("pullModel on %s raised exception[%s]", driverInstance, e.getMessage()));
         }
         return new AsyncResult<>("SUCCESS");
     }

@@ -14,6 +14,7 @@ import javax.ejb.AsyncResult;
 import javax.ejb.EJBException;
 import javax.ejb.LocalBean;
 import javax.ejb.Lock;
+import javax.ejb.LockType;
 import static javax.ejb.LockType.READ;
 import javax.ejb.Schedule;
 import javax.ejb.Singleton;
@@ -50,7 +51,7 @@ public class DriverModelPuller {
         DriverInstancePersistenceManager.refreshAll();
     }
     
-    @Lock(READ)
+    @Lock(LockType.WRITE)
     @Schedule(minute = "*", hour = "*", persistent = false)
     public void run() {
         if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null
@@ -61,18 +62,18 @@ public class DriverModelPuller {
         for (String topoUri : DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().keySet()) {
             DriverInstance driverInstance = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().get(topoUri);
             Future<String> previousResult = pullResultMap.get(driverInstance);
-                if (previousResult != null) {
-                    if (previousResult.isDone()) {
-                        try {
-                            String status = previousResult.get();
-                        } catch (Exception e) {
-                            //@TODO: error handling: retry in this current pull, then exception if still failed
-                        }
-                    } else {
-                        //@TODO: timeout handling: skip this current pull and check after one more cycle, then do
-                        //previousResult.cancel(true); // assume the underlying driverSystem puller is cooperative
+            if (previousResult != null) {
+                if (previousResult.isDone()) {
+                    try {
+                        String status = previousResult.get();
+                    } catch (Exception e) {
+                        //@TODO: error handling: retry in this current pull, then exception if still failed
                     }
+                } else {
+                    //@TODO: timeout handling: skip this current pull and check after one more cycle, then do
+                    //previousResult.cancel(true); // assume the underlying driverSystem puller is cooperative
                 }
+            }
             try {
                 if (ejbCxt == null) {
                     ejbCxt = new InitialContext();
