@@ -14,6 +14,9 @@ import java.io.InputStreamReader;
 import static java.lang.Thread.sleep;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -32,7 +35,6 @@ import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
@@ -57,12 +59,31 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
         if (subsystemBaseUrl == null) {
             throw new EJBException(String.format("%s has no property key=subsystemBaseUrl", driverInstance));
         }
-        String subsystemPushlUrl = subsystemBaseUrl + "/delta";
+        VersionItem refVI = aDelta.getReferenceVersionItem();
+        if (refVI == null) {
+            throw new EJBException(String.format("%s has no referenceVersionItem", aDelta));
+        }
         try {
-            //$$ compose string body (delta) using JSONObject
-                // use aDelta.id
-            //$$ do REST API push
-            
+            // compose string body (delta) using JSONObject
+            JSONObject deltaJSON = new JSONObject();
+            deltaJSON.put("id", Long.toString(aDelta.getId()));
+            deltaJSON.put("referenceVersion", refVI.getReferenceUUID());
+            deltaJSON.put("creationTime", (new Date()).toString());
+            if (aDelta.getModelAddition() != null && aDelta.getModelAddition().getOntModel() != null) {
+                String ttlModelAddition = ModelUtil.marshalOntModel(aDelta.getModelAddition().getOntModel());
+                deltaJSON.put("modelAddition", ttlModelAddition);
+            }
+            if (aDelta.getModelReduction() != null && aDelta.getModelReduction().getOntModel() != null) {
+                String ttlModelReduction = ModelUtil.marshalOntModel(aDelta.getModelReduction().getOntModel());
+                deltaJSON.put("modelAddition", ttlModelReduction);
+            }
+            // push via REST POST
+            URL url = new URL(String.format("%s/delta", subsystemBaseUrl));
+            HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            String status = this.executeHttpMethod(url, conn, "POST", deltaJSON.toString());
+            if (!status.toUpperCase().equals("CONFIRMED")) {
+                throw new EJBException(String.format("%s failed to push %s into CONFIRMED status", driverInstance, aDelta));
+            }
         } catch (Exception e) {
             throw new EJBException(String.format("propagateDelta failed for %s with %s due to exception (%s)", driverInstance, aDelta, e.getMessage()));
         }
@@ -89,21 +110,24 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
             throw new EJBException(String.format("%s failed to connect to subsystem with exception (%s)", driverInstance, ex));
         }
         // query through GET
-        //$$ TODO: set up Timeout 
         boolean doPoll = true;
-        while (doPoll) {
+        int maxNumPolls = 10; // timeout after 5 minutes -> ? make configurable
+        while (doPoll && (maxNumPolls--) > 0) {
             try {
-                sleep(30000L); // poll every 30 minutes
+                sleep(30000L); // poll every 30 minutes -> ? make configurable
                 // pull model from REST API
                 URL url = new URL(String.format("%s/delta/%s/%d", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
                 HttpURLConnection conn = (HttpURLConnection)url.openConnection();
                 String status = this.executeHttpMethod(url, conn, "GET", null);
-                // $$ doPoll = flase if ACTIVE
-                // $$ raise exception if FAILED
+                if (status.toUpperCase().equals("ACTIVE")) {
+                    doPoll = false; // committed successfully
+                } else if (status.toUpperCase().contains("FAILED")) {
+                    throw new EJBException(String.format("%s failed to commit %s with status=%s", driverInstance, aDelta, status));
+                }
             } catch (InterruptedException ex) {
                 throw new EJBException(String.format("%s poll for commit status is interrupted", driverInstance));
             } catch (IOException ex) {
-                throw new EJBException(String.format("%s failed to connect to subsystem with exception (%s)", driverInstance, ex));
+                throw new EJBException(String.format("%s failed to communicate with subsystem with exception (%s)", driverInstance, ex));
             }
         }        
         return new AsyncResult<>("SUCCESS");
@@ -123,6 +147,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
         }
         String version = null;
         String ttlModel = null;
+        String creationTimestamp = null;
         try {
             // pull model from REST API
             URL url = new URL(subsystemBaseUrl + "/model");
@@ -136,6 +161,10 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
             ttlModel = responseJSON.get("ttlModel").toString();
             if (ttlModel == null || ttlModel.isEmpty()) {
                 throw new EJBException(String.format("%s pulled model from subsystem with null/empty ttlModel content", driverInstance));
+            }
+            creationTimestamp = responseJSON.get("creationTime").toString();
+            if (creationTimestamp == null || creationTimestamp.isEmpty()) {
+                throw new EJBException(String.format("%s pulled model from subsystem with null/empty creationTime", driverInstance));
             }
         } catch (IOException ex) {
             throw new EJBException(String.format("%s failed to connect to subsystem with exception (%s)", driverInstance, ex));
@@ -155,6 +184,8 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
             dm = new DriverModel();
             dm.setCommitted(true);
             dm.setOntModel(ontModel);
+            Date creationTime = new Date(Long.parseLong(creationTimestamp));
+            dm.setCreationTime(creationTime);
             ModelPersistenceManager.save(dm);
             vi = new VersionItem();
             vi.setModelRef(dm);
@@ -162,6 +193,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
             vi.setDriverInstance(driverInstance);
             VersionItemPersistenceManager.save(vi);
             driverInstance.setHeadVersionItem(vi);
+            VersionItemPersistenceManager.save(vi);
         } catch (Exception e) {
             try {
                 if (dm != null) {

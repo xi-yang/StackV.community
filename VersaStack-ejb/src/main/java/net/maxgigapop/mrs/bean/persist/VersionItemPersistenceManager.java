@@ -28,9 +28,15 @@ public class VersionItemPersistenceManager extends PersistenceManager {
 
     public static VersionItem findByReferenceUUID(String uuid) {
 		try {
-			Query q = createQuery(String.format("FROM %s WHERE referenceUUID = %d", VersionItem.class.getSimpleName(), uuid));
-            return (VersionItem)q.getSingleResult(); 
+			Query q = createQuery(String.format("FROM %s WHERE referenceUUID='%s'", VersionItem.class.getSimpleName(), uuid));
+            List<VersionItem> listVI = (List<VersionItem>)q.getResultList(); 
+            if (listVI == null || listVI.isEmpty()) {
+                return null;
+            }
+            return listVI.get(0);
 		} catch (Exception e) {
+            if (e.getMessage().contains("No entity found"))
+                return null;
             throw new EJBException(String.format("VersionItemPersistenceManager::findByReferenceId raised exception: %s", e.getMessage()));
 		}
     }    
@@ -42,6 +48,8 @@ public class VersionItemPersistenceManager extends PersistenceManager {
             Object viObj = q.getSingleResult();
             return (VersionItem)viObj;
 		} catch (Exception e) {
+            if (e.getMessage().contains("No entity found"))
+                return null;
             throw new EJBException(String.format("VersionItemPersistenceManager::getHeadByDriverInstance raised exception: %s", e.getMessage()));
 		}
     }

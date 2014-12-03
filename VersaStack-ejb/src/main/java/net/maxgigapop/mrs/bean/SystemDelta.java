@@ -25,23 +25,11 @@ import javax.persistence.OneToOne;
 @Inheritance(strategy=InheritanceType.SINGLE_TABLE)
 public class SystemDelta extends DeltaBase {
     @OneToOne
-    @JoinColumn(name = "systemInstanceId")
-    protected SystemInstance systemInstance = null;
-
-    @OneToMany(mappedBy="systemDelta", cascade = {CascadeType.ALL})
-    protected List<DriverSystemDelta> driverSystemDeltas = null;    
-
-    @OneToOne
     @JoinColumn(name = "referenceVersionGroupId")
     protected VersionGroup referenceVersionGroup;
 
-    public SystemInstance getSystemInstance() {
-        return systemInstance;
-    }
-
-    public void setSystemInstance(SystemInstance systemInstance) {
-        this.systemInstance = systemInstance;
-    }
+    @OneToMany(mappedBy="systemDelta", cascade = {CascadeType.ALL})
+    protected List<DriverSystemDelta> driverSystemDeltas = null;    
 
     public List<DriverSystemDelta> getDriverSystemDeltas() {
         return driverSystemDeltas;

@@ -37,7 +37,7 @@ public class IntegrationTest1 {
         try {
             Context ejbCxt = new InitialContext();
             //HandleSystemCall systemCallHandler = (HandleSystemCall) ejbCxt.lookup("java:module/HandleSystemCall");
-            sleep(90000L);
+            sleep(190000L);
             Long refId = 1L;
             VersionGroup vg = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
         } catch (Exception ex) {

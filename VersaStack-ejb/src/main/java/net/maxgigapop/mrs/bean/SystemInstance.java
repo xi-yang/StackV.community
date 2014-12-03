@@ -36,7 +36,8 @@ public class SystemInstance extends PersistentEntity implements Serializable {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    @OneToMany(mappedBy="systemInstance", cascade = {CascadeType.ALL})
+    @OneToOne
+    @JoinColumn(name = "systemDeltaId")
     protected SystemDelta systemDelta = null;    
 
     public Long getId() {

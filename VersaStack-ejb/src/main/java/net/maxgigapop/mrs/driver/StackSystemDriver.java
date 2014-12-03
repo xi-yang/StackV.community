@@ -67,7 +67,6 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
             //@TODO: use random UUID and add a versioItem.id -> uuid HashMap
             VersionGroup vg = ejbSystemHandler.updateHeadVersionGroup(aDelta.getReferenceVersionItem().getReferenceUUID());
             SystemDelta sysDelta = new SystemDelta();
-            sysDelta.setSystemInstance(si);
             sysDelta.setReferenceVersionGroup(vg);
             sysDelta.setModelAddition(aDelta.getModelAddition());
             sysDelta.setModelReduction(aDelta.getModelReduction());

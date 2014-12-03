@@ -40,8 +40,8 @@ public class StartServiceTest {
     private @PersistenceContext(unitName = "RAINSAgentPU")
     EntityManager entityManager;
 
-    @PostConstruct
-    public void init() {
+    //@PostConstruct
+    public void testSubDriver() {
         if (PersistenceManager.getEntityManager() == null) {
             PersistenceManager.initialize(entityManager);
         }
@@ -74,8 +74,29 @@ public class StartServiceTest {
             driverProperties.put("driverEjbPath", "java:module/StubSystemDriver");
             driverProperties.put("stubModelTtl", model1.getTtlModel());
             systemCallHandler.plugDriverInstance(driverProperties);
+            driverProperties.put("topologyUri", "testdomain2.org");
+            systemCallHandler.plugDriverInstance(driverProperties);
         } catch (Exception ex) {
             Logger.getLogger(StartServiceTest.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
+        
+    @PostConstruct
+    public void testVersaNSDriver() {
+        if (PersistenceManager.getEntityManager() == null) {
+            PersistenceManager.initialize(entityManager);
+        }
+        try {
+            Context ejbCxt = new InitialContext();
+            HandleSystemCall systemCallHandler = (HandleSystemCall) ejbCxt.lookup("java:module/HandleSystemCall");
+            Map<String, String> driverProperties = new HashMap<>();
+            driverProperties.put("topologyUri", "urn:ogf:network:sdn.maxgigapop.net:network");
+            driverProperties.put("driverEjbPath", "java:module/GenericRESTDriver");
+            driverProperties.put("subsystemBaseUrl", "http://localhost:8080/VersaNS-0.0.1-SNAPSHOT");
+            systemCallHandler.plugDriverInstance(driverProperties);
+        } catch (Exception ex) {
+            Logger.getLogger(StartServiceTest.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
 }

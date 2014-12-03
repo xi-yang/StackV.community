@@ -10,7 +10,7 @@ import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import java.io.Serializable;
-import java.sql.Date;
+import java.util.Date;
 import javax.ejb.EJBException;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -41,7 +41,7 @@ public class ModelBase extends PersistentEntity implements Serializable {
     @GeneratedValue(strategy = GenerationType.AUTO)
     protected Long id = 0L;
     
-    protected java.sql.Date creationTime;
+    protected Date creationTime;
     protected Long cxtVersion = 0L;
     protected String cxtVersionTag = "";
     protected boolean committed = false;
