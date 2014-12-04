@@ -76,7 +76,7 @@ public class DriverInstancePersistenceManager extends PersistenceManager{
             driverInstanceByTopologyMap = new HashMap<String, DriverInstance>();
         }
         if (di.getTopologyUri() != null && !di.getTopologyUri().isEmpty() 
-                && driverInstanceByTopologyMap.containsKey(di.getTopologyUri())) {
+                && !driverInstanceByTopologyMap.containsKey(di.getTopologyUri())) {
             driverInstanceByTopologyMap.put(di.getTopologyUri(), di);
         }
     }

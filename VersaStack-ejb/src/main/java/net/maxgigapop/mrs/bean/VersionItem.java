@@ -123,7 +123,7 @@ public class VersionItem extends PersistentEntity implements Serializable {
 
     @Override
     public String toString() {
-        return "net.maxgigapop.mrs.bean.VersionItem[ id=" + id + " ]";
+        return String.format("net.maxgigapop.mrs.bean.VersionItem[ id=%d uuid=%s ]", id, referenceUUID);
     }
     
 }

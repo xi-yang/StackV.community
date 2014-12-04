@@ -32,10 +32,8 @@ import net.maxgigapop.mrs.bean.VersionItem;
 import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
-import net.maxgigapop.mrs.bean.persist.PersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.system.HandleSystemCall;
-import net.maxgigapop.mrs.system.HandleSystemPushCall;
 
 /**
  *
@@ -46,7 +44,7 @@ import net.maxgigapop.mrs.system.HandleSystemPushCall;
 
 @Stateless
 public class StackSystemDriver implements IHandleDriverSystemCall{
-    private static Map<DriverSystemDelta, HandleSystemPushCall> driverSystemSessionMap = new HashMap<DriverSystemDelta, HandleSystemPushCall>();
+    private static Map<DriverSystemDelta, SystemInstance> driverSystemSessionMap = new HashMap<DriverSystemDelta, SystemInstance>();
             
     @Override
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
@@ -58,20 +56,18 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
             throw new EJBException(String.format("%s has no property key=driverSystemPath", driverInstance));
         }
         String ejbPathHandleSystemCall = driverSystemEjbBase + "HandleSystemCall";
-        String ejbPathHandleSystemPushCall = driverSystemEjbBase + "HandleSystemPushCall";
         try {
             Context ejbCxt = new InitialContext();
             HandleSystemCall ejbSystemHandler = (HandleSystemCall)ejbCxt.lookup(ejbPathHandleSystemCall);
-            HandleSystemPushCall ejbSystemPushHandler = (HandleSystemPushCall)ejbCxt.lookup(ejbPathHandleSystemPushCall);
-            SystemInstance si = ejbSystemPushHandler.createInstance();
+            SystemInstance sysInstance = ejbSystemHandler.createInstance();
             //@TODO: use random UUID and add a versioItem.id -> uuid HashMap
             VersionGroup vg = ejbSystemHandler.updateHeadVersionGroup(aDelta.getReferenceVersionItem().getReferenceUUID());
             SystemDelta sysDelta = new SystemDelta();
             sysDelta.setReferenceVersionGroup(vg);
             sysDelta.setModelAddition(aDelta.getModelAddition());
             sysDelta.setModelReduction(aDelta.getModelReduction());
-            ejbSystemPushHandler.propagateDelta(sysDelta);
-            driverSystemSessionMap.put(aDelta, ejbSystemPushHandler);
+            ejbSystemHandler.propagateDelta(sysInstance, sysDelta);
+            driverSystemSessionMap.put(aDelta, sysInstance);
         } catch (Exception e) {
             throw new EJBException(String.format("propagateDelta failed for %s with %s due to exception (%s)", driverInstance, aDelta, e.getMessage()));
         }
@@ -84,12 +80,19 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
         if (driverInstance == null) {
             throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
         }
-        if (!driverSystemSessionMap.containsKey(aDelta)) {
-            throw new EJBException(String.format("commitDelta cannot associate %s with a driverSystemSession", aDelta));
+        String driverSystemEjbBase = driverInstance.getProperty("driverSystemPath");
+        if (driverSystemEjbBase == null) {
+            throw new EJBException(String.format("%s has no property key=driverSystemPath", driverInstance));
         }
-        HandleSystemPushCall ejbSystemPushHandler = driverSystemSessionMap.get(aDelta);
+        String ejbPathHandleSystemCall = driverSystemEjbBase + "HandleSystemCall";
+        if (!driverSystemSessionMap.containsKey(aDelta)) {
+            throw new EJBException(String.format("commitDelta cannot associate %s with a systemInstance", aDelta));
+        }
+        SystemInstance sysInstance = driverSystemSessionMap.get(aDelta);
         try {
-            ejbSystemPushHandler.commitDelta();
+            Context ejbCxt = new InitialContext();
+            HandleSystemCall ejbSystemHandler = (HandleSystemCall)ejbCxt.lookup(ejbPathHandleSystemCall);
+            ejbSystemHandler.commitDelta(sysInstance);
         } catch (Exception e) {
             throw new EJBException(String.format("commitDelta failed for %s", aDelta));
         }

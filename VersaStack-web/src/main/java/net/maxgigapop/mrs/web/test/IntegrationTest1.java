@@ -6,6 +6,7 @@
 
 package net.maxgigapop.mrs.web.test;
 
+import com.hp.hpl.jena.ontology.OntModel;
 import static java.lang.Thread.sleep;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -17,8 +18,15 @@ import javax.ejb.Singleton;
 import javax.ejb.Startup;
 import javax.naming.Context;
 import javax.naming.InitialContext;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import net.maxgigapop.mrs.bean.DeltaModel;
+import net.maxgigapop.mrs.bean.SystemDelta;
+import net.maxgigapop.mrs.bean.SystemInstance;
 import net.maxgigapop.mrs.bean.VersionGroup;
-import net.maxgigapop.mrs.system.HandleSystemCall;
+import net.maxgigapop.mrs.bean.persist.PersistenceManager;
+import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.system.*;
 
 /**
  *
@@ -28,18 +36,66 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
 @LocalBean
 @Startup
 public class IntegrationTest1 {
-
     @EJB
     HandleSystemCall systemCallHandler;
+
+    private final String modelAdditionStr = "@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n" +
+"@prefix owl:   <http://www.w3.org/2002/07/owl#> .\n" +
+"@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .\n" +
+"@prefix rdf:   <http://schemas.ogf.org/nml/2013/03/base#> .\n" +
+"@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .\n" +
+"@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .\n" +
+"<urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON:l2switching:crs-svc1>\n" +
+"        a                         mrs:SwitchingSubnet , owl:NamedIndividual ;\n" +
+"        nml:encoding              <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> ;\n" +
+"        nml:hasBidirectionalPort  <urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*:vlan-3203> , <urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*:vlan-3203> ;\n" +
+"        nml:labelSwapping         \"false\" .\n" +
+"<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*:vlan-3203>\n" +
+"        a              nml:BidirectionalPort , owl:NamedIndividual ;\n" +
+"        nml:hasLabel   <urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*:vlan-3203:label> .\n" +
+"<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*:vlan-3203>\n" +
+"        a              nml:BidirectionalPort , owl:NamedIndividual ;\n" +
+"        nml:hasLabel   <urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*:vlan-3203:label> .\n" +
+"<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*:vlan-3203:label>\n" +
+"        a              nml:Label , owl:NamedIndividual ;\n" +
+"        nml:labeltype  <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> ;\n" +
+"        nml:value      \"3203\" .\n" +
+"<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*:vlan-3203:label>\n" +
+"        a              nml:Label , owl:NamedIndividual ;\n" +
+"        nml:labeltype  <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> ;\n" +
+"        nml:value      \"3203\" .";
+    
+    private final String modelReductionStr = "@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n" +
+"@prefix owl:   <http://www.w3.org/2002/07/owl#> .\n" +
+"@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .\n" +
+"@prefix rdf:   <http://schemas.ogf.org/nml/2013/03/base#> .\n" +
+"@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .\n" +
+"@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .";
     
     @PostConstruct
-    public void init() {
+    public void testSystemPullAndPush1() {
         try {
-            Context ejbCxt = new InitialContext();
-            //HandleSystemCall systemCallHandler = (HandleSystemCall) ejbCxt.lookup("java:module/HandleSystemCall");
-            sleep(190000L);
-            Long refId = 1L;
+            sleep(200000L);
             VersionGroup vg = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
+            SystemInstance sysInstance = systemCallHandler.createInstance();
+            SystemDelta sysDelta = new SystemDelta();
+            sysDelta.setReferenceVersionGroup(vg);
+            OntModel modelAddition = ModelUtil.unmarshalOntModel(modelAdditionStr);
+            DeltaModel dmAddition = new DeltaModel();
+            dmAddition.setCommitted(false);
+            dmAddition.setDelta(sysDelta);
+            dmAddition.setIsAddition(true);
+            dmAddition.setOntModel(modelAddition);
+            OntModel modelReduction = ModelUtil.unmarshalOntModel(modelReductionStr);
+            DeltaModel dmReduction = new DeltaModel();
+            dmReduction.setCommitted(false);
+            dmReduction.setDelta(sysDelta);
+            dmReduction.setIsAddition(false);
+            dmReduction.setOntModel(modelReduction);
+            sysDelta.setModelAddition(dmAddition);
+            sysDelta.setModelReduction(dmReduction);
+            systemCallHandler.propagateDelta(sysInstance, sysDelta);
+            systemCallHandler.commitDelta(sysInstance);
         } catch (Exception ex) {
             Logger.getLogger(IntegrationTest1.class.getName()).log(Level.SEVERE, null, ex);
         }

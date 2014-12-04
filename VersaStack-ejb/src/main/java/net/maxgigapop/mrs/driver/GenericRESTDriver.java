@@ -80,7 +80,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
             // push via REST POST
             URL url = new URL(String.format("%s/delta", subsystemBaseUrl));
             HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-            String status = this.executeHttpMethod(url, conn, "POST", deltaJSON.toString());
+            String status = this.executeHttpMethod(url, conn, "POST", "{\"delta\": {"+deltaJSON.toString()+"}}");
             if (!status.toUpperCase().equals("CONFIRMED")) {
                 throw new EJBException(String.format("%s failed to push %s into CONFIRMED status", driverInstance, aDelta));
             }
@@ -145,40 +145,39 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
         if (subsystemBaseUrl == null) {
             throw new EJBException(String.format("%s has no property key=subsystemBaseUrl", driverInstance));
         }
-        
-        String version = null;
-        String ttlModel = null;
-        String creationTimestamp = null;
-        try {
-            // pull model from REST API
-            URL url = new URL(subsystemBaseUrl + "/model");
-            HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-            String responseStr = this.executeHttpMethod(url, conn, "GET", null);
-            JSONObject responseJSON = (JSONObject) JSONValue.parseWithException(responseStr);
-            version = responseJSON.get("version").toString();
-            if (version == null || version.isEmpty()) {
-                throw new EJBException(String.format("%s pulled model from subsystem with null/empty version", driverInstance));
-            }
-            ttlModel = responseJSON.get("ttlModel").toString();
-            if (ttlModel == null || ttlModel.isEmpty()) {
-                throw new EJBException(String.format("%s pulled model from subsystem with null/empty ttlModel content", driverInstance));
-            }
-            creationTimestamp = responseJSON.get("creationTime").toString();
-            if (creationTimestamp == null || creationTimestamp.isEmpty()) {
-                throw new EJBException(String.format("%s pulled model from subsystem with null/empty creationTime", driverInstance));
-            }
-        } catch (IOException ex) {
-            throw new EJBException(String.format("%s failed to connect to subsystem with exception (%s)", driverInstance, ex));
-        } catch (ParseException ex) {
-            throw new EJBException(String.format("%s failed to parse pulled information from subsystem with exception (%s)", driverInstance, ex));
+        if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null 
+                || !DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().containsKey(driverInstance.getTopologyUri())) {
+            return new AsyncResult<>("INITIALIZING");
         }
-        DriverInstance cachedDriverInstance = driverInstance; // sync on local object = do nothing
-        if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() != null 
-                && DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().containsKey(driverInstance.getTopologyUri())) {
-            // sync on cached object = once per driverInstance to avoid write multiple vi of same version 
-            cachedDriverInstance = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().get(driverInstance.getTopologyUri());
-        }
-        synchronized (cachedDriverInstance) {
+        // sync on cached DriverInstance object = once per driverInstance to avoid write multiple vi of same version 
+        DriverInstance syncOnDriverInstance = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().get(driverInstance.getTopologyUri());
+        synchronized (syncOnDriverInstance) {
+            String version = null;
+            String ttlModel = null;
+            String creationTimestamp = null;
+            try {
+                // pull model from REST API
+                URL url = new URL(subsystemBaseUrl + "/model");
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                String responseStr = this.executeHttpMethod(url, conn, "GET", null);
+                JSONObject responseJSON = (JSONObject) JSONValue.parseWithException(responseStr);
+                version = responseJSON.get("version").toString();
+                if (version == null || version.isEmpty()) {
+                    throw new EJBException(String.format("%s pulled model from subsystem with null/empty version", driverInstance));
+                }
+                ttlModel = responseJSON.get("ttlModel").toString();
+                if (ttlModel == null || ttlModel.isEmpty()) {
+                    throw new EJBException(String.format("%s pulled model from subsystem with null/empty ttlModel content", driverInstance));
+                }
+                creationTimestamp = responseJSON.get("creationTime").toString();
+                if (creationTimestamp == null || creationTimestamp.isEmpty()) {
+                    throw new EJBException(String.format("%s pulled model from subsystem with null/empty creationTime", driverInstance));
+                }
+            } catch (IOException ex) {
+                throw new EJBException(String.format("%s failed to connect to subsystem with exception (%s)", driverInstance, ex));
+            } catch (ParseException ex) {
+                throw new EJBException(String.format("%s failed to parse pulled information from subsystem with exception (%s)", driverInstance, ex));
+            }
             VersionItem vi = null;
             DriverModel dm = null;
             try {
@@ -202,6 +201,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
                 VersionItemPersistenceManager.save(vi);
                 driverInstance.setHeadVersionItem(vi);
                 VersionItemPersistenceManager.save(vi);
+                logger.info(String.format("persisted %s", vi));
             } catch (Exception e) {
                 try {
                     if (dm != null) {

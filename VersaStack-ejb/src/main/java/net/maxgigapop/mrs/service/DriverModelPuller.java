@@ -48,7 +48,9 @@ public class DriverModelPuller {
         if (PersistenceManager.getEntityManager() == null) {
             PersistenceManager.initialize(entityManager);
         }
-        DriverInstancePersistenceManager.refreshAll();
+        if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null) {
+            DriverInstancePersistenceManager.refreshAll();
+        }
     }
     
     @Lock(LockType.WRITE)

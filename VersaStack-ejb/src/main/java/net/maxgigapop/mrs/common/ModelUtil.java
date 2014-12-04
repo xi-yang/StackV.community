@@ -104,7 +104,7 @@ public class ModelUtil {
         for (RDFNode topoNode: listTopo) {
         	OntModel modelTopology = getTopology(model, topoNode);
         	model.remove(modelTopology);
-                topoModelMap.put(topoNode.asResource().getURI(), modelTopology);
+            topoModelMap.put(topoNode.asResource().getURI(), modelTopology);
         }
         //verify full decomposition (no nml: mrs: namespace objects left, otherwise thrown exception)
         if (isEmptyModel(model)) {
