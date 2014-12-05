@@ -9,6 +9,7 @@ package net.maxgigapop.mrs.web.test;
 import com.hp.hpl.jena.ontology.OntModel;
 import static java.lang.Thread.sleep;
 import java.util.UUID;
+import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
@@ -16,15 +17,10 @@ import javax.ejb.EJB;
 import javax.ejb.LocalBean;
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.SystemDelta;
 import net.maxgigapop.mrs.bean.SystemInstance;
 import net.maxgigapop.mrs.bean.VersionGroup;
-import net.maxgigapop.mrs.bean.persist.PersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.system.*;
 
@@ -36,6 +32,8 @@ import net.maxgigapop.mrs.system.*;
 @LocalBean
 @Startup
 public class IntegrationTest1 {
+    private static final Logger logger = Logger.getLogger(IntegrationTest1.class.getName());
+
     @EJB
     HandleSystemCall systemCallHandler;
 
@@ -97,9 +95,13 @@ public class IntegrationTest1 {
             sysDelta.setModelAddition(dmAddition);
             sysDelta.setModelReduction(dmReduction);
             systemCallHandler.propagateDelta(sysInstance, sysDelta);
-            systemCallHandler.commitDelta(sysInstance);
+            Future<String> asyncStatus = (Future<String>) systemCallHandler.commitDelta(sysInstance);
+            while (!asyncStatus.isDone()) {
+                sleep(10000);
+            }
+            logger.info("commit status="+asyncStatus.get());
         } catch (Exception ex) {
-            Logger.getLogger(IntegrationTest1.class.getName()).log(Level.SEVERE, null, ex);
+            logger.log(Level.SEVERE, null, ex);
         }
     }
 }

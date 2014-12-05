@@ -36,6 +36,8 @@ import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.bean.VersionItem;
 import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
+import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
+import net.maxgigapop.mrs.bean.persist.PersistenceManager;
 import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
@@ -201,12 +203,12 @@ public class HandleSystemCall {
                 // no diff, use existing verionItem
                 continue;
             }
-            //DeltaPersistenceManager.save(delta);
             // create targetDSM and targetDSD only if there is a change. 
             ModelBase targetDSM = new ModelBase();
             targetDSM.setOntModel(tom);
             // create targetDSD 
             DriverSystemDelta targetDSD = new DriverSystemDelta();
+            // do not save delta as it is transient but delta.modelA and delta.modelR must be saved
             targetDSD.setModelAddition(delta.getModelAddition());
             targetDSD.setModelReduction(delta.getModelReduction());
             targetDSD.setSystemDelta(sysDelta);
@@ -218,18 +220,27 @@ public class HandleSystemCall {
             // prepare to dispatch to driverInstance
             targetDSD.setDriverInstance(driverInstance);
             targetDriverSystemDeltas.add(targetDSD);
+            // Save targetDSD modelA and modelR.
+            targetDSD.getModelAddition().setDelta(null);
+            targetDSD.getModelReduction().setDelta(null);
+            ModelPersistenceManager.save(targetDSD.getModelAddition());
+            ModelPersistenceManager.save(targetDSD.getModelReduction());
         }
         // Save systemDelta
         sysDelta.setDriverSystemDeltas(targetDriverSystemDeltas);
         sysDelta.setPersistent(false);
-        DeltaPersistenceManager.save(sysDelta);
+        DeltaPersistenceManager.save(sysDelta); // propogate to save included targetDriverSystemDeltas and modelA and modelR
         
         //## Step 4. propagate driverSystemDeltas 
         Context ejbCxt = null;
         for (DriverSystemDelta targetDSD : targetDriverSystemDeltas) {
-            // 4.1. Save targetDSD
+            // save targetDSD
             DeltaPersistenceManager.save(targetDSD);
-            // 4.2. push driverSystemDeltas to driverInstances
+            targetDSD.getModelAddition().setDelta(targetDSD);
+            targetDSD.getModelReduction().setDelta(targetDSD);
+            ModelPersistenceManager.save(targetDSD.getModelAddition());
+            ModelPersistenceManager.save(targetDSD.getModelReduction());
+            // push driverSystemDeltas to driverInstances
             DriverInstance driverInstance = targetDSD.getDriverInstance();
             driverInstance.addDriverSystemDelta(targetDSD);
             String driverEjbPath = driverInstance.getDriverEjbPath();
