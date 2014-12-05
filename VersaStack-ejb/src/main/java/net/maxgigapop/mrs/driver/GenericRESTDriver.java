@@ -68,19 +68,20 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
             JSONObject deltaJSON = new JSONObject();
             deltaJSON.put("id", Long.toString(aDelta.getId()));
             deltaJSON.put("referenceVersion", refVI.getReferenceUUID());
-            deltaJSON.put("creationTime", (new Date()).toString());
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");         
+            deltaJSON.put("creationTime", dateFormat.format(new Date()).toString());
             if (aDelta.getModelAddition() != null && aDelta.getModelAddition().getOntModel() != null) {
                 String ttlModelAddition = ModelUtil.marshalOntModel(aDelta.getModelAddition().getOntModel());
                 deltaJSON.put("modelAddition", ttlModelAddition);
             }
             if (aDelta.getModelReduction() != null && aDelta.getModelReduction().getOntModel() != null) {
                 String ttlModelReduction = ModelUtil.marshalOntModel(aDelta.getModelReduction().getOntModel());
-                deltaJSON.put("modelAddition", ttlModelReduction);
+                deltaJSON.put("modelReduction", ttlModelReduction);
             }
             // push via REST POST
             URL url = new URL(String.format("%s/delta", subsystemBaseUrl));
             HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-            String status = this.executeHttpMethod(url, conn, "POST", "{\"delta\": {"+deltaJSON.toString()+"}}");
+            String status = this.executeHttpMethod(url, conn, "POST", deltaJSON.toString());
             if (!status.toUpperCase().equals("CONFIRMED")) {
                 throw new EJBException(String.format("%s failed to push %s into CONFIRMED status", driverInstance, aDelta));
             }

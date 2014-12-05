@@ -10,6 +10,7 @@ import static java.lang.Thread.sleep;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import javax.ejb.EJB;
 import javax.inject.Inject;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -49,10 +50,11 @@ public class HandleSystemCallTest {
                 .addPackages(true, "net.maxgigapop.mrs.driver")
                 .addPackages(true, "com.hp.hpl.jena")
                 .addPackages(true, "org.apache.xerces")
+                .addPackages(true, "org.json.simple")
                 .addAsResource("META-INF/test-persistence.xml", "META-INF/persistence.xml");
     }
 
-    @Inject
+    @EJB
     HandleSystemCall systemCallHandler;
     
     @PersistenceContext(unitName = "RAINSAgentPU")
@@ -62,13 +64,12 @@ public class HandleSystemCallTest {
      * Test of createHeadVersionGroup method, of class HandleSystemCall.
      */
     @Test
-    public void testCreateHeadVersionGroup_Long() throws Exception {
+    public void testCreateHeadVersionGroup() throws Exception {
         System.out.println("createHeadVersionGroup");
         if (PersistenceManager.getEntityManager() == null) {
             PersistenceManager.initialize(entityManager);
         }
-        
-        Long refId = 1L;
+        //sleep(150000);
         VersionGroup expResult = null;
         VersionGroup result = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
         System.out.println("createHeadVersionGroup result=" + result);

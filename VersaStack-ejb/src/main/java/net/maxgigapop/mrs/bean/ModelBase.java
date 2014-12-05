@@ -10,6 +10,7 @@ import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import java.io.Serializable;
+import java.io.StringWriter;
 import java.util.Date;
 import javax.ejb.EJBException;
 import javax.persistence.Entity;
@@ -187,15 +188,15 @@ public class ModelBase extends PersistentEntity implements Serializable {
         if (delta == null || (delta.getModelReduction() == null && delta.getModelAddition() == null)) {
             throw new EJBException("dryrunDelta encounters null/empty delta");
         }
-        OntModel ontModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-        ontModel.add(this.ontModel);
+        OntModel om = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        om.add(this.ontModel);        
         if (delta.getModelReduction() != null && delta.getModelReduction().getOntModel() !=null) {
-            ontModel.remove(delta.getModelReduction().getOntModel());
+            om.remove(delta.getModelReduction().getOntModel());
         }
         if (delta.getModelAddition() != null && delta.getModelAddition().getOntModel() !=null) {
-            ontModel.add(delta.getModelAddition().getOntModel());
+            om.add(delta.getModelAddition().getOntModel());
         }
-        return ontModel;
+        return om;
     }
     
     //calculate the delta that makes the otherOntModel become this.ontModel
@@ -228,7 +229,7 @@ public class ModelBase extends PersistentEntity implements Serializable {
         modelR = (OntModel)modelR.remove(otherOntModel);
         OntModel modelA = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         modelA.add(otherOntModel);
-        modelA = (OntModel)modelR.remove(this.ontModel);
+        modelA = (OntModel)modelA.remove(this.ontModel);
         DeltaModel deltaModelA = new DeltaModel();
         deltaModelA.setOntModel(modelA);
         DeltaModel deltaModelR = new DeltaModel();

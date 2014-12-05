@@ -7,6 +7,7 @@
 package net.maxgigapop.mrs.system;
 
 import com.hp.hpl.jena.ontology.OntModel;
+import java.io.StringWriter;
 import static java.lang.Thread.sleep;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -136,19 +137,13 @@ public class HandleSystemCall {
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
-    public void propagateDelta(SystemInstance systemInstance, SystemDelta aDelta) {
+    public void propagateDelta(SystemInstance systemInstance, SystemDelta sysDelta) {
         if (systemInstance == null) {
             throw new EJBException("propagateDelta encounters null systemInstance");
         }
-        try {
-            aDelta.setPersistent(false);
-            DeltaPersistenceManager.save(aDelta);
-        } catch (Exception ex) {
-            throw new EJBException(String.format("propagateDelta failed to save %s", aDelta));
-        }
-        // Note 1: a defaut VG (#1) must exist the first time the system starts.
+       // Note 1: a defaut VG (#1) must exist the first time the system starts.
         // Note 2: the VG below must contain versionItems for committed models only.
-        VersionGroup referenceVG = aDelta.getReferenceVersionGroup();
+        VersionGroup referenceVG = sysDelta.getReferenceVersionGroup();
         if (referenceVG == null) {
             throw new EJBException(String.format("%s has no reference versionGroup to work with", systemInstance));
         }
@@ -157,7 +152,7 @@ public class HandleSystemCall {
         //## Step 1. create reference model and target model 
         ModelBase referenceModel = referenceVG.createUnionModel();
         OntModel referenceOntModel = referenceModel.getOntModel();
-        OntModel targetOntModel = referenceModel.dryrunDelta(aDelta);
+        OntModel targetOntModel = referenceModel.dryrunDelta(sysDelta);
 
         //## Step 2. verify model change
         // 2.1. get head/lastest VG based on the current versionGroup 
@@ -169,18 +164,17 @@ public class HandleSystemCall {
             // Note: The head model has committed (driverDeltas) or propagated (driverSystemDeltas if available) to reduce contention.
             // We must persist target model VG after both propagated and committed.
             DeltaBase D12 = headSystemModel.diffFromModel(referenceOntModel);
-            //          verify D12.getModelAddition().getOntModel().intersection(aDelta.getModelReduction().getOntModel()) == empty
-            //          verify D12.getModelReduction().getOntModel().intersection(aDelta.getModelAddiction().getOntModel()) == empty
-            com.hp.hpl.jena.rdf.model.Model reductionConflict = D12.getModelAddition().getOntModel().intersection(aDelta.getModelReduction().getOntModel());
-            com.hp.hpl.jena.rdf.model.Model additionConflict = D12.getModelReduction().getOntModel().intersection(aDelta.getModelAddition().getOntModel());
+            //          verify D12.getModelAddition().getOntModel().intersection(sysDelta.getModelReduction().getOntModel()) == empty
+            //          verify D12.getModelReduction().getOntModel().intersection(sysDelta.getModelAddiction().getOntModel()) == empty
+            com.hp.hpl.jena.rdf.model.Model reductionConflict = D12.getModelAddition().getOntModel().intersection(sysDelta.getModelReduction().getOntModel());
+            com.hp.hpl.jena.rdf.model.Model additionConflict = D12.getModelReduction().getOntModel().intersection(sysDelta.getModelAddition().getOntModel());
             //          if either verification fails throw EJBException("version conflict");
             if (!ModelUtil.isEmptyModel(reductionConflict) || !ModelUtil.isEmptyModel(additionConflict)) {
-                throw new EJBException(String.format("%s %s based on %s conflicts with current head %s", systemInstance, aDelta, referenceVG, headVG));
+                throw new EJBException(String.format("%s %s based on %s conflicts with current head %s", systemInstance, sysDelta, referenceVG, headVG));
             }
             // Note: no need to update current VG to head as the targetDSD will be based the current VG and driverSystem will verify contention on its own.
         }
-
-        //## Step 3. decompose aDelta into driverSystemDeltas by <Topology>
+        //## Step 3. decompose sysDelta into driverSystemDeltas by <Topology>
         // 3.1. split targetOntModel to otain list of target driver topologies
         Map<String, OntModel> targetDriverSystemModels = ModelUtil.splitOntModelByTopology(targetOntModel);
         // 3.2. split referenceOntModel to otain list of reference driver topologies 
@@ -189,7 +183,7 @@ public class HandleSystemCall {
         List<DriverSystemDelta> targetDriverSystemDeltas = new ArrayList<>();
         for (String driverSystemTopoUri : targetDriverSystemModels.keySet()) {
             if (!referenceDriverSystemModels.containsKey(driverSystemTopoUri)) {
-                throw new EJBException(String.format("%s cannot decompose %s due to unexpected target topology [uri=%s]", systemInstance, aDelta, driverSystemTopoUri));
+                throw new EJBException(String.format("%s cannot decompose %s due to unexpected target topology [uri=%s]", systemInstance, sysDelta, driverSystemTopoUri));
             }
             DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(driverSystemTopoUri);
             if (driverInstance == null) {
@@ -207,6 +201,7 @@ public class HandleSystemCall {
                 // no diff, use existing verionItem
                 continue;
             }
+            //DeltaPersistenceManager.save(delta);
             // create targetDSM and targetDSD only if there is a change. 
             ModelBase targetDSM = new ModelBase();
             targetDSM.setOntModel(tom);
@@ -214,7 +209,7 @@ public class HandleSystemCall {
             DriverSystemDelta targetDSD = new DriverSystemDelta();
             targetDSD.setModelAddition(delta.getModelAddition());
             targetDSD.setModelReduction(delta.getModelReduction());
-            targetDSD.setSystemDelta(null);
+            targetDSD.setSystemDelta(sysDelta);
             // target delta uses version reference ID of committed model that corresponds to a known version in driverSystem.
             targetDSD.setReferenceVersionItem(oldVI);
             if (driverInstance == null) {
@@ -224,11 +219,15 @@ public class HandleSystemCall {
             targetDSD.setDriverInstance(driverInstance);
             targetDriverSystemDeltas.add(targetDSD);
         }
+        // Save systemDelta
+        sysDelta.setDriverSystemDeltas(targetDriverSystemDeltas);
+        sysDelta.setPersistent(false);
+        DeltaPersistenceManager.save(sysDelta);
         
         //## Step 4. propagate driverSystemDeltas 
         Context ejbCxt = null;
         for (DriverSystemDelta targetDSD : targetDriverSystemDeltas) {
-            // 4.1. save driverSystemDeltas
+            // 4.1. Save targetDSD
             DeltaPersistenceManager.save(targetDSD);
             // 4.2. push driverSystemDeltas to driverInstances
             DriverInstance driverInstance = targetDSD.getDriverInstance();
@@ -245,14 +244,10 @@ public class HandleSystemCall {
                 throw new EJBException(e);
             }
         }
-        // 4.3 save systemInstance and targetDSD
-        for (DriverSystemDelta targetDSD : targetDriverSystemDeltas) {
-            DeltaPersistenceManager.save(targetDSD);
-        }
-        aDelta.setDriverSystemDeltas(targetDriverSystemDeltas);
-        systemInstance.setSystemDelta(aDelta);
+        // save systemInstance
+        systemInstance.setSystemDelta(sysDelta);
         SystemInstancePersistenceManager.save(systemInstance);
-        //## End of propagtion
+        //## End of propgation
     }
 
     //@TODO: trigger pullModel upon success or failure?

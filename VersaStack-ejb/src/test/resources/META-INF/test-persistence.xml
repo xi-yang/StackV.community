@@ -4,7 +4,7 @@
     <jta-data-source>java:/jboss/datasources/MysqlDS</jta-data-source>
     <exclude-unlisted-classes>false</exclude-unlisted-classes>
     <properties>
-      <property name="javax.persistence.schema-generation.database.action" value="none"/>
+      <property name="javax.persistence.query.timeout" value="10000"/>
     </properties>
   </persistence-unit>
 </persistence>

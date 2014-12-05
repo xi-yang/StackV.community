@@ -45,6 +45,8 @@ public class IntegrationTest1 {
 "@prefix rdf:   <http://schemas.ogf.org/nml/2013/03/base#> .\n" +
 "@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .\n" +
 "@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .\n" +
+"<urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON:l2switching>\n" +
+"        mrs:providesSubnet        <urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON:l2switching:crs-svc1> ."+
 "<urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON:l2switching:crs-svc1>\n" +
 "        a                         mrs:SwitchingSubnet , owl:NamedIndividual ;\n" +
 "        nml:encoding              <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> ;\n" +
@@ -75,7 +77,7 @@ public class IntegrationTest1 {
     @PostConstruct
     public void testSystemPullAndPush1() {
         try {
-            sleep(200000L);
+            sleep(120000L);
             VersionGroup vg = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
             SystemInstance sysInstance = systemCallHandler.createInstance();
             SystemDelta sysDelta = new SystemDelta();

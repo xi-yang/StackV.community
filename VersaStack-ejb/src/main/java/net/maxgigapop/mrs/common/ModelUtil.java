@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.bean.DeltaBase;
 import net.maxgigapop.mrs.bean.ModelBase;
@@ -30,6 +31,8 @@ import net.maxgigapop.mrs.bean.ModelBase;
  * @author xyang
  */
 public class ModelUtil {
+    private static final Logger logger = Logger.getLogger(ModelUtil.class.getName());
+
     static public OntModel unmarshalOntModel (String ttl) throws Exception {
         OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         //$$ TODO: add ontology schema and namespace handling code
@@ -107,17 +110,20 @@ public class ModelUtil {
             topoModelMap.put(topoNode.asResource().getURI(), modelTopology);
         }
         //verify full decomposition (no nml: mrs: namespace objects left, otherwise thrown exception)
-        if (isEmptyModel(model)) {
+        if (!isEmptyModel(model.getBaseModel())) {
+            StringWriter writer1 = new StringWriter();
+            model.getBaseModel().write(writer1, "TURTLE");                 
+            logger.info("Non empty model after splitOntModelByTopology: " + writer1.getBuffer().toString());
         	throw new EJBException("ModelUtil.splitOntModelByTopology encounters non-dispatchable nml/mrs objects in " + model);
         }
         return topoModelMap;
     }
     
     private static List<RDFNode> getTopologyList(Model model) {
-        String sparqlString = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\"\n" +
-                "PREFIX owl: <http://www.w3.org/2002/07/owl#>\"\n" +
-                "PREFIX nml: <http://schemas.ogf.org/nml/2013/03/base#>\"\n" +
-                "PREFIX mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
+        String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
+                "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
+                "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
+                "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
                 "SELECT ?topology WHERE {?topology a nml:Topology}";
         Query query = QueryFactory.create(sparqlString);
         List<RDFNode> listRes = null;
