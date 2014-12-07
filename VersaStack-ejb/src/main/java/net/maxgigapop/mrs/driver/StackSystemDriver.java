@@ -66,7 +66,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
             sysDelta.setReferenceVersionGroup(vg);
             sysDelta.setModelAddition(aDelta.getModelAddition());
             sysDelta.setModelReduction(aDelta.getModelReduction());
-            ejbSystemHandler.propagateDelta(sysInstance, sysDelta);
+            ejbSystemHandler.propagateDelta(sysInstance.getReferenceUUID(), sysDelta);
             driverSystemSessionMap.put(aDelta, sysInstance);
         } catch (Exception e) {
             throw new EJBException(String.format("propagateDelta failed for %s with %s due to exception (%s)", driverInstance, aDelta, e.getMessage()));
@@ -92,7 +92,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
         try {
             Context ejbCxt = new InitialContext();
             HandleSystemCall ejbSystemHandler = (HandleSystemCall)ejbCxt.lookup(ejbPathHandleSystemCall);
-            ejbSystemHandler.commitDelta(sysInstance);
+            ejbSystemHandler.commitDelta(sysInstance.getReferenceUUID());
         } catch (Exception e) {
             throw new EJBException(String.format("commitDelta failed for %s", aDelta));
         }

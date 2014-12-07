@@ -35,13 +35,13 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
 @Singleton
 @LocalBean
 @Startup
-public class StartServiceTest {
+public class TestServiceStarter {
 
     private @PersistenceContext(unitName = "RAINSAgentPU")
     EntityManager entityManager;
 
     //@PostConstruct
-    public void testSubDriver() {
+    public void testStubDriver() {
         if (PersistenceManager.getEntityManager() == null) {
             PersistenceManager.initialize(entityManager);
         }
@@ -70,18 +70,15 @@ public class StartServiceTest {
             Context ejbCxt = new InitialContext();
             HandleSystemCall systemCallHandler = (HandleSystemCall) ejbCxt.lookup("java:module/HandleSystemCall");
             Map<String, String> driverProperties = new HashMap<>();
-            driverProperties.put("topologyUri", "testdomain1.org");
+            driverProperties.put("topologyUri", "urn:ogf:network:rains.maxgigapop.net:2013:topology");
             driverProperties.put("driverEjbPath", "java:module/StubSystemDriver");
             driverProperties.put("stubModelTtl", model1.getTtlModel());
             systemCallHandler.plugDriverInstance(driverProperties);
-            driverProperties.put("topologyUri", "testdomain2.org");
-            systemCallHandler.plugDriverInstance(driverProperties);
         } catch (Exception ex) {
-            Logger.getLogger(StartServiceTest.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(TestServiceStarter.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
         
-    @PostConstruct
     public void testVersaNSDriver() {
         if (PersistenceManager.getEntityManager() == null) {
             PersistenceManager.initialize(entityManager);
@@ -95,8 +92,13 @@ public class StartServiceTest {
             driverProperties.put("subsystemBaseUrl", "http://localhost:8080/VersaNS-0.0.1-SNAPSHOT");
             systemCallHandler.plugDriverInstance(driverProperties);
         } catch (Exception ex) {
-            Logger.getLogger(StartServiceTest.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(TestServiceStarter.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-
+    
+    @PostConstruct
+    public void runTests() {
+        this.testStubDriver();
+        this.testVersaNSDriver();
+    }
 }

@@ -75,7 +75,7 @@ public class IntegrationTest1 {
     @PostConstruct
     public void testSystemPullAndPush1() {
         try {
-            sleep(120000L);
+            sleep(180000L);
             VersionGroup vg = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
             SystemInstance sysInstance = systemCallHandler.createInstance();
             SystemDelta sysDelta = new SystemDelta();

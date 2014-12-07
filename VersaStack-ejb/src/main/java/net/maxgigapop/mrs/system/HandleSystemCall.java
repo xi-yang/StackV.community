@@ -123,25 +123,29 @@ public class HandleSystemCall {
         return systemInstance;
     }
 
-    public void terminateInstance(SystemInstance systemInstance) {
-        if (systemInstance != null) {
-            if (systemInstance.getSystemDelta() != null) {
-                DeltaPersistenceManager.delete(systemInstance.getSystemDelta());
-                if (systemInstance.getSystemDelta().getDriverSystemDeltas() != null) {
-                    for (Iterator<DriverSystemDelta> it = systemInstance.getSystemDelta().getDriverSystemDeltas().iterator(); it.hasNext();) {
-                        DriverSystemDelta dsd = it.next();
-                        DeltaPersistenceManager.delete(dsd);
-                    }
+    public void terminateInstance(String refUUID) {
+        SystemInstance systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(refUUID);
+        if (systemInstance == null) {
+            throw new EJBException(String.format("terminateInstance cannot find the SystemInstance with referenceUUID=%s", refUUID));
+        }
+        if (systemInstance.getSystemDelta() != null) {
+            DeltaPersistenceManager.delete(systemInstance.getSystemDelta());
+            if (systemInstance.getSystemDelta().getDriverSystemDeltas() != null) {
+                for (Iterator<DriverSystemDelta> it = systemInstance.getSystemDelta().getDriverSystemDeltas().iterator(); it.hasNext();) {
+                    DriverSystemDelta dsd = it.next();
+                    DeltaPersistenceManager.delete(dsd);
                 }
             }
-            SystemInstancePersistenceManager.delete(systemInstance);
         }
+        SystemInstancePersistenceManager.delete(systemInstance);
     }
-
+    
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(SystemInstance systemInstance, SystemDelta sysDelta) {
-        if (systemInstance == null) {
-            throw new EJBException("propagateDelta encounters null systemInstance");
+        if (systemInstance.getSystemDelta() != null 
+                && systemInstance.getSystemDelta().getDriverSystemDeltas() != null 
+                && !systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
+            throw new EJBException(String.format("Trying to propagateDelta for %s that has delta already progagated.", systemInstance));
         }
        // Note 1: a defaut VG (#1) must exist the first time the system starts.
         // Note 2: the VG below must contain versionItems for committed models only.
@@ -260,13 +264,9 @@ public class HandleSystemCall {
         SystemInstancePersistenceManager.save(systemInstance);
         //## End of propgation
     }
-
-    //@TODO: trigger pullModel upon success or failure?
+    
     @Asynchronous
     public Future<String> commitDelta(SystemInstance systemInstance) {
-        if (systemInstance == null) {
-            throw new EJBException(String.format("cannot run commitDelta with null systemInstance"));
-        }
         // 1. Get target VG from this stateful bean
         if (systemInstance.getSystemDelta() == null || systemInstance.getSystemDelta().getDriverSystemDeltas() == null 
                 || systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
@@ -323,6 +323,28 @@ public class HandleSystemCall {
         }
         throw new EJBException(String.format("commitDelta for %s has timed out ", systemInstance));
     }
+    
+    
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
+    public void propagateDelta(String sysInstanceUUID, SystemDelta sysDelta) {
+        SystemInstance systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(sysInstanceUUID);
+        if (systemInstance == null) {
+            throw new EJBException("propagateDelta encounters unknown systemInstance with referenceUUID="+sysInstanceUUID);
+        }
+        
+        this.propagateDelta(systemInstance, sysDelta);
+    }
+    
+    @Asynchronous
+    public Future<String> commitDelta(String sysInstanceUUID) {
+        SystemInstance systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(sysInstanceUUID);
+        if (systemInstance == null) {
+            throw new EJBException("commitDelta encounters unknown systemInstance with referenceUUID="+sysInstanceUUID);
+        }
+        
+        return this.commitDelta(systemInstance);
+    }
+    
     
     public void plugDriverInstance(Map<String, String> properties) {
         if (!properties.containsKey("topologyUri") || !properties.containsKey("driverEjbPath")) {

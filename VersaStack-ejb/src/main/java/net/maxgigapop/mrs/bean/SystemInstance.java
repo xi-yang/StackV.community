@@ -36,6 +36,8 @@ public class SystemInstance extends PersistentEntity implements Serializable {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
+    private String referenceUUID;
+            
     @OneToOne(cascade = {CascadeType.ALL})
     @JoinColumn(name = "systemDeltaId")
     protected SystemDelta systemDelta = null;    
@@ -46,6 +48,14 @@ public class SystemInstance extends PersistentEntity implements Serializable {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getReferenceUUID() {
+        return referenceUUID;
+    }
+
+    public void setReferenceUUID(String referenceUUID) {
+        this.referenceUUID = referenceUUID;
     }
 
     public SystemDelta getSystemDelta() {
