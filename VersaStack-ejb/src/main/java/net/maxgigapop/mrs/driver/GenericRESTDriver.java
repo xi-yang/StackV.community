@@ -157,6 +157,14 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
             String ttlModel = null;
             String creationTimestamp = null;
             try {
+                if (driverInstance.getHeadVersionItem() != null) {
+                    URL url = new URL(subsystemBaseUrl + "/model/"+driverInstance.getHeadVersionItem().getReferenceUUID());
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    String status = this.executeHttpMethod(url, conn, "GET", null);
+                    if (status.toUpperCase().equals("LATEST")) {
+                        return new AsyncResult<>("SUCCESS");
+                    }
+                }
                 // pull model from REST API
                 URL url = new URL(subsystemBaseUrl + "/model");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();

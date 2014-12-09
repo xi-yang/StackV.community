@@ -27,6 +27,7 @@ public class DeltaModel extends ModelBase {
     protected boolean isAddition = true; // true = addition; false = reduction
     
     @OneToOne
+    @JoinColumn(name = "deltaId")
     protected DeltaBase delta = null;
 
     public boolean isIsAddition() {
