@@ -21,6 +21,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 import net.maxgigapop.mrs.bean.persist.PersistentEntity;
 
 /**
@@ -47,6 +48,9 @@ public class VersionGroup extends PersistentEntity implements Serializable {
                 @JoinColumn(name = "item_id", referencedColumnName = "id")})
     private List<VersionItem> versionItems = null;
 
+    @Transient 
+    ModelBase cachedModelBase = null;
+    
     private String status = "";
     
     public Long getId() {
@@ -126,6 +130,10 @@ public class VersionGroup extends PersistentEntity implements Serializable {
         this.status = status;
     }
 
+    public ModelBase getCachedModelBase() {
+        return cachedModelBase;
+    }
+
     @Override
     public String toString() {
         return "net.maxgigapop.mrs.bean.VersionGroup[ id=" + id + " ]";
@@ -143,6 +151,7 @@ public class VersionGroup extends PersistentEntity implements Serializable {
             }
             newModel.getOntModel().addSubModel(vi.getModelRef().getOntModel());
         }
+        this.cachedModelBase = newModel;
         //@TBD: rebind / rerun inference for referenceModel
         return newModel;
     }

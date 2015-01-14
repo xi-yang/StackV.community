@@ -24,7 +24,7 @@ import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.PersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.driver.StubSystemDriver;
-import net.maxgigapop.mrs.service.DriverModelPuller;
+import net.maxgigapop.mrs.core.DriverModelPuller;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.shrinkwrap.api.ShrinkWrap;

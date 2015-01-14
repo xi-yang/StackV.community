@@ -19,7 +19,7 @@ import javax.naming.InitialContext;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import net.maxgigapop.mrs.bean.persist.PersistenceManager;
-import net.maxgigapop.mrs.service.TestServiceStarter;
+import net.maxgigapop.mrs.driver.DriverTestStarter;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
@@ -65,10 +65,10 @@ public class OpenStackTest {
             
             systemCallHandler.plugDriverInstance(driverProperties);        
             
-            Logger.getLogger(TestServiceStarter.class.getName()).log(Level.INFO, "OpenStack driver instance started");
+            Logger.getLogger(DriverTestStarter.class.getName()).log(Level.INFO, "OpenStack driver instance started");
             
         } catch (Exception ex) {
-            Logger.getLogger(TestServiceStarter.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
+            Logger.getLogger(DriverTestStarter.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
         }
     }
     

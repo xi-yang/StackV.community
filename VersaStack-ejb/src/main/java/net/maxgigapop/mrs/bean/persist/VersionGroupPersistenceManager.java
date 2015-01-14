@@ -46,17 +46,19 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
         if (ditMap.isEmpty()) {
             throw new EJBException(String.format("VersionGroupPersistenceManager::refreshToHead canont find driverInstance in the system"));
         }
-        VersionGroup vgNew = null;
+        boolean hasChanged = false;
+        VersionGroup vgNew = new VersionGroup();
         for (VersionItem vi : vg.getVersionItems()) {
             DriverInstance di = vi.getDriverInstance();
-            if (di != null && !di.getHeadVersionItem().equals(vi)) {
-                if (vgNew == null) {
-                    vgNew = new VersionGroup();
-                }
-                vgNew.addVersionItem(vi);
+            if (di == null)
+                continue;
+            VersionItem viNew = di.getHeadVersionItem();
+            if (!hasChanged && !viNew.equals(vi)) {
+                hasChanged = true;
             }
+            vgNew.addVersionItem(viNew);
         }
-        if (vgNew != null) {
+        if (hasChanged) {
             vgNew.setRefUuid(vg.getRefUuid());
             VersionGroupPersistenceManager.save(vgNew);
             VersionGroupPersistenceManager.delete(vg);

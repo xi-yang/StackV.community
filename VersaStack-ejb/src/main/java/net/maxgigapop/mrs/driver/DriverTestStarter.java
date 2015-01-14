@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-package net.maxgigapop.mrs.service;
+package net.maxgigapop.mrs.driver;
 
 import static java.lang.Thread.sleep;
 import java.util.HashMap;
@@ -27,6 +27,7 @@ import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.PersistenceManager;
 import net.maxgigapop.mrs.system.HandleSystemCall;
+import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
  *
@@ -35,7 +36,7 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
 @Singleton
 @LocalBean
 @Startup
-public class TestServiceStarter {
+public class DriverTestStarter {
 
     private @PersistenceContext(unitName = "RAINSAgentPU")
     EntityManager entityManager;
@@ -75,7 +76,7 @@ public class TestServiceStarter {
             driverProperties.put("stubModelTtl", model1.getTtlModel());
             systemCallHandler.plugDriverInstance(driverProperties);
         } catch (Exception ex) {
-            Logger.getLogger(TestServiceStarter.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(DriverTestStarter.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
         
@@ -92,7 +93,7 @@ public class TestServiceStarter {
             driverProperties.put("subsystemBaseUrl", "http://localhost:8080/VersaNS-0.0.1-SNAPSHOT");
             systemCallHandler.plugDriverInstance(driverProperties);
         } catch (Exception ex) {
-            Logger.getLogger(TestServiceStarter.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(DriverTestStarter.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
