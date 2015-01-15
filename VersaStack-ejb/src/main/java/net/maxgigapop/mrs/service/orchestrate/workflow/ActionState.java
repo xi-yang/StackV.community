@@ -14,5 +14,6 @@ public class ActionState {
     static final public String PROCESSING = "PROCESSING";
     static final public String CANCELLED = "CANCELLED";
     static final public String FINISHED = "FINISHED";
+    static final public String MERGED = "MERGED";
     static final public String FAILED = "FAILED";
 }

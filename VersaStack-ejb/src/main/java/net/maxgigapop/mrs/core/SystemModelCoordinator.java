@@ -20,13 +20,10 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
  * @author xyang
  */
 
-//? TODO: change name into CoreTransactionCoordinator
-    // 
-
 @Singleton
 @LocalBean
 @AccessTimeout(value=10000) // 10 seconds
-public class SystemModelManager {
+public class SystemModelCoordinator {
     @EJB
     HandleSystemCall systemCallHandler;
 
@@ -38,7 +35,7 @@ public class SystemModelManager {
     }
         
     @Lock(LockType.WRITE)
-    VersionGroup getLatestVersionGroupWithUnionModel() {
+    public VersionGroup getLatestVersionGroupWithUnionModel() {
         if (this.systemVersionGroup == null) {
             this.systemVersionGroup = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
             if (this.systemVersionGroup != null) {

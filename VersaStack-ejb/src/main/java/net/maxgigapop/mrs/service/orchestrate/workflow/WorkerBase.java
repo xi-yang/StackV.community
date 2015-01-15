@@ -5,11 +5,23 @@
  */
 package net.maxgigapop.mrs.service.orchestrate.workflow;
 
+import static java.lang.Thread.sleep;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.ejb.EJB;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.bean.DeltaBase;
 import net.maxgigapop.mrs.bean.ModelBase;
+import net.maxgigapop.mrs.bean.VersionGroup;
+import net.maxgigapop.mrs.core.SystemModelCoordinator;
+import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
  *
@@ -18,20 +30,19 @@ import net.maxgigapop.mrs.bean.ModelBase;
 public class WorkerBase {
     ModelBase referenceSystemModel = null;
     DeltaBase annoatedModel = null;
-    DeltaBase resultModel = null;
+    DeltaBase resultModelDelta = null;
     List<Action> rootActions = new ArrayList<>();
     List<List<Action>> actionBatches = new ArrayList<>();
-            
+    
+    @EJB
+    SystemModelCoordinator systemModelCoordinator;
+    
     public void setAnnoatedModel(DeltaBase annoatedModel) {
         this.annoatedModel = annoatedModel;
     }
 
-    public void setResultModel(DeltaBase resultModel) {
-        this.resultModel = resultModel;
-    }
-
-    public DeltaBase getResultModel() {
-        return resultModel;
+    public DeltaBase getResultModelDelta() {
+        return resultModelDelta;
     }
 
     public List<Action> getRootActions() {
@@ -47,44 +58,112 @@ public class WorkerBase {
     }
     
     // DFS to return the first Idle action that has none un-merged child
-    Action lookupDeepestIdleAction() {
-        //$ TODO
+    protected Action lookupIdleLeafAction() {
+        for (Action action: rootActions) {
+            Action idleLeaf = action.getIdleLeaf();
+            if (idleLeaf != null)
+                return idleLeaf;
+        }
         return null; 
     } 
 
-    // return set of actions that are Idle AND (not in its path to root) AND (have none un-merged child)
-    // thE returned list include the input Action itself
-    List<Action> lookupIndependentActions(Action action) {
+    // return set of actions that are Idle AND (not in its subtree) AND (have none un-merged child)
+    // the returned list include the input Action itself
+    protected List<Action> lookupIndependentActions(Action action) {
         List<Action> list = new ArrayList<>();
         list.add(action);
-        //$ TODO
+        for (Action aRoot: rootActions) {
+            List<Action> listAdd = aRoot.getIndependentIdleLeaves(action);
+            if (listAdd != null) {
+                list.addAll(listAdd);
+            }
+        }
         return list;
     }
             
-    void runWorkflow() {
-        //$ TODO
-        // retrieve (copy?) referenceSystemModel from core
-        
+    public void runWorkflow() {
+        // get system base model from SystemModelCoordinator singleton
+        VersionGroup referenceVersionGroup = systemModelCoordinator.getLatestVersionGroupWithUnionModel();
+        referenceSystemModel = referenceVersionGroup.getCachedModelBase();
         if (referenceSystemModel == null) {
-            throw new EJBException("Workerflow run with null referenceSystemModel");
+            throw new EJBException("Workerflow cannot run null referenceSystemModel");
         }
+        // annoatedModel and rootActions should have been instantiated by caller
         if (annoatedModel == null) {
-            throw new EJBException("Workerflow run with null annoatedModel");
+            throw new EJBException("Workerflow cannot run with null annoatedModel");
         }
         if (rootActions.isEmpty()) {
-            throw new EJBException("Workerflow run with empty rootActions");
+            throw new EJBException("Workerflow cannot run with empty rootActions");
         }
+        final Action mergedRoot = rootActions.get(0);
         
-        //$ TODO: drive workflow logic
-        // form a loop to exhaust idel actions in rootActions list:
-            //1. lookupDeepestIdleAction to get an available action;
-            //2. then lookupIndependentActions to find list of parallel actions for the step
+        Map<Action, Future<DeltaBase>> resultMap = new HashMap<>();
+        
+        // start workflow run
+        //1. lookupDeepestIdleAction to get an available action;
+        Action nextAction = this.lookupIdleLeafAction();
+        //2.  lookupIndependentActions to find list of parallel actions for the step
+        List<Action> batchOfActions = this.lookupIndependentActions(nextAction);
+        // Top loop to exhaust idle actions in rootActions list and sub-trees
+        //$$ Timeout for the top loop ?
+        while (!batchOfActions.isEmpty()) {
             //3. execute the idle actions in the list (asynchronously)
-            //4. pause to poll on action status 
-                // fail on exception, cleanup and shutdown workflow
-                // if a run action return successfully
-                // collect resultDelta and merge to parent input annotatedDelta
+            for (Action action: batchOfActions) {
+                if (action.getState().equals(ActionState.IDLE)) {
+                    Future<DeltaBase> asyncResult = action.execute();
+                    resultMap.put(action, asyncResult);
+                }
+            }
+            //4. poll action status 
+            long timeout = 3000; // 3000 intervals x 100ms = 300 seconds 
+            while (timeout-- > 0) {
+                try {
+                    sleep(100);
+                } catch (InterruptedException ex) {
+                    ;
+                }
+                Iterator<Action> itA = resultMap.keySet().iterator();
+                while (itA.hasNext()) {
+                    Action action = itA.next();
+                    Future<DeltaBase> asyncResult = resultMap.get(action);
+                    if (asyncResult.isDone()) {
+                        try {
+                            DeltaBase resultDelta = asyncResult.get();
+                            // if a run action return successfully
+                            // collect resultDelta and merge to parent input annotatedDelta
+                            if (!action.getUppers().isEmpty()) {
+                                for (Action upperAction: action.getUppers()) {
+                                    upperAction.mergeResult(resultDelta);
+                                    action.setState(ActionState.MERGED);
+                                }
+                            } else if (!action.equals(mergedRoot)){
+                                // merge root actions delta to the first root element
+                                mergedRoot.mergeResult(resultDelta);
+                            }
+                            itA.remove();
+                        } catch (Exception ex) {
+                            //$$ TODO: cleanup and cancel/shutdown other actions in workflow
+                            String errMsg;
+                            if (action.getState() == ActionState.FAILED)
+                                errMsg = "workflow caught exception from " + action;
+                            else 
+                                errMsg = "workflow is interrupted when " + action + " is in sate " + action.getState();
+                            throw new EJBException(errMsg + action, ex);
+                        }
+                    }
+                }
                 // lookupDeepestIdleAction to get next available action
-                // goto 2
+                nextAction = this.lookupIdleLeafAction();
+                if (nextAction != null) {
+                    //lookupIndependentActions and add all independent idel actions to execution batch
+                    batchOfActions.addAll(this.lookupIndependentActions(nextAction));
+                    break;
+                }
+                // continue to batch execution (to exectute new action and/or wait ones in processing)
+            }
+            //$$ TODO: throw exception if top loop times out
+            
+            this.resultModelDelta = mergedRoot.getOutputDelta();
+        }
     }
 }

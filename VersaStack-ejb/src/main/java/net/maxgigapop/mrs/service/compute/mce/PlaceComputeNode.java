@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package net.maxgigapop.mrs.service.orchestrate.mce;
+package net.maxgigapop.mrs.service.compute.mce;
 
 import java.util.concurrent.Future;
 import javax.ejb.AsyncResult;
@@ -18,7 +18,7 @@ import net.maxgigapop.mrs.bean.ModelBase;
  * Process abstract nodes annotations to place compute nodes 
  */
 @Stateless
-public class MCE_Place_ComputeNode implements IModelComputationElement {
+public class PlaceComputeNode implements IModelComputationElement {
     @Override
     @Asynchronous
     public Future<DeltaBase> process(ModelBase systemModel, DeltaBase annotatedDelta) {
