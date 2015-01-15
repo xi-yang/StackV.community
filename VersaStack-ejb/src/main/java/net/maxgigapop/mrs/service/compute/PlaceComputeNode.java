@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package net.maxgigapop.mrs.service.compute.mce;
+package net.maxgigapop.mrs.service.compute;
 
 import java.util.concurrent.Future;
 import javax.ejb.AsyncResult;

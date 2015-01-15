@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package net.maxgigapop.mrs.service.orchestrate.workflow;
+package net.maxgigapop.mrs.service.orchestrate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +14,7 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import net.maxgigapop.mrs.bean.DeltaBase;
 import net.maxgigapop.mrs.bean.ModelBase;
-import net.maxgigapop.mrs.service.compute.mce.IModelComputationElement;
+import net.maxgigapop.mrs.service.compute.IModelComputationElement;
 
 /**
  *
