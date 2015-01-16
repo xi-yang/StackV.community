@@ -31,8 +31,8 @@ public class WorkerBase {
     ModelBase referenceSystemModel = null;
     DeltaBase annoatedModel = null;
     DeltaBase resultModelDelta = null;
-    List<Action> rootActions = new ArrayList<>();
-    List<List<Action>> actionBatches = new ArrayList<>();
+    List<ActionBase> rootActions = new ArrayList<>();
+    List<List<ActionBase>> actionBatches = new ArrayList<>();
     
     @EJB
     SystemModelCoordinator systemModelCoordinator;
@@ -45,22 +45,22 @@ public class WorkerBase {
         return resultModelDelta;
     }
 
-    public List<Action> getRootActions() {
+    public List<ActionBase> getRootActions() {
         return rootActions;
     }
 
-    void addRooAction(Action action) {
+    void addRooAction(ActionBase action) {
         rootActions.add(action);
     }
 
-    void addDependency(Action parent, Action child) {
+    void addDependency(ActionBase parent, ActionBase child) {
         parent.addDependent(child);
     }
     
     // DFS to return the first Idle action that has none un-merged child
-    protected Action lookupIdleLeafAction() {
-        for (Action action: rootActions) {
-            Action idleLeaf = action.getIdleLeaf();
+    protected ActionBase lookupIdleLeafAction() {
+        for (ActionBase action: rootActions) {
+            ActionBase idleLeaf = action.getIdleLeaf();
             if (idleLeaf != null)
                 return idleLeaf;
         }
@@ -68,47 +68,33 @@ public class WorkerBase {
     } 
 
     // return set of actions that are Idle AND (not in its subtree) AND (have none un-merged child)
-    // the returned list include the input Action itself
-    protected List<Action> lookupIndependentActions(Action action) {
-        List<Action> list = new ArrayList<>();
+    // the returned list include the input ActionBase itself
+    protected List<ActionBase> lookupIndependentActions(ActionBase action) {
+        List<ActionBase> list = new ArrayList<>();
         list.add(action);
-        for (Action aRoot: rootActions) {
-            List<Action> listAdd = aRoot.getIndependentIdleLeaves(action);
+        for (ActionBase aRoot: rootActions) {
+            List<ActionBase> listAdd = aRoot.getIndependentIdleLeaves(action);
             if (listAdd != null) {
                 list.addAll(listAdd);
             }
         }
         return list;
     }
-            
-    public void runWorkflow() {
-        // get system base model from SystemModelCoordinator singleton
-        VersionGroup referenceVersionGroup = systemModelCoordinator.getLatestVersionGroupWithUnionModel();
-        referenceSystemModel = referenceVersionGroup.getCachedModelBase();
-        if (referenceSystemModel == null) {
-            throw new EJBException("Workerflow cannot run null referenceSystemModel");
-        }
-        // annoatedModel and rootActions should have been instantiated by caller
-        if (annoatedModel == null) {
-            throw new EJBException("Workerflow cannot run with null annoatedModel");
-        }
-        if (rootActions.isEmpty()) {
-            throw new EJBException("Workerflow cannot run with empty rootActions");
-        }
-        final Action mergedRoot = rootActions.get(0);
-        
-        Map<Action, Future<DeltaBase>> resultMap = new HashMap<>();
-        
+    
+    protected void runWorkflow() {
+        final ActionBase mergedRoot = rootActions.get(0);
+        Map<ActionBase, Future<DeltaBase>> resultMap = new HashMap<>();
+
         // start workflow run
         //1. lookupDeepestIdleAction to get an available action;
-        Action nextAction = this.lookupIdleLeafAction();
+        ActionBase nextAction = this.lookupIdleLeafAction();
         //2.  lookupIndependentActions to find list of parallel actions for the step
-        List<Action> batchOfActions = this.lookupIndependentActions(nextAction);
+        List<ActionBase> batchOfActions = this.lookupIndependentActions(nextAction);
         // Top loop to exhaust idle actions in rootActions list and sub-trees
         //$$ Timeout for the top loop ?
         while (!batchOfActions.isEmpty()) {
             //3. execute the idle actions in the list (asynchronously)
-            for (Action action: batchOfActions) {
+            for (ActionBase action: batchOfActions) {
                 if (action.getState().equals(ActionState.IDLE)) {
                     Future<DeltaBase> asyncResult = action.execute();
                     resultMap.put(action, asyncResult);
@@ -122,9 +108,9 @@ public class WorkerBase {
                 } catch (InterruptedException ex) {
                     ;
                 }
-                Iterator<Action> itA = resultMap.keySet().iterator();
+                Iterator<ActionBase> itA = resultMap.keySet().iterator();
                 while (itA.hasNext()) {
-                    Action action = itA.next();
+                    ActionBase action = itA.next();
                     Future<DeltaBase> asyncResult = resultMap.get(action);
                     if (asyncResult.isDone()) {
                         try {
@@ -132,7 +118,7 @@ public class WorkerBase {
                             // if a run action return successfully
                             // collect resultDelta and merge to parent input annotatedDelta
                             if (!action.getUppers().isEmpty()) {
-                                for (Action upperAction: action.getUppers()) {
+                                for (ActionBase upperAction: action.getUppers()) {
                                     upperAction.mergeResult(resultDelta);
                                     action.setState(ActionState.MERGED);
                                 }
@@ -165,5 +151,22 @@ public class WorkerBase {
             
             this.resultModelDelta = mergedRoot.getOutputDelta();
         }
+    }
+    
+    public void run() {
+        // get system base model from SystemModelCoordinator singleton
+        VersionGroup referenceVersionGroup = systemModelCoordinator.getLatestVersionGroupWithUnionModel();
+        referenceSystemModel = referenceVersionGroup.getCachedModelBase();
+        if (referenceSystemModel == null) {
+            throw new EJBException("Workerflow cannot run null referenceSystemModel");
+        }
+        // annoatedModel and rootActions should have been instantiated by caller
+        if (annoatedModel == null) {
+            throw new EJBException("Workerflow cannot run with null annoatedModel");
+        }
+        if (rootActions.isEmpty()) {
+            throw new EJBException("Workerflow cannot run with empty rootActions");
+        }
+        this.runWorkflow();
     }
 }

@@ -8,6 +8,7 @@ package net.maxgigapop.mrs.service.orchestrate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -15,21 +16,30 @@ import javax.naming.NamingException;
 import net.maxgigapop.mrs.bean.DeltaBase;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.service.compute.IModelComputationElement;
+import net.maxgigapop.mrs.service.compute.TestMCE;
 
 /**
  *
  * @author xyang
  */
-public class Action {
+public class ActionBase {
     protected String name = "";
     protected String mceBeanPath = "";
     protected String state = ActionState.IDLE;
     protected ModelBase referenceModel = null;
     protected DeltaBase inputDelta = null;
     protected DeltaBase outputDelta = null;
-    protected List<Action> dependencies = new ArrayList<>();
-    protected List<Action> uppers  = new ArrayList<>();
+    protected List<ActionBase> dependencies = new ArrayList<>();
+    protected List<ActionBase> uppers  = new ArrayList<>();
+    private static Logger log = Logger.getLogger(ActionBase.class.getName());
 
+    private ActionBase() { }
+    
+    public ActionBase(String name, String mceBean) {
+        this.name = name;
+        this.mceBeanPath = mceBean;
+    }
+    
     public String getName() {
         return name;
     }
@@ -79,20 +89,20 @@ public class Action {
         this.outputDelta = outputDelta;
     }
 
-    public List<Action> getUppers() {
+    public List<ActionBase> getUppers() {
         return uppers;
     }
 
-    public void setUppers(List<Action> uppers) {
+    public void setUppers(List<ActionBase> uppers) {
         this.uppers = uppers;
     }
 
     
-    public List<Action> getDependencies() {
+    public List<ActionBase> getDependencies() {
         return dependencies;
     }
 
-    public void addDependent(Action action) {
+    public void addDependent(ActionBase action) {
         if (!dependencies.contains(action)) {
             dependencies.add(action);
             if (!action.getUppers().contains(this)) 
@@ -100,7 +110,7 @@ public class Action {
         }
     }
 
-    public void removeDependent(Action action) {
+    public void removeDependent(ActionBase action) {
         if (dependencies.contains(action)) {
             dependencies.remove(action);
             dependencies.add(action);
@@ -109,9 +119,9 @@ public class Action {
         }
     }
 
-    public Action getIdleLeaf() {
-        for (Action action: this.dependencies) {
-            Action deeperAction = action.getIdleLeaf();
+    public ActionBase getIdleLeaf() {
+        for (ActionBase action: this.dependencies) {
+            ActionBase deeperAction = action.getIdleLeaf();
             if (deeperAction != null)
                 return deeperAction;
         }
@@ -120,14 +130,14 @@ public class Action {
         return null;
     }
     
-    public List<Action> getIndependentIdleLeaves(Action action) {
+    public List<ActionBase> getIndependentIdleLeaves(ActionBase action) {
         if (this.equals(action))
             return null;
-        List<Action> retList = null;
-        for (Action A: this.dependencies) {
+        List<ActionBase> retList = null;
+        for (ActionBase A: this.dependencies) {
             if (A.equals(action))
                 continue;
-            List<Action> addList = A.getIndependentIdleLeaves(action);
+            List<ActionBase> addList = A.getIndependentIdleLeaves(action);
             if (retList == null) {
                 retList = new ArrayList<>();
             }
@@ -141,7 +151,7 @@ public class Action {
     }
     
     public boolean hasAllDependenciesMerged() {
-        for (Action action: this.dependencies) {
+        for (ActionBase action: this.dependencies) {
             if (!action.getState().equals(ActionState.MERGED)) {
                 return false;
             }
@@ -153,8 +163,13 @@ public class Action {
         try {
             Context ejbCxt = new InitialContext();
             IModelComputationElement ejbMce = (IModelComputationElement)ejbCxt.lookup(this.mceBeanPath);
-            return ejbMce.process(referenceModel, inputDelta);
+            this.state = ActionState.PROCESSING;
+            Future<DeltaBase> asyncResult = ejbMce.process(referenceModel, inputDelta);
+            log.info(this+" FINISHED");
+            this.state = ActionState.FINISHED;
+            return asyncResult;
         } catch (NamingException ex) {
+            this.state = ActionState.FAILED;
             throw new EJBException(this + " failed to invoke MCE bean");
         }        
     }
