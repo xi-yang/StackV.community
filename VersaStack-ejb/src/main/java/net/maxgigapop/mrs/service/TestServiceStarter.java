@@ -94,11 +94,28 @@ public class TestServiceStarter {
         } catch (Exception ex) {
             Logger.getLogger(TestServiceStarter.class.getName()).log(Level.SEVERE, null, ex);
         }
+        
+        /*public void testAwsDriver(){
+        if(PersistenceManager.getEntityManager()==null){
+           PersistenceManager.initialize(entityManager);
+        }
+        try {
+            Context ejbCxt = new InitialContext();
+            HandleSystemCall systemCallHandler = (HandleSystemCall) ejbCxt.lookup("java:module/HandleSystemCall");
+            Map<String, String> driverProperties = new HashMap<>();
+            driverProperties.put("topologyUri", "urn:ogf:network:aws.amazon.com:aws-cloud");
+            driverProperties.put("driverEjbPath", "java:module/AwsDriver");
+            systemCallHandler.plugDriverInstance(driverProperties);
+        } catch (Exception ex) {
+            Logger.getLogger(TestServiceStarter.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        }*/ 
     }
     
     @PostConstruct
     public void runTests() {
         this.testStubDriver();
         this.testVersaNSDriver();
+        //this.testAwsDriver
     }
 }
