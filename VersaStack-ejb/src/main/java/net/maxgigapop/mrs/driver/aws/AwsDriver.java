@@ -29,14 +29,13 @@ import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
  *
  * @author muzcategui
  */
-
 @Stateless
 public class AwsDriver implements IHandleDriverSystemCall {
-    
+
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
-        
+
         throw new EJBException("Not implemented.");
     }
 
@@ -44,7 +43,7 @@ public class AwsDriver implements IHandleDriverSystemCall {
     @Asynchronous
     @Override
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
-        
+
         throw new EJBException("Not implemented.");
     }
 
@@ -52,33 +51,37 @@ public class AwsDriver implements IHandleDriverSystemCall {
     @Asynchronous
     @Override
     public Future<String> pullModel(Long driverInstanceId) {
-        
+
         DriverInstance driverInstance = DriverInstancePersistenceManager.findById(driverInstanceId);
         if (driverInstance == null) {
             throw new EJBException(String.format("pullModel cannot find driverInstance(id=%d)", driverInstanceId));
         }
-       
+
         try {
+            String access_key_id = driverInstance.getProperty("access_key_id");
+            String secret_access_key = driverInstance.getProperty("secret_access_key");
+            String r= driverInstance.getProperty("region");
+            //Regions region= Regions.fromName(r);
             
-            OntModel ontModel = AwsModelBuilder.createOntology("access_key_id","secret_key_id",Regions.US_EAST_1);
-            
+            OntModel ontModel = AwsModelBuilder.createOntology(access_key_id, secret_access_key,Regions.US_EAST_1);
+
             DriverModel dm = new DriverModel();
             dm.setCommitted(true);
             dm.setOntModel(ontModel);
             ModelPersistenceManager.save(dm);
-            
+
             VersionItem vi = new VersionItem();
             vi.setModelRef(dm);
             vi.setReferenceUUID(UUID.randomUUID().toString());
             vi.setDriverInstance(driverInstance);
             VersionItemPersistenceManager.save(vi);
             driverInstance.setHeadVersionItem(vi);
-            
+
         } catch (IOException e) {
             throw new EJBException(String.format("pullModel on %s raised exception[%s]", driverInstance, e.getMessage()));
         }
-               
+
         return new AsyncResult<>("SUCCESS");
     }
-    
+
 }

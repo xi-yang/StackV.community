@@ -23,7 +23,6 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.VersionGroup;
-
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.PersistenceManager;
 import net.maxgigapop.mrs.system.HandleSystemCall;
@@ -94,10 +93,11 @@ public class TestServiceStarter {
         } catch (Exception ex) {
             Logger.getLogger(TestServiceStarter.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
-        /*public void testAwsDriver(){
-        if(PersistenceManager.getEntityManager()==null){
-           PersistenceManager.initialize(entityManager);
+    }
+
+    public void testAwsDriver() {
+        if (PersistenceManager.getEntityManager() == null) {
+            PersistenceManager.initialize(entityManager);
         }
         try {
             Context ejbCxt = new InitialContext();
@@ -105,17 +105,20 @@ public class TestServiceStarter {
             Map<String, String> driverProperties = new HashMap<>();
             driverProperties.put("topologyUri", "urn:ogf:network:aws.amazon.com:aws-cloud");
             driverProperties.put("driverEjbPath", "java:module/AwsDriver");
+            driverProperties.put("aws_access_key_id","");
+            driverProperties.put("aws_secret_access_key","");
+            driverProperties.put("region","eu-east-1");
             systemCallHandler.plugDriverInstance(driverProperties);
         } catch (Exception ex) {
             Logger.getLogger(TestServiceStarter.class.getName()).log(Level.SEVERE, null, ex);
         }
-        }*/ 
+
     }
-    
+
     @PostConstruct
     public void runTests() {
         this.testStubDriver();
-        this.testVersaNSDriver();
-        //this.testAwsDriver
+        //this.testVersaNSDriver();
+        this.testAwsDriver();
     }
 }

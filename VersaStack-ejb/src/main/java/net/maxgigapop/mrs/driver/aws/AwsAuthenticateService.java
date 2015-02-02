@@ -23,8 +23,10 @@ import com.amazonaws.services.s3.AmazonS3Client;
 
 public class AwsAuthenticateService 
 {    
-    private BasicAWSCredentials credentials;
+    private BasicAWSCredentials credentials=null;
     
+    
+    //set the access key id and the secret key 
     public AwsAuthenticateService(String access_key_id, String secret_access_key)
     {
         credentials=new BasicAWSCredentials(access_key_id,secret_access_key);

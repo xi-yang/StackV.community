@@ -1,4 +1,4 @@
-/*
+ /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
@@ -99,13 +99,10 @@ public class AwsModelBuilder
         
         
         //create the outer layer of the aws model
-        Resource ec2Service=RdfOwl.createResource(model,"urn:ogf:network:aws.amazon.com:aws-cloud:ec2service-"+ec2Client.getClient().toString(),hypervisorService);
-        Resource vpcService=RdfOwl.createResource(model,"urn:ogf:network:aws.amazon.com:aws-cloud:vpcservice-"+ec2Client.getClient().toString(),virtualCloudService);
-        Resource s3Service= RdfOwl.createResource(model,"urn:ogf:network:aws.amazon.com:aws-cloud:s3service-"+s3Client.getClient().toString(),objectStorageService);
-        Resource ebsService= RdfOwl.createResource(model,"urn:ogf:network:aws.amazon.com:aws-cloud:ebsservice-"+ec2Client.getClient().toString(),blockStorageService);
-        
-        model.add(model.createStatement(awsTopology, type, topology));
-        model.add(model.createStatement(awsTopology, type, namedIndividual));
+        Resource ec2Service=RdfOwl.createResource(model,"urn:ogf:network:aws.amazon.com:aws-cloud:ec2service-"+ec2Client.getClient().toString()+region.getName(),hypervisorService);
+        Resource vpcService=RdfOwl.createResource(model,"urn:ogf:network:aws.amazon.com:aws-cloud:vpcservice-"+ec2Client.getClient().toString()+region.getName(),virtualCloudService);
+        Resource s3Service= RdfOwl.createResource(model,"urn:ogf:network:aws.amazon.com:aws-cloud:s3service-"+s3Client.getClient().toString()+region.getName(),objectStorageService);
+        Resource ebsService= RdfOwl.createResource(model,"urn:ogf:network:aws.amazon.com:aws-cloud:ebsservice-"+ec2Client.getClient().toString()+region.getName(),blockStorageService);
         
         model.add(model.createStatement(awsTopology,hasService,ec2Service));
         model.add(model.createStatement(awsTopology, hasService, vpcService));
