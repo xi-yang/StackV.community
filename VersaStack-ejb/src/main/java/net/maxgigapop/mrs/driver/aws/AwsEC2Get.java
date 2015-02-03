@@ -53,7 +53,7 @@ public class AwsEC2Get
         //get all the subnets in the account
         DescribeSubnetsResult subnetsResult=this.client.describeSubnets();
         this.subnets=subnetsResult.getSubnets();
-        
+ 
         //get all the security groups in the account
         DescribeSecurityGroupsResult securityGroupsResult=this.client.describeSecurityGroups();
         this.securityGroups=securityGroupsResult.getSecurityGroups();

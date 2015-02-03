@@ -107,7 +107,7 @@ public class TestServiceStarter {
             driverProperties.put("driverEjbPath", "java:module/AwsDriver");
             driverProperties.put("aws_access_key_id","");
             driverProperties.put("aws_secret_access_key","");
-            driverProperties.put("region","eu-east-1");
+            driverProperties.put("region","");
             systemCallHandler.plugDriverInstance(driverProperties);
         } catch (Exception ex) {
             Logger.getLogger(TestServiceStarter.class.getName()).log(Level.SEVERE, null, ex);

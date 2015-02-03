@@ -58,12 +58,12 @@ public class AwsDriver implements IHandleDriverSystemCall {
         }
 
         try {
-            String access_key_id = driverInstance.getProperty("access_key_id");
-            String secret_access_key = driverInstance.getProperty("secret_access_key");
+            String access_key_id = driverInstance.getProperty("aws_access_key_id");
+            String secret_access_key = driverInstance.getProperty("aws_secret_access_key");
             String r= driverInstance.getProperty("region");
-            //Regions region= Regions.fromName(r);
+            Regions region= Regions.fromName(r);
             
-            OntModel ontModel = AwsModelBuilder.createOntology(access_key_id, secret_access_key,Regions.US_EAST_1);
+            OntModel ontModel = AwsModelBuilder.createOntology(access_key_id, secret_access_key,region);
 
             DriverModel dm = new DriverModel();
             dm.setCommitted(true);
