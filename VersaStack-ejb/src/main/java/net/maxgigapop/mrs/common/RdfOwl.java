@@ -14,7 +14,7 @@ import com.hp.hpl.jena.rdf.model.*;
 public class RdfOwl {
     private static Model m_model = ModelFactory.createDefaultModel();
 
-    public static final String rdfNS = "http://schemas.ogf.org/nml/2013/03/base#";
+    public static final String rdfNS = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
     public static String getRdfURI() {return rdfNS;}
 
     public static final String rdfsNS = "http://www.w3.org/2000/01/rdf-schema#";
