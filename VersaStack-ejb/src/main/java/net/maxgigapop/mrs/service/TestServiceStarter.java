@@ -117,7 +117,7 @@ public class TestServiceStarter {
 
     @PostConstruct
     public void runTests() {
-        this.testStubDriver();
+        //this.testStubDriver();
         //this.testVersaNSDriver();
         this.testAwsDriver();
     }

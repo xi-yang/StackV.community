@@ -19,6 +19,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -38,7 +39,7 @@ import net.maxgigapop.mrs.driver.openstack.OpenStackModelBuilder;
  */
 public class AwsModelBuilder 
 {
-    public static OntModel createOntology(String access_key_id,String secret_access_key, Regions region) throws IOException
+    public static OntModel createOntology(String access_key_id,String secret_access_key, Regions region, String topologyURI) throws IOException
     {
         Logger logger = Logger.getLogger(AwsModelBuilder.class.getName());
         
@@ -70,13 +71,15 @@ public class AwsModelBuilder
         Property nextHop=Mrs.nextHop;
         Property value =Mrs.value;
         Property name=Nml.name;
+        Property hasBucket=Mrs.hasBucket;
+        Property hasVolume=Mrs.hasVolume;
+        Property hasTopology=Nml.hasTopology;
         Property publicIpAddress=model.createProperty(model.getNsPrefixURI("mrs")+"publicIpAddress");
         Property privateIpAddress=model.createProperty(model.getNsPrefixURI("mrs")+"privateIpAddress");
         
         //set the global resources
         Resource route=Mrs.Route;
         Resource hypervisorService=Mrs.HypervisorService;
-        Resource storageService=Mrs.StorageService;
         Resource virtualCloudService =Mrs.VirtualCloudService;
         Resource routingService = Mrs.RoutingService;
         Resource blockStorageService = Mrs.BlockStorageService;
@@ -89,7 +92,7 @@ public class AwsModelBuilder
         Resource node =Nml.Node;
         Resource port = Nml.BidirectionalPort;
         Resource namedIndividual = model.createResource(model.getNsPrefixURI("mrs")+"NamedIndividual");
-        Resource awsTopology = RdfOwl.createResource(model,"urn:ogf:network:aws.amazon.com:aws-cloud:AwsTopology",topology);
+        Resource awsTopology = RdfOwl.createResource(model,topologyURI + ":AwsTopology",topology);
         Resource objectStorageService=Mrs.ObjectStorageService;
         
         //get the information from the AWS account
@@ -99,28 +102,29 @@ public class AwsModelBuilder
         
         
         //create the outer layer of the aws model
-        Resource ec2Service=RdfOwl.createResource(model,"urn:ogf:network:aws.amazon.com:aws-cloud:ec2service-"+ec2Client.getClient().toString()+region.getName(),hypervisorService);
-        Resource vpcService=RdfOwl.createResource(model,"urn:ogf:network:aws.amazon.com:aws-cloud:vpcservice-"+ec2Client.getClient().toString()+region.getName(),virtualCloudService);
-        Resource s3Service= RdfOwl.createResource(model,"urn:ogf:network:aws.amazon.com:aws-cloud:s3service-"+s3Client.getClient().toString()+region.getName(),objectStorageService);
-        Resource ebsService= RdfOwl.createResource(model,"urn:ogf:network:aws.amazon.com:aws-cloud:ebsservice-"+ec2Client.getClient().toString()+region.getName(),blockStorageService);
+        Resource ec2Service=RdfOwl.createResource(model,topologyURI+  ":ec2service-"+region.getName(),hypervisorService);
+        Resource vpcService=RdfOwl.createResource(model,topologyURI + ":vpcservice-"+region.getName(),virtualCloudService);
+        Resource s3Service= RdfOwl.createResource(model,topologyURI + ":s3service-"+region.getName(),objectStorageService);
+        Resource ebsService= RdfOwl.createResource(model,topologyURI + ":ebsservice-"+region.getName(),blockStorageService);
         
         model.add(model.createStatement(awsTopology,hasService,ec2Service));
         model.add(model.createStatement(awsTopology, hasService, vpcService));
         model.add(model.createStatement(awsTopology,hasService,s3Service));
         model.add(model.createStatement(awsTopology,hasService,ebsService));
-
+        
         
         //put all the vpcs and their information into the model
         for(Vpc v : ec2Client.getVpcs())
         {
-            Resource VPC = RdfOwl.createResource(model,"urn:ogf:network:aws.amazon.com:aws-cloud:"+ v.getVpcId(),topology);
+            Resource VPC = RdfOwl.createResource(model,topologyURI +":" + v.getVpcId(),topology);
             model.add(model.createStatement(vpcService,providesVPC,VPC));
+            model.add(model.createStatement(awsTopology,hasTopology,VPC));
             
             //put all the subnets within the vpc
-            Resource SWITCHINGSERVICE= RdfOwl.createResource(model,"urn:ogf:network:aws.amazon.com:aws-cloud:"+v.getVpcId()+v.getCidrBlock(),switchingService);
+            Resource SWITCHINGSERVICE= RdfOwl.createResource(model,topologyURI + ":" +v.getVpcId()+v.getCidrBlock(),switchingService);
             for(Subnet p: AwsEC2Get.getSubnets(ec2Client.getSubnets(), v.getVpcId()))
             {
-                Resource SUBNET= RdfOwl.createResource(model,"urn:ogf:network:dragon.maxgigapop.net:"+p.getSubnetId(),switchingSubnet);
+                Resource SUBNET= RdfOwl.createResource(model,topologyURI + ":" +p.getSubnetId(),switchingSubnet);
                 model.add(model.createStatement(VPC, hasService,SWITCHINGSERVICE));
                 model.add(model.createStatement(SWITCHINGSERVICE, providesSubnet, SUBNET));
             
@@ -130,24 +134,35 @@ public class AwsModelBuilder
                 {
                     for(Instance i : instances)
                     {
-                        Resource INSTANCE= RdfOwl.createResource(model,"urn:ogf:network:aws.amazon.com:aws-cloud:"+i.getInstanceId(),node);
+                        Resource INSTANCE= RdfOwl.createResource(model,topologyURI + ":" +i.getInstanceId(),node);
                         model.add(model.createStatement(VPC,hasNode, INSTANCE));
+                        model.add(model.createStatement(ec2Service,providesVM,INSTANCE));
                         model.add(model.createStatement(INSTANCE, providedByService,ec2Service));
 
                         //put all the network interfaces of each instance into the model
                         for(InstanceNetworkInterface n : AwsEC2Get.getInstanceInterfaces(i))
                         {
-                            Resource PORT = RdfOwl.createResource(model,"urn:ogf:network:aws.amazon.com:aws-cloud:"+n.getNetworkInterfaceId(),port);
+                            Resource PORT = RdfOwl.createResource(model,topologyURI + ":" +n.getNetworkInterfaceId(),port);
 
                             model.add(model.createStatement(INSTANCE,hasBidirectionalPort,PORT));
                             model.add(model.createStatement(SUBNET,hasBidirectionalPort,PORT));
+                            
+                            //put all the voumes attached to this instance into the modle
+                            for(Volume vol : ec2Client.getVolumesWithAttachement(i))
+                            {
+                               Resource VOLUME= RdfOwl.createResource(model,topologyURI + ":" +vol.getVolumeId(),volume);
+                               model.add(model.createStatement(ebsService,providesVolume, VOLUME));
+                               model.add(model.createStatement(INSTANCE,hasVolume, VOLUME));
+                               model.add(model.createStatement(VOLUME, value,vol.getVolumeType()));
+                               
+                            }
                             
                             //put the private ip (if any) of the network interface in the model
                             for(InstancePrivateIpAddress q : n.getPrivateIpAddresses())
                             {
                                 if(q.getPrivateIpAddress()!=null)
                                 {
-                                    Resource PRIVATE_ADDRESS= RdfOwl.createResource(model,"urn:ogf:network:aws.amazon.com:aws-cloud:"+q.getPrivateIpAddress(),networkAddress);
+                                    Resource PRIVATE_ADDRESS= RdfOwl.createResource(model,topologyURI + ":" +q.getPrivateIpAddress(),networkAddress);
                                     model.add(model.createStatement(PORT, privateIpAddress, PRIVATE_ADDRESS));
                                     model.add(model.createStatement(PRIVATE_ADDRESS,value,q.getPrivateIpAddress()));
                                 }
@@ -156,7 +171,7 @@ public class AwsModelBuilder
                             //put the public Ip (if any) of the network interface into the model
                             if(n.getAssociation() !=null && n.getAssociation().getPublicIp()!=null)
                             {
-                                Resource PUBLIC_ADDRESS= RdfOwl.createResource(model,"urn:ogf:network:aws.amazon.com:aws-cloud:"+n.getAssociation().getPublicIp(),networkAddress);
+                                Resource PUBLIC_ADDRESS= RdfOwl.createResource(model,topologyURI + ":" +n.getAssociation().getPublicIp(),networkAddress);
                                 model.add(model.createStatement(PORT, publicIpAddress, PUBLIC_ADDRESS));
                                 model.add(model.createStatement(PUBLIC_ADDRESS,value,n.getAssociation().getPublicIp()));
                             }
@@ -169,12 +184,12 @@ public class AwsModelBuilder
             for(RouteTable t : AwsEC2Get.getRoutingTables(ec2Client.getRoutingTables(),v.getVpcId()))
             {
                
-                Resource ROUTINGSERVICE=RdfOwl.createResource(model,"urn:ogf:network:aws.amazon.com:aws-cloud:"+t.getRouteTableId(),routingService);
+                Resource ROUTINGSERVICE=RdfOwl.createResource(model,topologyURI + ":" +t.getRouteTableId(),routingService);
                 model.add(model.createStatement(VPC, hasService,ROUTINGSERVICE));
                 List<Route> routes= t.getRoutes();
                 for(Route r: routes)
                 {
-                    Resource ROUTE= RdfOwl.createResource(model,"urn:ogf:network:aws.amazon.com:aws-cloud:"+t.getRouteTableId()+r.getDestinationCidrBlock()+r.getState(),route);
+                    Resource ROUTE= RdfOwl.createResource(model,topologyURI + ":" +t.getRouteTableId()+r.getDestinationCidrBlock()+r.getState(),route);
                     model.add(model.createStatement(ROUTINGSERVICE,providesRoute,ROUTE));
                     //model.add(model.createStatement(ROUTE, routeFrom,r.getOrigin()));
                     //model.add(model.createStatement(ROUTE,routeTo,r.getDestinationCidrBlock()));
@@ -183,9 +198,9 @@ public class AwsModelBuilder
          }
         
         //put the volumes of the ebsService into the model
-        for(Volume v : ec2Client.getVolumes())
+        for(Volume v : ec2Client.getVolumesWithoutAttachment())
         {
-            Resource VOLUME= RdfOwl.createResource(model,"urn:ogf:network:aws.amazon.com:aws-cloud:"+v.getVolumeId(),volume);
+            Resource VOLUME= RdfOwl.createResource(model,topologyURI + ":" +v.getVolumeId(),volume);
             model.add(model.createStatement(ebsService,providesVolume, VOLUME));
             model.add(model.createStatement(VOLUME, value,v.getVolumeType()));
         }
@@ -193,18 +208,10 @@ public class AwsModelBuilder
         //put all the buckets of the s3Service into the model
         for(Bucket b: s3Client.getBuckets())
         {
-            Resource BUCKET = RdfOwl.createResource(model,"urn:ogf:network:aws.amazon.com:aws-cloud:"+ b.getName(),bucket);
+            Resource BUCKET = RdfOwl.createResource(model,topologyURI + ":" + b.getName(),bucket);
             model.add(model.createStatement(s3Service, providesBucket,BUCKET));
-            
-           /* for(S3ObjectSummary o :   s3Client.getObjects(b))
-            {
-                Resource OBJECT=model.createResource("urn:ogf:network:aws.amazon.com:aws-cloud:"+ o.getKey());
-                model.add(model.createStatement(BUCKET,hasObject,OBJECT));
-                model.add(model.createStatement(OBJECT,type,object));
-                model.add(model.createStatement(OBJECT,type,namedIndividual));
-            }*/
+            model.add(model.createStatement(awsTopology,hasBucket,BUCKET));
         }
-        
         logger.log(Level.INFO, "Ontology model for AWS driver rewritten");
         return model;
     }

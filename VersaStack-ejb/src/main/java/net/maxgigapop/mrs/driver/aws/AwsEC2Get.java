@@ -299,4 +299,34 @@ public class AwsEC2Get
         }
         return null;
     }
+    
+    //get a list of all the volumes that have an attachement to an instance
+    public List<Volume> getVolumesWithAttachement(Instance i)
+    {
+        List<Volume> volume=new ArrayList();
+        for(Volume v: this.volumes)
+        {
+            for(VolumeAttachment va: v.getAttachments())
+            {
+                if(va.getInstanceId().equals(i.getInstanceId()) && !volume.contains(v))
+                    volume.add(v);
+            }
+        }
+        return volume;
+    }
+    
+    //get a List of all the volumes withouh an attachement
+    public List<Volume> getVolumesWithoutAttachment()
+    {
+        List<Volume> volume=new ArrayList();
+        
+        for(Volume v: this.volumes)
+        {
+            if(v.getAttachments().isEmpty())
+            {
+                volume.add(v);
+            }
+        }
+        return volume;
+    }
 }
