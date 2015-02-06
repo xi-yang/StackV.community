@@ -29,15 +29,21 @@
             <scope>provided</scope>
 	</dependency>
 	<dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.31</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.jena</groupId>
-            <artifactId>jena-core</artifactId>
-            <version>2.11.1</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>jena-iri</artifactId>
-                    <groupId>org.apache.jena</groupId>
-                </exclusion>
-            </exclusions>
+            <artifactId>apache-jena-libs</artifactId>
+            <version>2.12.0</version>
+            <type>pom</type>
+        </dependency>
+        <dependency>
+            <groupId>org.jasig.cas.client</groupId>
+            <artifactId>cas-client-core</artifactId>
+            <version>3.3.3</version>
+            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>javax</groupId>

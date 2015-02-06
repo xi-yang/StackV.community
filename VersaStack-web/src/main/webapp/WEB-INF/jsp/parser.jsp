@@ -1,6 +1,6 @@
-<%@page contentType="application/json; charset=UTF-8"%>
+<%@page import="com.hp.hpl.jena.rdf.model.ModelFactory"%>
 <%@page import="com.hp.hpl.jena.ontology.OntModel"%>
-<%@page import="com.hp.hpl.jena.rdf.model.*"%>
+<%@page contentType="application/json; charset=UTF-8"%>
 <%
     String in = application.getRealPath("/data/max-nml-mrs-v1-full.ttl");
 
