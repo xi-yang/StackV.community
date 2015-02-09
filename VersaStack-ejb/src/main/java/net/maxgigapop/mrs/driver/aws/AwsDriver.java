@@ -8,8 +8,11 @@ package net.maxgigapop.mrs.driver.aws;
 import com.amazonaws.regions.Regions;
 import com.hp.hpl.jena.ontology.OntModel;
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.EJBException;
@@ -19,10 +22,13 @@ import javax.ejb.TransactionAttributeType;
 import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.DriverModel;
 import net.maxgigapop.mrs.bean.DriverSystemDelta;
+import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.VersionItem;
+import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
+import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 
 /**
@@ -35,16 +41,19 @@ public class AwsDriver implements IHandleDriverSystemCall {
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
-
-        throw new EJBException("Not implemented.");
+        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
+        aDelta = (DriverSystemDelta)DeltaPersistenceManager.findById(aDelta.getId());
     }
 
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
     @Asynchronous
     @Override
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
-
-        throw new EJBException("Not implemented.");
+        DriverInstance driverInstance = aDelta.getDriverInstance();
+        if (driverInstance == null) {
+            throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
+        }
+        return new AsyncResult<String>("SUCCESS");
     }
 
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
@@ -80,6 +89,8 @@ public class AwsDriver implements IHandleDriverSystemCall {
 
         } catch (IOException e) {
             throw new EJBException(String.format("pullModel on %s raised exception[%s]", driverInstance, e.getMessage()));
+        } catch (Exception ex) {
+            Logger.getLogger(AwsDriver.class.getName()).log(Level.SEVERE, null, ex);
         }
 
         return new AsyncResult<>("SUCCESS");

@@ -9,6 +9,8 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.*;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,6 +29,69 @@ public class AwsEC2Push
         AwsAuthenticateService authenticate=new AwsAuthenticateService(access_key_id,secret_access_key);
         this.client = authenticate.AwsAuthenticateEC2Service(Region.getRegion(region));
     }
+    
+   //function to create EC2 Instances, returns true if operations were succesfull
+    /*public boolean createInstances(HashMap<String,Object> args)
+    {
+        RunInstancesRequest runInstances= new RunInstancesRequest();
+        
+        for(String key: args.keySet())
+        {
+            switch(key)
+            {
+                case "withBlockDeviceMapping":runInstances.withBlockDeviceMappings((BlockDeviceMapping) args.get(key));
+                    break;
+                case "withClientToken:": runInstances.withClientToken((String) args.get(key));
+                    break;
+                case "withDisableApiTermination:": runInstances.withDisableApiTermination((boolean) args.get(key));
+                    break;  
+                case "withEbsOptimized:": runInstances.withEbsOptimized((boolean) args.get(key));
+                    break;
+                case "withIamInstanceProfile:": runInstances.withIamInstanceProfile((IamInstanceProfileSpecification) args.get(key));
+                    break;
+                case "withImageId:": runInstances.withImageId((String) args.get(key));
+                    break;
+                case "withInstanceInitiatedShutdownBehavior": runInstances.withInstanceInitiatedShutdownBehavior((String) args.get(key));
+                    break;
+                case "withInstanceType": runInstances.withInstanceType((String) args.get(key));
+                    break;
+                case "withKernelId:": runInstances.withKernelId((String) args.get(key));
+                    break;
+                case "withKeyName": runInstances.withKeyName((String) args.get(key));
+                    break;
+                case "withMaxCount:": runInstances.withMaxCount((int) args.get(key));
+                    break;
+                case "withMinCount:": runInstances. withMinCount((int) args.get(key));
+                    break;
+                case "withMonitoring:": runInstances.withMonitoring((boolean) args.get(key));
+                    break;
+                case "withNetworkInterfaces:": runInstances.withNetworkInterfaces((Collection<InstanceNetworkInterfaceSpecification>) args.get(key));
+                    break;
+                case "withClientToken:": runInstances.withClientToken((String) args.get(key));
+                    break;
+                case "withClientToken:": runInstances.withClientToken((String) args.get(key));
+                    break;
+                case "withClientToken:": runInstances.withClientToken((String) args.get(key));
+                    break;
+                case "withClientToken:": runInstances.withClientToken((String) args.get(key));
+                    break;
+                case "withClientToken:": runInstances.withClientToken((String) args.get(key));
+                    break;
+                
+            }
+            
+        }
+        try
+        {
+            this.client.runInstances(runInstances);
+        }
+        catch (Exception e)
+        {
+            logger.log(Level.INFO,"Error ocurred during termination {0} :", e.getMessage());
+            return false;
+        }
+        return true;
+    }*/
     
     //function to create EC2 Instances, returns true if operations were succesfull
     public boolean createInstances(String imageId, String instanceType,String subnetId,String key, int numberOfInstances)

@@ -65,7 +65,7 @@ public class IntegrationTest1 {
 "        nml:labeltype  <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> ;\n" +
 "        nml:value      \"3203\" .";
     
-    private final String modelReductionStr = "@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n" +
+private final String modelReductionStr = "@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n" +
 "@prefix owl:   <http://www.w3.org/2002/07/owl#> .\n" +
 "@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .\n" +
 "@prefix rdf:   <http://schemas.ogf.org/nml/2013/03/base#> .\n" +
