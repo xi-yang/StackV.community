@@ -30,6 +30,7 @@ import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
+import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
  *
@@ -43,6 +44,15 @@ public class AwsDriver implements IHandleDriverSystemCall {
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
         driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
         aDelta = (DriverSystemDelta)DeltaPersistenceManager.findById(aDelta.getId());
+        
+        
+        String modelAdd=aDelta.getModelAddition().getTtlModel();
+        String modelReduc= aDelta.getModelReduction().getTtlModel();
+        
+        driverInstance.putProperty("modelAddition", modelAdd);
+        driverInstance.putProperty("modelReduction", modelReduc);
+        
+         DriverInstancePersistenceManager.save(driverInstance);
     }
 
     // Use ID to avoid passing entity bean between threads, which breaks persistence session

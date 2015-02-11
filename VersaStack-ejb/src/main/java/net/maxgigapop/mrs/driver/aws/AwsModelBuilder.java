@@ -92,7 +92,7 @@ public class AwsModelBuilder
         Resource node =Nml.Node;
         Resource port = Nml.BidirectionalPort;
         Resource namedIndividual = model.createResource(model.getNsPrefixURI("mrs")+"NamedIndividual");
-        Resource awsTopology = RdfOwl.createResource(model,topologyURI + ":AwsTopology",topology);
+        Resource awsTopology = RdfOwl.createResource(model,topologyURI,topology);
         Resource objectStorageService=Mrs.ObjectStorageService;
         
         //get the information from the AWS account
@@ -134,7 +134,17 @@ public class AwsModelBuilder
                 {
                     for(Instance i : instances)
                     {
-                        Resource INSTANCE= RdfOwl.createResource(model,topologyURI + ":" +i.getInstanceId(),node);
+                        //if the instance has a tag with the id use the tag, otherwise use the instance id
+                        String instanceId=i.getInstanceId();
+                        for(Tag tg : i.getTags())
+                        {
+                            if(tg.getKey().equals("Instance Id"))
+                            {
+                                instanceId= tg.getValue();
+                                break;
+                            }
+                        }
+                        Resource INSTANCE= RdfOwl.createResource(model,topologyURI + ":" + instanceId ,node);
                         model.add(model.createStatement(VPC,hasNode, INSTANCE));
                         model.add(model.createStatement(ec2Service,providesVM,INSTANCE));
                         model.add(model.createStatement(INSTANCE, providedByService,ec2Service));

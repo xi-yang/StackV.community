@@ -9,11 +9,19 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.*;
+import com.hp.hpl.jena.ontology.OntModel;
+import com.hp.hpl.jena.rdf.model.ResIterator;
+import com.hp.hpl.jena.rdf.model.Resource;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.ejb.EJBException;
+import net.maxgigapop.mrs.bean.DeltaModel;
+import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.Mrs;
+import net.maxgigapop.mrs.common.Nml;
 
 /**
  *
@@ -22,15 +30,44 @@ import java.util.logging.Logger;
 public class AwsEC2Push 
 {
     public AmazonEC2Client client=null;
-     Logger logger = Logger.getLogger(AwsModelBuilder.class.getName());
+    Logger logger = Logger.getLogger(AwsModelBuilder.class.getName());
     
-    public AwsEC2Push(String access_key_id, String secret_access_key,Regions region)
+    public AwsEC2Push(String access_key_id, String secret_access_key,Regions region , String modelAddTtl, String modelReductTtl)
     {
+        
         AwsAuthenticateService authenticate=new AwsAuthenticateService(access_key_id,secret_access_key);
         this.client = authenticate.AwsAuthenticateEC2Service(Region.getRegion(region));
+        
+        OntModel modelReduct=null;
+        OntModel modelAdd=null;
+        try {
+            modelAdd= ModelUtil.unmarshalOntModel(modelAddTtl);
+            modelReduct= ModelUtil.unmarshalOntModel(modelReductTtl);
+        } catch (Exception ex) {
+           logger.log(Level.SEVERE,"unable to unMarshall Ttl model", ex);
+        }
+        if(modelAdd==null || modelReduct==null)
+            if(modelAdd == null)
+                throw new EJBException(String.format("cannot get the ontology model for the addition model"));
+            if(modelReduct == null)
+                throw new EJBException(String.format("cannot get the ontology model for the reductionModel model"));
+        
+        
+        ResIterator newNodes = modelAdd.listResourcesWithProperty(Mrs.type, Nml.Node);
+        ResIterator deleteNodes= modelReduct.listResourcesWithProperty(Mrs.type, Nml.Node);
+        
+        while(newNodes.hasNext())
+        {
+            Resource node = newNodes.next();
+            
+        }
+        
+        
     }
     
-   //function to create EC2 Instances, returns true if operations were succesfull
+  
+    
+//function to create EC2 Instances, returns true if operations were succesfull
     /*public boolean createInstances(HashMap<String,Object> args)
     {
         RunInstancesRequest runInstances= new RunInstancesRequest();

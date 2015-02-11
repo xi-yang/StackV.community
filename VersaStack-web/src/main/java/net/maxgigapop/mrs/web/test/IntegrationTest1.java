@@ -43,27 +43,38 @@ public class IntegrationTest1 {
 "@prefix rdf:   <http://schemas.ogf.org/nml/2013/03/base#> .\n" +
 "@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .\n" +
 "@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .\n" +
-"<urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON:l2switching>\n" +
-"        mrs:providesSubnet        <urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON:l2switching:crs-svc1> ."+
-"<urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON:l2switching:crs-svc1>\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloud:i-4f93ec60>\n" +
+"        a                         nml:Node , owl:NamedIndividual ;\n" +
+"        mrs:hasVolume             <urn:ogf:network:aws.amazon.com:aws-cloud:vol-f05f50bf> ;\n" +
+"        mrs:providedByService     <urn:ogf:network:aws.amazon.com:aws-cloud:ec2service-us-east-1> ;\n" +
+"        nml:hasBidirectionalPort  <urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b083> .\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloud:vpc-8c5f22e9>\n" +
+"        a               nml:Topology , owl:NamedIndividual ;\n" +
+"        nml:hasNode     <urn:ogf:network:aws.amazon.com:aws-cloud:i-4f93ec60> ;\n" +
+"        nml:hasService  <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-864b05e3> , <urn:ogf:network:aws.amazon.com:aws-cloud:vpc-8c5f22e910.0.0.0/16> .\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloud:ec2service-us-east-1>\n" +
+"        a               mrs:HypervisorService , owl:NamedIndividual ;\n" +
+"        mrs:providesVM  <urn:ogf:network:aws.amazon.com:aws-cloud:i-4f93ec60> .\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloud:subnet-2cd6ad16>\n" +
 "        a                         mrs:SwitchingSubnet , owl:NamedIndividual ;\n" +
-"        nml:encoding              <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> ;\n" +
-"        nml:hasBidirectionalPort  <urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*:vlan-3203> , <urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*:vlan-3203> ;\n" +
-"        nml:labelSwapping         \"false\" .\n" +
-"<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*:vlan-3203>\n" +
-"        a              nml:BidirectionalPort , owl:NamedIndividual ;\n" +
-"        nml:hasLabel   <urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*:vlan-3203:label> .\n" +
-"<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*:vlan-3203>\n" +
-"        a              nml:BidirectionalPort , owl:NamedIndividual ;\n" +
-"        nml:hasLabel   <urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*:vlan-3203:label> .\n" +
-"<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*:vlan-3203:label>\n" +
-"        a              nml:Label , owl:NamedIndividual ;\n" +
-"        nml:labeltype  <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> ;\n" +
-"        nml:value      \"3203\" .\n" +
-"<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*:vlan-3203:label>\n" +
-"        a              nml:Label , owl:NamedIndividual ;\n" +
-"        nml:labeltype  <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> ;\n" +
-"        nml:value      \"3203\" .";
+"        nml:hasBidirectionalPort  <urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b083> .\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b083> \n" +
+"        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n" +
+"        mrs:privateIpAddress  <urn:ogf:network:aws.amazon.com:aws-cloud:10.0.0.230> .\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloud:ebsservice-us-east-1>\n" +
+"        a                   mrs:BlockStorageService , owl:NamedIndividual ;\n" +
+"        mrs:providesVolume  <urn:ogf:network:aws.amazon.com:aws-cloud:vol-f05f50bf> .\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloud:vol-f05f50bf>\n" +
+"        a          mrs:Volume , owl:NamedIndividual ;\n" +
+"        mrs:value  \"gp2\" .\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloud:10.0.0.230>\n" +
+"        a          mrs:NetworkAddress , owl:NamedIndividual ;\n" +
+"        mrs:value  \"10.0.0.230\" .\n";
+
+
+
+
+
     
 private final String modelReductionStr = "@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n" +
 "@prefix owl:   <http://www.w3.org/2002/07/owl#> .\n" +
