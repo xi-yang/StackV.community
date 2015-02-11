@@ -1,7 +1,5 @@
-// Get existing versastack namespace, or define new one
-var versastack = versastack || {};
-
-versastack.loading = function () {
+define([
+], function() {
     var css = {
         classes: {
             indicatorDiv: 'loading-div',
@@ -34,16 +32,18 @@ versastack.loading = function () {
         }
     }
 
-    function endLoading(name) {
+    function endLoading(name, removeOverlay) {
         items[name].loading = false;
-        for (var indicator in items[name].indicators) {
-            var method = items[name].indicators[indicator];
-            if (method === 'display') {
-                display(indicator, false);
-            } else if (method === 'visibility') {
-                visible(indicator, false);
-            } else {
-                console.error('Invalid method for displaying loader ', indicator, ' for item ', name);
+        if (removeOverlay) {
+            for (var indicator in items[name].indicators) {
+                var method = items[name].indicators[indicator];
+                if (method === 'display') {
+                    display(indicator, false);
+                } else if (method === 'visibility') {
+                    visible(indicator, false);
+                } else {
+                    console.error('Invalid method for displaying loader ', indicator, ' for item ', name);
+                }
             }
         }
     }
@@ -92,4 +92,4 @@ versastack.loading = function () {
     };
     /** END PUBLIC INTERFACE **/
 
-}(); // end versastack.loading module
+});
