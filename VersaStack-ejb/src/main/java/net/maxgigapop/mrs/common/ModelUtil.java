@@ -132,6 +132,10 @@ public class ModelUtil {
         while(r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode node = querySolution.get("topology");
+            ResIterator riParentTopology = model.listResourcesWithProperty(Nml.hasTopology, node);
+            // skip non-root Topology
+            if (riParentTopology.hasNext())
+                continue;
             if (listRes == null)
             	listRes = new ArrayList<RDFNode>();
             listRes.add(node);            
