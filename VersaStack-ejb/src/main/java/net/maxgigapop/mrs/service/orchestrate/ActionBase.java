@@ -175,7 +175,10 @@ public class ActionBase {
     }
     
     public void mergeResult(DeltaBase childDelta) {
-        //$$ TBD
+        //$$ merging models A and B
+            // 1. Get dA = A.remove(B) and dB = B.remove(A)
+            // 2. if dA has r1 with annotation while r1 is not in dB, A.remove(r1)
+            // 3. if dB has r2 without annoation amd r2 is not in dA, A.add(r2)
     }
     
     public String toString() {

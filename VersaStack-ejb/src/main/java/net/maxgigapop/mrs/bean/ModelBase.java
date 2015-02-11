@@ -132,9 +132,20 @@ public class ModelBase extends PersistentEntity implements Serializable {
         return true;
     }
 
+    
     @Override
     public String toString() {
         return "net.maxgigapop.mrs.model.MrsModel[ id=" + id + " ]";
+    }
+    
+    public ModelBase clone() {
+        ModelBase other = new ModelBase();
+        other.setCommitted(this.committed);
+        other.setCxtVersion(this.cxtVersion);
+        other.setCxtVersionTag(this.cxtVersionTag);
+        other.setTtlModel(this.ttlModel);
+        other.setPersistent(this.isPersistent());
+        return other;
     }
     
     @SuppressWarnings("unused")
