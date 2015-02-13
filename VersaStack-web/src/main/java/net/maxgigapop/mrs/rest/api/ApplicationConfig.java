@@ -7,13 +7,14 @@
 package net.maxgigapop.mrs.rest.api;
 
 import java.util.Set;
+import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Application;
 
 /**
  *
  * @author xyang
  */
-@javax.ws.rs.ApplicationPath("webresources")
+@ApplicationPath("/")
 public class ApplicationConfig extends Application {
 
     @Override
@@ -30,7 +31,7 @@ public class ApplicationConfig extends Application {
      * If required, comment out calling this method in getClasses().
      */
     private void addRestResourceClasses(Set<Class<?>> resources) {
-        resources.add(net.maxgigapop.mrs.rest.api.GenericResource.class);
+        resources.add(net.maxgigapop.mrs.rest.api.SystemResource.class);
     }
     
 }

@@ -6,6 +6,7 @@
 
 package net.maxgigapop.mrs.rest.api;
 
+import javax.ejb.EJB;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.PathParam;
@@ -15,23 +16,26 @@ import javax.ws.rs.Path;
 import javax.ws.rs.GET;
 import javax.ws.rs.Produces;
 import javax.enterprise.context.RequestScoped;
+import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
  * REST Web Service
  *
  * @author xyang
  */
-@Path("generic")
+@Path("system")
 @RequestScoped
-public class GenericResource {
+public class SystemResource {
 
     @Context
     private UriInfo context;
 
+    @EJB
+    HandleSystemCall systemCallHandler;
     /**
      * Creates a new instance of GenericResource
      */
-    public GenericResource() {
+    public SystemResource() {
     }
 
     /**
@@ -54,4 +58,9 @@ public class GenericResource {
     @Consumes("application/xml")
     public void putXml(String content) {
     }
+    
+//    @POST
+//    @Consumes("application/xml")
+//    @Path("/unplug/")
+    
 }
