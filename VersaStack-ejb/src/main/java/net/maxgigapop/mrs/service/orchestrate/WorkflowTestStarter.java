@@ -20,7 +20,7 @@ import javax.ejb.Startup;
 public class WorkflowTestStarter {
     @PostConstruct
     void runTests() {
-        WorkerBase testWorker = WorkerFactory.createWorker("net.maxgigapop.mrs.service.orchestrate.TestWorker");
+        WorkerBase testWorker = WorkerFactory.createWorker("net.maxgigapop.mrs.service.orchestrate.SimpleWorker");
         testWorker.run();
     }
 }

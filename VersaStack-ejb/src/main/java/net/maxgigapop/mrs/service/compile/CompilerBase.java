@@ -14,6 +14,7 @@ import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.rdf.model.NodeIterator;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
@@ -23,48 +24,70 @@ import com.hp.hpl.jena.update.UpdateAction;
 import com.hp.hpl.jena.update.UpdateFactory;
 import com.hp.hpl.jena.update.UpdateRequest;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.ejb.EJBException;
-import net.maxgigapop.mrs.bean.DeltaBase;
+import net.maxgigapop.mrs.bean.ServiceDelta;
+import net.maxgigapop.mrs.common.RdfOwl;
+import net.maxgigapop.mrs.service.orchestrate.ActionBase;
+import net.maxgigapop.mrs.service.orchestrate.WorkerBase;
+import net.maxgigapop.www.rains.ontmodel.Spa;
 /**
  *
  * @author xyang
  */
 public class CompilerBase {
-    protected DeltaBase spaDelta = null;
+    protected ServiceDelta spaDelta = null;
 
-    public CompilerBase(DeltaBase spaDelta) {
-        this.spaDelta = spaDelta;
-    }
-
-    public DeltaBase getSpaDelta() {
+    public ServiceDelta getSpaDelta() {
         return spaDelta;
     }
 
-    public void setSpaDelta(DeltaBase spaDelta) {
+    public void setSpaDelta(ServiceDelta spaDelta) {
         this.spaDelta = spaDelta;
     }
 
-    public void compile() {
+    public void compile(WorkerBase worker) {
         throw new EJBException("CompilerBase::compile() is abstract. Use a specific implementation instead!");
     }
     
-    protected List<OntModel> decomposeByPolicyActions(OntModel spaModel) {
-        List<OntModel> listModelParts = null;
+    protected Map<Resource, OntModel> decomposeByPolicyActions(OntModel spaModel) {
+        Map<Resource, OntModel> leafPolicyModelMap = null;
         List<Resource> spaActions = getPolicyActionList(spaModel);
+        if (spaActions == null) {
+            throw new EJBException("CompilerBase::decomposeByPolicyActions() found none terminal / leaf action!");
+        }
         for (Resource policy : spaActions) {
             // test resAtion is terminal/leaf
             if (this.isLeafPolicy(spaModel, policy)) {
                 OntModel modelPart = getReverseDependencyTree(spaModel, policy);
-                if (listModelParts == null)
-                    listModelParts = new ArrayList<>();
-                listModelParts.add(modelPart);
+                if (leafPolicyModelMap == null)
+                    leafPolicyModelMap = new HashMap<>();
+                leafPolicyModelMap.put(policy, modelPart);
             }
         }
         
-        return listModelParts;
+        return leafPolicyModelMap;
     }
     
+    
+    protected boolean isPolicyAction(OntModel spaModel, Resource res) {
+        NodeIterator nodeIter = spaModel.listObjectsOfProperty(res, RdfOwl.type);
+        while (nodeIter.hasNext()) {
+            RDFNode node = nodeIter.next();
+            if (node.isResource() && 
+                    (node.asResource().getURI().contains("spa#Placement")
+                    || node.asResource().getURI().contains("spa#Connection")
+                    || node.asResource().getURI().contains("spa#Stitching")
+                    || node.asResource().getURI().contains("spa#Abstraction")
+                    )) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     protected List<Resource> getPolicyActionList(OntModel spaModel) {
         String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
                 "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
@@ -72,10 +95,10 @@ public class CompilerBase {
                 "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
                 "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" +
                 "SELECT ?policy WHERE {"
-                + "?policy a spa:Abstraction ."
-                + "?policy a spa:Placement ."
-                + "?policy a spa:Connection ."
-                + "?policy a spa:Stitching ."
+                + "{?policy a spa:Placement} UNION "
+                + "{?policy a spa:Connection} UNION "
+                + "{?policy a spa:Stitching} UNION"
+                + "{?policy a spa:Abstraction}"
                 + "}";
         Query query = QueryFactory.create(sparqlString);
         List<Resource> listRes = null;
@@ -97,7 +120,7 @@ public class CompilerBase {
                 "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
                 "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
                 "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" +
-                String.format("SELECT ?o WHERE {<%s> spa:dependOn ?o . <%s> spa:importFrom ?o . }", resPolicy.toString(), resPolicy.toString());
+                String.format("SELECT ?o WHERE { <%s> spa:dependOn ?o }", resPolicy.toString(), resPolicy.toString());
         Query query = QueryFactory.create(sparqlString);
         List<Resource> listRes = null;
         QueryExecution qexec = QueryExecutionFactory.create(query, spaModel);
@@ -145,7 +168,7 @@ public class CompilerBase {
         }
     }
 
-    private List<Statement> listUpDownStatements(OntModel model, Resource res) {
+    protected List<Statement> listUpDownStatements(OntModel model, Resource res) {
         List<Statement> listStmt = null; 
         StmtIterator its = model.listStatements(null, null, res);
         while (its.hasNext()) {
@@ -159,5 +182,21 @@ public class CompilerBase {
             }
         }
         return listStmt;
+    }
+
+    protected List<Resource> listParentPolicies(OntModel model, Resource res) {
+        List<Resource> listParents = null; 
+        StmtIterator its = model.listStatements(null, Spa.dependOn, res);
+        while (its.hasNext()) {
+            Statement stmt = its.next();
+            Resource subject = stmt.getSubject();
+            if (!isPolicyAction(model, subject))
+                continue;
+            if (listParents == null) {
+                listParents = new ArrayList<>();
+            }
+            listParents.add(stmt.getSubject());
+        }
+        return listParents;
     }
 }

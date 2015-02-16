@@ -32,7 +32,6 @@ public class WorkerBase {
     DeltaBase annoatedModel = null;
     DeltaBase resultModelDelta = null;
     List<ActionBase> rootActions = new ArrayList<>();
-    List<List<ActionBase>> actionBatches = new ArrayList<>();
     
     @EJB
     SystemModelCoordinator systemModelCoordinator;
@@ -49,11 +48,11 @@ public class WorkerBase {
         return rootActions;
     }
 
-    void addRooAction(ActionBase action) {
+    public void addRooAction(ActionBase action) {
         rootActions.add(action);
     }
 
-    void addDependency(ActionBase parent, ActionBase child) {
+    public void addDependency(ActionBase parent, ActionBase child) {
         parent.addDependent(child);
     }
     

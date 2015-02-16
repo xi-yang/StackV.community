@@ -100,6 +100,6 @@ public class DriverTestStarter {
     @PostConstruct
     public void runTests() {
         this.testStubDriver();
-        this.testVersaNSDriver();
+        //this.testVersaNSDriver();
     }
 }
