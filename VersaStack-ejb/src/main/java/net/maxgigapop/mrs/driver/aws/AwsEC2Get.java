@@ -269,15 +269,14 @@ public class AwsEC2Get
     }
     
     //get all the  elastic Ips under an 
-    public static List<Address> getElasticIps(List<Address> ips,String id)
+    public static Address getElasticIp(List<Address> ips,String id)
     {
         List<Address> elasticIps=new ArrayList();
         for(Address t : ips)
         {
-            if(t.getInstanceId().equals(id))
+            if(t.getPublicIp().equals(id))
             {
-                elasticIps.add(t);
-                return elasticIps;
+                return t;
             }
         }
         return null;
@@ -353,5 +352,24 @@ public class AwsEC2Get
             }
         }
         return volume;
+    }
+    
+    //get Id tag returns the resource Id if no Id tags were found
+    public String  getIdTag(String resourceId)
+    {
+        Filter filter= new Filter();
+        filter.withName("resource-id")
+              .withValues(resourceId);
+        
+        DescribeTagsRequest tagRequest= new DescribeTagsRequest();
+        tagRequest.withFilters(filter);
+        List<TagDescription> descriptions= this.client.describeTags(tagRequest).getTags();
+        
+        for(TagDescription td : descriptions)
+        {
+            if(td.getKey().equals("id"));
+                return td.getValue();
+        }
+        return resourceId;
     }
 }

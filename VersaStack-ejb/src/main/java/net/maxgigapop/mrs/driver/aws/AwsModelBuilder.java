@@ -116,15 +116,17 @@ public class AwsModelBuilder
         //put all the vpcs and their information into the model
         for(Vpc v : ec2Client.getVpcs())
         {
-            Resource VPC = RdfOwl.createResource(model,topologyURI +":" + v.getVpcId(),topology);
+            String vpcId= ec2Client.getIdTag(v.getVpcId());
+            Resource VPC = RdfOwl.createResource(model,topologyURI +":" + vpcId,topology);
             model.add(model.createStatement(vpcService,providesVPC,VPC));
             model.add(model.createStatement(awsTopology,hasTopology,VPC));
             
             //put all the subnets within the vpc
-            Resource SWITCHINGSERVICE= RdfOwl.createResource(model,topologyURI + ":" +v.getVpcId()+v.getCidrBlock(),switchingService);
+            Resource SWITCHINGSERVICE= RdfOwl.createResource(model,topologyURI + ":" +vpcId+v.getCidrBlock(),switchingService);
             for(Subnet p: AwsEC2Get.getSubnets(ec2Client.getSubnets(), v.getVpcId()))
             {
-                Resource SUBNET= RdfOwl.createResource(model,topologyURI + ":" +p.getSubnetId(),switchingSubnet);
+                String subnetId= ec2Client.getIdTag(p.getSubnetId());
+                Resource SUBNET= RdfOwl.createResource(model,topologyURI + ":" +subnetId,switchingSubnet);
                 model.add(model.createStatement(VPC, hasService,SWITCHINGSERVICE));
                 model.add(model.createStatement(SWITCHINGSERVICE, providesSubnet, SUBNET));
             
@@ -134,7 +136,8 @@ public class AwsModelBuilder
                 {
                     for(Instance i : instances)
                     {
-                        Resource INSTANCE= RdfOwl.createResource(model,topologyURI + ":" + i.getInstanceId() ,node);
+                        String instanceId= ec2Client.getIdTag(i.getInstanceId());
+                        Resource INSTANCE= RdfOwl.createResource(model,topologyURI + ":" + instanceId ,node);
                         model.add(model.createStatement(VPC,hasNode, INSTANCE));
                         model.add(model.createStatement(ec2Service,providesVM,INSTANCE));
                         model.add(model.createStatement(INSTANCE, providedByService,ec2Service));
@@ -142,15 +145,16 @@ public class AwsModelBuilder
                         //put all the network interfaces of each instance into the model
                         for(InstanceNetworkInterface n : AwsEC2Get.getInstanceInterfaces(i))
                         {
-                            Resource PORT = RdfOwl.createResource(model,topologyURI + ":" +n.getNetworkInterfaceId(),port);
-
+                            String portId= ec2Client.getIdTag(n.getNetworkInterfaceId());
+                            Resource PORT = RdfOwl.createResource(model,topologyURI + ":" +portId,port);
                             model.add(model.createStatement(INSTANCE,hasBidirectionalPort,PORT));
                             model.add(model.createStatement(SUBNET,hasBidirectionalPort,PORT));
                             
                             //put all the voumes attached to this instance into the modle
                             for(Volume vol : ec2Client.getVolumesWithAttachement(i))
                             {
-                               Resource VOLUME= RdfOwl.createResource(model,topologyURI + ":" +vol.getVolumeId(),volume);
+                               String volumeId= ec2Client.getIdTag(vol.getVolumeId());
+                               Resource VOLUME= RdfOwl.createResource(model,topologyURI + ":" +volumeId,volume);
                                model.add(model.createStatement(ebsService,providesVolume, VOLUME));
                                model.add(model.createStatement(INSTANCE,hasVolume, VOLUME));
                                model.add(model.createStatement(VOLUME, value,vol.getVolumeType()));
@@ -183,13 +187,13 @@ public class AwsModelBuilder
             //get all the routes inside this VPC
             for(RouteTable t : AwsEC2Get.getRoutingTables(ec2Client.getRoutingTables(),v.getVpcId()))
             {
-               
-                Resource ROUTINGSERVICE=RdfOwl.createResource(model,topologyURI + ":" +t.getRouteTableId(),routingService);
+                String routeTableId= ec2Client.getIdTag(t.getRouteTableId());
+                Resource ROUTINGSERVICE=RdfOwl.createResource(model,topologyURI + ":" +routeTableId,routingService);
                 model.add(model.createStatement(VPC, hasService,ROUTINGSERVICE));
                 List<Route> routes= t.getRoutes();
                 for(Route r: routes)
                 {
-                    Resource ROUTE= RdfOwl.createResource(model,topologyURI + ":" +t.getRouteTableId()+r.getDestinationCidrBlock()+r.getState(),route);
+                    Resource ROUTE= RdfOwl.createResource(model,topologyURI + ":" +routeTableId+r.getDestinationCidrBlock()+r.getState(),route);
                     model.add(model.createStatement(ROUTINGSERVICE,providesRoute,ROUTE));
                     //model.add(model.createStatement(ROUTE, routeFrom,r.getOrigin()));
                     //model.add(model.createStatement(ROUTE,routeTo,r.getDestinationCidrBlock()));
@@ -200,7 +204,8 @@ public class AwsModelBuilder
         //put the volumes of the ebsService into the model
         for(Volume v : ec2Client.getVolumesWithoutAttachment())
         {
-            Resource VOLUME= RdfOwl.createResource(model,topologyURI + ":" +v.getVolumeId(),volume);
+            String volumeId= ec2Client.getIdTag(v.getVolumeId());
+            Resource VOLUME= RdfOwl.createResource(model,topologyURI + ":" +volumeId,volume);
             model.add(model.createStatement(ebsService,providesVolume, VOLUME));
             model.add(model.createStatement(VOLUME, value,v.getVolumeType()));
         }
