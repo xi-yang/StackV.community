@@ -136,6 +136,19 @@ public class AwsEC2Get
     {
         return networkInterfaces;
     }
+    
+    //get all the network interfaces under the account
+    public static  NetworkInterface getNetworkInterface(List<NetworkInterface> networkInterfaces, String id)
+    {
+       for(NetworkInterface n : networkInterfaces)
+        {
+            if(n.getNetworkInterfaceId().equals(id))
+            {
+               return n;
+            }
+        }
+        return null;
+    }
 
     
     //get the list of all the subnets associated with an account
@@ -160,6 +173,19 @@ public class AwsEC2Get
             }
         }
         return subnetList;
+    }
+    
+    //get a single subnet based on its id
+    public static Subnet getSubnet(List<Subnet> subnets,String id)
+    {
+        for(Subnet sub : subnets)
+        {
+            if(sub.getSubnetId().equals(id))
+            {
+               return sub;
+            }
+        }
+        return null;
     }
     
     
@@ -286,19 +312,18 @@ public class AwsEC2Get
     }
     
     //get a  volume with a particular Id from a list of volumes
-    public static List<Volume> getVolumes(List<Volume> vol, String id)
-    {
-        List<Volume> volumesList=new ArrayList();
+    public static Volume getVolume(List<Volume> vol, String id)
+    {  
         for(Volume v : vol )
         {
             if(v.getVolumeId().equals(id))
             {
-               volumesList.add(v);
-               return volumesList;
+               return v;
             }
         }
         return null;
     }
+    
     
     //get a list of all the volumes that have an attachement to an instance
     public List<Volume> getVolumesWithAttachement(Instance i)
