@@ -199,4 +199,19 @@ public class CompilerBase {
         }
         return listParents;
     }
+    
+    protected List<Resource> listChildPolicies(OntModel model, Resource res) {
+        List<Resource> listChildren = null; 
+        NodeIterator itn = model.listObjectsOfProperty(res, Spa.dependOn);
+        while (itn.hasNext()) {
+            Resource child = itn.next().asResource();
+            if (!isPolicyAction(model, child))
+                continue;
+            if (listChildren == null) {
+                listChildren = new ArrayList<>();
+            }
+            listChildren.add(child);
+        }
+        return listChildren;
+    }
 }

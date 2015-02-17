@@ -67,6 +67,13 @@ public class SimpleCompiler extends CompilerBase {
                     for (ActionBase child: childActions) {
                         worker.addDependency(action, child);
                     }
+                    // check if the parent (action) has got all dependencies (children)
+                    //$$ TODO: cache <policy, childPolicies> for better performance                    
+                    List<Resource> childPolicies = this.listChildPolicies(spaOntModelAddition, policy);
+                    // If not, re-enqueue
+                    if (childPolicies.size() > childActions.size()) {
+                        policyQueue.add(policy);
+                    }
                 }
                 // traverse upwards to get parent actions
                 List<Resource> parentPolicies = this.listParentPolicies(spaOntModelAddition, policy);
@@ -74,8 +81,6 @@ public class SimpleCompiler extends CompilerBase {
                     for (Resource parent: parentPolicies) {
                         // enqueue parent policy
                         if (!policyQueue.contains(parent)) {
-                            // $$ TODO: Test if there is other already enqueued policy that depends (directly or indirectly) on this.
-                            // $$ TODO: If so, insert this parent to ahead of that. --> Add a testing method.
                             policyQueue.add(parent);
                         }
                         // map action as dependency of the parent policy for lookup at dequeue
