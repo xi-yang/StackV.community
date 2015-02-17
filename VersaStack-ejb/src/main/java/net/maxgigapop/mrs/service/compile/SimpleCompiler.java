@@ -73,9 +73,13 @@ public class SimpleCompiler extends CompilerBase {
                 if (parentPolicies != null) {
                     for (Resource parent: parentPolicies) {
                         // enqueue parent policy
-                        policyQueue.add(parent);
+                        if (!policyQueue.contains(parent)) {
+                            // $$ TODO: Test if there is other already enqueued policy that depends (directly or indirectly) on this.
+                            // $$ TODO: If so, insert this parent to ahead of that. --> Add a testing method.
+                            policyQueue.add(parent);
+                        }
                         // map action as dependency of the parent policy for lookup at dequeue
-                        List<ActionBase> childActions = parentPolicyChildActionMap.get(policy);
+                        List<ActionBase> childActions = parentPolicyChildActionMap.get(parent);
                         if (childActions == null) {
                             childActions = new ArrayList<>();
                             parentPolicyChildActionMap.put(parent, childActions);
