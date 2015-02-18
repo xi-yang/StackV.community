@@ -38,7 +38,7 @@ import net.maxgigapop.mrs.driver.openstack.OpenStackModelBuilder;
  * @author muzcategui
  */
 public class AwsModelBuilder 
-{
+{    
     public static OntModel createOntology(String access_key_id,String secret_access_key, Regions region, String topologyURI) throws IOException
     {
         Logger logger = Logger.getLogger(AwsModelBuilder.class.getName());

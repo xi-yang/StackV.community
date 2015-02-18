@@ -283,7 +283,6 @@ public class AwsEC2Get
     //get all the  elastic Ips under an 
     public static Address getElasticIp(List<Address> ips,String id)
     {
-        List<Address> elasticIps=new ArrayList();
         for(Address t : ips)
         {
             if(t.getPublicIp().equals(id))
@@ -379,7 +378,7 @@ public class AwsEC2Get
         
         for(TagDescription td : descriptions)
         {
-            if(td.getKey().equals("id"));
+            if(td.getKey().equals("id"))
                 return td.getValue();
         }
         return resourceId;

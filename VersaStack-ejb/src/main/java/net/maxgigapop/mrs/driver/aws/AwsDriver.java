@@ -45,14 +45,21 @@ public class AwsDriver implements IHandleDriverSystemCall {
         driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
         aDelta = (DriverSystemDelta)DeltaPersistenceManager.findById(aDelta.getId());
         
-        
+        String access_key_id = driverInstance.getProperty("aws_access_key_id");
+        String secret_access_key = driverInstance.getProperty("aws_secret_access_key");
+        String r= driverInstance.getProperty("region");
+        String topologyURI= driverInstance.getProperty("topologyUri");
+        Regions region= Regions.fromName(r);
+         
         String modelAdd=aDelta.getModelAddition().getTtlModel();
         String modelReduc= aDelta.getModelReduction().getTtlModel();
         
-        driverInstance.putProperty("modelAddition", modelAdd);
-        driverInstance.putProperty("modelReduction", modelReduc);
+        AwsPush push= new AwsPush(access_key_id,secret_access_key,region,topologyURI);
+        String requests= push.pushPropagate(modelAdd,modelReduc);
         
-         DriverInstancePersistenceManager.save(driverInstance);
+        String requestId= driverInstance.getId().toString()+ aDelta.getId().toString();
+        driverInstance.putProperty(requestId, requests);
+        DriverInstancePersistenceManager.save(driverInstance);
     }
 
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
@@ -60,9 +67,22 @@ public class AwsDriver implements IHandleDriverSystemCall {
     @Override
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
         DriverInstance driverInstance = aDelta.getDriverInstance();
+        driverInstance = DriverInstancePersistenceManager.findByTopologyUri(driverInstance.getTopologyUri());
         if (driverInstance == null) {
             throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
         }
+        
+        String access_key_id = driverInstance.getProperty("aws_access_key_id");
+        String secret_access_key = driverInstance.getProperty("aws_secret_access_key");
+        String r= driverInstance.getProperty("region");
+        String topologyURI= driverInstance.getProperty("topologyUri");
+        Regions region= Regions.fromName(r);
+        String requestId= driverInstance.getId().toString()+ aDelta.getId().toString();
+        String requests=driverInstance.getProperty(requestId);
+        
+        AwsPush push= new AwsPush(access_key_id,secret_access_key,region,topologyURI);
+        push.pushCommit(requests);
+        
         return new AsyncResult<String>("SUCCESS");
     }
 
@@ -84,18 +104,19 @@ public class AwsDriver implements IHandleDriverSystemCall {
             Regions region= Regions.fromName(r);
             
             OntModel ontModel = AwsModelBuilder.createOntology(access_key_id, secret_access_key,region,topologyURI);
+  
+                DriverModel dm = new DriverModel();
+                dm.setCommitted(true);
+                dm.setOntModel(ontModel);
+                ModelPersistenceManager.save(dm);
 
-            DriverModel dm = new DriverModel();
-            dm.setCommitted(true);
-            dm.setOntModel(ontModel);
-            ModelPersistenceManager.save(dm);
-
-            VersionItem vi = new VersionItem();
-            vi.setModelRef(dm);
-            vi.setReferenceUUID(UUID.randomUUID().toString());
-            vi.setDriverInstance(driverInstance);
-            VersionItemPersistenceManager.save(vi);
-            driverInstance.setHeadVersionItem(vi);
+                VersionItem vi = new VersionItem();
+                vi.setModelRef(dm);
+                vi.setReferenceUUID(UUID.randomUUID().toString());
+                vi.setDriverInstance(driverInstance);
+                VersionItemPersistenceManager.save(vi);
+                driverInstance.setHeadVersionItem(vi);
+          
 
         } catch (IOException e) {
             throw new EJBException(String.format("pullModel on %s raised exception[%s]", driverInstance, e.getMessage()));
