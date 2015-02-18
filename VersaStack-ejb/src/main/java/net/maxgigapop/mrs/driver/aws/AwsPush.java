@@ -68,7 +68,7 @@ public class AwsPush
         "        a               mrs:HypervisorService , owl:NamedIndividual ;\n" +
         "        mrs:providesVM  <urn:ogf:network:aws.amazon.com:aws-cloud:i-4f93ec60> .\n" +
         "<urn:ogf:network:aws.amazon.com:aws-cloud:subnet-2cd6ad16>\n" +
-        "        a                         mrs:SwitchingSubnet , owl:NamedIndividual ;\n" +
+        "        a               mrs:SwitchingSubnet , owl:NamedIndividual ;\n" +
         "        nml:hasBidirectionalPort  <urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b083> .\n" +
         "<urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b083> \n" +
         "        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n" +
@@ -78,13 +78,15 @@ public class AwsPush
         "        mrs:providesVolume  <urn:ogf:network:aws.amazon.com:aws-cloud:vol-f05f50bf> .\n" +
         "<urn:ogf:network:aws.amazon.com:aws-cloud:vol-f05f50bf>\n" +
         "        a          mrs:Volume , owl:NamedIndividual ;\n" +
-        "        mrs:value  \"gp2\" .\n" +
+        "        mrs:value  \"gp2\" ;\n" +
+        "        mrs:disk_gb \"8\" .\n" +
         "<urn:ogf:network:aws.amazon.com:aws-cloud:10.0.0.230>\n" +
         "        a          mrs:NetworkAddress , owl:NamedIndividual ;\n" +
         "        mrs:value  \"10.0.0.230\" .\n";
         
         AwsPush push =new AwsPush("","",Regions.US_EAST_1,"urn:ogf:network:aws.amazon.com:aws-cloud");
-        push.push(modelAdditionStr,"");
+        String request=push.pushPropagate(modelAdditionStr,"");
+        push.pushCommit(request);
     }
   
     
@@ -99,16 +101,16 @@ public class AwsPush
     }
     
 //function to push into the cloud
-public String push(String modelAddTtl, String modelReductTtl) throws Exception
+public String  pushPropagate(String modelAddTtl, String modelReductTtl) throws Exception
 {
-    Map <AmazonWebServiceRequest, String> requests= new HashMap();
+    String  requests="";
     
     OntModel modelReduct = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
     OntModel modelAdd = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 
      try {
         modelAdd.read(new ByteArrayInputStream(modelAddTtl.getBytes()), null, "TURTLE");
-        modelReduct.read(new ByteArrayInputStream(modelAddTtl.getBytes()), null, "TURTLE");
+        //modelReduct.read(new ByteArrayInputStream(modelAddTtl.getBytes()), null, "TURTLE");
     } catch (Exception e) {
         throw new Exception(String.format("failure to unmarshall ontology model, due to %s", e.getMessage()));
     }
@@ -151,7 +153,7 @@ public String push(String modelAddTtl, String modelReductTtl) throws Exception
     }
 
     //create a volume if a volume needs to be created
-    query= "SELECT ?volume WHERE {?service mrs:providesVolume ?volume}";
+    query= "SELECT ?volume WHERE {?volume a mrs:Volume}";
     r= executeQuery(query,modelAdd);
     while(r.hasNext())
     {
@@ -164,23 +166,32 @@ public String push(String modelAddTtl, String modelReductTtl) throws Exception
 
         if(v == null) //volume does not exist, need to create a volume
         {
-            CreateVolumeRequest volumeRequest =  new CreateVolumeRequest();
-
+            
+            //check what service is providing the volume
+            query= "SELECT ?type WHERE {?service mrs:providesVolume <"+ volume.asResource() + ">}";
+            ResultSet r1 = executeQuery(query,modelAdd);
+            if(!r1.hasNext())
+            throw  new Exception(String.format("model addition does not specify service that provides volume: %s",volume));
+            
             //find out the type of the volume
              query= "SELECT ?type WHERE {<" + volume.asResource() +"> mrs:value ?type}";
-             ResultSet r1 = executeQuery(query,modelAdd);
+             r1 = executeQuery(query,modelAdd);
             if(!r1.hasNext())
-            throw  new Exception(String.format("model addition does not specify new volume type"));
+            throw  new Exception(String.format("model addition does not specify new type of volume: %s",volume));
              QuerySolution querySolution1 = r1.next();
              RDFNode type = querySolution1.get("type");
-
-             System.out.println(String.format("create a volume with id: %s  type: %s ", volumeId, type.asLiteral().getString()));
-             volumeRequest.withVolumeType(type.asLiteral().getString())
-                    .withSize(8)
-                    .withAvailabilityZone(Regions.US_EAST_1.getName()+'a');
+             
+             //find out the size of the volume
+             query= "SELECT ?size WHERE {<" + volume.asResource() +"> mrs:disk_gb ?size}";
+             r1 = executeQuery(query,modelAdd);
+            if(!r1.hasNext())
+            throw  new Exception(String.format("model addition does not specify new size of volume: %s",volume));
+             querySolution1 = r1.next();
+             RDFNode size = querySolution1.get("size");
              
              //put it in a request 
-             requests.put(volumeRequest, volumeIdTagValue);
+             requests +=String.format("CreateVolumeRequest %s %s %s %s  \n",type.asLiteral().getString(),
+                     size.asLiteral().getString(),Regions.US_EAST_1.getName()+"a ", volumeIdTagValue);
         }
     }
 
@@ -197,37 +208,31 @@ public String push(String modelAddTtl, String modelReductTtl) throws Exception
         NetworkInterface p = AwsEC2Get.getNetworkInterface(ec2Client.getNetworkInterfaces(), portId);
 
         if(p == null) //network interface does not exist, need to create a network interface
-        {
-            System.out.println("need to create network interface with id :"+ portId);
-
+        {   
             //to get the private ip of the network interface
             query= "SELECT ?address WHERE {<" + port.asResource() +">  mrs:privateIpAddress  ?address}";
-            ResultSet r1 = executeQuery(query,modelAdd);
+             ResultSet r1 = executeQuery(query,modelAdd);
             if(!r1.hasNext())
-            throw  new Exception(String.format("model addition does not specify privat ip address of network interface"));
+            throw  new Exception(String.format("model addition does not specify privat ip address of port: %s",port));
              QuerySolution querySolution1 = r1.next();
              RDFNode address = querySolution1.get("address");
              String privateAddress = address.asResource().toString().replace(topologyUri,"");
-             System.out.println("Network interface has private address :" + privateAddress);
 
             //find the subnet that has the port previously found
-            query= "SELECT ?subnet WHERE {?subnet  nml:hasBidirectionalPort <" + port.asResource() + ">}";
+            query= "SELECT ?subnet WHERE {?subnet  nml:hasBidirectionalPort <" + port.asResource() + "> ."
+                    + "?subnet a mrs:SwitchingSubnet}";
             r1= executeQuery(query,modelAdd);         
             if(!r1.hasNext())
-                throw  new Exception(String.format("model addition does not network interface subnet"));
+                throw  new Exception(String.format("model addition does not network subnet of port: %s",port));
             querySolution1 = r1.next();
             RDFNode subnet = querySolution1.get("subnet");
             String subnetId= subnet.asResource().toString().replace(topologyUri,"");
             subnetId=getResourceId(subnetId);
 
             //create the network interface 
-            CreateNetworkInterfaceRequest networkInterfaceRequest= new CreateNetworkInterfaceRequest();
-            networkInterfaceRequest.withPrivateIpAddress(privateAddress);
-            networkInterfaceRequest.withSubnetId(subnetId);
-            requests.put(networkInterfaceRequest, portIdTagValue);
-            
-
-
+            requests += String.format("CreateNetworkInterfaceRequest  %s %s %s \n" ,privateAddress , subnetId
+                         ,portIdTagValue);
+ 
             //to get the public ip address of the network interface if any
             query= "SELECT ?address WHERE {<" + port.asResource() +">  mrs:publicIpAddress  ?address}";
             r1 = executeQuery(query,modelAdd);
@@ -236,13 +241,8 @@ public String push(String modelAddTtl, String modelReductTtl) throws Exception
                 querySolution1 = r1.next();
                 address = querySolution1.get("address");
                 String publicAddress = address.asResource().toString().replace(topologyUri,"");
-                System.out.println("Network interface  has public address: "+ publicAddress);
-                
-                AssociateAddressRequest addressAssociationRequest= new AssociateAddressRequest();
-                
-                addressAssociationRequest.withPublicIp(publicAddress)
-                                         .withNetworkInterfaceId(getResourceId(portIdTagValue));
-                requests.put(networkInterfaceRequest, publicAddress);
+                requests  += "AssociateAddressRequest " + publicAddress +" " + portIdTagValue
+                        + " \n";
             }       
         }
     }
@@ -256,108 +256,108 @@ public String push(String modelAddTtl, String modelReductTtl) throws Exception
         QuerySolution querySolution = r.next();
         RDFNode node = querySolution.get("node");
         String nodeIdTagValue= node.asResource().toString().replace(topologyUri,"");
-        System.out.println("create node with id :"+ nodeIdTagValue);
-
-        //find the Vpc that the node will be in
-        query= "SELECT ?vpc WHERE {?vpc nml:hasNode <" + node.asResource() +">}";
-        ResultSet r1= executeQuery(query,modelAdd);         
-        if(!r1.hasNext())
-            throw  new Exception(String.format("model addition does not specify new node's vpc"));
-        QuerySolution querySolution1 = r1.next();
-        RDFNode vpc = querySolution1.get("vpc");
-        String vpcId= vpc.asResource().toString().replace(topologyUri,"");
-        System.out.println("node has Vpc :" + vpcId);
-        vpcId=getResourceId(vpcId);
-
-        //to find the subnet the node is in first  find the port the node uses
-        query= "SELECT ?port WHERE {<" + node.asResource()+ "> nml:hasBidirectionalPort ?port}";
-        ResultSet r2= executeQuery(query,modelAdd);         
-        if(!r2.hasNext())
-            throw  new Exception(String.format("model addition does not specify new node's port"));
-        List<String> portsId =new ArrayList();
-        RDFNode lastPort = null;
-        while(r2.hasNext())//there could be multiple network interfaces attached to the instance
+        String nodeId= getResourceId(nodeIdTagValue);
+        
+        Instance instance = ec2Client.getInstance(nodeId);
+        if(instance==null) //instance needs to be created
         {
-            QuerySolution querySolution2 = r2.next();
-            RDFNode port= querySolution2.get("port");
-            String id= port.asResource().toString().replace(topologyUri,"");
-            portsId.add(getResourceId(id));
-            System.out.println(" node has port: " + id);
-            lastPort=port;
+            System.out.println("needs to create node with id "+ nodeIdTagValue);
+                    
+            //check what service is providing the instance
+            query= "SELECT ?type WHERE {?service mrs:providesVM <"+ node.asResource() + ">}";
+            ResultSet r1 = executeQuery(query,modelAdd);
+            if(!r1.hasNext())
+            throw  new Exception(String.format("model addition does not specify service that provides Instance: %s",node));
+            
+            //find the Vpc that the node will be in
+            query= "SELECT ?vpc WHERE {?vpc nml:hasNode <" + node.asResource() +">}";
+            r1= executeQuery(query,modelAdd);         
+            if(!r1.hasNext())
+                throw  new Exception(String.format("model addition does not specify the Vpc of the node: %s",node));
+            QuerySolution querySolution1 = r1.next();
+            RDFNode vpc = querySolution1.get("vpc");
+            String vpcId= vpc.asResource().toString().replace(topologyUri,"");
+            System.out.println("node has Vpc :" + vpcId);
+            vpcId=getResourceId(vpcId);
+
+            //to find the subnet the node is in first  find the port the node uses
+            query= "SELECT ?port WHERE {<" + node.asResource()+ "> nml:hasBidirectionalPort ?port}";
+            ResultSet r2= executeQuery(query,modelAdd);         
+            if(!r2.hasNext())
+                throw  new Exception(String.format("model addition does not specify the subnet that the node is: %s",node));
+            List<String> portsId =new ArrayList();
+            RDFNode lastPort = null;
+            while(r2.hasNext())//there could be multiple network interfaces attached to the instance
+            {
+                QuerySolution querySolution2 = r2.next();
+                RDFNode port= querySolution2.get("port");
+                String id= port.asResource().toString().replace(topologyUri,"");
+                portsId.add(getResourceId(id));
+                System.out.println(" node has port: " + id);
+                lastPort=port;
+            }
+
+
+            //find the EBS volumes that the instance uses
+            query = "SELECT ?volume WHERE {<" + node.asResource() + ">  mrs:hasVolume  ?volume}";
+            ResultSet r4= executeQuery(query,modelAdd);   
+            if(!r4.hasNext())
+               throw  new Exception(String.format("model addition does not specify the volume of the new node: %s",node));
+            List<String> volumesId =new ArrayList();
+             while(r4.hasNext())//there could be multiple network interfaces attached to the instance
+            {
+                QuerySolution querySolution4 = r4.next();
+                RDFNode volume= querySolution4.get("volume");
+                String id= volume.asResource().toString().replace(topologyUri,"");
+                System.out.println("node has volume :" + id);
+                volumesId.add(getResourceId(id));
+            }
+
+            //put request for new instance
+            requests += String.format("RunInstancesRequest ami-146e2a7c t2.micro 1 1 ");
+            int index =0;
+            for(String id : portsId)
+            {
+               requests+=String.format("InstanceNetworkInterfaceSpecification %s %d",id,index);
+               index++; //increment the device index
+            } 
+            requests+="\n";
         }
+    }
 
+    return requests;
+}
 
-        //find the EBS volumes that the instance uses
-        query = "SELECT ?volume WHERE {<" + node.asResource() + ">  mrs:hasVolume  ?volume}";
-        ResultSet r4= executeQuery(query,modelAdd);   
-        if(!r4.hasNext())
-           throw  new Exception(String.format("model addition does not specify new node's volumes"));
-        List<String> volumesId =new ArrayList();
-         while(r4.hasNext())//there could be multiple network interfaces attached to the instance
-        {
-            QuerySolution querySolution4 = r4.next();
-            RDFNode volume= querySolution4.get("volume");
-            String id= volume.asResource().toString().replace(topologyUri,"");
-            System.out.println("node has volume :" + id);
-            volumesId.add(getResourceId(id));
+public void pushCommit(String r)
+{
+    String []requests=r.split("[\\n]");
+    
+        for (String request : requests) 
+        {          
+            if(request.contains("CreateVolumeRequest"))
+            {                
+                String []parameters = request.split("%s");
+                
+                CreateVolumeRequest volumeRequest= new CreateVolumeRequest();
+                volumeRequest.withVolumeType(parameters[1]);
+                volumeRequest.withSize(Integer.parseInt(parameters[2]));
+                volumeRequest.withAvailabilityZone(parameters[3]);                
+                CreateVolumeResult result = client.createVolume(volumeRequest);
+                
+                CreateTagsRequest tagRequest = new CreateTagsRequest();
+                tagRequest.withTags(new Tag("id",parameters[4]));
+                tagRequest.withResources(result.getVolume().getVolumeId());
+                client.createTags(tagRequest);
+            }
+            else if(request.contains("CreateNetworkInterfaceRequest"))
+            {
+                 
+            }
+            else if(request.contains("RunInstancesRequest"))
+            {
+                
+            }
         }
-
-
-        //start creating instance
-        RunInstancesRequest runInstancesRequest= new RunInstancesRequest();
-        runInstancesRequest.withImageId("ami-146e2a7c")
-            .withInstanceType("t2.micro")
-            .withMaxCount(1)
-            .withMinCount(1);
-
-
-        //attach the network interfaces to the instance     
-        List<InstanceNetworkInterfaceSpecification> networkInterfaceSpecifications =
-                                                    new ArrayList();
-
-        int index =0;
-        for(String id : portsId)
-        {
-           InstanceNetworkInterfaceSpecification n= new InstanceNetworkInterfaceSpecification();
-           n.withNetworkInterfaceId(id)
-             .withDeviceIndex(index);
-           networkInterfaceSpecifications.add(n);
-           index++; //increment the device index
-        } 
-        runInstancesRequest.withNetworkInterfaces(networkInterfaceSpecifications);
-       
-
-
-        //create instance
-        /*RunInstancesResult  instanceResult=client.runInstances(runInstancesRequest);
-        Instance i = instanceResult.getReservation().getInstances().get(0);
-        InstanceBlockDeviceMapping ipo= new InstanceBlockDeviceMapping();
-
-
-        //set Id of the instance
-        Tag nodeTag= new Tag("id",nodeIdTagValue);
-        CreateTagsRequest tagRequest= new CreateTagsRequest();
-        tagRequest.withResources(i.getInstanceId())
-                .withTags(nodeTag);
-        client.createTags(tagRequest);
-
-        //attach volumes to the instance
-        /*
-         String deviceIndex="a";
-        for(String id : volumesId)
-        {
-            String deviceName="/dev/sd"+ deviceIndex;
-            deviceIndex=deviceIndex+1; //increment the leter
-            AttachVolumeRequest volumeRequest= new AttachVolumeRequest();
-            volumeRequest.withVolumeId(id)
-                           .withInstanceId(i.getInstanceId())
-                           .withDevice(deviceName);
-            ec2Client.getClient().attachVolume(volumeRequest);
-        }
-       */
-
-        }    
-    return null;
 }
     
  //function that execustes a query and returns the result
@@ -387,7 +387,7 @@ private ResultSet executeQuery(String queryString, Model model)
         
         DescribeTagsRequest tagRequest= new DescribeTagsRequest();
         tagRequest.withFilters(filter);
-        List<TagDescription> descriptions= this.client.describeTags(tagRequest).getTags();
+        List<TagDescription> descriptions= ec2Client.getClient().describeTags(tagRequest).getTags();
         if(!descriptions.isEmpty())
             return descriptions.get(0).getResourceId();
 

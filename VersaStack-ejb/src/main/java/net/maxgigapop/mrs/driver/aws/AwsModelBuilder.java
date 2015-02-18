@@ -158,6 +158,7 @@ public class AwsModelBuilder
                                model.add(model.createStatement(ebsService,providesVolume, VOLUME));
                                model.add(model.createStatement(INSTANCE,hasVolume, VOLUME));
                                model.add(model.createStatement(VOLUME, value,vol.getVolumeType()));
+                               model.add(model.createStatement(VOLUME, Mrs.disk_gb,Integer.toString(vol.getSize())));
                                
                             }
                             
@@ -208,6 +209,7 @@ public class AwsModelBuilder
             Resource VOLUME= RdfOwl.createResource(model,topologyURI + ":" +volumeId,volume);
             model.add(model.createStatement(ebsService,providesVolume, VOLUME));
             model.add(model.createStatement(VOLUME, value,v.getVolumeType()));
+            model.add(model.createStatement(VOLUME, Mrs.disk_gb,Integer.toString(v.getSize())));
         }
         
         //put all the buckets of the s3Service into the model

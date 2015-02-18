@@ -124,6 +124,18 @@ public class AwsEC2Get
         return ins;
     }
     
+    //get all the instances associated with a Vpc  or subnet in the account
+    public   Instance getInstance(String id )
+    {
+        List<Instance> ins= new ArrayList();
+        for(Instance i: instances)
+        {
+            if(i.getInstanceId().equals(id))
+                return i;
+        }
+        return null;
+    }
+    
         
     //get all the attached network interfaces for an instance
     public static List<InstanceNetworkInterface> getInstanceInterfaces(Instance i)
