@@ -43,6 +43,10 @@ public class IntegrationTest1 {
 "@prefix rdf:   <http://schemas.ogf.org/nml/2013/03/base#> .\n" +
 "@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .\n" +
 "@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .\n" +
+"<urn:ogf:network:rains.maxgigapop.net:2013:topology>\n" + 
+"    nml:hasNode\n" + 
+"        <urn:ogf:network:rains.maxgigapop.net:2013:new-node1>.";
+            /*
 "<urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON:l2switching>\n" +
 "        mrs:providesSubnet        <urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON:l2switching:crs-svc1> ."+
 "<urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON:l2switching:crs-svc1>\n" +
@@ -64,6 +68,7 @@ public class IntegrationTest1 {
 "        a              nml:Label , owl:NamedIndividual ;\n" +
 "        nml:labeltype  <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> ;\n" +
 "        nml:value      \"3203\" .";
+    */
     
     private final String modelReductionStr = "@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n" +
 "@prefix owl:   <http://www.w3.org/2002/07/owl#> .\n" +
@@ -75,7 +80,7 @@ public class IntegrationTest1 {
     @PostConstruct
     public void testSystemPullAndPush1() {
         try {
-            sleep(180000L);
+            sleep(90000L);
             VersionGroup vg = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
             SystemInstance sysInstance = systemCallHandler.createInstance();
             SystemDelta sysDelta = new SystemDelta();
