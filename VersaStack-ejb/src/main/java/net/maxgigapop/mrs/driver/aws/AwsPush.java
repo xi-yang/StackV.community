@@ -137,10 +137,28 @@ public String  pushPropagate(String modelAddTtl, String modelReductTtl)
     } catch (Exception e) {
         throw new EJBException(String.format("failure to unmarshall model reduction, due to %s", e.getMessage()));
     }
-
+    
+    //Step 1 delete everything that needs to be deleted
+    //Step 1.1 delete instances
+     String query= "SELECT ?node WHERE {?node a nml:Node}";
+     ResultSet r = executeQuery(query,modelAdd);
+    while(r.hasNext())
+    {
+        QuerySolution querySolution = r.next();
+        RDFNode node = querySolution.get("node");
+        String nodeIdTagValue= node.asResource().toString().replace(topologyUri,"");
+        String nodeId= getResourceId(nodeIdTagValue);
+        
+        Instance instance = ec2Client.getInstance(nodeId);
+        if(instance==null) //instance needs to be created
+            throw  new EJBException(String.format("Node: %s does not exist",node));
+        else
+            requests += String.format("TerminateInstancesRequest %s \n", nodeId);     
+    }
+    
     //create all the vpcs that need to be created
-     String query= "SELECT ?vpc WHERE {?service mrs:providesVPC  ?vpc}";
-     ResultSet r= executeQuery(query,modelAdd);         
+     query= "SELECT ?vpc WHERE {?service mrs:providesVPC  ?vpc}";
+     r= executeQuery(query,modelAdd);         
     while(r.hasNext())
     {
         QuerySolution querySolution = r.next();
@@ -176,7 +194,8 @@ public String  pushPropagate(String modelAddTtl, String modelReductTtl)
     }
 
     //create a volume if a volume needs to be created
-    query= "SELECT ?volume WHERE {?volume a mrs:Volume}";
+    query= "SELECT ?volume WHERE {?volume a mrs:Volume ."
+                                  + "?volume mrs:target_device ?name}";
     r= executeQuery(query,modelAdd);
     while(r.hasNext())
     {
@@ -189,7 +208,6 @@ public String  pushPropagate(String modelAddTtl, String modelReductTtl)
 
         if(v == null) //volume does not exist, need to create a volume
         {
-            
             //check what service is providing the volume
             query= "SELECT ?type WHERE {?service mrs:providesVolume <"+ volume.asResource() + ">}";
             ResultSet r1 = executeQuery(query,modelAdd);
@@ -356,8 +374,18 @@ public void pushCommit(String r)
     String []requests=r.split("[\\n]");
   
         for (String request : requests) 
-        {     
-            if(request.contains("CreateVolumeRequest"))
+        {   
+            if(request.contains("TerminateInstancesRequest"))
+                     {
+                        String []parameters = request.split("\\s+"); 
+
+                        TerminateInstancesRequest del = new TerminateInstancesRequest();
+                        del.withInstanceIds(getResourceId(parameters[1]));
+                        del.toString();
+                        client.terminateInstances(del);
+                     }
+            
+            else if(request.contains("CreateVolumeRequest"))
             {                
                 String []parameters = request.split("\\s+");
                

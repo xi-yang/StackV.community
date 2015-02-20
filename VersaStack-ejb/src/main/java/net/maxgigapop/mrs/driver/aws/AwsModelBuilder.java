@@ -76,6 +76,7 @@ public class AwsModelBuilder
         Property hasTopology=Nml.hasTopology;
         Property publicIpAddress=model.createProperty(model.getNsPrefixURI("mrs")+"publicIpAddress");
         Property privateIpAddress=model.createProperty(model.getNsPrefixURI("mrs")+"privateIpAddress");
+        Property targetDevice=model.createProperty(model.getNsPrefixURI("mrs"),"target_device");
         
         //set the global resources
         Resource route=Mrs.Route;
@@ -159,7 +160,13 @@ public class AwsModelBuilder
                                model.add(model.createStatement(INSTANCE,hasVolume, VOLUME));
                                model.add(model.createStatement(VOLUME, value,vol.getVolumeType()));
                                model.add(model.createStatement(VOLUME, Mrs.disk_gb,Integer.toString(vol.getSize())));
-                               
+                               VolumeAttachment volAttachment = new VolumeAttachment();
+                               volAttachment.withVolumeId(volumeId);
+                               volAttachment.withInstanceId(i.getInstanceId());
+                               if(!volAttachment.getDevice().equals("/dev/sda1") || !volAttachment.getDevice().equals("/dev/xvda"))
+                               {
+                                   model.add(model.createStatement(VOLUME,targetDevice,volAttachment.getDevice()));
+                               }  
                             }
                             
                             //put the private ip (if any) of the network interface in the model
