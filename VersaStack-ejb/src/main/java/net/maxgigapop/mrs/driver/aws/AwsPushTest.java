@@ -41,14 +41,79 @@ import net.maxgigapop.mrs.common.ModelUtil;
  *
  * @author max
  */
-public class AwsPush 
+public class AwsPushTest 
 {
     private AmazonEC2Client client=null;
     private  AwsEC2Get ec2Client =null; 
     private String topologyUri=null;
     static final Logger logger = Logger.getLogger(AwsPush.class.getName());
     
-    public  AwsPush(String access_key_id, String secret_access_key,Regions region, String topologyUri) 
+    /*public static void main(String [ ] args) throws Exception
+    {
+       String modelAdditionStr = "@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n" +
+        "@prefix owl:   <http://www.w3.org/2002/07/owl#> .\n" +
+        "@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .\n" +
+        "@prefix rdf:   <http://schemas.ogf.org/nml/2013/03/base#> .\n" +
+        "@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .\n" +
+        "@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .\n";
+        "<urn:ogf:network:aws.amazon.com:aws-cloud:i-4f93ec60>\n" +
+        "        a                         nml:Node , owl:NamedIndividual ;\n" +
+        "        mrs:hasVolume             <urn:ogf:network:aws.amazon.com:aws-cloud:vol-f05f50bf> ;\n" +
+        "        mrs:providedByService     <urn:ogf:network:aws.amazon.com:aws-cloud:ec2service-us-east-1> ;\n" +
+        "        nml:hasBidirectionalPort  <urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b083> , <urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b084> .\n" +
+        "<urn:ogf:network:aws.amazon.com:aws-cloud:vpc-8c5f22e9>\n" +
+        "        a               nml:Topology , owl:NamedIndividual ;\n" +
+        "        nml:hasNode     <urn:ogf:network:aws.amazon.com:aws-cloud:i-4f93ec60> ;\n" +
+        "        nml:hasService  <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-864b05e3> , <urn:ogf:network:aws.amazon.com:aws-cloud:vpc-8c5f22e910.0.0.0/16> .\n" +
+        "<urn:ogf:network:aws.amazon.com:aws-cloud:ec2service-us-east-1>\n" +
+        "        a               mrs:HypervisorService , owl:NamedIndividual ;\n" +
+        "        mrs:providesVM  <urn:ogf:network:aws.amazon.com:aws-cloud:i-4f93ec60> .\n" +
+        "<urn:ogf:network:aws.amazon.com:aws-cloud:subnet-2cd6ad16>\n" +
+        "        a               mrs:SwitchingSubnet , owl:NamedIndividual ;\n" +
+        "        nml:hasBidirectionalPort  <urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b083> , <urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b084> .\n" +
+        "<urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b083> \n" +
+        "        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n" +
+        "        mrs:privateIpAddress  <urn:ogf:network:aws.amazon.com:aws-cloud:10.0.0.230> .\n" +
+        "<urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b084> \n" +
+        "        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n" +
+        "        mrs:privateIpAddress  <urn:ogf:network:aws.amazon.com:aws-cloud:10.0.0.231> ;\n" +
+        "        mrs:publicIpAddress  <urn:ogf:network:aws.amazon.com:aws-cloud:54.152.72.205> .\n" +
+        "<urn:ogf:network:aws.amazon.com:aws-cloud:ebsservice-us-east-1>\n" +
+        "        a                   mrs:BlockStorageService , owl:NamedIndividual ;\n" +
+        "        mrs:providesVolume  <urn:ogf:network:aws.amazon.com:aws-cloud:vol-f05f50bf> .\n" +
+        "<urn:ogf:network:aws.amazon.com:aws-cloud:vol-f05f50bf>\n" +
+        "        a          mrs:Volume , owl:NamedIndividual ;\n" +
+        "        mrs:value  \"gp2\" ;\n" +
+        "        mrs:disk_gb \"8\" .\n" +
+        "<urn:ogf:network:aws.amazon.com:aws-cloud:10.0.0.230>\n" +
+        "        a          mrs:NetworkAddress , owl:NamedIndividual ;\n" +
+        "        mrs:value  \"10.0.0.230\" .\n"+
+        "<urn:ogf:network:aws.amazon.com:aws-cloud:10.0.0.231>\n" +
+        "        a          mrs:NetworkAddress , owl:NamedIndividual ;\n" +
+        "        mrs:value  \"10.0.0.231\" .\n"+
+        "<urn:ogf:network:aws.amazon.com:aws-cloud:54.152.72.205>\n" +
+        "        a          mrs:NetworkAddress , owl:NamedIndividual ;\n" +
+        "        mrs:value  \"54.152.72.205\" .\n"
+       
+       String modelReductionStr = "@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n" +
+        "@prefix owl:   <http://www.w3.org/2002/07/owl#> .\n" +
+        "@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .\n" +
+        "@prefix rdf:   <http://schemas.ogf.org/nml/2013/03/base#> .\n" +
+        "@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .\n" +
+        "@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .\n"+
+        "<urn:ogf:network:aws.amazon.com:aws-cloud:i-4f93ec60>\n" +
+        "        a                         nml:Node , owl:NamedIndividual ;\n" +
+        "        mrs:hasVolume             <urn:ogf:network:aws.amazon.com:aws-cloud:vol-f05f50bf> ;\n" +
+        "        mrs:providedByService     <urn:ogf:network:aws.amazon.com:aws-cloud:ec2service-us-east-1> ;\n" +
+        "        nml:hasBidirectionalPort  <urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b083> , <urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b084> .";    
+        
+        AwsPushTest push =new AwsPushTest("","",Regions.US_EAST_1,"urn:ogf:network:aws.amazon.com:aws-cloud");
+        String request=push.pushPropagate(modelAdditionStr,modelReductionStr);
+        push.pushCommit(request);
+    }*/
+  
+    
+    public  AwsPushTest(String access_key_id, String secret_access_key,Regions region, String topologyUri) 
     {
         //have all the information regarding the topology
          ec2Client=new AwsEC2Get(access_key_id,secret_access_key,region);
@@ -59,7 +124,7 @@ public class AwsPush
     }
     
 //function to push into the cloud
-public String  pushPropagate(String modelAddTtl, String modelReductTtl) 
+public String  pushPropagate(String modelAddTtl, String modelReductTtl) throws Exception 
 {
     String  requests="";
     
@@ -69,13 +134,13 @@ public String  pushPropagate(String modelAddTtl, String modelReductTtl)
      try {
         modelAdd.read(new ByteArrayInputStream(modelAddTtl.getBytes()), null, "TURTLE");
     } catch (Exception e) {
-        throw new EJBException(String.format("failure to unmarshall model addition, due to %s", e.getMessage()));
+        throw new Exception(String.format("failure to unmarshall model addition, due to %s", e.getMessage()));
     }
      
     try {
         modelReduct.read(new ByteArrayInputStream(modelReductTtl.getBytes()), null, "TURTLE");
     } catch (Exception e) {
-        throw new EJBException(String.format("failure to unmarshall model reduction, due to %s", e.getMessage()));
+        throw new Exception(String.format("failure to unmarshall model reduction, due to %s", e.getMessage()));
     }
     
     //Step 1 delete everything that needs to be deleted
@@ -90,8 +155,8 @@ public String  pushPropagate(String modelAddTtl, String modelReductTtl)
         String nodeId= getResourceId(nodeIdTagValue);
         
         Instance instance = ec2Client.getInstance(nodeId);
-        if(instance==null) //instance needs to be created
-            throw  new EJBException(String.format("Node to delete: %s does not exist",node));
+        if(instance==null) //instance does not exists
+            throw  new Exception(String.format("Node to delete: %s does not exist",node));
         else
             requests += String.format("TerminateInstancesRequest %s \n", nodeId);     
     }
@@ -134,7 +199,8 @@ public String  pushPropagate(String modelAddTtl, String modelReductTtl)
     }
 
     //create a volume if a volume needs to be created
-    query= "SELECT ?volume WHERE {?volume a mrs:Volume}";
+    query= "SELECT ?volume WHERE {?volume a mrs:Volume ."
+                                  + "?volume mrs:target_device ?name}";
     r= executeQuery(query,modelAdd);
     while(r.hasNext())
     {
@@ -151,13 +217,13 @@ public String  pushPropagate(String modelAddTtl, String modelReductTtl)
             query= "SELECT ?type WHERE {?service mrs:providesVolume <"+ volume.asResource() + ">}";
             ResultSet r1 = executeQuery(query,modelAdd);
             if(!r1.hasNext())
-            throw  new EJBException(String.format("model addition does not specify service that provides volume: %s",volume));
+            throw  new Exception(String.format("model addition does not specify service that provides volume: %s",volume));
             
             //find out the type of the volume
              query= "SELECT ?type WHERE {<" + volume.asResource() +"> mrs:value ?type}";
              r1 = executeQuery(query,modelAdd);
             if(!r1.hasNext())
-            throw  new EJBException(String.format("model addition does not specify new type of volume: %s",volume));
+            throw  new Exception(String.format("model addition does not specify new type of volume: %s",volume));
              QuerySolution querySolution1 = r1.next();
              RDFNode type = querySolution1.get("type");
              
@@ -165,7 +231,7 @@ public String  pushPropagate(String modelAddTtl, String modelReductTtl)
              query= "SELECT ?size WHERE {<" + volume.asResource() +"> mrs:disk_gb ?size}";
              r1 = executeQuery(query,modelAdd);
             if(!r1.hasNext())
-            throw  new EJBException(String.format("model addition does not specify new size of volume: %s",volume));
+            throw  new Exception(String.format("model addition does not specify new size of volume: %s",volume));
              querySolution1 = r1.next();
              RDFNode size = querySolution1.get("size");
              
@@ -193,7 +259,7 @@ public String  pushPropagate(String modelAddTtl, String modelReductTtl)
             query= "SELECT ?address WHERE {<" + port.asResource() +">  mrs:privateIpAddress  ?address}";
              ResultSet r1 = executeQuery(query,modelAdd);
             if(!r1.hasNext())
-            throw  new EJBException(String.format("model addition does not specify privat ip address of port: %s",port));
+            throw  new Exception(String.format("model addition does not specify privat ip address of port: %s",port));
              QuerySolution querySolution1 = r1.next();
              RDFNode address = querySolution1.get("address");
              String privateAddress = address.asResource().toString().replace(topologyUri,"");
@@ -203,7 +269,7 @@ public String  pushPropagate(String modelAddTtl, String modelReductTtl)
                     + "?subnet a mrs:SwitchingSubnet}";
             r1= executeQuery(query,modelAdd);         
             if(!r1.hasNext())
-                throw  new EJBException(String.format("model addition does not network subnet of port: %s",port));
+                throw  new Exception(String.format("model addition does not network subnet of port: %s",port));
             querySolution1 = r1.next();
             RDFNode subnet = querySolution1.get("subnet");
             String subnetId= subnet.asResource().toString().replace(topologyUri,"");
@@ -247,13 +313,13 @@ public String  pushPropagate(String modelAddTtl, String modelReductTtl)
             query= "SELECT ?type WHERE {?service mrs:providesVM <"+ node.asResource() + ">}";
             ResultSet r1 = executeQuery(query,modelAdd);
             if(!r1.hasNext())
-            throw  new EJBException(String.format("model addition does not specify service that provides Instance: %s",node));
+            throw  new Exception(String.format("model addition does not specify service that provides Instance: %s",node));
             
             //find the Vpc that the node will be in
             query= "SELECT ?vpc WHERE {?vpc nml:hasNode <" + node.asResource() +">}";
             r1= executeQuery(query,modelAdd);         
             if(!r1.hasNext())
-                throw  new EJBException(String.format("model addition does not specify the Vpc of the node: %s",node));
+                throw  new Exception(String.format("model addition does not specify the Vpc of the node: %s",node));
             QuerySolution querySolution1 = r1.next();
             RDFNode vpc = querySolution1.get("vpc");
             String vpcId= vpc.asResource().toString().replace(topologyUri,"");
@@ -264,8 +330,9 @@ public String  pushPropagate(String modelAddTtl, String modelReductTtl)
             query= "SELECT ?port WHERE {<" + node.asResource()+ "> nml:hasBidirectionalPort ?port}";
             ResultSet r2= executeQuery(query,modelAdd);         
             if(!r2.hasNext())
-                throw  new EJBException(String.format("model addition does not specify the subnet that the node is: %s",node));
+                throw  new Exception(String.format("model addition does not specify the subnet that the node is: %s",node));
             List<String> portsId =new ArrayList();
+            RDFNode lastPort = null;
             while(r2.hasNext())//there could be multiple network interfaces attached to the instance
             {
                 QuerySolution querySolution2 = r2.next();
@@ -273,6 +340,7 @@ public String  pushPropagate(String modelAddTtl, String modelReductTtl)
                 String id= port.asResource().toString().replace(topologyUri,"");
                 portsId.add(getResourceId(id));
                 System.out.println(" node has port: " + id);
+                lastPort=port;
             }
 
 
@@ -280,7 +348,7 @@ public String  pushPropagate(String modelAddTtl, String modelReductTtl)
             query = "SELECT ?volume WHERE {<" + node.asResource() + ">  mrs:hasVolume  ?volume}";
             ResultSet r4= executeQuery(query,modelAdd);   
             if(!r4.hasNext())
-               throw  new EJBException(String.format("model addition does not specify the volume of the new node: %s",node));
+               throw  new Exception(String.format("model addition does not specify the volume of the new node: %s",node));
             List<String> volumesId =new ArrayList();
              while(r4.hasNext())//there could be multiple network interfaces attached to the instance
             {
@@ -313,14 +381,14 @@ public void pushCommit(String r)
         for (String request : requests) 
         {   
             if(request.contains("TerminateInstancesRequest"))
-                     {
-                        String []parameters = request.split("\\s+"); 
+            {
+               String []parameters = request.split("\\s+"); 
 
-                        TerminateInstancesRequest del = new TerminateInstancesRequest();
-                        del.withInstanceIds(getResourceId(parameters[1]));
-                        del.toString();
-                        client.terminateInstances(del);
-                     }
+               TerminateInstancesRequest del = new TerminateInstancesRequest();
+               del.withInstanceIds(getResourceId(parameters[1]));
+               del.toString();
+               client.terminateInstances(del);
+            }
             
             else if(request.contains("CreateVolumeRequest"))
             {                
@@ -332,13 +400,13 @@ public void pushCommit(String r)
                              .withAvailabilityZone(parameters[3]);
                       
                System.out.println(volumeRequest.toString());
-               /*CreateVolumeResult result = client.createVolume(volumeRequest);
+               CreateVolumeResult result = client.createVolume(volumeRequest);
 
                
                 CreateTagsRequest tagRequest = new CreateTagsRequest();
                 tagRequest.withTags(new Tag("id",parameters[4]));
                 tagRequest.withResources(result.getVolume().getVolumeId());
-                client.createTags(tagRequest);*/
+                client.createTags(tagRequest);
             }
             else if(request.contains("CreateNetworkInterfaceRequest"))
             {

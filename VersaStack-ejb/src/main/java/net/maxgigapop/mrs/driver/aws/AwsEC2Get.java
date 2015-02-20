@@ -30,6 +30,7 @@ public class AwsEC2Get
     private List<CustomerGateway> customerGateways=null;
     private List<Volume> volumes=null;
     private List<NetworkInterface> networkInterfaces=null;
+    private List<InternetGateway> internetGateways=null;
     
     public AwsEC2Get(String access_key_id, String secret_access_key,Regions region)
     {
@@ -77,6 +78,10 @@ public class AwsEC2Get
         //get all the customer gatewyas under the account
         DescribeCustomerGatewaysResult gatewaysResult=this.client.describeCustomerGateways();
         customerGateways=gatewaysResult.getCustomerGateways();
+        
+        //get all the Internet gateways under the account
+        DescribeInternetGatewaysResult internetGatewaysResult=this.client.describeInternetGateways();
+        internetGateways = internetGatewaysResult.getInternetGateways();
         
         //get all the volumes under the account
         DescribeVolumesResult volumesResult=this.client.describeVolumes();
@@ -301,19 +306,38 @@ public class AwsEC2Get
     }
     
     //get a specific customer gateway based on its id 
-    public static List<CustomerGateway> getCustomerGateways(List<CustomerGateway> gateways,String id)
+    public static CustomerGateway getCustomerGateway(List<CustomerGateway> gateways,String id)
     {
-        List<CustomerGateway> customerGateways=new ArrayList();
         for(CustomerGateway t : gateways)
         {
             if(t.getCustomerGatewayId().equals(id))
             {
-                customerGateways.add(t);
-                return customerGateways;
+                return t;
             }
         }
         return null;
     }
+    
+    //get all the customer gateways under the aws account
+    public  List<InternetGateway> getInternetGateways()
+    {
+        return internetGateways;
+    }
+    
+    //get a specific customer gateway based on its id 
+    public static InternetGateway getInternetGateway(List<InternetGateway> gateways,String id)
+    {
+        for(InternetGateway t : gateways)
+        {
+            if(t.getInternetGatewayId().equals(id))
+            {
+                return t;
+            }
+        }
+        return null;
+    }
+    
+    
     
     //get all the volumes under the aws account
     public List<Volume> getVolumes()

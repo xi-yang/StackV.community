@@ -42,7 +42,7 @@ public class AwsDriver implements IHandleDriverSystemCall {
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
-        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
+        
         aDelta = (DriverSystemDelta)DeltaPersistenceManager.findById(aDelta.getId());
         
         String access_key_id = driverInstance.getProperty("aws_access_key_id");
@@ -59,15 +59,15 @@ public class AwsDriver implements IHandleDriverSystemCall {
         
         String requestId= driverInstance.getId().toString()+ aDelta.getId().toString();
         driverInstance.putProperty(requestId, requests);
-        DriverInstancePersistenceManager.save(driverInstance);
+        DriverInstancePersistenceManager.merge(driverInstance);
     }
 
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
     @Asynchronous
     @Override
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
+        
         DriverInstance driverInstance = aDelta.getDriverInstance();
-        driverInstance = DriverInstancePersistenceManager.findByTopologyUri(driverInstance.getTopologyUri());
         if (driverInstance == null) {
             throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
         }
@@ -82,6 +82,9 @@ public class AwsDriver implements IHandleDriverSystemCall {
         
         AwsPush push= new AwsPush(access_key_id,secret_access_key,region,topologyURI);
         push.pushCommit(requests);
+        
+        driverInstance.getProperties().remove("requestId");
+        DriverInstancePersistenceManager.merge(driverInstance);
         
         return new AsyncResult<String>("SUCCESS");
     }

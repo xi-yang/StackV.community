@@ -76,7 +76,7 @@ public class AwsModelBuilder
         Property hasTopology=Nml.hasTopology;
         Property publicIpAddress=model.createProperty(model.getNsPrefixURI("mrs")+"publicIpAddress");
         Property privateIpAddress=model.createProperty(model.getNsPrefixURI("mrs")+"privateIpAddress");
-        Property targetDevice=model.createProperty(model.getNsPrefixURI("mrs"),"target_device");
+        Property targetDevice= model.createProperty(model.getNsPrefixURI("mrs")+"target_device");
         
         //set the global resources
         Resource route=Mrs.Route;
@@ -95,6 +95,8 @@ public class AwsModelBuilder
         Resource namedIndividual = model.createResource(model.getNsPrefixURI("mrs")+"NamedIndividual");
         Resource awsTopology = RdfOwl.createResource(model,topologyURI,topology);
         Resource objectStorageService=Mrs.ObjectStorageService;
+        Resource routingTable= model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#RoutingTable");
+       
         
         //get the information from the AWS account
         AwsEC2Get ec2Client=new AwsEC2Get(access_key_id,secret_access_key,region);
@@ -192,22 +194,20 @@ public class AwsModelBuilder
                 }
             }  
             
-            //get all the routes inside this VPC
+            //Make the L3 routing model for this VPC
+            /*Resource ROUTINGSERVICE=RdfOwl.createResource(model,topologyURI + ":routingservice-"+ v.getVpcId() ,routingService);
+            model.add(model.createStatement(VPC, hasService,ROUTINGSERVICE));
             for(RouteTable t : AwsEC2Get.getRoutingTables(ec2Client.getRoutingTables(),v.getVpcId()))
             {
                 String routeTableId= ec2Client.getIdTag(t.getRouteTableId());
-                Resource ROUTINGSERVICE=RdfOwl.createResource(model,topologyURI + ":" +routeTableId,routingService);
-                model.add(model.createStatement(VPC, hasService,ROUTINGSERVICE));
+                Resource ROUTINGTABLE = RdfOwl.createResource(model,topologyURI + ":" + routeTableId,routingTable);
                 List<Route> routes= t.getRoutes();
-                for(Route r: routes)
+                for(Route r : routes)
                 {
-                    Resource ROUTE= RdfOwl.createResource(model,topologyURI + ":" +routeTableId+r.getDestinationCidrBlock()+r.getState(),route);
-                    model.add(model.createStatement(ROUTINGSERVICE,providesRoute,ROUTE));
-                    //model.add(model.createStatement(ROUTE, routeFrom,r.getOrigin()));
-                    //model.add(model.createStatement(ROUTE,routeTo,r.getDestinationCidrBlock()));
+                    Resource ROUTE = RdfOwl.createResource(model,topologyURI + ":" + r.getGatewayId()+r.getDestinationCidrBlock(),route);
                 }
-            }
-         }
+            }*/
+        }
         
         //put the volumes of the ebsService into the model
         for(Volume v : ec2Client.getVolumesWithoutAttachment())
