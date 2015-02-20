@@ -6,7 +6,9 @@
 package net.maxgigapop.mrs.service.orchestrate;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
@@ -120,26 +122,29 @@ public class ActionBase {
     }
 
     public ActionBase getIdleLeaf() {
+        boolean hasChildInProcessing = false;
         for (ActionBase action: this.dependencies) {
             ActionBase deeperAction = action.getIdleLeaf();
             if (deeperAction != null)
                 return deeperAction;
+            if (action.getState().equals(ActionState.PROCESSING))
+                hasChildInProcessing = true;
         }
-        if (this.state.equals(ActionState.IDLE))
+        if (this.state.equals(ActionState.IDLE) && !hasChildInProcessing)
             return this;
         return null;
     }
     
-    public List<ActionBase> getIndependentIdleLeaves(ActionBase action) {
+    public Set<ActionBase> getIndependentIdleLeaves(ActionBase action) {
         if (this.equals(action))
             return null;
-        List<ActionBase> retList = null;
+        Set<ActionBase> retList = null;
         for (ActionBase A: this.dependencies) {
             if (A.equals(action))
                 continue;
-            List<ActionBase> addList = A.getIndependentIdleLeaves(action);
+            Set<ActionBase> addList = A.getIndependentIdleLeaves(action);
             if (retList == null) {
-                retList = new ArrayList<>();
+                retList = new HashSet<>();
             }
             if (addList != null) {
                 retList.addAll(addList);
@@ -165,8 +170,7 @@ public class ActionBase {
             IModelComputationElement ejbMce = (IModelComputationElement)ejbCxt.lookup(this.mceBeanPath);
             this.state = ActionState.PROCESSING;
             Future<DeltaBase> asyncResult = ejbMce.process(referenceModel, inputDelta);
-            log.info(this+" FINISHED");
-            this.state = ActionState.FINISHED;
+            //# not FINISHED yet
             return asyncResult;
         } catch (NamingException ex) {
             this.state = ActionState.FAILED;

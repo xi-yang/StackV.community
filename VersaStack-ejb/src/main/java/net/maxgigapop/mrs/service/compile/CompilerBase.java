@@ -62,6 +62,15 @@ public class CompilerBase {
             // test resAtion is terminal/leaf
             if (this.isLeafPolicy(spaModel, policy)) {
                 OntModel modelPart = getReverseDependencyTree(spaModel, policy);
+                StmtIterator stmtIter = spaModel.listStatements(policy, Spa.importFrom, (Resource)null);
+                while (stmtIter.hasNext()) {
+                    Statement stmt = stmtIter.next();
+                    modelPart.add(stmt);
+                    StmtIterator stmtIter2 = spaModel.listStatements(stmt.getObject().asResource(), null, (Resource)null);
+                    while (stmtIter2.hasNext()) {
+                        modelPart.add(stmtIter2.next());
+                    }
+                }
                 if (leafPolicyModelMap == null)
                     leafPolicyModelMap = new HashMap<>();
                 leafPolicyModelMap.put(policy, modelPart);

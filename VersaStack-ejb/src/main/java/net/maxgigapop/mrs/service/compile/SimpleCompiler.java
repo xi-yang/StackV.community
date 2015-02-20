@@ -23,6 +23,7 @@ import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.service.orchestrate.ActionBase;
 import net.maxgigapop.mrs.service.orchestrate.SimpleWorker;
 import net.maxgigapop.mrs.service.orchestrate.WorkerBase;
+import net.maxgigapop.www.rains.ontmodel.Spa;
 
 /**
  *
@@ -100,14 +101,32 @@ public class SimpleCompiler extends CompilerBase {
     }
 
     private ActionBase createAction(OntModel spaModel, Resource policy) {
+        String policyActionType = null;
         NodeIterator nodeIter = spaModel.listObjectsOfProperty(policy, RdfOwl.type);
         while (nodeIter.hasNext()) {
             RDFNode rn = nodeIter.next();
-            if (rn.isResource() && rn.asResource().getURI().contains("spa#")) {
-                ActionBase action = new ActionBase(rn.asResource().getURI(), "java:module/TestMCE");
-                return action;
+            if (rn.isResource() && rn.asResource().getNameSpace().equals(Spa.getURI())) {
+                policyActionType = rn.asResource().getLocalName();
+                break;
             }
         }
-        throw new EJBException(SimpleCompiler.class.getName() + " cannot create action for policy " + policy.getURI());
+        if (policyActionType == null) {
+            throw new EJBException(SimpleCompiler.class.getName() + ":createAction does not recognize policy action: " + policy.getLocalName());       
+        }
+        ActionBase policyAction = null;
+        switch (policyActionType) {
+            case "Placement":
+                policyAction = new ActionBase(policy.getURI(), "java:module/MCE_VMFilterPlacement");
+                break;
+            case "Connection":
+                policyAction = new ActionBase(policy.getURI(), "java:module/MCE_MPVlanConnection");
+                break;
+            case "Stitching":
+                policyAction = new ActionBase(policy.getURI(), "java:module/MCE_InterfaceVlanStitching");
+                break;
+            default:
+                throw new EJBException(SimpleCompiler.class.getName() + ":createAction does not support policy action type: " + policyActionType);       
+        }
+        return policyAction;
     }
 }

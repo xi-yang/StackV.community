@@ -5,25 +5,31 @@
  */
 package net.maxgigapop.mrs.service.compute;
 
+import static java.lang.Thread.sleep;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.Stateless;
+import javax.ejb.LocalBean;
 import net.maxgigapop.mrs.bean.DeltaBase;
 import net.maxgigapop.mrs.bean.ModelBase;
 
 /**
  *
  * @author xyang
- * Process abstract nodes annotations to place compute nodes 
  */
 @Stateless
-public class PlaceComputeNode implements IModelComputationElement {
+public class MCE_InterfaceVlanStitching implements IModelComputationElement {
+    private static final Logger log = Logger.getLogger(MCE_InterfaceVlanStitching.class.getName());
+    
     @Override
     @Asynchronous
     public Future<DeltaBase> process(ModelBase systemModel, DeltaBase annotatedDelta) {
-        //$$ place holder
-        DeltaBase resultDelta = annotatedDelta;
-        return new AsyncResult<DeltaBase>(resultDelta);
+        log.log(Level.INFO, "MCE_InterfaceVlanStitching::process {0}", annotatedDelta);
+        DeltaBase outputDelta = new DeltaBase();
+        //$$ TODO: do computation and create outputDelta
+        return new AsyncResult(outputDelta);
     }
 }

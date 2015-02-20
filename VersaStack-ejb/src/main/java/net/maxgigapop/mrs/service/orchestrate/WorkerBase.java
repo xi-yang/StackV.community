@@ -8,9 +8,11 @@ package net.maxgigapop.mrs.service.orchestrate;
 import static java.lang.Thread.sleep;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
@@ -68,11 +70,11 @@ public class WorkerBase {
 
     // return set of actions that are Idle AND (not in its subtree) AND (have none un-merged child)
     // the returned list include the input ActionBase itself
-    protected List<ActionBase> lookupIndependentActions(ActionBase action) {
-        List<ActionBase> list = new ArrayList<>();
+    protected Set<ActionBase> lookupIndependentActions(ActionBase action) {
+        Set<ActionBase> list = new HashSet<>();
         list.add(action);
         for (ActionBase aRoot: rootActions) {
-            List<ActionBase> listAdd = aRoot.getIndependentIdleLeaves(action);
+            Set<ActionBase> listAdd = aRoot.getIndependentIdleLeaves(action);
             if (listAdd != null) {
                 list.addAll(listAdd);
             }
@@ -88,7 +90,7 @@ public class WorkerBase {
         //1. lookupDeepestIdleAction to get an available action;
         ActionBase nextAction = this.lookupIdleLeafAction();
         //2.  lookupIndependentActions to find list of parallel actions for the step
-        List<ActionBase> batchOfActions = this.lookupIndependentActions(nextAction);
+        Set<ActionBase> batchOfActions = this.lookupIndependentActions(nextAction);
         // Top loop to exhaust idle actions in rootActions list and sub-trees
         //$$ Timeout for the top loop ?
         while (!batchOfActions.isEmpty()) {
@@ -112,6 +114,7 @@ public class WorkerBase {
                     ActionBase action = itA.next();
                     Future<DeltaBase> asyncResult = resultMap.get(action);
                     if (asyncResult.isDone()) {
+                        action.setState(ActionState.FINISHED);
                         try {
                             DeltaBase resultDelta = asyncResult.get();
                             // if a run action return successfully
