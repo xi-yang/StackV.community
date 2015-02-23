@@ -162,13 +162,14 @@ public class AwsModelBuilder
                                model.add(model.createStatement(INSTANCE,hasVolume, VOLUME));
                                model.add(model.createStatement(VOLUME, value,vol.getVolumeType()));
                                model.add(model.createStatement(VOLUME, Mrs.disk_gb,Integer.toString(vol.getSize())));
-                               VolumeAttachment volAttachment = new VolumeAttachment();
-                               volAttachment.withVolumeId(volumeId);
-                               volAttachment.withInstanceId(i.getInstanceId());
-                               if(!volAttachment.getDevice().equals("/dev/sda1") || !volAttachment.getDevice().equals("/dev/xvda"))
+                               List<VolumeAttachment> volAttach= vol.getAttachments();
+                               for(VolumeAttachment va : volAttach)
                                {
-                                   model.add(model.createStatement(VOLUME,targetDevice,volAttachment.getDevice()));
-                               }  
+                                   if(va.getInstanceId().equals(i.getInstanceId()))
+                                   {
+                                       model.add(model.createStatement(VOLUME,targetDevice,va.getDevice()));
+                                   }
+                               }
                             }
                             
                             //put the private ip (if any) of the network interface in the model
