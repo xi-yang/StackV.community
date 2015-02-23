@@ -5,6 +5,12 @@
  */
 package net.maxgigapop.mrs.service.orchestrate;
 
+import com.hp.hpl.jena.ontology.OntModel;
+import com.hp.hpl.jena.ontology.OntModelSpec;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.rdf.model.Property;
+import com.hp.hpl.jena.rdf.model.Statement;
+import com.hp.hpl.jena.rdf.model.StmtIterator;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -16,9 +22,11 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import net.maxgigapop.mrs.bean.DeltaBase;
+import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.service.compute.IModelComputationElement;
 import net.maxgigapop.mrs.service.compute.TestMCE;
+import net.maxgigapop.www.rains.ontmodel.Spa;
 
 /**
  *
@@ -179,10 +187,56 @@ public class ActionBase {
     }
     
     public void mergeResult(DeltaBase childDelta) {
-        //$$ merging models A and B
-            // 1. Get dA = A.remove(B) and dB = B.remove(A)
-            // 2. if dA has r1 with annotation while r1 is not in dB, A.remove(r1)
-            // 3. if dB has r2 without annoation amd r2 is not in dA, A.add(r2)
+        if (inputDelta == null) {
+            inputDelta = childDelta;
+            return;
+        }
+        // merging models A (childDelta) into B (this.inputDelta)
+        // merge addition 
+        if (childDelta.getModelAddition() != null && childDelta.getModelAddition().getOntModel() != null &&
+                inputDelta.getModelAddition() != null && inputDelta.getModelAddition().getOntModel() != null) {
+            OntModel mergedAddition = this.mergeOntModel(childDelta.getModelAddition().getOntModel(), inputDelta.getModelAddition().getOntModel());
+            inputDelta.getModelAddition().setOntModel(mergedAddition);
+        }
+        // merge reduction         
+        if (childDelta.getModelReduction()!= null && childDelta.getModelReduction().getOntModel() != null &&
+                inputDelta.getModelReduction() != null && inputDelta.getModelReduction().getOntModel() != null) {
+            OntModel mergedReduction = this.mergeOntModel(childDelta.getModelReduction().getOntModel(), inputDelta.getModelReduction().getOntModel());
+            inputDelta.getModelReduction().setOntModel(mergedReduction);
+        }
+    }
+    
+    protected OntModel mergeOntModel(OntModel modelA, OntModel modelB) {
+        // 1. Get dA = A.remove(B) and dB = B.remove(A)
+        OntModel modelAbutB = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        modelAbutB.add(modelA.getBaseModel());
+        modelAbutB.remove(modelB);
+        OntModel modelBbutA = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        modelBbutA.add(modelB);
+        modelBbutA.remove(modelA.getBaseModel());
+        OntModel mergedModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        mergedModel.add(modelA.getBaseModel());        
+        // 2. if dA has r1 *with* annotation while r1 is not in dB, A.remove(r1)
+        StmtIterator stmtIter = modelAbutB.listStatements();
+        while (stmtIter.hasNext()) {
+            Statement stmt = stmtIter.next();
+            Property P = stmt.getPredicate();
+            if (!P.getNameSpace().equals(Spa.getURI()))
+                continue;
+            if (!modelBbutA.contains(stmt))
+                mergedModel.remove(stmt);
+        }
+        // 3. if dB has r2 *without* annoation amd r2 is not in dA, A.add(r2)
+        stmtIter = modelBbutA.listStatements();
+        while (stmtIter.hasNext()) {
+            Statement stmt = stmtIter.next();
+            Property P = stmt.getPredicate();
+            if (P.getNameSpace().equals(Spa.getURI()))
+                continue;
+            if (!modelAbutB.contains(stmt))
+                mergedModel.add(stmt);
+        }
+        return mergedModel;
     }
     
     public String toString() {

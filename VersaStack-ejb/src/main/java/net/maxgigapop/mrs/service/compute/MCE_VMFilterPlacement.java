@@ -36,11 +36,11 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
         }
         log.log(Level.INFO, "FilterPlacementMCE::process {0}", annotatedDelta);
         try {
-            log.log(Level.INFO, "\n>>>DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
+            log.log(Level.INFO, "\n>>>MCE_VMFilterPlacement--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
-        DeltaBase outputDelta = new DeltaBase();
+        DeltaBase outputDelta = annotatedDelta;
         //$$ TODO: do computation and create outputDelta
         return new AsyncResult(outputDelta);
     }

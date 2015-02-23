@@ -35,7 +35,12 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
         log.log(Level.INFO, "MCE_MPVlanConnection::process {0}", annotatedDelta);
-        DeltaBase outputDelta = new DeltaBase();
+        try {
+            log.log(Level.INFO, "\n>>>MCE_MPVlanConnection--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
+        } catch (Exception ex) {
+            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        DeltaBase outputDelta = annotatedDelta;
         //$$ TODO: do computation and create outputDelta
         return new AsyncResult(outputDelta);
     }

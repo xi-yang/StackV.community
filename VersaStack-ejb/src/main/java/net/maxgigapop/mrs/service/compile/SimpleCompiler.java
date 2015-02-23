@@ -57,11 +57,16 @@ public class SimpleCompiler extends CompilerBase {
                 Resource policy = policyQueue.poll();
                 // create Action and assign delta part
                 ActionBase action = this.createAction(spaOntModelAddition, policy);
-                DeltaModel addModel = new DeltaModel();
-                addModel.setOntModel(addParts.get(policy));
-                DeltaBase inputDelta = new DeltaBase();
-                inputDelta.setModelAddition(addModel);
-                action.setInputDelta(inputDelta);
+                OntModel addOntModel = addParts.get(policy);
+                if (addOntModel != null) {
+                    DeltaModel addModel = new DeltaModel();
+                    addModel.setOntModel(addParts.get(policy));
+                    DeltaBase inputDelta = action.getInputDelta();
+                    if (inputDelta == null)
+                        inputDelta = new DeltaBase();
+                    inputDelta.setModelAddition(addModel);
+                    action.setInputDelta(inputDelta);
+                }
                 // lookup dependency 
                 if (parentPolicyChildActionMap.containsKey(policy)) {
                     List<ActionBase> childActions = parentPolicyChildActionMap.get(policy);

@@ -116,7 +116,8 @@ public class WorkerBase {
                     if (asyncResult.isDone()) {
                         action.setState(ActionState.FINISHED);
                         try {
-                            DeltaBase resultDelta = asyncResult.get();
+                            DeltaBase resultDelta = asyncResult.get(); // exception may be thrown
+                            action.setOutputDelta(resultDelta);
                             // if a run action return successfully
                             // collect resultDelta and merge to parent input annotatedDelta
                             if (!action.getUppers().isEmpty()) {
