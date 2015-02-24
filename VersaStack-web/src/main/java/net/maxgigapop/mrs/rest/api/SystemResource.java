@@ -16,6 +16,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.GET;
 import javax.ws.rs.Produces;
 import javax.enterprise.context.RequestScoped;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.POST;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
@@ -32,6 +34,7 @@ public class SystemResource {
 
     @EJB
     HandleSystemCall systemCallHandler;
+    
     /**
      * Creates a new instance of GenericResource
      */
@@ -58,6 +61,19 @@ public class SystemResource {
     @Consumes("application/xml")
     public void putXml(String content) {
     }
+    
+    @POST
+    @Consumes({"application/xml","application/json"})
+    public String push(){
+        return systemCallHandler.createInstance().getReferenceUUID();
+    }
+    
+    @DELETE
+    @Path("/{refUUID}")
+    public void terminate(@PathParam("refUUID") String refUUID){
+        systemCallHandler.terminateInstance(refUUID);
+    }
+    
     
 //    @POST
 //    @Consumes("application/xml")
