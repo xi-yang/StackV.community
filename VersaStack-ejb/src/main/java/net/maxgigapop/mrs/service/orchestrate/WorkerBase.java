@@ -19,10 +19,14 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.EJBException;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
 import net.maxgigapop.mrs.bean.DeltaBase;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.core.SystemModelCoordinator;
+import net.maxgigapop.mrs.service.compute.IModelComputationElement;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
@@ -34,10 +38,7 @@ public class WorkerBase {
     DeltaBase annoatedModel = null;
     DeltaBase resultModelDelta = null;
     List<ActionBase> rootActions = new ArrayList<>();
-    
-    @EJB
-    SystemModelCoordinator systemModelCoordinator;
-    
+       
     public void setAnnoatedModel(DeltaBase annoatedModel) {
         this.annoatedModel = annoatedModel;
     }
@@ -156,13 +157,26 @@ public class WorkerBase {
         }
     }
     
+    protected void retrieveSystemModel() {
+        try {
+            Context ejbCxt = new InitialContext();
+            SystemModelCoordinator systemModelCoordinator = (SystemModelCoordinator)ejbCxt.lookup("java:module/SystemModelCoordinator");
+            VersionGroup referenceVersionGroup = systemModelCoordinator.getLatestVersionGroupWithUnionModel();
+            if (referenceVersionGroup == null) {
+                throw new EJBException(this.getClass().getName() + " got null referenceVersionGroup - systemModelCoordinator is not ready");
+            }
+            referenceSystemModel = referenceVersionGroup.getCachedModelBase();
+            if (referenceSystemModel == null) {
+                throw new EJBException(this.getClass().getName() + " got null  referenceSystemModel from " + referenceVersionGroup);
+            }
+        } catch (NamingException ex) {
+            throw new EJBException(this.getClass().getName() + " failed to inject systemModelCoordinator");
+        }        
+    }
+    
     public void run() {
         // get system base model from SystemModelCoordinator singleton
-        VersionGroup referenceVersionGroup = systemModelCoordinator.getLatestVersionGroupWithUnionModel();
-        referenceSystemModel = referenceVersionGroup.getCachedModelBase();
-        if (referenceSystemModel == null) {
-            throw new EJBException("Workerflow cannot run null referenceSystemModel");
-        }
+        retrieveSystemModel();
         // annoatedModel and rootActions should have been instantiated by caller
         if (annoatedModel == null) {
             throw new EJBException("Workerflow cannot run with null annoatedModel");

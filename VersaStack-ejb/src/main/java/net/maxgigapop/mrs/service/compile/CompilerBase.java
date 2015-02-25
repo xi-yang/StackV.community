@@ -190,6 +190,17 @@ public class CompilerBase {
                 listStmt.add(stmt);
             }
         }
+        // add a spa:* statement for res type
+        its = model.listStatements(res, RdfOwl.type, (Resource)null);
+        while (its.hasNext()) {
+            Statement stmt = its.next();
+            Resource object = stmt.getObject().asResource();
+            if (object.getNameSpace().equals(Spa.getURI())) {
+                if (listStmt == null)
+                    listStmt = new ArrayList<>();
+                listStmt.add(stmt);
+            }
+        }
         return listStmt;
     }
 

@@ -69,8 +69,8 @@ public class SimpleWorker extends WorkerBase {
             + "\n"
             + "<x-policy-annotation:action:place-left>\n"
             + "    a            spa:Placement ;\n"
-            + "    spa:matchAttribute <x-policy-annotation:data:left-filter-criteria> ;\n"
-            + "    spa:importFrom <x-policy-annotation:data:left-filter-criteria> ;\n"
+            + "    spa:matchAttribute <x-policy-annotation:data:left-filter-criteria>, <x-policy-annotation:data:left-filter-criteria2> ;\n"
+            + "    spa:importFrom <x-policy-annotation:data:left-filter-criteria>, <x-policy-annotation:data:left-filter-criteria2> ;\n"
             + "    spa:exportTo <x-policy-annotation:data:left-location> .\n"
             + "\n"
             + "<x-policy-annotation:action:stitch-left-if0>\n"
@@ -105,6 +105,11 @@ public class SimpleWorker extends WorkerBase {
             + "    spa:type     nml:Topology;\n"
             + "    spa:value    \"urn-for-aws-east-region\".\n"
             + "\n"
+            + "<x-policy-annotation:data:left-filter-criteria2>\n"
+            + "    a            spa:PolicyData;\n"
+            + "    spa:type     nml:Node;\n"
+            + "    spa:value    \"urn-for-aws-east-region-node1\".\n"
+            + "\n"
             + "<x-policy-annotation:data:right-filter-criteria>\n"
             + "    a            spa:PolicyData;\n"
             + "    spa:type     nml:Topology;\n"
@@ -132,6 +137,7 @@ public class SimpleWorker extends WorkerBase {
 
     @Override
     public void run() {
+        retrieveSystemModel();
         try {
             CompilerBase simpleCompiler = CompilerFactory.createCompiler("net.maxgigapop.mrs.service.compile.SimpleCompiler");
             ServiceDelta testSpaDelta = new ServiceDelta();

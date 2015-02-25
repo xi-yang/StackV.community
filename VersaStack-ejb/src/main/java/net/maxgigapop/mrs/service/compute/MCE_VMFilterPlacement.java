@@ -5,12 +5,23 @@
  */
 package net.maxgigapop.mrs.service.compute;
 
+import com.hp.hpl.jena.query.Query;
+import com.hp.hpl.jena.query.QueryExecution;
+import com.hp.hpl.jena.query.QueryExecutionFactory;
+import com.hp.hpl.jena.query.QueryFactory;
+import com.hp.hpl.jena.query.QuerySolution;
+import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.rdf.model.RDFNode;
+import com.hp.hpl.jena.rdf.model.Resource;
 import static java.lang.Thread.sleep;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
+import javax.ejb.EJBException;
 import javax.ejb.Stateless;
 import javax.ejb.LocalBean;
 import net.maxgigapop.mrs.bean.DeltaBase;
@@ -29,19 +40,51 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
     @Override
     @Asynchronous
     public Future<DeltaBase> process(ModelBase systemModel, DeltaBase annotatedDelta) {
-        try {
-            sleep(10000);
-        } catch (InterruptedException ex) {
-            Logger.getLogger(MCE_VMFilterPlacement.class.getName()).log(Level.SEVERE, null, ex);
+        // $$ MCE_VMFilterPlacement deals with add model only for now.
+        if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
+            throw new EJBException(String.format("%s::process ", this.getClass().getName()));
         }
-        log.log(Level.INFO, "FilterPlacementMCE::process {0}", annotatedDelta);
         try {
             log.log(Level.INFO, "\n>>>MCE_VMFilterPlacement--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
+        String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
+                "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
+                "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
+                "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
+                "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" +
+                "SELECT ?policy ?data ?type ?value WHERE {?policy a spa:Placement. "
+                + "?policy spa:importFrom ?data. "
+                + "?data spa:type ?type. ?data spa:value ?value. "
+                + "FILTER not exists {?policy spa:dependOn ?other} "
+                + "}";
+        Query query = QueryFactory.create(sparqlString);
+        List<Resource> listPolicy = null;
+        QueryExecution qexec = QueryExecutionFactory.create(query, annotatedDelta.getModelAddition().getOntModel());
+        ResultSet r = (ResultSet) qexec.execSelect();
+        while(r.hasNext()) {
+            QuerySolution querySolution = r.next();
+            RDFNode nodePolicy = querySolution.get("policy");
+            if (listPolicy == null)
+            	listPolicy = new ArrayList<>();
+            if (!listPolicy.contains(nodePolicy.asResource()))
+                listPolicy.add(nodePolicy.asResource());
+            RDFNode nodeData = querySolution.get("data");
+            RDFNode nodeDataType = querySolution.get("type");
+            RDFNode nodeDataValue = querySolution.get("value");
+        }
+        
         DeltaBase outputDelta = annotatedDelta;
         //$$ TODO: do computation and create outputDelta
         return new AsyncResult(outputDelta);
     }
+    
+    // placeIntoTopology
+    // placeIntoTopologyCandidates
+    
+    // placeMatchingRegExURI
+    // placeMatchingRegExURICandidates
+    
+    // placeWithMultiFilter
 }

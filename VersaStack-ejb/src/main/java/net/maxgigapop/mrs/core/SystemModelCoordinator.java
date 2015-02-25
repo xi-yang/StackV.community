@@ -12,6 +12,7 @@ import javax.ejb.LocalBean;
 import javax.ejb.Lock;
 import javax.ejb.LockType;
 import javax.ejb.Singleton;
+import javax.ejb.Startup;
 import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
@@ -22,6 +23,7 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
 
 @Singleton
 @LocalBean
+@Startup
 @AccessTimeout(value=10000) // 10 seconds
 public class SystemModelCoordinator {
     @EJB

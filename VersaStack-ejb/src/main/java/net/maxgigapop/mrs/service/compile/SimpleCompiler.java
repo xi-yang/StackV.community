@@ -129,6 +129,10 @@ public class SimpleCompiler extends CompilerBase {
             case "Stitching":
                 policyAction = new ActionBase(policy.getURI(), "java:module/MCE_InterfaceVlanStitching");
                 break;
+            case "Abstraction":
+                //$$ TODO: Node has providesVM by HypervisorService will be treated with MCE_VMFilterPlacement
+                //$$ TODO: BidirectionalPort with paired isAlias or Link will be treated with MCE_MPVlanConnection plus MCE_InterfaceVlanStitching
+                break;
             default:
                 throw new EJBException(SimpleCompiler.class.getName() + ":createAction does not support policy action type: " + policyActionType);       
         }

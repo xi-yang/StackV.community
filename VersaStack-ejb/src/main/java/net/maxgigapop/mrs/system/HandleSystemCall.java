@@ -72,7 +72,7 @@ public class HandleSystemCall {
             }
         }
         vg.setRefUuid(refUuid);
-        VersionGroupPersistenceManager.save(vg);
+        VersionGroupPersistenceManager.merge(vg);
         return vg;
     }
     
