@@ -31,6 +31,7 @@ public class AwsEC2Get
     private List<Volume> volumes=null;
     private List<NetworkInterface> networkInterfaces=null;
     private List<InternetGateway> internetGateways=null;
+    private List<VpnGateway> virtualPrivateGateways = null;
     
     public AwsEC2Get(String access_key_id, String secret_access_key,Regions region)
     {
@@ -83,6 +84,10 @@ public class AwsEC2Get
         DescribeInternetGatewaysResult internetGatewaysResult=this.client.describeInternetGateways();
         internetGateways = internetGatewaysResult.getInternetGateways();
         
+        //get all the virtual private gateways under the account
+        DescribeVpnGatewaysResult vpnGatewaysResult = this.client.describeVpnGateways();
+        virtualPrivateGateways =vpnGatewaysResult.getVpnGateways();
+        
         //get all the volumes under the account
         DescribeVolumesResult volumesResult=this.client.describeVolumes();
         volumes=volumesResult.getVolumes();
@@ -100,7 +105,7 @@ public class AwsEC2Get
     }
     
     //get a single Vpc based on its ID  from a list of Vpcs
-    public  static  Vpc  getVpc(List<Vpc> vpcs,String id)
+    public  Vpc  getVpc(String id)
     {
         for (Vpc vpc : vpcs) {
             if(vpc.getVpcId().equals(id))
@@ -132,7 +137,6 @@ public class AwsEC2Get
     //get all the instances associated with a Vpc  or subnet in the account
     public   Instance getInstance(String id )
     {
-        List<Instance> ins= new ArrayList();
         for(Instance i: instances)
         {
             if(i.getInstanceId().equals(id))
@@ -155,7 +159,7 @@ public class AwsEC2Get
     }
     
     //get all the network interfaces under the account
-    public static  NetworkInterface getNetworkInterface(List<NetworkInterface> networkInterfaces, String id)
+    public  NetworkInterface getNetworkInterface(String id)
     {
        for(NetworkInterface n : networkInterfaces)
         {
@@ -176,7 +180,7 @@ public class AwsEC2Get
     
     //get the subnet under a vpc or a single subnet  based on its Id from a list
     //of subnets
-    public static List<Subnet> getSubnets(List<Subnet> subnets,String id)
+    public List<Subnet> getSubnets(String id)
     {
         List<Subnet> subnetList=new ArrayList();
         for(Subnet sub : subnets)
@@ -193,7 +197,7 @@ public class AwsEC2Get
     }
     
     //get a single subnet based on its id
-    public static Subnet getSubnet(List<Subnet> subnets,String id)
+    public Subnet getSubnet(String id)
     {
         for(Subnet sub : subnets)
         {
@@ -214,10 +218,10 @@ public class AwsEC2Get
     
     //get all the security groups from a speicific VPC or a single group based 
     //on either a vpc Id or a group Id  from a list of security groups
-    public static List<SecurityGroup> getSecurityGroups(List<SecurityGroup> securityGroup,String id)
+    public List<SecurityGroup> getSecurityGroups(String id)
     {
         List<SecurityGroup> group=new ArrayList();
-        for(SecurityGroup gr : securityGroup )
+        for(SecurityGroup gr : securityGroups )
         {
            if(gr.getVpcId().equals(id))
                group.add(gr);
@@ -238,20 +242,20 @@ public class AwsEC2Get
     }
     
     //get all the ACLs within a VPC or an ACl based on its id
-    public static List<NetworkAcl> getACLs(List<NetworkAcl> aclList, String id)
+    public List<NetworkAcl> getACLs( String id)
     {
-       List<NetworkAcl> acls=new ArrayList();
-       for(NetworkAcl t : aclList)
+       List<NetworkAcl> rules = new ArrayList();
+       for(NetworkAcl t : acls)
        {
            if(t.getVpcId().equals(id))
-               acls.add(t);
+               rules.add(t);
            else if(t.getNetworkAclId().equals(id))
            {
-               acls.add(t);
-               return acls;
+               rules.add(t);
+               return rules;
            }
        }
-       return acls;
+       return rules;
     }
     
     
@@ -261,21 +265,32 @@ public class AwsEC2Get
         return routeTables;
     }
     
-    //get all the routing tables under a vpc or a single route table based on id
-    public static List<RouteTable> getRoutingTables(List<RouteTable> tables,String id)
+    //get a single routing table based on its id 
+    public RouteTable getRoutingTable(String id)
     {
-        List<RouteTable> routeTables=new ArrayList();
-        for(RouteTable t : tables)
+        for(RouteTable t : routeTables)
+        {
+          if (t.getRouteTableId().equals(id))
+              return t;
+        }
+        return null;               
+    }
+    
+    //get all the routing tables under a vpc or a single route table based on id
+    public  List<RouteTable> getRoutingTables(String id)
+    {
+        List<RouteTable> rt=new ArrayList();
+        for(RouteTable t : routeTables)
         {
             if (t.getVpcId().equals(id))
-                routeTables.add(t);
+                rt.add(t);
             else if(t.getRouteTableId().equals(id))
             {
-                routeTables.add(t);
-                return routeTables;
+                rt.add(t);
+                return rt;
             }
         }
-        return routeTables;
+        return rt;
     }
     
     
@@ -286,9 +301,9 @@ public class AwsEC2Get
     }
     
     //get all the  elastic Ips under an 
-    public static Address getElasticIp(List<Address> ips,String id)
+    public  Address getElasticIp(String id)
     {
-        for(Address t : ips)
+        for(Address t : elasticIps)
         {
             if(t.getPublicIp().equals(id))
             {
@@ -306,9 +321,9 @@ public class AwsEC2Get
     }
     
     //get a specific customer gateway based on its id 
-    public static CustomerGateway getCustomerGateway(List<CustomerGateway> gateways,String id)
+    public  CustomerGateway getCustomerGateway(String id)
     {
-        for(CustomerGateway t : gateways)
+        for(CustomerGateway t : customerGateways)
         {
             if(t.getCustomerGatewayId().equals(id))
             {
@@ -318,18 +333,35 @@ public class AwsEC2Get
         return null;
     }
     
-    //get all the customer gateways under the aws account
+    //get all the internet gateways under the aws account
     public  List<InternetGateway> getInternetGateways()
     {
         return internetGateways;
     }
     
-    //get a specific customer gateway based on its id 
-    public static InternetGateway getInternetGateway(List<InternetGateway> gateways,String id)
+    //get a specific internet gateway based on its id or vpc id
+    public InternetGateway getInternetGateway(String id)
     {
-        for(InternetGateway t : gateways)
+        for(InternetGateway t : internetGateways)
         {
             if(t.getInternetGatewayId().equals(id))
+                return t;
+        }
+        return null;
+    }
+    
+    //get the virtual private gateways
+    public List<VpnGateway> getVirtualPrivateGateways()
+    {
+        return virtualPrivateGateways;
+    }
+    
+    //get a specific virtual private gateway
+    public VpnGateway getVirtualPrivateGateway(String id)
+    {
+        for(VpnGateway t : virtualPrivateGateways)
+        {
+            if(t.getVpnGatewayId().equals(id))
             {
                 return t;
             }
@@ -346,9 +378,9 @@ public class AwsEC2Get
     }
     
     //get a  volume with a particular Id from a list of volumes
-    public static Volume getVolume(List<Volume> vol, String id)
+    public Volume getVolume(String id)
     {  
-        for(Volume v : vol )
+        for(Volume v : volumes )
         {
             if(v.getVolumeId().equals(id))
             {

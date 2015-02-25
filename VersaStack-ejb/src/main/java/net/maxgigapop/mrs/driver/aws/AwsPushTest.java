@@ -46,11 +46,15 @@ import net.maxgigapop.mrs.common.Mrs;
  */
 
 // TODO attach network interfaces and volumes to existing instances,tag root device
+// change the address type in network interfaces , recognize network interface by 
+// bidirectional port and the lable that says NetworkInterface
+//availability zone problems in volumes 
 public class AwsPushTest {
 
     private AmazonEC2Client client = null;
     private AwsEC2Get ec2Client = null;
     private String topologyUri = null;
+    private Regions region =null;
     static final Logger logger = Logger.getLogger(AwsPush.class.getName());
 
     public static void main(String[] args) throws Exception {
@@ -88,6 +92,7 @@ public class AwsPushTest {
                 + "<urn:ogf:network:aws.amazon.com:aws-cloud:vol-f05f50bf>\n"
                 + "        a          mrs:Volume , owl:NamedIndividual ;\n"
                 + "        mrs:value  \"gp2\" ;\n"
+                + "        mrs:target_device \"/dev/xvdba\" ;\n"
                 + "        mrs:disk_gb \"8\" .\n"
                 + "<urn:ogf:network:aws.amazon.com:aws-cloud:vol-f05f50be>\n"
                 + "        a          mrs:Volume , owl:NamedIndividual ;\n"
@@ -123,7 +128,7 @@ public class AwsPushTest {
         
         
         
-        /*OntModel model= AwsModelBuilder.createOntology("", "", Regions.US_EAST_1, "urn:ogf:network:aws.amazon.com:aws-cloud");
+       /* OntModel model= AwsModelBuilder.createOntology("","",Regions.US_EAST_1, "urn:ogf:network:aws.amazon.com:aws-cloud");
          StringWriter out = new StringWriter();
          try {
          model.write(out, "TURTLE");
@@ -132,12 +137,14 @@ public class AwsPushTest {
          }
          String ttl = out.toString();
          System.out.println(ttl);*/
+        
     }
 
     public AwsPushTest(String access_key_id, String secret_access_key, Regions region, String topologyUri) {
         //have all the information regarding the topology
         ec2Client = new AwsEC2Get(access_key_id, secret_access_key, region);
         client = ec2Client.getClient();
+        this.region =region;
 
         //do an adjustment to the topologyUri
         this.topologyUri = topologyUri + ":";
@@ -165,22 +172,25 @@ public class AwsPushTest {
          throw new Exception(String.format("failure to unmarshall model reduction, due to %s", e.getMessage()));
          }*/
         //delete all the instances that need to be created
-        requests += deleteInstances(modelReduct);
+        requests += deleteInstancesRequests(modelReduct);
 
         //create all the vpcs that need to be created
-        requests += createVpcs(modelAdd);
+        requests += createVpcsRequests(modelAdd);
 
         //create all the subnets that need to be created
-        requests += createSubnets(modelAdd);
+        requests += createSubnetsRequests(modelAdd);
         
         //create a volume if a volume needs to be created
-        requests += createVolumes(modelAdd);
+        requests += createVolumesRequests(modelAdd);
         
         //create network interface if it needs to be created
-        requests += createPorts(modelAdd);
+        requests += createPortsRequests(modelAdd);
         
         //create all the nodes that need to be created 
-        requests += createInstances(modelAdd);
+        requests += createInstancesRequests(modelAdd);
+        
+        //attach volumes that need to be atatched to existing instances
+        requests+= attachVolumeRequests(modelAdd);
 
         return requests;
     }
@@ -196,7 +206,7 @@ public class AwsPushTest {
                 String[] parameters = request.split("\\s+");
 
                 TerminateInstancesRequest del = new TerminateInstancesRequest();
-                del.withInstanceIds(getResourceId(parameters[1]));
+                del.withInstanceIds(getInstanceId(parameters[1]));
                 del.toString();
                 client.terminateInstances(del);
             } else if (request.contains("CreateVolumeRequest")) {
@@ -207,7 +217,7 @@ public class AwsPushTest {
                         .withSize(Integer.parseInt(parameters[2]))
                         .withAvailabilityZone(parameters[3]);
 
-                System.out.println(volumeRequest.toString());
+                
                 CreateVolumeResult result = client.createVolume(volumeRequest);
 
                 CreateTagsRequest tagRequest = new CreateTagsRequest();
@@ -220,7 +230,6 @@ public class AwsPushTest {
                 CreateNetworkInterfaceRequest portRequest = new CreateNetworkInterfaceRequest();
                 portRequest.withPrivateIpAddress(parameters[1])
                         .withSubnetId(getResourceId(parameters[2]));
-                System.out.println(portRequest.toString());
                 CreateNetworkInterfaceResult portResult = client.createNetworkInterface(portRequest);
 
                 CreateTagsRequest tagRequest = new CreateTagsRequest();
@@ -231,11 +240,10 @@ public class AwsPushTest {
             } else if (request.contains("AssociateAddressRequest")) {
                 String[] parameters = request.split("\\s+");
 
-                Address publicIp = AwsEC2Get.getElasticIp(ec2Client.getElasticIps(), parameters[1]);
+                Address publicIp = ec2Client.getElasticIp(parameters[1]);
                 AssociateAddressRequest associateAddressRequest = new AssociateAddressRequest();
                 associateAddressRequest.withAllocationId(publicIp.getAllocationId())
                         .withNetworkInterfaceId(getResourceId(parameters[2]));
-                System.out.println(associateAddressRequest.toString());
                 client.associateAddress(associateAddressRequest);
             } else if (request.contains("RunInstancesRequest")) {
                //requests += String.format("RunInstancesRequest ami-146e2a7c t2.micro ") 
@@ -282,6 +290,18 @@ public class AwsPushTest {
                 //tagRequest.withResources(volumeId);
                 //client.createTags(tagRequest);
             }
+            
+             else if (request.contains("AttachVolumeRequest")) 
+             {
+               String[] parameters = request.split("\\s+");  
+               
+               AttachVolumeRequest volumeRequest = new AttachVolumeRequest();
+               volumeRequest.withInstanceId(getInstanceId(parameters[1]))
+                       .withVolumeId(getVolumeId(parameters[2]))
+                       .withDevice(parameters[3]);
+ 
+               client.attachVolume(volumeRequest);
+             }
         }
     }
 
@@ -299,28 +319,11 @@ public class AwsPushTest {
         return (ResultSet) qexec.execSelect();
     }
 
-//function that checks if the id provided is a tag; if it is, it will return
-//the resource id, otherwise it will return the input parameter which is the 
-//id of the resource
-    private String getResourceId(String id) {
-        Filter filter = new Filter();
-        filter.withName("value")
-                .withValues(id);
-
-        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
-        tagRequest.withFilters(filter);
-        List<TagDescription> descriptions = ec2Client.getClient().describeTags(tagRequest).getTags();
-        if (!descriptions.isEmpty()) {
-            return descriptions.get(0).getResourceId();
-        }
-
-        return id;
-    }
 
     /*
      function to delete an instance from a model
      */
-    private String deleteInstances(OntModel modelReduct) throws Exception {
+    private String deleteInstancesRequests(OntModel modelReduct) throws Exception {
         String requests = "";
         String query = "SELECT ?node WHERE {?node a nml:Node}";
         ResultSet r = executeQuery(query, modelReduct);
@@ -328,7 +331,7 @@ public class AwsPushTest {
             QuerySolution querySolution = r.next();
             RDFNode node = querySolution.get("node");
             String nodeIdTagValue = node.asResource().toString().replace(topologyUri, "");
-            String nodeId = getResourceId(nodeIdTagValue);
+            String nodeId = getInstanceId(nodeIdTagValue);
 
             Instance instance = ec2Client.getInstance(nodeId);
             if (instance == null) //instance does not exists
@@ -344,7 +347,7 @@ public class AwsPushTest {
     /*
      Function to create a Vpc from a model
      */
-    private String createVpcs(OntModel modelAdd) {
+    private String createVpcsRequests(OntModel modelAdd) {
         String requests = "";
         String query;
 
@@ -356,7 +359,7 @@ public class AwsPushTest {
             String vpcIdTagValue = vpc.asResource().toString().replace(topologyUri, "");
             String vpcId = getResourceId(vpcIdTagValue);
 
-            Vpc v = AwsEC2Get.getVpc(ec2Client.getVpcs(), vpcId);
+            Vpc v = ec2Client.getVpc(vpcId);
 
             if (v == null) // vpc does not exist, has to be created
             {
@@ -369,7 +372,7 @@ public class AwsPushTest {
     /*
      Function to create a subnets from a model
      */
-    private String createSubnets(OntModel modelAdd) {
+    private String createSubnetsRequests(OntModel modelAdd) {
         String requests = "";
         String query;
 
@@ -381,7 +384,7 @@ public class AwsPushTest {
             String subnetIdTagValue = subnet.asResource().toString().replace(topologyUri, "");
             String subnetId = getResourceId(subnetIdTagValue);
 
-            Subnet s = AwsEC2Get.getSubnet(ec2Client.getSubnets(), subnetId);
+            Subnet s = ec2Client.getSubnet(subnetId);
 
             if (s == null) //subnet does not exist, need to create subnet
             {
@@ -394,7 +397,7 @@ public class AwsPushTest {
     /*
      Function to create a volumes from a model
      */
-    private String createVolumes(OntModel modelAdd) throws Exception {
+    private String createVolumesRequests(OntModel modelAdd) throws Exception {
         String requests = "";
         String query;
 
@@ -404,9 +407,9 @@ public class AwsPushTest {
             QuerySolution querySolution = r.next();
             RDFNode volume = querySolution.get("volume");
             String volumeIdTagValue = volume.asResource().toString().replace(topologyUri, "");
-            String volumeId = getResourceId(volumeIdTagValue);
+            String volumeId = getVolumeId(volumeIdTagValue);
 
-            Volume v = AwsEC2Get.getVolume(ec2Client.getVolumes(), volumeId);
+            Volume v = ec2Client.getVolume(volumeId);
 
             if (v == null) //volume does not exist, need to create a volume
             {
@@ -444,9 +447,14 @@ public class AwsPushTest {
                     String deviceName = querySolution1.get("deviceName").asLiteral().toString();
 
                     if (!deviceName.equals("/dev/sda1") && !deviceName.equals("/dev/xvda")) {
-                        requests += String.format("CreateVolumeRequest %s %s %s %s  \n", type.asLiteral().getString(),
-                                size.asLiteral().getString(), Regions.US_EAST_1.getName() + "a ", volumeIdTagValue);
+                        requests += String.format("CreateVolumeRequest %s %s %s  %s  \n", type.asLiteral().getString(),
+                                size.asLiteral().getString(), region.getName() + "e", volumeIdTagValue);
                     }
+                }
+                else
+                {
+                    requests += String.format("CreateVolumeRequest %s %s %s %s  \n", type.asLiteral().getString(),
+                                size.asLiteral().getString(), Regions.US_EAST_1.getName() + "e", volumeIdTagValue);
                 }
             }
         }
@@ -457,7 +465,7 @@ public class AwsPushTest {
     /*
      Function to create network interfaces from a model
      */
-    private String createPorts(OntModel modelAdd) throws Exception {
+    private String createPortsRequests(OntModel modelAdd) throws Exception {
         String requests = "";
         String query;
 
@@ -469,7 +477,7 @@ public class AwsPushTest {
             String portIdTagValue = port.asResource().toString().replace(topologyUri, "");
             String portId = getResourceId(portIdTagValue);
 
-            NetworkInterface p = AwsEC2Get.getNetworkInterface(ec2Client.getNetworkInterfaces(), portId);
+            NetworkInterface p = ec2Client.getNetworkInterface(portId);
 
             if (p == null) //network interface does not exist, need to create a network interface
             {
@@ -516,7 +524,7 @@ public class AwsPushTest {
     /*
      Function to create Instances
      */
-    private String createInstances(OntModel modelAdd) throws Exception {
+    private String createInstancesRequests(OntModel modelAdd) throws Exception {
         String requests = "";
         String query;
 
@@ -526,13 +534,12 @@ public class AwsPushTest {
             QuerySolution querySolution = r.next();
             RDFNode node = querySolution.get("node");
             String nodeIdTagValue = node.asResource().toString().replace(topologyUri, "");
-            String nodeId = getResourceId(nodeIdTagValue);
+            String nodeId = getInstanceId(nodeIdTagValue);
 
             Instance instance = ec2Client.getInstance(nodeId);
+            List<Instance> i =ec2Client.getEc2Instances();
             if (instance == null) //instance needs to be created
             {
-                System.out.println("needs to create node with id " + nodeIdTagValue);
-
                 //check what service is providing the instance
                 query = "SELECT ?type WHERE {?service mrs:providesVM <" + node.asResource() + ">}";
                 ResultSet r1 = executeQuery(query, modelAdd);
@@ -549,7 +556,6 @@ public class AwsPushTest {
                 QuerySolution querySolution1 = r1.next();
                 RDFNode vpc = querySolution1.get("vpc");
                 String vpcId = vpc.asResource().toString().replace(topologyUri, "");
-                System.out.println("node has Vpc :" + vpcId);
                 vpcId = getResourceId(vpcId);
 
                 //to find the subnet the node is in first  find the port the node uses
@@ -566,7 +572,6 @@ public class AwsPushTest {
                     RDFNode port = querySolution2.get("port");
                     String id = port.asResource().toString().replace(topologyUri, "");
                     portsId.add(getResourceId(id));
-                    System.out.println(" node has port: " + id);
                     lastPort = port;
                 }
 
@@ -582,8 +587,7 @@ public class AwsPushTest {
                     QuerySolution querySolution4 = r4.next();
                     RDFNode volume = querySolution4.get("volume");
                     String id = volume.asResource().toString().replace(topologyUri, "");
-                    System.out.println("node has volume :" + id);
-                    volumesId.add(getResourceId(id));
+                    volumesId.add(getVolumeId(id));
                 }
 
                 //put request for new instance
@@ -603,8 +607,14 @@ public class AwsPushTest {
                     String type = querySolution4.get("type").asLiteral().toString();
                     String size = querySolution4.get("size").asLiteral().toString();
                     String deviceName = querySolution4.get("deviceName").asLiteral().toString();
-
-                    requests += String.format("%s %s %s %s ", type, size, deviceName, volumeTag);
+                    boolean hasRootVolume=false;
+                    if (deviceName.equals("/dev/sda1") || deviceName.equals("/dev/xvda"))
+                    {
+                        hasRootVolume=true;
+                        requests += String.format("%s %s %s %s ", type, size, deviceName, volumeTag);
+                    }
+                    if(hasRootVolume==false)
+                        throw new Exception(String.format("model addition does not specify root volume for node: %s",node)); 
                 }
 
                 int index = 0;
@@ -619,4 +629,136 @@ public class AwsPushTest {
         }
         return requests;
     }
+    
+    
+    /*
+        Attach a volume to an existing instance AWS
+    */
+    private String attachVolumeRequests(OntModel modelAdd)
+    {
+        String requests="";
+        
+        String query = "SELECT  ?node ?volume ?deviceName ?size ?type  WHERE {"
+          + "?node  mrs:hasVolume  ?volume ."
+          + "?volume mrs:target_device ?deviceName ."
+          + "?volume mrs:disk_gb ?size ."
+          + "?volume mrs:value ?type}";
+        
+        ResultSet r1= executeQuery(query,modelAdd);
+        while(r1.hasNext())
+        {
+           QuerySolution querySolution1 = r1.next();
+           RDFNode node = querySolution1.get("node");
+           RDFNode volume = querySolution1.get("volume");
+           RDFNode deviceName = querySolution1.get("deviceName");
+           
+           String nodeTagId= node.asResource().toString().replace(topologyUri,"");
+           String volumeTagId= volume.asResource().toString().replace(topologyUri,"");
+           String device= deviceName.asLiteral().toString();
+           
+           if (!device.equals("/dev/sda1") && !device.equals("/dev/xvda"))
+           {
+                String nodeId= getInstanceId(nodeTagId);
+                String volumeId = getVolumeId(volumeTagId);
+
+
+                Instance ins = ec2Client.getInstance(nodeId);
+                Volume vol = ec2Client.getVolume(volumeId);
+                if(ins!=null)
+                {
+                    List< InstanceBlockDeviceMapping> map =ins.getBlockDeviceMappings();
+                    boolean attach =true;
+                    if(vol==null)
+                    {
+                     requests+=String.format("AttachVolumeRequest %s %s %s \n",nodeId,volumeTagId,device);
+                    }
+                    else 
+                    {
+                        for(InstanceBlockDeviceMapping m :map)
+                        {
+                            String instanceVolumeId = m.getEbs().getVolumeId();
+                            if(instanceVolumeId.equals(volumeId))
+                            {
+                                attach=false;
+                                break;
+                            }
+                        }
+                        if(attach == true)
+                        {
+                            requests+=String.format("AttachVolumeRequest %s %s %s \n",nodeId,volumeTagId,device);
+                        }
+                    }
+                }
+                else if (ins == null)
+                {
+                   requests+=String.format("AttachVolumeRequest %s %s %s \n",nodeTagId,volumeTagId,device);
+                }
+           }
+        }
+        return requests;
+    }
+    
+    //function that checks if the id provided is a tag; if it is, it will return
+    //the resource id, otherwise it will return the input parameter which is the 
+    //id of the resource 
+    //NOTE: does not work with volumes and instances because sometimes the tags
+    //      persist for a while in this resources, therefore we need to check if the 
+    //      instance or volume actually exists
+    private String getResourceId(String tag) {
+        Filter filter = new Filter();
+        filter.withName("value")
+                .withValues(tag);
+
+        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
+        tagRequest.withFilters(filter);
+        List<TagDescription> descriptions = ec2Client.getClient().describeTags(tagRequest).getTags();
+        if (!descriptions.isEmpty()) {
+            return descriptions.get(descriptions.size()-1).getResourceId(); //get the last resource tagged with this id 
+        }
+
+        return tag;
+    }
+    
+    //function to get the Id from and instance tag
+    private String getInstanceId(String tag)
+    {   
+        Filter filter = new Filter();
+        filter.withName("value")
+                .withValues(tag);
+        
+        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
+        tagRequest.withFilters(filter);
+        List<TagDescription> descriptions = ec2Client.getClient().describeTags(tagRequest).getTags();
+        if (!descriptions.isEmpty()) {
+            for(TagDescription des : descriptions)
+            {
+                Instance i = ec2Client.getInstance(des.getResourceId());
+                if(i !=null && i.getState().getCode()!=48) //check if the instance was not deleted
+                    return des.getResourceId();
+            }
+        }
+        return tag;
+    }
+    
+    //function to get the Id from and instance tag
+    private String getVolumeId(String tag)
+    {   
+        Filter filter = new Filter();
+        filter.withName("value")
+                .withValues(tag);
+        
+        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
+        tagRequest.withFilters(filter);
+        List<TagDescription> descriptions = ec2Client.getClient().describeTags(tagRequest).getTags();
+        if (!descriptions.isEmpty()) {
+            for(TagDescription des : descriptions)
+            {
+                Volume vol = ec2Client.getVolume(des.getResourceId());
+                if(vol !=null  && !vol.getState().equals("deleted") )
+                return des.getResourceId();
+            }
+        }
+        return tag;
+    }
 }
+

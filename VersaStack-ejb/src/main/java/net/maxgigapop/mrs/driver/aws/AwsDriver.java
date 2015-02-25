@@ -55,7 +55,12 @@ public class AwsDriver implements IHandleDriverSystemCall {
         String modelReduc= aDelta.getModelReduction().getTtlModel();
         
         AwsPush push= new AwsPush(access_key_id,secret_access_key,region,topologyURI);
-        String requests= push.pushPropagate(modelAdd,modelReduc);
+        String requests=null;
+        try {
+            requests = push.pushPropagate(modelAdd,modelReduc);
+        } catch (Exception ex) {
+            Logger.getLogger(AwsDriver.class.getName()).log(Level.SEVERE, null, ex);
+        }
         
         String requestId= driverInstance.getId().toString()+ aDelta.getId().toString();
         driverInstance.putProperty(requestId, requests);

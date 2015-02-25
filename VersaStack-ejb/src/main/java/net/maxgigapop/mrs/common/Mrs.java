@@ -39,6 +39,8 @@ public class Mrs {
     
     public static final Property hasNetworkAddress = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#hasNetworkAddress" );
     
+    public static final Property hasRoute = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#hasRoute");
+    
     public static final Property hasTagGroup = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#hasTagGroup" );
     
     public static final Property hasVolume = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#hasVolume" );
@@ -114,8 +116,10 @@ public class Mrs {
     public static final Resource POSIX_IOBenchmark = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#POSIX_IOBenchmark" );
     
     public static final Resource Route = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#Route" );
-    
+   
     public static final Resource RoutingService = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#RoutingService" );
+    
+    public static final  Resource routingTable= m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#RoutingTable");
     
     public static final Resource S3_IOBenchmark = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#S3_IOBenchmark" );
     
