@@ -194,12 +194,17 @@ public class CompilerBase {
         its = model.listStatements(res, RdfOwl.type, (Resource)null);
         while (its.hasNext()) {
             Statement stmt = its.next();
+            /*
             Resource object = stmt.getObject().asResource();
             if (object.getNameSpace().equals(Spa.getURI())) {
                 if (listStmt == null)
                     listStmt = new ArrayList<>();
                 listStmt.add(stmt);
             }
+            */
+            if (listStmt == null)
+                listStmt = new ArrayList<>();
+            listStmt.add(stmt);
         }
         return listStmt;
     }

@@ -54,11 +54,15 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
                 "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
                 "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
                 "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" +
-                "SELECT ?policy ?data ?type ?value WHERE {?policy a spa:Placement. "
+                "SELECT ?vm ?policy ?data ?type ?value WHERE {"
+                + "?vm a nml:Node ."
+                + "?vm spa:dependOn ?policy . "
+                + "?policy a spa:Placement. "
                 + "?policy spa:importFrom ?data. "
                 + "?data spa:type ?type. ?data spa:value ?value. "
                 + "FILTER not exists {?policy spa:dependOn ?other} "
                 + "}";
+        // TODO: sparql also needs to retrieve the VM Node that dependOn this action
         Query query = QueryFactory.create(sparqlString);
         List<Resource> listPolicy = null;
         QueryExecution qexec = QueryExecutionFactory.create(query, annotatedDelta.getModelAddition().getOntModel());
@@ -70,13 +74,19 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             	listPolicy = new ArrayList<>();
             if (!listPolicy.contains(nodePolicy.asResource()))
                 listPolicy.add(nodePolicy.asResource());
+            RDFNode nodeVM = querySolution.get("vm");
             RDFNode nodeData = querySolution.get("data");
             RDFNode nodeDataType = querySolution.get("type");
             RDFNode nodeDataValue = querySolution.get("value");
         }
         
-        DeltaBase outputDelta = annotatedDelta;
+        //$$ clone outputDelta from annotatedDelta
+        DeltaBase outputDelta = annotatedDelta; // TODO
+        //$$ remove vm and policy and all down-tree statements
+        //$$ do placement based on filter/match criteria *data*
+        //$$ add *placed* Node with full up-tree (HypervisorService and Topology etc.) and connect to other elements
         //$$ TODO: do computation and create outputDelta
+        
         return new AsyncResult(outputDelta);
     }
     

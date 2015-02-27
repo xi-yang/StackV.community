@@ -8,6 +8,7 @@ package net.maxgigapop.mrs.bean.persist;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import javax.ejb.EJBException;
 import javax.persistence.Query;
 import net.maxgigapop.mrs.bean.*;
@@ -59,9 +60,8 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
             vgNew.addVersionItem(viNew);
         }
         if (hasChanged) {
-            vgNew.setRefUuid(vg.getRefUuid());
+            vgNew.setRefUuid(UUID.randomUUID().toString());
             VersionGroupPersistenceManager.save(vgNew);
-            VersionGroupPersistenceManager.delete(vg);
             return vgNew;
         }
         return vg;

@@ -65,15 +65,14 @@ public class HandleSystemCallTest {
      */
     @Test
     public void testCreateHeadVersionGroup() throws Exception {
-        System.out.println("createHeadVersionGroup");
+        System.out.println("###createHeadVersionGroup###");
         if (PersistenceManager.getEntityManager() == null) {
             PersistenceManager.initialize(entityManager);
         }
-        //sleep(150000);
+        sleep(90000);
         VersionGroup expResult = null;
         VersionGroup result = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
         System.out.println("createHeadVersionGroup result=" + result);
         assertFalse("createHeadVersionGroup results in null VersionGroup", expResult == null);
-        //fail("The test case is a prototype.");
-    }
+   }
 }

@@ -98,6 +98,7 @@ public class WorkerBase {
             //3. execute the idle actions in the list (asynchronously)
             for (ActionBase action: batchOfActions) {
                 if (action.getState().equals(ActionState.IDLE)) {
+                    action.setReferenceModel(this.referenceSystemModel);
                     Future<DeltaBase> asyncResult = action.execute();
                     resultMap.put(action, asyncResult);
                 }

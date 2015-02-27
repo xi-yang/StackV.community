@@ -24,7 +24,7 @@ public class WorkflowTestStarter {
     @PostConstruct
     void runTests() {
         try {
-            sleep(90000L);
+            sleep(60000L);
         } catch (InterruptedException ex) {
             Logger.getLogger(WorkflowTestStarter.class.getName()).log(Level.SEVERE, null, ex);
         }

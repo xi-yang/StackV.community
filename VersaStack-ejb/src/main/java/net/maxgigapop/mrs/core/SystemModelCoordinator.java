@@ -5,7 +5,10 @@
  */
 package net.maxgigapop.mrs.core;
 
+import static java.lang.Math.log;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.AccessTimeout;
 import javax.ejb.EJB;
 import javax.ejb.LocalBean;
@@ -14,6 +17,8 @@ import javax.ejb.LockType;
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
 import net.maxgigapop.mrs.bean.VersionGroup;
+import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.service.compute.MCE_MPVlanConnection;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
@@ -43,6 +48,11 @@ public class SystemModelCoordinator {
             if (this.systemVersionGroup != null) {
                 //$$ handle exception?
                 this.systemVersionGroup.createUnionModel();
+                try {
+                    Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.INFO, "\n>>>SystemModelCoordinator--SystemModel=\n" + ModelUtil.marshalOntModel(systemVersionGroup.getCachedModelBase().getOntModel()));
+                } catch (Exception ex) {
+                    Logger.getLogger(SystemModelCoordinator.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         } else {
             //$$ handle exception?

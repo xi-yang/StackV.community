@@ -41,7 +41,7 @@ public class ActionBase {
     protected DeltaBase outputDelta = null;
     protected List<ActionBase> dependencies = new ArrayList<>();
     protected List<ActionBase> uppers  = new ArrayList<>();
-    private static Logger log = Logger.getLogger(ActionBase.class.getName());
+    private static final Logger log = Logger.getLogger(ActionBase.class.getName());
 
     private ActionBase() { }
     

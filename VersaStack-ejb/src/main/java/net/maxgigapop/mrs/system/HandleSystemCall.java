@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.EJBException;
@@ -42,7 +44,9 @@ import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.core.SystemModelCoordinator;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
+import net.maxgigapop.mrs.service.compute.MCE_MPVlanConnection;
 
 /**
  *
@@ -61,6 +65,7 @@ public class HandleSystemCall {
            throw new EJBException(String.format("createHeadVersionGroup canont find driverInstance in the system"));
         }
         VersionGroup vg = new VersionGroup();
+        vg.setRefUuid(refUuid);
         for (String topoUri: ditMap.keySet()) {
             DriverInstance di = ditMap.get(topoUri);
             synchronized (di) {
@@ -68,13 +73,12 @@ public class HandleSystemCall {
                 if (vi == null) {
                     throw new EJBException(String.format("createHeadVersionGroup encounters null head versionItem in %s", di));
                 }
-                vg.addVersionItem(vi);
+                vi.addVersionGroup(vg);
+                vg.addVersionItem((VersionItem)VersionItemPersistenceManager.merge(vi));
             }
         }
-        vg.setRefUuid(refUuid);
-        VersionGroupPersistenceManager.merge(vg);
-        return vg;
-    }
+        return (VersionGroup)VersionGroupPersistenceManager.merge(vg);
+   }
     
     public VersionGroup createHeadVersionGroup(String refUuid, List<String> topoURIs) {
         Map<String, DriverInstance> ditMap = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
@@ -86,7 +90,8 @@ public class HandleSystemCall {
            throw new EJBException(String.format("createHeadVersionGroup canont find driverInstance in the system"));
         }
         VersionGroup vg = new VersionGroup();
-        for (String topoUri: topoURIs) {
+        vg.setRefUuid(refUuid);
+       for (String topoUri: topoURIs) {
             DriverInstance di = ditMap.get(topoUri);
             if (di == null) {
                 throw new EJBException(String.format("createHeadVersionGroup canont find driverInstance with topologyURI=%s", topoUri));
@@ -95,12 +100,10 @@ public class HandleSystemCall {
             if (vi == null) {
                 throw new EJBException(String.format("createHeadVersionGroup encounters null head versionItem in %s", di));
             }
-            vg.addVersionItem(vi);
             vi.addVersionGroup(vg);
+            vg.addVersionItem((VersionItem)VersionItemPersistenceManager.merge(vi));
         }
-        vg.setRefUuid(refUuid);
-        VersionGroupPersistenceManager.save(vg);
-        return vg;
+        return (VersionGroup)VersionGroupPersistenceManager.merge(vg);
     }
 
     public VersionGroup updateHeadVersionGroup(String refUuid) {
@@ -165,9 +168,9 @@ public class HandleSystemCall {
         VersionGroup headVG = VersionGroupPersistenceManager.refreshToHead(referenceVG);
         // 2.2. if the head VG is newer than the current/reference VG
         if (headVG != null && !headVG.equals(referenceVG)) {
-            //          create headOntModel. get D12=headModel.diffFromModel(refeneceOntModel)
+           //          create headOntModel. get D12=headModel.diffFromModel(refeneceOntModel)
             ModelBase headSystemModel = headVG.createUnionModel();
-            // Note: The head model has committed (driverDeltas) or propagated (driverSystemDeltas if available) to reduce contention.
+           // Note: The head model has committed (driverDeltas) or propagated (driverSystemDeltas if available) to reduce contention.
             // We must persist target model VG after both propagated and committed.
             DeltaBase D12 = headSystemModel.diffFromModel(referenceOntModel);
             //          verify D12.getModelAddition().getOntModel().intersection(sysDelta.getModelReduction().getOntModel()) == empty

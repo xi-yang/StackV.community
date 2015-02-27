@@ -29,11 +29,13 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
     @Asynchronous
     public Future<DeltaBase> process(ModelBase systemModel, DeltaBase annotatedDelta) {
         log.log(Level.INFO, "MCE_InterfaceVlanStitching::process {0}", annotatedDelta);
+        /*
         try {
             log.log(Level.INFO, "\n>>>MCE_InterfaceVlanStitching--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
+        */
         DeltaBase outputDelta = annotatedDelta;
         //$$ TODO: do computation and create outputDelta
         return new AsyncResult(outputDelta);
