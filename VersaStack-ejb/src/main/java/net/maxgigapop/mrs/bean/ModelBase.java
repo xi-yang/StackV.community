@@ -139,13 +139,16 @@ public class ModelBase extends PersistentEntity implements Serializable {
     }
     
     public ModelBase clone() {
-        ModelBase other = new ModelBase();
-        other.setCommitted(this.committed);
-        other.setCxtVersion(this.cxtVersion);
-        other.setCxtVersionTag(this.cxtVersionTag);
-        other.setTtlModel(this.ttlModel);
-        other.setPersistent(this.isPersistent());
-        return other;
+        ModelBase cloned = new ModelBase();
+        cloned.setCommitted(this.committed);
+        cloned.setCxtVersion(this.cxtVersion);
+        cloned.setCxtVersionTag(this.cxtVersionTag);
+        cloned.setTtlModel(this.ttlModel);
+        if (this.ontModel != null) {
+            cloned.setOntModel(ModelUtil.cloneOntModel(this.ontModel));
+        }
+        cloned.setPersistent(this.isPersistent());
+        return cloned;
     }
     
     @SuppressWarnings("unused")

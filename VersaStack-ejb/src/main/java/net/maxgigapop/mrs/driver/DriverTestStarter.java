@@ -60,7 +60,12 @@ public class DriverTestStarter {
                 + "        owl:NamedIndividual;\n"
                 + "    nml:hasNode\n"
                 + "        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1>,\n"
-                + "        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-4>.");
+                + "        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-4>."
+                + "<urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-4>"
+                + "   a    nml:Node;"
+                + "   nml:hasService <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-4:kvm>."
+                + "<urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-4:kvm>"
+                + "   a    mrs:HypervisorService.");
         /*
          ModelPersistenceManager.save(model1);
          ModelBase model2 = ModelPersistenceManager.find(ModelBase.class, model1.getId());

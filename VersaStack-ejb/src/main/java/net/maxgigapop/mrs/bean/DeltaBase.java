@@ -73,7 +73,15 @@ public class DeltaBase extends PersistentEntity implements Serializable {
         this.modelReduction = modelReduction;
     }
 
-
+    public DeltaBase clone() {
+        DeltaBase cloned = new DeltaBase();
+        if (this.modelAddition != null)
+            cloned.modelAddition = this.modelAddition.clone();
+        if (this.modelReduction != null)
+            cloned.modelReduction = this.modelReduction.clone();
+        return cloned;
+    }
+    
     @Override
     public boolean equals(Object object) {
         // TODO: Warning - this method won't work in the case the id fields are not set

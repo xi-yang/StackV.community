@@ -56,6 +56,12 @@ public class ModelUtil {
         return ttl;
     }
 
+    static public OntModel cloneOntModel (OntModel model) {
+        OntModel cloned = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        cloned.add(model.getBaseModel());
+        return cloned;
+    }
+
     static public boolean isEmptyModel(Model model) {
         if (model == null) {
             return true;
@@ -105,7 +111,7 @@ public class ModelUtil {
         	throw new EJBException("ModelUtil.splitOntModelByTopology getTopologyList returns on " + model);
         }
         for (RDFNode topoNode: listTopo) {
-        	OntModel modelTopology = getTopology(model, topoNode);
+        	OntModel modelTopology = getTopology(topoNode);
         	model.remove(modelTopology);
             topoModelMap.put(topoNode.asResource().getURI(), modelTopology);
         }
@@ -119,7 +125,7 @@ public class ModelUtil {
         return topoModelMap;
     }
     
-    private static List<RDFNode> getTopologyList(Model model) {
+    private static List<RDFNode> getTopologyList(OntModel model) {
         String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
                 "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
                 "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
@@ -143,7 +149,7 @@ public class ModelUtil {
         return listRes;
     }
 
-    private static OntModel getTopology(Model model, RDFNode node) {
+    private static OntModel getTopology(RDFNode node) {
         OntModel subModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         Set<RDFNode> visited = new HashSet<RDFNode>();
         rdfDFS(node, visited, subModel);
@@ -161,7 +167,6 @@ public class ModelUtil {
                 while ( stmts.hasNext() ) {
                     Statement stmt = stmts.next();
                     ontModel.add(stmt);
-                    //stmt.remove();
                     if (!stmt.getPredicate().toString().contains("#isAlias")) {
                     	rdfDFS( stmt.getObject(), visited, ontModel);
                     }
@@ -169,4 +174,41 @@ public class ModelUtil {
             }
         }
     }
+    
+    public static void listRecursiveDownTree(RDFNode node, Set<RDFNode> visited, List<String> filterList, List<Statement> listStmts) {
+        if ( visited.contains( node )) {
+            return;
+        }
+        else {
+            visited.add( node );
+            if ( node.isResource() ) {
+                StmtIterator stmts = node.asResource().listProperties();
+                while ( stmts.hasNext() ) {
+                    Statement stmt = stmts.next();
+                    for (String matchStr: filterList) {
+                        // match by contains or regex
+                        if (stmt.getPredicate().toString().contains(matchStr)) {
+                            listStmts.add(stmt);
+                            listRecursiveDownTree( stmt.getObject(), visited, filterList, listStmts);
+                        } else if (stmt.getPredicate().toString().matches(matchStr)) {
+                            listStmts.add(stmt);
+                            listRecursiveDownTree( stmt.getObject(), visited, filterList, listStmts);
+                        } else if (stmt.getObject().toString().contains(matchStr)) {
+                            listStmts.add(stmt);
+                        } else if (stmt.getPredicate().toString().matches(matchStr)) {
+                            listStmts.add(stmt);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    public static void listRecursiveDownTree(RDFNode node, String matchStr, List<Statement> listStmts) {
+        Set<RDFNode> visited = new HashSet<>();
+        List filterList = new ArrayList<>();
+        filterList.add(matchStr);
+        listRecursiveDownTree(node, visited, filterList, listStmts);
+    }
+
 }
