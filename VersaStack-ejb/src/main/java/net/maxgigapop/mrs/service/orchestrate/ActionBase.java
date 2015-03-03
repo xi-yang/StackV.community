@@ -206,6 +206,7 @@ public class ActionBase {
         }
     }
     
+    //@@ TODO: include all importFrom statements when merging
     protected OntModel mergeOntModel(OntModel modelA, OntModel modelB) {
         // 1. Get dA = A.remove(B) and dB = B.remove(A)
         OntModel modelAbutB = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);

@@ -71,6 +71,15 @@ public class CompilerBase {
                         modelPart.add(stmtIter2.next());
                     }
                 }
+                stmtIter = spaModel.listStatements(policy, Spa.exportTo, (Resource)null);
+                while (stmtIter.hasNext()) {
+                    Statement stmt = stmtIter.next();
+                    modelPart.add(stmt);
+                    StmtIterator stmtIter2 = spaModel.listStatements(stmt.getObject().asResource(), null, (Resource)null);
+                    while (stmtIter2.hasNext()) {
+                        modelPart.add(stmtIter2.next());
+                    }
+                }
                 if (leafPolicyModelMap == null)
                     leafPolicyModelMap = new HashMap<>();
                 leafPolicyModelMap.put(policy, modelPart);
@@ -190,7 +199,21 @@ public class CompilerBase {
                 listStmt.add(stmt);
             }
         }
-        // add a spa:* statement for res type
+        // add exportTo and related policyData statements
+        its = model.listStatements(res, Spa.exportTo, (Resource)null);
+        while (its.hasNext()) {
+            Statement stmt = its.next();
+            if (!stmt.getObject().isResource())
+                continue;
+            listStmt.add(stmt);
+            Resource object = stmt.getObject().asResource();
+            Property predicate = stmt.getPredicate();
+            StmtIterator its2 = object.listProperties();
+            while (its2.hasNext()) {
+                listStmt.add(its2.next());
+            }
+        }
+        // add a statement for res type
         its = model.listStatements(res, RdfOwl.type, (Resource)null);
         while (its.hasNext()) {
             Statement stmt = its.next();

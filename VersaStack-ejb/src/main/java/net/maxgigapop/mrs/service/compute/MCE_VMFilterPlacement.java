@@ -43,7 +43,7 @@ import net.maxgigapop.www.rains.ontmodel.Spa;
  *
  * @author xyang
  */
-@Stateless
+    @Stateless
 public class MCE_VMFilterPlacement implements IModelComputationElement {
     private static final Logger log = Logger.getLogger(MCE_VMFilterPlacement.class.getName());
     
@@ -54,11 +54,13 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
         if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
             throw new EJBException(String.format("%s::process ", this.getClass().getName()));
         }
+        /*
         try {
             log.log(Level.INFO, "\n>>>MCE_VMFilterPlacement--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
+        */
         String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
                 "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
                 "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
@@ -112,9 +114,10 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             } catch (Exception ex) {
                 Logger.getLogger(MCE_VMFilterPlacement.class.getName()).log(Level.SEVERE, null, ex);
             }
-
-            //$$ 3. update export data ??
-            //this.updateExportData(outputDelta.getModelAddition().getOntModel(), placementModel, vm);
+            
+            //$$ 3. update policyData this action exportTo 
+            //@@ TODO: exportTo statement will be removed but importFrom by parent action will be kept afte merge
+            //this.exportPolicyData(outputDelta.getModelAddition().getOntModel(), placementModel, vm);
             
             //4. remove policy and all related SPA statements receursively under vm from spaModel
             List<Statement> listStmtsToRemove = new ArrayList<>();

@@ -48,11 +48,13 @@ public class SystemModelCoordinator {
             if (this.systemVersionGroup != null) {
                 //$$ handle exception?
                 this.systemVersionGroup.createUnionModel();
+                /*
                 try {
                     Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.INFO, "\n>>>SystemModelCoordinator--SystemModel=\n" + ModelUtil.marshalOntModel(systemVersionGroup.getCachedModelBase().getOntModel()));
                 } catch (Exception ex) {
                     Logger.getLogger(SystemModelCoordinator.class.getName()).log(Level.SEVERE, null, ex);
                 }
+                */
             }
         } else {
             //$$ handle exception?
