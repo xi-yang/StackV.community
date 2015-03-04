@@ -118,6 +118,14 @@ public class AwsModelBuilder
         model.add(model.createStatement(awsTopology,hasService,s3Service));
         model.add(model.createStatement(awsTopology,hasService,ebsService));
         
+        //add the lables for vpn and internet gateways
+        Resource IGW_LABEL= RdfOwl.createResource(model,topologyURI + ":igwLabel",Nml.Label);
+        model.add(model.createStatement(IGW_LABEL,Nml.labeltype,Nml.InternetGateway));
+        model.add(model.createStatement(IGW_LABEL,value,"any"));
+        Resource VPNGW_LABEL= RdfOwl.createResource(model,topologyURI + ":vpngwLabel",Nml.Label);
+        model.add(model.createStatement(VPNGW_LABEL,Nml.labeltype,Nml.VpnGateway));
+        model.add(model.createStatement(VPNGW_LABEL,value,"any"));
+        
         
         
         //put all the Internet gateways into the model
@@ -125,9 +133,6 @@ public class AwsModelBuilder
         {
             String internetGatewayId = ec2Client.getIdTag(t.getInternetGatewayId());
             Resource INTERNETGATEWAY = RdfOwl.createResource(model,topologyURI + ":" + internetGatewayId,port);
-            Resource IGW_LABEL= RdfOwl.createResource(model,topologyURI + ":igwLabel-" + internetGatewayId,Nml.Label);
-            model.add(model.createStatement(IGW_LABEL,Nml.labeltype,Nml.InternetGateway));
-            model.add(model.createStatement(IGW_LABEL,value,"any"));
             model.add(model.createStatement(INTERNETGATEWAY, hasLabel,IGW_LABEL));
         }
         
@@ -136,9 +141,6 @@ public class AwsModelBuilder
         {
             String vpnGatewayId = ec2Client.getIdTag(g.getVpnGatewayId());
             Resource VPNGATEWAY = RdfOwl.createResource(model,topologyURI + ":" + vpnGatewayId,port);
-            Resource VPNGW_LABEL= RdfOwl.createResource(model,topologyURI + ":vpngwLabel-" + vpnGatewayId,Nml.Label);
-            model.add(model.createStatement(VPNGW_LABEL,Nml.labeltype,Nml.VpnGateway));
-            model.add(model.createStatement(VPNGW_LABEL,value,"any"));
             model.add(model.createStatement(VPNGATEWAY, hasLabel,VPNGW_LABEL));
         }
         

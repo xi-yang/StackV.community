@@ -132,7 +132,7 @@ public class AwsPushTest {
                 + " <urn:ogf:network:aws.amazon.com:aws-cloud:subnetnetworkaddress-0339843>\n"
                 + "         a          mrs:NetworkAddress , owl:NamedIndividual ;\n"
                 + "         mrs:type   \"ipv4-prefix\" ;\n"
-                + "         mrs:value  \"subnet-2cd6ad16\" .\n"
+                + "         mrs:value  \"10.0.0/24\" .\n"
                 + "<urn:ogf:network:aws.amazon.com:aws-cloudroutefrom-rtb-2f64394unnasociated>\n"
                 + "         a          mrs:NetworkAddress , owl:NamedIndividual .\n"
                 + "<urn:ogf:network:aws.amazon.com:aws-cloud:10.0.0.230>\n"
@@ -150,11 +150,17 @@ public class AwsPushTest {
                 + "<urn:ogf:network:aws.amazon.com:aws-cloudroutefrom-rtb-8723d8musubnet-2cd6ad16>\n"
                 + "         a             mrs:NetworkAddress , owl:NamedIndividual ;\n"
                 + "         mrs:type   \"subnet\" ;\n"
-                + "         mrs:value  \"10.0.0.0/24\" ."
+                + "         mrs:value  \"subnet-2cd6ad16\" ."
                 + "<urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-8723d8musubnet-2cd6ad16>\n"
                 + "         a             mrs:NetworkAddress , owl:NamedIndividual ;\n"
                 + "         mrs:type   \"ipv4-prefix\" ;\n"
                 + "        mrs:value  \"10.0.0.0/16\" ."
+                +"<urn:ogf:network:aws.amazon.com:aws-cloud:igw-6cf01345>\n"
+                +"          a             nml:BidirectionalPort , owl:NamedIndividual ;\n"
+                +"          nml:hasLabel  <urn:ogf:network:aws.amazon.com:aws-cloud:igwLabel> .\n"
+                +"<urn:ogf:network:aws.amazon.com:aws-cloud:vgw-fa36d593>\n"
+                +"          a             nml:BidirectionalPort , owl:NamedIndividual ;\n"
+                +"          nml:hasLabel  <urn:ogf:network:aws.amazon.com:aws-cloud:vpngwLabel .\n"
                 + "<urn:ogf:network:aws.amazon.com:aws-cloud:10.0.0.231>\n"
                 + "        a          mrs:NetworkAddress , owl:NamedIndividual ;\n"
                 + "        mrs:value  \"10.0.0.231\" .\n";
@@ -325,7 +331,20 @@ public class AwsPushTest {
                 client.createTags(tagRequest);
                 ec2Client.getRoutingTables().add(tableResult.getRouteTable());
 
-            } else if (request.contains("associateTableRequest")){
+            } else if (request.contains("AssociateTableRequest")){
+                String[] parameters = request.split("\\s+");
+                
+                String routeTableId= getTableId(parameters[1]);
+                String subnetId = getResourceId(parameters[2]);
+
+                AssociateRouteTableRequest associateRequest = new AssociateRouteTableRequest();
+                associateRequest.withRouteTableId(getResourceId(routeTableId))
+                        .withSubnetId(getResourceId(subnetId));
+                AssociateRouteTableResult associateResult= client.associateRouteTable(associateRequest);
+            
+            } else if (request.contains("CreateVpnGatewayRequest")){
+                String[] parameters = request.split("\\s+");
+                
                 
             } else if (request.contains("CreateVolumeRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -777,6 +796,7 @@ public class AwsPushTest {
         ResultSet r = executeQuery(query,emptyModel,modelAdd);
         while(r.hasNext())
         {
+            boolean createRequest= true;
             QuerySolution querySolution = r.next();
             RDFNode value = querySolution.get("value");
             RDFNode route = querySolution.get("route");
@@ -794,8 +814,94 @@ public class AwsPushTest {
             String subnetIdTag = value.asLiteral().toString();
             String tableIdTag = table.asResource().toString().replace(topologyUri, "");
             
-            requests+=String.format("AssociateTableRequest %s %s \n",tableIdTag,subnetIdTag);
+            RouteTable rt = ec2Client.getRoutingTable(getTableId(tableIdTag));
+            if(rt == null)
+            {}
+            else
+                for(RouteTableAssociation as : rt.getAssociations())
+                {
+                    if(as.getSubnetId().equals(getResourceId(subnetIdTag)))
+                        createRequest = false;
+                }
             
+            if(createRequest == true)
+                requests+=String.format("AssociateTableRequest %s %s \n",tableIdTag,subnetIdTag);
+            
+        }
+       return requests;
+    }
+    
+     /**
+     * ****************************************************************
+     * Function to create an internet gateway and attach it to a vpc
+     *****************************************************************
+     */
+    private String createInternetGatewayRequest(OntModel model, OntModel modelAdd) throws Exception
+    {
+       String requests = "";
+       String query;
+
+        query = "SELECT ?igw WHERE {?igw a nml:BidirectionalPort}";
+        ResultSet r = executeQuery(query, emptyModel, modelAdd);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            RDFNode igw = q.get("igw");
+            String igwIdTag = igw.asResource().toString().replace(topologyUri,"");
+            
+            query = "SELECT ?label WHERE {<"+igw.asResource()+"> nml:hasLabel ?label}";
+            ResultSet r1 = executeQuery(query, emptyModel, modelAdd);
+            if(!r1.hasNext())
+                throw new Exception(String.format("Label for Internet gateway %s i"
+                        + "s not specified in model addition",igw));
+            QuerySolution q1 = r1.next();
+            RDFNode label = q1.get("label");
+            
+            //look for the lable in the reference model
+            query = "SELECT ?null WHERE {<"+label.asResource()+"> a nml:Label ."
+                    + "<"+label.asResource()+"> nml:labeltype  nml:InternetGateway}";
+            r1  = executeQuery(query,model,emptyModel);
+            if(!r1.hasNext())
+                throw new Exception(String.format("Label %s for Internet gateway %s is"
+                        + " an invalid label",label,igw));
+           
+            requests += String.format("CreateInternetGatewayRequest %s \n",igwIdTag);
+        }
+       return requests;
+    }
+    
+    /**
+     * ****************************************************************
+     * Function to create a VPN gateway 
+     *****************************************************************
+     */
+    private String createVpnGatewayRequest(OntModel model, OntModel modelAdd) throws Exception
+    {
+       String requests = "";
+       String query;
+
+        query = "SELECT ?vpngw WHERE {?vpngw a nml:BidirectionalPort}";
+        ResultSet r = executeQuery(query, emptyModel, modelAdd);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            RDFNode vpngw = q.get("vpngw");
+            String vpngwIdTag = vpngw.asResource().toString().replace(topologyUri,"");
+            
+            query = "SELECT ?label WHERE {<"+vpngw.asResource()+"> nml:hasLabel ?label}";
+            ResultSet r1 = executeQuery(query, emptyModel, modelAdd);
+            if(!r1.hasNext())
+                throw new Exception(String.format("Label for VPN gateway %s i"
+                        + "s not specified in model addition",vpngw));
+            QuerySolution q1 = r1.next();
+            RDFNode label = q1.get("label");
+            
+            //look for the lable in the reference model
+            query = "SELECT ?null WHERE {<"+label.asResource()+"> a nml:Label ."
+                    + "<"+label.asResource()+"> nml:labeltype  nml:VpnGateway}";
+            r1  = executeQuery(query,model,emptyModel);
+            if(!r1.hasNext())
+                throw new Exception(String.format("Label %s for VPN gateway %s is"
+                        + " an invalid label",label,vpngw));
+            requests += String.format("CreateVpnGatewayRequest %s \n",vpngwIdTag);
         }
        return requests;
     }
