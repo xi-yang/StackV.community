@@ -32,6 +32,9 @@ public class ApplicationConfig extends Application {
      */
     private void addRestResourceClasses(Set<Class<?>> resources) {
         resources.add(net.maxgigapop.mrs.rest.api.SystemResource.class);
+        resources.add(net.maxgigapop.mrs.rest.api.VersionGroupResource.class);
+        resources.add(net.maxgigapop.mrs.rest.api.DriverResource.class);
+        resources.add(net.maxgigapop.mrs.rest.api.DeltaResource.class);
     }
     
 }
