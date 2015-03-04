@@ -7,6 +7,7 @@
 package net.maxgigapop.mrs.rest.api;
 
 import javax.ejb.EJB;
+import javax.ejb.EJBException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.PathParam;
@@ -70,8 +71,13 @@ public class SystemResource {
     
     @DELETE
     @Path("/{refUUID}")
-    public void terminate(@PathParam("refUUID") String refUUID){
-        systemCallHandler.terminateInstance(refUUID);
+    public String terminate(@PathParam("refUUID") String refUUID){
+        try{
+            systemCallHandler.terminateInstance(refUUID);
+            return "Successfully terminated";
+        }catch(EJBException e){
+            return(e.getMessage());
+        }
     }
     
     
