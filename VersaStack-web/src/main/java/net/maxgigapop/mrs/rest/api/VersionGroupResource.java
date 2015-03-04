@@ -12,9 +12,14 @@ import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
 import javax.ws.rs.DELETE;
 import javax.enterprise.context.RequestScoped;
+import javax.ws.rs.NotFoundException;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
+import net.maxgigapop.mrs.bean.ModelBase;
+import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
@@ -33,49 +38,29 @@ public class VersionGroupResource {
     @EJB
     HandleSystemCall systemCallHandler;
     
-    private String VersionGroup;
-
-    /**
-     * Creates a new instance of VersionGroupResource
-     */
-    private VersionGroupResource(String VersionGroup) {
-        this.VersionGroup = VersionGroup;
+    public VersionGroupResource(){
     }
-
-    /**
-     * Get instance of the VersionGroupResource
-     */
-    public static VersionGroupResource getInstance(String VersionGroup) {
-        // The user may use some kind of persistence mechanism
-        // to store and restore instances of VersionGroupResource class.
-        return new VersionGroupResource(VersionGroup);
-    }
-
-    /**
-     * Retrieves representation of an instance of net.maxgigapop.mrs.rest.api.VersionGroupResource
-     * @return an instance of java.lang.String
-     */
-    @GET
-    @Produces({"application/xml","application/json"})
-    public String pull() {
-        //TODO return proper representation object
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * PUT method for updating or creating an instance of VersionGroupResource
-     * @param content representation for the resource
-     * @return an HTTP response with content of the updated or created resource.
-     */
+//    
+//    @POST
+//    @Consumes({"application/xml","application/json"})
+//    public VersionGroup 
+    
     @PUT
-    @Consumes("application/xml")
-    public void putXml(String content) {
+    @Path("/{refUUID}")
+    public VersionGroup update(@PathParam("refUUID") String refUUID){
+        return systemCallHandler.updateHeadVersionGroup(refUUID);
     }
-
-    /**
-     * DELETE method for resource VersionGroupResource
-     */
-    @DELETE
-    public void delete() {
+    
+    @GET
+    @Produces({"application/xml", "application/json"})
+    @Path("/{refUUID}")
+    public ModelBase pull(@PathParam("refUUID") String refUUID){
+        try{
+            return systemCallHandler.retrieveVersionGroupModel(refUUID);
+        }catch(Exception e){
+            throw new NotFoundException("None!");
+        }
+        
     }
+   
 }
