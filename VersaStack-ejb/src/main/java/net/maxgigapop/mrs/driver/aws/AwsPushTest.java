@@ -39,6 +39,7 @@ import javax.ejb.EJBException;
 import net.maxgigapop.mrs.bean.DriverModel;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
+import net.maxgigapop.mrs.common.Nml;
 
 /**
  *
@@ -77,14 +78,15 @@ public class AwsPushTest {
                 + "        a                      nml:Topology , owl:NamedIndividual ;\n"
                 + "        mrs:hasNetworkAddress  <urn:ogf:network:aws.amazon.com:aws-cloud:vpcnetworkaddress-vpc-8c5f22e9> ;\n"
                 + "        nml:hasService         <urn:ogf:network:aws.amazon.com:aws-cloud:routingservice-vpc-8c5f22e9> , <urn:ogf:network:aws.amazon.com:aws-cloud:switchingservice-vpc-8c5f22e9> ;\n"
-                + "        nml:hasNode     <urn:ogf:network:aws.amazon.com:aws-cloud:i-4f93ec60> .\n"
+                + "        nml:hasNode     <urn:ogf:network:aws.amazon.com:aws-cloud:i-4f93ec60> ;\n"
+                + "        nml:hasBidirectionalPort  <urn:ogf:network:aws.amazon.com:aws-cloud:igw-6cf01345> , <urn:ogf:network:aws.amazon.com:aws-cloud:vgw-fa36d345> .\n"
                 + "<urn:ogf:network:aws.amazon.com:aws-cloud:vpcnetworkaddress-vpc-8c5f22e9>\n" 
                 +"        a          mrs:NetworkAddress , owl:NamedIndividual ;\n" 
                 +"        mrs:type   \"ipv4-prefix\" ;\n" 
                 +"        mrs:value  \"10.0.0.0/16\" .\n"
                 + "<urn:ogf:network:aws.amazon.com:aws-cloud:routingservice-vpc-8c5f22e9>\n"
                 + "       a          mrs:RoutingService , owl:NamedIndividual ;"
-                + "        mrs:providesRoute  <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu10.0.0.016> , <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-2f64394a10.0.0.016> ;\n"
+                + "        mrs:providesRoute  <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu10.0.0.016> , <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-2f64394a10.0.0.016> , <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu75.40.30.016> ;\n"
                 + "        mrs:providesRoutingTable <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu> , <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-2f64394a> .\n"
                 + "<urn:ogf:network:aws.amazon.com:aws-cloud:ec2service-us-east-1>\n"
                 + "        mrs:providesVM  <urn:ogf:network:aws.amazon.com:aws-cloud:i-4f93ec60> .\n"
@@ -97,11 +99,11 @@ public class AwsPushTest {
                 + "        nml:hasBidirectionalPort  <urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b083> , <urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b084> .\n"
                 + "<urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b083> \n"
                 + "        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n"
-                + "        nml:labeltype  nml:NetworkInterface;\n"
+                + "        nml:hasLabel          <urn:ogf:network:aws.amazon.com:aws-cloud:portLabel> ;\n"
                 + "        mrs:privateIpAddress  <urn:ogf:network:aws.amazon.com:aws-cloud:10.0.0.230> .\n"
                 + "<urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b084> \n"
                 + "        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n"
-                + "        nml:labeltype  nml:NetworkInterface;\n"
+                + "        nml:hasLabel          <urn:ogf:network:aws.amazon.com:aws-cloud:portLabel> ;\n"
                 + "        mrs:privateIpAddress  <urn:ogf:network:aws.amazon.com:aws-cloud:10.0.0.231> ;\n"
                 + "        mrs:publicIpAddress  <urn:ogf:network:aws.amazon.com:aws-cloud:54.152.72.205> .\n"
                 + "<urn:ogf:network:aws.amazon.com:aws-cloud:ebsservice-us-east-1>\n"
@@ -140,7 +142,7 @@ public class AwsPushTest {
                 + "        mrs:value  \"10.0.0.230\" .\n"
                 + "<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu>\n"
                 + "        a             mrs:RoutingTable , owl:NamedIndividual ;\n"
-                + "        mrs:hasRoute  <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu10.0.0.016>;\n"
+                + "        mrs:hasRoute  <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu10.0.0.016> , <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu75.40.30.016> ;\n"
                 + "        mrs:type      \"local\" .\n"
                 + "<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu10.0.0.016>\n"
                 + "        a              mrs:Route , owl:NamedIndividual ;\n"
@@ -150,17 +152,30 @@ public class AwsPushTest {
                 + "<urn:ogf:network:aws.amazon.com:aws-cloudroutefrom-rtb-8723d8musubnet-2cd6ad16>\n"
                 + "         a             mrs:NetworkAddress , owl:NamedIndividual ;\n"
                 + "         mrs:type   \"subnet\" ;\n"
-                + "         mrs:value  \"subnet-2cd6ad16\" ."
+                + "         mrs:value  \"subnet-2cd6ad16\" .\n"
                 + "<urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-8723d8musubnet-2cd6ad16>\n"
                 + "         a             mrs:NetworkAddress , owl:NamedIndividual ;\n"
                 + "         mrs:type   \"ipv4-prefix\" ;\n"
-                + "        mrs:value  \"10.0.0.0/16\" ."
+                + "        mrs:value  \"10.0.0.0/16\" .\n"   
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu75.40.30.016>\n"
+                + "        a              mrs:Route , owl:NamedIndividual ;\n"
+                + "        mrs:nextHop   <urn:ogf:network:aws.amazon.com:aws-cloud:igw-6cf01345>  ;\n"
+                + "        mrs:routeFrom  <urn:ogf:network:aws.amazon.com:aws-cloudroutefrom-rtb-8723d8mu75.40.30.016subnet-2cd6ad16> ;\n"
+                + "        mrs:routeTo    <urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-8723d8mu75.40.30.016subnet-2cd6ad16> .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloudroutefrom-rtb-8723d8mu75.40.30.016subnet-2cd6ad16>\n"
+                + "         a             mrs:NetworkAddress , owl:NamedIndividual ;\n"
+                + "         mrs:type   \"subnet\" ;\n"
+                + "         mrs:value  \"subnet-2cd6ad16\" .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-8723d8mu75.40.30.016subnet-2cd6ad16>\n"
+                + "         a             mrs:NetworkAddress , owl:NamedIndividual ;\n"
+                + "         mrs:type   \"ipv4-prefix\" ;\n"
+                + "        mrs:value  \"75.40.30.0/16\" .\n"
                 +"<urn:ogf:network:aws.amazon.com:aws-cloud:igw-6cf01345>\n"
                 +"          a             nml:BidirectionalPort , owl:NamedIndividual ;\n"
                 +"          nml:hasLabel  <urn:ogf:network:aws.amazon.com:aws-cloud:igwLabel> .\n"
-                +"<urn:ogf:network:aws.amazon.com:aws-cloud:vgw-fa36d593>\n"
+                +"<urn:ogf:network:aws.amazon.com:aws-cloud:vgw-fa36d345>\n"
                 +"          a             nml:BidirectionalPort , owl:NamedIndividual ;\n"
-                +"          nml:hasLabel  <urn:ogf:network:aws.amazon.com:aws-cloud:vpngwLabel .\n"
+                +"          nml:hasLabel  <urn:ogf:network:aws.amazon.com:aws-cloud:vpngwLabel> .\n"
                 + "<urn:ogf:network:aws.amazon.com:aws-cloud:10.0.0.231>\n"
                 + "        a          mrs:NetworkAddress , owl:NamedIndividual ;\n"
                 + "        mrs:value  \"10.0.0.231\" .\n";
@@ -244,7 +259,17 @@ public class AwsPushTest {
         //create all the routeTables that need to be created
         requests += createRouteTableRequests(model, modelAdd);
         
+        //create the associations of route tables
         requests += associateTableRequest(model,modelAdd);
+        
+        //create gateways request 
+         requests +=createGatewayRequests(model,modelAdd);
+         
+         //attach the gateways
+         requests +=attachGatewayRequests(model,modelAdd);
+         
+         //create the new routes requests
+         requests += createRouteRequest(model,modelAdd);
 
         /*//create a volume if a volume needs to be created
          requests += createVolumesRequests(model,modelAdd);
@@ -342,11 +367,97 @@ public class AwsPushTest {
                         .withSubnetId(getResourceId(subnetId));
                 AssociateRouteTableResult associateResult= client.associateRouteTable(associateRequest);
             
-            } else if (request.contains("CreateVpnGatewayRequest")){
+            } else if (request.contains("CreateInternetGatewayRequest")){
+                 String[] parameters = request.split("\\s+");
+                 
+                 CreateInternetGatewayResult igwResult = client.createInternetGateway();
+                 InternetGateway igw = igwResult.getInternetGateway();
+                 
+                 CreateTagsRequest tagRequest = new CreateTagsRequest();
+                tagRequest.withTags(new Tag("id", parameters[1]));
+                tagRequest.withResources(igw.getInternetGatewayId());
+                client.createTags(tagRequest);
+                ec2Client.getInternetGateways().add(igw);
+                
+            }else if (request.contains("CreateVpnGatewayRequest")){
                 String[] parameters = request.split("\\s+");
                 
+                CreateVpnGatewayRequest vpngwRequest= new CreateVpnGatewayRequest();
+                vpngwRequest.withType(GatewayType.Ipsec1);
+                CreateVpnGatewayResult vpngwResult = client.createVpnGateway(vpngwRequest);
+                VpnGateway vpngw =vpngwResult.getVpnGateway();
                 
-            } else if (request.contains("CreateVolumeRequest")) {
+                CreateTagsRequest tagRequest = new CreateTagsRequest();
+                tagRequest.withTags(new Tag("id", parameters[1]));
+                tagRequest.withResources(vpngw.getVpnGatewayId());
+                client.createTags(tagRequest);
+                ec2Client.getVirtualPrivateGateways().add(vpngw);
+     
+                
+            }else if(request.contains("CreateRouteRequest")){
+                 String[] parameters = request.split("\\s+");
+                 
+                 String tableIdTag = parameters[1];
+                 String target = getResourceId(parameters[3]);
+                 RouteTable t = ec2Client.getRoutingTable(getTableId(tableIdTag));
+                 Vpc v = ec2Client.getVpc(t.getVpcId());
+                 
+                 
+                 Route route = new Route();
+                 route.withDestinationCidrBlock(parameters[2])
+                         .withGatewayId(target)
+                         .withState(RouteState.Active)
+                         .withOrigin(RouteOrigin.CreateRoute);
+                         
+                 
+                 if(t.getRoutes().contains(route) || parameters[2].equals(v.getCidrBlock()))
+                 {}
+                 else
+                 {
+                     CreateRouteRequest routeRequest = new CreateRouteRequest();
+                     routeRequest.withRouteTableId(t.getRouteTableId())
+                             .withGatewayId(target)
+                             .withDestinationCidrBlock(parameters[2]);
+                     client.createRoute(routeRequest);
+                 }
+                         
+                
+                
+            }else if (request.contains("AttachInternetGatewayRequest")){
+                String[] parameters = request.split("\\s+");
+                
+                InternetGateway igw = ec2Client.getInternetGateway(getResourceId(parameters[1]));
+                Vpc v = ec2Client.getVpc(getResourceId(parameters[2]));
+                
+                 
+                if(!igw.equals(ec2Client.getInternetGateway(v)))
+                {
+                    AttachInternetGatewayRequest gwRequest = new AttachInternetGatewayRequest();
+                    gwRequest.withInternetGatewayId(getResourceId(parameters[1]))
+                            .withVpcId(getResourceId(parameters[2]));
+
+                    client.attachInternetGateway(gwRequest);
+                }
+                
+            }
+             else if (request.contains("AttachVpnGatewayRequest")){
+                String[] parameters = request.split("\\s+");
+                
+                VpnGateway vpn = ec2Client.getVirtualPrivateGateway(getResourceId(parameters[1]));
+                Vpc v = ec2Client.getVpc(getResourceId(parameters[2]));
+                
+                if(!vpn.equals(ec2Client.getVirtualPrivateGateway(v)))
+                {
+                    AttachVpnGatewayRequest gwRequest = new AttachVpnGatewayRequest();
+                    gwRequest.withVpnGatewayId(vpn.getVpnGatewayId())
+                            .withVpcId(v.getVpcId());
+
+                    client.attachVpnGateway(gwRequest);
+                }
+                
+                
+                
+            }else if (request.contains("CreateVolumeRequest")) {
                 String[] parameters = request.split("\\s+");
 
                 CreateVolumeRequest volumeRequest = new CreateVolumeRequest();
@@ -471,6 +582,77 @@ public class AwsPushTest {
             r = qexec.execSelect();
         }
         return r;
+    }
+    
+        /**
+     * ****************************************************************
+     * Attach a volume to an existing instance AWS
+    *****************************************************************
+     */
+    private String dettachVolumeRequests(OntModel model, OntModel modelAdd) throws Exception {
+        String requests = "";
+
+        //check if the volume is new therefore it should be in the model additiom
+        String query = "SELECT  ?node ?volume  WHERE {?node  mrs:hasVolume  ?volume}";
+
+        ResultSet r1 = executeQuery(query, emptyModel, modelAdd);
+        while (r1.hasNext()) {
+            QuerySolution querySolution1 = r1.next();
+            RDFNode node = querySolution1.get("node");
+            String nodeTagId = node.asResource().toString().replace(topologyUri, "");
+            RDFNode volume = querySolution1.get("volume");
+            String volumeTagId = volume.asResource().toString().replace(topologyUri, "");
+            String volumeId = getVolumeId(volumeTagId);
+
+            query = "SELECT ?deviceName WHERE{<" + volume.asResource() + "> mrs:target_device ?deviceName}";
+            ResultSet r2 = executeQuery(query, model, modelAdd);
+            if (!r2.hasNext()) {
+                throw new Exception(String.format("volume device name is not specified for volume %s", volume));
+            }
+
+            QuerySolution querySolution2 = r2.next();
+
+            RDFNode deviceName = querySolution2.get("deviceName");
+            String device = deviceName.asLiteral().toString();
+
+            if (!device.equals("/dev/sda1") && !device.equals("/dev/xvda")) {
+                String nodeId = getInstanceId(nodeTagId);
+
+                Instance ins = ec2Client.getInstance(nodeId);
+                Volume vol = ec2Client.getVolume(volumeId);
+                if (vol == null) {
+                    query = "SELECT ?deviceName ?size ?type WHERE{<" + volume.asResource() + "> a mrs:Volume ."
+                            + "<" + volume.asResource() + "> mrs:target_device ?deviceName ."
+                            + "<" + volume.asResource() + "> mrs:disk_gb ?size ."
+                            + "<" + volume.asResource() + "> mrs:value ?type}";
+                    r2 = executeQuery(query, model, modelAdd);
+                    if (!r2.hasNext()) {
+                        throw new Exception(String.format("volume %s is not well specified in volume addition", volume));
+                    }
+                }
+                if (ins != null) {
+                    List< InstanceBlockDeviceMapping> map = ins.getBlockDeviceMappings();
+                    boolean attach = true;
+                    if (vol == null) {
+                        requests += String.format("AttachVolumeRequest %s %s %s \n", nodeId, volumeTagId, device);
+                    } else {
+                        for (InstanceBlockDeviceMapping m : map) {
+                            String instanceVolumeId = m.getEbs().getVolumeId();
+                            if (instanceVolumeId.equals(volumeId)) {
+                                attach = false;
+                                break;
+                            }
+                        }
+                        if (attach == true) {
+                            requests += String.format("AttachVolumeRequest %s %s %s \n", nodeId, volumeTagId, device);
+                        }
+                    }
+                } else if (ins == null) {
+                    requests += String.format("AttachVolumeRequest %s %s %s \n", nodeTagId, volumeTagId, device);
+                }
+            }
+        }
+        return requests;
     }
 
     /**
@@ -836,7 +1018,7 @@ public class AwsPushTest {
      * Function to create an internet gateway and attach it to a vpc
      *****************************************************************
      */
-    private String createInternetGatewayRequest(OntModel model, OntModel modelAdd) throws Exception
+    private String createGatewayRequests(OntModel model, OntModel modelAdd) throws Exception
     {
        String requests = "";
        String query;
@@ -846,7 +1028,7 @@ public class AwsPushTest {
         while (r.hasNext()) {
             QuerySolution q = r.next();
             RDFNode igw = q.get("igw");
-            String igwIdTag = igw.asResource().toString().replace(topologyUri,"");
+            String idTag = igw.asResource().toString().replace(topologyUri,"");
             
             query = "SELECT ?label WHERE {<"+igw.asResource()+"> nml:hasLabel ?label}";
             ResultSet r1 = executeQuery(query, emptyModel, modelAdd);
@@ -857,55 +1039,128 @@ public class AwsPushTest {
             RDFNode label = q1.get("label");
             
             //look for the lable in the reference model
-            query = "SELECT ?null WHERE {<"+label.asResource()+"> a nml:Label ."
-                    + "<"+label.asResource()+"> nml:labeltype  nml:InternetGateway}";
+            query = "SELECT ?type WHERE {<"+label.asResource()+"> a nml:Label ."
+                    + "<"+label.asResource()+"> nml:labeltype  ?type}";
             r1  = executeQuery(query,model,emptyModel);
             if(!r1.hasNext())
-                throw new Exception(String.format("Label %s for Internet gateway %s is"
+                throw new Exception(String.format("Label %s for gateway %s is"
                         + " an invalid label",label,igw));
-           
-            requests += String.format("CreateInternetGatewayRequest %s \n",igwIdTag);
+            q1 = r1.next();
+            RDFNode type = q1.get("type");
+            if(type.equals(Nml.InternetGateway))
+            {
+                if(ec2Client.getInternetGateway(getResourceId(idTag))==null)
+                    requests += String.format("CreateInternetGatewayRequest %s \n",idTag);
+            }
+            else if (type.equals(Nml.VpnGateway))
+            {
+                if(ec2Client.getVirtualPrivateGateway(getResourceId(idTag))==null)
+                    requests += String.format("CreateVpnGatewayRequest %s \n",idTag);
+            }
         }
        return requests;
     }
     
     /**
      * ****************************************************************
-     * Function to create a VPN gateway 
+     * Function to create a volumes from a model
      *****************************************************************
      */
-    private String createVpnGatewayRequest(OntModel model, OntModel modelAdd) throws Exception
+    private String attachGatewayRequests(OntModel  model, OntModel modelAdd) throws Exception
     {
-       String requests = "";
-       String query;
-
-        query = "SELECT ?vpngw WHERE {?vpngw a nml:BidirectionalPort}";
-        ResultSet r = executeQuery(query, emptyModel, modelAdd);
-        while (r.hasNext()) {
+        String requests ="";
+        String query="";
+        
+        //fin all the vpcs that have a bidirectional port
+        query ="SELECT ?vpc ?port  WHERE {?vpc nml:hasBidirectionalPort ?port}";
+        ResultSet r = executeQuery(query,emptyModel,modelAdd);
+        while(r.hasNext())
+        {
             QuerySolution q = r.next();
-            RDFNode vpngw = q.get("vpngw");
-            String vpngwIdTag = vpngw.asResource().toString().replace(topologyUri,"");
+            RDFNode gateway = q.get("port");
+            RDFNode vpc = q.get("vpc");
             
-            query = "SELECT ?label WHERE {<"+vpngw.asResource()+"> nml:hasLabel ?label}";
-            ResultSet r1 = executeQuery(query, emptyModel, modelAdd);
-            if(!r1.hasNext())
-                throw new Exception(String.format("Label for VPN gateway %s i"
-                        + "s not specified in model addition",vpngw));
-            QuerySolution q1 = r1.next();
-            RDFNode label = q1.get("label");
-            
-            //look for the lable in the reference model
-            query = "SELECT ?null WHERE {<"+label.asResource()+"> a nml:Label ."
-                    + "<"+label.asResource()+"> nml:labeltype  nml:VpnGateway}";
-            r1  = executeQuery(query,model,emptyModel);
-            if(!r1.hasNext())
-                throw new Exception(String.format("Label %s for VPN gateway %s is"
-                        + " an invalid label",label,vpngw));
-            requests += String.format("CreateVpnGatewayRequest %s \n",vpngwIdTag);
-        }
-       return requests;
-    }
+            //check that vpc is the correct type
+            query = "SELECT ?vpc WHERE {<"+vpc.asResource()+"> a nml:Topology}";
+            ResultSet r1 = executeQuery(query,model,modelAdd);
+            while(r1.hasNext())
+            {
+                r1.next();
+                query = "SELECT ?label WHERE {<"+gateway.asResource()+"> a nml:BidirectionalPort ."
+                        + "<"+gateway.asResource()+"> nml:hasLabel ?label}";
+                ResultSet r2 = executeQuery(query, model, modelAdd);
+                if(!r2.hasNext())
+                    throw new Exception(String.format("Label for Internet gateway %s i"
+                            + "s not specified in model addition",gateway));
+                QuerySolution q1 = r2.next();
+                RDFNode label = q1.get("label");
 
+                //look for the lable in the reference model
+                query = "SELECT ?type WHERE {<"+label.asResource()+"> a nml:Label ."
+                        + "<"+label.asResource()+"> nml:labeltype  ?type}";
+                r2  = executeQuery(query,model,emptyModel);
+                if(!r2.hasNext())
+                    throw new Exception(String.format("Label %s for gateway %s is"
+                            + " an invalid label",label,gateway));
+                q1 = r2.next();
+                RDFNode type = q1.get("type");
+                String  gatewayIdTag = gateway.asResource().toString().replace(topologyUri,"");
+                String vpcIdTag = vpc.asResource().toString().replace(topologyUri,"");
+                if(type.equals(Nml.InternetGateway))  
+                        requests += String.format("AttachInternetGatewayRequest %s %s \n",gatewayIdTag,vpcIdTag);
+                    else if (type.equals(Nml.VpnGateway))
+                        requests += String.format("AttachVpnGatewayRequest %s %s \n",gatewayIdTag,vpcIdTag);
+                
+            } 
+        }
+        return requests;
+    }
+    
+     /**
+     * ****************************************************************
+     * Function to create a volumes from a model
+     *****************************************************************
+     */
+     private String createRouteRequest (OntModel model,OntModel modelAdd) throws Exception
+     {
+         String requests ="";
+         String query="";
+         
+         query ="SELECT ?route ?nextHop ?value WHERE {?route mrs:routeFrom ?routeFrom ."
+                 + "?route mrs:routeTo ?routeTo ."
+                 + "?route mrs:nextHop ?nextHop ."
+                + "?routeFrom mrs:type \"subnet\" ."
+                + "?routeTo mrs:value ?value}";
+         ResultSet r = executeQuery(query,emptyModel,modelAdd);
+         while(r.hasNext())
+         {
+             QuerySolution q = r.next();
+             RDFNode value = q.get("value");
+             RDFNode nextHop =q.get("nextHop");
+             RDFNode route  = q.get("route");
+             String destination = value.asLiteral().toString();
+             String target;
+             if(nextHop.isLiteral())
+                 target= nextHop.asLiteral().toString();
+             else
+                 target = nextHop.asResource().toString().replace(topologyUri,"");
+             
+             query = "SELECT ?routeTable WHERE {?routeTable mrs:hasRoute <"+route.asResource()+"> ."
+                     + "<"+route.asResource()+"> a mrs:Route}";
+             ResultSet r1 = executeQuery(query,model,modelAdd);
+             if(!r1.hasNext())
+                throw new Exception(String.format("route %s does not specify type or "
+                        + "route t6able that has this route ",route)); 
+             QuerySolution q1 = r1.next();
+             RDFNode table = q1.get("routeTable");
+             String tableIdTag = table.asResource().toString().replace(topologyUri,"");
+             
+             requests += String.format("CreateRouteRequest %s %s %s \n",tableIdTag,destination,target);
+         }
+       return requests;
+     }
+     
+     
     /**
      * ****************************************************************
      * Function to create a volumes from a model
@@ -984,7 +1239,7 @@ public class AwsPushTest {
         String query;
 
         query = "SELECT ?port WHERE {?port a  nml:BidirectionalPort ."
-                + "?port  nml:labeltype   nml:NetworkInterface}";
+                + "?port  nml:hasLabel   <urn:ogf:network:aws.amazon.com:aws-cloud:portLabel>}";
         ResultSet r = executeQuery(query, emptyModel, modelAdd);
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();

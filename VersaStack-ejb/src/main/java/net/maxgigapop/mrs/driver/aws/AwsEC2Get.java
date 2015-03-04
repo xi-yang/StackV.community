@@ -350,10 +350,40 @@ public class AwsEC2Get
         return null;
     }
     
+    //get a specificic internet gateway fro a vpc
+    public InternetGateway getInternetGateway(Vpc v)
+    {
+        String vpcId = v.getVpcId();
+        for(InternetGateway t : internetGateways)
+        {
+            for(InternetGatewayAttachment att : t.getAttachments())
+            {
+                if(att.getVpcId().equals(vpcId))
+                    return t;
+            }
+        }
+        return null;
+    }
+    
     //get the virtual private gateways
     public List<VpnGateway> getVirtualPrivateGateways()
     {
         return virtualPrivateGateways;
+    }
+    
+    //get virtual private gateways associated with a specific vpc
+    public VpnGateway getVirtualPrivateGateway(Vpc v)
+    {
+        String vpcId= v.getVpcId();
+        for(VpnGateway vpn : virtualPrivateGateways)
+        {
+            for( VpcAttachment att :vpn.getVpcAttachments())
+            {
+                if(att.getVpcId().equals(vpcId) && att.getState().equals(AttachmentStatus.Attached.toString()))
+                    return vpn;
+            }
+        }
+       return null;
     }
     
     //get a specific virtual private gateway

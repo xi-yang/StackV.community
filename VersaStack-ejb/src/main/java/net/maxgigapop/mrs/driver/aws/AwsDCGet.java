@@ -38,6 +38,7 @@ public class AwsDCGet
         //get all the connections under the account
         DescribeConnectionsResult connectionsResult=this.client.describeConnections();
         connections= connectionsResult.getConnections();
+       
         
     }
     
