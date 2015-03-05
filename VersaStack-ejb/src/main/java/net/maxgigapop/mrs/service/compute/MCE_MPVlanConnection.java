@@ -5,18 +5,15 @@
  */
 package net.maxgigapop.mrs.service.compute;
 
-import static java.lang.Thread.sleep;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.Stateless;
-import javax.ejb.LocalBean;
 import net.maxgigapop.mrs.bean.DeltaBase;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.common.ModelUtil;
-import net.maxgigapop.mrs.driver.openstack.OpenStackModelBuilder;
 
 /**
  *
@@ -28,15 +25,10 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
     
     @Override
     @Asynchronous
-    public Future<DeltaBase> process(ModelBase systemModel, DeltaBase annotatedDelta) {
-        try {
-            sleep(10000);
-        } catch (InterruptedException ex) {
-            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
-        }
+    public Future<DeltaBase> process(ModelBase systemModel, DeltaBase annotatedDelta) {        
         log.log(Level.INFO, "MCE_MPVlanConnection::process {0}", annotatedDelta);
         try {
-            log.log(Level.INFO, "\n>>>MCE_MPVlanConnection--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
+            log.log(Level.INFO, "\n>>>MCE_MPVlanConnection--DeltaAddModel=\n" + ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }

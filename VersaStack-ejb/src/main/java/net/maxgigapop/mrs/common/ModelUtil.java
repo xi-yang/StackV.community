@@ -24,8 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
-import net.maxgigapop.mrs.bean.DeltaBase;
-import net.maxgigapop.mrs.bean.ModelBase;
+
 /**
  *
  * @author xyang
@@ -56,6 +55,18 @@ public class ModelUtil {
         return ttl;
     }
 
+    static public String marshalModel (Model model) throws Exception {
+        //$$ TODO: add namespace handling code
+        StringWriter out = new StringWriter();
+        try {
+            model.write(out, "TURTLE");
+        } catch (Exception e) {
+            throw new Exception(String.format("failure to marshall ontology model, due to %s", e.getMessage()));
+        }
+        String ttl = out.toString();
+        return ttl;
+    }
+    
     static public OntModel cloneOntModel (OntModel model) {
         OntModel cloned = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         cloned.add(model.getBaseModel());
@@ -93,6 +104,19 @@ public class ModelUtil {
         //$$ TODO: add ontology schema and namespace handling code
         model.read(new ByteArrayInputStream(ttl.getBytes()), null, "TURTLE");
         return model;
+    }
+    
+    static public ResultSet sparqlQuery(OntModel model, String sparqlStringWithoutPrefix) {
+        String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
+                "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
+                "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
+                "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
+                "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" +
+                sparqlStringWithoutPrefix;        
+        Query query = QueryFactory.create(sparqlString);
+        QueryExecution qexec = QueryExecutionFactory.create(query, model);
+        ResultSet rs = (ResultSet) qexec.execSelect();
+        return rs;
     }
     
     static public OntModel createUnionOntModel(List<OntModel> modelList) {

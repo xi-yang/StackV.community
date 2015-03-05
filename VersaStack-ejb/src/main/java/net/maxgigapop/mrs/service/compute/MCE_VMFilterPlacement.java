@@ -17,26 +17,24 @@ import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
+import java.io.StringWriter;
 import static java.lang.Thread.sleep;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.EJBException;
 import javax.ejb.Stateless;
-import javax.ejb.LocalBean;
 import net.maxgigapop.mrs.bean.DeltaBase;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
-import net.maxgigapop.mrs.driver.openstack.OpenStackModelBuilder;
 import net.maxgigapop.www.rains.ontmodel.Spa;
 
 /**
@@ -109,15 +107,15 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
                         
             //2. merge the placement satements into spaModel
             outputDelta.getModelAddition().getOntModel().add(placementModel.getBaseModel());
+            /*
             try {
                 log.log(Level.INFO, "\n>>>MCE_VMFilterPlacement--outputDelta(stage 2)=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
             } catch (Exception ex) {
                 Logger.getLogger(MCE_VMFilterPlacement.class.getName()).log(Level.SEVERE, null, ex);
             }
-            
+            */
             //$$ 3. update policyData this action exportTo 
-            //@@ TODO: exportTo statement will be removed but importFrom by parent action will be kept afte merge
-            //this.exportPolicyData(outputDelta.getModelAddition().getOntModel(), placementModel, vm);
+            this.exportPolicyData(outputDelta.getModelAddition().getOntModel(), vm);
             
             //4. remove policy and all related SPA statements receursively under vm from spaModel
             List<Statement> listStmtsToRemove = new ArrayList<>();
@@ -130,11 +128,13 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             //$$ TODO: change VM URI (and all other virtual resources) into a unique string either during compile or in stitching action
             //$$ TODO: Add dependOn->Abstraction annotation to root level spaModel and add a generic Action to remvoe that abstract nml:Topology
         }
+        /*
         try {
             log.log(Level.INFO, "\n>>>MCE_VMFilterPlacement--outputDelta(stage 3)=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_VMFilterPlacement.class.getName()).log(Level.SEVERE, null, ex);
         }
+        */
         return new AsyncResult(outputDelta);
     }
     
@@ -237,8 +237,36 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
     }
     
     private void exportPolicyData(OntModel spaModel, Resource vm) {
-        //$$ find Placement policy -> exportTo -> policyData
-        //$$ export type (Nml:Topology / Nml:Node): value (host *URI*)
+        // find Placement policy -> exportTo -> policyData
+        String sparql = "SELECT ?nodeorvpc ?policyAction ?policyData WHERE {"
+                + "?nodeorvpc nml:hasService ?hvservice . "
+                + "?hvservice a mrs:HypervisorService . "
+                + String.format("?hvservice mrs:providesVM <%s> .", vm.getURI())
+                + String.format("<%s> spa:dependOn ?policyAction .", vm.getURI())
+                + "?policyAction a spa:Placement."
+                + "?policyAction spa:exportTo ?policyData . "
+                + "?policyData a spa:PolicyData . "
+                + "}";
+        ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
+        List<QuerySolution> solutions = new ArrayList<>();
+        if (r.hasNext()) {
+            solutions.add(r.next());
+        }
+        for (QuerySolution querySolution: solutions) {
+            Resource resHost = querySolution.get("nodeorvpc").asResource();
+            Resource resPolicy = querySolution.get("policyAction").asResource();
+            Resource resData = querySolution.get("policyData").asResource();
+            // add export data
+            if (!spaModel.listStatements(vm, RdfOwl.type, Spa.PolicyData).hasNext()) {
+                if (spaModel.listStatements(resHost, RdfOwl.type, Nml.Topology).hasNext())
+                    spaModel.add(resData, Spa.type, Nml.Topology);
+                else if (spaModel.listStatements(resHost, RdfOwl.type, Nml.Node).hasNext())
+                    spaModel.add(resData, Spa.type, Nml.Node);
+                 spaModel.add(resData, Spa.value, resHost);
+            }
+            // remove VM->exportTo statement so the exportData can be kept in spaModel during receurive removal
+            spaModel.remove(resPolicy, Spa.exportTo, resData);
+        }
     }
 
     //$$ TODO: matchingRegExURIFilter

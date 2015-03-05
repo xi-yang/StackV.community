@@ -9,6 +9,7 @@ import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Property;
+import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.rdf.model.StmtIterator;
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import javax.naming.Context;
@@ -24,6 +26,8 @@ import javax.naming.NamingException;
 import net.maxgigapop.mrs.bean.DeltaBase;
 import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.ModelBase;
+import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.service.compute.IModelComputationElement;
 import net.maxgigapop.mrs.service.compute.TestMCE;
 import net.maxgigapop.www.rains.ontmodel.Spa;
@@ -206,8 +210,12 @@ public class ActionBase {
         }
     }
     
-    //@@ TODO: include all importFrom statements when merging
     protected OntModel mergeOntModel(OntModel modelA, OntModel modelB) {
+        OntModel mergedModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        // simplified merge --> child actions are responsible to remove unneeded annotations
+        mergedModel.add(modelA.getBaseModel());        
+        mergedModel.add(modelB.getBaseModel());        
+        /* sophisticated merge
         // 1. Get dA = A.remove(B) and dB = B.remove(A)
         OntModel modelAbutB = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         modelAbutB.add(modelA.getBaseModel());
@@ -215,28 +223,42 @@ public class ActionBase {
         OntModel modelBbutA = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         modelBbutA.add(modelB);
         modelBbutA.remove(modelA.getBaseModel());
-        OntModel mergedModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         mergedModel.add(modelA.getBaseModel());        
         // 2. if dA has r1 *with* annotation while r1 is not in dB, A.remove(r1)
         StmtIterator stmtIter = modelAbutB.listStatements();
         while (stmtIter.hasNext()) {
             Statement stmt = stmtIter.next();
             Property P = stmt.getPredicate();
+            Resource S = stmt.getSubject();
+            if (!modelBbutA.listStatements(S, RdfOwl.type, Spa.PolicyData).hasNext()) {
+                S = null;
+            }
             if (!P.getNameSpace().equals(Spa.getURI()))
                 continue;
-            if (!modelBbutA.contains(stmt))
-                mergedModel.remove(stmt);
+            if (!modelBbutA.contains(stmt)
+                 // keep all importFrom->policyData->* statements when merging
+                && !P.getURI().equals(Spa.importFrom.getURI())
+                && S == null)
+               mergedModel.remove(stmt);
         }
         // 3. if dB has r2 *without* annoation amd r2 is not in dA, A.add(r2)
         stmtIter = modelBbutA.listStatements();
         while (stmtIter.hasNext()) {
             Statement stmt = stmtIter.next();
             Property P = stmt.getPredicate();
-            if (P.getNameSpace().equals(Spa.getURI()))
+            Resource S = stmt.getSubject();
+            if (!modelBbutA.listStatements(S, RdfOwl.type, Spa.PolicyData).hasNext()) {
+                S = null;
+            }
+            if (P.getNameSpace().equals(Spa.getURI())
+                    // keep all importFrom->policyData->* statements when merging
+                    && !P.getURI().equals(Spa.importFrom.getURI())
+                    && S == null)
                 continue;
             if (!modelAbutB.contains(stmt))
                 mergedModel.add(stmt);
         }
+        */
         return mergedModel;
     }
     
