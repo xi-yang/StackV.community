@@ -5,6 +5,7 @@
  */
 package net.maxgigapop.mrs.rest.api;
 
+import java.util.UUID;
 import javax.ejb.EJB;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
@@ -18,8 +19,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
-import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.VersionGroup;
+import net.maxgigapop.mrs.rest.model.ModelBase;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
@@ -29,7 +30,6 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
  */
 
 @Path("VersionGroup")
-@RequestScoped
 public class VersionGroupResource {
 
     @Context
@@ -40,27 +40,36 @@ public class VersionGroupResource {
     
     public VersionGroupResource(){
     }
-//    
-//    @POST
+    
+    @POST
 //    @Consumes({"application/xml","application/json"})
-//    public VersionGroup 
+    public String createHeadVersionGroup(){
+        return systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString()).getRefUuid();
+    } 
     
     @PUT
     @Path("/{refUUID}")
-    public VersionGroup update(@PathParam("refUUID") String refUUID){
-        return systemCallHandler.updateHeadVersionGroup(refUUID);
+    public void update(@PathParam("refUUID") String refUUID){
+        systemCallHandler.updateHeadVersionGroup(refUUID);
     }
     
     @GET
     @Produces({"application/xml", "application/json"})
     @Path("/{refUUID}")
     public ModelBase pull(@PathParam("refUUID") String refUUID){
+        net.maxgigapop.mrs.bean.ModelBase mbDB;
         try{
-            return systemCallHandler.retrieveVersionGroupModel(refUUID);
+            mbDB= systemCallHandler.retrieveVersionGroupModel(refUUID);
         }catch(Exception e){
-            throw new NotFoundException("None!");
+            throw new NotFoundException("Not Found");
         }
-        
+        ModelBase mbRest = new ModelBase();
+        mbRest.setId(mbDB.getId());
+        mbRest.setVersion(mbDB.getCxtVersionTag());
+        mbRest.setCreationTime(mbDB.getCreationTime());
+//        mbRest.setStatus();
+        mbRest.setTtlModel(mbDB.getTtlModel());
+        return mbRest;
     }
    
 }
