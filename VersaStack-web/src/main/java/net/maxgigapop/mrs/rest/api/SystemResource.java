@@ -27,7 +27,6 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
  * @author xyang
  */
 @Path("system")
-@RequestScoped
 public class SystemResource {
 
     @Context
