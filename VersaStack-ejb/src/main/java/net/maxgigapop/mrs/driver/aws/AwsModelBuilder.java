@@ -7,6 +7,8 @@ package net.maxgigapop.mrs.driver.aws;
 
 
 import com.amazonaws.regions.Regions;
+import com.amazonaws.services.directconnect.model.Connection;
+import com.amazonaws.services.directconnect.model.VirtualInterface;
 import com.amazonaws.services.ec2.model.*;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
@@ -95,7 +97,7 @@ public class AwsModelBuilder
         Resource switchingSubnet=Mrs.SwitchingSubnet;
         Resource switchingService=Mrs.SwitchingService;
         Resource node =Nml.Node;
-        Resource port = Nml.BidirectionalPort;
+        Resource biPort = Nml.BidirectionalPort;
         Resource namedIndividual = model.createResource(model.getNsPrefixURI("mrs")+"NamedIndividual");
         Resource awsTopology = RdfOwl.createResource(model,topologyURI,topology);
         Resource objectStorageService=Mrs.ObjectStorageService;
@@ -105,6 +107,7 @@ public class AwsModelBuilder
         AwsEC2Get ec2Client=new AwsEC2Get(access_key_id,secret_access_key,region);
         AwsS3Get s3Client=new AwsS3Get(access_key_id,secret_access_key,region);
         AwsDCGet dcClient= new AwsDCGet(access_key_id,secret_access_key,region);
+
         
         
         //create the outer layer of the aws model
@@ -128,13 +131,18 @@ public class AwsModelBuilder
         Resource PORT_LABEL= RdfOwl.createResource(model,topologyURI + ":portLabel",Nml.Label);
         model.add(model.createStatement(PORT_LABEL,Nml.labeltype,Nml.NetworkInterface));
         model.add(model.createStatement(PORT_LABEL,value,"any"));
+        model.add(model.createStatement(VPNGW_LABEL,value,"any"));
+        Resource VIRTUAL_INTERFACE_LABEL= RdfOwl.createResource(model,topologyURI + ":virtualinterfaceLabel",Nml.Label);
+        model.add(model.createStatement(PORT_LABEL,Nml.labeltype,Nml.Link));
+        model.add(model.createStatement(PORT_LABEL,value,"any"));
+
         
 
         //put all the Internet gateways into the model
         for(InternetGateway t: ec2Client.getInternetGateways())
         {
             String internetGatewayId = ec2Client.getIdTag(t.getInternetGatewayId());
-            Resource INTERNETGATEWAY = RdfOwl.createResource(model,topologyURI + ":" + internetGatewayId,port);
+            Resource INTERNETGATEWAY = RdfOwl.createResource(model,topologyURI + ":" + internetGatewayId,biPort);
             model.add(model.createStatement(INTERNETGATEWAY, hasLabel,IGW_LABEL));
         }
         
@@ -142,10 +150,33 @@ public class AwsModelBuilder
         for(VpnGateway g : ec2Client.getVirtualPrivateGateways())
         {
             String vpnGatewayId = ec2Client.getIdTag(g.getVpnGatewayId());
-            Resource VPNGATEWAY = RdfOwl.createResource(model,topologyURI + ":" + vpnGatewayId,port);
+            Resource VPNGATEWAY = RdfOwl.createResource(model,topologyURI + ":" + vpnGatewayId,biPort);
             model.add(model.createStatement(VPNGATEWAY, hasLabel,VPNGW_LABEL));
+            
+            for(VirtualInterface vi : dcClient.getVirtualInterfaces(vpnGatewayId))
+            {
+                String viId = vi.getVirtualGatewayId();
+                String vlan = Integer.toString(vi.getVlan());
+                
+                Resource VLAN_LABEL= RdfOwl.createResource(model,topologyURI +":vlan-"+vlan,Nml.Label);
+                Resource VLAN = RdfOwl.createResource(model,topologyURI+":"+vlan,biPort);
+                Resource VIRTUAL_INTERFACE= RdfOwl.createResource(model,topologyURI+":"+vi.getVirtualInterfaceId(),biPort);
+                
+                model.add(model.createStatement(VIRTUAL_INTERFACE,hasLabel,VIRTUAL_INTERFACE_LABEL));
+               // model.add(model.createStatement(VIRTUALINTERFACE,ASN,vi.getAsn().toString()))
+                model.add(model.createStatement(VPNGATEWAY,hasBidirectionalPort,VIRTUAL_INTERFACE));
+                model.add(model.createStatement(VLAN_LABEL,Nml.labeltype,Nml.Link));
+                model.add(model.createStatement(VLAN_LABEL,value,vlan));
+                model.add(model.createStatement(VLAN,hasLabel,VLAN_LABEL));
+                
+                Connection c = dcClient.getConnection(vi);
+                if(c!=null)
+                {
+                   model.add(model.createStatement(VLAN,Mrs.capacity,c.getBandwidth()));
+                    
+                }
+            }
         }
-        
         //put all the vpcs and their information into the model
         for(Vpc v : ec2Client.getVpcs())
         {
@@ -225,7 +256,7 @@ public class AwsModelBuilder
                         for(InstanceNetworkInterface n : AwsEC2Get.getInstanceInterfaces(i))
                         {
                             String portId= ec2Client.getIdTag(n.getNetworkInterfaceId());
-                            Resource PORT = RdfOwl.createResource(model,topologyURI + ":" +portId,port);
+                            Resource PORT = RdfOwl.createResource(model,topologyURI + ":" +portId,biPort);
                             model.add(model.createStatement(PORT, hasLabel,PORT_LABEL));
                             model.add(model.createStatement(INSTANCE,hasBidirectionalPort,PORT));
                             model.add(model.createStatement(SUBNET,hasBidirectionalPort,PORT));

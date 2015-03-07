@@ -9,6 +9,7 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.directconnect.AmazonDirectConnectClient;
 import com.amazonaws.services.directconnect.model.*;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -48,10 +49,33 @@ public class AwsDCGet
         return virtualInterfaces;
     }
     
+    //get a list of vitual interfaces from a gateway
+    public List<VirtualInterface> getVirtualInterfaces(String id)
+    {
+        List<VirtualInterface> vis = new ArrayList();
+        for(VirtualInterface v : virtualInterfaces)
+        {
+            if(v.getVirtualGatewayId().equals(id))
+                vis.add(v);
+        }
+        return vis;
+    }
+    
     //get all the direct connect connections
     public List<Connection> getConnections()
     {
         return connections;
+    }
+    
+    //public Connection from a Virtual interface
+    public Connection getConnection(VirtualInterface v)
+    {
+       for(Connection c :connections)
+       {
+           if(c.getConnectionId().equals(v.getConnectionId()));
+                return c;
+       }
+       return null;
     }
     
     //get all the private gateways 

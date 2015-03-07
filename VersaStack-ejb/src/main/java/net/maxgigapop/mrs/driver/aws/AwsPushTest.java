@@ -134,7 +134,7 @@ public class AwsPushTest {
                 + " <urn:ogf:network:aws.amazon.com:aws-cloud:subnetnetworkaddress-0339843>\n"
                 + "         a          mrs:NetworkAddress , owl:NamedIndividual ;\n"
                 + "         mrs:type   \"ipv4-prefix\" ;\n"
-                + "         mrs:value  \"10.0.0/24\" .\n"
+                + "         mrs:value  \"10.0.0.0/24\" .\n"
                 + "<urn:ogf:network:aws.amazon.com:aws-cloudroutefrom-rtb-2f64394unnasociated>\n"
                 + "         a          mrs:NetworkAddress , owl:NamedIndividual .\n"
                 + "<urn:ogf:network:aws.amazon.com:aws-cloud:10.0.0.230>\n"
@@ -186,11 +186,120 @@ public class AwsPushTest {
                 + "@prefix rdf:   <http://schemas.ogf.org/nml/2013/03/base#> .\n"
                 + "@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .\n"
                 + "@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud>\n"
+                + "         nml:hasTopology <urn:ogf:network:aws.amazon.com:aws-cloud:vpc-8c5f22e9> .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:vpcservice-us-east-1>\n"
+                + "         mrs:providesVPC <urn:ogf:network:aws.amazon.com:aws-cloud:vpc-8c5f22e9> .\n"
                 + "<urn:ogf:network:aws.amazon.com:aws-cloud:i-4f93ec60>\n"
                 + "        a                         nml:Node , owl:NamedIndividual ;\n"
-                + "        mrs:hasVolume             <urn:ogf:network:aws.amazon.com:aws-cloud:vol-f05f50bf> ;\n"
+                + "        mrs:hasVolume             <urn:ogf:network:aws.amazon.com:aws-cloud:vol-f05f50bf> , <urn:ogf:network:aws.amazon.com:aws-cloud:vol-f05f50be> ;\n"
                 + "        mrs:providedByService     <urn:ogf:network:aws.amazon.com:aws-cloud:ec2service-us-east-1> ;\n"
-                + "        nml:hasBidirectionalPort  <urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b083> , <urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b084> .";
+                + "        nml:hasBidirectionalPort  <urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b083> , <urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b084> .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:vpc-8c5f22e9>\n"
+                + "        a                      nml:Topology , owl:NamedIndividual ;\n"
+                + "        mrs:hasNetworkAddress  <urn:ogf:network:aws.amazon.com:aws-cloud:vpcnetworkaddress-vpc-8c5f22e9> ;\n"
+                + "        nml:hasService         <urn:ogf:network:aws.amazon.com:aws-cloud:routingservice-vpc-8c5f22e9> , <urn:ogf:network:aws.amazon.com:aws-cloud:switchingservice-vpc-8c5f22e9> ;\n"
+                + "        nml:hasNode     <urn:ogf:network:aws.amazon.com:aws-cloud:i-4f93ec60> ;\n"
+                + "        nml:hasBidirectionalPort  <urn:ogf:network:aws.amazon.com:aws-cloud:igw-6cf01345> , <urn:ogf:network:aws.amazon.com:aws-cloud:vgw-fa36d345> .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:vpcnetworkaddress-vpc-8c5f22e9>\n" 
+                +"        a          mrs:NetworkAddress , owl:NamedIndividual ;\n" 
+                +"        mrs:type   \"ipv4-prefix\" ;\n" 
+                +"        mrs:value  \"10.0.0.0/16\" .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:routingservice-vpc-8c5f22e9>\n"
+                + "       a          mrs:RoutingService , owl:NamedIndividual ;"
+                + "        mrs:providesRoute  <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu10.0.0.016> , <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-2f64394a10.0.0.016> , <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu75.40.30.016> ;\n"
+                + "        mrs:providesRoutingTable <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu> , <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-2f64394a> .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:ec2service-us-east-1>\n"
+                + "        mrs:providesVM  <urn:ogf:network:aws.amazon.com:aws-cloud:i-4f93ec60> .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:switchingservice-vpc-8c5f22e9>\n"
+                + "        a                   mrs:SwitchingService , owl:NamedIndividual ;\n"
+                + "        mrs:providesSubnet <urn:ogf:network:aws.amazon.com:aws-cloud:subnet-2cd6ad16> .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:subnet-2cd6ad16>\n"
+                + "        a       mrs:SwitchingSubnet , owl:NamedIndividual ;\n"
+                + "        mrs:hasNetworkAddress <urn:ogf:network:aws.amazon.com:aws-cloud:subnetnetworkaddress-0339843> ;\n"
+                + "        nml:hasBidirectionalPort  <urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b083> , <urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b084> .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b083> \n"
+                + "        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n"
+                + "        nml:hasLabel          <urn:ogf:network:aws.amazon.com:aws-cloud:portLabel> ;\n"
+                + "        mrs:privateIpAddress  <urn:ogf:network:aws.amazon.com:aws-cloud:10.0.0.230> .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:eni-b9f9b084> \n"
+                + "        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n"
+                + "        nml:hasLabel          <urn:ogf:network:aws.amazon.com:aws-cloud:portLabel> ;\n"
+                + "        mrs:privateIpAddress  <urn:ogf:network:aws.amazon.com:aws-cloud:10.0.0.231> ;\n"
+                + "        mrs:publicIpAddress  <urn:ogf:network:aws.amazon.com:aws-cloud:54.152.72.205> .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:ebsservice-us-east-1>\n"
+                + "        mrs:providesVolume  <urn:ogf:network:aws.amazon.com:aws-cloud:vol-f05f50bf> , <urn:ogf:network:aws.amazon.com:aws-cloud:vol-f05f50be> .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:vol-f05f50bf>\n"
+                + "        a          mrs:Volume , owl:NamedIndividual ;\n"
+                + "        mrs:value  \"gp2\" ;\n"
+                + "        mrs:target_device \"/dev/xvdba\" ;\n"
+                + "        mrs:disk_gb \"8\" .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:vol-f05f50be>\n"
+                + "        a          mrs:Volume , owl:NamedIndividual ;\n"
+                + "        mrs:value  \"standard\" ;\n"
+                + "        mrs:target_device \"/dev/xvda\" ;\n"
+                + "        mrs:disk_gb \"8\" .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-2f64394a>\n"
+                + "        a             mrs:RoutingTable , owl:NamedIndividual ;\n"
+                + "        mrs:hasRoute  <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-2f64394a10.0.0.016> ;\n"
+                + "        mrs:type      \"main\" .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-2f64394a10.0.0.016>\n"
+                + "        a              mrs:Route , owl:NamedIndividual ;\n"
+                + "        mrs:nextHop    \"local\" ;\n"
+                + "        mrs:routeFrom  <urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-2f64394unnasociated> ;\n"
+                + "        mrs:routeTo    <urn:ogf:network:aws.amazon.com:aws-cloud:routeto-rtb-2f64394a10.0.0.0160> .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:routeto-rtb-2f64394a10.0.0.0160>\n"
+                + "         a          mrs:NetworkAddress , owl:NamedIndividual ;\n"
+                + "         mrs:type   \"ipv4-prefix\" ;\n"
+                + "         mrs:value  \"10.0.0.0/16\" .\n"
+                + " <urn:ogf:network:aws.amazon.com:aws-cloud:subnetnetworkaddress-0339843>\n"
+                + "         a          mrs:NetworkAddress , owl:NamedIndividual ;\n"
+                + "         mrs:type   \"ipv4-prefix\" ;\n"
+                + "         mrs:value  \"10.0.0/24\" .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloudroutefrom-rtb-2f64394unnasociated>\n"
+                + "         a          mrs:NetworkAddress , owl:NamedIndividual .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:10.0.0.230>\n"
+                + "        a          mrs:NetworkAddress , owl:NamedIndividual ;\n"
+                + "        mrs:value  \"10.0.0.230\" .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu>\n"
+                + "        a             mrs:RoutingTable , owl:NamedIndividual ;\n"
+                + "        mrs:hasRoute  <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu10.0.0.016> , <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu75.40.30.016> ;\n"
+                + "        mrs:type      \"local\" .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu10.0.0.016>\n"
+                + "        a              mrs:Route , owl:NamedIndividual ;\n"
+                + "        mrs:nextHop    \"local\" ;\n"
+                + "        mrs:routeFrom  <urn:ogf:network:aws.amazon.com:aws-cloudroutefrom-rtb-8723d8musubnet-2cd6ad16> ;\n"
+                + "        mrs:routeTo    <urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-8723d8musubnet-2cd6ad16> .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloudroutefrom-rtb-8723d8musubnet-2cd6ad16>\n"
+                + "         a             mrs:NetworkAddress , owl:NamedIndividual ;\n"
+                + "         mrs:type   \"subnet\" ;\n"
+                + "         mrs:value  \"subnet-2cd6ad16\" .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-8723d8musubnet-2cd6ad16>\n"
+                + "         a             mrs:NetworkAddress , owl:NamedIndividual ;\n"
+                + "         mrs:type   \"ipv4-prefix\" ;\n"
+                + "        mrs:value  \"10.0.0.0/16\" .\n"   
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu75.40.30.016>\n"
+                + "        a              mrs:Route , owl:NamedIndividual ;\n"
+                + "        mrs:nextHop   <urn:ogf:network:aws.amazon.com:aws-cloud:igw-6cf01345>  ;\n"
+                + "        mrs:routeFrom  <urn:ogf:network:aws.amazon.com:aws-cloudroutefrom-rtb-8723d8mu75.40.30.016subnet-2cd6ad16> ;\n"
+                + "        mrs:routeTo    <urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-8723d8mu75.40.30.016subnet-2cd6ad16> .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloudroutefrom-rtb-8723d8mu75.40.30.016subnet-2cd6ad16>\n"
+                + "         a             mrs:NetworkAddress , owl:NamedIndividual ;\n"
+                + "         mrs:type   \"subnet\" ;\n"
+                + "         mrs:value  \"subnet-2cd6ad16\" .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-8723d8mu75.40.30.016subnet-2cd6ad16>\n"
+                + "         a             mrs:NetworkAddress , owl:NamedIndividual ;\n"
+                + "         mrs:type   \"ipv4-prefix\" ;\n"
+                + "        mrs:value  \"75.40.30.0/16\" .\n"
+                +"<urn:ogf:network:aws.amazon.com:aws-cloud:igw-6cf01345>\n"
+                +"          a             nml:BidirectionalPort , owl:NamedIndividual ;\n"
+                +"          nml:hasLabel  <urn:ogf:network:aws.amazon.com:aws-cloud:igwLabel> .\n"
+                +"<urn:ogf:network:aws.amazon.com:aws-cloud:vgw-fa36d345>\n"
+                +"          a             nml:BidirectionalPort , owl:NamedIndividual ;\n"
+                +"          nml:hasLabel  <urn:ogf:network:aws.amazon.com:aws-cloud:vpngwLabel> .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:10.0.0.231>\n"
+                + "        a          mrs:NetworkAddress , owl:NamedIndividual ;\n"
+                + "        mrs:value  \"10.0.0.231\" .\n";
 
         OntModel model = AwsModelBuilder.createOntology("", "", Regions.US_EAST_1, "urn:ogf:network:aws.amazon.com:aws-cloud");
         StringWriter out = new StringWriter();
@@ -202,10 +311,10 @@ public class AwsPushTest {
         String ttl = out.toString();
         System.out.println(ttl);
 
-        AwsPushTest push = new AwsPushTest("", "", Regions.US_EAST_1, "urn:ogf:network:aws.amazon.com:aws-cloud");
-        String request = push.pushPropagate(ttl, modelAdditionStr, "");
+        /*AwsPushTest push = new AwsPushTest("", "", Regions.US_EAST_1, "urn:ogf:network:aws.amazon.com:aws-cloud");
+        String request = push.pushPropagate(ttl, modelAdditionStr, modelReductionStr);
         System.out.println(request);
-        push.pushCommit(request);
+        push.pushCommit(request);*/
     }
 
     public AwsPushTest(String access_key_id, String secret_access_key, Regions region, String topologyUri) {
@@ -242,16 +351,47 @@ public class AwsPushTest {
             throw new Exception(String.format("failure to unmarshall reference model, due to %s", e.getMessage()));
         }
 
-        /*try {
+        try {
          modelReduct.read(new ByteArrayInputStream(modelReductTtl.getBytes()), null, "TURTLE");
          } catch (Exception e) {
          throw new Exception(String.format("failure to unmarshall model reduction, due to %s", e.getMessage()));
-         }*/
+         }
+        /*//deatch volumes that need to be detached
+        requests += detachVolumeRequests(model,modelReduct);
+        
+        //Delete a volume if a volume needs to be created
+        requests += deleteVolumesRequests(model,modelReduct);
+        
         //delete all the instances that need to be created
-        requests += deleteInstancesRequests(model, modelReduct);
+        requests += deleteInstancesRequests(model, modelReduct);*/
+        
+        //Delete the network interfaces that need to be deleted
+       /* requests += deletePortsRequests(model,modelReduct);
+        
+        
+        //Delete routes that need to be deleted
+        requests += deleteRouteRequests(model,modelReduct);
+        
+        //deatch gateways that need to be detached
+        requests += detachGatewayRequests(model,modelReduct);
+        
+        //delete gateways that need to be deleated
+        requests += deleteGatewayRequests(model,modelReduct);
+        
+        //disassociate route tabes from subnets
+        //requests += disassociateTableRequests(model,modelReduct);
+        
+        //delete a route table 
+        */requests += deleteRouteTableRequests(model,modelReduct);
+        
+        //delete subnets that need to deleted
+        requests += deleteSubnetsRequests(model,modelReduct);
+        
+        //delete the Vpcs that need to be deleted
+        requests += deleteVpcsRequests(model,modelReduct);
 
         //create all the vpcs that need to be created
-        requests += createVpcsRequests(model, modelAdd);
+        /*requests += createVpcsRequests(model, modelAdd);
 
         //create all the subnets that need to be created
         requests += createSubnetsRequests(model, modelAdd);
@@ -271,7 +411,7 @@ public class AwsPushTest {
          //create the new routes requests
          requests += createRouteRequest(model,modelAdd);
 
-        /*//create a volume if a volume needs to be created
+        //create a volume if a volume needs to be created
          requests += createVolumesRequests(model,modelAdd);
         
          //create network interface if it needs to be created
@@ -304,7 +444,141 @@ public class AwsPushTest {
                 client.terminateInstances(del);
                 ec2Client.getEc2Instances().remove(ec2Client.getInstance(instanceId));
 
-            } else if (request.contains("CreateVpcRequest")) {
+            }else if (request.contains("DetachVolumeRequest")) {
+                String[] parameters = request.split("\\s+");
+                
+                DetachVolumeRequest volumeRequest = new DetachVolumeRequest();
+                
+                volumeRequest.withVolumeId(parameters[1])
+                        .withInstanceId(parameters[2]);
+                client.detachVolume(volumeRequest);
+            
+            }else if (request.contains("DeleteNetworkInterfaceRequest")){
+                String[] parameters = request.split("\\s+");
+                
+                DeleteNetworkInterfaceRequest portRequest= new DeleteNetworkInterfaceRequest();
+                portRequest.withNetworkInterfaceId(parameters[1]);
+                client.deleteNetworkInterface(portRequest);
+                ec2Client.getNetworkInterfaces().remove(ec2Client.getNetworkInterface(parameters[1]));
+                
+            }else if (request.contains("DeleteVolumeRequest")){
+                String[] parameters = request.split("\\s+");
+                
+                DeleteVolumeRequest volumeRequest = new DeleteVolumeRequest();
+                volumeRequest.withVolumeId(parameters[1]);
+                client.deleteVolume(volumeRequest);
+                ec2Client.getVolumes().remove(ec2Client.getVolume(parameters[1]));
+            
+            }else if(request.contains("DeleteRouteRequest")){
+                String[] parameters = request.split("\\s+");
+                
+                String tableIdTag = parameters[1];
+                 String target = getResourceId(parameters[3]);
+                 RouteTable t = ec2Client.getRoutingTable(getTableId(tableIdTag));
+                 Vpc v = ec2Client.getVpc(t.getVpcId());
+                 
+                 
+                 Route route = new Route();
+                 route.withDestinationCidrBlock(parameters[2])
+                         .withGatewayId(target)
+                         .withState(RouteState.Active)
+                         .withOrigin(RouteOrigin.CreateRoute);
+                         
+                 
+                 if(t.getRoutes().contains(route) || parameters[2].equals(v.getCidrBlock()))
+                 {}
+                 else
+                 {
+                     DeleteRouteRequest routeRequest = new DeleteRouteRequest();
+                     routeRequest.withRouteTableId(t.getRouteTableId())
+                             .withDestinationCidrBlock(parameters[2]);
+                     client.deleteRoute(routeRequest);
+                 }
+                
+                
+            }else if(request.contains("DeleteSubnetRequest")){
+                String[] parameters = request.split("\\s+");
+                
+                Subnet subnet = ec2Client.getSubnet(parameters[1]);
+                DeleteSubnetRequest subnetRequest = new DeleteSubnetRequest();
+                subnetRequest.withSubnetId(subnet.getSubnetId());
+                client.deleteSubnet(subnetRequest);
+                
+                ec2Client.getSubnets().remove(subnet);
+                
+            }else if(request.contains("DeleteVpcRequest")){
+                String[] parameters = request.split("\\s+");
+                
+                Vpc vpc = ec2Client.getVpc(parameters[1]);
+                DeleteVpcRequest vpcRequest = new DeleteVpcRequest();
+                vpcRequest.withVpcId(vpc.getVpcId());
+                client.deleteVpc(vpcRequest);
+                
+                ec2Client.getVpcs().remove(vpc);
+                
+            }else if(request.contains("dettachVpnGatewayRequest")){
+                String[] parameters = request.split("\\s+");
+                
+                VpnGateway vpn = ec2Client.getVirtualPrivateGateway(getResourceId(parameters[1]));
+                Vpc v = ec2Client.getVpc(getResourceId(parameters[2]));
+                
+                if(vpn.equals(ec2Client.getVirtualPrivateGateway(v)))
+                {
+                    DetachVpnGatewayRequest gwRequest = new DetachVpnGatewayRequest();
+                    gwRequest.withVpnGatewayId(vpn.getVpnGatewayId())
+                            .withVpcId(v.getVpcId());
+
+                    client.detachVpnGateway(gwRequest);
+                }
+                
+                
+            }else if(request.contains("dettachInternetGatewayRequest")){
+                String[] parameters = request.split("\\s+");
+                
+                InternetGateway igw = ec2Client.getInternetGateway(getResourceId(parameters[1]));
+                Vpc v = ec2Client.getVpc(getResourceId(parameters[2]));
+
+                if(igw.equals(ec2Client.getInternetGateway(v)))
+                {
+                    DetachInternetGatewayRequest gwRequest = new DetachInternetGatewayRequest();
+                    gwRequest.withInternetGatewayId(getResourceId(parameters[1]))
+                            .withVpcId(getResourceId(parameters[2]));
+
+                    client.detachInternetGateway(gwRequest);
+                }
+                
+            }else if (request.contains("DeleteInternetGatewayRequest")){
+                 String[] parameters = request.split("\\s+");
+                 
+                 InternetGateway gateway= ec2Client.getInternetGateway(parameters[1]);
+                 DeleteInternetGatewayRequest gatewayRequest = new DeleteInternetGatewayRequest();
+                 gatewayRequest.withInternetGatewayId(gateway.getInternetGatewayId());
+                 client.deleteInternetGateway(gatewayRequest);
+                 
+                 ec2Client.getInternetGateways().remove(gateway);
+
+            }else if (request.contains("DeleteVpnGatewayRequest")){
+                String[] parameters = request.split("\\s+");
+                
+                VpnGateway gateway = ec2Client.getVirtualPrivateGateway(parameters[1]);
+                DeleteVpnGatewayRequest gatewayRequest = new DeleteVpnGatewayRequest();
+                gatewayRequest.withVpnGatewayId(gateway.getVpnGatewayId());
+                client.deleteVpnGateway(gatewayRequest);
+                
+                ec2Client.getVirtualPrivateGateways().remove(gateway);
+     
+                
+            }else if(request.contains("DeleteRouteTableRequest")){
+                String[] parameters = request.split("\\s+");
+                
+                RouteTable table = ec2Client.getRoutingTable(parameters[1]);
+                DeleteRouteTableRequest tableRequest = new DeleteRouteTableRequest();
+                tableRequest.withRouteTableId(table.getRouteTableId());
+                client.deleteRouteTable(tableRequest);
+                
+                ec2Client.getRoutingTables().remove(table);
+                
+            }else if (request.contains("CreateVpcRequest")) {
                 String[] parameters = request.split("\\s+");
 
                 CreateVpcRequest vpcRequest = new CreateVpcRequest();
@@ -335,7 +609,8 @@ public class AwsPushTest {
 
                 CreateSubnetRequest subnetRequest = new CreateSubnetRequest();
                 subnetRequest.withVpcId(getResourceId(parameters[1]))
-                        .withCidrBlock(parameters[2]);
+                        .withCidrBlock(parameters[2])
+                        .withAvailabilityZone(Regions.US_EAST_1.getName()+"e");
 
                 CreateSubnetResult subnetResult = client.createSubnet(subnetRequest);
                 CreateTagsRequest tagRequest = new CreateTagsRequest();
@@ -584,18 +859,18 @@ public class AwsPushTest {
         return r;
     }
     
-        /**
+     /**
      * ****************************************************************
-     * Attach a volume to an existing instance AWS
+     * Detach a volume to an existing instance AWS
     *****************************************************************
      */
-    private String dettachVolumeRequests(OntModel model, OntModel modelAdd) throws Exception {
+    private String detachVolumeRequests(OntModel model, OntModel modelReduct) throws Exception {
         String requests = "";
 
         //check if the volume is new therefore it should be in the model additiom
         String query = "SELECT  ?node ?volume  WHERE {?node  mrs:hasVolume  ?volume}";
 
-        ResultSet r1 = executeQuery(query, emptyModel, modelAdd);
+        ResultSet r1 = executeQuery(query, emptyModel, modelReduct);
         while (r1.hasNext()) {
             QuerySolution querySolution1 = r1.next();
             RDFNode node = querySolution1.get("node");
@@ -605,7 +880,7 @@ public class AwsPushTest {
             String volumeId = getVolumeId(volumeTagId);
 
             query = "SELECT ?deviceName WHERE{<" + volume.asResource() + "> mrs:target_device ?deviceName}";
-            ResultSet r2 = executeQuery(query, model, modelAdd);
+            ResultSet r2 = executeQuery(query, model, modelReduct);
             if (!r2.hasNext()) {
                 throw new Exception(String.format("volume device name is not specified for volume %s", volume));
             }
@@ -615,41 +890,95 @@ public class AwsPushTest {
             RDFNode deviceName = querySolution2.get("deviceName");
             String device = deviceName.asLiteral().toString();
 
-            if (!device.equals("/dev/sda1") && !device.equals("/dev/xvda")) {
+            if (!device.equals("/dev/sda1") && !device.equals("/dev/xvda")) 
+            {
                 String nodeId = getInstanceId(nodeTagId);
 
                 Instance ins = ec2Client.getInstance(nodeId);
                 Volume vol = ec2Client.getVolume(volumeId);
-                if (vol == null) {
-                    query = "SELECT ?deviceName ?size ?type WHERE{<" + volume.asResource() + "> a mrs:Volume ."
-                            + "<" + volume.asResource() + "> mrs:target_device ?deviceName ."
-                            + "<" + volume.asResource() + "> mrs:disk_gb ?size ."
-                            + "<" + volume.asResource() + "> mrs:value ?type}";
-                    r2 = executeQuery(query, model, modelAdd);
-                    if (!r2.hasNext()) {
-                        throw new Exception(String.format("volume %s is not well specified in volume addition", volume));
+                if (vol == null) 
+                {
+                   throw new Exception(String.format("The volume %s to be deleted does not exist", volume));
+                }
+                if (ins == null) 
+                {
+                    throw new Exception(String.format("The node %s where the volume %s "
+                            + "wiil be deattached does not exist",node, volume));
+                }
+                if(!vol.getAttachments().isEmpty())
+                    requests += String.format("DetachVolumeRequest %s %s \n",volumeId,nodeId);
+            }
+        }
+        return requests;
+    }
+    
+    /**
+     * ****************************************************************
+     * Function to delete a network interface 
+     *****************************************************************
+     */
+    private String deletePortsRequests(OntModel model, OntModel modelReduct) throws Exception {
+        String requests = "";
+        String query;
+
+        query = "SELECT ?port WHERE {?port a  nml:BidirectionalPort ."
+                + "?port  nml:hasLabel   <urn:ogf:network:aws.amazon.com:aws-cloud:portLabel>}";
+        ResultSet r = executeQuery(query, emptyModel, modelReduct);
+        while (r.hasNext()) {
+            QuerySolution querySolution = r.next();
+            RDFNode port = querySolution.get("port");
+            String portIdTagValue = port.asResource().toString().replace(topologyUri, "");
+            String portId = getResourceId(portIdTagValue);
+
+            NetworkInterface p = ec2Client.getNetworkInterface(portId);
+            if (p == null) //network interface does not exist, need to create a network interface
+                throw new Exception(String.format("The port %s to be deleted"
+                        + "does not exists",port));
+            else
+            {
+                //check to see the network interface has no attachments before
+                //deleting it, if they do and the instance is not in the deleting
+                //part, there will be an error
+                query = "SELECT ?node WHERE {?node nml:hasBidirectionalPort <"+port.asResource()+"> ."
+                        + "?node a nml:Node}";
+                ResultSet r1 = executeQuery(query,emptyModel,modelReduct);
+                if(p.getAttachment() != null  && !r1.hasNext())
+                    throw new Exception(String.format("The port %s to be deleted"
+                        + " has attachments, delete dependant resource first",port));
+                //to get the private ip of the network interface
+                query = "SELECT ?address WHERE {<" + port.asResource() + ">  mrs:privateIpAddress  ?address}";
+                r1 = executeQuery(query, model, modelReduct);
+                if (!r1.hasNext()) {
+                    throw new Exception(String.format("model Reduction does not specify privat ip address of port: %s", port));
+                }
+                QuerySolution querySolution1 = r1.next();
+                RDFNode address = querySolution1.get("address");
+                String privateAddress = address.asResource().toString().replace(topologyUri, "");
+
+                //find the subnet that has the port previously found
+                query = "SELECT ?subnet WHERE {?subnet  nml:hasBidirectionalPort <" + port.asResource() + ">}";
+                r1 = executeQuery(query, model, modelReduct);
+                if (!r1.hasNext()) {
+                    throw new Exception(String.format("model Reduction does not specify network subnet of port: %s", port));
+                }
+                String subnetId = null;
+                while (r1.hasNext()) {
+                    querySolution1 = r1.next();
+                    RDFNode subnet = querySolution1.get("subnet");
+                    query = "SELECT ?subnet WHERE {<" + subnet.asResource() + ">  a  mrs:SwitchingSubnet}";
+                    ResultSet r3 = executeQuery(query, model, modelReduct);
+                    while (r3.hasNext()) //search in the model to see if subnet existed before
+                    {
+                         subnetId = subnet.asResource().toString().replace(topologyUri, "");
+                         subnetId = getResourceId(subnetId);
+                         break;
                     }
                 }
-                if (ins != null) {
-                    List< InstanceBlockDeviceMapping> map = ins.getBlockDeviceMappings();
-                    boolean attach = true;
-                    if (vol == null) {
-                        requests += String.format("AttachVolumeRequest %s %s %s \n", nodeId, volumeTagId, device);
-                    } else {
-                        for (InstanceBlockDeviceMapping m : map) {
-                            String instanceVolumeId = m.getEbs().getVolumeId();
-                            if (instanceVolumeId.equals(volumeId)) {
-                                attach = false;
-                                break;
-                            }
-                        }
-                        if (attach == true) {
-                            requests += String.format("AttachVolumeRequest %s %s %s \n", nodeId, volumeTagId, device);
-                        }
-                    }
-                } else if (ins == null) {
-                    requests += String.format("AttachVolumeRequest %s %s %s \n", nodeTagId, volumeTagId, device);
-                }
+                if(subnetId ==null)
+                      throw new Exception(String.format("model additions subnet for port %s"
+                                + "is not found in the reference model", subnetId));
+                //create the network interface 
+                requests += String.format("DeleteNetworkInterfaceRequest %s \n",portId);
             }
         }
         return requests;
@@ -677,8 +1006,8 @@ public class AwsPushTest {
             }
             QuerySolution querySolution1 = r1.next();
 
-            RDFNode service = querySolution.get("service");
-            RDFNode volume = querySolution.get("volume");
+            RDFNode service = querySolution1.get("service");
+            RDFNode volume = querySolution1.get("volume");
             RDFNode port = querySolution1.get("port");
             if (service == null) {
                 throw new Exception(String.format("node to delete does not specify service for node: %s", node));
@@ -689,7 +1018,25 @@ public class AwsPushTest {
             if (port == null) {
                 throw new Exception(String.format("node to delete does not specify port for node: %s", node));
             }
-
+            //check that one of the volumes is the main device 
+            query ="SELECT ?volume ?deviceName WHERE {<" + node.asResource() + "> mrs:hasVolume ?volume ."
+                    + "?volume mrs:target_device ?deviceName}";
+            r1=executeQuery(query,model,modelReduct);
+            if(!r1.hasNext())
+                throw new Exception(String.format("model reduct does not specify device name for volume"
+                        + " attached to instance: %s", node));
+            boolean found =false;
+            while(r1.hasNext())
+            {
+                QuerySolution q1 = r1.next();
+                RDFNode deviceName = q1.get("deviceName");
+                if (deviceName.toString().equals("/dev/sda1") || deviceName.toString().equals("/dev/xvda"))
+                         found =true;
+            }
+            if(found == false)
+                throw new Exception(String.format("model reduct does not specify root volume"
+                        + " attached to instance: %s", node));
+                         
             query = "SELECT ?vpc WHERE {?vpc nml:hasNode <" + node.asResource() + ">}";
             r1 = executeQuery(query, model, modelReduct);
             if (!r1.hasNext()) {
@@ -711,6 +1058,540 @@ public class AwsPushTest {
                 throw new Exception(String.format("Node to delete: %s does not exist", node));
             } else {
                 requests += String.format("TerminateInstancesRequest %s \n", nodeId);
+            }
+        }
+        return requests;
+    }
+    
+    /**
+     * ****************************************************************
+     * Function to delete volumes from a model
+     *****************************************************************
+     */
+    private String deleteVolumesRequests(OntModel model, OntModel modelReduct) throws Exception {
+        String requests = "";
+        String query;
+
+        query = "SELECT ?volume WHERE {?volume a mrs:Volume}";
+        ResultSet r = executeQuery(query, emptyModel, modelReduct);
+        while (r.hasNext()) {
+            QuerySolution querySolution = r.next();
+            RDFNode volume = querySolution.get("volume");
+            String volumeIdTagValue = volume.asResource().toString().replace(topologyUri, "");
+            String volumeId = getVolumeId(volumeIdTagValue);
+
+            Volume v = ec2Client.getVolume(volumeId);
+            
+            if(v==null)
+              throw new Exception(String.format("volume does not exist: %s", volume));
+            else  //volume exists so it has to be deleted
+            {
+                //check what service is providing the volume
+                query = "SELECT ?type WHERE {?service mrs:providesVolume <" + volume.asResource() + ">}";
+                ResultSet r1 = executeQuery(query, model, modelReduct);
+                if (!r1.hasNext()) {
+                    throw new Exception(String.format("model addition does not specify service that provides volume: %s", volume));
+                }
+
+                //find out the type of the volume
+                query = "SELECT ?type WHERE {<" + volume.asResource() + "> mrs:value ?type}";
+                r1 = executeQuery(query, model, modelReduct);
+                if (!r1.hasNext()) {
+                    throw new Exception(String.format("model addition does not specify new type of volume: %s", volume));
+                }
+                //find out the size of the volume
+                query = "SELECT ?size WHERE {<" + volume.asResource() + "> mrs:disk_gb ?size}";
+                r1 = executeQuery(query, model, modelReduct);
+                if (!r1.hasNext()) {
+                    throw new Exception(String.format("model addition does not specify new size of volume: %s", volume));
+                }
+                //dont create the volumes with no target device and that are attached to an instance
+                //since this volumes are the root devices
+                query = "SELECT ?deviceName WHERE {<" + volume.asResource() + "> mrs:target_device ?deviceName}";
+                r1 = executeQuery(query, model, modelReduct);
+                if (r1.hasNext()) {
+                    QuerySolution querySolution1 = r1.next();
+                    String deviceName = querySolution1.get("deviceName").asLiteral().toString();
+
+                    if (!deviceName.equals("/dev/sda1") && !deviceName.equals("/dev/xvda")) {
+                        requests += String.format("DeleteVolumeRequest %s \n", volumeId);
+                    }
+                } else {
+                    requests += String.format("DeleteVolumeRequest %s \n",volumeId);
+                }
+            }
+        }
+
+        return requests;
+    }
+    
+    
+    /**
+     * ****************************************************************
+     * Function to create a volumes from a model
+     *****************************************************************
+     */
+     private String deleteRouteRequests (OntModel model,OntModel modelReduct) throws Exception
+     {
+         String requests ="";
+         String query="";
+         
+         query ="SELECT ?route ?nextHop ?value WHERE {?route mrs:routeFrom ?routeFrom ."
+                 + "?route mrs:routeTo ?routeTo ."
+                 + "?route mrs:nextHop ?nextHop ."
+                + "?routeFrom mrs:type \"subnet\" ."
+                + "?routeTo mrs:value ?value}";
+         ResultSet r = executeQuery(query,emptyModel,modelReduct);
+         while(r.hasNext())
+         {
+             QuerySolution q = r.next();
+             RDFNode value = q.get("value");
+             RDFNode nextHop =q.get("nextHop");
+             RDFNode route  = q.get("route");
+             String destination = value.asLiteral().toString();
+             String target;
+             if(nextHop.isLiteral())
+                 target= nextHop.asLiteral().toString();
+             else
+                 target = nextHop.asResource().toString().replace(topologyUri,"");
+             
+             query = "SELECT ?routeTable WHERE {?routeTable mrs:hasRoute <"+route.asResource()+"> ."
+                     + "<"+route.asResource()+"> a mrs:Route}";
+             ResultSet r1 = executeQuery(query,model,modelReduct);
+             if(!r1.hasNext())
+                throw new Exception(String.format("route %s does not specify type or "
+                        + "route table that has this route ",route)); 
+             QuerySolution q1 = r1.next();
+             RDFNode table = q1.get("routeTable");
+             String tableIdTag = table.asResource().toString().replace(topologyUri,"");
+             
+             requests += String.format("DeleteRouteRequest %s %s %s \n",tableIdTag,destination,target);
+         }
+       return requests;
+     }
+     
+     /**
+     * ****************************************************************
+     * Function to disassociate Route table with a subnet
+     *****************************************************************
+     */
+    private String disassociateTableRequest(OntModel model, OntModel modelReduct) throws Exception {
+        String requests = "";
+        String query;
+        
+        query ="SELECT ?route ?value WHERE {?route mrs:routeFrom ?routeFrom ."
+                + "?routeFrom mrs:type \"subnet\" ."
+                + "?routeFrom mrs:value ?value}";
+        ResultSet r = executeQuery(query,emptyModel,modelReduct);
+        while(r.hasNext())
+        {
+            boolean createRequest= false;
+            QuerySolution querySolution = r.next();
+            RDFNode value = querySolution.get("value");
+            RDFNode route = querySolution.get("route");
+            
+            query = "SELECT ?table WHERE {?table mrs:hasRoute <"+route.asResource()+"> ."
+                    + "?service mrs:providesRoute <"+route.asResource()+">}";
+            ResultSet r1 = executeQuery(query,model,modelReduct);
+            if(!r1.hasNext())
+                 throw new Exception(String.format("Route  %s"
+                                + "does not have a route table or is not"
+                         + "being provided by a routing service", route));
+            QuerySolution querySolution1= r1.next();
+            RDFNode table = querySolution1.get("table");
+            
+            String subnetIdTag = value.asLiteral().toString();
+            String tableIdTag = table.asResource().toString().replace(topologyUri, "");
+            
+            RouteTable rt = ec2Client.getRoutingTable(getTableId(tableIdTag));
+            if(rt == null)
+            {    
+                throw new Exception(String.format("Route table % does not exist", rt));
+            }
+            else
+                for(RouteTableAssociation as : rt.getAssociations())
+                {
+                    if(as.getSubnetId().equals(getResourceId(subnetIdTag)))
+                    {
+                        createRequest = true;
+                        break;
+                    }
+                }
+            
+            if(createRequest == true)
+                requests+=String.format("DisassociateTableRequest %s %s \n",tableIdTag,subnetIdTag);
+            
+        }
+       return requests;
+    }
+     
+     
+     /*
+     * ****************************************************************
+     * Function to create a volumes from a model
+     *****************************************************************
+     */
+    private String detachGatewayRequests(OntModel  model, OntModel modelReduct) throws Exception
+    {
+        String requests ="";
+        String query="";
+        
+        //fin all the vpcs that have a bidirectional port
+        query ="SELECT ?vpc ?port  WHERE {?vpc nml:hasBidirectionalPort ?port}";
+        ResultSet r = executeQuery(query,emptyModel,modelReduct);
+        while(r.hasNext())
+        {
+            QuerySolution q = r.next();
+            RDFNode gateway = q.get("port");
+            RDFNode vpc = q.get("vpc");
+            
+            //check that vpc is the correct type
+            query = "SELECT ?vpc WHERE {<"+vpc.asResource()+"> a nml:Topology}";
+            ResultSet r1 = executeQuery(query,model,modelReduct);
+            while(r1.hasNext())
+            {
+                r1.next();
+                query = "SELECT ?label WHERE {<"+gateway.asResource()+"> a nml:BidirectionalPort ."
+                        + "<"+gateway.asResource()+"> nml:hasLabel ?label}";
+                ResultSet r2 = executeQuery(query, model, modelReduct);
+                if(!r2.hasNext())
+                    throw new Exception(String.format("Label for Internet gateway %s i"
+                            + "s not specified in model reduction",gateway));
+                QuerySolution q1 = r2.next();
+                RDFNode label = q1.get("label");
+
+                //look for the lable in the reference model
+                query = "SELECT ?type WHERE {<"+label.asResource()+"> a nml:Label ."
+                        + "<"+label.asResource()+"> nml:labeltype  ?type}";
+                r2  = executeQuery(query,model,emptyModel);
+                if(!r2.hasNext())
+                    throw new Exception(String.format("Label %s for gateway %s is"
+                            + " an invalid label",label,gateway));
+                q1 = r2.next();
+                RDFNode type = q1.get("type");
+                String  gatewayIdTag = gateway.asResource().toString().replace(topologyUri,"");
+                String gatewayId = getResourceId(gatewayIdTag);
+                String vpcIdTag = vpc.asResource().toString().replace(topologyUri,"");
+                String vpcId = getResourceId(vpcIdTag);
+                if(ec2Client.getVpc(vpcId)==null)
+                    throw new Exception(String.format("Vpc with vpc id %s from where"
+                            + "the gateway will be detacched does not exist",vpcId));
+                if(type.equals(Nml.InternetGateway))  
+                {
+                    if(ec2Client.getInternetGateway(gatewayId)==null)
+                       throw new Exception(String.format("Gatway %s to be detacched does"
+                               + "not exist",gatewayId)); 
+                    requests += String.format("dettachInternetGatewayRequest %s %s \n",gatewayId,vpcId);
+                }
+                else if (type.equals(Nml.VpnGateway))
+                {
+                    if(ec2Client.getVirtualPrivateGateway(gatewayId)==null)
+                       throw new Exception(String.format("Gatway %s to be detacched does"
+                               + "not exist",gatewayId)); 
+                    requests += String.format("dettachVpnGatewayRequest %s %s \n",gatewayId,vpcId);
+                }
+                
+            } 
+        }
+        return requests;
+    }
+    
+    /**
+     * ****************************************************************
+     * Function to delete  gateway (Internet and VPN)
+     *****************************************************************
+     */
+    private String deleteGatewayRequests(OntModel model, OntModel modelReduct) throws Exception
+    {
+       String requests = "";
+       String query;
+
+        query = "SELECT ?igw WHERE {?igw a nml:BidirectionalPort}";
+        ResultSet r = executeQuery(query, emptyModel, modelReduct);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            RDFNode igw = q.get("igw");
+            String idTag = igw.asResource().toString().replace(topologyUri,"");
+            
+            query = "SELECT ?label WHERE {<"+igw.asResource()+"> nml:hasLabel ?label}";
+            ResultSet r1 = executeQuery(query, emptyModel, modelReduct);
+            if(!r1.hasNext())
+                throw new Exception(String.format("Label for Internet gateway %s i"
+                        + "s not specified in model addition",igw));
+            QuerySolution q1 = r1.next();
+            RDFNode label = q1.get("label");
+            
+            //look for the lable in the reference model
+            query = "SELECT ?type WHERE {<"+label.asResource()+"> a nml:Label ."
+                    + "<"+label.asResource()+"> nml:labeltype  ?type}";
+            r1  = executeQuery(query,model,emptyModel);
+            if(!r1.hasNext())
+                throw new Exception(String.format("Label %s for gateway %s is"
+                        + " an invalid label",label,igw));
+            q1 = r1.next();
+            RDFNode type = q1.get("type");
+            if(type.equals(Nml.InternetGateway))
+            {
+                InternetGateway gateway =ec2Client.getInternetGateway(getResourceId(idTag));
+                if(gateway==null)
+                    throw new Exception(String.format("Internet gateway %s to de deleted"
+                            + "does not exist",idTag));
+                requests += String.format("DeleteInternetGatewayRequest %s \n",gateway.getInternetGatewayId());
+            }
+            else if (type.equals(Nml.VpnGateway))
+            {
+                VpnGateway gateway =ec2Client.getVirtualPrivateGateway(getResourceId(idTag));
+                if(gateway==null)
+                    throw new Exception(String.format("Internet gateway %s to de deleted"
+                            + "does not exist",idTag));
+                requests += String.format("DeleteVpnGatewayRequest %s \n",gateway.getVpnGatewayId());
+            }
+        }
+       return requests;
+    }
+    
+    
+    /**
+     * ****************************************************************
+     * Function to delete the route table
+     *****************************************************************
+     */
+    private String deleteRouteTableRequests(OntModel model, OntModel modelReduct) throws Exception {
+        String requests = "";
+        String query = "";
+
+        query = "SELECT ?table WHERE {?table a mrs:RoutingTable ."
+                + "?table mrs:type \"local\"}";
+        ResultSet r = executeQuery(query, emptyModel, modelReduct);
+        while (r.hasNext()) {
+            QuerySolution querySolution = r.next();
+            RDFNode table = querySolution.get("table");
+            String tableIdTagValue = table.asResource().toString().replace(topologyUri, "");
+            String tableId = getTableId(tableIdTagValue);
+            if (ec2Client.getRoutingTable(tableId) != null) {
+                //check route table is modeled 
+                query = "SELECT ?type WHERE{<" + table.asResource() + "> mrs:type ?type}";
+                ResultSet r1 = executeQuery(query, emptyModel, modelReduct);
+                if (!r1.hasNext()) {
+                    throw new Exception(String.format("model Reduction for route table %s"
+                            + " is not well specified", table));
+                }
+                QuerySolution querySolution1 = r1.next();
+                RDFNode type = querySolution1.get("type");
+
+                //check the service that provides the routing table
+                query = "SELECT ?service WHERE {?service   mrs:providesRoutingTable <" + table.asResource() + ">}";
+                r1 = executeQuery(query, emptyModel, modelReduct);
+                if (!r1.hasNext()) {
+                    throw new Exception(String.format("Route table to be deleted %s is not provided by any service", table));
+                }
+                querySolution1 = r1.next();
+                RDFNode service = querySolution1.get("service");
+
+                //get the address of the vpc of the route table
+                query = "SELECT ?vpc ?address WHERE {?vpc nml:hasService <" + service.asResource() + "> ."
+                        + "?vpc mrs:hasNetworkAddress ?networkAddress ."
+                        + "?networkAddress mrs:value ?address}";
+                r1 = executeQuery(query, model, modelReduct);
+                if (!r1.hasNext()) {
+                    throw new Exception(String.format("vpc of route table %s has no network address", table));
+                }
+                querySolution1 = r1.next();
+                RDFNode address = querySolution1.get("address");
+                RDFNode vpc = querySolution1.get("vpc");
+                String vpcIdTagValue = vpc.asResource().toString().replace(topologyUri, "");
+
+                //if the table was a main table, it was created with
+                //the vpc
+                if (!type.asLiteral().toString().equals("main")) {
+                    //check the main route to the vpc is there
+                    boolean found = false;
+                    query = "SELECT ?route ?from ?routeTo WHERE{<" + table.asResource() + "> mrs:hasRoute ?route ."
+                            + "?route mrs:routeFrom ?from ."
+                            + "?route mrs:nextHop \"local\" ."
+                            + "?from mrs:type \"subnet\" ."
+                            + "?to mrs:type \"ipv4-prefix\" ."
+                            + "?to mrs:value ?routeTo}";
+                    r1 = executeQuery(query, emptyModel, modelReduct);
+                    if (!r1.hasNext()) {
+                        throw new Exception(String.format("model reduction for route table %s"
+                                + "does not have any main  routes", table));
+                    }
+                    while (r1.hasNext()) {
+                        QuerySolution querySolution2 = r1.next();
+                        RDFNode addressTable = querySolution2.get("routeTo");
+                        //compare to check if it is in fact the address of the vpc
+                        if (addressTable.asLiteral().toString().equals(address.asLiteral().toString())) {
+                            found = true;
+                        }
+                    }
+                    if (found == false) {
+                        throw new Exception(String.format("route table %s"
+                                + "does not have the main route", table));
+                    }
+                }
+                requests += String.format("DeleteRouteTableRequest  %s \n", tableId);
+            }
+        }
+        return requests;
+    }
+
+        /**
+     * ****************************************************************
+     * Function to create a Vpc from a model
+    /*****************************************************************
+     */
+    private String deleteVpcsRequests(OntModel model, OntModel modelReduct) throws Exception {
+        String requests = "";
+        String query;
+
+        query = "SELECT ?vpc WHERE {?service mrs:providesVPC  ?vpc ."
+                + "?vpc a nml:Topology}";
+        ResultSet r = executeQuery(query, emptyModel, modelReduct);
+        while (r.hasNext()) {
+            QuerySolution querySolution = r.next();
+            RDFNode vpc = querySolution.get("vpc");
+            String vpcIdTagValue = vpc.asResource().toString().replace(topologyUri, "");
+            String vpcId = getResourceId(vpcIdTagValue);
+
+            //double check vpc does not exist in the cloud
+            Vpc v = ec2Client.getVpc(vpcId);
+            if (v == null) // vpc does not exist, has to be created
+            {
+               throw new Exception(String.format("vpc to be deleted $s does not exist",vpc)); 
+            }
+            else
+            {
+                query = "SELECT ?cloud WHERE {?cloud nml:hasTopology <" + vpc.asResource() + ">}";
+                ResultSet r1 = executeQuery(query, model, modelReduct);
+                if (!r1.hasNext()) {
+                    throw new Exception(String.format("model reduction does not specify the aws-cloud that"
+                            + "provides VPC : %s", vpc));
+                }
+
+                query = "SELECT ?address WHERE {<" + vpc.asResource() + "> mrs:hasNetworkAddress ?address}";
+                r1 = executeQuery(query, model, modelReduct);
+                if (!r1.hasNext()) {
+                    throw new Exception(String.format("model addition does not specify the "
+                            + "newtowk address of vpc: %s", vpc));
+                }
+                QuerySolution querySolution1 = r1.next();
+                RDFNode address = querySolution1.get("address");
+
+                query = "SELECT ?type ?value WHERE {<" + address.asResource() + "> mrs:type ?type ."
+                        + "<" + address.asResource() + "> mrs:value ?value}";
+                r1 = executeQuery(query, model, modelReduct);
+                if (!r1.hasNext()) {
+                    throw new Exception(String.format("model addition does not specify the "
+                            + "type or value of network address: %s", address));
+                }
+                querySolution1 = r1.next();
+                RDFNode value = querySolution1.get("value");
+                String cidrBlock = value.asLiteral().toString();
+
+                //check taht vpc offers switching and routing Services and vpc services
+                query = "SELECT ?service  WHERE {<" + vpc.asResource() + "> nml:hasService  ?service ."
+                        + "?service a  mrs:SwitchingService}";
+                r1 = executeQuery(query, model, modelReduct);
+                if (!r1.hasNext()) {
+                    throw new Exception(String.format("Vpc %s does not speicfy Switching Service", vpc));
+                }
+                query = "SELECT ?service  WHERE {<" + vpc.asResource() + "> nml:hasService  ?service ."
+                        + "?service a mrs:RoutingService}";
+                r1 = executeQuery(query, model, modelReduct);
+                if (!r1.hasNext()) {
+                    throw new Exception(String.format("Vpc %s does not speicfy Routing Service", vpc));
+                }
+                querySolution1 = r1.next();
+                RDFNode routingService = querySolution1.get("service");
+
+                //incorporate main routing table and routes into the vpc
+                query = "SELECT ?routingTable ?type  WHERE {<" + routingService.asResource() + "> mrs:providesRoutingTable ?routingTable ."
+                        + "?routingTable mrs:type  \"main\"}";
+                r1 = executeQuery(query, model, modelReduct);
+                if (!r1.hasNext()) {
+                    throw new Exception(String.format("Routing service  %s does not speicfy main Routing table", routingService));
+                }
+
+                querySolution1 = r1.next();
+                RDFNode routingTable = querySolution1.get("routingTable");
+                String routeTableIdTagValue = routingTable.asResource().toString().replace(topologyUri, "");
+
+                //add routeTable id tag to the request to tatg the main route Table later
+                String vpcIp = cidrBlock;
+                cidrBlock = "\"" + cidrBlock + "\"";
+
+                //check for  the local route is in the route table 
+                query = "SELECT ?route ?to  WHERE {<" + routingTable.asResource() + "> mrs:hasRoute ?route ."
+                        + "<" + routingService.asResource() + "> mrs:providesRoute ?route ."
+                        + "?route mrs:nextHop \"local\" ."
+                        + "?route mrs:routeTo  ?to ."
+                        + "?to mrs:value " + cidrBlock + "}";
+                r1 = executeQuery(query, model, modelReduct);
+                if (!r1.hasNext()) {
+                    throw new Exception(String.format("Routing service has no route for main table", routingService));
+                }
+                requests += String.format("DeleteVpcRequest %s \n", vpcId);
+            }
+        }
+        return requests;
+    }
+
+    /**
+     * ****************************************************************
+     * Function to create a subnets from a model
+     *****************************************************************
+     */
+    private String deleteSubnetsRequests(OntModel model, OntModel modelReduct) throws Exception {
+        String requests = "";
+        String query;
+
+        query = "SELECT ?subnet WHERE {?subnet a mrs:SwitchingSubnet}";
+        ResultSet r = executeQuery(query, emptyModel, modelReduct);
+        while (r.hasNext()) {
+            QuerySolution querySolution = r.next();
+            RDFNode subnet = querySolution.get("subnet");
+            String subnetIdTagValue = subnet.asResource().toString().replace(topologyUri, "");
+            String subnetId = getResourceId(subnetIdTagValue);
+
+            Subnet s = ec2Client.getSubnet(subnetId);
+
+            if (s == null) //subnet does not exist, need to create subnet
+            {
+               throw new Exception(String.format("subnet %s to be deleted does not exist ", subnet));
+            }
+            else
+            {
+                query = "SELECT ?service {?service mrs:providesSubnet <" + subnet.asResource() + ">}";
+                ResultSet r1 = executeQuery(query, model, modelReduct);
+                if (!r1.hasNext()) {
+                    throw new Exception(String.format("No service has subnet %s", subnet));
+                }
+                QuerySolution querySolution1 = r1.next();
+                RDFNode service = querySolution1.get("service");
+                query = "SELECT ?vpc {?vpc nml:hasService <" + service.asResource() + "> ."
+                        + "<" + service.asResource() + "> a mrs:SwitchingService}";
+                r1 = executeQuery(query, model, modelReduct);
+                if (!r1.hasNext()) {
+                    r1 = executeQuery(query, model, model);
+                }
+                if (!r1.hasNext()) {
+                    throw new Exception(String.format("Subnet %s does not have a vpc", subnet));
+                }
+                querySolution1 = r1.next();
+                RDFNode vpc = querySolution1.get("vpc");
+                String vpcIdTagValue = vpc.asResource().toString().replace(topologyUri, "");
+
+                query = "SELECT ?subnet ?address ?value WHERE {?subnet mrs:hasNetworkAddress ?address ."
+                        + "?address a mrs:NetworkAddress ."
+                        + "?address mrs:type \"ipv4-prefix\" ."
+                        + "?address mrs:value ?value}";
+                r1 = executeQuery(query, model, modelReduct);
+                querySolution1 = r1.next();
+                RDFNode value = querySolution1.get("value");
+                String cidrBlock = value.asLiteral().toString();
+
+                requests += String.format("DeleteSubnetRequest %s \n",subnetId);
             }
         }
         return requests;
@@ -793,8 +1674,6 @@ public class AwsPushTest {
                 RDFNode routingTable = querySolution1.get("routingTable");
                 String routeTableIdTagValue = routingTable.asResource().toString().replace(topologyUri, "");
 
-                //add routeTable id tag to the request to tatg the main route Table later
-                requests += " " + routeTableIdTagValue + "\n";
                 String vpcIp = cidrBlock;
                 cidrBlock = "\"" + cidrBlock + "\"";
 
@@ -880,7 +1759,8 @@ public class AwsPushTest {
         String requests = "";
         String query = "";
 
-        query = "SELECT ?table WHERE {?table a mrs:RoutingTable}";
+        query = "SELECT ?table WHERE {?table a mrs:RoutingTable ."
+                + "?table mrs:type \"local\"}";
         ResultSet r = executeQuery(query, emptyModel, modelAdd);
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
@@ -925,27 +1805,19 @@ public class AwsPushTest {
                 if (!type.asLiteral().toString().equals("main")) {
                     //check the main route to the vpc is there
                     boolean found = false;
-                    query = "SELECT ?route WHERE{<" + table.asResource() + "> mrs:hasRoute ?route}";
+                    query = "SELECT ?route ?routeTo WHERE{<" + table.asResource() + "> mrs:hasRoute ?route ."
+                    + "?route mrs:routeFrom ?from ."
+                    + "?route mrs:nextHop \"local\" ."
+                    + "?from mrs:type \"subnet\" ."
+                    + "?to mrs:type \"ipv4-prefix\" ."
+                    + "?to mrs:value ?routeTo}";
                     r1 = executeQuery(query, emptyModel, modelAdd);
                     if (!r1.hasNext()) {
                         throw new Exception(String.format("model addition for route table %s"
                                 + "does not have any routes", table));
                     }
                     while (r1.hasNext()) {
-                        querySolution1 = r1.next();
-                        RDFNode route = querySolution1.get("route");
-                        query = "SELECT ?routeTo WHERE {<" + route.asResource() + "> mrs:routeTo ?to ."
-                                + "<" + route.asResource() + "> mrs:routeFrom ?from ."
-                                + "<" + route.asResource() + "> mrs:nextHop \"local\" ."
-                                + "?from mrs:type \"subnet\" ."
-                                + "?to mrs:type \"ipv4-prefix\" ."
-                                + "?to mrs:value ?routeTo}";
-                        ResultSet r2 = executeQuery(query, emptyModel, modelAdd);
-                        if (!r2.hasNext()) {
-                            throw new Exception(String.format("Route Table %s do not "
-                                    + "have any route to the local VPC", table));
-                        }
-                        QuerySolution querySolution2 = r2.next();
+                        QuerySolution querySolution2 = r1.next();
                         RDFNode addressTable = querySolution2.get("routeTo");
                         //compare to check if it is in fact the address of the vpc
                         if (addressTable.asLiteral().toString().equals(address.asLiteral().toString())) {
@@ -1150,7 +2022,7 @@ public class AwsPushTest {
              ResultSet r1 = executeQuery(query,model,modelAdd);
              if(!r1.hasNext())
                 throw new Exception(String.format("route %s does not specify type or "
-                        + "route t6able that has this route ",route)); 
+                        + "route table that has this route ",route)); 
              QuerySolution q1 = r1.next();
              RDFNode table = q1.get("routeTable");
              String tableIdTag = table.asResource().toString().replace(topologyUri,"");
@@ -1273,15 +2145,16 @@ public class AwsPushTest {
                     RDFNode subnet = querySolution1.get("subnet");
                     query = "SELECT ?subnet WHERE {<" + subnet.asResource() + ">  a  mrs:SwitchingSubnet}";
                     ResultSet r3 = executeQuery(query, model, modelAdd);
-                    if (!r3.hasNext()) //search in the model to see if subnet existed before
+                    while (r3.hasNext()) //search in the model to see if subnet existed before
                     {
-                        throw new Exception(String.format("model additions subnet for port %s"
-                                + "is not found in the reference model", subnetId));
+                         subnetId = subnet.asResource().toString().replace(topologyUri, "");
+                         subnetId = getResourceId(subnetId);
+                         break;
                     }
-                    subnetId = subnet.asResource().toString().replace(topologyUri, "");
-                    subnetId = getResourceId(subnetId);
-
                 }
+                if(subnetId ==null)
+                      throw new Exception(String.format("model additions subnet for port %s"
+                                + "is not found in the reference model", subnetId));
                 //create the network interface 
                 requests += String.format("CreateNetworkInterfaceRequest  %s %s %s \n", privateAddress, subnetId, portIdTagValue);
 
