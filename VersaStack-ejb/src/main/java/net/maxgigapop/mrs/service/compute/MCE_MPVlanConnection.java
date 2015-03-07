@@ -22,7 +22,9 @@ import net.maxgigapop.mrs.common.ModelUtil;
 @Stateless
 public class MCE_MPVlanConnection implements IModelComputationElement {
     private static final Logger log = Logger.getLogger(MCE_MPVlanConnection.class.getName());
-    
+    /*
+    ** Simple L2 connection will create new SwitchingSubnet on every transit switching node.
+    */
     @Override
     @Asynchronous
     public Future<DeltaBase> process(ModelBase systemModel, DeltaBase annotatedDelta) {        

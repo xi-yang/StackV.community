@@ -114,16 +114,12 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
                 Logger.getLogger(MCE_VMFilterPlacement.class.getName()).log(Level.SEVERE, null, ex);
             }
             */
-            //$$ 3. update policyData this action exportTo 
+            //3. update policyData this action exportTo 
             this.exportPolicyData(outputDelta.getModelAddition().getOntModel(), vm);
             
             //4. remove policy and all related SPA statements receursively under vm from spaModel
-            List<Statement> listStmtsToRemove = new ArrayList<>();
-            Resource resVm = outputDelta.getModelAddition().getOntModel().getResource(vm.getURI());
-            ModelUtil.listRecursiveDownTree(resVm, Spa.getURI(), listStmtsToRemove);
-            if (listStmtsToRemove.isEmpty())
-                throw new EJBException(String.format("%s::process cannot remove SPA statements under %s", this.getClass().getName(), vm));
-            outputDelta.getModelAddition().getOntModel().remove(listStmtsToRemove);
+            //   and also remove all statements that say dependOn this 'policy'
+            this.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), vm);
             
             //$$ TODO: change VM URI (and all other virtual resources) into a unique string either during compile or in stitching action
             //$$ TODO: Add dependOn->Abstraction annotation to root level spaModel and add a generic Action to remvoe that abstract nml:Topology
@@ -260,13 +256,42 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             if (!spaModel.listStatements(vm, RdfOwl.type, Spa.PolicyData).hasNext()) {
                 if (spaModel.listStatements(resHost, RdfOwl.type, Nml.Topology).hasNext())
                     spaModel.add(resData, Spa.type, Nml.Topology);
-                else if (spaModel.listStatements(resHost, RdfOwl.type, Nml.Node).hasNext())
+                else if (spaModel.listStatements(resHost, RdfOwl.type, Nml.Node).hasNext()) {
                     spaModel.add(resData, Spa.type, Nml.Node);
-                 spaModel.add(resData, Spa.value, resHost);
+                }
+                spaModel.add(resData, Spa.value, resHost);
             }
             // remove VM->exportTo statement so the exportData can be kept in spaModel during receurive removal
             spaModel.remove(resPolicy, Spa.exportTo, resData);
         }
+    }
+
+    private void removeResolvedAnnotation(OntModel spaModel, Resource vm) {
+        List<Statement> listStmtsToRemove = new ArrayList<>();
+        Resource resVm = spaModel.getResource(vm.getURI());
+        ModelUtil.listRecursiveDownTree(resVm, Spa.getURI(), listStmtsToRemove);
+        if (listStmtsToRemove.isEmpty()) {
+            throw new EJBException(String.format("%s::process cannot remove SPA statements under %s", this.getClass().getName(), vm));
+        }
+
+        String sparql = "SELECT ?anyOther ?policyAction WHERE {"
+                + String.format("<%s> spa:dependOn ?policyAction .", vm.getURI())
+                + "?policyAction a spa:Placement."
+                + "?anyOther spa:dependOn ?policyAction . "
+                + "?policyData a spa:PolicyData . "
+                + "}";
+        ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
+        List<QuerySolution> solutions = new ArrayList<>();
+        if (r.hasNext()) {
+            solutions.add(r.next());
+        }
+
+        for (QuerySolution querySolution : solutions) {
+            Resource resAnyOther = querySolution.get("anyOther").asResource();
+            Resource resPolicy = querySolution.get("policyAction").asResource();
+            spaModel.remove(resAnyOther, Spa.dependOn, resPolicy);
+        }
+        spaModel.remove(listStmtsToRemove);
     }
 
     //$$ TODO: matchingRegExURIFilter

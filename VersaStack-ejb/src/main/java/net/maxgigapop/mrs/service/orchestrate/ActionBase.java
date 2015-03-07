@@ -7,6 +7,8 @@ package net.maxgigapop.mrs.service.orchestrate;
 
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
+import com.hp.hpl.jena.query.QuerySolution;
+import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
@@ -212,10 +214,37 @@ public class ActionBase {
     
     protected OntModel mergeOntModel(OntModel modelA, OntModel modelB) {
         OntModel mergedModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-        // simplified merge --> child actions are responsible to remove unneeded annotations
+        //## simplified merge --> child actions are responsible to remove unneeded annotations
         mergedModel.add(modelA.getBaseModel());        
-        mergedModel.add(modelB.getBaseModel());        
-        /* sophisticated merge
+        mergedModel.add(modelB.getBaseModel());    
+        // find resolved actions from B
+        String sparql = "SELECT ?someResource ?policyAction WHERE {"
+                + "?someResource spa:dependOn ?policyAction . "
+                + "FILTER not exists {?policyAction spa:dependOn ?other} "
+                + "}";
+        OntModel modelAbutB = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        modelAbutB.add(modelA.getBaseModel());
+        modelAbutB.remove(modelB);
+        ResultSet rs = ModelUtil.sparqlQuery(modelAbutB, sparql);
+        List<QuerySolution> solutions = new ArrayList<>();
+        if (rs.hasNext()) {
+            solutions.add(rs.next());
+        }
+        // find resolved actions from A
+        OntModel modelBbutA = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        modelBbutA.add(modelB);
+        modelBbutA.remove(modelA.getBaseModel());
+        rs = ModelUtil.sparqlQuery(modelBbutA, sparql);
+        if (rs.hasNext()) {
+            solutions.add(rs.next());
+        }
+        // remove all ->dependOn->policy statements
+        for (QuerySolution querySolution : solutions) {
+            Resource resSome = querySolution.get("someResource").asResource();
+            Resource resPolicy = querySolution.get("policyAction").asResource();
+            mergedModel.remove(resSome, Spa.dependOn, resPolicy);
+        }        
+        /*## alternative: sophisticated merge
         // 1. Get dA = A.remove(B) and dB = B.remove(A)
         OntModel modelAbutB = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         modelAbutB.add(modelA.getBaseModel());
