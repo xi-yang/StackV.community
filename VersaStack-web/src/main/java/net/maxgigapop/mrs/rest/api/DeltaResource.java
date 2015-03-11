@@ -8,6 +8,7 @@ package net.maxgigapop.mrs.rest.api;
 import java.util.concurrent.Future;
 import javax.ejb.EJB;
 import javax.ejb.EJBException;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -15,6 +16,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
+import net.maxgigapop.mrs.bean.SystemDelta;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
@@ -32,12 +34,6 @@ public class DeltaResource {
     public DeltaResource(){
     }
     
-//    @POST
-//    @Consumes({"application/xml","application/json"})
-//    @Path("/{refUUID}/{deltaId}/{action}")
-//    public String propagate(@PathParam("refUUID")String refUUID){
-//        
-//    }
     
     @PUT
     @Consumes({"application/xml","application/json"})
@@ -49,6 +45,18 @@ public class DeltaResource {
             return e.getMessage();
         }
         return "commit successfully";
+    }
+    
+    @PUT
+    @Consumes({"application/xml","application/json"})
+    @Path("/{refUUID}/{id}/{action}")
+    public String push(@PathParam("refUUID")String refUUID, SystemDelta systemDelta){
+        try{
+            systemCallHandler.propagateDelta(refUUID, systemDelta);
+        }catch(Exception e){
+            return e.getMessage();
+        }
+        return "propagate successfully";
     }
     
     
