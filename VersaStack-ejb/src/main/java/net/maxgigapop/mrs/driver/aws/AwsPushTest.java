@@ -263,14 +263,14 @@ public class AwsPushTest {
                 + "        mrs:value  \"10.0.0.230\" .\n"
                 + "<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu>\n"
                 + "        a             mrs:RoutingTable , owl:NamedIndividual ;\n"
-                + "        mrs:hasRoute  <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu10.0.0.016> , <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu75.40.30.016> ;\n"
+                + "        mrs:hasRoute  <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu10.0.0.016> , <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu75.40.0.016> ;\n"
                 + "        mrs:type      \"local\" .\n"
                 + "<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu10.0.0.016>\n"
                 + "        a              mrs:Route , owl:NamedIndividual ;\n"
                 + "        mrs:nextHop    \"local\" ;\n"
-                + "        mrs:routeFrom  <urn:ogf:network:aws.amazon.com:aws-cloudroutefrom-rtb-8723d8musubnet-2cd6ad16> ;\n"
-                + "        mrs:routeTo    <urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-8723d8musubnet-2cd6ad16> .\n"
-                + "<urn:ogf:network:aws.amazon.com:aws-cloudroutefrom-rtb-8723d8musubnet-2cd6ad16>\n"
+                + "        mrs:routeFrom  <urn:ogf:network:aws.amazon.com:aws-cloudroutefrom-rtb-8723d8mu-subnet-2cd6ad16> ;\n"
+                + "        mrs:routeTo    <urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-8723d8mu-subnet-2cd6ad16> .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloudroutefrom-rtb-8723d8mu-subnet-2cd6ad16>\n"
                 + "         a             mrs:NetworkAddress , owl:NamedIndividual ;\n"
                 + "         mrs:type   \"subnet\" ;\n"
                 + "         mrs:value  \"subnet-2cd6ad16\" .\n"
@@ -278,19 +278,19 @@ public class AwsPushTest {
                 + "         a             mrs:NetworkAddress , owl:NamedIndividual ;\n"
                 + "         mrs:type   \"ipv4-prefix\" ;\n"
                 + "        mrs:value  \"10.0.0.0/16\" .\n"   
-                + "<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu75.40.30.016>\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu75.40.0.016>\n"
                 + "        a              mrs:Route , owl:NamedIndividual ;\n"
                 + "        mrs:nextHop   <urn:ogf:network:aws.amazon.com:aws-cloud:igw-6cf01345>  ;\n"
-                + "        mrs:routeFrom  <urn:ogf:network:aws.amazon.com:aws-cloudroutefrom-rtb-8723d8mu75.40.30.016subnet-2cd6ad16> ;\n"
-                + "        mrs:routeTo    <urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-8723d8mu75.40.30.016subnet-2cd6ad16> .\n"
-                + "<urn:ogf:network:aws.amazon.com:aws-cloudroutefrom-rtb-8723d8mu75.40.30.016subnet-2cd6ad16>\n"
+                + "        mrs:routeFrom  <urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-8723d8mu75.40.30.016-subnet-2cd6ad16> ;\n"
+                + "        mrs:routeTo    <urn:ogf:network:aws.amazon.com:aws-cloud:routeto-rtb-8723d8mu75.40.30.016-subnet-2cd6ad16> .\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-8723d8mu75.40.0.016-subnet-2cd6ad16>\n"
                 + "         a             mrs:NetworkAddress , owl:NamedIndividual ;\n"
                 + "         mrs:type   \"subnet\" ;\n"
                 + "         mrs:value  \"subnet-2cd6ad16\" .\n"
-                + "<urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-8723d8mu75.40.30.016subnet-2cd6ad16>\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:routeto-rtb-8723d8mu75.40.0.016subnet-2cd6ad16>\n"
                 + "         a             mrs:NetworkAddress , owl:NamedIndividual ;\n"
                 + "         mrs:type   \"ipv4-prefix\" ;\n"
-                + "        mrs:value  \"75.40.30.0/16\" .\n"
+                + "        mrs:value  \"75.40.0.0/16\" .\n"
                 +"<urn:ogf:network:aws.amazon.com:aws-cloud:igw-6cf01345>\n"
                 +"          a             nml:BidirectionalPort , owl:NamedIndividual ;\n"
                 +"          nml:hasLabel  <urn:ogf:network:aws.amazon.com:aws-cloud:igwLabel> .\n"
@@ -311,10 +311,10 @@ public class AwsPushTest {
         String ttl = out.toString();
         System.out.println(ttl);
 
-        /*AwsPushTest push = new AwsPushTest("", "", Regions.US_EAST_1, "urn:ogf:network:aws.amazon.com:aws-cloud");
+        AwsPushTest push = new AwsPushTest("", "", Regions.US_EAST_1, "urn:ogf:network:aws.amazon.com:aws-cloud");
         String request = push.pushPropagate(ttl, modelAdditionStr, modelReductionStr);
         System.out.println(request);
-        push.pushCommit(request);*/
+        push.pushCommit(request);
     }
 
     public AwsPushTest(String access_key_id, String secret_access_key, Regions region, String topologyUri) {
@@ -366,7 +366,7 @@ public class AwsPushTest {
         requests += deleteInstancesRequests(model, modelReduct);*/
         
         //Delete the network interfaces that need to be deleted
-       /* requests += deletePortsRequests(model,modelReduct);
+        /*requests += deletePortsRequests(model,modelReduct);
         
         
         //Delete routes that need to be deleted
@@ -376,13 +376,13 @@ public class AwsPushTest {
         requests += detachGatewayRequests(model,modelReduct);
         
         //delete gateways that need to be deleated
-        requests += deleteGatewayRequests(model,modelReduct);
+        requests += deleteGatewayRequests(model,modelReduct);*/
         
         //disassociate route tabes from subnets
-        //requests += disassociateTableRequests(model,modelReduct);
+        requests += disassociateTableRequests(model,modelReduct);
         
         //delete a route table 
-        */requests += deleteRouteTableRequests(model,modelReduct);
+        /*requests += deleteRouteTableRequests(model,modelReduct);
         
         //delete subnets that need to deleted
         requests += deleteSubnetsRequests(model,modelReduct);
@@ -391,7 +391,7 @@ public class AwsPushTest {
         requests += deleteVpcsRequests(model,modelReduct);
 
         //create all the vpcs that need to be created
-        /*requests += createVpcsRequests(model, modelAdd);
+        requests += createVpcsRequests(model, modelAdd);
 
         //create all the subnets that need to be created
         requests += createSubnetsRequests(model, modelAdd);
@@ -1175,54 +1175,77 @@ public class AwsPushTest {
      * Function to disassociate Route table with a subnet
      *****************************************************************
      */
-    private String disassociateTableRequest(OntModel model, OntModel modelReduct) throws Exception {
+    private String disassociateTableRequests(OntModel model, OntModel modelReduct) throws Exception {
         String requests = "";
         String query;
         
-        query ="SELECT ?route ?value WHERE {?route mrs:routeFrom ?routeFrom ."
+        query = "SELECT ?route ?routeFrom ?value WHERE {?route mrs:routeFrom ?routefrom ."
                 + "?routeFrom mrs:type \"subnet\" ."
                 + "?routeFrom mrs:value ?value}";
         ResultSet r = executeQuery(query,emptyModel,modelReduct);
         while(r.hasNext())
         {
-            boolean createRequest= false;
-            QuerySolution querySolution = r.next();
-            RDFNode value = querySolution.get("value");
-            RDFNode route = querySolution.get("route");
-            
-            query = "SELECT ?table WHERE {?table mrs:hasRoute <"+route.asResource()+"> ."
-                    + "?service mrs:providesRoute <"+route.asResource()+">}";
-            ResultSet r1 = executeQuery(query,model,modelReduct);
-            if(!r1.hasNext())
-                 throw new Exception(String.format("Route  %s"
-                                + "does not have a route table or is not"
-                         + "being provided by a routing service", route));
-            QuerySolution querySolution1= r1.next();
-            RDFNode table = querySolution1.get("table");
-            
-            String subnetIdTag = value.asLiteral().toString();
-            String tableIdTag = table.asResource().toString().replace(topologyUri, "");
-            
-            RouteTable rt = ec2Client.getRoutingTable(getTableId(tableIdTag));
-            if(rt == null)
-            {    
-                throw new Exception(String.format("Route table % does not exist", rt));
-            }
-            else
-                for(RouteTableAssociation as : rt.getAssociations())
+           QuerySolution q = r.next();
+           RDFNode route = q.get("route"); 
+           RDFNode subnet = q.get("value"); 
+           String subnetIdTag = subnet.asLiteral().toString().replace(topologyUri,"");
+           query = "SELECT ?table WHERE {?table mrs:hasRoute <"+route.asResource()+">}";
+           ResultSet r1 = executeQuery(query,emptyModel,modelReduct);
+           if(!r1.hasNext())
+               throw new Exception(String.format("Route %s does not specify"
+                       + "routing table",route));
+           else
+           {
+              QuerySolution q1 =r1.next();
+              RDFNode table = q1.get("table"); 
+              String tableIdTag = table.asResource().toString().replace(topologyUri,"");
+              RouteTable t  = ec2Client.getRoutingTable(getTableId(tableIdTag));
+              
+              if(t ==null)
+                  throw new Exception(String.format("Route Table %s does not exist",tableIdTag));
+              
+              //get all the routes from the table from the reference model
+              query= "SELECT ?route WHERE {<"+table.asResource()+"> mrs:hasRoute ?route}";
+              r1 = executeQuery(query,model,emptyModel);
+              if(!r1.hasNext())
+                 throw new Exception(String.format("routing table %s has no routes",tableIdTag));
+              boolean disassociate =true;
+              while(r1.hasNext())
+              {
+                q1 = r1.next();
+                route = q1.get("route");
+
+                String subnetLiteral = "\"" + subnet.asLiteral().toString()+ "\"";
+                query ="SELECT ?routeFrom WHERE {<"+route.asResource()+"> mrs:routeFrom ?routeFrom ."
+                        + "?routeFrom mrs:type \"subnet\" ."
+                        + "?routeFrom mrs:value "+subnetLiteral+"}";
+                ResultSet r2 =executeQuery(query,model,emptyModel);
+                ResultSet r3 =executeQuery(query,emptyModel,modelReduct);
+
+                //if the two solutions are the same, the user wants to eliminate all
+                // the routes coming from a subnet which means that the user wants
+                //the route table to be disassociated
+                boolean p =r2.hasNext();
+                boolean p1 =!r2.hasNext();
+                boolean p3 =r3.hasNext();
+                boolean p4 =!r3.hasNext();
+                if((r2.hasNext() && !r3.hasNext()) || (!r2.hasNext() && r3.hasNext()))
                 {
-                    if(as.getSubnetId().equals(getResourceId(subnetIdTag)))
-                    {
-                        createRequest = true;
-                        break;
-                    }
+                  disassociate = false;
+                  break;
                 }
-            
-            if(createRequest == true)
-                requests+=String.format("DisassociateTableRequest %s %s \n",tableIdTag,subnetIdTag);
+              }
+              if(disassociate ==true)
+              {
+                    String subnetId = getResourceId(subnetIdTag);
+                    requests += String.format("DisassociateTableRequest %s %s \n",t.getRouteTableId(),subnetId);
+              }
+              
+           }
+           
             
         }
-       return requests;
+        return requests;
     }
      
      

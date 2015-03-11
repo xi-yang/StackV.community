@@ -311,99 +311,60 @@ public class AwsModelBuilder
                         Resource ROUTE_TO=null;
                         Resource ROUTE_FROM=null;
                         int i=0;
-                        String routeId = t.getRouteTableId()+ r.getDestinationCidrBlock().replace("/","");
+                        String routeId = routeTableId+ r.getDestinationCidrBlock().replace("/","");
                         Resource ROUTE = RdfOwl.createResource(model,topologyURI + ":" +routeId,route);
                         model.add(model.createStatement(ROUTINGSERVICE,providesRoute,ROUTE));
-                        do //get the routes from the amazon cloud to any destination
+                        String target= r.getGatewayId();
+                        InternetGateway internetGateway =ec2Client.getInternetGateway(target);
+                        VpnGateway vpnGateway = ec2Client.getVirtualPrivateGateway(target);
+                        model.add(model.createStatement(ROUTINGTABLE, hasRoute,ROUTE));
+
+                        if(internetGateway!=null)
                         {
+                          Resource resource = model.getResource(topologyURI +":"+ ec2Client.getIdTag(internetGateway.getInternetGatewayId()));
+                          model.add(model.createStatement(ROUTE,nextHop,resource));
+                        }
+                        else if(vpnGateway!=null)
+                        {
+                          Resource resource = model.getResource(topologyURI +":"+ ec2Client.getIdTag(vpnGateway.getVpnGatewayId()));
+                          model.add(model.createStatement(ROUTE,nextHop,resource)); 
+                        }
+                        else
+                          model.add(model.createStatement(ROUTE,nextHop,"local")); 
+
+
+                      String p =r.getOrigin();
+
+                      ROUTE_TO= RdfOwl.createResource(model,topologyURI + "routeto-" +routeId,networkAddress);
+                      if(target.equals("local"))
+                          model.add(model.createStatement(ROUTE_TO,type,"ipv4-prefix"));
+                      else
+                          model.add(model.createStatement(ROUTE_TO,type,"ipv4-prefix-list"));
+
+                      model.add(model.createStatement(ROUTE_TO,value,r.getDestinationCidrBlock()));
+                      model.add(model.createStatement(ROUTE,routeTo, ROUTE_TO));
+                    do //get the routes from the amazon cloud to any destination
+                    {
                           String complementId="-unassociated";
                           if(!associations.isEmpty())
-                            complementId = "-"+associations.get(i).getSubnetId();
+                            complementId = "-"+ec2Client.getIdTag(associations.get(i).getSubnetId());
                           if(complementId ==null)
                               complementId="-unassociated";
-                          String target= r.getGatewayId();
-                          InternetGateway internetGateway =ec2Client.getInternetGateway(target);
-                          VpnGateway vpnGateway = ec2Client.getVirtualPrivateGateway(target);
-                          model.add(model.createStatement(ROUTINGTABLE, hasRoute,ROUTE));
+
+                        ROUTE_FROM= RdfOwl.createResource(model,topologyURI + ":routefrom-" +routeId + complementId, networkAddress);
+
+                         String subnetId=null;
+                         if(!associations.isEmpty())
+                            subnetId= associations.get(i).getSubnetId();
+                         if(subnetId !=null)
+                         {
+                             model.add(model.createStatement(ROUTE_FROM,type,"subnet")); 
+                             model.add(model.createStatement(ROUTE_FROM,value,ec2Client.getIdTag(subnetId))); 
+                         }
+
+
+                          model.add(model.createStatement(ROUTE,routeFrom,ROUTE_FROM));
                           
-                          if(internetGateway!=null)
-                          {
-                            Resource resource = model.getResource(topologyURI +":"+ ec2Client.getIdTag(internetGateway.getInternetGatewayId()));
-                            model.add(model.createStatement(ROUTE,nextHop,resource));
-                          }
-                          else if(vpnGateway!=null)
-                          {
-                            Resource resource = model.getResource(topologyURI +":"+ ec2Client.getIdTag(vpnGateway.getVpnGatewayId()));
-                            model.add(model.createStatement(ROUTE,nextHop,resource)); 
-                          }
-                          else
-                            model.add(model.createStatement(ROUTE,nextHop,"local")); 
-                          
-
-                          String p =r.getOrigin();
-                          //route is from outside of AWS to somewhere
-                          /*if(r.getOrigin().equals("EnableVgwRoutePropagation"))
-                          {
-                              List<PropagatingVgw> propagating = t.getPropagatingVgws();
-                              for(PropagatingVgw pw : propagating)
-                              {
-                                  String gatewayId = pw.getGatewayId();
-                                  VpnGateway gateway= ec2Client.getVirtualPrivateGateway(gatewayId);
-                                  List<VpcAttachment> atta =gateway.getVpcAttachments();
-                                  for(VpcAttachment at : atta)
-                                  {
-                                      if(at.getVpcId().equals(v.getVpcId()))
-                                      {
-                                          String gwId = ec2Client.getIdTag(gateway.getVpnGatewayId());
-                                          ROUTE_FROM= RdfOwl.createResource(model,topologyURI + ":routefrom-" +routeId +complementId, networkAddress);
-                                          model.add(model.createStatement(ROUTE_FROM,type,"gateway")); 
-                                          model.add(model.createStatement(ROUTE_FROM,value,topologyURI+":"+gwId)); 
-                                          model.add(model.createStatement(ROUTE,routeFrom,ROUTE_FROM));
-                                      }
-                                  }
-                              }
-                                ROUTE_TO= RdfOwl.createResource(model,topologyURI + "routeto-" +routeId + complementId, networkAddress);
-                                //goes to the subnets that the roue table is associated with 
-                                if(target.equals("local"))
-                                {
-                                    String subnetId=null;
-                                    if(!associations.isEmpty())
-                                       subnetId= associations.get(i).getSubnetId();
-                                    if(subnetId !=null)
-                                    {
-                                        model.add(model.createStatement(ROUTE_TO,type,"subnet")); 
-                                        model.add(model.createStatement(ROUTE_TO,value,ec2Client.getIdTag(subnetId)));
-                                       
-                                    }
-                                }
-                                 model.add(model.createStatement(ROUTE,routeTo,ROUTE_TO));
-                          }
-                          else //the route is from AWS to somewhere */
-                          if(true)
-                          {
-                            ROUTE_TO= RdfOwl.createResource(model,topologyURI + "routeto-" +routeId + complementId, networkAddress);
-                            if(target.equals("local"))
-                                model.add(model.createStatement(ROUTE_TO,type,"ipv4-prefix"));
-                            else
-                                model.add(model.createStatement(ROUTE_TO,type,"ipv4-prefix-list"));
-                            
-                            model.add(model.createStatement(ROUTE_TO,value,r.getDestinationCidrBlock()));
-                            model.add(model.createStatement(ROUTE,routeTo, ROUTE_TO));
-                            
-                            ROUTE_FROM= RdfOwl.createResource(model,topologyURI + ":routefrom-" +routeId + complementId, networkAddress);
-
-                             String subnetId=null;
-                             if(!associations.isEmpty())
-                                subnetId= associations.get(i).getSubnetId();
-                             if(subnetId !=null)
-                             {
-                                 model.add(model.createStatement(ROUTE_FROM,type,"subnet")); 
-                                 model.add(model.createStatement(ROUTE_FROM,value,ec2Client.getIdTag(subnetId))); 
-                             }
-                            
-
-                              model.add(model.createStatement(ROUTE,routeFrom,ROUTE_FROM));
-                          }
                               
                           i++; //increment the association index
                           index++; //increment the index for route Ids
