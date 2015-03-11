@@ -21,8 +21,8 @@ import javax.ws.rs.DELETE;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.POST;
 import net.maxgigapop.mrs.bean.VersionGroup;
-import net.maxgigapop.mrs.rest.api.model.APIModelBase;
-import net.maxgigapop.mrs.rest.api.model.APIVersionGroup;
+import net.maxgigapop.mrs.rest.api.model.ApiModelBase;
+import net.maxgigapop.mrs.rest.api.model.ApiVersionGroup;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
@@ -53,14 +53,14 @@ public class ModelResource {
     @GET
     @Produces({"application/xml", "application/json"})
     @Path("/{refUUID}")
-    public APIModelBase pull(@PathParam("refUUID") String refUUID){
+    public ApiModelBase pull(@PathParam("refUUID") String refUUID){
         net.maxgigapop.mrs.bean.ModelBase modelBase;
         try{
             modelBase= systemCallHandler.retrieveVersionGroupModel(refUUID);
         }catch(Exception e){
             throw new NotFoundException("Not Found");
         }
-        APIModelBase apiModelBase = new APIModelBase();
+        ApiModelBase apiModelBase = new ApiModelBase();
         apiModelBase.setId(modelBase.getId());
         apiModelBase.setVersion(modelBase.getCxtVersionTag());
         apiModelBase.setCreationTime(modelBase.getCreationTime());
@@ -77,9 +77,9 @@ public class ModelResource {
     @PUT
     @Produces({"application/xml", "application/json"})
     @Path("/{refUUID}")
-    public APIVersionGroup update(@PathParam("refUUID") String refUUID){
+    public ApiVersionGroup update(@PathParam("refUUID") String refUUID){
         VersionGroup vg = systemCallHandler.updateHeadVersionGroup(refUUID);
-        APIVersionGroup apiVersionGroup = new APIVersionGroup();
+        ApiVersionGroup apiVersionGroup = new ApiVersionGroup();
         apiVersionGroup.setId(vg.getId());
         apiVersionGroup.setRefUuid(vg.getRefUuid());
         apiVersionGroup.setStatus(vg.getStatus());
@@ -89,9 +89,9 @@ public class ModelResource {
 
     @POST
     @Produces({"application/xml", "application/json"})
-    public APIVersionGroup creatHeadVersionGroup(){
+    public ApiVersionGroup creatHeadVersionGroup(){
         VersionGroup vg = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
-        APIVersionGroup apiVersionGroup = new APIVersionGroup();
+        ApiVersionGroup apiVersionGroup = new ApiVersionGroup();
         apiVersionGroup.setId(vg.getId());
         apiVersionGroup.setRefUuid(vg.getRefUuid());
         apiVersionGroup.setStatus(vg.getStatus());
