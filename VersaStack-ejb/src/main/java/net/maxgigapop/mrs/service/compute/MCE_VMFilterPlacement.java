@@ -59,6 +59,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
         */
+        // importPolicyData
         String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
                 "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
                 "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
@@ -295,7 +296,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
     }
 
     //$$ TODO: matchingRegExURIFilter
-    //$$ TODO: hostCapabilityFilter's
+    //$$ TODO: hostCapabilityFilter(s)
     //$$ placeMatchingRegExURI
-    //$$ placeWithMultiFilter ??
+    //$$ placeWithMultiFilter
 }

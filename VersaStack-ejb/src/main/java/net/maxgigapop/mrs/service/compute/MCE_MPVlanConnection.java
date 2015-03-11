@@ -34,8 +34,21 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
-        DeltaBase outputDelta = annotatedDelta;
-        //$$ TODO: do computation and create outputDelta
+        DeltaBase outputDelta = annotatedDelta.clone();
+        
+        //$$ TODO: importPolicyData : List<Resource> of terminal Node/Topology (Map policyAction:->List<Resource>)
+
+        //$$ TODO: computeConnection : return a List<Model> of MPVlan connections
+        //$$        Filter out irrelevant statements (based on property type, label type, has switchingService etc.)
+        //$$        Transform into bidirectional connected graph by explicit interence
+        //$$        KSP-MP path computation on the connected graph model
+        //$$        Verify TE constraints (switching label and ?adaptation?)
+
+        //$$ pick a connection and add to outputDelta.additionOntModel
+        
+        //$$ TODO: exportPolicyData
+        //$$ TODO: removeResolvedAnnotation
+        
         return new AsyncResult(outputDelta);
     }
 }
