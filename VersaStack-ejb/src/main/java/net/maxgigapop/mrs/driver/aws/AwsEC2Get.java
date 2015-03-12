@@ -469,4 +469,15 @@ public class AwsEC2Get
         }
         return resourceId;
     }
+    
+    //from a peering connection get the vpc id
+    public String getPeerVpc(String connectionId)
+    {
+        DescribeVpcPeeringConnectionsRequest request = new DescribeVpcPeeringConnectionsRequest();
+        request.withVpcPeeringConnectionIds(connectionId);
+        DescribeVpcPeeringConnectionsResult vpcConnect=  client.describeVpcPeeringConnections(request);
+        String vpcId = vpcConnect.getVpcPeeringConnections().get(0).getAccepterVpcInfo().getVpcId();
+        
+        return vpcId;
+    }
 }

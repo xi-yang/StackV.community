@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import javax.ejb.AsyncResult;
@@ -119,6 +120,7 @@ public class HandleSystemCall {
     
     public SystemInstance createInstance() {
         SystemInstance systemInstance = new SystemInstance();
+        systemInstance.setReferenceUUID(UUID.randomUUID().toString());
         SystemInstancePersistenceManager.save(systemInstance);
         return systemInstance;
     }

@@ -113,8 +113,6 @@ public class Nml {
     
     public static final Resource Group = m_model.createResource( "http://schemas.ogf.org/nml/2013/03/base#Group" );
     
-    public static final Resource InternetGateway = m_model.createResource("http://schemas.ogf.org/nml/2013/03/base#InternetGateway" );
-    
     public static final Resource Label = m_model.createResource( "http://schemas.ogf.org/nml/2013/03/base#Label" );
     
     public static final Resource LabelGroup = m_model.createResource( "http://schemas.ogf.org/nml/2013/03/base#LabelGroup" );
@@ -131,7 +129,6 @@ public class Nml {
     
     public static final Resource NetworkObject = m_model.createResource( "http://schemas.ogf.org/nml/2013/03/base#NetworkObject" );
     
-    public static final Resource NetworkInterface = m_model.createResource("http://schemas.ogf.org/nml/2013/03/base#NetworkInterface" );
     
     public static final Resource Node = m_model.createResource( "http://schemas.ogf.org/nml/2013/03/base#Node" );
     
@@ -144,7 +141,5 @@ public class Nml {
     public static final Resource SwitchingService = m_model.createResource( "http://schemas.ogf.org/nml/2013/03/base#SwitchingService" );
     
     public static final Resource Topology = m_model.createResource( "http://schemas.ogf.org/nml/2013/03/base#Topology" );
-    
-    public static final Resource VpnGateway = m_model.createResource("http://schemas.ogf.org/nml/2013/03/base#VpnGateway" );
     
 }

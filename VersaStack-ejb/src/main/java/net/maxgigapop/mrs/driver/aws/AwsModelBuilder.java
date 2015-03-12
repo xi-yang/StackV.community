@@ -72,7 +72,6 @@ public class AwsModelBuilder
         Property routeTo =Mrs.routeTo;
         Property nextHop=Mrs.nextHop;
         Property value =Mrs.value;
-        Property name=Nml.name;
         Property hasBucket=Mrs.hasBucket;
         Property hasVolume=Mrs.hasVolume;
         Property hasTopology=Nml.hasTopology;
@@ -115,26 +114,30 @@ public class AwsModelBuilder
         Resource vpcService=RdfOwl.createResource(model,topologyURI + ":vpcservice-"+region.getName(),virtualCloudService);
         Resource s3Service= RdfOwl.createResource(model,topologyURI + ":s3service-"+region.getName(),objectStorageService);
         Resource ebsService= RdfOwl.createResource(model,topologyURI + ":ebsservice-"+region.getName(),blockStorageService);
+        Resource directConnect = RdfOwl.createResource(model,topologyURI + ":directconnect",biPort);
         
         model.add(model.createStatement(awsTopology,hasService,ec2Service));
         model.add(model.createStatement(awsTopology, hasService, vpcService));
         model.add(model.createStatement(awsTopology,hasService,s3Service));
         model.add(model.createStatement(awsTopology,hasService,ebsService));
+        model.add(model.createStatement(awsTopology, hasBidirectionalPort,directConnect));
         
         //add the lables for vpn gatewyas, internet gateways, and network interfaces
-        Resource IGW_LABEL= RdfOwl.createResource(model,topologyURI + ":igwLabel",Nml.Label);
-        model.add(model.createStatement(IGW_LABEL,Nml.labeltype,Nml.InternetGateway));
-        model.add(model.createStatement(IGW_LABEL,value,"any"));
-        Resource VPNGW_LABEL= RdfOwl.createResource(model,topologyURI + ":vpngwLabel",Nml.Label);
-        model.add(model.createStatement(VPNGW_LABEL,Nml.labeltype,Nml.VpnGateway));
-        model.add(model.createStatement(VPNGW_LABEL,value,"any"));
-        Resource PORT_LABEL= RdfOwl.createResource(model,topologyURI + ":portLabel",Nml.Label);
-        model.add(model.createStatement(PORT_LABEL,Nml.labeltype,Nml.NetworkInterface));
-        model.add(model.createStatement(PORT_LABEL,value,"any"));
-        model.add(model.createStatement(VPNGW_LABEL,value,"any"));
-        Resource VIRTUAL_INTERFACE_LABEL= RdfOwl.createResource(model,topologyURI + ":virtualinterfaceLabel",Nml.Label);
-        model.add(model.createStatement(PORT_LABEL,Nml.labeltype,Nml.Link));
-        model.add(model.createStatement(PORT_LABEL,value,"any"));
+        Resource IGW_TAG= RdfOwl.createResource(model,topologyURI + ":igwTag",Nml.Label);
+        model.add(model.createStatement(IGW_TAG,Nml.labeltype,Nml.InternetGateway));
+        model.add(model.createStatement(IGW_TAG,value,"any"));
+        Resource VPNGW_TAG= RdfOwl.createResource(model,topologyURI + ":vpngwTag",Nml.Label);
+        model.add(model.createStatement(VPNGW_TAG,Nml.labeltype,Nml.VpnGateway));
+        model.add(model.createStatement(VPNGW_TAG,value,"any"));
+        Resource PORT_TAG= RdfOwl.createResource(model,topologyURI + ":portTag",Nml.Label);
+        model.add(model.createStatement(PORT_TAG,Nml.labeltype,Nml.NetworkInterface));
+        model.add(model.createStatement(PORT_TAG,value,"any"));
+        Resource VIRTUAL_INTERFACE_TAG= RdfOwl.createResource(model,topologyURI + ":virtualinterfaceTag",Nml.Label);
+        model.add(model.createStatement(VIRTUAL_INTERFACE_TAG,Nml.labeltype,Mrs.VirtualInterface));
+        model.add(model.createStatement(PORT_TAG,value,"any"));
+        
+        //create resource for Vlan labels
+        Resource vlan = model.createResource("http://schemas.ogf.org/nml/2012/10/ethernet#vlan");
 
         
 
@@ -143,7 +146,7 @@ public class AwsModelBuilder
         {
             String internetGatewayId = ec2Client.getIdTag(t.getInternetGatewayId());
             Resource INTERNETGATEWAY = RdfOwl.createResource(model,topologyURI + ":" + internetGatewayId,biPort);
-            model.add(model.createStatement(INTERNETGATEWAY, hasLabel,IGW_LABEL));
+            model.add(model.createStatement(INTERNETGATEWAY, hasLabel,IGW_TAG));
         }
         
         //put all the Vpn gateways into the model
@@ -151,28 +154,28 @@ public class AwsModelBuilder
         {
             String vpnGatewayId = ec2Client.getIdTag(g.getVpnGatewayId());
             Resource VPNGATEWAY = RdfOwl.createResource(model,topologyURI + ":" + vpnGatewayId,biPort);
-            model.add(model.createStatement(VPNGATEWAY, hasLabel,VPNGW_LABEL));
+            model.add(model.createStatement(VPNGATEWAY, hasLabel,VPNGW_TAG));
             
-            for(VirtualInterface vi : dcClient.getVirtualInterfaces(vpnGatewayId))
+            for(VirtualInterface vi : dcClient.getVirtualInterfaces(g.getVpnGatewayId()))
             {
                 String viId = vi.getVirtualGatewayId();
-                String vlan = Integer.toString(vi.getVlan());
+                String vlanNum = Integer.toString(vi.getVlan());
                 
-                Resource VLAN_LABEL= RdfOwl.createResource(model,topologyURI +":vlan-"+vlan,Nml.Label);
-                Resource VLAN = RdfOwl.createResource(model,topologyURI+":"+vlan,biPort);
+                Resource VLAN_LABEL= RdfOwl.createResource(model,topologyURI +":vlan-"+vlanNum,Nml.Label);
+                model.add(model.createStatement(VLAN_LABEL,Nml.labeltype,vlan));
+                model.add(model.createStatement(VLAN_LABEL,value,vlanNum));
+                
                 Resource VIRTUAL_INTERFACE= RdfOwl.createResource(model,topologyURI+":"+vi.getVirtualInterfaceId(),biPort);
-                
-                model.add(model.createStatement(VIRTUAL_INTERFACE,hasLabel,VIRTUAL_INTERFACE_LABEL));
-               // model.add(model.createStatement(VIRTUALINTERFACE,ASN,vi.getAsn().toString()))
-                model.add(model.createStatement(VPNGATEWAY,hasBidirectionalPort,VIRTUAL_INTERFACE));
-                model.add(model.createStatement(VLAN_LABEL,Nml.labeltype,Nml.Link));
-                model.add(model.createStatement(VLAN_LABEL,value,vlan));
-                model.add(model.createStatement(VLAN,hasLabel,VLAN_LABEL));
+                model.add(model.createStatement(VIRTUAL_INTERFACE,hasLabel,VIRTUAL_INTERFACE_TAG));
+                model.add(model.createStatement(VIRTUAL_INTERFACE,hasLabel,VLAN_LABEL));
+                model.add(model.createStatement(VPNGATEWAY,Nml.isAlias,VIRTUAL_INTERFACE));
+                model.add(model.createStatement(VIRTUAL_INTERFACE,Nml.isAlias,VPNGATEWAY));
+                model.add(model.createStatement(directConnect,hasBidirectionalPort,VIRTUAL_INTERFACE));
                 
                 Connection c = dcClient.getConnection(vi);
                 if(c!=null)
                 {
-                   model.add(model.createStatement(VLAN,Mrs.capacity,c.getBandwidth()));
+                   //model.add(model.createStatement(VLAN,Mrs.capacity,c.getBandwidth()));
                     
                 }
             }
@@ -257,7 +260,7 @@ public class AwsModelBuilder
                         {
                             String portId= ec2Client.getIdTag(n.getNetworkInterfaceId());
                             Resource PORT = RdfOwl.createResource(model,topologyURI + ":" +portId,biPort);
-                            model.add(model.createStatement(PORT, hasLabel,PORT_LABEL));
+                            model.add(model.createStatement(PORT, hasLabel,PORT_TAG));
                             model.add(model.createStatement(INSTANCE,hasBidirectionalPort,PORT));
                             model.add(model.createStatement(SUBNET,hasBidirectionalPort,PORT));
                             
@@ -315,25 +318,35 @@ public class AwsModelBuilder
                         Resource ROUTE = RdfOwl.createResource(model,topologyURI + ":" +routeId,route);
                         model.add(model.createStatement(ROUTINGSERVICE,providesRoute,ROUTE));
                         String target= r.getGatewayId();
-                        InternetGateway internetGateway =ec2Client.getInternetGateway(target);
-                        VpnGateway vpnGateway = ec2Client.getVirtualPrivateGateway(target);
-                        model.add(model.createStatement(ROUTINGTABLE, hasRoute,ROUTE));
-
-                        if(internetGateway!=null)
+                        
+                        if(target != null) //in case is not a vpc peering connection
                         {
-                          Resource resource = model.getResource(topologyURI +":"+ ec2Client.getIdTag(internetGateway.getInternetGatewayId()));
-                          model.add(model.createStatement(ROUTE,nextHop,resource));
+                            InternetGateway internetGateway =ec2Client.getInternetGateway(target);
+                            VpnGateway vpnGateway = ec2Client.getVirtualPrivateGateway(target);
+                            model.add(model.createStatement(ROUTINGTABLE, hasRoute,ROUTE));
+
+                            if(internetGateway!=null)
+                            {
+                              Resource resource = model.getResource(topologyURI +":"+ ec2Client.getIdTag(internetGateway.getInternetGatewayId()));
+                              model.add(model.createStatement(ROUTE,nextHop,resource));
+                            }
+                            else if(vpnGateway!=null)
+                            {
+                              Resource resource = model.getResource(topologyURI +":"+ ec2Client.getIdTag(vpnGateway.getVpnGatewayId()));
+                              model.add(model.createStatement(ROUTE,nextHop,resource)); 
+                            }
+                            else
+                              model.add(model.createStatement(ROUTE,nextHop,"local")); 
                         }
-                        else if(vpnGateway!=null)
+                        else //in case is a vpc peering connection
                         {
-                          Resource resource = model.getResource(topologyURI +":"+ ec2Client.getIdTag(vpnGateway.getVpnGatewayId()));
-                          model.add(model.createStatement(ROUTE,nextHop,resource)); 
+                            target = r.getVpcPeeringConnectionId();
+                            target = ec2Client.getPeerVpc(target);
+                            target = ec2Client.getIdTag(target);
+                            model.add(model.createStatement(ROUTINGTABLE, hasRoute,ROUTE));
+                            Resource resource = model.getResource(topologyURI +":"+target);
+                            model.add(model.createStatement(ROUTE,nextHop,resource)); 
                         }
-                        else
-                          model.add(model.createStatement(ROUTE,nextHop,"local")); 
-
-
-                      String p =r.getOrigin();
 
                       ROUTE_TO= RdfOwl.createResource(model,topologyURI + "routeto-" +routeId,networkAddress);
                       if(target.equals("local"))
@@ -343,13 +356,12 @@ public class AwsModelBuilder
 
                       model.add(model.createStatement(ROUTE_TO,value,r.getDestinationCidrBlock()));
                       model.add(model.createStatement(ROUTE,routeTo, ROUTE_TO));
-                    do //get the routes from the amazon cloud to any destination
+                    while(i<associations.size() && !associations.isEmpty()) //get the routes from the amazon cloud to any destination
                     {
-                          String complementId="-unassociated";
-                          if(!associations.isEmpty())
-                            complementId = "-"+ec2Client.getIdTag(associations.get(i).getSubnetId());
-                          if(complementId ==null)
-                              complementId="-unassociated";
+                        String complementId = "-"+ec2Client.getIdTag(associations.get(i).getSubnetId());
+                        if(complementId.equals("-null"))
+                            break;
+
 
                         ROUTE_FROM= RdfOwl.createResource(model,topologyURI + ":routefrom-" +routeId + complementId, networkAddress);
 
@@ -368,7 +380,7 @@ public class AwsModelBuilder
                               
                           i++; //increment the association index
                           index++; //increment the index for route Ids
-                        }while(i<associations.size());
+                        }
 
                     }
             }

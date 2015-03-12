@@ -55,7 +55,10 @@ public class AwsDCGet
         List<VirtualInterface> vis = new ArrayList();
         for(VirtualInterface v : virtualInterfaces)
         {
-            if(v.getVirtualGatewayId().equals(id))
+            String virtualGatewayId = v.getVirtualGatewayId();
+            if(virtualGatewayId == null)
+                continue;
+            if(virtualGatewayId.equals(id))
                 vis.add(v);
         }
         return vis;
