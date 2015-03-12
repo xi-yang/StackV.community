@@ -79,7 +79,7 @@ public class AwsModelBuilder
         Property privateIpAddress=model.createProperty(model.getNsPrefixURI("mrs")+"privateIpAddress");
         Property targetDevice= model.createProperty(model.getNsPrefixURI("mrs")+"target_device");
         Property hasRoute =Mrs.hasRoute;
-        Property hasLabel = Nml.hasLabel;
+        Property hasTag = Mrs.hasTag;
         Property hasNetworkAddress = Mrs.hasNetworkAddress;
         Property providesRoutingTable= model.createProperty(model.getNsPrefixURI("mrs")+"providesRoutingTable");
         
@@ -100,7 +100,7 @@ public class AwsModelBuilder
         Resource namedIndividual = model.createResource(model.getNsPrefixURI("mrs")+"NamedIndividual");
         Resource awsTopology = RdfOwl.createResource(model,topologyURI,topology);
         Resource objectStorageService=Mrs.ObjectStorageService;
-        Resource routingTable = Mrs.routingTable;
+        Resource routingTable = Mrs.RoutingTable;
         
         //get the information from the AWS account
         AwsEC2Get ec2Client=new AwsEC2Get(access_key_id,secret_access_key,region);
@@ -123,18 +123,18 @@ public class AwsModelBuilder
         model.add(model.createStatement(awsTopology, hasBidirectionalPort,directConnect));
         
         //add the lables for vpn gatewyas, internet gateways, and network interfaces
-        Resource IGW_TAG= RdfOwl.createResource(model,topologyURI + ":igwTag",Nml.Label);
-        model.add(model.createStatement(IGW_TAG,Nml.labeltype,Nml.InternetGateway));
-        model.add(model.createStatement(IGW_TAG,value,"any"));
-        Resource VPNGW_TAG= RdfOwl.createResource(model,topologyURI + ":vpngwTag",Nml.Label);
-        model.add(model.createStatement(VPNGW_TAG,Nml.labeltype,Nml.VpnGateway));
-        model.add(model.createStatement(VPNGW_TAG,value,"any"));
-        Resource PORT_TAG= RdfOwl.createResource(model,topologyURI + ":portTag",Nml.Label);
-        model.add(model.createStatement(PORT_TAG,Nml.labeltype,Nml.NetworkInterface));
-        model.add(model.createStatement(PORT_TAG,value,"any"));
-        Resource VIRTUAL_INTERFACE_TAG= RdfOwl.createResource(model,topologyURI + ":virtualinterfaceTag",Nml.Label);
-        model.add(model.createStatement(VIRTUAL_INTERFACE_TAG,Nml.labeltype,Mrs.VirtualInterface));
-        model.add(model.createStatement(PORT_TAG,value,"any"));
+        Resource IGW_TAG= RdfOwl.createResource(model,topologyURI + ":igwTag",Mrs.Tag);
+        model.add(model.createStatement(IGW_TAG,Mrs.type,"gateway"));
+        model.add(model.createStatement(IGW_TAG,value,"internet"));
+        Resource VPNGW_TAG= RdfOwl.createResource(model,topologyURI + ":vpngwTag",Mrs.Tag);
+        model.add(model.createStatement(VPNGW_TAG,type,"gateway"));
+        model.add(model.createStatement(VPNGW_TAG,value,"vpn"));
+        Resource PORT_TAG= RdfOwl.createResource(model,topologyURI + ":portTag",Mrs.Tag);
+        model.add(model.createStatement(PORT_TAG,type,"interface"));
+        model.add(model.createStatement(PORT_TAG,value,"network"));
+        Resource VIRTUAL_INTERFACE_TAG= RdfOwl.createResource(model,topologyURI + ":virtualinterfaceTag",Mrs.Tag);
+        model.add(model.createStatement(VIRTUAL_INTERFACE_TAG,type,"interface"));
+        model.add(model.createStatement(PORT_TAG,value,"virtual"));
         
         //create resource for Vlan labels
         Resource vlan = model.createResource("http://schemas.ogf.org/nml/2012/10/ethernet#vlan");
@@ -146,7 +146,7 @@ public class AwsModelBuilder
         {
             String internetGatewayId = ec2Client.getIdTag(t.getInternetGatewayId());
             Resource INTERNETGATEWAY = RdfOwl.createResource(model,topologyURI + ":" + internetGatewayId,biPort);
-            model.add(model.createStatement(INTERNETGATEWAY, hasLabel,IGW_TAG));
+            model.add(model.createStatement(INTERNETGATEWAY, hasTag,IGW_TAG));
         }
         
         //put all the Vpn gateways into the model
@@ -154,7 +154,7 @@ public class AwsModelBuilder
         {
             String vpnGatewayId = ec2Client.getIdTag(g.getVpnGatewayId());
             Resource VPNGATEWAY = RdfOwl.createResource(model,topologyURI + ":" + vpnGatewayId,biPort);
-            model.add(model.createStatement(VPNGATEWAY, hasLabel,VPNGW_TAG));
+            model.add(model.createStatement(VPNGATEWAY, hasTag,VPNGW_TAG));
             
             for(VirtualInterface vi : dcClient.getVirtualInterfaces(g.getVpnGatewayId()))
             {
@@ -166,8 +166,8 @@ public class AwsModelBuilder
                 model.add(model.createStatement(VLAN_LABEL,value,vlanNum));
                 
                 Resource VIRTUAL_INTERFACE= RdfOwl.createResource(model,topologyURI+":"+vi.getVirtualInterfaceId(),biPort);
-                model.add(model.createStatement(VIRTUAL_INTERFACE,hasLabel,VIRTUAL_INTERFACE_TAG));
-                model.add(model.createStatement(VIRTUAL_INTERFACE,hasLabel,VLAN_LABEL));
+                model.add(model.createStatement(VIRTUAL_INTERFACE,hasTag,VIRTUAL_INTERFACE_TAG));
+                model.add(model.createStatement(VIRTUAL_INTERFACE,Nml.hasLabel,VLAN_LABEL));
                 model.add(model.createStatement(VPNGATEWAY,Nml.isAlias,VIRTUAL_INTERFACE));
                 model.add(model.createStatement(VIRTUAL_INTERFACE,Nml.isAlias,VPNGATEWAY));
                 model.add(model.createStatement(directConnect,hasBidirectionalPort,VIRTUAL_INTERFACE));
@@ -260,7 +260,7 @@ public class AwsModelBuilder
                         {
                             String portId= ec2Client.getIdTag(n.getNetworkInterfaceId());
                             Resource PORT = RdfOwl.createResource(model,topologyURI + ":" +portId,biPort);
-                            model.add(model.createStatement(PORT, hasLabel,PORT_TAG));
+                            model.add(model.createStatement(PORT, hasTag,PORT_TAG));
                             model.add(model.createStatement(INSTANCE,hasBidirectionalPort,PORT));
                             model.add(model.createStatement(SUBNET,hasBidirectionalPort,PORT));
                             

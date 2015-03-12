@@ -60,30 +60,22 @@ public class AwsPushTest {
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 
     public static void main(String[] args) throws Exception {
-        String modelAdditionStr = "@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n"
-                + "@prefix owl:   <http://www.w3.org/2002/07/owl#> .\n"
-                + "@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .\n"
-                + "@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n"
-                + "@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .\n"
-                + "@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .\n"
-                + "\n"
-                + "<urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-8723d8mu75.40.0.016-subnet-85135bbf>\n"
-                + "        a          mrs:NetworkAddress , owl:NamedIndividual ;\n"
-                + "        mrs:type   \"subnet\" ;\n"
-                + "        mrs:value  \"subnet-85135bbf\" .\n"
-                + "\n"
-                + "<urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-8723d8mu10.0.0.016-subnet-85135bbf>\n"
-                + "        a          mrs:NetworkAddress , owl:NamedIndividual ;\n"
-                + "        mrs:type   \"subnet\" ;\n"
-                + "        mrs:value  \"subnet-85135bbf\" .\n"
-                + "\n"
-                + "<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu10.0.0.016>\n"
-                + "        mrs:routeFrom  <urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-8723d8mu10.0.0.016-subnet-85135bbf> .\n"
-                + "\n"
-                + "<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu75.40.0.016>\n"
-                + "        mrs:routeFrom  <urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-8723d8mu75.40.0.016-subnet-85135bbf> .";
+        String modelAdditionStr = "";
 
-        String modelReductionStr = "";
+        String modelReductionStr = "@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n" +
+"@prefix owl:   <http://www.w3.org/2002/07/owl#> .\n" +
+"@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .\n" +
+"@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n" +
+"@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .\n" +
+"@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .\n" +
+"\n" +
+"\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloud:igw-6cf01345>\n" +
+"        a             nml:BidirectionalPort , owl:NamedIndividual ;\n" +
+"        mrs:hasTag  <urn:ogf:network:aws.amazon.com:aws-cloud:igwTag> .\n" +
+"\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloud:vpc-8c5f22e9>\n" +
+"        nml:hasBidirectionalPort  <urn:ogf:network:aws.amazon.com:aws-cloud:igw-6cf01345> ;";
         OntModel model = AwsModelBuilder.createOntology("", "", Regions.US_EAST_1, "urn:ogf:network:aws.amazon.com:aws-cloud");
         StringWriter out = new StringWriter();
         try {
@@ -686,9 +678,20 @@ public class AwsPushTest {
         String requests = "";
         String query;
 
+        //get the tag resource from the reference model that indicates 
+        //that this is a network  interface 
+        query = "SELECT ?tag WHERE {?tag mrs:type \"interface\" ."
+                + "?tag mrs:value \"network\"}";
+        ResultSet r = executeQuery(query, model, emptyModel);
+        if (!r.hasNext()) {
+            throw new Exception(String.format("Reference model has no tags for network"
+                    + "interfaces"));
+        }
+        QuerySolution q = r.next();
+        RDFNode tag = q.get("tag");
         query = "SELECT ?port WHERE {?port a  nml:BidirectionalPort ."
-                + "?port  nml:hasLabel   <urn:ogf:network:aws.amazon.com:aws-cloud:portLabel>}";
-        ResultSet r = executeQuery(query, emptyModel, modelReduct);
+                + "?port  nml:hasTag <" + tag.asResource() + ">}";
+        r = executeQuery(query, emptyModel, modelReduct);
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode port = querySolution.get("port");
@@ -1095,26 +1098,25 @@ public class AwsPushTest {
             ResultSet r1 = executeQuery(query, model, modelReduct);
             while (r1.hasNext()) {
                 r1.next();
-                query = "SELECT ?label WHERE {<" + gateway.asResource() + "> a nml:BidirectionalPort ."
-                        + "<" + gateway.asResource() + "> nml:hasLabel ?label}";
-                ResultSet r2 = executeQuery(query, model, modelReduct);
+                query = "SELECT ?tag WHERE {<" + gateway.asResource() + "> mrs:hasTag ?tag}";
+                ResultSet r2 = executeQuery(query, emptyModel, modelReduct);
                 if (!r2.hasNext()) {
-                    throw new Exception(String.format("Label for Internet gateway %s i"
-                            + "s not specified in model reduction", gateway));
+                    throw new Exception(String.format("Tag for Internet gateway %s i"
+                            + "s not specified in model addition", gateway));
                 }
                 QuerySolution q1 = r2.next();
-                RDFNode label = q1.get("label");
+                RDFNode tag = q1.get("tag");
 
                 //look for the lable in the reference model
-                query = "SELECT ?type WHERE {<" + label.asResource() + "> a nml:Label ."
-                        + "<" + label.asResource() + "> nml:labeltype  ?type}";
+                query = "SELECT ?value WHERE {<" + tag.asResource() + "> mrs:type \"gateway\" ."
+                        + "<" + tag.asResource() + "> mrs:value  ?value}";
                 r2 = executeQuery(query, model, emptyModel);
                 if (!r2.hasNext()) {
                     throw new Exception(String.format("Label %s for gateway %s is"
-                            + " an invalid label", label, gateway));
+                            + " an invalid label", tag, gateway));
                 }
                 q1 = r2.next();
-                RDFNode type = q1.get("type");
+                String value = q1.get("value").asLiteral().toString();
                 String gatewayIdTag = gateway.asResource().toString().replace(topologyUri, "");
                 String gatewayId = getResourceId(gatewayIdTag);
                 String vpcIdTag = vpc.asResource().toString().replace(topologyUri, "");
@@ -1123,13 +1125,13 @@ public class AwsPushTest {
                     throw new Exception(String.format("Vpc with vpc id %s from where"
                             + "the gateway will be detacched does not exist", vpcId));
                 }
-                if (type.equals(Nml.InternetGateway)) {
+                if (value.equals("internet")) {
                     if (ec2Client.getInternetGateway(gatewayId) == null) {
                         throw new Exception(String.format("Gatway %s to be detacched does"
                                 + "not exist", gatewayId));
                     }
                     requests += String.format("DettachInternetGatewayRequest %s %s \n", gatewayId, vpcId);
-                } else if (type.equals(Nml.VpnGateway)) {
+                } else if (value.equals("vpn")) {
                     if (ec2Client.getVirtualPrivateGateway(gatewayId) == null) {
                         throw new Exception(String.format("Gatway %s to be detacched does"
                                 + "not exist", gatewayId));
@@ -1158,33 +1160,33 @@ public class AwsPushTest {
             RDFNode igw = q.get("igw");
             String idTag = igw.asResource().toString().replace(topologyUri, "");
 
-            query = "SELECT ?label WHERE {<" + igw.asResource() + "> nml:hasLabel ?label}";
+            query = "SELECT ?tag WHERE {<" + igw.asResource() + "> mrs:hasTag ?tag}";
             ResultSet r1 = executeQuery(query, emptyModel, modelReduct);
             if (!r1.hasNext()) {
-                throw new Exception(String.format("Label for Internet gateway %s i"
-                        + "s not specified in model addition", igw));
+                throw new Exception(String.format("Tag for Internet gateway %s i"
+                        + "s not specified in model reduction", igw));
             }
             QuerySolution q1 = r1.next();
-            RDFNode label = q1.get("label");
+            RDFNode tag = q1.get("tag");
 
             //look for the lable in the reference model
-            query = "SELECT ?type WHERE {<" + label.asResource() + "> a nml:Label ."
-                    + "<" + label.asResource() + "> nml:labeltype  ?type}";
+            query = "SELECT ?value WHERE {<" + tag.asResource() + "> mrs:type \"gateway\" ."
+                    + "<" + tag.asResource() + "> mrs:value ?value}";
             r1 = executeQuery(query, model, emptyModel);
             if (!r1.hasNext()) {
-                throw new Exception(String.format("Label %s for gateway %s is"
-                        + " an invalid label", label, igw));
+                throw new Exception(String.format("Tag %s for gateway %s is"
+                        + " an invalid tag", tag, igw));
             }
             q1 = r1.next();
-            RDFNode type = q1.get("type");
-            if (type.equals(Nml.InternetGateway)) {
+            String value = q1.get("value").asLiteral().toString();
+            if (value.equals("internet")) {
                 InternetGateway gateway = ec2Client.getInternetGateway(getResourceId(idTag));
                 if (gateway == null) {
                     throw new Exception(String.format("Internet gateway %s to de deleted"
                             + "does not exist", idTag));
                 }
                 requests += String.format("DeleteInternetGatewayRequest %s \n", gateway.getInternetGatewayId());
-            } else if (type.equals(Nml.VpnGateway)) {
+            } else if (value.equals("gateway")) {
                 VpnGateway gateway = ec2Client.getVirtualPrivateGateway(getResourceId(idTag));
                 if (gateway == null) {
                     throw new Exception(String.format("Internet gateway %s to de deleted"
@@ -1773,32 +1775,32 @@ public class AwsPushTest {
             RDFNode igw = q.get("igw");
             String idTag = igw.asResource().toString().replace(topologyUri, "");
 
-            query = "SELECT ?label WHERE {<" + igw.asResource() + "> nml:hasLabel ?label}";
+            query = "SELECT ?tag WHERE {<" + igw.asResource() + "> mrs:hasTag ?tag}";
             ResultSet r1 = executeQuery(query, emptyModel, modelAdd);
             if (!r1.hasNext()) {
                 throw new Exception(String.format("Label for Internet gateway %s i"
                         + "s not specified in model addition", igw));
             }
             QuerySolution q1 = r1.next();
-            RDFNode label = q1.get("label");
+            RDFNode tag = q1.get("tag");
 
             //look for the lable in the reference model
-            query = "SELECT ?type WHERE {<" + label.asResource() + "> a nml:Label ."
-                    + "<" + label.asResource() + "> nml:labeltype  ?type}";
+            query = "SELECT ?value WHERE {<" + tag.asResource() + "> mrs:type \"gateway\" ."
+                    + "<" + tag.asResource() + "> mrs:value ?value}";
             r1 = executeQuery(query, model, emptyModel);
             if (!r1.hasNext()) {
-                throw new Exception(String.format("Label %s for gateway %s is"
-                        + " an invalid label", label, igw));
+                throw new Exception(String.format("Tag %s for gateway %s is"
+                        + " an invalid Tag", tag, igw));
             }
             q1 = r1.next();
-            RDFNode type = q1.get("type");
-            if (type.equals(Nml.InternetGateway)) {
+            String value = q1.get("value").asLiteral().toString();
+            if (value.equals("internet")) {
                 if (ec2Client.getInternetGateway(getResourceId(idTag)) != null) {
                     throw new Exception(String.format("Internet gateway %s already exists", idTag));
                 } else {
                     requests += String.format("CreateInternetGatewayRequest %s \n", idTag);
                 }
-            } else if (type.equals(Nml.VpnGateway)) {
+            } else if (value.equals("vpn")) {
                 if (ec2Client.getVirtualPrivateGateway(getResourceId(idTag)) != null) {
                     throw new Exception(String.format("VPN gateway %s already exists", idTag));
                 } else {
@@ -1831,31 +1833,30 @@ public class AwsPushTest {
             ResultSet r1 = executeQuery(query, model, modelAdd);
             while (r1.hasNext()) {
                 r1.next();
-                query = "SELECT ?label WHERE {<" + gateway.asResource() + "> a nml:BidirectionalPort ."
-                        + "<" + gateway.asResource() + "> nml:hasLabel ?label}";
-                ResultSet r2 = executeQuery(query, model, modelAdd);
+                query = "SELECT ?tag WHERE {<" + gateway.asResource() + "> mrs:hasTag ?tag}";
+                ResultSet r2 = executeQuery(query, emptyModel, modelAdd);
                 if (!r2.hasNext()) {
-                    throw new Exception(String.format("Label for Internet gateway %s i"
+                    throw new Exception(String.format("Tag for Internet gateway %s i"
                             + "s not specified in model addition", gateway));
                 }
                 QuerySolution q1 = r2.next();
-                RDFNode label = q1.get("label");
+                RDFNode tag = q1.get("tag");
 
                 //look for the lable in the reference model
-                query = "SELECT ?type WHERE {<" + label.asResource() + "> a nml:Label ."
-                        + "<" + label.asResource() + "> nml:labeltype  ?type}";
+                query = "SELECT ?value WHERE {<" + tag.asResource() + "> mrs:type \"gateway\" ."
+                        + "<" + tag.asResource() + "> mrs:value  ?value}";
                 r2 = executeQuery(query, model, emptyModel);
                 if (!r2.hasNext()) {
-                    throw new Exception(String.format("Label %s for gateway %s is"
-                            + " an invalid label", label, gateway));
+                    throw new Exception(String.format("Tag %s for gateway %s is"
+                            + " an invalid tag", tag, gateway));
                 }
                 q1 = r2.next();
-                RDFNode type = q1.get("type");
+                String value = q1.get("value").asLiteral().toString();
                 String gatewayIdTag = gateway.asResource().toString().replace(topologyUri, "");
                 String vpcIdTag = vpc.asResource().toString().replace(topologyUri, "");
-                if (type.equals(Nml.InternetGateway)) {
+                if (value.equals("internet")) {
                     requests += String.format("AttachInternetGatewayRequest %s %s \n", gatewayIdTag, vpcIdTag);
-                } else if (type.equals(Nml.VpnGateway)) {
+                } else if (value.equals("vpn")) {
                     requests += String.format("AttachVpnGatewayRequest %s %s \n", gatewayIdTag, vpcIdTag);
                 }
 
@@ -2039,9 +2040,21 @@ public class AwsPushTest {
         String requests = "";
         String query;
 
+        //get the tag resource from the reference model that indicates 
+        //that this is a network  interface 
+        query = "SELECT ?tag WHERE {?tag mrs:type \"interface\" ."
+                + "?tag mrs:value \"network\"}";
+        ResultSet r = executeQuery(query, model, emptyModel);
+        if (!r.hasNext()) {
+            throw new Exception(String.format("Reference model has no tags for network"
+                    + "interfaces"));
+        }
+        QuerySolution q = r.next();
+        RDFNode tag = q.get("tag");
+
         query = "SELECT ?port WHERE {?port a  nml:BidirectionalPort ."
-                + "?port  nml:hasLabel   <urn:ogf:network:aws.amazon.com:aws-cloud:portLabel>}";
-        ResultSet r = executeQuery(query, emptyModel, modelAdd);
+                + "?port  nml:hasTag <" + tag.asResource() + ">}";
+        r = executeQuery(query, emptyModel, modelAdd);
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode port = querySolution.get("port");
