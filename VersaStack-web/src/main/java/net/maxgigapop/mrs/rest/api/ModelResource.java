@@ -87,7 +87,7 @@ public class ModelResource {
         return apiVersionGroup;
     }
 
-    @POST
+    @GET
     @Produces({"application/xml", "application/json"})
     public ApiVersionGroup creatHeadVersionGroup(){
         VersionGroup vg = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
@@ -99,7 +99,7 @@ public class ModelResource {
         return apiVersionGroup;
     }
     
-    @POST
+    @GET
     @Path("/systeminstance")
     public String push(){
         return systemCallHandler.createInstance().getReferenceUUID();

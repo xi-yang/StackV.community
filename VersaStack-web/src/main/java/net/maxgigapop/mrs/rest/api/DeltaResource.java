@@ -41,9 +41,12 @@ public class DeltaResource {
     
     
     @PUT
-    @Consumes({"application/xml","application/json"})
-    @Path("/{refUUID}")
-    public String commit(@PathParam("refUUID")String refUUID){
+//    @Consumes({"application/xml","application/json"})
+    @Path("/{refUUID}/{action}")
+    public String commit(@PathParam("refUUID")String refUUID, @PathParam("action") String action){
+        if (!action.toLowerCase().equals("commit")) {
+            throw new BadRequestException("Invalid action: "+action);
+        }
         try{
             systemCallHandler.commitDelta(refUUID);
         }catch(EJBException e){
@@ -52,10 +55,10 @@ public class DeltaResource {
         return "commit successfully";
     }
     
-    @PUT
+    @POST
     @Consumes({"application/xml","application/json"})
-    @Path("/{refUUID}/{id}/{action}")
-    public String push(@PathParam("refUUID")String SysInstanceRefUUID, ApiDeltaBase deltabase,@PathParam("action") String action) throws Exception{
+    @Path("/{refUUID}/{action}")
+    public String push(@PathParam("refUUID")String SysInstanceRefUUID, ApiDeltaBase deltabase, @PathParam("action") String action) throws Exception{
         if (!action.toLowerCase().equals("propagate")) {
             throw new BadRequestException("Invalid action: "+action);
         }
