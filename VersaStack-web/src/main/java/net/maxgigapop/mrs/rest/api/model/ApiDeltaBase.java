@@ -28,8 +28,8 @@ public class ApiDeltaBase {
     protected String modelReduction = null;
     @XmlElement(required=true) 
     protected String modelAddition = null;
-    @XmlElement(required=true) 
-    protected String status = "";
+//    @XmlElement(required=true) 
+//    protected String status = "";
     
         public String getId() {
         return id;
@@ -71,13 +71,13 @@ public class ApiDeltaBase {
         this.referenceVersion = referenceVersion;
     }
 
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
+//    public String getStatus() {
+//        return status;
+//    }
+//
+//    public void setStatus(String status) {
+//        this.status = status;
+//    }
 
     @Override
     public String toString() {

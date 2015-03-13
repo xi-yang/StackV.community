@@ -18,6 +18,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name="model")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ApiModelBase {
+    
     @XmlElement(required=true) 
     protected Long id = 0L;
     @XmlElement(required=true) 
@@ -26,8 +27,8 @@ public class ApiModelBase {
     protected String version = "";
     @XmlElement(required=true) 
     protected String ttlModel = "";
-    @XmlElement(required=true) 
-    protected String status = "";
+//    @XmlElement(required=true) 
+//    protected String status = "";
 
     public Long getId() {
         return id;
@@ -61,13 +62,13 @@ public class ApiModelBase {
         this.ttlModel = ttlModel;
     }
 
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
+//    public String getStatus() {
+//        return status;
+//    }
+//
+//    public void setStatus(String status) {
+//        this.status = status;
+//    }
 
     @Override
     public String toString() {
