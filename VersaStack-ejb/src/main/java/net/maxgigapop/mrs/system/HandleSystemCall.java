@@ -155,6 +155,8 @@ public class HandleSystemCall {
         if (referenceVG == null) {
             throw new EJBException(String.format("%s has no reference versionGroup to work with", systemInstance));
         }
+        // refresh into current persistence context
+        referenceVG = VersionGroupPersistenceManager.findByReferenceId(referenceVG.getRefUuid());
 
         //EJBExeption may be thrown upon fault from subroutine of each step below
         //## Step 1. create reference model and target model 
