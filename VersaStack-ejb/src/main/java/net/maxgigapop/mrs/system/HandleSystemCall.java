@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import javax.ejb.AsyncResult;
@@ -119,6 +120,7 @@ public class HandleSystemCall {
     
     public SystemInstance createInstance() {
         SystemInstance systemInstance = new SystemInstance();
+        systemInstance.setReferenceUUID(UUID.randomUUID().toString());
         SystemInstancePersistenceManager.save(systemInstance);
         return systemInstance;
     }
@@ -150,6 +152,7 @@ public class HandleSystemCall {
        // Note 1: a defaut VG (#1) must exist the first time the system starts.
         // Note 2: the VG below must contain versionItems for committed models only.
         VersionGroup referenceVG = sysDelta.getReferenceVersionGroup();
+        referenceVG = VersionGroupPersistenceManager.findByReferenceId(referenceVG.getRefUuid());
         if (referenceVG == null) {
             throw new EJBException(String.format("%s has no reference versionGroup to work with", systemInstance));
         }
@@ -265,7 +268,7 @@ public class HandleSystemCall {
         //## End of propgation
     }
     
-    @Asynchronous
+        @Asynchronous
     public Future<String> commitDelta(SystemInstance systemInstance) {
         // 1. Get target VG from this stateful bean
         if (systemInstance.getSystemDelta() == null || systemInstance.getSystemDelta().getDriverSystemDeltas() == null 
