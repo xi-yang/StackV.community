@@ -89,18 +89,20 @@ public class ModelResource {
 
     @GET
     @Produces({"application/xml", "application/json"})
-    public ApiVersionGroup creatHeadVersionGroup(){
+    public ApiModelBase creatHeadVersionGroup(){
         VersionGroup vg = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
-        ApiVersionGroup apiVersionGroup = new ApiVersionGroup();
-        apiVersionGroup.setId(vg.getId());
-        apiVersionGroup.setRefUuid(vg.getRefUuid());
-        apiVersionGroup.setStatus(vg.getStatus());
-        apiVersionGroup.setVersionItems(vg.getVersionItems());
-        return apiVersionGroup;
+        return this.pull(vg.getRefUuid());
+//        ApiVersionGroup apiVersionGroup = new ApiVersionGroup();
+//        apiVersionGroup.setId(vg.getId());
+//        apiVersionGroup.setRefUuid(vg.getRefUuid());
+//        apiVersionGroup.setStatus(vg.getStatus());
+//        apiVersionGroup.setVersionItems(vg.getVersionItems());
+//        return apiVersionGroup;
     }
     
     @GET
     @Path("/systeminstance")
+    @Produces({"application/xml","application/json"})
     public String push(){
         return systemCallHandler.createInstance().getReferenceUUID();
     }
