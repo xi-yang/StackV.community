@@ -60,22 +60,27 @@ public class AwsPushTest {
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 
     public static void main(String[] args) throws Exception {
-        String modelAdditionStr = "";
+        String modelAdditionStr = "@prefix owl:   <http://www.w3.org/2002/07/owl#> .\n"
+                + "@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n"
+                + "@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .\n"
+                + "@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n"
+                + "@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .\n"
+                + "@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .\n"
+                + "\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:eni-123456>\n"
+                + "        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n"
+                + "        mrs:hasTag            <urn:ogf:network:aws.amazon.com:aws-cloud:portTag> ;\n"
+                + "        mrs:privateIpAddress  <urn:ogf:network:aws.amazon.com:aws-cloud:10.0.0.6> .\n"
+                + "\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:10.0.0.6>\n"
+                + "        a          mrs:NetworkAddress , owl:NamedIndividual ;\n"
+                + "        mrs:type   \"ipv4:private\" ;\n"
+                + "        mrs:value  \"10.0.0.6\" .\n"
+                + "\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:subnet-2cd6ad16>\n"
+                + "	nml:hasBidirectionalPort <urn:ogf:network:aws.amazon.com:aws-cloud:eni-123456> .";
 
-        String modelReductionStr = "@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n" +
-"@prefix owl:   <http://www.w3.org/2002/07/owl#> .\n" +
-"@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .\n" +
-"@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n" +
-"@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .\n" +
-"@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .\n" +
-"\n" +
-"\n" +
-"<urn:ogf:network:aws.amazon.com:aws-cloud:igw-6cf01345>\n" +
-"        a             nml:BidirectionalPort , owl:NamedIndividual ;\n" +
-"        mrs:hasTag  <urn:ogf:network:aws.amazon.com:aws-cloud:igwTag> .\n" +
-"\n" +
-"<urn:ogf:network:aws.amazon.com:aws-cloud:vpc-8c5f22e9>\n" +
-"        nml:hasBidirectionalPort  <urn:ogf:network:aws.amazon.com:aws-cloud:igw-6cf01345> ;";
+        String modelReductionStr = "";
         OntModel model = AwsModelBuilder.createOntology("", "", Regions.US_EAST_1, "urn:ogf:network:aws.amazon.com:aws-cloud");
         StringWriter out = new StringWriter();
         try {
@@ -140,6 +145,9 @@ public class AwsPushTest {
         //delete all the instances that need to be created
         requests += deleteInstancesRequests(model, modelReduct);
 
+        //disassociate an address from a network interface
+        requests += disassociateAddressRequest(model, modelReduct);
+
         //Delete the network interfaces that need to be deleted
         requests += deletePortsRequests(model, modelReduct);
 
@@ -191,6 +199,9 @@ public class AwsPushTest {
         //create network interface if it needs to be created
         requests += createPortsRequests(model, modelAdd);
 
+        //Associate an address with a  interface
+        requests += associateAddressRequest(model, modelAdd);
+
         //create all the nodes that need to be created 
         requests += createInstancesRequests(model, modelAdd);
 
@@ -226,6 +237,15 @@ public class AwsPushTest {
                 volumeRequest.withVolumeId(parameters[1])
                         .withInstanceId(parameters[2]);
                 client.detachVolume(volumeRequest);
+
+            } else if (request.contains("DisassociateAddressRequest")) {
+                String[] parameters = request.split("\\s+");
+
+                Address publicIp = ec2Client.getElasticIp(parameters[1]);
+                DisassociateAddressRequest disassociateAddressRequest = new DisassociateAddressRequest();
+                disassociateAddressRequest.withAssociationId(publicIp.getAssociationId())
+                        .withPublicIp(publicIp.toString());
+                client.disassociateAddress(disassociateAddressRequest);
 
             } else if (request.contains("DeleteNetworkInterfaceRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -671,6 +691,37 @@ public class AwsPushTest {
 
     /**
      * ****************************************************************
+     * Function to disassociate an address from a network interface
+     * ****************************************************************
+     */
+    private String disassociateAddressRequest(OntModel model, OntModel modelReduct) throws Exception {
+        //to get the public ip address of the network interface if any
+        String requests = "";
+        String query = "SELECT  ?port ?address WHERE {?port  mrs:hasNetworkAddress ?address ."
+                + "?address mrs:type \"ipv4:public\"}";
+        ResultSet r1 = executeQuery(query, emptyModel, modelReduct);
+        while (r1.hasNext()) {
+            QuerySolution querySolution1 = r1.next();
+            RDFNode address = querySolution1.get("address");
+            RDFNode port = querySolution1.get(("port"));
+            String portIdTagValue = port.asResource().toString().replace(topologyUri, "");
+            query = "SELECT ?value WHERE {<" + address.asResource() + ">  mrs:value  ?value}";
+            ResultSet r2 = executeQuery(query, model, modelReduct);
+            if (!r2.hasNext()) {
+                throw new Exception(String.format("model Reduction  network addres  %s for port $s"
+                        + "is not found in the reference model", address, port));
+            }
+            QuerySolution querySolution2 = r2.next();
+            RDFNode value = querySolution2.get("value");
+            String publicAddress = value.asLiteral().toString().replace(topologyUri, "");
+            requests += "DisassociateAddressRequest " + publicAddress + " " + portIdTagValue
+                    + " \n";
+        }
+        return requests;
+    }
+
+    /**
+     * ****************************************************************
      * Function to delete a network interface
      * ****************************************************************
      */
@@ -690,7 +741,7 @@ public class AwsPushTest {
         QuerySolution q = r.next();
         RDFNode tag = q.get("tag");
         query = "SELECT ?port WHERE {?port a  nml:BidirectionalPort ."
-                + "?port  nml:hasTag <" + tag.asResource() + ">}";
+                + "?port  mrs:hasTag <" + tag.asResource() + ">}";
         r = executeQuery(query, emptyModel, modelReduct);
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
@@ -1153,7 +1204,9 @@ public class AwsPushTest {
         String requests = "";
         String query;
 
-        query = "SELECT ?igw WHERE {?igw a nml:BidirectionalPort}";
+        query = "SELECT ?igw WHERE {?igw a nml:BidirectionalPort ."
+                + "?igw mrs:hasTag ?tag ."
+                + "?tag mrs:type \"gateway\"}";
         ResultSet r = executeQuery(query, emptyModel, modelReduct);
         while (r.hasNext()) {
             QuerySolution q = r.next();
@@ -1768,7 +1821,9 @@ public class AwsPushTest {
         String requests = "";
         String query;
 
-        query = "SELECT ?igw WHERE {?igw a nml:BidirectionalPort}";
+        query = "SELECT ?igw WHERE {?igw a nml:BidirectionalPort ."
+                + "?igw mrs:hasTag ?tag ."
+                + "?tag mrs:type \"gateway\"}";
         ResultSet r = executeQuery(query, emptyModel, modelAdd);
         while (r.hasNext()) {
             QuerySolution q = r.next();
@@ -2053,7 +2108,7 @@ public class AwsPushTest {
         RDFNode tag = q.get("tag");
 
         query = "SELECT ?port WHERE {?port a  nml:BidirectionalPort ."
-                + "?port  nml:hasTag <" + tag.asResource() + ">}";
+                + "?port  mrs:hasTag <" + tag.asResource() + ">}";
         r = executeQuery(query, emptyModel, modelAdd);
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
@@ -2081,7 +2136,7 @@ public class AwsPushTest {
                 query = "SELECT ?subnet WHERE {?subnet  nml:hasBidirectionalPort <" + port.asResource() + ">}";
                 r1 = executeQuery(query, model, modelAdd);
                 if (!r1.hasNext()) {
-                    throw new Exception(String.format("model addition does not network subnet of port: %s", port));
+                    throw new Exception(String.format("model addition does not specify network interface subnet of port: %s", port));
                 }
                 String subnetId = null;
                 while (r1.hasNext()) {
@@ -2102,26 +2157,38 @@ public class AwsPushTest {
                 }
                 //create the network interface 
                 requests += String.format("CreateNetworkInterfaceRequest  %s %s %s \n", privateAddress, subnetId, portIdTagValue);
-
-                //to get the public ip address of the network interface if any
-                query = "SELECT ?address WHERE {<" + port.asResource() + ">  mrs:publicIpAddress  ?address}";
-                r1 = executeQuery(query, model, modelAdd);
-                if (r1.hasNext()) {
-                    querySolution1 = r1.next();
-                    address = querySolution1.get("address");
-                    query = "SELECT ?value WHERE {<" + address.asResource() + ">  mrs:value  ?value}";
-                    ResultSet r2 = executeQuery(query, model, modelAdd);
-                    if (!r2.hasNext()) {
-                        throw new Exception(String.format("model additions network addres  %s for port $s"
-                                + "is not found in the reference mode", address, port));
-                    }
-                    QuerySolution querySolution2 = r2.next();
-                    RDFNode value = querySolution2.get("value");
-                    String publicAddress = value.asLiteral().toString().replace(topologyUri, "");
-                    requests += "AssociateAddressRequest " + publicAddress + " " + portIdTagValue
-                            + " \n";
-                }
             }
+        }
+        return requests;
+    }
+
+    /**
+     * ****************************************************************
+     * Function to associate an address with a network interface
+     * ****************************************************************
+     */
+    private String associateAddressRequest(OntModel model, OntModel modelAdd) throws Exception {
+        //to get the public ip address of the network interface if any
+        String requests = "";
+        String query = "SELECT  ?port ?address WHERE {?port  mrs:hasNetworkAddress ?address ."
+                + "?address mrs:type \"ipv4:public\"}";
+        ResultSet r1 = executeQuery(query, model, modelAdd);
+        while (r1.hasNext()) {
+            QuerySolution querySolution1 = r1.next();
+            RDFNode address = querySolution1.get("address");
+            RDFNode port = querySolution1.get(("port"));
+            String portIdTagValue = port.asResource().toString().replace(topologyUri, "");
+            query = "SELECT ?value WHERE {<" + address.asResource() + ">  mrs:value  ?value}";
+            ResultSet r2 = executeQuery(query, model, modelAdd);
+            if (!r2.hasNext()) {
+                throw new Exception(String.format("model additions network addres  %s for port $s"
+                        + "is not found in the reference mode", address, port));
+            }
+            QuerySolution querySolution2 = r2.next();
+            RDFNode value = querySolution2.get("value");
+            String publicAddress = value.asLiteral().toString().replace(topologyUri, "");
+            requests += "AssociateAddressRequest " + publicAddress + " " + portIdTagValue
+                    + " \n";
         }
         return requests;
     }
@@ -2276,10 +2343,7 @@ public class AwsPushTest {
                 Instance ins = ec2Client.getInstance(nodeId);
                 Volume vol = ec2Client.getVolume(volumeId);
                 if (vol == null) {
-                    query = "SELECT ?deviceName ?size ?type WHERE{<" + volume.asResource() + "> a mrs:Volume ."
-                            + "<" + volume.asResource() + "> mrs:target_device ?deviceName ."
-                            + "<" + volume.asResource() + "> mrs:disk_gb ?size ."
-                            + "<" + volume.asResource() + "> mrs:value ?type}";
+                    query = "SELECT ?deviceName ?size ?type WHERE{<" + volume.asResource() + "> mrs:target_device ?deviceName}";
                     r2 = executeQuery(query, model, modelAdd);
                     if (!r2.hasNext()) {
                         throw new Exception(String.format("volume %s is not well specified in volume addition", volume));
