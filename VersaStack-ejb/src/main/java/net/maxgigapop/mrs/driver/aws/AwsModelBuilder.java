@@ -44,7 +44,6 @@ import net.maxgigapop.mrs.driver.openstack.OpenStackModelBuilder;
 public class AwsModelBuilder {
 
     public static OntModel createOntology(String access_key_id, String secret_access_key, Regions region, String topologyURI) throws IOException {
-        Logger logger = Logger.getLogger(AwsModelBuilder.class.getName());
 
         //create model object
         OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
@@ -397,7 +396,6 @@ public class AwsModelBuilder {
             model.add(model.createStatement(s3Service, providesBucket, BUCKET));
             model.add(model.createStatement(awsTopology, hasBucket, BUCKET));
         }
-        logger.log(Level.INFO, "Ontology model for AWS driver rewritten");
         return model;
     }
 }

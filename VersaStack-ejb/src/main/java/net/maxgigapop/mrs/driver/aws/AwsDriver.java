@@ -38,6 +38,8 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
  */
 @Stateless
 public class AwsDriver implements IHandleDriverSystemCall {
+    
+    Logger logger = Logger.getLogger(AwsDriver.class.getName());
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
@@ -50,14 +52,15 @@ public class AwsDriver implements IHandleDriverSystemCall {
         String r= driverInstance.getProperty("region");
         String topologyURI= driverInstance.getProperty("topologyUri");
         Regions region= Regions.fromName(r);
-         
+        
+        String model=driverInstance.getHeadVersionItem().getModelRef().getTtlModel();
         String modelAdd=aDelta.getModelAddition().getTtlModel();
         String modelReduc= aDelta.getModelReduction().getTtlModel();
         
         AwsPush push= new AwsPush(access_key_id,secret_access_key,region,topologyURI);
         String requests=null;
         try {
-            requests = push.pushPropagate(modelAdd,modelReduc);
+            requests = push.pushPropagate(model,modelAdd,modelReduc);
         } catch (Exception ex) {
             Logger.getLogger(AwsDriver.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -65,6 +68,7 @@ public class AwsDriver implements IHandleDriverSystemCall {
         String requestId= driverInstance.getId().toString()+ aDelta.getId().toString();
         driverInstance.putProperty(requestId, requests);
         DriverInstancePersistenceManager.merge(driverInstance);
+        Logger.getLogger(AwsDriver.class.getName()).log(Level.SEVERE, null,"AWS driver delta models succesfully propagated");
     }
 
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
@@ -86,11 +90,16 @@ public class AwsDriver implements IHandleDriverSystemCall {
         String requests=driverInstance.getProperty(requestId);
         
         AwsPush push= new AwsPush(access_key_id,secret_access_key,region,topologyURI);
-        push.pushCommit(requests);
+        try {
+            push.pushCommit(requests);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(AwsDriver.class.getName()).log(Level.SEVERE, null, ex);
+        }
         
         driverInstance.getProperties().remove("requestId");
         DriverInstancePersistenceManager.merge(driverInstance);
         
+        Logger.getLogger(AwsDriver.class.getName()).log(Level.SEVERE, null,"AWS driver delta models succesfully commited");
         return new AsyncResult<String>("SUCCESS");
     }
 
@@ -131,7 +140,8 @@ public class AwsDriver implements IHandleDriverSystemCall {
         } catch (Exception ex) {
             Logger.getLogger(AwsDriver.class.getName()).log(Level.SEVERE, null, ex);
         }
-
+        
+        Logger.getLogger(AwsDriver.class.getName()).log(Level.SEVERE, null,"AWS driver ontology model succesfully pulled");
         return new AsyncResult<>("SUCCESS");
     }
 
