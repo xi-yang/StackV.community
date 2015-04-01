@@ -60,34 +60,17 @@ public class AwsPushTest {
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 
     public static void main(String[] args) throws Exception {
-        String modelAdditionStr = "@prefix owl:   <http://www.w3.org/2002/07/owl#> .\n" +
-"@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n" +
-"@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .\n" +
-"@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n" +
-"@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .\n" +
-"@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .\n" +
-"\n" +
-"<urn:ogf:network:aws.amazon.com:aws-cloud:vol-123457>\n" +
-"        a                  mrs:Volume , owl:NamedIndividual ;\n" +
-"        mrs:disk_gb        \"8\" ;\n" +
-"        mrs:target_device  \"/dev/xvda\" ;\n" +
-"        mrs:value          \"standard\" .\n" +
-"\n" +
-"<urn:ogf:network:aws.amazon.com:aws-cloud:ebsservice-us-east-1>\n" +
-"        mrs:providesVolume  <urn:ogf:network:aws.amazon.com:aws-cloud:vol-123457> .\n" +
-"\n" +
-"<urn:ogf:network:aws.amazon.com:aws-cloud:i-123456>\n" +
-"        a                         nml:Node , owl:NamedIndividual ;\n" +
-"        mrs:providedByService     <urn:ogf:network:aws.amazon.com:aws-cloud:ec2service-us-east-1> ;\n" +
-"        mrs:hasVolume             <urn:ogf:network:aws.amazon.com:aws-cloud:vol-123457> ;\n" +
-"        nml:hasBidirectionalPort  <urn:ogf:network:aws.amazon.com:aws-cloud:eni-123456> .\n" +
-"\n" +
-"<urn:ogf:network:aws.amazon.com:aws-cloud:vpc-8c5f22e9>\n" +
-"nml:hasNode               <urn:ogf:network:aws.amazon.com:aws-cloud:i-123456> .\n" +
-"\n" +
-"<urn:ogf:network:aws.amazon.com:aws-cloud:ec2service-us-east-1>\n" +
-"        mrs:providesVM  <urn:ogf:network:aws.amazon.com:aws-cloud:i-123456> .";
-        String modelReductionStr = "";
+        String modelAdditionStr = "";
+
+        String modelReductionStr = "@prefix owl:   <http://www.w3.org/2002/07/owl#> .\n"
+                + "@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n"
+                + "@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .\n"
+                + "@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n"
+                + "@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .\n"
+                + "@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .\n"
+                + "\n"
+                + "<urn:ogf:network:aws.amazon.com:aws-cloud:i-123456>\n"
+                + "        nml:hasBidirectionalPort  <urn:ogf:network:aws.amazon.com:aws-cloud:eni-123457> .\n";
 
         OntModel model = AwsModelBuilder.createOntology("", "", Regions.US_EAST_1, "urn:ogf:network:aws.amazon.com:aws-cloud");
         StringWriter out = new StringWriter();
@@ -152,6 +135,9 @@ public class AwsPushTest {
         //delete all the instances that need to be created
         requests += deleteInstancesRequests(model, modelReduct);
 
+        //detach a network interface from an existing instance
+        requests += detachPortRequest(model, modelReduct);
+
         //disassociate an address from a network interface
         requests += disassociateAddressRequest(model, modelReduct);
 
@@ -209,6 +195,9 @@ public class AwsPushTest {
         //Associate an address with a  interface
         requests += associateAddressRequest(model, modelAdd);
 
+        //attach ports to existing instances
+        requests += attachPortRequest(model, modelAdd);
+
         //create all the nodes that need to be created 
         requests += createInstancesRequests(model, modelAdd);
 
@@ -235,6 +224,14 @@ public class AwsPushTest {
                 DeleteTagsRequest tagRequest = new DeleteTagsRequest();
                 client.terminateInstances(del);
                 ec2Client.getEc2Instances().remove(ec2Client.getInstance(instanceId));
+
+            } else if (request.contains("DetachNetworkInterfaceRequest")) {
+                String[] parameters = request.split("\\s+");
+
+                String attachmentId = parameters[1];
+                DetachNetworkInterfaceRequest portRequest = new DetachNetworkInterfaceRequest();
+                portRequest.withAttachmentId(attachmentId);
+                client.detachNetworkInterface(portRequest);
 
             } else if (request.contains("DetachVolumeRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -559,6 +556,18 @@ public class AwsPushTest {
                 associateAddressRequest.withAllocationId(publicIp.getAllocationId())
                         .withNetworkInterfaceId(getResourceId(parameters[2]));
                 client.associateAddress(associateAddressRequest);
+
+            } else if (request.contains("AttachNetworkInterfaceRequest")) {
+                String[] parameters = request.split("\\s+");
+
+                String portId = getResourceId(parameters[1]);
+                String nodeId = getInstanceId(parameters[2]);
+                int index = Integer.parseInt(parameters[3]);
+                AttachNetworkInterfaceRequest portRequest = new AttachNetworkInterfaceRequest();
+                portRequest.withInstanceId(nodeId);
+                portRequest.withNetworkInterfaceId(portId);
+                portRequest.withDeviceIndex(index);
+                client.attachNetworkInterface(portRequest);
 
             } else if (request.contains("RunInstancesRequest")) {
                 //requests += String.format("RunInstancesRequest ami-146e2a7c t2.micro ") 
@@ -907,6 +916,68 @@ public class AwsPushTest {
 
     /**
      * ****************************************************************
+     * Function to detach a network interface to an existing instance
+     * ****************************************************************
+     */
+    private String detachPortRequest(OntModel model, OntModel modelReduct) throws Exception {
+        String requests = "";
+        String query = "";
+
+        query = "SELECT ?node ?port WHERE {?node nml:hasBidirectionalPort ?port}";
+        ResultSet r = executeQuery(query, emptyModel, modelReduct);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            RDFNode port = q.get("port");
+            RDFNode node = q.get("node");
+            String nodeIdTag = node.asResource().toString().replace(topologyUri, "");
+            query = "SELECT ?node WHERE {<" + node.asResource() + "> a nml:Node}";
+            ResultSet r1 = executeQuery(query, model, emptyModel);
+            ResultSet r1_1 = executeQuery(query, emptyModel, modelReduct);
+            Instance i = null;
+            if (r1.hasNext()) {
+                String nodeId = getInstanceId(nodeIdTag);
+                i = ec2Client.getInstance(nodeId);
+            }
+            while (r1.hasNext() && !r1_1.hasNext()) {
+                r1.next();
+                String portIdTag = port.asResource().toString().replace(topologyUri, "");
+
+                query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:hasTag ?tag}";
+                ResultSet r2 = executeQuery(query, model, modelReduct);
+                if (!r2.hasNext()) {
+                    throw new Exception(String.format("bidirectional port %s to be detached to intsnace does not specify a tag", port));
+                }
+                QuerySolution q2 = r2.next();
+                RDFNode tag = q2.get("tag");
+                query = "SELECT ?tag WHERE {<" + tag.asResource() + "> mrs:type \"interface\". "
+                        + "<" + tag.asResource() + "> mrs:value \"network\"}";
+                r2 = executeQuery(query, model, emptyModel);
+                if (!r2.hasNext()) {
+                    throw new Exception(String.format("bidirectional port %s to be detached to instance is not a net"
+                            + "work interface", port));
+                }
+
+                String attachmentId = "";
+                for (InstanceNetworkInterface eni : i.getNetworkInterfaces()) {
+                    if (eni.getNetworkInterfaceId().equals(getResourceId(portIdTag))) {
+                        attachmentId = eni.getAttachment().getAttachmentId();
+                        break;
+                    }
+
+                }
+                if (attachmentId.equals("")) {
+                    throw new Exception(String.format("bidirectional port %s to be detached has no attachments", port));
+                }
+
+                requests += String.format("DetachNetworkInterfaceRequests %s\n", attachmentId);
+            }
+
+        }
+        return requests;
+    }
+
+    /**
+     * ****************************************************************
      * Function to delete volumes from a model
      * ****************************************************************
      */
@@ -1226,7 +1297,6 @@ public class AwsPushTest {
         String requests = "";
         String query;
 
-
         query = "SELECT ?igw  WHERE {?igw a nml:BidirectionalPort}";
         ResultSet r = executeQuery(query, emptyModel, modelReduct);
         while (r.hasNext()) {
@@ -1248,7 +1318,7 @@ public class AwsPushTest {
                     + "<" + tag.asResource() + "> mrs:value ?value}";
             r1 = executeQuery(query, model, emptyModel);
             if (!r1.hasNext()) {
-                continue; 
+                continue;
             }
             q1 = r1.next();
             String value = q1.get("value").asLiteral().toString();
@@ -2217,6 +2287,66 @@ public class AwsPushTest {
 
     /**
      * ****************************************************************
+     * Function to attach a network interface to an existing instance
+     * ****************************************************************
+     */
+    private String attachPortRequest(OntModel model, OntModel modelAdd) throws Exception {
+        String requests = "";
+        String query = "";
+
+        query = "SELECT ?node ?port WHERE {?node nml:hasBidirectionalPort ?port}";
+        ResultSet r = executeQuery(query, emptyModel, modelAdd);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            RDFNode port = q.get("port");
+            RDFNode node = q.get("node");
+            String nodeIdTag = node.asResource().toString().replace(topologyUri, "");
+            query = "SELECT ?node WHERE {<" + node.asResource() + "> a nml:Node}";
+            ResultSet r1 = executeQuery(query, model, emptyModel);
+            Instance i = null;
+            int index = 0;
+            if (r1.hasNext()) {
+                String nodeId = getInstanceId(nodeIdTag);
+                i = ec2Client.getInstance(nodeId);
+                index = i.getNetworkInterfaces().size();
+            }
+            while (r1.hasNext()) {
+                r1.next();
+                String portIdTag = port.asResource().toString().replace(topologyUri, "");
+
+                query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:hasTag ?tag}";
+                ResultSet r2 = executeQuery(query, model, modelAdd);
+                if (!r2.hasNext()) {
+                    throw new Exception(String.format("bidirectional port %s to be attached to intsnace does not specify a tag", port));
+                }
+                QuerySolution q2 = r2.next();
+                RDFNode tag = q2.get("tag");
+                query = "SELECT ?tag WHERE {<" + tag.asResource() + "> mrs:type \"interface\". "
+                        + "<" + tag.asResource() + "> mrs:value \"network\"}";
+                r2 = executeQuery(query, model, emptyModel);
+                if (!r2.hasNext()) {
+                    throw new Exception(String.format("bidirectional port %s to be attached to instance is not a net"
+                            + "work interface", port));
+                }
+
+                //see if the network interface is already atatched
+                NetworkInterface eni = ec2Client.getNetworkInterface(getResourceId(portIdTag));
+                if (eni != null) {
+                    if (eni.getAttachment() != null) {
+                        throw new Exception(String.format("bidirectional port %s to be attached to instance is already"
+                                + " attached to an instance", port));
+                    }
+                }
+                requests += String.format("AttachNetworkInterfaceRequests %s %s %s \n", portIdTag, nodeIdTag, Integer.toString(index));
+                index++;
+            }
+
+        }
+        return requests;
+    }
+
+    /**
+     * ****************************************************************
      * Function to create Instances
      * ****************************************************************
      */
@@ -2493,8 +2623,8 @@ public class AwsPushTest {
         }
         return tag;
     }
-    
-       /**
+
+    /**
      * ****************************************************************
      * //function to get the Id from a volume tag
      * ****************************************************************
