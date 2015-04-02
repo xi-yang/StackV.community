@@ -59,7 +59,7 @@ public class AwsPushTest {
     static final Logger logger = Logger.getLogger(AwsPush.class.getName());
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 
-    public static void main(String[] args) throws Exception {
+   /* public static void main(String[] args) throws Exception {
         String modelAdditionStr = "";
 
         String modelReductionStr = "@prefix owl:   <http://www.w3.org/2002/07/owl#> .\n"
@@ -95,7 +95,7 @@ public class AwsPushTest {
 
         //do an adjustment to the topologyUri
         this.topologyUri = topologyUri + ":";
-    }
+    }*/
 
     /**
      * ***********************************************
