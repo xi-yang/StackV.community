@@ -129,6 +129,7 @@ public class Nml {
     
     public static final Resource NetworkObject = m_model.createResource( "http://schemas.ogf.org/nml/2013/03/base#NetworkObject" );
     
+    
     public static final Resource Node = m_model.createResource( "http://schemas.ogf.org/nml/2013/03/base#Node" );
     
     public static final Resource Port = m_model.createResource( "http://schemas.ogf.org/nml/2013/03/base#Port" );

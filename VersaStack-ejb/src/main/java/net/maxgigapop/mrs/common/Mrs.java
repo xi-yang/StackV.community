@@ -119,7 +119,7 @@ public class Mrs {
     public static final Resource POSIX_IOBenchmark = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#POSIX_IOBenchmark" );
     
     public static final Resource Route = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#Route" );
-    
+   
     public static final Resource RoutingService = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#RoutingService" );
     
     public static final Resource RoutingTable = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#RoutingTable" );
