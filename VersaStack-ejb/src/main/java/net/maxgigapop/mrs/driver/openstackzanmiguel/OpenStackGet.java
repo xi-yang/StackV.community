@@ -7,82 +7,134 @@ package net.maxgigapop.mrs.driver.openstackzanmiguel;
 
 import java.util.List;
 import org.openstack4j.api.OSClient;
+import org.openstack4j.model.common.Resource;
+import org.openstack4j.model.compute.*;
 import org.openstack4j.model.network.*;
+import org.openstack4j.model.storage.block.*;
 
 /**
  *
  * @author max
  */
-public class OpenStackGet 
-{
+public class OpenStackGet {
+
     public OSClient client = null;
-    private List <? extends Network> networks = null;
-    private List <? extends Subnet> subnets =null;
-    private List <? extends Port> ports =null;
-    
-    public OpenStackGet(String url, String username, String password, String tenantName)
-    {
+    private List<? extends Network> networks = null;
+    private List<? extends Subnet> subnets = null;
+    private List<? extends Port> ports = null;
+    private List<? extends Server> servers = null;
+    private List<? extends Volume> volumes = null;
+    private List<? extends NetFloatingIP> floatingIps = null;
+
+    public OpenStackGet(String url, String username, String password, String tenantName) {
         //authenticate
         Authenticate authenticate = new Authenticate();
-        client =  authenticate.openStackAuthenticate(url,username,password,tenantName);
-        
+        client = authenticate.openStackAuthenticate(url, username, password, tenantName);
+
         //get the resources
         networks = client.networking().network().list();
         subnets = client.networking().subnet().list();
         ports = client.networking().port().list();
+        servers = client.compute().servers().list();
+        volumes = client.blockStorage().volumes().list();
+        floatingIps = client.networking().floatingip().list();
         
+
     }
-    
+
     //get all the networks in the tenant
-    public List<? extends Network> getNetworks()
-    {
-       return networks;
+    public List<? extends Network> getNetworks() {
+        return networks;
     }
-    
-    //get a network by its name
-    public Network getNetwork(String name)
-    {
-        for(Network net: networks)
-        {
-            if(net.getName().equals(name))
+
+    //get a network by its id
+    public Network getNetwork(String id) {
+        for (Network net : networks) {
+            if (net.getId().equals(id) || net.getName().equals(id)) {
                 return net;
+            }
         }
         return null;
     }
-    
-    //get all the sybnets in the tenant
-    public List<? extends Subnet> getSubnets()
-    {
-       return subnets;
+
+    //get all the subnets in the tenant
+    public List<? extends Subnet> getSubnets() {
+        return subnets;
     }
-    
-    //get a network by its name
-    public Subnet getSubnet(String name)
-    {
-        for(Subnet net: subnets)
-        {
-            if(net.getName().equals(name))
+
+    //get a subnet by its id
+    public Subnet getSubnet(String id) {
+        for (Subnet net : subnets) {
+            if (net.getId().equals(id) || net.getName().equals(id)) {
                 return net;
+            }
         }
         return null;
     }
-    
+
     //get all the ports in the tenant
-    public List<? extends Port> getPorts()
-    {
+    public List<? extends Port> getPorts() {
         return ports;
     }
-    
-    //get a port by its name
-    public Port getPort(String name)
-    {
-        for(Port port : ports)
-        {
-            if(port.getName().equals(name))
+
+    //get a port by its id
+    public Port getPort(String id) {
+        for (Port port : ports) {
+            if (port.getId().equals(id) || port.getName().equals(id)) {
                 return port;
+            }
+        }
+        return null;
+    }
+
+    //get all servers in the tenant
+    public List<? extends Server> getServers() {
+        return servers;
+    }
+
+    //get a server by its id
+    public Server getServer(String id) {
+        for (Server server : servers) {
+            if (server.getId().equals(id) || server.getName().equals(id)) {
+                 return server;
+            }
         }
         return null;
     }
     
+    //get all volumes in the tenant
+    public List<? extends Volume> getVolumes() {
+        return volumes;
+    }
+
+    //get a volume by its id
+    public Volume getVolume(String id) {
+        for (Volume volume: volumes) {
+            if (volume.getId().equals(id) || volume.getName().equals(id)) {
+                return volume;
+            }
+        }
+        return null;
+    }
     
+    //get all floating ips in the tenant
+    public List<? extends NetFloatingIP> getFloatingIp() {
+        return floatingIps;
+    }
+
+    //get a floating ip  by its id
+    public NetFloatingIP getFloatingIp(String id) {
+        for (NetFloatingIP ip: floatingIps) {
+            if (ip.getId().equals(id)) {
+                return ip;
+            }
+        }
+        return null;
+    }
+    
+    //get the OpenStack client
+    public OSClient getClient()
+    {
+        return client;
+    }
 }
