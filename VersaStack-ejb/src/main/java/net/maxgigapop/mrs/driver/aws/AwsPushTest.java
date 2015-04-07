@@ -43,8 +43,8 @@ import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
 
 /**
- * 
- * @author muzcategui
+ *
+ * @author max
  */
 // TODO attach network interfaces and volumes to existing instances,tag root device
 // change the address type in network interfaces , recognize network interface by 
@@ -72,7 +72,7 @@ public class AwsPushTest {
                 + "<urn:ogf:network:aws.amazon.com:aws-cloud:i-123456>\n"
                 + "        nml:hasBidirectionalPort  <urn:ogf:network:aws.amazon.com:aws-cloud:eni-123457> .\n";
 
-        OntModel model = AwsModelBuilder.createOntology("AKIAJQMR4G7PCMWZRIHA", "FGPE/uQnnwS186JpJTvRWrLLgaognTXWCDuggxpN", Regions.US_EAST_1, "urn:ogf:network:aws.amazon.com:aws-cloud");
+        OntModel model = AwsModelBuilder.createOntology("", "", Regions.US_EAST_1, "urn:ogf:network:aws.amazon.com:aws-cloud");
         StringWriter out = new StringWriter();
         try {
             model.write(out, "TURTLE");
@@ -82,7 +82,7 @@ public class AwsPushTest {
         String ttl = out.toString();
         System.out.println(ttl);
 
-        AwsPushTest push = new AwsPushTest("AKIAJQMR4G7PCMWZRIHA", "FGPE/uQnnwS186JpJTvRWrLLgaognTXWCDuggxpN", Regions.US_EAST_1, "urn:ogf:network:aws.amazon.com:aws-cloud");
+        AwsPushTest push = new AwsPushTest("", "", Regions.US_EAST_1, "urn:ogf:network:aws.amazon.com:aws-cloud");
         String request = push.pushPropagate(ttl, modelAdditionStr, modelReductionStr);
         push.pushCommit(request);
     }

@@ -9,8 +9,8 @@ import org.openstack4j.api.OSClient;
 import org.openstack4j.openstack.OSFactory;
 
 /**
- * 
- * @author muzcategui
+ *
+ * @author max
  */
 public class Authenticate {
 
