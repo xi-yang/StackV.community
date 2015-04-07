@@ -43,13 +43,12 @@ import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
 import static net.maxgigapop.mrs.driver.aws.AwsPushTest.emptyModel;
 
-/**
- *
- * @author max
+/*
+ * 
+ * @author muzcategui
  */
-// TODO attach network interfaces and volumes to existing instances,tag root device
-// change the address type in network interfaces , recognize network interface by 
-// bidirectional port and the lable that says NetworkInterface
+
+//TODO
 //availability zone problems in volumes 
 public class AwsPush {
 

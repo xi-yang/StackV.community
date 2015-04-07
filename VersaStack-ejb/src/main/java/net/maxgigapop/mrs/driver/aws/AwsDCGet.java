@@ -13,8 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *
- * @author max
+ * 
+ * @author muzcategui
  */
 public class AwsDCGet 
 {

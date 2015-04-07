@@ -13,8 +13,8 @@ import org.openstack4j.model.network.*;
 import org.openstack4j.model.storage.block.*;
 
 /**
- *
- * @author max
+ * 
+ * @author muzcategui
  */
 public class OpenStackGet {
 
@@ -24,6 +24,7 @@ public class OpenStackGet {
     private List<? extends Port> ports = null;
     private List<? extends Server> servers = null;
     private List<? extends Volume> volumes = null;
+    private List<? extends VolumeSnapshot> snapshots = null;
     private List<? extends NetFloatingIP> floatingIps = null;
 
     public OpenStackGet(String url, String username, String password, String tenantName) {
@@ -37,9 +38,8 @@ public class OpenStackGet {
         ports = client.networking().port().list();
         servers = client.compute().servers().list();
         volumes = client.blockStorage().volumes().list();
+        snapshots = client.blockStorage().snapshots().list();
         floatingIps = client.networking().floatingip().list();
-        
-
     }
 
     //get all the networks in the tenant
@@ -112,6 +112,21 @@ public class OpenStackGet {
         for (Volume volume: volumes) {
             if (volume.getId().equals(id) || volume.getName().equals(id)) {
                 return volume;
+            }
+        }
+        return null;
+    }
+    
+     //get all the snapshots in the tenant
+    public List<? extends VolumeSnapshot> getSnapshots() {
+        return snapshots;
+    }
+
+    //get a volume by its id
+    public VolumeSnapshot getSnapshot(String id) {
+        for (VolumeSnapshot snap: snapshots) {
+            if (snap.getId().equals(id) || snap.getName().equals(id)) {
+                return snap;
             }
         }
         return null;
