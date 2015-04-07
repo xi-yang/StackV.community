@@ -137,4 +137,15 @@ public class OpenStackGet {
     {
         return client;
     }
+    
+    //get name from a resource
+    //if the resource does not have a nane, return the ID
+    public String getResourceName(Resource r)
+    {
+        String name = r.getName();
+        if(name.isEmpty())
+            return r.getId();
+        else 
+            return r.getName();
+    }
 }
