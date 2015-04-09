@@ -5,14 +5,19 @@
  */
 package net.maxgigapop.mrs.driver.aws;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.AmazonWebServiceRequest;
+import static com.amazonaws.auth.policy.Principal.Services.AmazonEC2;
+import com.amazonaws.auth.policy.Resource;
 import com.amazonaws.regions.Regions;
+import static com.amazonaws.regions.ServiceAbbreviations.EC2;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.RunInstancesRequest;
 import com.amazonaws.services.ec2.model.StartInstancesRequest;
 import com.amazonaws.services.ec2.model.StopInstancesRequest;
 import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
 import com.amazonaws.services.ec2.model.*;
+import com.amazonaws.services.support.model.Service;
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.query.Query;
@@ -59,18 +64,82 @@ public class AwsPushTest {
     static final Logger logger = Logger.getLogger(AwsPush.class.getName());
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 
-   /* public static void main(String[] args) throws Exception {
-        String modelAdditionStr = "";
+    public static void main(String[] args) throws Exception {
+        String modelAdditionStr ="";
 
-        String modelReductionStr = "@prefix owl:   <http://www.w3.org/2002/07/owl#> .\n"
-                + "@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n"
-                + "@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .\n"
-                + "@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n"
-                + "@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .\n"
-                + "@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .\n"
-                + "\n"
-                + "<urn:ogf:network:aws.amazon.com:aws-cloud:i-123456>\n"
-                + "        nml:hasBidirectionalPort  <urn:ogf:network:aws.amazon.com:aws-cloud:eni-123457> .\n";
+        String modelReductionStr = "@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n" +
+"@prefix owl:   <http://www.w3.org/2002/07/owl#> .\n" +
+"@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .\n" +
+"@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n" +
+"@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .\n" +
+"@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .\n" +
+"\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloud>\n" +
+"	nml:hasTopology <urn:ogf:network:aws.amazon.com:aws-cloud:vpc-8c5f22e9> .\n" +
+"\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloud:vpcservice-us-east-1>\n" +
+"        mrs:providesVPC <urn:ogf:network:aws.amazon.com:aws-cloud:vpc-8c5f22e9> .\n" +
+"\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloud:vpc-8c5f22e9>\n" +
+"        a                         nml:Topology , owl:NamedIndividual ;\n" +
+"        mrs:hasNetworkAddress     <urn:ogf:network:aws.amazon.com:aws-cloud:vpcnetworkaddress-vpc-8c5f22e9> ;\n" +
+"        nml:hasService            <urn:ogf:network:aws.amazon.com:aws-cloud:routingservice-vpc-8c5f22e9> , <urn:ogf:network:aws.amazon.com:aws-cloud:switchingservice-vpc-8c5f22e9> .\n" +
+"\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloud:switchingservice-vpc-8c5f22e9>\n" +
+"        a                   mrs:SwitchingService , owl:NamedIndividual ;\n" +
+"        mrs:providesSubnet  <urn:ogf:network:aws.amazon.com:aws-cloud:subnet-2cd6ad16> .\n" +
+"\n" +
+"\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloud:vpcnetworkaddress-vpc-8c5f22e9>\n" +
+"        a          mrs:NetworkAddress , owl:NamedIndividual ;\n" +
+"        mrs:type   \"ipv4-prefix\" ;\n" +
+"        mrs:value  \"10.0.0.0/16\" .\n" +
+"\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloud:routingservice-vpc-8c5f22e9>\n" +
+"        a                         mrs:RoutingService , owl:NamedIndividual ;\n" +
+"        mrs:providesRoute         <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-2f64394a10.0.0.016> ,<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu10.0.0.016> ;\n" +
+"        mrs:providesRoutingTable  <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-2f64394a>,<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu>  .\n" +
+"\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-2f64394a>\n" +
+"        a             mrs:RoutingTable , owl:NamedIndividual ;\n" +
+"        mrs:hasRoute  <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-2f64394a10.0.0.016> ;\n" +
+"        mrs:type      \"main\" .\n" +
+"\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-2f64394a10.0.0.016>\n" +
+"        a            mrs:Route , owl:NamedIndividual ;\n" +
+"        mrs:nextHop  \"local\" ;\n" +
+"        mrs:routeTo  <urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-2f64394a10.0.0.016> .\n" +
+"\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-2f64394a10.0.0.016>\n" +
+"        a          mrs:NetworkAddress , owl:NamedIndividual ;\n" +
+"        mrs:type   \"ipv4-prefix\" ;\n" +
+"        mrs:value  \"10.0.0.0/16\" .\n" +
+"\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloud:subnet-2cd6ad16>\n" +
+"        a                      mrs:SwitchingSubnet , owl:NamedIndividual ;\n" +
+"        mrs:hasNetworkAddress  <urn:ogf:network:aws.amazon.com:aws-cloud:subnetnetworkaddress-subnet-2cd6ad16> .\n" +
+"\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloud:subnetnetworkaddress-subnet-2cd6ad16>\n" +
+"        a          mrs:NetworkAddress , owl:NamedIndividual ;\n" +
+"        mrs:type   \"ipv4-prefix\" ;\n" +
+"        mrs:value  \"10.0.0.0/24\" .\n" +
+"\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu>\n" +
+"        a             mrs:RoutingTable , owl:NamedIndividual ;\n" +
+"        mrs:hasRoute   <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu10.0.0.016> ;\n" +
+"        mrs:type      \"local\" .\n" +
+"\n" +
+"\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-8723d8mu10.0.0.016>\n" +
+"        a              mrs:Route , owl:NamedIndividual ;\n" +
+"        mrs:nextHop    \"local\" ;\n" +
+"        mrs:routeTo    <urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-8723d8mu10.0.0.016> .\n" +
+"\n" +
+"\n" +
+"<urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-8723d8mu10.0.0.016>\n" +
+"        a          mrs:NetworkAddress , owl:NamedIndividual ;\n" +
+"        mrs:type   \"ipv4-prefix\" ;\n" +
+"        mrs:value  \"10.0.0.0/16\" .";
 
         OntModel model = AwsModelBuilder.createOntology("", "", Regions.US_EAST_1, "urn:ogf:network:aws.amazon.com:aws-cloud");
         StringWriter out = new StringWriter();
@@ -95,7 +164,7 @@ public class AwsPushTest {
 
         //do an adjustment to the topologyUri
         this.topologyUri = topologyUri + ":";
-    }*/
+    }
 
     /**
      * ***********************************************
@@ -211,7 +280,7 @@ public class AwsPushTest {
      * Function to do execute all the requests provided by the propagate method
      * **********************************************************************
      */
-    public void pushCommit(String r) throws InterruptedException {
+    public void pushCommit(String r) {
         String[] requests = r.split("[\\n]");
 
         for (String request : requests) {
@@ -224,6 +293,7 @@ public class AwsPushTest {
                 DeleteTagsRequest tagRequest = new DeleteTagsRequest();
                 client.terminateInstances(del);
                 ec2Client.getEc2Instances().remove(ec2Client.getInstance(instanceId));
+                ec2Client.instanceStatusCheck(parameters[1], "terminated");
 
             } else if (request.contains("DetachNetworkInterfaceRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -298,6 +368,7 @@ public class AwsPushTest {
                 client.deleteSubnet(subnetRequest);
 
                 ec2Client.getSubnets().remove(subnet);
+                ec2Client.subnetDeletionCheck(subnet.getSubnetId(),SubnetState.Available.name());
 
             } else if (request.contains("DeleteVpcRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -373,6 +444,7 @@ public class AwsPushTest {
                 client.deleteRouteTable(tableRequest);
 
                 ec2Client.getRoutingTables().remove(table);
+                ec2Client.RouteTableDeletionCheck(table.getRouteTableId());
 
             } else if (request.contains("CreateVpcRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -381,25 +453,20 @@ public class AwsPushTest {
                 vpcRequest.withCidrBlock(parameters[1]);
                 CreateVpcResult vpcResult = client.createVpc(vpcRequest);
                 String vpcId = vpcResult.getVpc().getVpcId();
+                ec2Client.getVpcs().add(vpcResult.getVpc());
 
                 //create the tag for the vpc
-                CreateTagsRequest vpcTagRequest = new CreateTagsRequest();
-                vpcTagRequest.withTags(new Tag("id", parameters[2]));
-                vpcTagRequest.withResources(vpcId);
-                ec2Client.getVpcs().add(vpcResult.getVpc());
-                //wait a little bit to tag the vpc
+                tagResource(vpcId, parameters[2]);
 
                 //tag the routing table of the 
                 DescribeRouteTablesResult tablesResult = this.client.describeRouteTables();
                 List<RouteTable> routeTables = tablesResult.getRouteTables();
                 routeTables.removeAll(ec2Client.getRoutingTables()); //get the new routing table
                 RouteTable mainTable = routeTables.get(0);
-                CreateTagsRequest tableTagRequest = new CreateTagsRequest();
-                tableTagRequest.withTags(new Tag("id", parameters[3]));
-                tableTagRequest.withResources(mainTable.getRouteTableId());
-                client.createTags(vpcTagRequest);
-                client.createTags(tableTagRequest);
+                tagResource(mainTable.getRouteTableId(), parameters[3]);
                 ec2Client.getRoutingTables().add(mainTable);
+                ec2Client.vpcStatusCheck(vpcId, VpcState.Available.name().toLowerCase());
+
             } else if (request.contains("CreateSubnetRequest")) {
                 String[] parameters = request.split("\\s+");
 
@@ -409,23 +476,21 @@ public class AwsPushTest {
                         .withAvailabilityZone(Regions.US_EAST_1.getName() + "e");
 
                 CreateSubnetResult subnetResult = client.createSubnet(subnetRequest);
-                CreateTagsRequest tagRequest = new CreateTagsRequest();
-                tagRequest.withTags(new Tag("id", parameters[3]));
-                tagRequest.withResources(subnetResult.getSubnet().getSubnetId());
+                tagResource(subnetResult.getSubnet().getSubnetId(), parameters[3]);
 
-                client.createTags(tagRequest);
                 ec2Client.getSubnets().add(subnetResult.getSubnet());
+                ec2Client.subnetCreationCheck(subnetResult.getSubnet().getSubnetId(),SubnetState.Available.name().toLowerCase());
+                
             } else if (request.contains("CreateRouteTableReques")) {
                 String[] parameters = request.split("\\s+");
 
                 CreateRouteTableRequest tableRequest = new CreateRouteTableRequest();
                 tableRequest.withVpcId(getVpcId(parameters[1]));
                 CreateRouteTableResult tableResult = client.createRouteTable(tableRequest);
-                CreateTagsRequest tagRequest = new CreateTagsRequest();
-                tagRequest.withTags(new Tag("id", parameters[2]));
-                tagRequest.withResources(tableResult.getRouteTable().getRouteTableId());
-                client.createTags(tagRequest);
+
+                tagResource(tableResult.getRouteTable().getRouteTableId(), parameters[2]);
                 ec2Client.getRoutingTables().add(tableResult.getRouteTable());
+                ec2Client.RouteTableCreationCheck(tableResult.getRouteTable().getRouteTableId());
 
             } else if (request.contains("AssociateTableRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -444,10 +509,7 @@ public class AwsPushTest {
                 CreateInternetGatewayResult igwResult = client.createInternetGateway();
                 InternetGateway igw = igwResult.getInternetGateway();
 
-                CreateTagsRequest tagRequest = new CreateTagsRequest();
-                tagRequest.withTags(new Tag("id", parameters[1]));
-                tagRequest.withResources(igw.getInternetGatewayId());
-                client.createTags(tagRequest);
+                tagResource(igw.getInternetGatewayId(), parameters[1]);
                 ec2Client.getInternetGateways().add(igw);
 
             } else if (request.contains("CreateVpnGatewayRequest")) {
@@ -458,10 +520,7 @@ public class AwsPushTest {
                 CreateVpnGatewayResult vpngwResult = client.createVpnGateway(vpngwRequest);
                 VpnGateway vpngw = vpngwResult.getVpnGateway();
 
-                CreateTagsRequest tagRequest = new CreateTagsRequest();
-                tagRequest.withTags(new Tag("id", parameters[1]));
-                tagRequest.withResources(vpngw.getVpnGatewayId());
-                client.createTags(tagRequest);
+                tagResource(vpngw.getVpnGatewayId(), parameters[1]);
                 ec2Client.getVirtualPrivateGateways().add(vpngw);
 
             } else if (request.contains("CreateRouteRequest")) {
@@ -526,10 +585,7 @@ public class AwsPushTest {
                 CreateVolumeResult result = client.createVolume(volumeRequest);
 
                 Volume volume = result.getVolume();
-                CreateTagsRequest tagRequest = new CreateTagsRequest();
-                tagRequest.withTags(new Tag("id", parameters[4]));
-                tagRequest.withResources(volume.getVolumeId());
-                client.createTags(tagRequest);
+                tagResource(volume.getVolumeId(), parameters[4]);
                 ec2Client.getVolumes().add(volume);
 
             } else if (request.contains("CreateNetworkInterfaceRequest")) {
@@ -541,11 +597,7 @@ public class AwsPushTest {
                 CreateNetworkInterfaceResult portResult = client.createNetworkInterface(portRequest);
 
                 NetworkInterface port = portResult.getNetworkInterface();
-                CreateTagsRequest tagRequest = new CreateTagsRequest();
-                tagRequest.withTags(new Tag("id", parameters[3]));
-                tagRequest.withResources(port.getNetworkInterfaceId());
-                Thread.sleep(2000);
-                client.createTags(tagRequest);
+                tagResource(port.getNetworkInterfaceId(), parameters[3]);
                 ec2Client.getNetworkInterfaces().add(port);
 
             } else if (request.contains("AssociateAddressRequest")) {
@@ -603,22 +655,15 @@ public class AwsPushTest {
 
                 //tag the new instance
                 Instance instance = result.getReservation().getInstances().get(0);
-                CreateTagsRequest tagRequest = new CreateTagsRequest();
-                tagRequest.withTags(new Tag("id", parameters[3]));
-                tagRequest.withResources(instance.getInstanceId());
-                client.createTags(tagRequest);
+                tagResource(instance.getInstanceId(), parameters[3]);
                 ec2Client.getEc2Instances().add(instance);
+                ec2Client.instanceStatusCheck(instance.getInstanceId(), "running");
 
-                //tag the root volume
-                tagRequest = new CreateTagsRequest();
-                tagRequest.withTags(new Tag("id", volumeTag));
-                Thread.sleep(10000);
                 DescribeVolumesResult volumesResult = client.describeVolumes();
                 List<Volume> volumes = volumesResult.getVolumes();
                 volumes.removeAll(ec2Client.getVolumes());
                 String volumeId = volumes.get((0)).getVolumeId();
-                tagRequest.withResources(volumeId);
-                client.createTags(tagRequest);
+                tagResource(volumeId, volumeTag);
                 ec2Client.getVolumes().add(volumes.get(0));
 
             } else if (request.contains("AttachVolumeRequest")) {
@@ -2626,7 +2671,7 @@ public class AwsPushTest {
 
     /**
      * ****************************************************************
-     * //function to get the Id from a volume tag
+     * function to get the Id from a volume tag
      * ****************************************************************
      */
     private String getVpcId(String tag) {
@@ -2647,4 +2692,24 @@ public class AwsPushTest {
         }
         return tag;
     }
+
+    /**
+     * ****************************************************************
+     * function to tag a resource
+     * ****************************************************************
+     */
+    private void tagResource(String id, String tag) {
+        CreateTagsRequest tagRequest = new CreateTagsRequest();
+        tagRequest.withTags(new Tag("id", tag));
+        tagRequest.withResources(id);
+        while (true) {
+            try {
+                client.createTags(tagRequest);
+                break;
+            } catch (AmazonServiceException e) {
+            }
+        }
+    }
+
+    
 }

@@ -6,6 +6,7 @@
 package net.maxgigapop.mrs.driver.aws;
 
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ec2.model.*;
@@ -479,5 +480,123 @@ public class AwsEC2Get
         String vpcId = vpcConnect.getVpcPeeringConnections().get(0).getAccepterVpcInfo().getVpcId();
         
         return vpcId;
+    }
+    
+    /**
+     * ****************************************************************
+     * function to wait for correct VPC status
+     * ****************************************************************
+     */
+    public void vpcStatusCheck(String id, String status) {
+        DescribeVpcsRequest request = new DescribeVpcsRequest();
+        request.withVpcIds(id);
+
+        while (true) {
+            try {
+                Vpc resource = client.describeVpcs(request).getVpcs().get(0);
+                if (resource.getState().toLowerCase().equals(status.toLowerCase())) {
+                    break;
+                }
+            } catch (AmazonServiceException | NullPointerException e) {
+            }
+        }
+    }
+    
+    
+    
+     /**
+     * ****************************************************************
+     * function to wait for correct subnet status
+     * ****************************************************************
+     */
+    public void subnetCreationCheck(String id, String status) {
+        DescribeSubnetsRequest request = new DescribeSubnetsRequest();
+        request.withSubnetIds(id);
+
+        while (true) {
+            try {
+                Subnet resource = client.describeSubnets(request).getSubnets().get(0);
+                if (resource.getState().toLowerCase().equals(status.toLowerCase())) {
+                    break;
+                }
+            } catch (AmazonServiceException | NullPointerException e) {
+            }
+        }
+    }
+    
+     /**
+     * ****************************************************************
+     * function to wait for subnet deletion
+     * ****************************************************************
+     */
+    public void subnetDeletionCheck(String id,String status) {
+        DescribeSubnetsRequest request = new DescribeSubnetsRequest();
+        request.withSubnetIds(id);
+
+        while (true) {
+            try {
+                Subnet resource = client.describeSubnets(request).getSubnets().get(0);
+                if (resource.getState().toLowerCase().equals(status.toLowerCase())) {
+                }
+            } catch (AmazonServiceException | NullPointerException e) {
+                break;
+            }
+        }
+    }
+    
+    /**
+     * ****************************************************************
+     * function to wait for routing Table creation
+     * ****************************************************************
+     */
+    public void RouteTableCreationCheck(String id) {
+        DescribeRouteTablesRequest request = new DescribeRouteTablesRequest();
+        request.withRouteTableIds(id);
+
+        while (true) {
+            try {
+                RouteTable resource = client.describeRouteTables(request).getRouteTables().get(0);
+                break;
+            } catch (AmazonServiceException | NullPointerException e) {
+            }
+        }
+    }
+    
+     /**
+     * ****************************************************************
+     * function to wait for routing Table deletion 
+     * ****************************************************************
+     */
+    public void RouteTableDeletionCheck(String id) {
+        DescribeRouteTablesRequest request = new DescribeRouteTablesRequest();
+        request.withRouteTableIds(id);
+
+        while (true) {
+            try {
+                RouteTable resource = client.describeRouteTables(request).getRouteTables().get(0);
+            } catch (AmazonServiceException | NullPointerException e) {
+                break;
+            }
+        }
+    }
+
+    /**
+     * ****************************************************************
+     * function to wait for the correct instance status
+     * ****************************************************************
+     */
+    public void instanceStatusCheck(String id, String status) {
+        DescribeInstancesRequest request = new DescribeInstancesRequest();
+        request.withInstanceIds(id);
+
+        while (true) {
+            try {
+                Instance resource = client.describeInstances(request).getReservations().get(0).getInstances().get(0);
+                if (resource.getState().getName().toLowerCase().equals(status)) {
+                    break;
+                }
+            } catch (AmazonServiceException | NullPointerException e) {
+            }
+        }
     }
 }

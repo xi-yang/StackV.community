@@ -9,6 +9,7 @@ import java.util.List;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.model.common.Resource;
 import org.openstack4j.model.compute.*;
+import org.openstack4j.model.compute.ext.Hypervisor;
 import org.openstack4j.model.network.*;
 import org.openstack4j.model.storage.block.*;
 
@@ -18,13 +19,14 @@ import org.openstack4j.model.storage.block.*;
  */
 public class OpenStackGet {
 
-    public OSClient client = null;
+    private OSClient client = null;
     private List<? extends Network> networks = null;
     private List<? extends Subnet> subnets = null;
     private List<? extends Port> ports = null;
     private List<? extends Server> servers = null;
     private List<? extends Volume> volumes = null;
     private List<? extends NetFloatingIP> floatingIps = null;
+    private List<? extends Hypervisor> hypervisors = null;
 
     public OpenStackGet(String url, String username, String password, String tenantName) {
         //authenticate
@@ -38,6 +40,7 @@ public class OpenStackGet {
         servers = client.compute().servers().list();
         volumes = client.blockStorage().volumes().list();
         floatingIps = client.networking().floatingip().list();
+        //hypervisors = client.compute().hypervisors().list();
         
 
     }
@@ -96,12 +99,12 @@ public class OpenStackGet {
     public Server getServer(String id) {
         for (Server server : servers) {
             if (server.getId().equals(id) || server.getName().equals(id)) {
-                 return server;
+                return server;
             }
         }
         return null;
     }
-    
+
     //get all volumes in the tenant
     public List<? extends Volume> getVolumes() {
         return volumes;
@@ -109,14 +112,14 @@ public class OpenStackGet {
 
     //get a volume by its id
     public Volume getVolume(String id) {
-        for (Volume volume: volumes) {
+        for (Volume volume : volumes) {
             if (volume.getId().equals(id) || volume.getName().equals(id)) {
                 return volume;
             }
         }
         return null;
     }
-    
+
     //get all floating ips in the tenant
     public List<? extends NetFloatingIP> getFloatingIp() {
         return floatingIps;
@@ -124,28 +127,42 @@ public class OpenStackGet {
 
     //get a floating ip  by its id
     public NetFloatingIP getFloatingIp(String id) {
-        for (NetFloatingIP ip: floatingIps) {
+        for (NetFloatingIP ip : floatingIps) {
             if (ip.getId().equals(id)) {
                 return ip;
             }
         }
         return null;
     }
-    
+
+    //get a list of all the hypervisors
+    public List<? extends Hypervisor> getHypervisors() {
+        return hypervisors;
+    }
+
+    //get a specific hypervisor by id 
+    public Hypervisor getHypervisor(String id) {
+        for (Hypervisor h : hypervisors) {
+            if (h.getId().equals(id)) {
+                return h;
+            }
+        }
+        return null;
+    }
+
     //get the OpenStack client
-    public OSClient getClient()
-    {
+    public OSClient getClient() {
         return client;
     }
-    
+
     //get name from a resource
     //if the resource does not have a nane, return the ID
-    public String getResourceName(Resource r)
-    {
+    public String getResourceName(Resource r) {
         String name = r.getName();
-        if(name.isEmpty())
+        if (name.isEmpty()) {
             return r.getId();
-        else 
+        } else {
             return r.getName();
+        }
     }
 }

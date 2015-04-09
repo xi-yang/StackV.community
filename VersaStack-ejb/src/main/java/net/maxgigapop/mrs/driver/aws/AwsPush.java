@@ -5,12 +5,11 @@
  */
 package net.maxgigapop.mrs.driver.aws;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.AmazonWebServiceRequest;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.RunInstancesRequest;
-import com.amazonaws.services.ec2.model.StartInstancesRequest;
-import com.amazonaws.services.ec2.model.StopInstancesRequest;
 import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
 import com.amazonaws.services.ec2.model.*;
 import com.hp.hpl.jena.ontology.OntModel;
@@ -167,7 +166,7 @@ public class AwsPush {
      * Function to do execute all the requests provided by the propagate method
      * **********************************************************************
      */
-    public void pushCommit(String r) throws InterruptedException {
+    public void pushCommit(String r) {
         String[] requests = r.split("[\\n]");
 
         for (String request : requests) {
@@ -180,6 +179,7 @@ public class AwsPush {
                 DeleteTagsRequest tagRequest = new DeleteTagsRequest();
                 client.terminateInstances(del);
                 ec2Client.getEc2Instances().remove(ec2Client.getInstance(instanceId));
+                
 
             } else if (request.contains("DetachNetworkInterfaceRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -337,25 +337,19 @@ public class AwsPush {
                 vpcRequest.withCidrBlock(parameters[1]);
                 CreateVpcResult vpcResult = client.createVpc(vpcRequest);
                 String vpcId = vpcResult.getVpc().getVpcId();
+                ec2Client.getVpcs().add(vpcResult.getVpc());
 
                 //create the tag for the vpc
-                CreateTagsRequest vpcTagRequest = new CreateTagsRequest();
-                vpcTagRequest.withTags(new Tag("id", parameters[2]));
-                vpcTagRequest.withResources(vpcId);
-                ec2Client.getVpcs().add(vpcResult.getVpc());
-                //wait a little bit to tag the vpc
+                tagResource(vpcId, parameters[2]);
 
                 //tag the routing table of the 
                 DescribeRouteTablesResult tablesResult = this.client.describeRouteTables();
                 List<RouteTable> routeTables = tablesResult.getRouteTables();
                 routeTables.removeAll(ec2Client.getRoutingTables()); //get the new routing table
                 RouteTable mainTable = routeTables.get(0);
-                CreateTagsRequest tableTagRequest = new CreateTagsRequest();
-                tableTagRequest.withTags(new Tag("id", parameters[3]));
-                tableTagRequest.withResources(mainTable.getRouteTableId());
-                client.createTags(vpcTagRequest);
-                client.createTags(tableTagRequest);
+                tagResource(mainTable.getRouteTableId(), parameters[3]);
                 ec2Client.getRoutingTables().add(mainTable);
+
             } else if (request.contains("CreateSubnetRequest")) {
                 String[] parameters = request.split("\\s+");
 
@@ -365,11 +359,8 @@ public class AwsPush {
                         .withAvailabilityZone(Regions.US_EAST_1.getName() + "e");
 
                 CreateSubnetResult subnetResult = client.createSubnet(subnetRequest);
-                CreateTagsRequest tagRequest = new CreateTagsRequest();
-                tagRequest.withTags(new Tag("id", parameters[3]));
-                tagRequest.withResources(subnetResult.getSubnet().getSubnetId());
+                tagResource(subnetResult.getSubnet().getSubnetId(), parameters[3]);
 
-                client.createTags(tagRequest);
                 ec2Client.getSubnets().add(subnetResult.getSubnet());
             } else if (request.contains("CreateRouteTableReques")) {
                 String[] parameters = request.split("\\s+");
@@ -377,10 +368,8 @@ public class AwsPush {
                 CreateRouteTableRequest tableRequest = new CreateRouteTableRequest();
                 tableRequest.withVpcId(getVpcId(parameters[1]));
                 CreateRouteTableResult tableResult = client.createRouteTable(tableRequest);
-                CreateTagsRequest tagRequest = new CreateTagsRequest();
-                tagRequest.withTags(new Tag("id", parameters[2]));
-                tagRequest.withResources(tableResult.getRouteTable().getRouteTableId());
-                client.createTags(tagRequest);
+
+                tagResource(tableResult.getRouteTable().getRouteTableId(), parameters[2]);
                 ec2Client.getRoutingTables().add(tableResult.getRouteTable());
 
             } else if (request.contains("AssociateTableRequest")) {
@@ -400,10 +389,7 @@ public class AwsPush {
                 CreateInternetGatewayResult igwResult = client.createInternetGateway();
                 InternetGateway igw = igwResult.getInternetGateway();
 
-                CreateTagsRequest tagRequest = new CreateTagsRequest();
-                tagRequest.withTags(new Tag("id", parameters[1]));
-                tagRequest.withResources(igw.getInternetGatewayId());
-                client.createTags(tagRequest);
+                tagResource(igw.getInternetGatewayId(), parameters[1]);
                 ec2Client.getInternetGateways().add(igw);
 
             } else if (request.contains("CreateVpnGatewayRequest")) {
@@ -414,10 +400,7 @@ public class AwsPush {
                 CreateVpnGatewayResult vpngwResult = client.createVpnGateway(vpngwRequest);
                 VpnGateway vpngw = vpngwResult.getVpnGateway();
 
-                CreateTagsRequest tagRequest = new CreateTagsRequest();
-                tagRequest.withTags(new Tag("id", parameters[1]));
-                tagRequest.withResources(vpngw.getVpnGatewayId());
-                client.createTags(tagRequest);
+                tagResource(vpngw.getVpnGatewayId(), parameters[1]);
                 ec2Client.getVirtualPrivateGateways().add(vpngw);
 
             } else if (request.contains("CreateRouteRequest")) {
@@ -482,10 +465,7 @@ public class AwsPush {
                 CreateVolumeResult result = client.createVolume(volumeRequest);
 
                 Volume volume = result.getVolume();
-                CreateTagsRequest tagRequest = new CreateTagsRequest();
-                tagRequest.withTags(new Tag("id", parameters[4]));
-                tagRequest.withResources(volume.getVolumeId());
-                client.createTags(tagRequest);
+                tagResource(volume.getVolumeId(), parameters[4]);
                 ec2Client.getVolumes().add(volume);
 
             } else if (request.contains("CreateNetworkInterfaceRequest")) {
@@ -497,11 +477,7 @@ public class AwsPush {
                 CreateNetworkInterfaceResult portResult = client.createNetworkInterface(portRequest);
 
                 NetworkInterface port = portResult.getNetworkInterface();
-                CreateTagsRequest tagRequest = new CreateTagsRequest();
-                tagRequest.withTags(new Tag("id", parameters[3]));
-                tagRequest.withResources(port.getNetworkInterfaceId());
-                Thread.sleep(2000);
-                client.createTags(tagRequest);
+                tagResource(port.getNetworkInterfaceId(), parameters[3]);
                 ec2Client.getNetworkInterfaces().add(port);
 
             } else if (request.contains("AssociateAddressRequest")) {
@@ -559,22 +535,14 @@ public class AwsPush {
 
                 //tag the new instance
                 Instance instance = result.getReservation().getInstances().get(0);
-                CreateTagsRequest tagRequest = new CreateTagsRequest();
-                tagRequest.withTags(new Tag("id", parameters[3]));
-                tagRequest.withResources(instance.getInstanceId());
-                client.createTags(tagRequest);
+                tagResource(instance.getInstanceId(), parameters[3]);
                 ec2Client.getEc2Instances().add(instance);
 
-                //tag the root volume
-                tagRequest = new CreateTagsRequest();
-                tagRequest.withTags(new Tag("id", volumeTag));
-                Thread.sleep(10000);
                 DescribeVolumesResult volumesResult = client.describeVolumes();
                 List<Volume> volumes = volumesResult.getVolumes();
                 volumes.removeAll(ec2Client.getVolumes());
                 String volumeId = volumes.get((0)).getVolumeId();
-                tagRequest.withResources(volumeId);
-                client.createTags(tagRequest);
+                tagResource(volumeId, volumeTag);
                 ec2Client.getVolumes().add(volumes.get(0));
 
             } else if (request.contains("AttachVolumeRequest")) {
@@ -2602,5 +2570,49 @@ public class AwsPush {
             }
         }
         return tag;
+    }
+    
+        /**
+     * ****************************************************************
+     * function to tag a resource
+     * ****************************************************************
+     */
+    private void tagResource(String id, String tag) {
+        CreateTagsRequest tagRequest = new CreateTagsRequest();
+        tagRequest.withTags(new Tag("id", tag));
+        tagRequest.withResources(id);
+        while (true) {
+            try {
+                client.createTags(tagRequest);
+                break;
+            } catch (AmazonServiceException e) {
+            }
+        }
+    }
+
+    /**
+     * ****************************************************************
+     * function to check instance creation and deletion status
+     * ****************************************************************
+     */
+    private void instanceStatus(Instance i, String status) {
+        String id = i.getInstanceId();
+        DescribeInstancesRequest request = new DescribeInstancesRequest();
+        request.withInstanceIds(id);
+        
+        while(true)
+        {
+            try
+            {
+              Instance ins = client.describeInstances(request).getReservations().get(0).getInstances().get(0);
+              if(ins.getState().getName().toString().toLowerCase().equals(status))
+                  break;
+            }
+            catch(Exception e )
+            {
+                
+            } 
+        }
+        
     }
 }
