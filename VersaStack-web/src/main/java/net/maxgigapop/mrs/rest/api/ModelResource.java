@@ -23,6 +23,7 @@ import javax.ws.rs.POST;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
+import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.rest.api.model.ApiModelBase;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
@@ -54,23 +55,24 @@ public class ModelResource {
     @GET
     @Produces({"application/xml", "application/json"})
     @Path("/{refUUID}")
-    public ApiModelBase pull(@PathParam("refUUID") String refUUID){
+    public ApiModelBase pull(@PathParam("refUUID") String refUUID) throws Exception{
         VersionGroup vg = VersionGroupPersistenceManager.findByReferenceId(refUUID);
 //        if (vg == null) {
 //           throw new EJBException(String.format("retrieveVersionModel cannot find a VG with refUuid=%s", refUUID));
 //        }
-        ModelBase modelBase = new ModelBase();
-        try{
-            modelBase= systemCallHandler.retrieveVersionGroupModel(refUUID);
-        }catch(Exception e){
-            throw new NotFoundException("Not Found");
-        }        
+        ModelBase modelBase = systemCallHandler.retrieveVersionGroupModel(refUUID);
+//        ModelBase modelBase = new ModelBase();
+//        try{
+//            modelBase= systemCallHandler.retrieveVersionGroupModel(refUUID);
+//        }catch(Exception e){
+//            throw new NotFoundException("Not Found");
+//        }        
         ApiModelBase apiModelBase = new ApiModelBase();
         apiModelBase.setId(modelBase.getId());
         apiModelBase.setVersion(refUUID);
         apiModelBase.setCreationTime(modelBase.getCreationTime());
-        apiModelBase.setStatus(vg.getStatus());
-        apiModelBase.setTtlModel(modelBase.getTtlModel());
+        apiModelBase.setStatus(vg.getStatus());        
+        apiModelBase.setTtlModel(ModelUtil.marshalOntModel(modelBase.getOntModel()));
         return apiModelBase;
     }
 
@@ -82,14 +84,14 @@ public class ModelResource {
     @PUT
     @Produces({"application/xml", "application/json"})
     @Path("/{refUUID}")
-    public ApiModelBase update(@PathParam("refUUID") String refUUID){
+    public ApiModelBase update(@PathParam("refUUID") String refUUID) throws Exception{
         systemCallHandler.updateHeadVersionGroup(refUUID);
         return this.pull(refUUID);
     }
 
     @GET
     @Produces({"application/xml", "application/json"})
-    public ApiModelBase creatHeadVersionGroup(){
+    public ApiModelBase creatHeadVersionGroup() throws Exception{
         VersionGroup vg = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
         return this.pull(vg.getRefUuid());
     }
