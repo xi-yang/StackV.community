@@ -19,6 +19,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 import net.maxgigapop.mrs.bean.DriverInstance;
+import net.maxgigapop.mrs.rest.api.model.ApiDriverInstance;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
@@ -50,10 +51,10 @@ public class DriverResource {
     }
     
     @DELETE
-    @Path("/{topoUri}")
-    public String unplug(@PathParam("topoUri")String topoUri){
+    @Consumes({"application/xml","application/json"})
+    public String unplug(ApiDriverInstance di){
         try{
-            systemCallHandler.unplugDriverInstance(topoUri);
+            systemCallHandler.unplugDriverInstance(di.getTopologyUri());
         }catch(EJBException e){
             return e.getMessage();
         }
@@ -62,11 +63,10 @@ public class DriverResource {
     
     @POST
     @Consumes({"application/xml","application/json"})
-    @Path("/{topoUri}")
-    public String plug(@PathParam("topoUri")String topoUri){
+    public String plug(ApiDriverInstance di){
         Map<String,String> driverProperties = new HashMap();
-        driverProperties.put("topoUri", topoUri);
-        driverProperties.put("driverEjbPath", "java:module/StubSystemDriver");
+        driverProperties.put("topoUri", di.getTopologyUri());
+        driverProperties.put("driverEjbPath", di.getDriverEjbPath());
         try{
             systemCallHandler.plugDriverInstance(driverProperties);
         }catch(EJBException e){
