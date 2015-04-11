@@ -7,6 +7,7 @@ package net.maxgigapop.mrs.rest.api;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import javax.ejb.EJB;
 import javax.ejb.EJBException;
 import javax.ws.rs.Consumes;
@@ -39,22 +40,30 @@ public class DriverResource {
     
     @GET
     @Produces({"application/xml","application/json"})
-    public Map<String, DriverInstance> pullAll(){
-        return systemCallHandler.retrieveAllDriverInstanceMap();
+    public String pullAll(){
+        Set<String> instanceSet = systemCallHandler.retrieveAllDriverInstanceMap().keySet();
+        String allInstance = "";
+        for(String instance : instanceSet)
+            allInstance += instance+"\n";
+        return allInstance;
     }
     
     @GET
     @Produces({"application/xml","application/json"})
     @Path("/{topoUri}")
-    public DriverInstance pull(@PathParam("topoUri")String topoUri){
-        return systemCallHandler.retrieveDriverInstance(topoUri);
+    public ApiDriverInstance pull(@PathParam("topoUri")String topoUri){
+        DriverInstance driverInstance = systemCallHandler.retrieveDriverInstance(topoUri);
+        ApiDriverInstance adi = new ApiDriverInstance();
+        adi.setProperties(driverInstance.getProperties());
+        return adi;
     }
+
     
     @DELETE
-    @Consumes({"application/xml","application/json"})
-    public String unplug(ApiDriverInstance di){
+    @Path("/{topoUri}")    
+    public String unplug(@PathParam("topoUri")String topoUri){
         try{
-            systemCallHandler.unplugDriverInstance(di.getTopologyUri());
+            systemCallHandler.unplugDriverInstance(topoUri);
         }catch(EJBException e){
             return e.getMessage();
         }
@@ -64,11 +73,8 @@ public class DriverResource {
     @POST
     @Consumes({"application/xml","application/json"})
     public String plug(ApiDriverInstance di){
-        Map<String,String> driverProperties = new HashMap();
-        driverProperties.put("topoUri", di.getTopologyUri());
-        driverProperties.put("driverEjbPath", di.getDriverEjbPath());
         try{
-            systemCallHandler.plugDriverInstance(driverProperties);
+            systemCallHandler.plugDriverInstance(di.getProperties());
         }catch(EJBException e){
             return e.getMessage();
         }
