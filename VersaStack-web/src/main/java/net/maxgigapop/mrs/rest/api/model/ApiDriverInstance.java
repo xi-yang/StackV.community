@@ -5,6 +5,8 @@
  */
 package net.maxgigapop.mrs.rest.api.model;
 
+import java.util.HashMap;
+import java.util.Map;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
@@ -18,30 +20,27 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name="driverInstance")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ApiDriverInstance {
-    @XmlElement(required=true)
-    private String topologyUri = "";
-    @XmlElement(required=true)
-    private String driverEjbPath = "";
+    @XmlElement(required=true)    
+    protected Map<String, String> properties = new HashMap<String, String>();
+
+    public Map<String, String> getProperties() {
+        return properties;
+    }
     
-    public String getTopologyUri() {
-        return topologyUri;
+    public void setProperties(Map<String, String> properties) {
+        this.properties = properties;
     }
-
-    public void setTopologyUri(String topologyUri) {
-        this.topologyUri = topologyUri;
+    
+    public String getTopologyUri() throws Exception{
+        if (!properties.containsKey("topologyUri"))
+            throw new Exception("Can't find topologyUri");
+        else
+            return properties.get("topologyUri");
     }
-
-    public String getDriverEjbPath() {
-        return driverEjbPath;
-    }
-
-    public void setDriverEjbPath(String driverEjbPath) {
-        this.driverEjbPath = driverEjbPath;
-    }
-    @Override
-    public String toString() {
-        return "net.maxgigapop.mrs.model.DriverInstance[ topologyUri=" + topologyUri + " ]";
-    }
+//    @Override
+//    public String toString() {
+//        return "net.maxgigapop.mrs.model.DriverInstance[ topologyUri=" + topologyUri + " ]";
+//    }
 
 
 }
