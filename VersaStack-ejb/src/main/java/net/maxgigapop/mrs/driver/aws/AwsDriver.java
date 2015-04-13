@@ -8,7 +8,6 @@ package net.maxgigapop.mrs.driver.aws;
 import com.amazonaws.regions.Regions;
 import com.hp.hpl.jena.ontology.OntModel;
 import java.io.IOException;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
@@ -22,15 +21,12 @@ import javax.ejb.TransactionAttributeType;
 import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.DriverModel;
 import net.maxgigapop.mrs.bean.DriverSystemDelta;
-import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.VersionItem;
 import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
-import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
-import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
  *

@@ -22,6 +22,7 @@ import org.json.simple.JSONObject;
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.model.compute.Server;
+import org.openstack4j.model.compute.ServerCreate;
 import org.openstack4j.model.network.*;
 import org.openstack4j.model.storage.block.*;
 import org.openstack4j.openstack.networking.domain.NeutronPort;
@@ -60,6 +61,9 @@ public class OpenStackPushTest {
         //do an adjustment to the topologyUri
         this.topologyUri = topologyUri + ":";
 
+        client.getServers().get(0);
+        client.getServers();
+
     }
 
     /**
@@ -71,11 +75,11 @@ public class OpenStackPushTest {
         List<JSONObject> requests = new ArrayList();
 
         //get all the requests
-        requests.addAll(createVolumesRequests(modelRef, modelReduct));
+        requests.addAll(VolumesRequests(modelRef, modelReduct,false));
         requests.addAll(deleteSubnetsRequests(modelRef, modelReduct));
         requests.addAll(createNetworksRequests(modelRef, modelAdd));
         requests.addAll(createSubnetsRequests(modelRef, modelAdd));
-        requests.addAll(createVolumesRequests(modelRef, modelAdd));
+        requests.addAll(VolumesRequests(modelRef, modelAdd,true));
         return requests;
     }
 
@@ -99,65 +103,6 @@ public class OpenStackPushTest {
 
     }
 
-    /**
-     * *****************************************************************
-     * Function to create a volumes from a modelRef
-     * ***************************************************************
-     */
-    private List<JSONObject> DeleteVolumesRequests(OntModel modelRef, OntModel model) throws Exception {
-        List<JSONObject> requests = new ArrayList();
-        String query;
-
-        query = "SELECT ?volume WHERE {?volume a mrs:Volume}";
-        ResultSet r = executeQuery(query, emptyModel, model);
-        while (r.hasNext()) {
-            QuerySolution querySolution = r.next();
-            RDFNode volume = querySolution.get("volume");
-            String volumeName = volume.asResource().toString().replace(topologyUri, "");
-
-            Volume v = client.getVolume(volumeName);
-
-            if (v != null) //volume exists, no need to create a volume
-            {
-                throw new Exception(String.format("Volume %s already exists", v));
-            } else {
-                //check what service is providing the volume
-                query = "SELECT ?type WHERE {?service mrs:providesVolume <" + volume.asResource() + ">}";
-                ResultSet r1 = executeQuery(query, modelRef, model);
-                if (!r1.hasNext()) {
-                    throw new Exception(String.format("model addition does not specify service that provides volume: %s", volume));
-                }
-
-                //find out the type of the volume
-                query = "SELECT ?type WHERE {<" + volume.asResource() + "> mrs:value ?type}";
-                r1 = executeQuery(query, modelRef, model);
-                if (!r1.hasNext()) {
-                    throw new Exception(String.format("model addition does not specify new type of volume: %s", volume));
-                }
-                QuerySolution querySolution1 = r1.next();
-                RDFNode type = querySolution1.get("type");
-
-                //find out the size of the volume
-                query = "SELECT ?size WHERE {<" + volume.asResource() + "> mrs:disk_gb ?size}";
-                r1 = executeQuery(query, modelRef, model);
-                if (!r1.hasNext()) {
-                    throw new Exception(String.format("model addition does not specify new size of volume: %s", volume));
-                }
-                querySolution1 = r1.next();
-                RDFNode size = querySolution1.get("size");
-
-                JSONObject o = new JSONObject();
-                o.put("request", "DeleteVolumeRequest");
-                o.put("type", type.asLiteral());
-                o.put("size", size.asLiteral());
-                o.put("availabiltyZone", "nova");
-                o.put("name", volume);
-                requests.add(o);
-
-            }
-        }
-        return requests;
-    }
 
     /**
      * *****************************************************************
@@ -386,10 +331,10 @@ public class OpenStackPushTest {
 
     /**
      * *****************************************************************
-     * Function to create a volumes from a modelRef
+     * Function to create/delete a volumes from a modelRef
      * ***************************************************************
      */
-    private List<JSONObject> createVolumesRequests(OntModel modelRef, OntModel model) throws Exception {
+    private List<JSONObject> VolumesRequests(OntModel modelRef, OntModel model, boolean creation) throws Exception {
         List<JSONObject> requests = new ArrayList();
         String query;
 
@@ -432,7 +377,11 @@ public class OpenStackPushTest {
                 RDFNode size = querySolution1.get("size");
 
                 JSONObject o = new JSONObject();
-                o.put("request", "CreateVolumeRequest");
+                if (creation == true) {
+                    o.put("request", "CreateVolumeRequest");
+                } else {
+                    o.put("request", "DeleteVolumeRequest");
+                }
                 o.put("type", type.asLiteral());
                 o.put("size", size.asLiteral());
                 o.put("availabiltyZone", "nova");
@@ -449,7 +398,7 @@ public class OpenStackPushTest {
      * Function to create network interfaces from a model
      * ****************************************************************
      */
-    private String createPortsRequests(OntModel modelRef, OntModel modelDelta) throws Exception {
+    private String createPortsRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws Exception {
         String requests = "";
         String query;
 
@@ -508,7 +457,7 @@ public class OpenStackPushTest {
                         String subnetName = subnet.asResource().toString().replace(topologyUri, "");
                         subnetId = client.getSubnet(subnetName).getId();
                     }
-                    if (subnetId==null || subnetId.isEmpty()) {
+                    if (subnetId == null || subnetId.isEmpty()) {
                         throw new Exception(String.format("model additions subnet for port %s"
                                 + "is not found in the reference model", subnetId));
                     }
@@ -523,117 +472,137 @@ public class OpenStackPushTest {
 
     /**
      * ****************************************************************
-     * Function to create Instances
+     * Function to request or delete an instance
      * ****************************************************************
      */
-    /* private List<JSONObject> createServerRequests(OntModel model, OntModel modelAdd) throws Exception {
-     List<JSONObject> requests = new ArrayList();
-     String query;
+    private List<JSONObject> createServerRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws Exception {
+        List<JSONObject> requests = new ArrayList();
+        String query;
 
-     query = "SELECT ?server WHERE {?server a nml:vm}";
-     ResultSet r = executeQuery(query, emptyModel, modelAdd);
-     while (r.hasNext()) {
-     QuerySolution querySolution = r.next();
-     RDFNode node = querySolution.get("server");
-     String serverName = node.asResource().toString().replace(topologyUri, "");
-     Server server= client.getServer(serverName);
+        query = "SELECT ?server WHERE {?server a nml:Node}";
+        ResultSet r = executeQuery(query, emptyModel, modelDelta);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            RDFNode vm = q.get("server");
+            String serverName = vm.asResource().toString().replace(topologyUri, "");
+            Server server = client.getServer(serverName);
 
-            
-     if (server!= null) //instance does not be to be created
-     {
-     throw new Exception(String.format("Server %s already exists", serverName));
-     } else {
-     //check what service is providing the instance
-     query = "SELECT ?service WHERE {?service mrs:providesVM <" + node.asResource() + ">}";
-     ResultSet r1 = executeQuery(query, model, modelAdd);
-     if (!r1.hasNext()) {
-     throw new Exception(String.format("model addition does not specify service that provides Instance: %s", node));
-     }
+            if (server != null || creation) //instance does not be to be created
+            {
+                throw new Exception(String.format("Server %s already exists", serverName));
+            } else {
+                //check what service is providing the instance
+                query = "SELECT ?service WHERE {?service mrs:providesVM <" + vm.asResource() + ">}";
+                ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
+                if (!r1.hasNext()) {
+                    throw new Exception(String.format("Dleta model does not specify service that provides the VM: %s", vm));
+                }
+                QuerySolution q1 = r1.next();
+                RDFNode hypervisorService = q1.get("service");
+                String hyperVisorServiceName = hypervisorService.asResource().toString().replace(topologyUri, "");
 
-     //find the Vpc that the node will be in
-     query = "SELECT ?vpc WHERE {?vpc nml:hasNode <" + node.asResource() + ">}";
-     r1 = executeQuery(query, model, modelAdd);
-     if (!r1.hasNext()) {
-     throw new Exception(String.format("model addition does not specify the Vpc of the node: %s", node));
-     }
-     QuerySolution querySolution1 = r1.next();
-     RDFNode vpc = querySolution1.get("vpc");
-     String vpcId = vpc.asResource().toString().replace(topologyUri, "");
-     vpcId = getVpcId(vpcId);
+                //find the host of the VM
+                query = "SELECT ?node WHERE {?node nml:hasService <" + hypervisorService.asResource() + ">}";
+                r1 = executeQuery(query, modelRef, modelDelta);
+                if (!r1.hasNext()) {
+                    throw new Exception(String.format("Delta model does not specify host that provides service %s", hypervisorService));
+                }
+                q1 = r1.next();
+                RDFNode host = q1.get("host");
+                String hostName = host.asResource().toString().replace(topologyUri, "");
 
-     //to find the subnet the node is in first  find the port the node uses
-     query = "SELECT ?port WHERE {<" + node.asResource() + "> nml:hasBidirectionalPort ?port}";
-     ResultSet r2 = executeQuery(query, model, modelAdd);
-     if (!r2.hasNext()) {
-     throw new Exception(String.format("model addition does not specify the subnet that the node is: %s", node));
-     }
-     List<String> portsId = new ArrayList();
-     RDFNode lastPort = null;
-     while (r2.hasNext())//there could be multiple network interfaces attached to the instance
-     {
-     QuerySolution querySolution2 = r2.next();
-     RDFNode port = querySolution2.get("port");
-     String id = port.asResource().toString().replace(topologyUri, "");
-     portsId.add(getResourceId(id));
-     lastPort = port;
-     }
+                //make sure that the host is a node
+                query = "SELECT ?node WHERE {<" + host.asResource() + "> a nml:Node}";
+                r1 = executeQuery(query, modelRef, modelDelta);
+                if (!r1.hasNext()) {
+                    throw new Exception(String.format("Host %s to host node %s is not of type nml:Node", host, vm));
+                }
 
-     //find the EBS volumes that the instance uses
-     query = "SELECT ?volume WHERE {<" + node.asResource() + ">  mrs:hasVolume  ?volume}";
-     ResultSet r4 = executeQuery(query, model, modelAdd);
-     if (!r4.hasNext()) {
-     throw new Exception(String.format("model addition does not specify the volume of the new node: %s", node));
-     }
-     List<String> volumesId = new ArrayList();
-     while (r4.hasNext())//there could be multiple volumes attached to the instance
-     {
-     QuerySolution querySolution4 = r4.next();
-     RDFNode volume = querySolution4.get("volume");
-     String id = volume.asResource().toString().replace(topologyUri, "");
-     volumesId.add(getVolumeId(id));
-     }
+                //find the network that the node will be in
+                query = "SELECT ?network WHERE {?network nml:hasNode <" + host.asResource() + ">}";
+                r1 = executeQuery(query, modelRef, modelDelta);
+                if (!r1.hasNext()) {
+                    throw new Exception(String.format("VM %s does not specify network", vm));
+                }
+                q1 = r1.next();
+                RDFNode network = q1.get("network");
+                String networkName = network.asResource().toString().replace(topologyUri, "");
 
-     //put request for new instance
-     requests += String.format("RunInstancesRequest ami-146e2a7c t2.micro %s ", nodeIdTagValue);
+                //to find the subnet the node is in first  find the port the node uses
+                query = "SELECT ?port WHERE {<" + vm.asResource() + "> nml:hasBidirectionalPort ?port}";
+                ResultSet r2 = executeQuery(query, modelRef, modelDelta);
+                if (!r2.hasNext()) {
+                    throw new Exception(String.format("Vm %s does not specify the attached network interface", vm));
+                }
+                List<String> portNames = new ArrayList();
+                while (r2.hasNext())//there could be multiple network interfaces attached to the instance
+                {
+                    QuerySolution q2 = r2.next();
+                    RDFNode port = q2.get("port");
+                    String name = port.asResource().toString().replace(topologyUri, "");
+                    portNames.add(name);
+                }
 
-     //put the root device of the instance
-     query = "SELECT ?volume ?deviceName ?size ?type  WHERE {"
-     + "<" + node.asResource() + ">  mrs:hasVolume  ?volume ."
-     + "?volume mrs:target_device ?deviceName ."
-     + "?volume mrs:disk_gb ?size ."
-     + "?volume mrs:value ?type}";
-     r4 = executeQuery(query, model, modelAdd);
-     boolean hasRootVolume = false;
-     while (r4.hasNext()) {
-     QuerySolution querySolution4 = r4.next();
-     RDFNode volume = querySolution4.get("volume");
-     String volumeTag = volume.asResource().toString().replace(topologyUri, "");
-     String type = querySolution4.get("type").asLiteral().toString();
-     String size = querySolution4.get("size").asLiteral().toString();
-     String deviceName = querySolution4.get("deviceName").asLiteral().toString();
-     if (deviceName.equals("/dev/sda1") || deviceName.equals("/dev/xvda")) {
-     hasRootVolume = true;
-     requests += String.format("%s %s %s %s ", type, size, deviceName, volumeTag);
-     }
-     }
-     if (hasRootVolume == false) {
-     throw new Exception(String.format("model addition does not specify root volume for node: %s", node));
-     }
+                //find the EBS volumes that the instance uses
+                query = "SELECT ?volume WHERE {<" + vm.asResource() + ">  mrs:hasVolume  ?volume}";
+                ResultSet r4 = executeQuery(query, emptyModel, modelDelta);
+                if (!r4.hasNext()) {
+                    throw new Exception(String.format("Delta model does not specify the volume of the new vm: %s", vm));
+                }
+                List<String> volumeNames = new ArrayList();
+                while (r4.hasNext())//there could be multiple volumes attached to the instance
+                {
+                    QuerySolution q4 = r4.next();
+                    RDFNode volume = q4.get("volume");
+                    String name = volume.asResource().toString().replace(topologyUri, "");
+                    volumeNames.add(name);
+                }
 
-     int index = 0;
-     //put the networ interfaces 
-     requests += "NetworkInterfaceSpecification ";
-     for (String id : portsId) {
-     requests += String.format("%s %d ", id, index);
-     index++; //increment the device index
-     }
-     requests += "\n";
-     }
-     }
-     return requests;
-     }/*
+                //put the root device of the instance
+                query = "SELECT ?volume ?deviceName ?size ?type  WHERE {"
+                        + "<" + vm.asResource() + ">  mrs:hasVolume  ?volume ."
+                        + "?volume mrs:target_device ?deviceName ."
+                        + "?volume mrs:disk_gb ?size ."
+                        + "?volume mrs:value ?type}";
+                r4 = executeQuery(query, modelRef, modelDelta);
+                boolean hasRootVolume = false;
+                String volumeName = "";
+                while (r4.hasNext()) {
+                    QuerySolution q4 = r4.next();
+                    RDFNode volume = q4.get("volume");
+                    volumeName = volume.asResource().toString().replace(topologyUri, "");
+                    String deviceName = q4.get("deviceName").asLiteral().toString();
+                    if (deviceName.equals("/dev/") || deviceName.equals("/dev/")) {
+                        hasRootVolume = true;
+                    }
+                }
+                if (hasRootVolume == false) {
+                    throw new Exception(String.format("model addition does not specify root volume for node: %s", vm));
+                }
 
-     /**
+                JSONObject o = new JSONObject();
+                if (creation == true) {
+                    o.put("request", "RunInstanceRequest");
+                } else {
+                    o.put("request", "TerminateInstanceRequest");
+                }
+
+                o.put("image", "54f6673b-f39f-461b-886e-dbe4f4497fd5");
+                o.put("flavor", volumeName);
+
+                int index = 0;
+                for (String port : portNames) {
+                    String key = "port" + Integer.toString(index);
+                    o.put(key, port);
+                    index++; //increment the device index
+                }
+                requests.add(o);
+            }
+        }
+        return requests;
+    }
+
+    /**
      * ****************************************************************
      * function that executes a query using a model addition/subtraction and a
      * reference model, returns the result of the query

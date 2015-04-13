@@ -6,18 +6,11 @@
 package net.maxgigapop.mrs.driver.aws;
 
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.AmazonWebServiceRequest;
-import static com.amazonaws.auth.policy.Principal.Services.AmazonEC2;
-import com.amazonaws.auth.policy.Resource;
 import com.amazonaws.regions.Regions;
-import static com.amazonaws.regions.ServiceAbbreviations.EC2;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.RunInstancesRequest;
-import com.amazonaws.services.ec2.model.StartInstancesRequest;
-import com.amazonaws.services.ec2.model.StopInstancesRequest;
 import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
 import com.amazonaws.services.ec2.model.*;
-import com.amazonaws.services.support.model.Service;
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.query.Query;
@@ -26,30 +19,16 @@ import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
-import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
-import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import java.io.ByteArrayInputStream;
-import java.io.StringWriter;
-import static java.lang.Thread.sleep;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.ejb.EJBException;
-import net.maxgigapop.mrs.bean.DriverModel;
-import net.maxgigapop.mrs.common.ModelUtil;
-import net.maxgigapop.mrs.common.Mrs;
-import net.maxgigapop.mrs.common.Nml;
 
 /**
  *
- * @author max
+ * @author muzcategui
  */
 // TODO attach network interfaces and volumes to existing instances,tag root device
 // change the address type in network interfaces , recognize network interface by 
@@ -64,7 +43,7 @@ public class AwsPushTest {
     static final Logger logger = Logger.getLogger(AwsPush.class.getName());
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 
-    public static void main(String[] args) throws Exception {
+    /*public static void main(String[] args) throws Exception {
         String modelAdditionStr = "";
 
         String modelReductionStr = "@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n" +
@@ -245,14 +224,14 @@ public class AwsPushTest {
 
         //do an adjustment to the topologyUri
         this.topologyUri = topologyUri + ":";
-    }
+    }*/
 
     /**
      * ***********************************************
      * function to propagate all the requests
      * ************************************************
      */
-    public String pushPropagate(String modelTtl, String modelAddTtl, String modelReductTtl) throws Exception {
+    public String pushPropagate(String modelRefTtl, String modelAddTtl, String modelReductTtl) throws Exception {
         String requests = "";
 
         OntModel modelReduct = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
@@ -266,7 +245,7 @@ public class AwsPushTest {
         }
 
         try {
-            model.read(new ByteArrayInputStream(modelTtl.getBytes()), null, "TURTLE");
+            model.read(new ByteArrayInputStream(modelRefTtl.getBytes()), null, "TURTLE");
         } catch (Exception e) {
             throw new Exception(String.format("failure to unmarshall reference model, due to %s", e.getMessage()));
         }
@@ -727,6 +706,7 @@ public class AwsPushTest {
                 runInstance.withInstanceType(parameters[2]);
                 runInstance.withMaxCount(1);
                 runInstance.withMinCount(1);
+                runInstance.withKeyName("Driver Key");
 
                 //integrate the root device
                 EbsBlockDevice device = new EbsBlockDevice();
@@ -2603,7 +2583,6 @@ public class AwsPushTest {
                 QuerySolution querySolution1 = r1.next();
                 RDFNode vpc = querySolution1.get("vpc");
                 String vpcId = vpc.asResource().toString().replace(topologyUri, "");
-                vpcId = getVpcId(vpcId);
 
                 //to find the subnet the node is in first  find the port the node uses
                 query = "SELECT ?port WHERE {<" + node.asResource() + "> nml:hasBidirectionalPort ?port}";
