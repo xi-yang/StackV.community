@@ -7,6 +7,7 @@ package net.maxgigapop.mrs.rest.api;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import javax.ejb.EJB;
 import javax.ejb.EJBException;
 import javax.ws.rs.Consumes;
@@ -19,6 +20,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 import net.maxgigapop.mrs.bean.DriverInstance;
+import net.maxgigapop.mrs.rest.api.model.ApiDriverInstance;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
@@ -38,19 +40,27 @@ public class DriverResource {
     
     @GET
     @Produces({"application/xml","application/json"})
-    public Map<String, DriverInstance> pullAll(){
-        return systemCallHandler.retrieveAllDriverInstanceMap();
+    public String pullAll(){
+        Set<String> instanceSet = systemCallHandler.retrieveAllDriverInstanceMap().keySet();
+        String allInstance = "";
+        for(String instance : instanceSet)
+            allInstance += instance+"\n";
+        return allInstance;
     }
     
     @GET
     @Produces({"application/xml","application/json"})
     @Path("/{topoUri}")
-    public DriverInstance pull(@PathParam("topoUri")String topoUri){
-        return systemCallHandler.retrieveDriverInstance(topoUri);
+    public ApiDriverInstance pull(@PathParam("topoUri")String topoUri){
+        DriverInstance driverInstance = systemCallHandler.retrieveDriverInstance(topoUri);
+        ApiDriverInstance adi = new ApiDriverInstance();
+        adi.setProperties(driverInstance.getProperties());
+        return adi;
     }
+
     
     @DELETE
-    @Path("/{topoUri}")
+    @Path("/{topoUri}")    
     public String unplug(@PathParam("topoUri")String topoUri){
         try{
             systemCallHandler.unplugDriverInstance(topoUri);
@@ -62,13 +72,9 @@ public class DriverResource {
     
     @POST
     @Consumes({"application/xml","application/json"})
-    @Path("/{topoUri}")
-    public String plug(@PathParam("topoUri")String topoUri){
-        Map<String,String> driverProperties = new HashMap();
-        driverProperties.put("topoUri", topoUri);
-        driverProperties.put("driverEjbPath", "java:module/StubSystemDriver");
+    public String plug(ApiDriverInstance di){
         try{
-            systemCallHandler.plugDriverInstance(driverProperties);
+            systemCallHandler.plugDriverInstance(di.getProperties());
         }catch(EJBException e){
             return e.getMessage();
         }
