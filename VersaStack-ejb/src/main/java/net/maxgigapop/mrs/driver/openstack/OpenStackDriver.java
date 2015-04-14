@@ -58,25 +58,17 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
             throw new EJBException(String.format("pullModel cannot find driverInstance(id=%d)", driverInstanceId));
         }
        
-        try {
-            
-            OntModel ontModel = OpenStackModelBuilder.createOntology("charon.dragon.maxgigapop.net", "admin", "admin");
-            
-            DriverModel dm = new DriverModel();
-            dm.setCommitted(true);
-            dm.setOntModel(ontModel);
-            ModelPersistenceManager.save(dm);
-            
-            VersionItem vi = new VersionItem();
-            vi.setModelRef(dm);
-            vi.setReferenceUUID(UUID.randomUUID().toString());
-            vi.setDriverInstance(driverInstance);
-            VersionItemPersistenceManager.save(vi);
-            driverInstance.setHeadVersionItem(vi);
-            
-        } catch (IOException e) {
-            throw new EJBException(String.format("pullModel on %s raised exception[%s]", driverInstance, e.getMessage()));
-        }
+        OntModel ontModel = OpenStackModelBuilder.createOntology("charon.dragon.maxgigapop.net", "admin", "admin");
+        DriverModel dm = new DriverModel();
+        dm.setCommitted(true);
+        dm.setOntModel(ontModel);
+        ModelPersistenceManager.save(dm);
+        VersionItem vi = new VersionItem();
+        vi.setModelRef(dm);
+        vi.setReferenceUUID(UUID.randomUUID().toString());
+        vi.setDriverInstance(driverInstance);
+        VersionItemPersistenceManager.save(vi);
+        driverInstance.setHeadVersionItem(vi);
                
         return new AsyncResult<>("SUCCESS");
     }

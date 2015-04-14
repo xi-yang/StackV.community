@@ -5,6 +5,7 @@
  */
 package net.maxgigapop.mrs.driver.openstackzanmiguel;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.model.common.Resource;
@@ -26,7 +27,7 @@ public class OpenStackGet {
     private List<? extends Volume> volumes = null;
     private List<? extends NetFloatingIP> floatingIps = null;
 
-    public OpenStackGet(String url, String username, String password, String tenantName) {
+    public  OpenStackGet(String url, String username, String password, String tenantName) {
         //authenticate
         Authenticate authenticate = new Authenticate();
         client = authenticate.openStackAuthenticate(url, username, password, tenantName);
@@ -40,6 +41,10 @@ public class OpenStackGet {
         floatingIps = client.networking().floatingip().list();
         
 
+    }
+
+    public OpenStackGet() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     //get all the networks in the tenant
@@ -71,7 +76,45 @@ public class OpenStackGet {
         }
         return null;
     }
-
+    
+    public List<Subnet> getSubnets(String id){
+        List<Subnet> subnetList = new ArrayList();
+        for(Subnet sub : subnets){
+            if (sub.getNetworkId().equals(id))
+                subnetList.add(sub);
+            else if (sub.getId().equals(id)){
+                subnetList.add(sub);
+                
+                
+            }
+            
+        }
+        
+        return subnetList;
+        
+        
+        
+    }
+    
+    
+    
+    
+        /*public List<Subnet> getSubnets(String id)
+    {
+        List<Subnet> subnetList=new ArrayList();
+        for(Subnet sub : subnets)
+        {
+            if(sub.getNetworkId().equals(id))
+                subnetList.add(sub);
+            else if(sub..equals(id))
+            {
+                subnetList.add(sub);
+                return subnetList;
+            }
+        }
+        return subnetList;
+    }
+*/
     //get all the ports in the tenant
     public List<? extends Port> getPorts() {
         return ports;

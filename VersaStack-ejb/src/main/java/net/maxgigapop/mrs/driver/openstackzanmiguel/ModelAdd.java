@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package net.maxgigapop.mrs.openstackget;
+package net.maxgigapop.mrs.driver.openstackzanmiguel;
 
 import static com.hp.hpl.jena.enhanced.BuiltinPersonalities.model;
 import com.hp.hpl.jena.rdf.model.Literal;

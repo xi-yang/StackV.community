@@ -13,15 +13,17 @@ import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.maxgigapop.mrs.common.Mrs;
 import static net.maxgigapop.mrs.common.Mrs.hasNetworkAddress;
 import static net.maxgigapop.mrs.common.Mrs.value;
+import net.maxgigapop.mrs.common.Nml;
 import static net.maxgigapop.mrs.common.Nml.Port;
 import net.maxgigapop.mrs.common.RdfOwl;
-import net.maxgigapop.mrs.openstackget.OpenstackGet;
+import net.maxgigapop.mrs.driver.openstackzanmiguel.OpenStackGet;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.openstack4j.api.OSClient;
@@ -36,9 +38,14 @@ import org.openstack4j.model.network.Subnet;
  * @author james
  */
 public class OpenStackModelBuilder {
+
+    static OntModel createOntology(String charondragonmaxgigapopnet, String admin, String admin0) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
     public OSClient client = null;
     
-    public static OntModel createOntology(String hostName, String tenantName, String tenantPasswd) throws IOException {
+    public static OntModel createOntology(String hostName, String tenantName, String tenantPasswd,String topologyURI) throws IOException {
         
         String host = "charon.dragon.maxgigapop.net";
         String tenant = "admin";
@@ -76,6 +83,7 @@ public class OpenStackModelBuilder {
         Resource routingService = Mrs.RoutingService;
         Resource switchingSubnet = Mrs.SwitchingSubnet;
         Resource networkAddress = Mrs.NetworkAddress;
+        Resource biPort = Nml.BidirectionalPort;
         
         model.add(model.createStatement(OpenstackTopology, type, Topology));
         model.add(model.createStatement(OpenstackTopology, type, NamedIndividual));
@@ -96,7 +104,7 @@ public class OpenStackModelBuilder {
         tenantId = OpenStackRESTClient.getTenantId(host, tenant, token);
         JSONArray novaDescription = OpenStackRESTClient.pullNovaConfig(host, tenantId, token); 
         
-        OpenstackGet openstacknetworkget = new OpenstackGet();
+        OpenStackGet openstacknetworkget = new OpenStackGet();
         
                
         for(Object o : novaDescription) {
@@ -189,7 +197,12 @@ public class OpenStackModelBuilder {
                 }
             }
         } 
-      
+        
+        
+        StringWriter out = new StringWriter();
+        model.write(out);
+        
+        
         
         logger.log(Level.INFO, "Ontology model for OpenStack driver rewritten");
         
