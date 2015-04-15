@@ -99,6 +99,6 @@ public class TestServiceStarter {
     @PostConstruct
     public void runTests() {
         this.testStubDriver();
-        this.testVersaNSDriver();
+        //this.testVersaNSDriver();
     }
 }

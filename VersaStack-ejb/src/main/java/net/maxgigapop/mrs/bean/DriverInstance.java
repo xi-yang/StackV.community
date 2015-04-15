@@ -131,9 +131,7 @@ public class DriverInstance extends PersistentEntity implements Serializable {
         if (this.id == 0L) {
             throw new EJBException(String.format("call getHeadVersionItem from unpersisted %s", this));
         }
-        if (this.headVersionItem == null) {
-            this.headVersionItem = VersionItemPersistenceManager.getHeadByDriverInstance(this);
-        }
+        this.headVersionItem = VersionItemPersistenceManager.getHeadByDriverInstance(this);
         return headVersionItem;
     }
 

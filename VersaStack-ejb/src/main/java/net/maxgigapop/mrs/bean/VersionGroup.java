@@ -141,7 +141,7 @@ public class VersionGroup extends PersistentEntity implements Serializable {
             if (vi.getModelRef() == null || vi.getModelRef().getOntModel() == null) {
                 throw new EJBException(String.format("%s method createUnionModel encounters empty %s", this, vi));
             }
-            newModel.getOntModel().addSubModel(vi.getModelRef().getOntModel());
+            newModel.getOntModel().add(vi.getModelRef().getOntModel().getBaseModel());
         }
         //@TBD: rebind / rerun inference for referenceModel
         return newModel;

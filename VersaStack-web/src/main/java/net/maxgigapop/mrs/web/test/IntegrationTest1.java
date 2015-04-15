@@ -72,7 +72,7 @@ public class IntegrationTest1 {
 "@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .\n" +
 "@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .";
     
-    @PostConstruct
+    //@PostConstruct
     public void testSystemPullAndPush1() {
         try {
             sleep(180000L);
