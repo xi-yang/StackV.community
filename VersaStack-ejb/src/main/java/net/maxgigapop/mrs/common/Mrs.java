@@ -71,6 +71,8 @@ public class Mrs {
     
     public static final Property providesBucket = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#providesBucket" );
     
+    public static final Property providesRoutingTable = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#providesRoutingTable" );
+
     public static final Property providesRoute = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#providesRoute" );
     
     public static final Property providesSubnet = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#providesSubnet" );
@@ -115,6 +117,8 @@ public class Mrs {
     
     public static final Resource Route = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#Route" );
     
+    public static final Resource RoutingTable = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#RoutingTable" );
+
     public static final Resource RoutingService = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#RoutingService" );
     
     public static final Resource S3_IOBenchmark = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#S3_IOBenchmark" );
