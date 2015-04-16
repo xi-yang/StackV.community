@@ -62,6 +62,7 @@ public class HandleSystemCall {
            throw new EJBException(String.format("createHeadVersionGroup canont find driverInstance in the system"));
         }
         VersionGroup vg = new VersionGroup();
+        vg.setRefUuid(refUuid);
         for (String topoUri: ditMap.keySet()) {
             DriverInstance di = ditMap.get(topoUri);
             synchronized (di) {
@@ -69,13 +70,14 @@ public class HandleSystemCall {
                 if (vi == null) {
                     throw new EJBException(String.format("createHeadVersionGroup encounters null head versionItem in %s", di));
                 }
+                //$$ TODO: remove duplicate references
+                vi.addVersionGroup(vg);
                 vg.addVersionItem(vi);
             }
         }
-        vg.setRefUuid(refUuid);
         VersionGroupPersistenceManager.save(vg);
         return vg;
-    }
+   }
     
     public VersionGroup createHeadVersionGroup(String refUuid, List<String> topoURIs) {
         Map<String, DriverInstance> ditMap = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
@@ -87,7 +89,8 @@ public class HandleSystemCall {
            throw new EJBException(String.format("createHeadVersionGroup canont find driverInstance in the system"));
         }
         VersionGroup vg = new VersionGroup();
-        for (String topoUri: topoURIs) {
+        vg.setRefUuid(refUuid);
+       for (String topoUri: topoURIs) {
             DriverInstance di = ditMap.get(topoUri);
             if (di == null) {
                 throw new EJBException(String.format("createHeadVersionGroup canont find driverInstance with topologyURI=%s", topoUri));
@@ -96,10 +99,10 @@ public class HandleSystemCall {
             if (vi == null) {
                 throw new EJBException(String.format("createHeadVersionGroup encounters null head versionItem in %s", di));
             }
-            vg.addVersionItem(vi);
+            //$$ TODO: remove duplicate references
             vi.addVersionGroup(vg);
+            vg.addVersionItem(vi);
         }
-        vg.setRefUuid(refUuid);
         VersionGroupPersistenceManager.save(vg);
         return vg;
     }

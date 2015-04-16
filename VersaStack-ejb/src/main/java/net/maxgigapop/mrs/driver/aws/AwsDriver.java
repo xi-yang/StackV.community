@@ -26,6 +26,7 @@ import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
+import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 
 /**
@@ -88,7 +89,7 @@ public class AwsDriver implements IHandleDriverSystemCall {
         AwsPush push = new AwsPush(access_key_id, secret_access_key, region, topologyURI);
         push.pushCommit(requests);
 
-        driverInstance.getProperties().remove("requestId");
+        driverInstance.getProperties().remove(requestId);
         DriverInstancePersistenceManager.merge(driverInstance);
 
         Logger.getLogger(AwsDriver.class.getName()).log(Level.SEVERE, null, "AWS driver delta models succesfully commited");
@@ -114,17 +115,19 @@ public class AwsDriver implements IHandleDriverSystemCall {
 
             OntModel ontModel = AwsModelBuilder.createOntology(access_key_id, secret_access_key, region, topologyURI);
 
-            DriverModel dm = new DriverModel();
-            dm.setCommitted(true);
-            dm.setOntModel(ontModel);
-            ModelPersistenceManager.save(dm);
+            if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getTtlModel().equals(ModelUtil.marshalOntModel(ontModel))) {
+                DriverModel dm = new DriverModel();
+                dm.setCommitted(true);
+                dm.setOntModel(ontModel);
+                ModelPersistenceManager.save(dm);
 
-            VersionItem vi = new VersionItem();
-            vi.setModelRef(dm);
-            vi.setReferenceUUID(UUID.randomUUID().toString());
-            vi.setDriverInstance(driverInstance);
-            VersionItemPersistenceManager.save(vi);
-            driverInstance.setHeadVersionItem(vi);
+                VersionItem vi = new VersionItem();
+                vi.setModelRef(dm);
+                vi.setReferenceUUID(UUID.randomUUID().toString());
+                vi.setDriverInstance(driverInstance);
+                VersionItemPersistenceManager.save(vi);
+                driverInstance.setHeadVersionItem(vi);
+            }
 
         } catch (IOException e) {
             throw new EJBException(String.format("pullModel on %s raised exception[%s]", driverInstance, e.getMessage()));

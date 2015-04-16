@@ -49,11 +49,10 @@ public class OpenStackPushTest {
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
     private String topologyUri;
 
-    public static void main(String[] args) {
-        OpenStackPushTest test = new OpenStackPushTest("http://max-vlsr2.dragon.maxgigapop.net", "admin", "1234", "miguel's project", "jwjcjsd");
+    /*public static void main(String[] args) {
+     OpenStackPushTest test = new OpenStackPushTest("http://max-vlsr2.dragon.maxgigapop.net", "admin", "1234", "miguel's project", "jwjcjsd");
 
-    }
-
+     }*/
     public OpenStackPushTest(String url, String username, String password, String tenantName, String topologyUri) {
         client = new OpenStackGet(url, username, password, tenantName);
         osClient = client.getClient();
@@ -63,7 +62,6 @@ public class OpenStackPushTest {
 
         client.getServers().get(0);
         client.getServers();
-
     }
 
     /**
@@ -75,11 +73,11 @@ public class OpenStackPushTest {
         List<JSONObject> requests = new ArrayList();
 
         //get all the requests
-        requests.addAll(VolumesRequests(modelRef, modelReduct,false));
-        requests.addAll(deleteSubnetsRequests(modelRef, modelReduct));
-        requests.addAll(createNetworksRequests(modelRef, modelAdd));
-        requests.addAll(createSubnetsRequests(modelRef, modelAdd));
-        requests.addAll(VolumesRequests(modelRef, modelAdd,true));
+        requests.addAll(volumesRequests(modelRef, modelReduct, false));
+        requests.addAll(subnetsRequests(modelRef, modelReduct,false));
+        requests.addAll(networksRequests(modelRef, modelAdd));
+        requests.addAll(subnetsRequests(modelRef, modelAdd,true));
+        requests.addAll(volumesRequests(modelRef, modelAdd, true));
         return requests;
     }
 
@@ -103,75 +101,12 @@ public class OpenStackPushTest {
 
     }
 
-
-    /**
-     * *****************************************************************
-     * Function to create a subnets from a modelRef
-     * ***************************************************************
-     */
-    private List<JSONObject> deleteSubnetsRequests(OntModel modelRef, OntModel model) throws Exception {
-        List<JSONObject> requests = new ArrayList();
-        String query;
-
-        query = "SELECT ?subnet WHERE {?subnet a mrs:SwitchingSubnet}";
-        ResultSet r = executeQuery(query, emptyModel, model);
-        while (r.hasNext()) {
-            QuerySolution querySolution = r.next();
-            RDFNode subnet = querySolution.get("subnet");
-            String subnetName = subnet.asResource().toString().replace(topologyUri, "");
-            Subnet s = client.getSubnet(subnetName);
-
-            if (s == null) //subnet  exists,does not need to create one
-            {
-                throw new Exception(String.format("Subnet %s does not exists", subnet));
-            } else {
-                String subnetId = s.getId();
-                query = "SELECT ?service {?service mrs:providesSubnet <" + subnet.asResource() + ">}";
-                ResultSet r1 = executeQuery(query, emptyModel, model);
-                if (!r1.hasNext()) {
-                    throw new Exception(String.format("No service has subnet %s", subnet));
-                }
-                QuerySolution querySolution1 = r1.next();
-                RDFNode service = querySolution1.get("service");
-                query = "SELECT ?network {?network nml:hasService <" + service.asResource() + "> ."
-                        + "<" + service.asResource() + "> a mrs:SwitchingService}";
-                r1 = executeQuery(query, modelRef, model);
-                if (!r1.hasNext()) {
-                    r1 = executeQuery(query, modelRef, modelRef);
-                }
-                if (!r1.hasNext()) {
-                    throw new Exception(String.format("Subnet %s does not belong a network", subnet));
-                }
-                querySolution1 = r1.next();
-                RDFNode network = querySolution1.get("network");
-                String networkName = network.asResource().toString().replace(topologyUri, "");
-
-                query = "SELECT ?subnet ?address ?value WHERE {?subnet mrs:hasNetworkAddress ?address ."
-                        + "?address a mrs:NetworkAddress ."
-                        + "?address mrs:type \"ipv4-prefix\" ."
-                        + "?address mrs:value ?value}";
-                r1 = executeQuery(query, modelRef, model);
-                querySolution1 = r1.next();
-                RDFNode value = querySolution1.get("value");
-                String cidrBlock = value.asLiteral().toString();
-
-                JSONObject o = new JSONObject();
-                o.put("request", "DeleteSubnetRequest");
-                o.put("network name", networkName);
-                o.put("cidr block", cidrBlock);
-                o.put("name", subnetName);
-                requests.add(o);
-            }
-        }
-        return requests;
-    }
-
     /**
      * *****************************************************************
      * Function to create a Vpc from a modelRef
      * /*****************************************************************
      */
-    private List<JSONObject> createNetworksRequests(OntModel modelRef, OntModel model) throws Exception {
+    private List<JSONObject> networksRequests(OntModel modelRef, OntModel model) throws Exception {
         List<JSONObject> requests = new ArrayList();
         String query;
 
@@ -272,7 +207,7 @@ public class OpenStackPushTest {
      * Function to create a subnets from a modelRef
      * ***************************************************************
      */
-    private List<JSONObject> createSubnetsRequests(OntModel modelRef, OntModel model) throws Exception {
+    private List<JSONObject> subnetsRequests(OntModel modelRef, OntModel model, boolean creation) throws Exception {
         List<JSONObject> requests = new ArrayList();
         String query;
 
@@ -284,9 +219,13 @@ public class OpenStackPushTest {
             String subnetName = subnet.asResource().toString().replace(topologyUri, "");
             Subnet s = client.getSubnet(subnetName);
 
-            if (s != null) //subnet  exists,does not need to create one
+            if (s == null ^ creation) //subnet  exists,does not need to create one
             {
-                throw new Exception(String.format("Subnet %s already exists", subnet));
+                if (creation == true) {
+                    throw new Exception(String.format("Subnet %s already exists", subnet));
+                } else {
+                    throw new Exception(String.format("Subnet %s does not exist, cannot be deleted", subnet));
+                }
             } else {
                 String subnetId = s.getId();
                 query = "SELECT ?service {?service mrs:providesSubnet <" + subnet.asResource() + ">}";
@@ -319,8 +258,11 @@ public class OpenStackPushTest {
                 String cidrBlock = value.asLiteral().toString();
 
                 JSONObject o = new JSONObject();
-                o.put("request", "CreateSubnetRequest");
-                o.put("network name", networkName);
+                if (creation == true) {
+                    o.put("request", "CreateSubnetRequest");
+                } else {
+                    o.put("network name", networkName);
+                }
                 o.put("cidr block", cidrBlock);
                 o.put("name", subnetName);
                 requests.add(o);
@@ -334,7 +276,7 @@ public class OpenStackPushTest {
      * Function to create/delete a volumes from a modelRef
      * ***************************************************************
      */
-    private List<JSONObject> VolumesRequests(OntModel modelRef, OntModel model, boolean creation) throws Exception {
+    private List<JSONObject> volumesRequests(OntModel modelRef, OntModel model, boolean creation) throws Exception {
         List<JSONObject> requests = new ArrayList();
         String query;
 
@@ -347,9 +289,13 @@ public class OpenStackPushTest {
 
             Volume v = client.getVolume(volumeName);
 
-            if (v != null) //volume exists, no need to create a volume
+            if (v == null ^ creation) //volume exists, no need to create a volume
             {
-                throw new Exception(String.format("Volume %s already exists", v));
+                if (creation == true) {
+                    throw new Exception(String.format("Volume %s already exists", v));
+                } else {
+                    throw new Exception(String.format("Volume %s does not exist, cannot be deleted", v));
+                }
             } else {
                 //check what service is providing the volume
                 query = "SELECT ?type WHERE {?service mrs:providesVolume <" + volume.asResource() + ">}";
@@ -398,8 +344,8 @@ public class OpenStackPushTest {
      * Function to create network interfaces from a model
      * ****************************************************************
      */
-    private String createPortsRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws Exception {
-        String requests = "";
+    private List<JSONObject> createPortsRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws Exception {
+        List<JSONObject> requests = new ArrayList();
         String query;
 
         //get the tag resource from the reference model that indicates 
@@ -424,17 +370,21 @@ public class OpenStackPushTest {
 
             Port p = client.getPort(portName);
 
-            if (p != null) //network interface  exists, no need to create a network interface
+            if (p == null ^ creation) //network interface  exists, no need to create a network interface
             {
-                throw new Exception(String.format("Network interface %s already exists", portName));
+                if (creation == true) {
+                    throw new Exception(String.format("Network interface %s already exists", portName));
+                } else {
+                    throw new Exception(String.format("Network interface %s does not exist, cannot be deleted", portName));
+                }
             } else {
                 //to get the private ip of the network interface
                 query = "SELECT ?address ?value WHERE {<" + port.asResource() + ">  mrs:hasNetworkAddress  ?address ."
                         + "?address mrs:type \"ipv4:private\" ."
                         + "?address mrs:value ?value }";
-                ResultSet r1 = executeQuery(query, modelRef, modelDelta);
+                ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
                 if (!r1.hasNext()) {
-                    throw new Exception(String.format("model addition does not specify privat ip address of port: %s", port));
+                    throw new Exception(String.format("Delta Model does not specify privat ip address of port: %s", port));
                 }
                 QuerySolution querySolution1 = r1.next();
                 RDFNode value = querySolution1.get("value");
@@ -444,9 +394,9 @@ public class OpenStackPushTest {
                 query = "SELECT ?subnet WHERE {?subnet  nml:hasBidirectionalPort <" + port.asResource() + ">}";
                 r1 = executeQuery(query, modelRef, modelDelta);
                 if (!r1.hasNext()) {
-                    throw new Exception(String.format("model addition does not specify network interface subnet of port: %s", port));
+                    throw new Exception(String.format("Delta model does not specify network interface subnet of port: %s", port));
                 }
-                String subnetId = null;
+                String subnetName = "";
                 while (r1.hasNext()) {
                     querySolution1 = r1.next();
                     RDFNode subnet = querySolution1.get("subnet");
@@ -454,17 +404,24 @@ public class OpenStackPushTest {
                     ResultSet r3 = executeQuery(query, modelRef, modelDelta);
                     if (r3.hasNext()) //search in the model to see if subnet existed before
                     {
-                        String subnetName = subnet.asResource().toString().replace(topologyUri, "");
-                        subnetId = client.getSubnet(subnetName).getId();
-                    }
-                    if (subnetId == null || subnetId.isEmpty()) {
-                        throw new Exception(String.format("model additions subnet for port %s"
-                                + "is not found in the reference model", subnetId));
+                        subnetName = subnet.asResource().toString().replace(topologyUri, "");
+                    } else {
+                        throw new Exception(String.format("Subnet  for port %s"
+                                + "is not found in any model", port.asResource()));
                     }
                 }
 
-                //create the network interface 
-                requests += String.format("CreateNetworkInterfaceRequest  %s %s %s \n", privateAddress, subnetId, portName);
+                JSONObject o = new JSONObject();
+                if (creation == true) {
+                    o.put("request", "CreateNetworkInterfaceRequest");
+                } else {
+                    o.put("request", "DeleteNetworkInterfaceRequest");
+                }
+
+                o.put("private address", privateAddress);
+                o.put("subnet name", subnetName);
+                o.put("port name", portName);
+                requests.add(o);
             }
         }
         return requests;
@@ -475,7 +432,7 @@ public class OpenStackPushTest {
      * Function to request or delete an instance
      * ****************************************************************
      */
-    private List<JSONObject> createServerRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws Exception {
+    private List<JSONObject> serverRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws Exception {
         List<JSONObject> requests = new ArrayList();
         String query;
 
@@ -487,9 +444,13 @@ public class OpenStackPushTest {
             String serverName = vm.asResource().toString().replace(topologyUri, "");
             Server server = client.getServer(serverName);
 
-            if (server != null || creation) //instance does not be to be created
+            if (server == null ^ creation) //check if server needs to be created or deleted
             {
-                throw new Exception(String.format("Server %s already exists", serverName));
+                if (creation == true) {
+                    throw new Exception(String.format("Server %s already exists", serverName));
+                } else {
+                    throw new Exception(String.format("Server %s does not exist, cannot be deleted", serverName));
+                }
             } else {
                 //check what service is providing the instance
                 query = "SELECT ?service WHERE {?service mrs:providesVM <" + vm.asResource() + ">}";
