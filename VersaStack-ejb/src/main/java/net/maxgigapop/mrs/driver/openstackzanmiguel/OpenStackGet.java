@@ -145,6 +145,19 @@ public class OpenStackGet {
         return null;
     }
     
+    public List<String> gethostlist(){
+        List<String> l= new ArrayList<>();
+        for (Server server : servers){
+            String a = server.getHost();
+            l.add(a);
+        
+        }
+        return l;
+    }
+        
+        
+        
+    
     //get all volumes in the tenant
     public List<? extends Volume> getVolumes() {
         return volumes;
@@ -180,6 +193,11 @@ public class OpenStackGet {
     {
         return client;
     }
+    
+    
+    
+    //get server interface
+   
     
     //get name from a resource
     //if the resource does not have a nane, return the ID

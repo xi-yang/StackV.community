@@ -22,6 +22,7 @@ import static net.maxgigapop.mrs.common.Mrs.hasNetworkAddress;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import org.openstack4j.api.OSClient;
+import org.openstack4j.model.compute.Server;
 import org.openstack4j.model.network.Network;
 import org.openstack4j.model.network.Subnet;
 
@@ -103,12 +104,37 @@ public class OpenStackNeutronModelBuilder {
         model.add(model.createStatement(OpenstackTopology, type, namedIndividual));
         model.add(model.createStatement(OpenstackTopology, hasService, hypervisorService));
         model.add(model.createStatement(OpenstackTopology, hasService, routingService));
-        
+        //model.add(model.createStatement(OpenstackTopology, hasNode, Host));
         model.add(model.createStatement(OpenstackTopology, hasService, networkService));
        // model.add(model.createStatement(OpenstackTopology, hasBidirectionalPort, directConnect));
-                
+        //Left part
+        for (Server s : openstackget.getServers()){
+            String hostid = s.getHostId();
+            String hostname = s.getHost();
+            String hypervisorname = s.getHypervisorHostname();
+            
+            Resource HOST = RdfOwl.createResource(model, topologyURI + ":" + hostname, node);
+            Resource HOSTID = RdfOwl.createResource(model, topologyURI + ":hostid-" + hostid, node);
+            Resource HYPERVISOR = RdfOwl.createResource(model, topologyURI + ":" + hypervisorname, hypervisorService);
+            Resource VM = RdfOwl.createResource(model, topologyURI + ":" + openstackget.getResourceName((org.openstack4j.model.common.Resource) s), node);
+            
+            model.add(model.createStatement(OpenstackTopology, hasNode, HOST));
+            model.add(model.createStatement(HOST, hasTag, HOSTID));//not sure this funciton is right
+            
+            model.add(model.createStatement(HOST, hasService, HYPERVISOR ));
+            model.add(model.createStatement(HYPERVISOR, providesVM, VM));
+            model.add(model.createStatement(HOST, hasNode, VM));
+            
+            
+            
+            
+            
+            
+        }     
+        
+        //Right subnet part
         for (Network n : openstackget.getNetworks()){
-            String networkID = n.getId();//not using the miguel function
+            String networkID = openstackget.getResourceName(n);//not using the miguel function
             Resource NETWORK = RdfOwl.createResource(model, topologyURI + ":" + networkID, topology);
             Resource NETWORK_ADDRESS
                     = RdfOwl.createResource(model, topologyURI + ":networkaddress-" + networkID, networkAddress);
@@ -120,7 +146,7 @@ public class OpenStackNeutronModelBuilder {
             Resource SWITCHINGSERVICE = RdfOwl.createResource(model, topologyURI + ":switchingservice-" + networkID, switchingService);
             model.add(model.createStatement(NETWORK, hasService, SWITCHINGSERVICE));
             for (Subnet s : openstackget.getSubnets(n.getId())){
-                String subnetId = s.getId();
+                String subnetId = openstackget.getResourceName(s);
                 Resource SUBNET = RdfOwl.createResource(model, topologyURI + ":" + subnetId, switchingSubnet);
                 model.add(model.createStatement(SWITCHINGSERVICE, providesSubnet, SUBNET));
                 Resource SUBNET_NETWORK_ADDRESS
@@ -128,6 +154,8 @@ public class OpenStackNeutronModelBuilder {
                 model.add(model.createStatement(SUBNET_NETWORK_ADDRESS, type, "ipv4-prefix"));
                 model.add(model.createStatement(SUBNET_NETWORK_ADDRESS, value, s.getCidr()));
                 model.add(model.createStatement(SUBNET, hasNetworkAddress, SUBNET_NETWORK_ADDRESS));
+                
+                
                 
             }
             
