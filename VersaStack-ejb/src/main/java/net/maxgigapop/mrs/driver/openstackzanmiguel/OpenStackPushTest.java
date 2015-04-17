@@ -50,7 +50,7 @@ public class OpenStackPushTest {
     private String topologyUri;
 
     /*public static void main(String[] args) {
-     OpenStackPushTest test = new OpenStackPushTest("http://max-vlsr2.dragon.maxgigapop.net", "admin", "1234", "miguel's project", "jwjcjsd");
+     OpenStackPushTest test = new OpenStackPushTest();
 
      }*/
     public OpenStackPushTest(String url, String username, String password, String tenantName, String topologyUri) {

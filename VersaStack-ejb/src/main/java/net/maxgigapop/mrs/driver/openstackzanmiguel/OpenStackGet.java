@@ -5,6 +5,7 @@
  */
 package net.maxgigapop.mrs.driver.openstackzanmiguel;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.model.common.Resource;
@@ -12,6 +13,7 @@ import org.openstack4j.model.compute.*;
 import org.openstack4j.model.compute.ext.Hypervisor;
 import org.openstack4j.model.network.*;
 import org.openstack4j.model.storage.block.*;
+import org.openstack4j.openstack.compute.domain.NovaInterfaceAttachment;
 
 /**
  *
@@ -41,11 +43,10 @@ public class OpenStackGet {
         volumes = client.blockStorage().volumes().list();
         floatingIps = client.networking().floatingip().list();
         //hypervisors = client.compute().hypervisors().list();
-        
 
     }
 
-    //get all the networks in the tenant
+    //get all the nets in the tenant
     public List<? extends Network> getNetworks() {
         return networks;
     }
@@ -103,6 +104,33 @@ public class OpenStackGet {
             }
         }
         return null;
+    }
+
+    //get the Networks of  a server
+    public List<Network> getServerNetworks(Server server) {
+        List<Network> nets = new ArrayList();
+        for (Port port : ports) {
+            if (port.getDeviceId().equals(server.getId())) {
+                Network net = getNetwork(port.getNetworkId());
+                nets.add(net);
+            }
+        }
+        return nets;
+    }
+    
+       //get the Subnets of  a server
+    public List<Subnet> getServerSubnets(Server server) {
+        List<Subnet> nets = new ArrayList();
+        for (Port port : ports) {
+            if (port.getDeviceId().equals(server.getId())) {
+                NovaInterfaceAttachment att = new NovaInterfaceAttachment(port.getId());
+                for(InterfaceAttachment.FixedIp attIp : att.getFixedIps())
+                {
+                    nets.add(getSubnet(attIp.getSubnetId()));
+                }
+            }
+        }
+        return nets;
     }
 
     //get all volumes in the tenant
