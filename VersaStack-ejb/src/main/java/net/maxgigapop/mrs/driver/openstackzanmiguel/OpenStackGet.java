@@ -12,6 +12,7 @@ import org.openstack4j.model.common.Resource;
 import org.openstack4j.model.compute.*;
 import org.openstack4j.model.network.*;
 import org.openstack4j.model.storage.block.*;
+import org.openstack4j.openstack.compute.domain.NovaInterfaceAttachment;
 
 /**
  *
@@ -194,7 +195,33 @@ public class OpenStackGet {
         return client;
     }
     
+    //get the Networks of  a server
+    public List<Network> getServerNetworks(Server server) {
+        List<Network> nets = new ArrayList();
+        for (Port port : ports) {
+            if (port.getDeviceId().equals(server.getId())) {
+                Network net = getNetwork(port.getNetworkId());
+                nets.add(net);
+            }
+        }
+        return nets;
+    }
     
+       //get the Subnets of  a server
+    public List<Subnet> getServerSubnets(Server server) {
+        List<Subnet> nets = new ArrayList();
+        for (Port port : ports) {
+            if (port.getDeviceId().equals(server.getId())) {
+                NovaInterfaceAttachment att = new NovaInterfaceAttachment(port.getId());
+                for(InterfaceAttachment.FixedIp attIp : att.getFixedIps())
+                {
+                    nets.add(getSubnet(attIp.getSubnetId()));
+                }
+            }
+        }
+        return nets;
+    }
+
     
     //get server interface
    
