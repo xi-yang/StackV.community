@@ -254,14 +254,12 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             Resource resPolicy = querySolution.get("policyAction").asResource();
             Resource resData = querySolution.get("policyData").asResource();
             // add export data
-            if (!spaModel.listStatements(vm, RdfOwl.type, Spa.PolicyData).hasNext()) {
-                if (spaModel.listStatements(resHost, RdfOwl.type, Nml.Topology).hasNext())
-                    spaModel.add(resData, Spa.type, Nml.Topology);
-                else if (spaModel.listStatements(resHost, RdfOwl.type, Nml.Node).hasNext()) {
-                    spaModel.add(resData, Spa.type, Nml.Node);
-                }
-                spaModel.add(resData, Spa.value, resHost);
+            if (spaModel.listStatements(resHost, RdfOwl.type, Nml.Topology).hasNext()) {
+                spaModel.add(resData, Spa.type, Nml.Topology);
+            } else if (spaModel.listStatements(resHost, RdfOwl.type, Nml.Node).hasNext()) {
+                spaModel.add(resData, Spa.type, Nml.Node);
             }
+            spaModel.add(resData, Spa.value, resHost);
             // remove VM->exportTo statement so the exportData can be kept in spaModel during receurive removal
             spaModel.remove(resPolicy, Spa.exportTo, resData);
         }
