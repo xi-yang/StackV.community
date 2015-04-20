@@ -6,7 +6,10 @@
 package net.maxgigapop.mrs.driver.openstackzanmiguel;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.model.common.Resource;
 import org.openstack4j.model.compute.*;
@@ -178,7 +181,7 @@ public class OpenStackGet {
     public List<? extends NetFloatingIP> getFloatingIp() {
         return floatingIps;
     }
-
+   
     //get a floating ip  by its id
     public NetFloatingIP getFloatingIp(String id) {
         for (NetFloatingIP ip: floatingIps) {
@@ -208,17 +211,27 @@ public class OpenStackGet {
     }
     
        //get the Subnets of  a server
-    public List<Subnet> getServerSubnets(Server server) {
-        List<Subnet> nets = new ArrayList();
+    public List<String> getServerSubnets(Server server) {
+        List<String> nets = new ArrayList();
+        
         for (Port port : ports) {
-            if (port.getDeviceId().equals(server.getId())) {
+            /*if (port.getDeviceId().equals(server.getId())) {
                 NovaInterfaceAttachment att = new NovaInterfaceAttachment(port.getId());
                 for(InterfaceAttachment.FixedIp attIp : att.getFixedIps())
                 {
                     nets.add(getSubnet(attIp.getSubnetId()));
                 }
+                    */
+            
+            Iterator ip = port.getFixedIps().iterator();
+            while (ip.hasNext()){
+                IP ipadd = (IP) ip.next();
+                nets.add(ipadd.getSubnetId());
             }
-        }
+            
+                        
+            }
+        
         return nets;
     }
 

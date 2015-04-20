@@ -118,7 +118,7 @@ public class OpenStackNeutronModelBuilder {
             Resource HOST = RdfOwl.createResource(model, topologyURI + ":" + hostname, node);
             Resource HOSTID = RdfOwl.createResource(model, topologyURI + ":hostid-" + hostid, node);
             Resource HYPERVISOR = RdfOwl.createResource(model, topologyURI + ":" + hypervisorname, hypervisorService);
-            Resource VM = RdfOwl.createResource(model, topologyURI + ":" + openstackget.getResourceName((org.openstack4j.model.common.Resource) server), node);
+            Resource VM = RdfOwl.createResource(model, topologyURI + ":" + server.getId(), node);
             Resource SERVER_SUBNET = RdfOwl.createResource(model, topologyURI + ":" + openstackget.getServerSubnets(server), networkAddress);
             
             
