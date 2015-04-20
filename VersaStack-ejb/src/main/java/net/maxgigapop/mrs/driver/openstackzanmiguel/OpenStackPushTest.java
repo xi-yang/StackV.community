@@ -28,6 +28,8 @@ import org.openstack4j.model.network.IP;
 import org.openstack4j.model.network.*;
 import org.openstack4j.model.storage.block.*;
 import org.openstack4j.openstack.compute.domain.NovaServer;
+import org.openstack4j.openstack.compute.internal.ServerServiceImpl;
+import org.openstack4j.openstack.networking.domain.NeutronNetwork;
 import org.openstack4j.openstack.networking.domain.NeutronPort;
 import org.openstack4j.openstack.networking.domain.NeutronSubnet;
 import org.openstack4j.openstack.storage.block.domain.CinderVolume;
@@ -66,6 +68,9 @@ public class OpenStackPushTest {
 
         client.getServers().get(0);
         client.getServers();
+
+        
+        
     }
 
     /**
@@ -77,6 +82,7 @@ public class OpenStackPushTest {
         List<JSONObject> requests = new ArrayList();
 
         //get all the requests
+        requests.addAll(volumesAttachmentRequests(modelRef, modelReduct, false));
         requests.addAll(volumesRequests(modelRef, modelReduct, false));
         requests.addAll((portsRequests(modelRef, modelReduct, false)));
         requests.addAll(subnetsRequests(modelRef, modelReduct, false));
@@ -84,6 +90,7 @@ public class OpenStackPushTest {
         requests.addAll(subnetsRequests(modelRef, modelAdd, true));
         requests.addAll(volumesRequests(modelRef, modelAdd, true));
         requests.addAll((portsRequests(modelRef, modelAdd, true)));
+        requests.addAll(volumesAttachmentRequests(modelRef, modelAdd, true));
         return requests;
     }
 
@@ -94,18 +101,18 @@ public class OpenStackPushTest {
      */
     public void pushCommit(List<JSONObject> requests) {
         for (JSONObject o : requests) {
-            if (o.get("request").equals("CreatePortRequest")) {
+            if (o.get("request").toString().equals("CreatePortRequest")) {
                 Port port = new NeutronPort();
                 Subnet net = client.getSubnet(o.get("subnet name").toString());
                 port.toBuilder().name(o.get("name").toString())
                         .fixedIp(o.get("private address").toString(), net.getId());
 
                 osClient.networking().port().create(port);
-            } else if (o.get("request").equals("DeletePortRequest")) {
+            } else if (o.get("request").toString().equals("DeletePortRequest")) {
                 Port port = client.getPort(o.get("port name").toString());
                 osClient.networking().port().delete(port.getId());
 
-            } else if (o.get("request").equals("CreateVolumeRequest")) {
+            } else if (o.get("request").toString().equals("CreateVolumeRequest")) {
                 Volume volume = new CinderVolume();
                 volume.toBuilder().size(Integer.parseInt(o.get("size").toString()))
                         .volumeType(o.get("type").toString())
@@ -113,11 +120,11 @@ public class OpenStackPushTest {
 
                 osClient.blockStorage().volumes().create(volume);
 
-            } else if (o.get("request").equals("DeleteVolumeRequest")) {
+            } else if (o.get("request").toString().equals("DeleteVolumeRequest")) {
                 Volume volume = client.getVolume(o.get("volume name").toString());
                 osClient.blockStorage().volumes().delete(volume.getId());
 
-            } else if (o.get("request").equals("CreateSubnetRequest")) {
+            } else if (o.get("request").toString().equals("CreateSubnetRequest")) {
                 Subnet subnet = new NeutronSubnet();
                 subnet.toBuilder().cidr(o.get("cidr block").toString())
                         .network(client.getNetwork(o.get("network name").toString()))
@@ -125,10 +132,10 @@ public class OpenStackPushTest {
 
                 osClient.networking().subnet().create(subnet);
 
-            } else if (o.get("request").equals("DeleteSubnetRequest")) {
+            } else if (o.get("request").toString().equals("DeleteSubnetRequest")) {
                 Subnet net = client.getSubnet(o.get("subnet name").toString());
                 osClient.networking().subnet().delete(net.getId());
-            } else if (o.get("request").equals("RunInstanceRequest")) {
+            } else if (o.get("request").toString().equals("RunInstanceRequest")) {
                 ServerCreateBuilder builder = Builders.server()
                         .name("name")
                         .image(o.get("image").toString())
@@ -147,9 +154,21 @@ public class OpenStackPushTest {
                 Server server = (Server) builder.build();
                 server = osClient.compute().servers().boot((ServerCreate) server);
 
-            } else if (o.get("request").equals("TerminateInstanceRequest")) {
+            } else if (o.get("request").toString().equals("TerminateInstanceRequest")) {
                 Server server = client.getServer(o.get("server name").toString());
                 osClient.compute().servers().delete(server.getId());
+            } else if (o.get("request").toString().equals("AttachVolumeRequest")) {
+                ServerServiceImpl serverService = new ServerServiceImpl();
+                String volumeId = client.getVolume(o.get("volume name").toString()).getId();
+                String serverId = client.getServer(o.get("server name").toString()).getId();
+
+                serverService.attachVolume(serverId, volumeId, o.get("device name").toString());
+            } else if (o.get("request").toString().equals("DetachVolumeRequest")) {
+                ServerServiceImpl serverService = new ServerServiceImpl();
+                String serverId = client.getServer(o.get("server name").toString()).getId();
+                String attachmentId = o.get("attachment id").toString();
+
+                serverService.detachVolume(serverId, attachmentId);
             }
 
         }
@@ -481,6 +500,66 @@ public class OpenStackPushTest {
         }
         return requests;
     }
+    
+    /**
+     * ****************************************************************
+     * Function to attach (if not on server creation) or detach a port from a server
+     * ****************************************************************
+     */
+    /*private List<JSONObject> portsAttachmentRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws Exception
+    {
+        List<JSONObject> requests = new ArrayList();
+        String query;
+        
+        query = "SELECT ?node ?port WHERE {?node nml:hasBidirectionalPort ?port}";
+        ResultSet r = executeQuery(query, emptyModel, modelDelta);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            RDFNode port = q.get("port");
+            RDFNode server = q.get("node");
+            String serverName = server.asResource().toString().replace(topologyUri, "");
+            query = "SELECT ?node WHERE {<" + server.asResource() + "> a nml:Node}";
+            ResultSet r1 = executeQuery(query, modelRef, emptyModel);
+            Server s = null;
+            int index = 0;
+            if (r1.hasNext()) {
+                s = client.getServer(serverName);
+                index = client.getServerPorts(s);
+            }
+            while (r1.hasNext()) {
+                r1.next();
+                String portIdTag = port.asResource().toString().replace(topologyUri, "");
+
+                query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:hasTag ?tag}";
+                ResultSet r2 = executeQuery(query, model, modelAdd);
+                if (!r2.hasNext()) {
+                    throw new Exception(String.format("bidirectional port %s to be attached to intsnace does not specify a tag", port));
+                }
+                QuerySolution q2 = r2.next();
+                RDFNode tag = q2.get("tag");
+                query = "SELECT ?tag WHERE {<" + tag.asResource() + "> mrs:type \"interface\". "
+                        + "<" + tag.asResource() + "> mrs:value \"network\"}";
+                r2 = executeQuery(query, model, emptyModel);
+                if (!r2.hasNext()) {
+                    throw new Exception(String.format("bidirectional port %s to be attached to instance is not a net"
+                            + "work interface", port));
+                }
+
+                //see if the network interface is already atatched
+                NetworkInterface eni = ec2Client.getNetworkInterface(getResourceId(portIdTag));
+                if (eni != null) {
+                    if (eni.getAttachment() != null) {
+                        throw new Exception(String.format("bidirectional port %s to be attached to instance is already"
+                                + " attached to an instance", port));
+                    }
+                }
+                requests += String.format("AttachNetworkInterfaceRequests %s %s %s \n", portIdTag, serverName, Integer.toString(index));
+                index++;
+            }
+
+        }
+        return requests;
+    }*/
 
     /**
      * ****************************************************************
@@ -624,10 +703,10 @@ public class OpenStackPushTest {
      * Function to attach or detach volume to an instance
      * ****************************************************************
      */
-    /*private List<JSONObject> VolumeAttachmentRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws Exception {
+    private List<JSONObject> volumesAttachmentRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws Exception {
         List<JSONObject> requests = new ArrayList();
         String query;
-        
+
         //check if the volume is new therefore it should be in the model additiom
         query = "SELECT  ?node ?volume  WHERE {?node  mrs:hasVolume  ?volume}";
 
@@ -638,7 +717,6 @@ public class OpenStackPushTest {
             String serverName = server.asResource().toString().replace(topologyUri, "");
             RDFNode volume = querySolution1.get("volume");
             String volumeName = volume.asResource().toString().replace(topologyUri, "");
-            
 
             query = "SELECT ?deviceName WHERE{<" + volume.asResource() + "> mrs:target_device ?deviceName}";
             ResultSet r2 = executeQuery(query, modelRef, modelDelta);
@@ -653,7 +731,7 @@ public class OpenStackPushTest {
 
             if (!device.equals("/dev/")) {
                 Server s = client.getServer(serverName);
-  
+
                 Volume vol = client.getVolume(volumeName);
                 if (vol == null) {
                     query = "SELECT ?deviceName ?size ?type WHERE{<" + volume.asResource() + "> mrs:target_device ?deviceName}";
@@ -663,29 +741,68 @@ public class OpenStackPushTest {
                     }
                 }
                 if (s != null) {
-                    List< InstanceBlockDeviceMapping> map = 
-                    boolean attach = true;
+                    List<String> map = s.getOsExtendedVolumesAttached();
                     if (vol == null) {
-                        requests += String.format("AttachVolumeRequest %s %s %s \n", serverId, volumeName, device);
+                        if (creation == false) {
+                            throw new Exception(String.format("volume %s to be detached does not exist", volumeName));
+                        } else {
+                            JSONObject o = new JSONObject();
+                            o.put("request", "AttachVolumeRequest");
+                            o.put("server name", serverName);
+                            o.put("volume name", volumeName);
+                            o.put("device name", device);
+                            requests.add(o);
+                        }
                     } else {
-                        for (InstanceBlockDeviceMapping m : map) {
-                            String instanceVolumeId = m.getEbs().getVolumeId();
-                            if (instanceVolumeId.equals(volumeId)) {
-                                attach = false;
-                                break;
+                        if (creation == true) {
+                            if (!map.contains(vol.getId())) {
+                                JSONObject o = new JSONObject();
+                                o.put("request", "AttachVolumeRequest");
+                                o.put("server name", serverName);
+                                o.put("volume name", volumeName);
+                                o.put("device name", device);
+                                requests.add(o);
+                            } else {
+                                throw new Exception(String.format("volume %s is already attached to"
+                                        + " server %s", volumeName, serverName));
+                            }
+                        } else if (creation == false) {
+                            if (map.contains(vol.getId())) {
+                                JSONObject o = new JSONObject();
+                                o.put("request", "DetachVolumeRequest");
+                                o.put("server name", serverName);
+                                List<? extends VolumeAttachment> att = vol.getAttachments();
+                                for(VolumeAttachment a: att)
+                                {
+                                    if (a.getId().equals(s.getId()))
+                                        o.put("attachment id", a.getId());
+                                }
+                                s.getOsExtendedVolumesAttached();
+                                requests.add(o);
+                            } else {
+                                throw new Exception(String.format("volume %s is not attached to"
+                                        + " server %s", volumeName, serverName));
                             }
                         }
-                        if (attach == true) {
-                            requests += String.format("AttachVolumeRequest %s %s %s \n", serverId, volumeName, device);
-                        }
                     }
-                } else if (ins == null) {
-                    requests += String.format("AttachVolumeRequest %s %s %s \n", serverName, volumeName, device);
+
+                } else if (s == null) {
+                    if (creation == true) {
+                        JSONObject o = new JSONObject();
+                        o.put("request", "AttachVolumeRequest");
+                        o.put("server name", serverName);
+                        o.put("volume name", volumeName);
+                        o.put("device name", device);
+                        requests.add(o);
+                    } else {
+                        throw new Exception(String.format("server %s where the volume %s will be"
+                                + "detached does not exists", serverName, volumeName));
+                    }
                 }
             }
         }
         return requests;
-    }*/
+    }
 
     /**
      * ****************************************************************

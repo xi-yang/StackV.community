@@ -14,6 +14,7 @@ import org.openstack4j.model.compute.ext.Hypervisor;
 import org.openstack4j.model.network.*;
 import org.openstack4j.model.storage.block.*;
 import org.openstack4j.openstack.compute.domain.NovaInterfaceAttachment;
+import org.openstack4j.openstack.compute.internal.ext.InterfaceServiceImpl;
 
 /**
  *
@@ -118,19 +119,30 @@ public class OpenStackGet {
         return nets;
     }
     
-       //get the Subnets of  a server
+    //get the Subnets of  a server
     public List<Subnet> getServerSubnets(Server server) {
         List<Subnet> nets = new ArrayList();
-        for (Port port : ports) {
-            if (port.getDeviceId().equals(server.getId())) {
-                NovaInterfaceAttachment att = new NovaInterfaceAttachment(port.getId());
+        InterfaceServiceImpl impl = new InterfaceServiceImpl();
+        for (InterfaceAttachment att: impl.list(server.getId())) {
                 for(InterfaceAttachment.FixedIp attIp : att.getFixedIps())
                 {
+                    if(!nets.contains(getSubnet(attIp.getSubnetId())))
                     nets.add(getSubnet(attIp.getSubnetId()));
                 }
             }
-        }
         return nets;
+    }
+    
+    //get the ports of  a server
+    public List<Port> getServerPorts(Server server) {
+        List<Port> ports = new ArrayList();
+        InterfaceServiceImpl impl = new InterfaceServiceImpl();
+        for (InterfaceAttachment att: impl.list(server.getId())) {
+                Port p = getPort(att.getPortId());
+                if(!ports.contains(p))
+                    ports.add(p);
+            }
+        return ports;
     }
 
     //get all volumes in the tenant

@@ -479,13 +479,13 @@ public class AwsPush {
                 //requests += String.format("RunInstancesRequest ami-146e2a7c t2.micro ") 
                 //requests+=String.format("InstanceNetworkInterfaceSpecification %s %d",id,index)
                 String[] parameters = request.split("\\s+");
-
+                
                 RunInstancesRequest runInstance = new RunInstancesRequest();
                 runInstance.withImageId(parameters[1]);
                 runInstance.withInstanceType(parameters[2]);
                 runInstance.withMaxCount(1);
                 runInstance.withMinCount(1);
-                runInstance.withKeyName("Driver Key");
+                
 
                 //integrate the root device
                 EbsBlockDevice device = new EbsBlockDevice();
@@ -1179,26 +1179,8 @@ public class AwsPush {
             RDFNode igw = q.get("igw");
             String idTag = igw.asResource().toString().replace(topologyUri, "");
 
-            //find the vpc of the gateway
-            query = "SELECT ?vpc ?port  WHERE {?vpc nml:hasBidirectionalPort <" + igw + ">}";
-            ResultSet r1 = executeQuery(query, emptyModel, modelReduct);
-            if (!r1.hasNext()) {
-                throw new EJBException(String.format("Gateway %s does not specify vpc", igw));
-            }
-            q = r1.next();
-            RDFNode vpc = q.get("vpc");
-            String vpcIdTag = vpc.asResource().toString().replace(topologyUri, "");
-
-            //check that the vpc is of type topology
-            query = "SELECT ?vpc WHERE {<" + vpc.asResource() + "> a nml:Topology}";
-            r1 = executeQuery(query, model, modelReduct);
-            if (!r1.hasNext()) {
-                throw new EJBException(String.format("VPC %s for gateway %s is not "
-                        + "of type topology", vpc, igw));
-            }
-
             query = "SELECT ?tag WHERE {<" + igw.asResource() + "> mrs:hasTag ?tag}";
-            r1 = executeQuery(query, emptyModel, modelReduct);
+            ResultSet r1 = executeQuery(query, emptyModel, modelReduct);
             if (!r1.hasNext()) {
                 throw new EJBException(String.format("Tag for Internet gateway %s i"
                         + "s not specified in model reduction", igw));
@@ -1215,6 +1197,25 @@ public class AwsPush {
             }
             q1 = r1.next();
             String value = q1.get("value").asLiteral().toString();
+
+            //find the vpc of the gateway
+            query = "SELECT ?vpc ?port  WHERE {?vpc nml:hasBidirectionalPort <" + igw + ">}";
+            r1 = executeQuery(query, emptyModel, modelReduct);
+            if (!r1.hasNext()) {
+                throw new EJBException(String.format("Gateway %s does not specify vpc", igw));
+            }
+            q = r1.next();
+            RDFNode vpc = q.get("vpc");
+            String vpcIdTag = vpc.asResource().toString().replace(topologyUri, "");
+
+            //check that the vpc is of type topology
+            query = "SELECT ?vpc WHERE {<" + vpc.asResource() + "> a nml:Topology}";
+            r1 = executeQuery(query, model, modelReduct);
+            if (!r1.hasNext()) {
+                throw new EJBException(String.format("VPC %s for gateway %s is not "
+                        + "of type topology", vpc, igw));
+            }
+
             if (value.equals("internet")) {
                 InternetGateway gateway = ec2Client.getInternetGateway(getResourceId(idTag));
                 if (gateway == null) {
@@ -1811,28 +1812,10 @@ public class AwsPush {
             RDFNode igw = q.get("igw");
             String idTag = igw.asResource().toString().replace(topologyUri, "");
 
-            //find the vpc of the gateway
-            query = "SELECT ?vpc ?port  WHERE {?vpc nml:hasBidirectionalPort <" + igw + ">}";
+            query = "SELECT ?tag WHERE {<" + igw.asResource() + "> mrs:hasTag ?tag}";
             ResultSet r1 = executeQuery(query, emptyModel, modelAdd);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("Gateway %s does not specify vpc", igw));
-            }
-            q = r1.next();
-            RDFNode vpc = q.get("vpc");
-            String vpcIdTag = vpc.asResource().toString().replace(topologyUri, "");
-
-            //check that the vpc is of type topology
-            query = "SELECT ?vpc WHERE {<" + vpc.asResource() + "> a nml:Topology}";
-            r1 = executeQuery(query, model, modelAdd);
-            if (!r1.hasNext()) {
-                throw new EJBException(String.format("VPC %s for gateway %s is not "
-                        + "of type topology", vpc, igw));
-            }
-
-            query = "SELECT ?tag WHERE {<" + igw.asResource() + "> mrs:hasTag ?tag}";
-            r1 = executeQuery(query, emptyModel, modelAdd);
-            if (!r1.hasNext()) {
-                throw new EJBException(String.format("Label for Internet gateway %s i"
+                throw new EJBException(String.format("Label for bidirectional port %s i"
                         + "s not specified in model addition", igw));
             }
             QuerySolution q1 = r1.next();
@@ -1847,6 +1830,24 @@ public class AwsPush {
             }
             q1 = r1.next();
             String value = q1.get("value").asLiteral().toString();
+
+            //find the vpc of the gateway
+            query = "SELECT ?vpc ?port  WHERE {?vpc nml:hasBidirectionalPort <" + igw + ">}";
+            r1 = executeQuery(query, emptyModel, modelAdd);
+            if (!r1.hasNext()) {
+                throw new EJBException(String.format("Gateway %s does not specify vpc", igw));
+            }
+            q = r1.next();
+            RDFNode vpc = q.get("vpc");
+            String vpcIdTag = vpc.asResource().toString().replace(topologyUri, "");
+
+            //check that the vpc is of type topology
+            query = "SELECT ?vpc WHERE {<" + vpc.asResource() + "> a nml:Topology}";
+            r1 = executeQuery(query, model, modelAdd);
+            if (!r1.hasNext()) {
+                throw new EJBException(String.format("VPC %s for gateway %s is not "
+                        + "of type topology", vpc, igw));
+            }
             if (value.equals("internet")) {
                 if (ec2Client.getInternetGateway(getResourceId(idTag)) != null) {
                     throw new EJBException(String.format("Internet gateway %s already exists", idTag));
