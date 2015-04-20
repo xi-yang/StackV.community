@@ -122,36 +122,39 @@ public class AwsModelBuilder {
 
         //put all the Internet gateways into the model
         for (InternetGateway t : ec2Client.getInternetGateways()) {
-            String internetGatewayId = ec2Client.getIdTag(t.getInternetGatewayId());
-            Resource INTERNETGATEWAY = RdfOwl.createResource(model, topologyURI + ":" + internetGatewayId, biPort);
-            model.add(model.createStatement(INTERNETGATEWAY, hasTag, IGW_TAG));
+            if (!t.getAttachments().isEmpty()) {
+                String internetGatewayId = ec2Client.getIdTag(t.getInternetGatewayId());
+                Resource INTERNETGATEWAY = RdfOwl.createResource(model, topologyURI + ":" + internetGatewayId, biPort);
+                model.add(model.createStatement(INTERNETGATEWAY, hasTag, IGW_TAG));
+            }
         }
 
         //put all the Vpn gateways into the model
         for (VpnGateway g : ec2Client.getVirtualPrivateGateways()) {
-            String vpnGatewayId = ec2Client.getIdTag(g.getVpnGatewayId());
-            Resource VPNGATEWAY = RdfOwl.createResource(model, topologyURI + ":" + vpnGatewayId, biPort);
-            model.add(model.createStatement(VPNGATEWAY, hasTag, VPNGW_TAG));
+            if (!g.getVpcAttachments().isEmpty()) {
+                String vpnGatewayId = ec2Client.getIdTag(g.getVpnGatewayId());
+                Resource VPNGATEWAY = RdfOwl.createResource(model, topologyURI + ":" + vpnGatewayId, biPort);
+                model.add(model.createStatement(VPNGATEWAY, hasTag, VPNGW_TAG));
+                for (VirtualInterface vi : dcClient.getVirtualInterfaces(g.getVpnGatewayId())) {
+                    String viId = vi.getVirtualGatewayId();
+                    String vlanNum = Integer.toString(vi.getVlan());
 
-            for (VirtualInterface vi : dcClient.getVirtualInterfaces(g.getVpnGatewayId())) {
-                String viId = vi.getVirtualGatewayId();
-                String vlanNum = Integer.toString(vi.getVlan());
+                    Resource VLAN_LABEL = RdfOwl.createResource(model, topologyURI + ":vlan-" + vlanNum, Nml.Label);
+                    model.add(model.createStatement(VLAN_LABEL, Nml.labeltype, vlan));
+                    model.add(model.createStatement(VLAN_LABEL, value, vlanNum));
 
-                Resource VLAN_LABEL = RdfOwl.createResource(model, topologyURI + ":vlan-" + vlanNum, Nml.Label);
-                model.add(model.createStatement(VLAN_LABEL, Nml.labeltype, vlan));
-                model.add(model.createStatement(VLAN_LABEL, value, vlanNum));
+                    Resource VIRTUAL_INTERFACE = RdfOwl.createResource(model, topologyURI + ":" + vi.getVirtualInterfaceId(), biPort);
+                    model.add(model.createStatement(VIRTUAL_INTERFACE, hasTag, VIRTUAL_INTERFACE_TAG));
+                    model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabel, VLAN_LABEL));
+                    model.add(model.createStatement(VPNGATEWAY, Nml.isAlias, VIRTUAL_INTERFACE));
+                    model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.isAlias, VPNGATEWAY));
+                    model.add(model.createStatement(directConnect, hasBidirectionalPort, VIRTUAL_INTERFACE));
 
-                Resource VIRTUAL_INTERFACE = RdfOwl.createResource(model, topologyURI + ":" + vi.getVirtualInterfaceId(), biPort);
-                model.add(model.createStatement(VIRTUAL_INTERFACE, hasTag, VIRTUAL_INTERFACE_TAG));
-                model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabel, VLAN_LABEL));
-                model.add(model.createStatement(VPNGATEWAY, Nml.isAlias, VIRTUAL_INTERFACE));
-                model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.isAlias, VPNGATEWAY));
-                model.add(model.createStatement(directConnect, hasBidirectionalPort, VIRTUAL_INTERFACE));
+                    Connection c = dcClient.getConnection(vi);
+                    if (c != null) {
+                        //model.add(model.createStatement(VLAN,Mrs.capacity,c.getBandwidth()));
 
-                Connection c = dcClient.getConnection(vi);
-                if (c != null) {
-                    //model.add(model.createStatement(VLAN,Mrs.capacity,c.getBandwidth()));
-
+                    }
                 }
             }
         }

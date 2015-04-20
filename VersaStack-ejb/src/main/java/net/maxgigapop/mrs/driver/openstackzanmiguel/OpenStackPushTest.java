@@ -23,10 +23,14 @@ import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.model.compute.Server;
 import org.openstack4j.model.compute.ServerCreate;
+import org.openstack4j.model.compute.builder.ServerCreateBuilder;
+import org.openstack4j.model.network.IP;
 import org.openstack4j.model.network.*;
 import org.openstack4j.model.storage.block.*;
+import org.openstack4j.openstack.compute.domain.NovaServer;
 import org.openstack4j.openstack.networking.domain.NeutronPort;
 import org.openstack4j.openstack.networking.domain.NeutronSubnet;
+import org.openstack4j.openstack.storage.block.domain.CinderVolume;
 
 /**
  *
@@ -74,10 +78,12 @@ public class OpenStackPushTest {
 
         //get all the requests
         requests.addAll(volumesRequests(modelRef, modelReduct, false));
-        requests.addAll(subnetsRequests(modelRef, modelReduct,false));
+        requests.addAll((portsRequests(modelRef, modelReduct, false)));
+        requests.addAll(subnetsRequests(modelRef, modelReduct, false));
         requests.addAll(networksRequests(modelRef, modelAdd));
-        requests.addAll(subnetsRequests(modelRef, modelAdd,true));
+        requests.addAll(subnetsRequests(modelRef, modelAdd, true));
         requests.addAll(volumesRequests(modelRef, modelAdd, true));
+        requests.addAll((portsRequests(modelRef, modelAdd, true)));
         return requests;
     }
 
@@ -88,15 +94,64 @@ public class OpenStackPushTest {
      */
     public void pushCommit(List<JSONObject> requests) {
         for (JSONObject o : requests) {
-            if (o.get("request").equals("CreateSubnetRequest")) {
+            if (o.get("request").equals("CreatePortRequest")) {
+                Port port = new NeutronPort();
+                Subnet net = client.getSubnet(o.get("subnet name").toString());
+                port.toBuilder().name(o.get("name").toString())
+                        .fixedIp(o.get("private address").toString(), net.getId());
+
+                osClient.networking().port().create(port);
+            } else if (o.get("request").equals("DeletePortRequest")) {
+                Port port = client.getPort(o.get("port name").toString());
+                osClient.networking().port().delete(port.getId());
+
+            } else if (o.get("request").equals("CreateVolumeRequest")) {
+                Volume volume = new CinderVolume();
+                volume.toBuilder().size(Integer.parseInt(o.get("size").toString()))
+                        .volumeType(o.get("type").toString())
+                        .name(o.get("name").toString());
+
+                osClient.blockStorage().volumes().create(volume);
+
+            } else if (o.get("request").equals("DeleteVolumeRequest")) {
+                Volume volume = client.getVolume(o.get("volume name").toString());
+                osClient.blockStorage().volumes().delete(volume.getId());
+
+            } else if (o.get("request").equals("CreateSubnetRequest")) {
                 Subnet subnet = new NeutronSubnet();
                 subnet.toBuilder().cidr(o.get("cidr block").toString())
                         .network(client.getNetwork(o.get("network name").toString()))
                         .name(o.get("name").toString());
 
-                subnet = osClient.networking().subnet().create(subnet);
-                // client.getSubnets().add(? extends Subnet subnet)
+                osClient.networking().subnet().create(subnet);
+
+            } else if (o.get("request").equals("DeleteSubnetRequest")) {
+                Subnet net = client.getSubnet(o.get("subnet name").toString());
+                osClient.networking().subnet().delete(net.getId());
+            } else if (o.get("request").equals("RunInstanceRequest")) {
+                ServerCreateBuilder builder = Builders.server()
+                        .name("name")
+                        .image(o.get("image").toString())
+                        .flavor(o.get("flavor").toString());
+
+                int index = 0;
+                while (true) {
+                    String key = "port" + Integer.toString(index);
+                    if (o.containsKey(key)) {
+                        builder.addNetworkPort(o.get(key).toString());
+                    } else {
+                        break;
+                    }
+                }
+
+                Server server = (Server) builder.build();
+                server = osClient.compute().servers().boot((ServerCreate) server);
+
+            } else if (o.get("request").equals("TerminateInstanceRequest")) {
+                Server server = client.getServer(o.get("server name").toString());
+                osClient.compute().servers().delete(server.getId());
             }
+
         }
 
     }
@@ -328,10 +383,10 @@ public class OpenStackPushTest {
                 } else {
                     o.put("request", "DeleteVolumeRequest");
                 }
-                o.put("type", type.asLiteral());
-                o.put("size", size.asLiteral());
-                o.put("availabiltyZone", "nova");
-                o.put("name", volume);
+                o.put("type", type.asLiteral().toString());
+                o.put("size", size.asLiteral().toString());
+                o.put("availabilty zone", "nova");
+                o.put("name", volumeName);
                 requests.add(o);
 
             }
@@ -344,7 +399,7 @@ public class OpenStackPushTest {
      * Function to create network interfaces from a model
      * ****************************************************************
      */
-    private List<JSONObject> createPortsRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws Exception {
+    private List<JSONObject> portsRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws Exception {
         List<JSONObject> requests = new ArrayList();
         String query;
 
@@ -472,14 +527,14 @@ public class OpenStackPushTest {
                 RDFNode host = q1.get("host");
                 String hostName = host.asResource().toString().replace(topologyUri, "");
 
-                //make sure that the host is a node
+                //make sure that the host is a server
                 query = "SELECT ?node WHERE {<" + host.asResource() + "> a nml:Node}";
                 r1 = executeQuery(query, modelRef, modelDelta);
                 if (!r1.hasNext()) {
                     throw new Exception(String.format("Host %s to host node %s is not of type nml:Node", host, vm));
                 }
 
-                //find the network that the node will be in
+                //find the network that the server will be in
                 query = "SELECT ?network WHERE {?network nml:hasNode <" + host.asResource() + ">}";
                 r1 = executeQuery(query, modelRef, modelDelta);
                 if (!r1.hasNext()) {
@@ -489,7 +544,7 @@ public class OpenStackPushTest {
                 RDFNode network = q1.get("network");
                 String networkName = network.asResource().toString().replace(topologyUri, "");
 
-                //to find the subnet the node is in first  find the port the node uses
+                //to find the subnet the server is in first  find the port the server uses
                 query = "SELECT ?port WHERE {<" + vm.asResource() + "> nml:hasBidirectionalPort ?port}";
                 ResultSet r2 = executeQuery(query, modelRef, modelDelta);
                 if (!r2.hasNext()) {
@@ -533,7 +588,7 @@ public class OpenStackPushTest {
                     RDFNode volume = q4.get("volume");
                     volumeName = volume.asResource().toString().replace(topologyUri, "");
                     String deviceName = q4.get("deviceName").asLiteral().toString();
-                    if (deviceName.equals("/dev/") || deviceName.equals("/dev/")) {
+                    if (deviceName.equals("/dev/")) {
                         hasRootVolume = true;
                     }
                 }
@@ -548,6 +603,7 @@ public class OpenStackPushTest {
                     o.put("request", "TerminateInstanceRequest");
                 }
 
+                o.put("server name", serverName);
                 o.put("image", "54f6673b-f39f-461b-886e-dbe4f4497fd5");
                 o.put("flavor", volumeName);
 
@@ -562,6 +618,74 @@ public class OpenStackPushTest {
         }
         return requests;
     }
+
+    /**
+     * ****************************************************************
+     * Function to attach or detach volume to an instance
+     * ****************************************************************
+     */
+    /*private List<JSONObject> VolumeAttachmentRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws Exception {
+        List<JSONObject> requests = new ArrayList();
+        String query;
+        
+        //check if the volume is new therefore it should be in the model additiom
+        query = "SELECT  ?node ?volume  WHERE {?node  mrs:hasVolume  ?volume}";
+
+        ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
+        while (r1.hasNext()) {
+            QuerySolution querySolution1 = r1.next();
+            RDFNode server = querySolution1.get("node");
+            String serverName = server.asResource().toString().replace(topologyUri, "");
+            RDFNode volume = querySolution1.get("volume");
+            String volumeName = volume.asResource().toString().replace(topologyUri, "");
+            
+
+            query = "SELECT ?deviceName WHERE{<" + volume.asResource() + "> mrs:target_device ?deviceName}";
+            ResultSet r2 = executeQuery(query, modelRef, modelDelta);
+            if (!r2.hasNext()) {
+                throw new Exception(String.format("volume device name is not specified for volume %s in the model delta", volume));
+            }
+
+            QuerySolution querySolution2 = r2.next();
+
+            RDFNode deviceName = querySolution2.get("deviceName");
+            String device = deviceName.asLiteral().toString();
+
+            if (!device.equals("/dev/")) {
+                Server s = client.getServer(serverName);
+  
+                Volume vol = client.getVolume(volumeName);
+                if (vol == null) {
+                    query = "SELECT ?deviceName ?size ?type WHERE{<" + volume.asResource() + "> mrs:target_device ?deviceName}";
+                    r2 = executeQuery(query, modelRef, modelDelta);
+                    if (!r2.hasNext()) {
+                        throw new Exception(String.format("volume %s is not well specified in volume delta", volume));
+                    }
+                }
+                if (s != null) {
+                    List< InstanceBlockDeviceMapping> map = 
+                    boolean attach = true;
+                    if (vol == null) {
+                        requests += String.format("AttachVolumeRequest %s %s %s \n", serverId, volumeName, device);
+                    } else {
+                        for (InstanceBlockDeviceMapping m : map) {
+                            String instanceVolumeId = m.getEbs().getVolumeId();
+                            if (instanceVolumeId.equals(volumeId)) {
+                                attach = false;
+                                break;
+                            }
+                        }
+                        if (attach == true) {
+                            requests += String.format("AttachVolumeRequest %s %s %s \n", serverId, volumeName, device);
+                        }
+                    }
+                } else if (ins == null) {
+                    requests += String.format("AttachVolumeRequest %s %s %s \n", serverName, volumeName, device);
+                }
+            }
+        }
+        return requests;
+    }*/
 
     /**
      * ****************************************************************
