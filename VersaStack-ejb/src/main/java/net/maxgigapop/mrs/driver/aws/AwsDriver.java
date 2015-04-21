@@ -132,10 +132,10 @@ public class AwsDriver implements IHandleDriverSystemCall {
         } catch (IOException e) {
             throw new EJBException(String.format("pullModel on %s raised exception[%s]", driverInstance, e.getMessage()));
         } catch (Exception ex) {
-            Logger.getLogger(AwsDriver.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(AwsDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
         }
 
-        Logger.getLogger(AwsDriver.class.getName()).log(Level.SEVERE, null, "AWS driver ontology model succesfully pulled");
+        //Logger.getLogger(AwsDriver.class.getName()).log(Level.INFO, "AWS driver ontology model succesfully pulled");
         return new AsyncResult<>("SUCCESS");
     }
 

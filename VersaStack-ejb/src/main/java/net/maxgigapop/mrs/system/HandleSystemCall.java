@@ -71,8 +71,10 @@ public class HandleSystemCall {
                     throw new EJBException(String.format("createHeadVersionGroup encounters null head versionItem in %s", di));
                 }
                 //$$ TODO: remove duplicate references
-                vi.addVersionGroup(vg);
-                vg.addVersionItem(vi);
+                if (vi.getVersionGroups() == null || !vi.getVersionGroups().contains(vg))
+                    vi.addVersionGroup(vg);
+                if (vg.getVersionItems() == null || !vg.getVersionItems().contains(vi))
+                    vg.addVersionItem(vi);
             }
         }
         VersionGroupPersistenceManager.save(vg);
@@ -100,8 +102,12 @@ public class HandleSystemCall {
                 throw new EJBException(String.format("createHeadVersionGroup encounters null head versionItem in %s", di));
             }
             //$$ TODO: remove duplicate references
-            vi.addVersionGroup(vg);
-            vg.addVersionItem(vi);
+            if (vi.getVersionGroups() == null || !vi.getVersionGroups().contains(vg)) {
+                vi.addVersionGroup(vg);
+            }
+            if (vg.getVersionItems() == null || !vg.getVersionItems().contains(vi)) {
+                vg.addVersionItem(vi);
+            }
         }
         VersionGroupPersistenceManager.save(vg);
         return vg;
@@ -109,7 +115,7 @@ public class HandleSystemCall {
 
     public VersionGroup updateHeadVersionGroup(String refUuid) {
         VersionGroup vg = VersionGroupPersistenceManager.findByReferenceId(refUuid);
-        return VersionGroupPersistenceManager.refreshToHead(vg);        
+        return VersionGroupPersistenceManager.refreshToHead(vg, true);        
     }
     
     public ModelBase retrieveVersionGroupModel(String refUuid) {
@@ -138,6 +144,8 @@ public class HandleSystemCall {
             if (systemInstance.getSystemDelta().getDriverSystemDeltas() != null) {
                 for (Iterator<DriverSystemDelta> it = systemInstance.getSystemDelta().getDriverSystemDeltas().iterator(); it.hasNext();) {
                     DriverSystemDelta dsd = it.next();
+                    DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(dsd.getDriverInstance().getTopologyUri());
+                    driverInstance.getDriverSystemDeltas().remove(dsd);
                     DeltaPersistenceManager.delete(dsd);
                 }
             }
@@ -155,13 +163,13 @@ public class HandleSystemCall {
        // Note 1: a defaut VG (#1) must exist the first time the system starts.
         // Note 2: the VG below must contain versionItems for committed models only.
         VersionGroup referenceVG = sysDelta.getReferenceVersionGroup();
+        // refresh into current persistence context
         referenceVG = VersionGroupPersistenceManager.findByReferenceId(referenceVG.getRefUuid());
         if (referenceVG == null) {
             throw new EJBException(String.format("%s has no reference versionGroup to work with", systemInstance));
         }
-        // refresh into current persistence context
-        referenceVG = VersionGroupPersistenceManager.findByReferenceId(referenceVG.getRefUuid());
-
+        sysDelta.setReferenceVersionGroup(referenceVG);
+        
         //EJBExeption may be thrown upon fault from subroutine of each step below
         //## Step 1. create reference model and target model 
         ModelBase referenceModel = referenceVG.createUnionModel();
@@ -169,8 +177,8 @@ public class HandleSystemCall {
         OntModel targetOntModel = referenceModel.dryrunDelta(sysDelta);
 
         //## Step 2. verify model change
-        // 2.1. get head/lastest VG based on the current versionGroup 
-        VersionGroup headVG = VersionGroupPersistenceManager.refreshToHead(referenceVG);
+        // 2.1. get head/lastest VG based on the current versionGroup (no update / persist)
+        VersionGroup headVG = VersionGroupPersistenceManager.refreshToHead(referenceVG, false); 
         // 2.2. if the head VG is newer than the current/reference VG
         if (headVG != null && !headVG.equals(referenceVG)) {
             //          create headOntModel. get D12=headModel.diffFromModel(refeneceOntModel)
@@ -273,7 +281,7 @@ public class HandleSystemCall {
         //## End of propgation
     }
     
-        @Asynchronous
+    @Asynchronous
     public Future<String> commitDelta(SystemInstance systemInstance) {
         // 1. Get target VG from this stateful bean
         if (systemInstance.getSystemDelta() == null || systemInstance.getSystemDelta().getDriverSystemDeltas() == null 
