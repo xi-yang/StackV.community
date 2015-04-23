@@ -7,6 +7,7 @@ package net.maxgigapop.mrs.driver.openstackzanmiguel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.model.common.Resource;
 import org.openstack4j.model.compute.*;
@@ -76,6 +77,19 @@ public class OpenStackGet {
         }
         return null;
     }
+    
+    //get a Lsit of subnets under a network
+    public List<Subnet> getSubnets(String id) {
+        List<Subnet> subnetList = new ArrayList();
+        for (Subnet sub : subnets) {
+            if (sub.getNetworkId().equals(id)) {
+                subnetList.add(sub);
+            } else if (sub.getId().equals(id)) {
+                subnetList.add(sub);
+            }
+        }
+        return subnetList;
+    }
 
     //get all the ports in the tenant
     public List<? extends Port> getPorts() {
@@ -118,31 +132,32 @@ public class OpenStackGet {
         }
         return nets;
     }
-    
+
     //get the Subnets of  a server
     public List<Subnet> getServerSubnets(Server server) {
         List<Subnet> nets = new ArrayList();
         InterfaceServiceImpl impl = new InterfaceServiceImpl();
-        for (InterfaceAttachment att: impl.list(server.getId())) {
-                for(InterfaceAttachment.FixedIp attIp : att.getFixedIps())
-                {
-                    if(!nets.contains(getSubnet(attIp.getSubnetId())))
+        for (InterfaceAttachment att : impl.list(server.getId())) {
+            for (InterfaceAttachment.FixedIp attIp : att.getFixedIps()) {
+                if (!nets.contains(getSubnet(attIp.getSubnetId()))) {
                     nets.add(getSubnet(attIp.getSubnetId()));
                 }
             }
+        }
         return nets;
     }
-    
+
     //get the ports of  a server
     public List<Port> getServerPorts(Server server) {
-        List<Port> ports = new ArrayList();
+        List<Port> portList = new ArrayList();
         InterfaceServiceImpl impl = new InterfaceServiceImpl();
-        for (InterfaceAttachment att: impl.list(server.getId())) {
-                Port p = getPort(att.getPortId());
-                if(!ports.contains(p))
-                    ports.add(p);
+        for (InterfaceAttachment att : impl.list(server.getId())) {
+            Port p = getPort(att.getPortId());
+            if (!portList.contains(p)) {
+                portList.add(p);
             }
-        return ports;
+        }
+        return portList;
     }
 
     //get all volumes in the tenant

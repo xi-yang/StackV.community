@@ -21,17 +21,21 @@ import java.util.List;
 import org.json.simple.JSONObject;
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient;
+import org.openstack4j.model.compute.InterfaceAttachment;
 import org.openstack4j.model.compute.Server;
 import org.openstack4j.model.compute.ServerCreate;
 import org.openstack4j.model.compute.builder.ServerCreateBuilder;
 import org.openstack4j.model.network.IP;
 import org.openstack4j.model.network.*;
 import org.openstack4j.model.storage.block.*;
+import org.openstack4j.openstack.compute.domain.NovaInterfaceAttachment;
 import org.openstack4j.openstack.compute.domain.NovaServer;
 import org.openstack4j.openstack.compute.internal.ServerServiceImpl;
+import org.openstack4j.openstack.compute.internal.ext.InterfaceServiceImpl;
 import org.openstack4j.openstack.networking.domain.NeutronNetwork;
 import org.openstack4j.openstack.networking.domain.NeutronPort;
 import org.openstack4j.openstack.networking.domain.NeutronSubnet;
+import org.openstack4j.openstack.networking.internal.PortServiceImpl;
 import org.openstack4j.openstack.storage.block.domain.CinderVolume;
 
 /**
@@ -65,12 +69,6 @@ public class OpenStackPushTest {
 
         //do an adjustment to the topologyUri
         this.topologyUri = topologyUri + ":";
-
-        client.getServers().get(0);
-        client.getServers();
-
-        
-        
     }
 
     /**
@@ -82,15 +80,16 @@ public class OpenStackPushTest {
         List<JSONObject> requests = new ArrayList();
 
         //get all the requests
+        requests.addAll(portsAttachmentRequests(modelRef, modelReduct, false));
         requests.addAll(volumesAttachmentRequests(modelRef, modelReduct, false));
         requests.addAll(volumesRequests(modelRef, modelReduct, false));
         requests.addAll((portsRequests(modelRef, modelReduct, false)));
         requests.addAll(subnetsRequests(modelRef, modelReduct, false));
-        requests.addAll(networksRequests(modelRef, modelAdd));
         requests.addAll(subnetsRequests(modelRef, modelAdd, true));
         requests.addAll(volumesRequests(modelRef, modelAdd, true));
         requests.addAll((portsRequests(modelRef, modelAdd, true)));
         requests.addAll(volumesAttachmentRequests(modelRef, modelAdd, true));
+        requests.addAll(portsAttachmentRequests(modelRef, modelAdd, true));
         return requests;
     }
 
@@ -169,6 +168,19 @@ public class OpenStackPushTest {
                 String attachmentId = o.get("attachment id").toString();
 
                 serverService.detachVolume(serverId, attachmentId);
+            } else if (o.get("request").toString().equals("AttachPortRequest")) {
+                InterfaceServiceImpl portService = new InterfaceServiceImpl();
+                String serverId = client.getServer(o.get("server name").toString()).getId();
+                String portId = client.getPort(o.get("port name").toString()).getId();
+
+                portService.create(serverId, portId);
+            }
+             else if (o.get("request").toString().equals("DetachPortRequest")) {
+                InterfaceServiceImpl portService = new InterfaceServiceImpl();
+                String serverId = client.getServer(o.get("server name").toString()).getId();
+                String portId = client.getPort(o.get("port name").toString()).getId();
+
+                portService.detach(serverId, portId);
             }
 
         }
@@ -500,17 +512,16 @@ public class OpenStackPushTest {
         }
         return requests;
     }
-    
+
     /**
      * ****************************************************************
-     * Function to attach (if not on server creation) or detach a port from a server
-     * ****************************************************************
+     * Function to attach (if not on server creation) or detach a port from a
+     * server ****************************************************************
      */
-    /*private List<JSONObject> portsAttachmentRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws Exception
-    {
+    private List<JSONObject> portsAttachmentRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws Exception {
         List<JSONObject> requests = new ArrayList();
         String query;
-        
+
         query = "SELECT ?node ?port WHERE {?node nml:hasBidirectionalPort ?port}";
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
         while (r.hasNext()) {
@@ -521,17 +532,15 @@ public class OpenStackPushTest {
             query = "SELECT ?node WHERE {<" + server.asResource() + "> a nml:Node}";
             ResultSet r1 = executeQuery(query, modelRef, emptyModel);
             Server s = null;
-            int index = 0;
             if (r1.hasNext()) {
                 s = client.getServer(serverName);
-                index = client.getServerPorts(s);
             }
             while (r1.hasNext()) {
                 r1.next();
-                String portIdTag = port.asResource().toString().replace(topologyUri, "");
+                String portName = port.asResource().toString().replace(topologyUri, "");
 
                 query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:hasTag ?tag}";
-                ResultSet r2 = executeQuery(query, model, modelAdd);
+                ResultSet r2 = executeQuery(query, modelRef, modelDelta);
                 if (!r2.hasNext()) {
                     throw new Exception(String.format("bidirectional port %s to be attached to intsnace does not specify a tag", port));
                 }
@@ -539,27 +548,40 @@ public class OpenStackPushTest {
                 RDFNode tag = q2.get("tag");
                 query = "SELECT ?tag WHERE {<" + tag.asResource() + "> mrs:type \"interface\". "
                         + "<" + tag.asResource() + "> mrs:value \"network\"}";
-                r2 = executeQuery(query, model, emptyModel);
+                r2 = executeQuery(query, modelRef, emptyModel);
                 if (!r2.hasNext()) {
                     throw new Exception(String.format("bidirectional port %s to be attached to instance is not a net"
                             + "work interface", port));
                 }
 
-                //see if the network interface is already atatched
-                NetworkInterface eni = ec2Client.getNetworkInterface(getResourceId(portIdTag));
-                if (eni != null) {
-                    if (eni.getAttachment() != null) {
-                        throw new Exception(String.format("bidirectional port %s to be attached to instance is already"
-                                + " attached to an instance", port));
+                JSONObject o = new JSONObject();
+                Port p = client.getPort(portName);
+                if (creation == true) {
+                    //see if the network interface is already atatched
+                    if (p.getDeviceOwner() != null || !p.getDeviceOwner().isEmpty()) {
+                        throw new Exception(String.format("bidirectional port %s to be attached to instance %s is already"
+                                + " attached to an instance", port, serverName));
                     }
-                }
-                requests += String.format("AttachNetworkInterfaceRequests %s %s %s \n", portIdTag, serverName, Integer.toString(index));
-                index++;
-            }
 
+                    o.put("request", "AttachPortRequest");
+                    o.put("port name", portName);
+                    o.put("server name", serverName);
+                    requests.add(o);
+                } else {
+                    if (p.getDeviceOwner() != null || !p.getDeviceOwner().isEmpty()) {
+                        throw new Exception(String.format("bidirectional port %s to be detached from instance %s is not"
+                                + " attached", port, serverName));
+                    }
+                    o.put("request", "DetachPortRequest");
+                    o.put("port name", portName);
+                    o.put("server name", serverName);
+                    requests.add(o);
+                }
+
+            }
         }
         return requests;
-    }*/
+    }
 
     /**
      * ****************************************************************
@@ -772,10 +794,10 @@ public class OpenStackPushTest {
                                 o.put("request", "DetachVolumeRequest");
                                 o.put("server name", serverName);
                                 List<? extends VolumeAttachment> att = vol.getAttachments();
-                                for(VolumeAttachment a: att)
-                                {
-                                    if (a.getId().equals(s.getId()))
+                                for (VolumeAttachment a : att) {
+                                    if (a.getId().equals(s.getId())) {
                                         o.put("attachment id", a.getId());
+                                    }
                                 }
                                 s.getOsExtendedVolumesAttached();
                                 requests.add(o);
