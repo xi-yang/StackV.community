@@ -132,6 +132,7 @@ public class ModelBase extends PersistentEntity implements Serializable {
         return true;
     }
 
+    
     @Override
     public String toString() {
         try {
@@ -141,6 +142,19 @@ public class ModelBase extends PersistentEntity implements Serializable {
             ;
         }
         return "net.maxgigapop.mrs.model.MrsModel[ id=" + id + " ]\n Model = " + ttlModel;
+    }
+    
+    public ModelBase clone() {
+        ModelBase cloned = new ModelBase();
+        cloned.setCommitted(this.committed);
+        cloned.setCxtVersion(this.cxtVersion);
+        cloned.setCxtVersionTag(this.cxtVersionTag);
+        cloned.setTtlModel(this.ttlModel);
+        if (this.ontModel != null) {
+            cloned.setOntModel(ModelUtil.cloneOntModel(this.ontModel));
+        }
+        cloned.setPersistent(this.isPersistent());
+        return cloned;
     }
     
     @SuppressWarnings("unused")

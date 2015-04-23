@@ -27,7 +27,7 @@ public class RdfOwl {
     public static String getXsdURI() {return xsdNS;}
 
     public static final Property type = m_model.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
-    public static final Resource NamedIndividual = m_model.createResource("http://www.w3.org/2002/07/owl#NamedIndividual");    
+    public static final Resource NamedIndividual = m_model.createResource("http://www.w3.org/2002/07/owl#NamedIndividual");
 
     public static Resource createResource(OntModel model, String uri, Resource type) {
         Resource res = model.createResource(uri);
