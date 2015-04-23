@@ -264,4 +264,20 @@ public class OpenStackGet {
         else 
             return r.getName();
     }
+    public String getServereName(Server r)
+    {
+        String name = r.getName();
+        if(name.isEmpty())
+            return r.getId();
+        else 
+            return r.getName();
+    }
+    public String getVolumeName(Volume r)
+    {
+        String name = r.getName();
+        if(name.isEmpty())
+            return r.getId();
+        else 
+            return r.getName();
+    }
 }
