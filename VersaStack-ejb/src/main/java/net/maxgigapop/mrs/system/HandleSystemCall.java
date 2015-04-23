@@ -155,19 +155,22 @@ public class HandleSystemCall {
     
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(SystemInstance systemInstance, SystemDelta sysDelta) {
+        // refresh systemInstance into current persistence context
+        if (systemInstance.getId() != 0) {
+            systemInstance = SystemInstancePersistenceManager.findById(systemInstance.getId());
+        }
         if (systemInstance.getSystemDelta() != null 
                 && systemInstance.getSystemDelta().getDriverSystemDeltas() != null 
                 && !systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
             throw new EJBException(String.format("Trying to propagateDelta for %s that has delta already progagated.", systemInstance));
         }
-       // Note 1: a defaut VG (#1) must exist the first time the system starts.
-        // Note 2: the VG below must contain versionItems for committed models only.
+        // Note 1: an initial VG (#1) must exist 
         VersionGroup referenceVG = sysDelta.getReferenceVersionGroup();
-        // refresh into current persistence context
-        referenceVG = VersionGroupPersistenceManager.findByReferenceId(referenceVG.getRefUuid());
         if (referenceVG == null) {
             throw new EJBException(String.format("%s has no reference versionGroup to work with", systemInstance));
         }
+        // refresh VG into current persistence context
+        referenceVG = VersionGroupPersistenceManager.findByReferenceId(referenceVG.getRefUuid());
         sysDelta.setReferenceVersionGroup(referenceVG);
         
         //EJBExeption may be thrown upon fault from subroutine of each step below
@@ -283,13 +286,16 @@ public class HandleSystemCall {
     
     @Asynchronous
     public Future<String> commitDelta(SystemInstance systemInstance) {
-        // 1. Get target VG from this stateful bean
+        // 1. refresh systemInstance
+        if (systemInstance.getId() != 0) {
+            systemInstance = SystemInstancePersistenceManager.findById(systemInstance.getId());
+        }
         if (systemInstance.getSystemDelta() == null || systemInstance.getSystemDelta().getDriverSystemDeltas() == null 
                 || systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
             throw new EJBException(String.format("%s has no systemDelta or driverSystemDeltas to commit", systemInstance));
         }
         Context ejbCxt = null;
-        // 2. Get list of versionItem, driverInstances and DSD
+        // 2. dispatch commit to drivers
         Map<DriverSystemDelta, Future<String>> commitResultMap = new HashMap<>();
         for (DriverSystemDelta dsd : systemInstance.getSystemDelta().getDriverSystemDeltas()) {
             DriverInstance driverInstance = dsd.getDriverInstance();
@@ -357,8 +363,13 @@ public class HandleSystemCall {
         if (systemInstance == null) {
             throw new EJBException("commitDelta encounters unknown systemInstance with referenceUUID="+sysInstanceUUID);
         }
+        if (systemInstance.getCommitStatus() != null){
+            throw new EJBException("commitDelta has already been done once with systemInstance with referenceUUID="+sysInstanceUUID);
+        }
         
-        return this.commitDelta(systemInstance);
+        Future<String> commitStatus = this.commitDelta(systemInstance);
+        systemInstance.setCommitStatus(commitStatus);
+        return commitStatus;
     }
     
     

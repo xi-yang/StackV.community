@@ -59,13 +59,13 @@ public class AwsDriver implements IHandleDriverSystemCall {
         try {
             requests = push.pushPropagate(model, modelAdd, modelReduc);
         } catch (Exception ex) {
-            Logger.getLogger(AwsDriver.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(AwsDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
         }
 
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         driverInstance.putProperty(requestId, requests);
         DriverInstancePersistenceManager.merge(driverInstance);
-        Logger.getLogger(AwsDriver.class.getName()).log(Level.SEVERE, null, "AWS driver delta models succesfully propagated");
+        Logger.getLogger(AwsDriver.class.getName()).log(Level.INFO, "AWS driver delta models succesfully propagated");
     }
 
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
@@ -92,7 +92,7 @@ public class AwsDriver implements IHandleDriverSystemCall {
         driverInstance.getProperties().remove(requestId);
         DriverInstancePersistenceManager.merge(driverInstance);
 
-        Logger.getLogger(AwsDriver.class.getName()).log(Level.SEVERE, null, "AWS driver delta models succesfully commited");
+        Logger.getLogger(AwsDriver.class.getName()).log(Level.INFO, "AWS driver delta models succesfully commited");
         return new AsyncResult<String>("SUCCESS");
     }
 
