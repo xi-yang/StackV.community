@@ -69,6 +69,8 @@ public class VersionItemPersistenceManager extends PersistenceManager {
 		try {
 			Query q = createQuery(String.format("DELETE FROM %s WHERE driverInstanceId=%d", 
                     VersionItem.class.getSimpleName(), di.getId()));
+            q.executeUpdate();
+            entityManager.flush();
 		} catch (Exception e) {
             throw new EJBException(String.format("VersionItemPersistenceManager::getHeadByDriverInstance raised exception: %s", e.getMessage()));
 		}

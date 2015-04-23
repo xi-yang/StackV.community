@@ -14,10 +14,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.EJBException;
@@ -44,9 +43,7 @@ import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
-import net.maxgigapop.mrs.core.SystemModelCoordinator;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
-import net.maxgigapop.mrs.service.compute.MCE_MPVlanConnection;
 
 /**
  *
@@ -73,11 +70,15 @@ public class HandleSystemCall {
                 if (vi == null) {
                     throw new EJBException(String.format("createHeadVersionGroup encounters null head versionItem in %s", di));
                 }
-                vi.addVersionGroup(vg);
-                vg.addVersionItem((VersionItem)VersionItemPersistenceManager.merge(vi));
+                //$$ TODO: remove duplicate references
+                if (vi.getVersionGroups() == null || !vi.getVersionGroups().contains(vg))
+                    vi.addVersionGroup(vg);
+                if (vg.getVersionItems() == null || !vg.getVersionItems().contains(vi))
+                    vg.addVersionItem(vi);
             }
         }
-        return (VersionGroup)VersionGroupPersistenceManager.merge(vg);
+        VersionGroupPersistenceManager.save(vg);
+        return vg;
    }
     
     public VersionGroup createHeadVersionGroup(String refUuid, List<String> topoURIs) {
@@ -100,15 +101,21 @@ public class HandleSystemCall {
             if (vi == null) {
                 throw new EJBException(String.format("createHeadVersionGroup encounters null head versionItem in %s", di));
             }
-            vi.addVersionGroup(vg);
-            vg.addVersionItem((VersionItem)VersionItemPersistenceManager.merge(vi));
+            //$$ TODO: remove duplicate references
+            if (vi.getVersionGroups() == null || !vi.getVersionGroups().contains(vg)) {
+                vi.addVersionGroup(vg);
+            }
+            if (vg.getVersionItems() == null || !vg.getVersionItems().contains(vi)) {
+                vg.addVersionItem(vi);
+            }
         }
-        return (VersionGroup)VersionGroupPersistenceManager.merge(vg);
+        VersionGroupPersistenceManager.save(vg);
+        return vg;
     }
 
     public VersionGroup updateHeadVersionGroup(String refUuid) {
         VersionGroup vg = VersionGroupPersistenceManager.findByReferenceId(refUuid);
-        return VersionGroupPersistenceManager.refreshToHead(vg);        
+        return VersionGroupPersistenceManager.refreshToHead(vg, true);        
     }
     
     public ModelBase retrieveVersionGroupModel(String refUuid) {
@@ -122,6 +129,7 @@ public class HandleSystemCall {
     
     public SystemInstance createInstance() {
         SystemInstance systemInstance = new SystemInstance();
+        systemInstance.setReferenceUUID(UUID.randomUUID().toString());
         SystemInstancePersistenceManager.save(systemInstance);
         return systemInstance;
     }
@@ -136,6 +144,8 @@ public class HandleSystemCall {
             if (systemInstance.getSystemDelta().getDriverSystemDeltas() != null) {
                 for (Iterator<DriverSystemDelta> it = systemInstance.getSystemDelta().getDriverSystemDeltas().iterator(); it.hasNext();) {
                     DriverSystemDelta dsd = it.next();
+                    DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(dsd.getDriverInstance().getTopologyUri());
+                    driverInstance.getDriverSystemDeltas().remove(dsd);
                     DeltaPersistenceManager.delete(dsd);
                 }
             }
@@ -145,18 +155,24 @@ public class HandleSystemCall {
     
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(SystemInstance systemInstance, SystemDelta sysDelta) {
+        // refresh systemInstance into current persistence context
+        if (systemInstance.getId() != 0) {
+            systemInstance = SystemInstancePersistenceManager.findById(systemInstance.getId());
+        }
         if (systemInstance.getSystemDelta() != null 
                 && systemInstance.getSystemDelta().getDriverSystemDeltas() != null 
                 && !systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
             throw new EJBException(String.format("Trying to propagateDelta for %s that has delta already progagated.", systemInstance));
         }
-       // Note 1: a defaut VG (#1) must exist the first time the system starts.
-        // Note 2: the VG below must contain versionItems for committed models only.
+        // Note 1: an initial VG (#1) must exist 
         VersionGroup referenceVG = sysDelta.getReferenceVersionGroup();
         if (referenceVG == null) {
             throw new EJBException(String.format("%s has no reference versionGroup to work with", systemInstance));
         }
-
+        // refresh VG into current persistence context
+        referenceVG = VersionGroupPersistenceManager.findByReferenceId(referenceVG.getRefUuid());
+        sysDelta.setReferenceVersionGroup(referenceVG);
+        
         //EJBExeption may be thrown upon fault from subroutine of each step below
         //## Step 1. create reference model and target model 
         ModelBase referenceModel = referenceVG.createUnionModel();
@@ -164,13 +180,13 @@ public class HandleSystemCall {
         OntModel targetOntModel = referenceModel.dryrunDelta(sysDelta);
 
         //## Step 2. verify model change
-        // 2.1. get head/lastest VG based on the current versionGroup 
-        VersionGroup headVG = VersionGroupPersistenceManager.refreshToHead(referenceVG);
+        // 2.1. get head/lastest VG based on the current versionGroup (no update / persist)
+        VersionGroup headVG = VersionGroupPersistenceManager.refreshToHead(referenceVG, false); 
         // 2.2. if the head VG is newer than the current/reference VG
         if (headVG != null && !headVG.equals(referenceVG)) {
-           //          create headOntModel. get D12=headModel.diffFromModel(refeneceOntModel)
+            //          create headOntModel. get D12=headModel.diffFromModel(refeneceOntModel)
             ModelBase headSystemModel = headVG.createUnionModel();
-           // Note: The head model has committed (driverDeltas) or propagated (driverSystemDeltas if available) to reduce contention.
+            // Note: The head model has committed (driverDeltas) or propagated (driverSystemDeltas if available) to reduce contention.
             // We must persist target model VG after both propagated and committed.
             DeltaBase D12 = headSystemModel.diffFromModel(referenceOntModel);
             //          verify D12.getModelAddition().getOntModel().intersection(sysDelta.getModelReduction().getOntModel()) == empty
@@ -270,13 +286,16 @@ public class HandleSystemCall {
     
     @Asynchronous
     public Future<String> commitDelta(SystemInstance systemInstance) {
-        // 1. Get target VG from this stateful bean
+        // 1. refresh systemInstance
+        if (systemInstance.getId() != 0) {
+            systemInstance = SystemInstancePersistenceManager.findById(systemInstance.getId());
+        }
         if (systemInstance.getSystemDelta() == null || systemInstance.getSystemDelta().getDriverSystemDeltas() == null 
                 || systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
             throw new EJBException(String.format("%s has no systemDelta or driverSystemDeltas to commit", systemInstance));
         }
         Context ejbCxt = null;
-        // 2. Get list of versionItem, driverInstances and DSD
+        // 2. dispatch commit to drivers
         Map<DriverSystemDelta, Future<String>> commitResultMap = new HashMap<>();
         for (DriverSystemDelta dsd : systemInstance.getSystemDelta().getDriverSystemDeltas()) {
             DriverInstance driverInstance = dsd.getDriverInstance();
@@ -344,8 +363,13 @@ public class HandleSystemCall {
         if (systemInstance == null) {
             throw new EJBException("commitDelta encounters unknown systemInstance with referenceUUID="+sysInstanceUUID);
         }
+        if (systemInstance.getCommitStatus() != null){
+            throw new EJBException("commitDelta has already been done once with systemInstance with referenceUUID="+sysInstanceUUID);
+        }
         
-        return this.commitDelta(systemInstance);
+        Future<String> commitStatus = this.commitDelta(systemInstance);
+        systemInstance.setCommitStatus(commitStatus);
+        return commitStatus;
     }
     
     

@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-package net.maxgigapop.mrs.driver;
+package net.maxgigapop.mrs.service;
 
 import static java.lang.Thread.sleep;
 import java.util.HashMap;
@@ -23,10 +23,8 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.VersionGroup;
-
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.PersistenceManager;
-import net.maxgigapop.mrs.system.HandleSystemCall;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
@@ -36,7 +34,7 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
 @Singleton
 @LocalBean
 @Startup
-public class DriverTestStarter {
+public class TestServiceStarter {
 
     private @PersistenceContext(unitName = "RAINSAgentPU")
     EntityManager entityManager;
@@ -60,12 +58,7 @@ public class DriverTestStarter {
                 + "        owl:NamedIndividual;\n"
                 + "    nml:hasNode\n"
                 + "        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1>,\n"
-                + "        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-4>."
-                + "<urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-4>"
-                + "   a    nml:Node;"
-                + "   nml:hasService <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-4:kvm>."
-                + "<urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-4:kvm>"
-                + "   a    mrs:HypervisorService.");
+                + "        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-4>.");
         /*
          ModelPersistenceManager.save(model1);
          ModelBase model2 = ModelPersistenceManager.find(ModelBase.class, model1.getId());
@@ -81,7 +74,7 @@ public class DriverTestStarter {
             driverProperties.put("stubModelTtl", model1.getTtlModel());
             systemCallHandler.plugDriverInstance(driverProperties);
         } catch (Exception ex) {
-            Logger.getLogger(DriverTestStarter.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(TestServiceStarter.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
         
@@ -98,13 +91,33 @@ public class DriverTestStarter {
             driverProperties.put("subsystemBaseUrl", "http://localhost:8080/VersaNS-0.0.1-SNAPSHOT");
             systemCallHandler.plugDriverInstance(driverProperties);
         } catch (Exception ex) {
-            Logger.getLogger(DriverTestStarter.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(TestServiceStarter.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
+    public void testAwsDriver() {
+        if (PersistenceManager.getEntityManager() == null) {
+            PersistenceManager.initialize(entityManager);
+        }
+        try {
+            Context ejbCxt = new InitialContext();
+            HandleSystemCall systemCallHandler = (HandleSystemCall) ejbCxt.lookup("java:module/HandleSystemCall");
+            Map<String, String> driverProperties = new HashMap<>();
+            driverProperties.put("topologyUri", "urn:ogf:network:aws.amazon.com:aws-cloud");
+            driverProperties.put("driverEjbPath", "java:module/AwsDriver");
+            driverProperties.put("aws_access_key_id","");
+            driverProperties.put("aws_secret_access_key","");
+            driverProperties.put("region","us-east-1");
+            systemCallHandler.plugDriverInstance(driverProperties);
+        } catch (Exception ex) {
+            Logger.getLogger(TestServiceStarter.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+    }
+
     @PostConstruct
     public void runTests() {
-        this.testStubDriver();
+        //this.testStubDriver();
         //this.testVersaNSDriver();
     }
 }
