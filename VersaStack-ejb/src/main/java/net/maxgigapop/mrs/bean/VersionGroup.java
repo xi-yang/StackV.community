@@ -79,9 +79,10 @@ public class VersionGroup extends PersistentEntity implements Serializable {
             return false;
         }
         VersionGroup other = (VersionGroup) object;
-        if ((this.id != null && other.id != null) || (this.id.equals(other.id))) {
+        if ((this.id != null && other.id != null && this.id.equals(other.id))) {
             return true;
-        } else if (this.getVersionItems() == null || other.getVersionItems() == null) {
+        } else if (this.getVersionItems() == null || other.getVersionItems() == null
+                || this.getVersionItems().isEmpty() || other.getVersionItems().isEmpty()) {
             return false;
         } else if (this.getVersionItems().size() != other.getVersionItems().size()) {
             return false;
@@ -141,7 +142,7 @@ public class VersionGroup extends PersistentEntity implements Serializable {
             if (vi.getModelRef() == null || vi.getModelRef().getOntModel() == null) {
                 throw new EJBException(String.format("%s method createUnionModel encounters empty %s", this, vi));
             }
-            newModel.getOntModel().addSubModel(vi.getModelRef().getOntModel());
+            newModel.getOntModel().add(vi.getModelRef().getOntModel().getBaseModel());
         }
         //@TBD: rebind / rerun inference for referenceModel
         return newModel;

@@ -62,9 +62,15 @@
         </dependency>
         <dependency>
             <groupId>org.pacesys</groupId>
-            <artifactId>openstack4j</artifactId>
+            <artifactId>openstack4j-core</artifactId>
             <version>2.0.1</version>
-        </dependency> 
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.pacesys.openstack4j.connectors</groupId>
+            <artifactId>openstack4j-resteasy</artifactId>
+            <version>2.0.1</version>
+        </dependency>
         <dependency>
             <groupId>javax</groupId>
             <artifactId>javaee-api</artifactId>
