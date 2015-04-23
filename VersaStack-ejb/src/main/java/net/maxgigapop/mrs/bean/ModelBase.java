@@ -135,7 +135,13 @@ public class ModelBase extends PersistentEntity implements Serializable {
     
     @Override
     public String toString() {
-        return "net.maxgigapop.mrs.model.MrsModel[ id=" + id + " ]";
+        try {
+            if (ontModel != null && (ttlModel == null || ttlModel.isEmpty()))
+            ttlModel = ModelUtil.marshalOntModel(ontModel);
+        } catch (Exception e) {
+            ;
+        }
+        return "net.maxgigapop.mrs.model.MrsModel[ id=" + id + " ]\n Model = " + ttlModel;
     }
     
     public ModelBase clone() {

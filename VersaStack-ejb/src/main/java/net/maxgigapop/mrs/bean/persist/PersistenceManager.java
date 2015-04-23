@@ -74,4 +74,11 @@ public class PersistenceManager {
         }
         return theResult;
     }
+
+    public static void refresh(PersistentEntity aPersistentObject) {
+        if (entityManager != null) {
+            entityManager.refresh(aPersistentObject);
+        }
+    }
+
 }
