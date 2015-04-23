@@ -16,6 +16,7 @@ import org.openstack4j.model.compute.*;
 import org.openstack4j.model.network.*;
 import org.openstack4j.model.storage.block.*;
 import org.openstack4j.openstack.compute.domain.NovaInterfaceAttachment;
+import org.openstack4j.openstack.compute.internal.ext.InterfaceServiceImpl;
 
 /**
  *
@@ -133,7 +134,7 @@ public class OpenStackGet {
         }
         return null;
     }
-
+     
     //get all servers in the tenant
     public List<? extends Server> getServers() {
         return servers;
@@ -211,33 +212,47 @@ public class OpenStackGet {
     }
     
        //get the Subnets of  a server
-    public List<String> getServerSubnets(Server server) {
-        List<String> nets = new ArrayList();
-        
-        for (Port port : ports) {
-            /*if (port.getDeviceId().equals(server.getId())) {
-                NovaInterfaceAttachment att = new NovaInterfaceAttachment(port.getId());
+    public List<Subnet> getServerSubnets(Server server) {
+        List<Subnet> nets = new ArrayList();
+        InterfaceServiceImpl impl = new InterfaceServiceImpl();
+        for (InterfaceAttachment att: impl.list(server.getId())) {
                 for(InterfaceAttachment.FixedIp attIp : att.getFixedIps())
                 {
+                    if(!nets.contains(getSubnet(attIp.getSubnetId())))
                     nets.add(getSubnet(attIp.getSubnetId()));
                 }
-                    */
-            
-            Iterator ip = port.getFixedIps().iterator();
-            while (ip.hasNext()){
-                IP ipadd = (IP) ip.next();
-                nets.add(ipadd.getSubnetId());
             }
-            
-                        
-            }
-        
         return nets;
+    }
+    
+    //get the ports of  a server
+    public List<Port> getServerPorts(Server server) {
+        List<Port> ports = new ArrayList();
+        InterfaceServiceImpl impl = new InterfaceServiceImpl();
+        for (InterfaceAttachment att: impl.list(server.getId())) {
+                Port p = getPort(att.getPortId());
+                if(!ports.contains(p))
+                    ports.add(p);
+            }
+        return ports;
     }
 
     
-    //get server interface
-   
+    //get port subnet id
+    public List<String> getPortSubnetID(Port port){
+        List<IP> snID =  new ArrayList();
+        List<String> subID = new ArrayList();
+        Iterator p = port.getFixedIps().iterator();
+          while(p.hasNext()){
+              IP ip = (IP) p.next();
+              snID.add(ip);
+          }
+          for(IP ip : snID){
+              
+              subID.add(ip.getSubnetId());
+          }   
+          return subID;
+    }
     
     //get name from a resource
     //if the resource does not have a nane, return the ID

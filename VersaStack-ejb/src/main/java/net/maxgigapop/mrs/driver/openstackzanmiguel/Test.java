@@ -7,7 +7,7 @@ package net.maxgigapop.mrs.driver.openstackzanmiguel;
 
 import java.io.IOException;
 
-import net.maxgigapop.mrs.driver.openstack.OpenStackModelBuilder;
+
 
 import static net.maxgigapop.mrs.driver.openstackzanmiguel.OpenStackNeutronModelBuilder.createOntology;
 

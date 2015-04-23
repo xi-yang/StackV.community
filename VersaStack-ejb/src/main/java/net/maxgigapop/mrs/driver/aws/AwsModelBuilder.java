@@ -32,7 +32,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.common.*;
-import net.maxgigapop.mrs.driver.openstack.OpenStackModelBuilder;
+
 
 //TODO add the public ip address that an instance might have that is not an
 //elastic ip
