@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-package net.maxgigapop.mrs.service;
+package net.maxgigapop.mrs.driver;
 
 import static java.lang.Thread.sleep;
 import java.util.HashMap;
