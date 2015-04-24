@@ -23,11 +23,13 @@ import javax.ejb.Startup;
 public class WorkflowTestStarter {
     @PostConstruct
     void runTests() {
+        /*
         try {
             sleep(60000L);
         } catch (InterruptedException ex) {
             Logger.getLogger(WorkflowTestStarter.class.getName()).log(Level.SEVERE, null, ex);
         }
+        */
         WorkerBase testWorker = WorkerFactory.createWorker("net.maxgigapop.mrs.service.orchestrate.SimpleWorker");
         testWorker.run();
     }

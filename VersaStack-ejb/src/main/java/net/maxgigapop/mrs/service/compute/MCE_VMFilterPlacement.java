@@ -201,11 +201,9 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
                 "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
                 "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
                 "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
-                "SELECT ?topology ?nodeorvpc ?hvservice WHERE {"
+                "SELECT ?topology ?hvservice WHERE {"
                 + "?topology a nml:Topology ."
-                + "?topology nml:hasNode ?nodeorvpc ."
-                + "?nodeorvpc a nml:Node . "
-                + "?nodeorvpc nml:hasService ?hvservice . "
+                + "?topology nml:hasService ?hvservice . "
                 + "?hvservice a mrs:HypervisorService . "
                 + String.format("FILTER (?topology = <%s>) ", topologyUri)
                 + "}";   
@@ -214,19 +212,15 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
         r = (ResultSet) qexec.execSelect();
         if (r.hasNext()) {
             QuerySolution querySolution = r.next();
-            Resource resTopology = querySolution.get("topology").asResource();
-            Resource resHostOrVpc = querySolution.get("nodeorvpc").asResource();
+            Resource resHostTopology = querySolution.get("topology").asResource();
             Resource resHvService = querySolution.get("hvservice").asResource();
             if (hostModel == null) {
                 hostModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
             }
-            hostModel.add(resTopology, RdfOwl.type, Nml.Topology);
-            hostModel.add(resTopology, Nml.hasTopology, resHostOrVpc);
-            hostModel.add(resTopology, Nml.hasService, Mrs.VirtualCloudService);
-            hostModel.add(resHostOrVpc, RdfOwl.type, Nml.Topology);
-            hostModel.add(resHostOrVpc, Nml.hasService, resHvService);
+            hostModel.add(resHostTopology, RdfOwl.type, Nml.Topology);
+            hostModel.add(resHostTopology, Nml.hasService, resHvService);
             hostModel.add(resHvService, RdfOwl.type, Mrs.HypervisorService);
-            hostModel.add(resHostOrVpc, Nml.hasNode, resVm);
+            hostModel.add(resHostTopology, Nml.hasNode, resVm);
             hostModel.add(resHvService, Mrs.providesVM, resVm);
             return hostModel;
         }

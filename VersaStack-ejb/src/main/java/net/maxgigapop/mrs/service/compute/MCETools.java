@@ -177,39 +177,40 @@ public class MCETools {
         return KSP;
     }
 
-    private static String l2NetworkConstructSparql = 
-            "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
-    		+ "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n"
-    		+ "PREFIX owl: <http://www.w3.org/2002/07/owl#>\n"
-    		+ "PREFIX nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
-    		+ "PREFIX mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
+    private static String l2NetworkConstructSparql
+            = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+            + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n"
+            + "PREFIX owl: <http://www.w3.org/2002/07/owl#>\n"
+            + "PREFIX nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
+            + "PREFIX mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
             + "CONSTRUCT {\n"
             + "# get Topology/Node -> (SwService -> *) / (BidirectionalPort -> *)\n"
-            + "  ?node nml:hasService ?swsvc. \n"
-            + "  ?node nml:hasBidirectionalPort ?biport . \n"
-            + "  ?swsvc a nml:SwitchingService . \n"
-            + "  ?swsvc ?nml_p1 ?nml_o1 . \n"
-            + "  ?biport a nml:BidirectionalPort . \n"
-            + "  ?biport ?nml_p2 ?nml_o2 . \n"
+            + "  ?topo ?has_node_or_topology ?node.\n"
+            + "  ?node nml:hasService ?swsvc.\n"
+            + "  ?node nml:hasBidirectionalPort ?biport .\n"
+            + "  ?swsvc a nml:SwitchingService .\n"
+            + "  ?swsvc ?nml_p1 ?nml_o1 .\n"
+            + "  ?biport a nml:BidirectionalPort .\n"
+            + "  ?biport ?nml_p2 ?nml_o2 .\n"
             + "# get SwSubnet as well\n"
-            + "  ?swsvc mrs:providesSubnet ?subnet . \n"
+            + "  ?swsvc mrs:providesSubnet ?subnet .\n"
             + "  ?subnet a mrs:SwitchingSubnet .\n"
             + "  ?subnet ?nml_p2_1 ?nml_o2_1 .\n"
             + "# get BidirectionalPort -> Label/LabelGroup -> *\n"
             + "  ?label a ?label_or_labelgroup .\n"
-            + "  ?label ?nml_p3 ?nml_o3 . \n"
+            + "  ?label ?nml_p3 ?nml_o3 .\n"
             + "# TODO: get everything under mrs:(De)AdaptationService\n"
             + "} WHERE {\n"
             + "  { ?node a  ?nodetype.\n"
-            + "    ?node nml:hasService ?swsvc . \n"
-            + "    ?swsvc a nml:SwitchingService . \n"
-            + "    ?swsvc ?nml_p1 ?nml_o1 . \n"
-            + "    ?swsvc nml:encoding <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> . \n"
-            + "    ?node nml:hasBidirectionalPort ?biport . \n"
-            + "    ?biport a nml:BidirectionalPort . \n"
-            + "    ?biport ?nml_p2 ?nml_o2 . \n"
+            + "    ?node nml:hasService ?swsvc .\n"
+            + "    ?swsvc a nml:SwitchingService .\n"
+            + "    ?swsvc ?nml_p1 ?nml_o1 .\n"
+            + "    ?swsvc nml:encoding <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> .\n"
+            + "    ?node nml:hasBidirectionalPort ?biport .\n"
+            + "    ?biport a nml:BidirectionalPort .\n"
+            + "    ?biport ?nml_p2 ?nml_o2 .\n"
             + "    OPTIONAL {\n"
-            + "      ?swsvc mrs:providesSubnet ?subnet . \n"
+            + "      ?swsvc mrs:providesSubnet ?subnet .\n"
             + "      ?subnet a mrs:SwitchingSubnet .\n"
             + "      ?subnet ?nml_p2_1 ?nml_o2_1 .\n"
             + "      FILTER ((REGEX(STR(?nml_p2_1), '^http://schemas.ogf.org/nml/2013/03/base#')))\n"
@@ -219,19 +220,34 @@ public class MCETools {
             + "        (REGEX(STR(?nml_p2), '^http://schemas.ogf.org/nml/2013/03/base#'))\n"
             + "    )\n"
             + "  } UNION {\n"
-            + "    ?biport a nml:BidirectionalPort . \n"
-            + "    ?biport ?haslabel_or_labelgroup ?label . \n"
+            + "    ?biport a nml:BidirectionalPort .\n"
+            + "    ?biport ?haslabel_or_labelgroup ?label .\n"
             + "    ?label a ?label_or_labelgroup .\n"
-            + "    ?label ?nml_p3 ?nml_o3 . \n"
+            + "    ?label ?nml_p3 ?nml_o3 .\n"
             + "    FILTER ((?label_or_labelgroup in (nml:Label, nml:LabelGroup)) &&\n"
-            + "    	(?haslabel_or_labelgroup in (nml:hasLabel, nml:hasLabelGroup)) &&\n"
-            + "    	(REGEX(STR(?nml_p3), '^http://schemas.ogf.org/nml/2013/03/base#'))\n"
+            + "        (?haslabel_or_labelgroup in (nml:hasLabel, nml:hasLabelGroup)) &&\n"
+            + "        (REGEX(STR(?nml_p3), '^http://schemas.ogf.org/nml/2013/03/base#'))\n"
+            + "    )\n"
+            + "  } UNION {\n"
+            + "    ?topo a  nml:Topology.\n"
+            + "    ?topo ?has_node_or_topology ?node .\n"
+            + "    ?node nml:hasService ?swsvc.\n"
+            + "    ?swsvc a nml:SwitchingService .\n"
+            + "    ?swsvc ?nml_p1 ?nml_o1 .\n"
+            + "    ?swsvc nml:encoding <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> .\n"
+            + "    OPTIONAL {\n"
+            + "      ?swsvc mrs:providesSubnet ?subnet .\n"
+            + "      ?subnet a mrs:SwitchingSubnet .\n"
+            + "      ?subnet ?nml_p2_1 ?nml_o2_1 .\n"
+            + "      FILTER ((REGEX(STR(?nml_p2_1), '^http://schemas.ogf.org/nml/2013/03/base#')))\n"
+            + "    }\n"
+            + "    FILTER ( (?has_node_or_topology in (nml:hasTopology, nml:hasNode))\n"
             + "    )\n"
             + "  }\n"
             + "}";
-    
-    private static String l2NetworkReasonerRules = 
-            "[rule1:  (?a http://schemas.ogf.org/nml/2013/03/base#hasService ?b) \n"
+
+    private static String l2NetworkReasonerRules
+            = "[rule1:  (?a http://schemas.ogf.org/nml/2013/03/base#hasService ?b) \n"
             + "         (?b http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort ?c)\n"
             + "      -> (?a http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort ?c)\n"
             + "]\n"
@@ -266,15 +282,15 @@ public class MCETools {
             + "      -> (?a http://schemas.ogf.org/nml/2013/03/base#connectsTo ?d)\n"
             + "         (?d http://schemas.ogf.org/nml/2013/03/base#connectsTo ?a)\n"
             + "]";
-    
+
     public static OntModel transformL2NetworkModel(Model inputModel) {
-        Query query = QueryFactory.create(l2NetworkConstructSparql);
-        QueryExecution qexec = QueryExecutionFactory.create(query, inputModel);
-        Model modelConstructed = qexec.execConstruct();
+        //Query query = QueryFactory.create(l2NetworkConstructSparql);
+        //QueryExecution qexec = QueryExecutionFactory.create(query, inputModel);
+        //inputModel = qexec.execConstruct();
 
         Reasoner reasoner = new GenericRuleReasoner(Rule.parseRules(l2NetworkReasonerRules));
         reasoner.setDerivationLogging(true);
-        InfModel infModel = ModelFactory.createInfModel(reasoner, modelConstructed);
+        InfModel infModel = ModelFactory.createInfModel(reasoner, inputModel);
 
         OntModel outputModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         outputModel.add(infModel);

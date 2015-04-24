@@ -48,12 +48,6 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
     @Override
     @Asynchronous
     public Future<DeltaBase> process(ModelBase systemModel, DeltaBase annotatedDelta) {        
-        log.log(Level.INFO, "MCE_MPVlanConnection::process {0}", annotatedDelta);
-        try {
-            log.log(Level.INFO, "\n>>>MCE_MPVlanConnection--SystemModel=\n" + ModelUtil.marshalModel(systemModel.getOntModel()));
-        } catch (Exception ex) {
-            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
-        }
         try {
             log.log(Level.INFO, "\n>>>MCE_MPVlanConnection--DeltaAddModel=\n" + ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
         } catch (Exception ex) {
@@ -116,7 +110,11 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
         // transform network graph
         // filter out irrelevant statements (based on property type, label type, has switchingService etc.)
         OntModel transformedModel = MCETools.transformL2NetworkModel(systemModel);
-        
+        try {
+            log.log(Level.INFO, "\n>>>MCE_MPVlanConnection--SystemModel=\n" + ModelUtil.marshalModel(transformedModel));
+        } catch (Exception ex) {
+            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
+        }
         // get source and destination nodes (nodeA, nodeZ) -- only picks fist two terminals for now 
         List<Resource> terminals = new ArrayList<>();
         for (Map entry: connTerminalData) {
@@ -136,7 +134,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
         // KSP-MP path computation on the connected graph model (point2point for now - will do MP in future)
         Property[] filterProperties = {Nml.connectsTo};
         Filter<Statement> connFilters = new PredicatesFilter(filterProperties);
-        List<MCETools.Path> KSP = MCETools.computeKShortestPaths(systemModel, nodeA, nodeZ, MCETools.KSP_K_DEFAULT, connFilters);
+        List<MCETools.Path> KSP = MCETools.computeKShortestPaths(transformedModel, nodeA, nodeZ, MCETools.KSP_K_DEFAULT, connFilters);
         if (KSP == null || KSP.isEmpty()) {
             throw new EJBException(String.format("%s::process doPathFinding cannot find feasible path for <%s>", resLink));
         }
