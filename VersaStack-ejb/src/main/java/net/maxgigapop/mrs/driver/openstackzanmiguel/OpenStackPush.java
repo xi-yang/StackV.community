@@ -51,7 +51,7 @@ import org.openstack4j.openstack.storage.block.domain.CinderVolume;
  * in order to create/delete a volume
  * **********************************************************
  */
-public class OpenStackPushTest {
+public class OpenStackPush {
 
     //global variables
     private OpenStackGet client = null;
@@ -60,10 +60,10 @@ public class OpenStackPushTest {
     private String topologyUri;
 
     /*public static void main(String[] args) {
-     OpenStackPushTest test = new OpenStackPushTest();
+     OpenStackPush test = new OpenStackPush();
 
      }*/
-    public OpenStackPushTest(String url, String username, String password, String tenantName, String topologyUri) {
+    public OpenStackPush(String url, String username, String password, String tenantName, String topologyUri) {
         client = new OpenStackGet(url, username, password, tenantName);
         osClient = client.getClient();
 
@@ -76,7 +76,7 @@ public class OpenStackPushTest {
      * Method to get the requests provided in the model addition and model
      * reduction ************************************************
      */
-    public List<JSONObject> pushPropagate(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) throws Exception {
+    public List<JSONObject> propagate(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) throws Exception {
         List<JSONObject> requests = new ArrayList();
 
         //get all the requests
