@@ -6,6 +6,7 @@
 package net.maxgigapop.mrs.driver.openstackzanmiguel;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import org.openstack4j.api.OSClient;
@@ -31,6 +32,7 @@ public class OpenStackGet {
     private List<? extends Volume> volumes = null;
     private List<? extends NetFloatingIP> floatingIps = null;
     private List<? extends Hypervisor> hypervisors = null;
+    private List<? extends Router> routers =null;
 
     public OpenStackGet(String url, String username, String password, String tenantName) {
         //authenticate
@@ -44,6 +46,7 @@ public class OpenStackGet {
         servers = client.compute().servers().list();
         volumes = client.blockStorage().volumes().list();
         floatingIps = client.networking().floatingip().list();
+        routers = client.networking().router().list();
         //hypervisors = client.compute().hypervisors().list();
 
     }
@@ -77,7 +80,7 @@ public class OpenStackGet {
         }
         return null;
     }
-    
+
     //get a Lsit of subnets under a network
     public List<Subnet> getSubnets(String id) {
         List<Subnet> subnetList = new ArrayList();
@@ -104,6 +107,16 @@ public class OpenStackGet {
             }
         }
         return null;
+    }
+
+    //get port subnet id
+    public List<String> getPortSubnetID(Port port) {
+        List<IP> snID = new ArrayList();
+        List<String> subID = new ArrayList();
+        for (IP ip : port.getFixedIps()) {
+            subID.add(ip.getSubnetId());
+        }
+        return subID;
     }
 
     //get all servers in the tenant
@@ -204,6 +217,23 @@ public class OpenStackGet {
         }
         return null;
     }
+    
+    //get all the routers
+    public List<? extends Router> getRouters()
+    {
+        return routers;
+    }
+    
+    //get a specific route by id or name
+    public Router getRouter(String id)
+    {
+        for (Router router : routers) {
+            if (router.getId().equals(id) || router.getName().equals(id)) {
+                return router;
+            }
+        }
+        return null;
+    }
 
     //get the OpenStack client
     public OSClient getClient() {
@@ -215,6 +245,26 @@ public class OpenStackGet {
     public String getResourceName(Resource r) {
         String name = r.getName();
         if (name.isEmpty()) {
+            return r.getId();
+        } else {
+            return r.getName();
+        }
+    }
+
+    //get the name of a server 
+    public String getServereName(Server r) {
+        String name = r.getName();
+        if (name ==null || name.isEmpty()) {
+            return r.getId();
+        } else {
+            return r.getName();
+        }
+    }
+
+    //get the name of a volume
+    public String getVolumeName(Volume r) {
+        String name = r.getName();
+        if (name == null || name.isEmpty()) {
             return r.getId();
         } else {
             return r.getName();

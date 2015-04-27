@@ -86,6 +86,9 @@ public class AwsPush {
 
         //Delete routes that need to be deleted
         requests += deleteRouteRequests(modelRef, modelReduct);
+        
+        //detach vpn gateway to VPC
+        requests += detachVPNGatewayRequests(modelRef,modelReduct);
 
         //delete gateways that need to be deleated
         requests += deleteGatewayRequests(modelRef, modelReduct);
@@ -116,6 +119,9 @@ public class AwsPush {
 
         //create gateways request 
         requests += createGatewayRequests(modelRef, modelAdd);
+        
+        //attach vpn gateway to VPC
+        requests += attachVPNGatewayRequests(modelRef,modelAdd);
 
         //create the new routes requests
         requests += createRouteRequests(modelRef, modelAdd);
@@ -272,13 +278,6 @@ public class AwsPush {
                 String[] parameters = request.split("\\s+");
 
                 VpnGateway gateway = ec2Client.getVirtualPrivateGateway(parameters[1]);
-                Vpc v = ec2Client.getVpc(getResourceId(parameters[2]));
-                DetachVpnGatewayRequest gwRequest = new DetachVpnGatewayRequest();
-                gwRequest.withVpnGatewayId(gateway.getVpnGatewayId())
-                        .withVpcId(v.getVpcId());
-
-                client.detachVpnGateway(gwRequest);
-                ec2Client.vpnGatewayDetachmentCheck(gateway.getVpnGatewayId());
 
                 DeleteVpnGatewayRequest gatewayRequest = new DeleteVpnGatewayRequest();
                 gatewayRequest.withVpnGatewayId(gateway.getVpnGatewayId());
@@ -286,6 +285,18 @@ public class AwsPush {
 
                 ec2Client.getVirtualPrivateGateways().remove(gateway);
                 ec2Client.vpnGatewayDeletionCheck(gateway.getVpnGatewayId());
+
+            } else if (request.contains("detachVpnGatewayRequest")) {
+                String[] parameters = request.split("\\s+");
+
+                VpnGateway gateway = ec2Client.getVirtualPrivateGateway(parameters[1]);
+                Vpc v = ec2Client.getVpc(getResourceId(parameters[2]));
+                DetachVpnGatewayRequest gwRequest = new DetachVpnGatewayRequest();
+                gwRequest.withVpnGatewayId(gateway.getVpnGatewayId())
+                        .withVpcId(v.getVpcId());
+
+                client.detachVpnGateway(gwRequest);
+                ec2Client.vpnGatewayDetachmentCheck(gateway.getVpnGatewayId());
 
             } else if (request.contains("DisassociateTableRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -391,15 +402,6 @@ public class AwsPush {
                 ec2Client.getVirtualPrivateGateways().add(vpngw);
                 ec2Client.vpnGatewayAdditionCheck(vpngw.getVpnGatewayId());
                 tagResource(vpngw.getVpnGatewayId(), parameters[1]);
-
-                Vpc v = ec2Client.getVpc(getResourceId(parameters[2]));
-
-                AttachVpnGatewayRequest gwRequest = new AttachVpnGatewayRequest();
-                gwRequest.withVpnGatewayId(vpngw.getVpnGatewayId())
-                        .withVpcId(v.getVpcId());
-
-                AttachVpnGatewayResult result = client.attachVpnGateway(gwRequest);
-                ec2Client.vpnGatewayAttachmentCheck(vpngw.getVpnGatewayId());
 
             } else if (request.contains("AttachVpnGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -1235,7 +1237,7 @@ public class AwsPush {
             query = "SELECT ?vpc ?port  WHERE {?vpc nml:hasBidirectionalPort <" + igw + ">}";
             r1 = executeQuery(query, emptyModel, modelReduct);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("Gateway %s does not specify vpc", igw));
+                throw new EJBException(String.format("Gateway %s does not specify topology", igw));
             }
             q = r1.next();
             RDFNode vpc = q.get("vpc");
@@ -1248,22 +1250,75 @@ public class AwsPush {
                 throw new EJBException(String.format("VPC %s for gateway %s is not "
                         + "of type topology", vpc, igw));
             }
-
             if (value.equals("internet")) {
-                InternetGateway gateway = ec2Client.getInternetGateway(getResourceId(idTag));
-                if (gateway == null) {
-                    throw new EJBException(String.format("Internet gateway %s to de deleted"
-                            + "does not exist", idTag));
+
+                //check that the topology for the internet gateway is not the main topology
+                //as the internet gateway should be attached to a VPC not the main topology
+                if (vpcIdTag.contains(topologyUri.replace(":", ""))) {
+                    throw new EJBException(String.format("Internet gateway %s"
+                            + " cannot be detached from root topology", igw));
                 }
-                requests += String.format("DeleteInternetGatewayRequest %s %s \n", gateway.getInternetGatewayId(), vpcIdTag);
-            } else if (value.equals("gateway")) {
-                VpnGateway gateway = ec2Client.getVirtualPrivateGateway(getResourceId(idTag));
-                if (gateway == null) {
-                    throw new EJBException(String.format("Internet gateway %s to de deleted"
-                            + "does not exist", idTag));
+                if (ec2Client.getInternetGateway(getResourceId(idTag)) == null) {
+                    throw new EJBException(String.format("Internet gateway %s  does not exists", idTag));
+                } else {
+                    requests += String.format("DeleteInternetGatewayRequest %s %s \n", idTag, vpcIdTag);
                 }
-                requests += String.format("DeleteVpnGatewayRequest %s %s \n", gateway.getVpnGatewayId(), vpcIdTag);
+            } else if (value.equals("vpn")) {
+                if (ec2Client.getVirtualPrivateGateway(getResourceId(idTag)) == null) {
+                    throw new EJBException(String.format("VPN gateway %s does not exists", idTag));
+                } else {
+                    requests += String.format("DeleteVpnGatewayRequest %s \n", idTag);
+                }
             }
+        }
+        return requests;
+    }
+
+    /**
+     * ****************************************************************
+     * Function to detach a VPN gateway to a VPC from a model
+     * ****************************************************************
+     */
+    private String detachVPNGatewayRequests(OntModel model, OntModel modelReduct) throws EJBException {
+        String requests = "";
+        String query = "";
+
+        //fin all the vpcs that have a bidirectional port
+        query = "SELECT ?vpc ?port  WHERE {?vpc nml:hasBidirectionalPort ?port}";
+        ResultSet r = executeQuery(query, emptyModel, modelReduct);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            RDFNode gateway = q.get("port");
+            RDFNode vpc = q.get("vpc");
+
+            //check that vpc is the correct type
+            query = "SELECT ?vpc WHERE {<" + vpc.asResource() + "> a nml:Topology ."
+                    + "<" + vpc.asResource() + "> nml:hasService ?service ."
+                    + "?service a  mrs:SwitchingService}";
+            ResultSet r1 = executeQuery(query, model, modelReduct);
+            while (r1.hasNext()) {
+                r1.next();
+                query = "SELECT ?tag WHERE {<" + gateway.asResource() + "> mrs:hasTag ?tag}";
+                ResultSet r2 = executeQuery(query, model, modelReduct);
+                if (!r2.hasNext()) {
+                    throw new EJBException(String.format("Tag for  gateway %s i"
+                            + "s not specified in model addition", gateway));
+                }
+                QuerySolution q1 = r2.next();
+                RDFNode tag = q1.get("tag");
+
+                //look for the label in the reference model
+                query = "SELECT ?value WHERE {<" + tag.asResource() + "> mrs:type \"gateway\" ."
+                        + "<" + tag.asResource() + "> mrs:value  \"vpn\"}";
+                r2 = executeQuery(query, model, emptyModel);
+                if (!r2.hasNext()) {
+                    continue;
+                }
+                String gatewayIdTag = gateway.asResource().toString().replace(topologyUri, "");
+                String vpcIdTag = vpc.asResource().toString().replace(topologyUri, "");
+                requests += String.format("detachVpnGatewayRequest %s %s \n", gatewayIdTag, vpcIdTag);
+            }
+
         }
         return requests;
     }
@@ -1885,8 +1940,8 @@ public class AwsPush {
 
                 //check that the topology for the internet gateway is not the main topology
                 //as the internet gateway should be attached to a VPC not the main topology
-                String topology = vpcIdTag;
-                if (topology.contains(topology.replace(":", ""))) {
+                String topology =topologyUri;
+                if (vpcIdTag.contains(topology.replace(":", ""))) {
                     throw new EJBException(String.format("Internet gateway %s"
                             + " cannot be attached to root topology", igw));
                 }
@@ -1925,15 +1980,15 @@ public class AwsPush {
 
             //check that vpc is the correct type
             query = "SELECT ?vpc WHERE {<" + vpc.asResource() + "> a nml:Topology ."
-                    + "<" + vpc.asResource() + "> mrs:hasService ?service"
-                    + "?service a  mrs:SwitchingService";
+                    + "<" + vpc.asResource() + "> nml:hasService ?service ."
+                    + "?service a  mrs:SwitchingService}";
             ResultSet r1 = executeQuery(query, model, modelAdd);
             while (r1.hasNext()) {
                 r1.next();
                 query = "SELECT ?tag WHERE {<" + gateway.asResource() + "> mrs:hasTag ?tag}";
                 ResultSet r2 = executeQuery(query, model, modelAdd);
                 if (!r2.hasNext()) {
-                    throw new EJBException(String.format("Tag for Internet gateway %s i"
+                    throw new EJBException(String.format("Tag for  gateway %s i"
                             + "s not specified in model addition", gateway));
                 }
                 QuerySolution q1 = r2.next();
@@ -1946,7 +2001,6 @@ public class AwsPush {
                 if (!r2.hasNext()) {
                     continue;
                 }
-                q1 = r2.next();
                 String gatewayIdTag = gateway.asResource().toString().replace(topologyUri, "");
                 String vpcIdTag = vpc.asResource().toString().replace(topologyUri, "");
                 requests += String.format("AttachVpnGatewayRequest %s %s \n", gatewayIdTag, vpcIdTag);

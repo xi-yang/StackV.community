@@ -5,8 +5,10 @@
  */
 package net.maxgigapop.mrs.driver.openstackzanmiguel;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hp.hpl.jena.ontology.OntModel;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Future;
@@ -15,6 +17,7 @@ import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.EJBException;
+import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import net.maxgigapop.mrs.bean.DriverInstance;
@@ -26,15 +29,17 @@ import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 import org.json.simple.JSONObject;
 
 /**
  *
  * @author muzcategui
  */
-public class OpenStackDriver {
+@Stateless
+public class OpenStackDriver implements IHandleDriverSystemCall {
 
-    Logger logger = Logger.getLogger(OpenStackDriver.class.getName());
+    static final Logger logger = Logger.getLogger(OpenStackDriver.class.getName());
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
@@ -53,14 +58,14 @@ public class OpenStackDriver {
 
         OpenStackPush push = new OpenStackPush(topologyURI, username, password, tenant, topologyURI);
         List<JSONObject> requests = null;
+        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         try {
             requests = push.propagate(model, modelAdd, modelReduc);
+            driverInstance.putProperty(requestId, requests.toString());
         } catch (Exception ex) {
             Logger.getLogger(OpenStackDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
         }
 
-        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
-        driverInstance.putProperty(requestId, requests.toString());
         DriverInstancePersistenceManager.merge(driverInstance);
         Logger.getLogger(OpenStackDriver.class.getName()).log(Level.INFO, "OpenStack driver delta models succesfully propagated");
     }
@@ -68,7 +73,7 @@ public class OpenStackDriver {
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
     @Asynchronous
     @Override
-    public Future<String> commitDelta(DriverSystemDelta aDelta) {
+    public Future<String> commitDelta(DriverSystemDelta aDelta)  {
 
         DriverInstance driverInstance = aDelta.getDriverInstance();
         if (driverInstance == null) {
@@ -78,12 +83,19 @@ public class OpenStackDriver {
         String username = driverInstance.getProperty("username");
         String password = driverInstance.getProperty("password");
         String tenant = driverInstance.getProperty("tenant");
-        String topologyURI = driverInstance.getProperty("topology_uri");
+        String topologyURI = driverInstance.getProperty("topologyUri");
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         String requests = driverInstance.getProperty(requestId);
 
         OpenStackPush push = new OpenStackPush(topologyURI, username, password, tenant, topologyURI);
-        push.pushCommit(requests);
+        ObjectMapper mapper = new ObjectMapper();
+        List<JSONObject> r = new ArrayList();
+        try {
+            r = mapper.readValue(requests, mapper.getTypeFactory().constructCollectionType(List.class, JSONObject.class));
+        } catch (IOException ex) {
+            Logger.getLogger(OpenStackDriver.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        push.pushCommit(r);
 
         driverInstance.getProperties().remove(requestId);
         DriverInstancePersistenceManager.merge(driverInstance);
@@ -106,7 +118,7 @@ public class OpenStackDriver {
             String username = driverInstance.getProperty("username");
             String password = driverInstance.getProperty("password");
             String tenant = driverInstance.getProperty("tenant");
-            String topologyURI = driverInstance.getProperty("topology_uri");
+            String topologyURI = driverInstance.getProperty("topologyUri");
 
             OntModel ontModel = OpenStackNeutronModelBuilder.createOntology(topologyURI, topologyURI, username, password, tenant);
 
