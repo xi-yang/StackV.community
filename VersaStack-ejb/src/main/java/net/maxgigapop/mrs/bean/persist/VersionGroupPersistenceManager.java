@@ -34,7 +34,7 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
         }
     }
 
-    public static VersionGroup refreshToHead(VersionGroup vg) {
+    public static VersionGroup refreshToHead(VersionGroup vg, boolean doUpdate) {
         if (vg == null) {
             throw new EJBException(String.format("VersionGroupPersistenceManager::refreshToHead encounters null VG"));
         }
@@ -49,17 +49,21 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
         VersionGroup vgNew = null;
         for (VersionItem vi : vg.getVersionItems()) {
             DriverInstance di = vi.getDriverInstance();
-            if (di != null && !di.getHeadVersionItem().equals(vi)) {
+            VersionItem newVi = di.getHeadVersionItem();
+            if (di != null && !newVi.equals(vi)) {
                 if (vgNew == null) {
                     vgNew = new VersionGroup();
                 }
-                vgNew.addVersionItem(vi);
+                vgNew.addVersionItem(newVi);
+                //newVi.addVersionGroup(vgNew);
             }
         }
         if (vgNew != null) {
             vgNew.setRefUuid(vg.getRefUuid());
-            VersionGroupPersistenceManager.save(vgNew);
-            VersionGroupPersistenceManager.delete(vg);
+            if (doUpdate) {
+                VersionGroupPersistenceManager.save(vgNew);
+                VersionGroupPersistenceManager.delete(vg);
+            }
             return vgNew;
         }
         return vg;

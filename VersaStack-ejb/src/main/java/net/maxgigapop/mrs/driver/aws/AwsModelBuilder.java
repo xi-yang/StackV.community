@@ -10,29 +10,15 @@ import com.amazonaws.services.directconnect.model.Connection;
 import com.amazonaws.services.directconnect.model.VirtualInterface;
 import com.amazonaws.services.ec2.model.*;
 import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.common.*;
-
 
 //TODO add the public ip address that an instance might have that is not an
 //elastic ip
@@ -116,7 +102,6 @@ public class AwsModelBuilder {
         model.add(model.createStatement(awsTopology, hasService, s3Service));
         model.add(model.createStatement(awsTopology, hasService, ebsService));
         model.add(model.createStatement(awsTopology, hasBidirectionalPort, directConnect));
-        
 
         //add the lables for vpn gatewyas, internet gateways, and network interfaces
         Resource IGW_TAG = RdfOwl.createResource(model, topologyURI + ":igwTag", Mrs.Tag);
@@ -137,9 +122,11 @@ public class AwsModelBuilder {
 
         //put all the Internet gateways into the model
         for (InternetGateway t : ec2Client.getInternetGateways()) {
-            String internetGatewayId = ec2Client.getIdTag(t.getInternetGatewayId());
-            Resource INTERNETGATEWAY = RdfOwl.createResource(model, topologyURI + ":" + internetGatewayId, biPort);
-            model.add(model.createStatement(INTERNETGATEWAY, hasTag, IGW_TAG));
+            if (!t.getAttachments().isEmpty()) {
+                String internetGatewayId = ec2Client.getIdTag(t.getInternetGatewayId());
+                Resource INTERNETGATEWAY = RdfOwl.createResource(model, topologyURI + ":" + internetGatewayId, biPort);
+                model.add(model.createStatement(INTERNETGATEWAY, hasTag, IGW_TAG));
+            }
         }
 
         //put all the Vpn gateways into the model
@@ -147,7 +134,9 @@ public class AwsModelBuilder {
             String vpnGatewayId = ec2Client.getIdTag(g.getVpnGatewayId());
             Resource VPNGATEWAY = RdfOwl.createResource(model, topologyURI + ":" + vpnGatewayId, biPort);
             model.add(model.createStatement(VPNGATEWAY, hasTag, VPNGW_TAG));
-
+            if (g.getVpcAttachments().isEmpty()) {
+                 model.add(model.createStatement(awsTopology, hasBidirectionalPort, VPNGATEWAY));
+            }
             for (VirtualInterface vi : dcClient.getVirtualInterfaces(g.getVpnGatewayId())) {
                 String viId = vi.getVirtualGatewayId();
                 String vlanNum = Integer.toString(vi.getVlan());
@@ -171,11 +160,14 @@ public class AwsModelBuilder {
             }
         }
 
+        //to be used later, a list containing the elatic ips as strings
+        List<String> elasticIps = new ArrayList();
         //put all the elastic ips under the account into the model
         for (Address ip : ec2Client.getElasticIps()) {
             Resource PUBLIC_ADDRESS = RdfOwl.createResource(model, topologyURI + ":" + ip.getPublicIp(), networkAddress);
             model.add(model.createStatement(PUBLIC_ADDRESS, type, "ipv4:public"));
             model.add(model.createStatement(PUBLIC_ADDRESS, value, ip.getPublicIp()));
+            elasticIps.add(ip.getPublicIp());
         }
 
         //Put all the subnets into the model
@@ -206,9 +198,17 @@ public class AwsModelBuilder {
                 }
             }
 
-            //put the public Ip (if any) of the network interface into the model
+            //put the public Ip (if any) of the network interface into the model3
             if (n.getAssociation() != null && n.getAssociation().getPublicIp() != null) {
-                Resource PUBLIC_ADDRESS = model.getResource(topologyURI + ":" + n.getAssociation().getPublicIp());
+                String publicIp = n.getAssociation().getPublicIp();
+                Resource PUBLIC_ADDRESS;
+                if (elasticIps.contains(publicIp)) {
+                    PUBLIC_ADDRESS = model.getResource(topologyURI + ":" + n.getAssociation().getPublicIp());
+                } else {
+                    PUBLIC_ADDRESS = RdfOwl.createResource(model, topologyURI + ":" + publicIp, networkAddress);
+                    model.add(model.createStatement(PUBLIC_ADDRESS, type, "ipv4:public"));
+                    model.add(model.createStatement(PUBLIC_ADDRESS, value, publicIp));
+                }
                 model.add(model.createStatement(PORT, hasNetworkAddress, PUBLIC_ADDRESS));
             }
 
@@ -354,7 +354,7 @@ public class AwsModelBuilder {
                     while (i < associations.size() && !associations.isEmpty()) //get the routes from the amazon cloud to any destination
                     {
                         String complementId = "-" + ec2Client.getIdTag(associations.get(i).getSubnetId());
-                        
+
                         //if the association subnet is null just skip to the next one
                         if (complementId.equals("-null")) {
                             i++;

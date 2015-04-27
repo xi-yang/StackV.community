@@ -9,7 +9,6 @@ import java.io.IOException;
 
 
 
-import static net.maxgigapop.mrs.driver.openstackzanmiguel.OpenStackNeutronModelBuilder.createOntology;
 
 
 
@@ -19,15 +18,17 @@ import static net.maxgigapop.mrs.driver.openstackzanmiguel.OpenStackNeutronModel
  * @author tcm
  */
 public class Test {
-    public static void main(String args[]) throws IOException, Exception{
-       //OpenStackGet openstackget =  new OpenStackGet("http://max-vlsr2.dragon.maxgigapop.net","admin","1234","admin");
+    /*public static void main(String args[]) throws IOException, Exception{
+       OpenStackGet openstackget =  new OpenStackGet("","","","");
        
        
-       //openstackget.getSubnets();
-       //openstackget.getNetworks();
-       //OpenStackModelBuilder.createOntology("http://max-vlsr2.dragon.maxgigapop.net", "admin", "1234", "urn:ogf:network:max-vlsr2.dragon.maxgigapop.net:openstack-neutron");
-        createOntology("http://max-vlsr2.dragon.maxgigapop.net","max-vlsr2.dragon.maxgigapop.net","admin","1234","admin");
+       System.out.println(openstackget.getSubnet("1d953afd-cfd4-4c46-9fcc-8d0b958122ca").getHostRoutes());
+       System.out.println();
+       System.out.println();
+       System.out.println(openstackget.getRouter("5bab2075-f47e-4163-9177-746363ac513c").getRoutes());
+       openstackget.getNetworks();
+       //OpenStackModelBuilder.createOntology("", "", "", "");
+        //createOntology("","","","","");
         
-        
-    }
+    }*/
 }

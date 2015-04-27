@@ -92,13 +92,13 @@ public class OpenStackNeutronModelBuilder {
         Resource namedIndividual = model.createResource(model.getNsPrefixURI("mrs") + "NamedIndividual");
         Resource objectStorageService = Mrs.ObjectStorageService;
         //Resource OpenstackTopology = model.createResource("urn:ogf:network:dragon.maxgigapop.net:topology");
-        Resource OpenstackTopology = RdfOwl.createResource(model, topologyURI + ":topology", topology);
+        Resource OpenstackTopology = RdfOwl.createResource(model, topologyURI, topology);
         //Resource Neutron = model.createResource("urn:ogf:network:dragon.maxgigapop.net:openstack-neutron");
-        Resource networkService = RdfOwl.createResource(model, topologyURI + ":openstack-neutron", Nml.NetworkObject);
+        Resource networkService = RdfOwl.createResource(model, topologyURI + ":neutron-service", Nml.NetworkObject);
         Resource directConnect = RdfOwl.createResource(model, topologyURI + ":directconnect", biPort);
-        Resource routingService = RdfOwl.createResource(model, topologyURI + "routing_service", Mrs.RoutingService);
-        Resource cinderService = RdfOwl.createResource(model, topologyURI + "cinder-service", blockStorageService);
-        
+        Resource routingService = RdfOwl.createResource(model, topologyURI + ":routing_service", Mrs.RoutingService);
+        Resource cinderService = RdfOwl.createResource(model, topologyURI + ":cinder-service", blockStorageService);
+
         //port tag
         Resource PORT_TAG = RdfOwl.createResource(model, topologyURI + ":portTag", Mrs.Tag);
         model.add(model.createStatement(PORT_TAG, type, "interface"));
@@ -106,13 +106,10 @@ public class OpenStackNeutronModelBuilder {
 
         OpenStackGet openstackget = new OpenStackGet(url, user_name, password, tenantName);
 
-  
         model.add(model.createStatement(OpenstackTopology, hasService, routingService));
-       
         model.add(model.createStatement(OpenstackTopology, hasService, networkService));
-       
-        //Left part
 
+        //Left part
         for (Port p : openstackget.getPorts()) {
             String PortID = openstackget.getResourceName(p);
             Resource PORT = RdfOwl.createResource(model, topologyURI + ":" + PortID, biPort);
@@ -126,33 +123,32 @@ public class OpenStackNeutronModelBuilder {
                     model.add(model.createStatement(PORT, hasTag, PORT_TAG));
                 }
             }
-        for (Server server : openstackget.getServers()) {
-                
+            for (Server server : openstackget.getServers()) {
+
                 String hostID = server.getHost();
-                if(hostID == null || hostID.isEmpty()){
-                 hostID = server.getHostId();
-                 }
+                if (hostID == null || hostID.isEmpty()) {
+                    hostID = server.getHostId();
+                }
 
                 String hypervisorname = server.getHypervisorHostname();
 
                 Resource HOST = RdfOwl.createResource(model, topologyURI + ":" + hostID, node);
-                
+
                 Resource HYPERVISOR = RdfOwl.createResource(model, topologyURI + ":" + hypervisorname, hypervisorService);
                 Resource VM = RdfOwl.createResource(model, topologyURI + ":" + openstackget.getServereName(server), node);
-                
-                
+
                 model.add(model.createStatement(OpenstackTopology, hasNode, HOST));
 
                 model.add(model.createStatement(HOST, hasService, HYPERVISOR));
                 model.add(model.createStatement(HYPERVISOR, providesVM, VM));
                 model.add(model.createStatement(HOST, hasNode, VM));
-                
-                for (Port port :  openstackget.getServerPorts(server)){
-                    Resource Port = model.getResource(topologyURI+":"+ openstackget.getResourceName(port));  //use function
+
+                for (Port port : openstackget.getServerPorts(server)) {
+                    Resource Port = model.getResource(topologyURI + ":" + openstackget.getResourceName(port));  //use function
                     model.add(model.createStatement(VM, hasBidirectionalPort, Port));
                     model.add(model.createStatement(Port, hasTag, PORT_TAG));
                 }
-                
+
             }
         }
 
@@ -171,21 +167,23 @@ public class OpenStackNeutronModelBuilder {
                 Resource SUBNET = RdfOwl.createResource(model, topologyURI + ":" + subnetId, switchingSubnet);
                 model.add(model.createStatement(SWITCHINGSERVICE, providesSubnet, SUBNET));
                 Resource SUBNET_NETWORK_ADDRESS
-                        = RdfOwl.createResource(model, topologyURI + ":subnetnetworkaddress-" + s.getId(), networkAddress);
+                        = RdfOwl.createResource(model, topologyURI + ":subnetnetworkaddress-" + subnetId, networkAddress);
                 model.add(model.createStatement(SUBNET_NETWORK_ADDRESS, type, "ipv4-prefix"));
                 model.add(model.createStatement(SUBNET_NETWORK_ADDRESS, value, s.getCidr()));
                 model.add(model.createStatement(SUBNET, hasNetworkAddress, SUBNET_NETWORK_ADDRESS));
-                for (Port port : openstackget.getPorts()){
-                    for(String subID: openstackget.getPortSubnetID(port)){
-                        if (subnetId.equals(subID)){
-                        Resource Port = model.getResource(topologyURI + ":" + port.getId());
-                        model.add(model.createStatement(SUBNET, hasBidirectionalPort, Port)); 
-                        model.add(model.createStatement(Port, hasTag, PORT_TAG));
+                for (Port port : openstackget.getPorts()) {
+                    for (String subID : openstackget.getPortSubnetID(port)) {
+                        if (s.getId().equals(subID)) {
+                            Resource Port = model.getResource(topologyURI + ":" + port.getId());
+                            model.add(model.createStatement(SUBNET, hasBidirectionalPort, Port));
+                            model.add(model.createStatement(Port, hasTag, PORT_TAG));
                         }
-                        
+
                     }
                 }
+
             }
+        }
         for (Volume v : openstackget.getVolumes()) {
             String volumeName = openstackget.getVolumeName(v);
             Resource VOLUME = RdfOwl.createResource(model, topologyURI + ":" + volumeName, volume);
@@ -194,7 +192,6 @@ public class OpenStackNeutronModelBuilder {
             model.add(model.createStatement(VOLUME, Mrs.disk_gb, Integer.toString(v.getSize())));
         }
 
-        }
         /*for(Subnet s : openstackget.getSubnets()){
          String subnetId = s.getId();
          Resource SUBNET = RdfOwl.createResource(model, topologyURI + ":" + subnetId, switchingSubnet);
@@ -207,7 +204,6 @@ public class OpenStackNeutronModelBuilder {
          }
         
          */
-
         StringWriter out = new StringWriter();
         try {
             model.write(out, "TURTLE");
