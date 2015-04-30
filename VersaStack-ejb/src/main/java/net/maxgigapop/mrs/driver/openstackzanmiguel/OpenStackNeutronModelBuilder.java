@@ -105,9 +105,10 @@ public class OpenStackNeutronModelBuilder {
         model.add(model.createStatement(PORT_TAG, value, "network"));
 
         OpenStackGet openstackget = new OpenStackGet(url, user_name, password, tenantName);
-
+        
         model.add(model.createStatement(OpenstackTopology, hasService, routingService));
         model.add(model.createStatement(OpenstackTopology, hasService, networkService));
+        model.add(model.createStatement(OpenstackTopology,hasService, cinderService));
 
         //Left part
         for (Port p : openstackget.getPorts()) {
@@ -201,9 +202,9 @@ public class OpenStackNeutronModelBuilder {
          //model.add(model.createStatement(SUBNET_NETWORK_ADDRESS, value, s.getCidrBlock()));
          model.add(model.createStatement(SUBNET, hasNetworkAddress, SUBNET_NETWORK_ADDRESS));
         
-         }
+         }*/
         
-         */
+         
         StringWriter out = new StringWriter();
         try {
             model.write(out, "TURTLE");

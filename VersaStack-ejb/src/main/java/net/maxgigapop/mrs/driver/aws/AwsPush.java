@@ -277,7 +277,7 @@ public class AwsPush {
             } else if (request.contains("DeleteVpnGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
 
-                VpnGateway gateway = ec2Client.getVirtualPrivateGateway(parameters[1]);
+                VpnGateway gateway = ec2Client.getVirtualPrivateGateway(getVpnGatewayId(parameters[1]));
 
                 DeleteVpnGatewayRequest gatewayRequest = new DeleteVpnGatewayRequest();
                 gatewayRequest.withVpnGatewayId(gateway.getVpnGatewayId());
@@ -289,14 +289,14 @@ public class AwsPush {
             } else if (request.contains("detachVpnGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
 
-                VpnGateway gateway = ec2Client.getVirtualPrivateGateway(parameters[1]);
-                Vpc v = ec2Client.getVpc(getResourceId(parameters[2]));
+                VpnGateway gateway = ec2Client.getVirtualPrivateGateway(getVpnGatewayId(parameters[1]));
+                Vpc v = ec2Client.getVpc(getVpcId(parameters[2]));
                 DetachVpnGatewayRequest gwRequest = new DetachVpnGatewayRequest();
                 gwRequest.withVpnGatewayId(gateway.getVpnGatewayId())
                         .withVpcId(v.getVpcId());
 
                 client.detachVpnGateway(gwRequest);
-                ec2Client.vpnGatewayDetachmentCheck(gateway.getVpnGatewayId());
+                ec2Client.vpnGatewayDetachmentCheck(gateway.getVpnGatewayId(),v.getVpcId());
 
             } else if (request.contains("DisassociateTableRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -406,8 +406,8 @@ public class AwsPush {
             } else if (request.contains("AttachVpnGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
 
-                VpnGateway vpn = ec2Client.getVirtualPrivateGateway(getResourceId(parameters[1]));
-                Vpc v = ec2Client.getVpc(getResourceId(parameters[2]));
+                VpnGateway vpn = ec2Client.getVirtualPrivateGateway(getVpnGatewayId(parameters[1]));
+                Vpc v = ec2Client.getVpc(getVpcId(parameters[2]));
 
                 if (!vpn.equals(ec2Client.getVirtualPrivateGateway(v))) {
                     AttachVpnGatewayRequest gwRequest = new AttachVpnGatewayRequest();
@@ -415,7 +415,7 @@ public class AwsPush {
                             .withVpcId(v.getVpcId());
 
                     AttachVpnGatewayResult result = client.attachVpnGateway(gwRequest);
-                    ec2Client.vpnGatewayAttachmentCheck(vpn.getVpnGatewayId());
+                    ec2Client.vpnGatewayAttachmentCheck(vpn.getVpnGatewayId(),v.getVpcId());
                 }
             } else if (request.contains("CreateRouteRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -1264,7 +1264,7 @@ public class AwsPush {
                     requests += String.format("DeleteInternetGatewayRequest %s %s \n", idTag, vpcIdTag);
                 }
             } else if (value.equals("vpn")) {
-                if (ec2Client.getVirtualPrivateGateway(getResourceId(idTag)) == null) {
+                if (ec2Client.getVirtualPrivateGateway(getVpnGatewayId(idTag)) == null) {
                     throw new EJBException(String.format("VPN gateway %s does not exists", idTag));
                 } else {
                     requests += String.format("DeleteVpnGatewayRequest %s \n", idTag);
@@ -1951,7 +1951,7 @@ public class AwsPush {
                     requests += String.format("CreateInternetGatewayRequest %s %s \n", idTag, vpcIdTag);
                 }
             } else if (value.equals("vpn")) {
-                if (ec2Client.getVirtualPrivateGateway(getResourceId(idTag)) != null) {
+                if (ec2Client.getVirtualPrivateGateway(getVpnGatewayId(idTag)) != null) {
                     throw new EJBException(String.format("VPN gateway %s already exists", idTag));
                 } else {
                     requests += String.format("CreateVpnGatewayRequest %s \n", idTag);
@@ -2694,6 +2694,30 @@ public class AwsPush {
             for (TagDescription des : descriptions) {
                 Vpc vpc = ec2Client.getVpc(des.getResourceId());
                 if (vpc != null) {
+                    return des.getResourceId();
+                }
+            }
+        }
+        return tag;
+    }
+    
+     /**
+     * ****************************************************************
+     * function to get the Id from a vpnGateway tag
+     * ****************************************************************
+     */
+    private String getVpnGatewayId(String tag) {
+        Filter filter = new Filter();
+        filter.withName("value")
+                .withValues(tag);
+
+        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
+        tagRequest.withFilters(filter);
+        List<TagDescription> descriptions = ec2Client.getClient().describeTags(tagRequest).getTags();
+        if (!descriptions.isEmpty()) {
+            for (TagDescription des : descriptions) {
+                VpnGateway vpn = ec2Client.getVirtualPrivateGateway(des.getResourceId());
+                if (vpn != null) {
                     return des.getResourceId();
                 }
             }

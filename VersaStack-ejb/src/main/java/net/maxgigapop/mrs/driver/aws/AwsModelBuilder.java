@@ -134,9 +134,8 @@ public class AwsModelBuilder {
             String vpnGatewayId = ec2Client.getIdTag(g.getVpnGatewayId());
             Resource VPNGATEWAY = RdfOwl.createResource(model, topologyURI + ":" + vpnGatewayId, biPort);
             model.add(model.createStatement(VPNGATEWAY, hasTag, VPNGW_TAG));
-            if (g.getVpcAttachments().isEmpty()) {
-                 model.add(model.createStatement(awsTopology, hasBidirectionalPort, VPNGATEWAY));
-            }
+            model.add(model.createStatement(awsTopology, hasBidirectionalPort, VPNGATEWAY));
+
             for (VirtualInterface vi : dcClient.getVirtualInterfaces(g.getVpnGatewayId())) {
                 String viId = vi.getVirtualGatewayId();
                 String vlanNum = Integer.toString(vi.getVlan());
