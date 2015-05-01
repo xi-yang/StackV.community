@@ -81,7 +81,8 @@ public class ModelUtil {
         while (stmts.hasNext()) {
             Statement stmt = stmts.next();
             // check subject will be enough
-            if (stmt.getSubject().isResource() && stmt.getSubject().toString().contains("ogf.org")) {
+            if (stmt.getSubject().isResource() && stmt.getSubject().toString().contains("ogf.org") 
+                && stmt.getPredicate().toString().contains("ogf.org")) {
                 return false;
             }
         }
