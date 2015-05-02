@@ -31,10 +31,12 @@ public class OpenStackGet {
     private List<? extends Server> servers = null;
     private List<? extends Volume> volumes = null;
     private List<? extends NetFloatingIP> floatingIps = null;
-    private List<? extends Hypervisor> hypervisors = null;
-    private List<? extends Router> routers =null;
-
-    public OpenStackGet(String url, String username, String password, String tenantName) {
+    private List<? extends Router> routers = null;
+    private List<? extends RouterInterface> routerinterface = null;
+    public List<? extends HostRoute> hostroute = null;
+    public List<? extends Hypervisor> hypervisors =null;
+    
+    public  OpenStackGet(String url, String username, String password, String tenantName) {
         //authenticate
         Authenticate authenticate = new Authenticate();
         client = authenticate.openStackAuthenticate(url, username, password, tenantName);
@@ -47,8 +49,7 @@ public class OpenStackGet {
         volumes = client.blockStorage().volumes().list();
         floatingIps = client.networking().floatingip().list();
         routers = client.networking().router().list();
-        //hypervisors = client.compute().hypervisors().list();
-
+        
     }
 
     //get all the nets in the tenant
@@ -260,9 +261,9 @@ public class OpenStackGet {
             return r.getName();
         }
     }
-
-    //get the name of a volume
-    public String getVolumeName(Volume r) {
+    
+    public String getVolumeName(Volume r)
+    {
         String name = r.getName();
         if (name == null || name.isEmpty()) {
             return r.getId();
@@ -270,4 +271,6 @@ public class OpenStackGet {
             return r.getName();
         }
     }
+    
+   
 }
