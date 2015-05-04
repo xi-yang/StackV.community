@@ -16,6 +16,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
+import net.maxgigapop.mrs.common.ModelUtil;
 
 /**
  *
@@ -44,6 +45,21 @@ public class DeltaModel extends ModelBase {
 
     public void setDelta(DeltaBase delta) {
         this.delta = delta;
+    }
+    
+    public DeltaModel clone() {
+        DeltaModel cloned = new DeltaModel();
+        cloned.setCommitted(this.committed);
+        cloned.setCxtVersion(this.cxtVersion);
+        cloned.setCxtVersionTag(this.cxtVersionTag);
+        cloned.setTtlModel(this.ttlModel);
+        if (this.ontModel != null) {
+            cloned.setOntModel(ModelUtil.cloneOntModel(this.ontModel));
+        }
+        cloned.setPersistent(this.isPersistent());
+        cloned.setIsAddition(this.isAddition);
+        cloned.setDelta(this.delta);
+        return cloned;    
     }
     
     @Override

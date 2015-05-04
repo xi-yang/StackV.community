@@ -64,6 +64,7 @@
             <groupId>org.pacesys</groupId>
             <artifactId>openstack4j-core</artifactId>
             <version>2.0.1</version>
+            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>org.pacesys.openstack4j.connectors</groupId>
@@ -158,9 +159,17 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.16</version>
+                <configuration>
+                    <systemPropertyVariables>
+                        <arquillian.launch>wildfly-as-managed</arquillian.launch>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
-</project>
-</project>
 </project>

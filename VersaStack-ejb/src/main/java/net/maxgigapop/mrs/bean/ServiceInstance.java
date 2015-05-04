@@ -28,6 +28,8 @@ public class ServiceInstance extends PersistentEntity implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
+    
+    private String referenceUUID;
 
     @OneToMany(mappedBy="serviceInstance", cascade = {CascadeType.ALL})
     protected List<ServiceModel> serviceModels = null;    
@@ -38,6 +40,14 @@ public class ServiceInstance extends PersistentEntity implements Serializable {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getReferenceUUID() {
+        return referenceUUID;
+    }
+
+    public void setReferenceUUID(String referenceUUID) {
+        this.referenceUUID = referenceUUID;
     }
 
     public List<ServiceModel> getServiceModels() {

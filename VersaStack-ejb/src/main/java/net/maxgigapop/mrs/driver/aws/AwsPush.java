@@ -7,6 +7,11 @@ package net.maxgigapop.mrs.driver.aws;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.services.directconnect.AmazonDirectConnectClient;
+import com.amazonaws.services.directconnect.model.ConfirmPrivateVirtualInterfaceRequest;
+import com.amazonaws.services.directconnect.model.ConfirmPrivateVirtualInterfaceResult;
+import com.amazonaws.services.directconnect.model.DeleteVirtualInterfaceRequest;
+import com.amazonaws.services.directconnect.model.DeleteVirtualInterfaceResult;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.RunInstancesRequest;
 import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
@@ -37,8 +42,10 @@ import net.maxgigapop.mrs.common.ModelUtil;
 //availability zone problems in volumes 
 public class AwsPush {
 
-    private AmazonEC2Client client = null;
+    private AmazonEC2Client ec2 = null;
+    private AmazonDirectConnectClient dc = null;
     private AwsEC2Get ec2Client = null;
+    private AwsDCGet dcClient = null;
     private String topologyUri = null;
     private Regions region = null;
     static final Logger logger = Logger.getLogger(AwsPush.class.getName());
@@ -47,7 +54,9 @@ public class AwsPush {
     public AwsPush(String access_key_id, String secret_access_key, Regions region, String topologyUri) {
         //have all the information regarding the topology
         ec2Client = new AwsEC2Get(access_key_id, secret_access_key, region);
-        client = ec2Client.getClient();
+        dcClient = new AwsDCGet(access_key_id, secret_access_key, region);
+        ec2 = ec2Client.getClient();
+        dc = dcClient.getClient();
         this.region = region;
 
         //do an adjustment to the topologyUri
@@ -86,9 +95,12 @@ public class AwsPush {
 
         //Delete routes that need to be deleted
         requests += deleteRouteRequests(modelRef, modelReduct);
-        
+
+        //delete a virtual interface from a gateway
+        requests += deleteVirtualInterfaceRequests(modelRef, modelReduct);
+
         //detach vpn gateway to VPC
-        requests += detachVPNGatewayRequests(modelRef,modelReduct);
+        requests += detachVPNGatewayRequests(modelRef, modelReduct);
 
         //delete gateways that need to be deleated
         requests += deleteGatewayRequests(modelRef, modelReduct);
@@ -119,9 +131,12 @@ public class AwsPush {
 
         //create gateways request 
         requests += createGatewayRequests(modelRef, modelAdd);
-        
+
         //attach vpn gateway to VPC
-        requests += attachVPNGatewayRequests(modelRef,modelAdd);
+        requests += attachVPNGatewayRequests(modelRef, modelAdd);
+
+        //acccept/reject a virtual interface for direct connect
+        requests += acceptRejectVirtualInterfaceRequests(modelRef, modelAdd);
 
         //create the new routes requests
         requests += createRouteRequests(modelRef, modelAdd);
@@ -162,7 +177,7 @@ public class AwsPush {
                 TerminateInstancesRequest del = new TerminateInstancesRequest();
                 del.withInstanceIds(instanceId);
                 DeleteTagsRequest tagRequest = new DeleteTagsRequest();
-                client.terminateInstances(del);
+                ec2.terminateInstances(del);
                 ec2Client.getEc2Instances().remove(ec2Client.getInstance(instanceId));
                 ec2Client.instanceStatusCheck(parameters[1], "terminated");
 
@@ -172,7 +187,7 @@ public class AwsPush {
                 String attachmentId = parameters[1];
                 DetachNetworkInterfaceRequest portRequest = new DetachNetworkInterfaceRequest();
                 portRequest.withAttachmentId(attachmentId);
-                client.detachNetworkInterface(portRequest);
+                ec2.detachNetworkInterface(portRequest);
                 ec2Client.PortDetachmentCheck(parameters[2]);
 
             } else if (request.contains("DetachVolumeRequest")) {
@@ -182,7 +197,7 @@ public class AwsPush {
 
                 volumeRequest.withVolumeId(parameters[1])
                         .withInstanceId(parameters[2]);
-                client.detachVolume(volumeRequest);
+                ec2.detachVolume(volumeRequest);
                 ec2Client.volumeDetachmentCheck(parameters[1]);
 
             } else if (request.contains("DisassociateAddressRequest")) {
@@ -192,14 +207,14 @@ public class AwsPush {
                 DisassociateAddressRequest disassociateAddressRequest = new DisassociateAddressRequest();
                 disassociateAddressRequest.withAssociationId(publicIp.getAssociationId())
                         .withPublicIp(publicIp.toString());
-                client.disassociateAddress(disassociateAddressRequest);
+                ec2.disassociateAddress(disassociateAddressRequest);
 
             } else if (request.contains("DeleteNetworkInterfaceRequest")) {
                 String[] parameters = request.split("\\s+");
 
                 DeleteNetworkInterfaceRequest portRequest = new DeleteNetworkInterfaceRequest();
                 portRequest.withNetworkInterfaceId(parameters[1]);
-                client.deleteNetworkInterface(portRequest);
+                ec2.deleteNetworkInterface(portRequest);
                 ec2Client.getNetworkInterfaces().remove(ec2Client.getNetworkInterface(parameters[1]));
                 ec2Client.PortDeletionCheck(parameters[1]);
 
@@ -208,7 +223,7 @@ public class AwsPush {
 
                 DeleteVolumeRequest volumeRequest = new DeleteVolumeRequest();
                 volumeRequest.withVolumeId(parameters[1]);
-                client.deleteVolume(volumeRequest);
+                ec2.deleteVolume(volumeRequest);
                 ec2Client.getVolumes().remove(ec2Client.getVolume(parameters[1]));
                 ec2Client.volumeDeletionCheck(parameters[1], "deleted");
 
@@ -231,7 +246,7 @@ public class AwsPush {
                     DeleteRouteRequest routeRequest = new DeleteRouteRequest();
                     routeRequest.withRouteTableId(t.getRouteTableId())
                             .withDestinationCidrBlock(parameters[2]);
-                    client.deleteRoute(routeRequest);
+                    ec2.deleteRoute(routeRequest);
                 }
 
             } else if (request.contains("DeleteSubnetRequest")) {
@@ -240,7 +255,7 @@ public class AwsPush {
                 Subnet subnet = ec2Client.getSubnet(parameters[1]);
                 DeleteSubnetRequest subnetRequest = new DeleteSubnetRequest();
                 subnetRequest.withSubnetId(subnet.getSubnetId());
-                client.deleteSubnet(subnetRequest);
+                ec2.deleteSubnet(subnetRequest);
 
                 ec2Client.getSubnets().remove(subnet);
                 ec2Client.subnetDeletionCheck(subnet.getSubnetId(), SubnetState.Available.name());
@@ -251,7 +266,7 @@ public class AwsPush {
                 Vpc vpc = ec2Client.getVpc(parameters[1]);
                 DeleteVpcRequest vpcRequest = new DeleteVpcRequest();
                 vpcRequest.withVpcId(vpc.getVpcId());
-                client.deleteVpc(vpcRequest);
+                ec2.deleteVpc(vpcRequest);
 
                 ec2Client.getVpcs().remove(vpc);
 
@@ -264,16 +279,22 @@ public class AwsPush {
                 gwRequest.withInternetGatewayId(getResourceId(parameters[1]))
                         .withVpcId(getVpcId(parameters[2]));
 
-                client.detachInternetGateway(gwRequest);
+                ec2.detachInternetGateway(gwRequest);
                 ec2Client.internetGatewayDetachmentCheck(getResourceId(parameters[1]));
 
                 DeleteInternetGatewayRequest gatewayRequest = new DeleteInternetGatewayRequest();
                 gatewayRequest.withInternetGatewayId(gateway.getInternetGatewayId());
-                client.deleteInternetGateway(gatewayRequest);
+                ec2.deleteInternetGateway(gatewayRequest);
 
                 ec2Client.getInternetGateways().remove(gateway);
                 ec2Client.internetGatewayDeletionCheck(gateway.getInternetGatewayId());
 
+            } else if (request.contains("DeleteVirtualInterface")) {
+                String[] parameters = request.split("\\s+");
+                DeleteVirtualInterfaceRequest interfaceRequest = new DeleteVirtualInterfaceRequest();
+                interfaceRequest.withVirtualInterfaceId(parameters[1]);
+
+                DeleteVirtualInterfaceResult interfaceResult = dc.deleteVirtualInterface(interfaceRequest);
             } else if (request.contains("DeleteVpnGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
 
@@ -281,7 +302,7 @@ public class AwsPush {
 
                 DeleteVpnGatewayRequest gatewayRequest = new DeleteVpnGatewayRequest();
                 gatewayRequest.withVpnGatewayId(gateway.getVpnGatewayId());
-                client.deleteVpnGateway(gatewayRequest);
+                ec2.deleteVpnGateway(gatewayRequest);
 
                 ec2Client.getVirtualPrivateGateways().remove(gateway);
                 ec2Client.vpnGatewayDeletionCheck(gateway.getVpnGatewayId());
@@ -295,15 +316,15 @@ public class AwsPush {
                 gwRequest.withVpnGatewayId(gateway.getVpnGatewayId())
                         .withVpcId(v.getVpcId());
 
-                client.detachVpnGateway(gwRequest);
-                ec2Client.vpnGatewayDetachmentCheck(gateway.getVpnGatewayId(),v.getVpcId());
+                ec2.detachVpnGateway(gwRequest);
+                ec2Client.vpnGatewayDetachmentCheck(gateway.getVpnGatewayId(), v.getVpcId());
 
             } else if (request.contains("DisassociateTableRequest")) {
                 String[] parameters = request.split("\\s+");
 
                 DisassociateRouteTableRequest tableRequest = new DisassociateRouteTableRequest();
                 tableRequest.withAssociationId(parameters[1]);
-                client.disassociateRouteTable(tableRequest);
+                ec2.disassociateRouteTable(tableRequest);
 
             } else if (request.contains("DeleteRouteTableRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -311,7 +332,7 @@ public class AwsPush {
                 RouteTable table = ec2Client.getRoutingTable(parameters[1]);
                 DeleteRouteTableRequest tableRequest = new DeleteRouteTableRequest();
                 tableRequest.withRouteTableId(table.getRouteTableId());
-                client.deleteRouteTable(tableRequest);
+                ec2.deleteRouteTable(tableRequest);
 
                 ec2Client.getRoutingTables().remove(table);
                 ec2Client.RouteTableDeletionCheck(table.getRouteTableId());
@@ -321,13 +342,13 @@ public class AwsPush {
 
                 CreateVpcRequest vpcRequest = new CreateVpcRequest();
                 vpcRequest.withCidrBlock(parameters[1]);
-                CreateVpcResult vpcResult = client.createVpc(vpcRequest);
+                CreateVpcResult vpcResult = ec2.createVpc(vpcRequest);
                 String vpcId = vpcResult.getVpc().getVpcId();
                 ec2Client.getVpcs().add(vpcResult.getVpc());
                 ec2Client.vpcStatusCheck(vpcId, VpcState.Available.name().toLowerCase());
 
                 //tag the routing table of the 
-                DescribeRouteTablesResult tablesResult = this.client.describeRouteTables();
+                DescribeRouteTablesResult tablesResult = this.ec2.describeRouteTables();
                 List<RouteTable> routeTables = tablesResult.getRouteTables();
                 routeTables.removeAll(ec2Client.getRoutingTables()); //get the new routing table
                 RouteTable mainTable = routeTables.get(0);
@@ -344,7 +365,7 @@ public class AwsPush {
                         .withCidrBlock(parameters[2])
                         .withAvailabilityZone(Regions.US_EAST_1.getName() + "e");
 
-                CreateSubnetResult subnetResult = client.createSubnet(subnetRequest);
+                CreateSubnetResult subnetResult = ec2.createSubnet(subnetRequest);
 
                 ec2Client.getSubnets().add(subnetResult.getSubnet());
                 ec2Client.subnetCreationCheck(subnetResult.getSubnet().getSubnetId(), SubnetState.Available.name().toLowerCase());
@@ -355,7 +376,7 @@ public class AwsPush {
 
                 CreateRouteTableRequest tableRequest = new CreateRouteTableRequest();
                 tableRequest.withVpcId(getVpcId(parameters[1]));
-                CreateRouteTableResult tableResult = client.createRouteTable(tableRequest);
+                CreateRouteTableResult tableResult = ec2.createRouteTable(tableRequest);
 
                 ec2Client.getRoutingTables().add(tableResult.getRouteTable());
                 ec2Client.RouteTableCreationCheck(tableResult.getRouteTable().getRouteTableId());
@@ -370,12 +391,12 @@ public class AwsPush {
                 AssociateRouteTableRequest associateRequest = new AssociateRouteTableRequest();
                 associateRequest.withRouteTableId(getResourceId(routeTableId))
                         .withSubnetId(getResourceId(subnetId));
-                AssociateRouteTableResult associateResult = client.associateRouteTable(associateRequest);
+                AssociateRouteTableResult associateResult = ec2.associateRouteTable(associateRequest);
 
             } else if (request.contains("CreateInternetGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
 
-                CreateInternetGatewayResult igwResult = client.createInternetGateway();
+                CreateInternetGatewayResult igwResult = ec2.createInternetGateway();
                 InternetGateway igw = igwResult.getInternetGateway();
 
                 ec2Client.getInternetGateways().add(igw);
@@ -388,7 +409,7 @@ public class AwsPush {
                 gwRequest.withInternetGatewayId(getResourceId(parameters[1]))
                         .withVpcId(getVpcId(parameters[2]));
 
-                client.attachInternetGateway(gwRequest);
+                ec2.attachInternetGateway(gwRequest);
                 ec2Client.internetGatewayAttachmentCheck(getResourceId(parameters[1]));
 
             } else if (request.contains("CreateVpnGatewayRequest")) {
@@ -396,7 +417,7 @@ public class AwsPush {
 
                 CreateVpnGatewayRequest vpngwRequest = new CreateVpnGatewayRequest();
                 vpngwRequest.withType(GatewayType.Ipsec1);
-                CreateVpnGatewayResult vpngwResult = client.createVpnGateway(vpngwRequest);
+                CreateVpnGatewayResult vpngwResult = ec2.createVpnGateway(vpngwRequest);
                 VpnGateway vpngw = vpngwResult.getVpnGateway();
 
                 ec2Client.getVirtualPrivateGateways().add(vpngw);
@@ -414,9 +435,25 @@ public class AwsPush {
                     gwRequest.withVpnGatewayId(vpn.getVpnGatewayId())
                             .withVpcId(v.getVpcId());
 
-                    AttachVpnGatewayResult result = client.attachVpnGateway(gwRequest);
-                    ec2Client.vpnGatewayAttachmentCheck(vpn.getVpnGatewayId(),v.getVpcId());
+                    AttachVpnGatewayResult result = ec2.attachVpnGateway(gwRequest);
+                    ec2Client.vpnGatewayAttachmentCheck(vpn.getVpnGatewayId(), v.getVpcId());
+
+                    //make the Vpn gateway to propagate in all the routing tables of the vpc
+                    for (RouteTable table : ec2Client.getRoutingTables(result.getVpcAttachment().getVpcId())) {
+
+                        EnableVgwRoutePropagationRequest propagationRequest = new EnableVgwRoutePropagationRequest();
+                        propagationRequest.withGatewayId(vpn.getVpnGatewayId())
+                                .withRouteTableId(table.getRouteTableId());
+                        ec2.enableVgwRoutePropagation(propagationRequest);
+                    }
                 }
+            } else if (request.contains("AcceptVirtualInterface")) {
+                String[] parameters = request.split("\\s+");
+                ConfirmPrivateVirtualInterfaceRequest interfaceRequest = new ConfirmPrivateVirtualInterfaceRequest();
+                interfaceRequest.withVirtualInterfaceId(parameters[1])
+                        .withVirtualGatewayId(getVpnGatewayId(parameters[2]));
+
+                ConfirmPrivateVirtualInterfaceResult interfaceResult = dc.confirmPrivateVirtualInterface(interfaceRequest);
             } else if (request.contains("CreateRouteRequest")) {
                 String[] parameters = request.split("\\s+");
 
@@ -437,7 +474,7 @@ public class AwsPush {
                     routeRequest.withRouteTableId(t.getRouteTableId())
                             .withGatewayId(target)
                             .withDestinationCidrBlock(parameters[2]);
-                    client.createRoute(routeRequest);
+                    ec2.createRoute(routeRequest);
                 }
 
             } else if (request.contains("CreateVolumeRequest")) {
@@ -448,13 +485,13 @@ public class AwsPush {
                         .withSize(Integer.parseInt(parameters[2]))
                         .withAvailabilityZone(parameters[3]);
 
-                CreateVolumeResult result = client.createVolume(volumeRequest);
+                CreateVolumeResult result = ec2.createVolume(volumeRequest);
 
                 Volume volume = result.getVolume();
                 ec2Client.volumeAdditionCheck(volume.getVolumeId(), "available");
                 tagResource(volume.getVolumeId(), parameters[4]);
                 ec2Client.getVolumes().clear();
-                ec2Client.getVolumes().addAll(client.describeVolumes().getVolumes());
+                ec2Client.getVolumes().addAll(ec2.describeVolumes().getVolumes());
 
             } else if (request.contains("CreateNetworkInterfaceRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -462,7 +499,7 @@ public class AwsPush {
                 CreateNetworkInterfaceRequest portRequest = new CreateNetworkInterfaceRequest();
                 portRequest.withPrivateIpAddress(parameters[1])
                         .withSubnetId(getResourceId(parameters[2]));
-                CreateNetworkInterfaceResult portResult = client.createNetworkInterface(portRequest);
+                CreateNetworkInterfaceResult portResult = ec2.createNetworkInterface(portRequest);
 
                 NetworkInterface port = portResult.getNetworkInterface();
                 ec2Client.getNetworkInterfaces().add(port);
@@ -476,7 +513,7 @@ public class AwsPush {
                 AssociateAddressRequest associateAddressRequest = new AssociateAddressRequest();
                 associateAddressRequest.withAllocationId(publicIp.getAllocationId())
                         .withNetworkInterfaceId(getResourceId(parameters[2]));
-                client.associateAddress(associateAddressRequest);
+                ec2.associateAddress(associateAddressRequest);
 
             } else if (request.contains("AttachNetworkInterfaceRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -488,7 +525,7 @@ public class AwsPush {
                 portRequest.withInstanceId(nodeId);
                 portRequest.withNetworkInterfaceId(portId);
                 portRequest.withDeviceIndex(index);
-                client.attachNetworkInterface(portRequest);
+                ec2.attachNetworkInterface(portRequest);
                 ec2Client.PortAttachmentCheck(portId);
 
             } else if (request.contains("RunInstancesRequest")) {
@@ -521,7 +558,7 @@ public class AwsPush {
                     portSpecification.add(s);
                 }
                 runInstance.withNetworkInterfaces(portSpecification);
-                RunInstancesResult result = client.runInstances(runInstance);
+                RunInstancesResult result = ec2.runInstances(runInstance);
 
                 //tag the new instance
                 Instance instance = result.getReservation().getInstances().get(0);
@@ -529,7 +566,7 @@ public class AwsPush {
                 ec2Client.instanceStatusCheck(instance.getInstanceId(), "running");
                 tagResource(instance.getInstanceId(), parameters[3]);
 
-                DescribeVolumesResult volumesResult = client.describeVolumes();
+                DescribeVolumesResult volumesResult = ec2.describeVolumes();
                 List<Volume> volumes = volumesResult.getVolumes();
                 volumes.removeAll(ec2Client.getVolumes());
                 String volumeId = volumes.get((0)).getVolumeId();
@@ -544,7 +581,7 @@ public class AwsPush {
                         .withVolumeId(getVolumeId(parameters[2]))
                         .withDevice(parameters[3]);
 
-                client.attachVolume(volumeRequest);
+                ec2.attachVolume(volumeRequest);
                 ec2Client.volumeAttachmentCheck(getVolumeId(parameters[2]));
             }
         }
@@ -582,7 +619,7 @@ public class AwsPush {
      * Detach a volume to an existing instance AWS
      * ****************************************************************
      */
-    private String detachVolumeRequests(OntModel model, OntModel modelReduct) throws EJBException {
+    private String detachVolumeRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
 
         //check if the volume is new therefore it should be in the model additiom
@@ -633,7 +670,7 @@ public class AwsPush {
      * Function to disassociate an address from a network interface
      * ****************************************************************
      */
-    private String disassociateAddressRequest(OntModel model, OntModel modelReduct) throws EJBException {
+    private String disassociateAddressRequest(OntModel model, OntModel modelReduct) {
         //to get the public ip address of the network interface if any
         String requests = "";
         String query = "SELECT  ?port ?address WHERE {?port  mrs:hasNetworkAddress ?address}";
@@ -667,7 +704,7 @@ public class AwsPush {
      * Function to delete a network interface
      * ****************************************************************
      */
-    private String deletePortsRequests(OntModel model, OntModel modelReduct) throws EJBException {
+    private String deletePortsRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
         String query;
 
@@ -754,7 +791,7 @@ public class AwsPush {
      * function to delete an instance from a model
      * ****************************************************************
      */
-    private String deleteInstancesRequests(OntModel model, OntModel modelReduct) throws EJBException {
+    private String deleteInstancesRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
         String query = "SELECT ?node WHERE {?node a nml:Node}";
         ResultSet r = executeQuery(query, emptyModel, modelReduct);
@@ -835,7 +872,7 @@ public class AwsPush {
      * Function to detach a network interface to an existing instance
      * ****************************************************************
      */
-    private String detachPortRequest(OntModel model, OntModel modelReduct) throws EJBException {
+    private String detachPortRequest(OntModel model, OntModel modelReduct) {
         String requests = "";
         String query = "";
 
@@ -897,7 +934,7 @@ public class AwsPush {
      * Function to delete volumes from a model
      * ****************************************************************
      */
-    private String deleteVolumesRequests(OntModel model, OntModel modelReduct) throws EJBException {
+    private String deleteVolumesRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
         String query;
 
@@ -959,7 +996,7 @@ public class AwsPush {
      * Function to create a volumes from a model
      * ****************************************************************
      */
-    private String deleteRouteRequests(OntModel model, OntModel modelRedutc) throws EJBException {
+    private String deleteRouteRequests(OntModel model, OntModel modelRedutc) {
         String requests = "";
         String tempRequest = "";
         String query = "";
@@ -1106,7 +1143,7 @@ public class AwsPush {
      * Function to disassociate Route table with a subnet
      * ****************************************************************
      */
-    private String disassociateTableRequests(OntModel model, OntModel modelReduct) throws EJBException {
+    private String disassociateTableRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
         String tempRequests = "";
         String query;
@@ -1203,7 +1240,7 @@ public class AwsPush {
      * Function to delete gateway (Internet and VPN)
      * ****************************************************************
      */
-    private String deleteGatewayRequests(OntModel model, OntModel modelReduct) throws EJBException {
+    private String deleteGatewayRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
         String query;
 
@@ -1279,7 +1316,7 @@ public class AwsPush {
      * Function to detach a VPN gateway to a VPC from a model
      * ****************************************************************
      */
-    private String detachVPNGatewayRequests(OntModel model, OntModel modelReduct) throws EJBException {
+    private String detachVPNGatewayRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
         String query = "";
 
@@ -1328,7 +1365,7 @@ public class AwsPush {
      * Function to delete the route table
      * ****************************************************************
      */
-    private String deleteRouteTableRequests(OntModel model, OntModel modelReduct) throws EJBException {
+    private String deleteRouteTableRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
         String query = "";
 
@@ -1412,7 +1449,7 @@ public class AwsPush {
      * Function to create a Vpc from a model
      * /*****************************************************************
      */
-    private String deleteVpcsRequests(OntModel model, OntModel modelReduct) throws EJBException {
+    private String deleteVpcsRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
         String query;
 
@@ -1514,7 +1551,7 @@ public class AwsPush {
      * Function to create a subnets from a model
      * ****************************************************************
      */
-    private String deleteSubnetsRequests(OntModel model, OntModel modelReduct) throws EJBException {
+    private String deleteSubnetsRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
         String query;
 
@@ -1572,7 +1609,7 @@ public class AwsPush {
      * Function to create a Vpc from a model
      * /*****************************************************************
      */
-    private String createVpcsRequests(OntModel model, OntModel modelAdd) throws EJBException {
+    private String createVpcsRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
         String query;
 
@@ -1672,7 +1709,7 @@ public class AwsPush {
      * Function to create a subnets from a model
      * ****************************************************************
      */
-    private String createSubnetsRequests(OntModel model, OntModel modelAdd) throws EJBException {
+    private String createSubnetsRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
         String query;
 
@@ -1731,7 +1768,7 @@ public class AwsPush {
      * Function to createRoutetable
      * ****************************************************************
      */
-    private String createRouteTableRequests(OntModel model, OntModel modelAdd) throws EJBException {
+    private String createRouteTableRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
         String query = "";
 
@@ -1818,7 +1855,7 @@ public class AwsPush {
      * Function to associate Route table with a subnet
      * ****************************************************************
      */
-    private String associateTableRequest(OntModel model, OntModel modelAdd) throws EJBException {
+    private String associateTableRequest(OntModel model, OntModel modelAdd) {
         String requests = "";
         String tempRequests = "";
         String query;
@@ -1889,7 +1926,7 @@ public class AwsPush {
      * Function to create an internet gateway and attach it to a vpc
      * ****************************************************************
      */
-    private String createGatewayRequests(OntModel model, OntModel modelAdd) throws EJBException {
+    private String createGatewayRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
         String query;
 
@@ -1940,7 +1977,7 @@ public class AwsPush {
 
                 //check that the topology for the internet gateway is not the main topology
                 //as the internet gateway should be attached to a VPC not the main topology
-                String topology =topologyUri;
+                String topology = topologyUri;
                 if (vpcIdTag.contains(topology.replace(":", ""))) {
                     throw new EJBException(String.format("Internet gateway %s"
                             + " cannot be attached to root topology", igw));
@@ -1966,7 +2003,7 @@ public class AwsPush {
      * Function to attach a VPN gateway to a VPC from a model
      * ****************************************************************
      */
-    private String attachVPNGatewayRequests(OntModel model, OntModel modelAdd) throws EJBException {
+    private String attachVPNGatewayRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
         String query = "";
 
@@ -2015,7 +2052,7 @@ public class AwsPush {
      * Function to create a routes from a model
      * ****************************************************************
      */
-    private String createRouteRequests(OntModel model, OntModel modelAdd) throws EJBException {
+    private String createRouteRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
         String tempRequest = "";
         String query = "";
@@ -2162,7 +2199,7 @@ public class AwsPush {
      * Function to create a volumes from a model
      * ****************************************************************
      */
-    private String createVolumesRequests(OntModel model, OntModel modelAdd) throws EJBException {
+    private String createVolumesRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
         String query;
 
@@ -2232,7 +2269,7 @@ public class AwsPush {
      * Function to create network interfaces from a model
      * ****************************************************************
      */
-    private String createPortsRequests(OntModel model, OntModel modelAdd) throws EJBException {
+    private String createPortsRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
         String query;
 
@@ -2310,7 +2347,7 @@ public class AwsPush {
      * Function to associate an address with a network interface
      * ****************************************************************
      */
-    private String associateAddressRequest(OntModel model, OntModel modelAdd) throws EJBException {
+    private String associateAddressRequest(OntModel model, OntModel modelAdd) {
         //to get the public ip address of the network interface if any
         String requests = "";
         String query = "SELECT  ?port ?address WHERE {?port  mrs:hasNetworkAddress ?address}";
@@ -2344,7 +2381,7 @@ public class AwsPush {
      * Function to attach a network interface to an existing instance
      * ****************************************************************
      */
-    private String attachPortRequest(OntModel model, OntModel modelAdd) throws EJBException {
+    private String attachPortRequest(OntModel model, OntModel modelAdd) {
         String requests = "";
         String query = "";
 
@@ -2404,7 +2441,7 @@ public class AwsPush {
      * Function to create Instances
      * ****************************************************************
      */
-    private String createInstancesRequests(OntModel model, OntModel modelAdd) throws EJBException {
+    private String createInstancesRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
         String query;
 
@@ -2516,7 +2553,7 @@ public class AwsPush {
      * Attach a volume to an existing instance AWS
      * ****************************************************************
      */
-    private String attachVolumeRequests(OntModel model, OntModel modelAdd) throws EJBException {
+    private String attachVolumeRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
 
         //check if the volume is new therefore it should be in the model additiom
@@ -2575,6 +2612,164 @@ public class AwsPush {
                     requests += String.format("AttachVolumeRequest %s %s %s \n", nodeTagId, volumeTagId, device);
                 }
             }
+        }
+        return requests;
+    }
+
+    /**
+     * ****************************************************************
+     * Accept/reject a virtualInterface connection for direct connect
+     * ****************************************************************
+     */
+    public String acceptRejectVirtualInterfaceRequests(OntModel model, OntModel modelAdd) {
+        String requests = "";
+
+        //check for aliasing of an interface
+        String query = "SELECT  ?x ?y  WHERE {?x  nml:isAlias  ?y}";
+        ResultSet r = executeQuery(query, emptyModel, modelAdd);
+        while (r.hasNext()) {
+            //we dont know who is the gateway and who is the interface
+            QuerySolution q = r.next();
+            RDFNode x = q.get("x");
+            RDFNode y = q.get("y");
+            RDFNode gateway = null;
+            RDFNode vInterface = null;
+
+            //check to see if x is the virtual interface
+            query = "SELECT  ?tag WHERE {<" + x.asResource() + ">  a  nml:BidirectionalPort ."
+                    + "<" + x.asResource() + "> mrs:hasTag ?tag ."
+                    + "?tag mrs:type \"interface\" ."
+                    + "?tag mrs:value \"virtual\"}";
+            ResultSet r1 = executeQuery(query, model, emptyModel);
+            if (r1.hasNext()) {
+                gateway = y;
+                vInterface = x;
+            }
+
+            //check to see if y is the interface
+            //check to see if x is the virtual interface
+            query = "SELECT  ?tag WHERE {<" + y.asResource() + ">  a  nml:BidirectionalPort ."
+                    + "<" + y.asResource() + "> mrs:hasTag ?tag ."
+                    + "?tag mrs:type \"interface\" ."
+                    + "?tag mrs:value \"virtual\"}";
+            r1 = executeQuery(query, model, emptyModel);
+            if (r1.hasNext()) {
+                gateway = x;
+                vInterface = y;
+            } //the delta model might be used for something else, just skip this loop
+            else {
+                continue;
+            }
+
+            //one resource is aliased to the second resource, make sure that the 
+            //reverse also happens in the elta model
+            query = "SELECT  ?a  WHERE {<" + y.asResource() + ">  nml:isAlias  <" + x.asResource() + ">}";
+            r1 = executeQuery(query, emptyModel, modelAdd);
+            if (!r1.hasNext()) {
+                throw new EJBException(String.format("%s is aliased to %s but %s is not aliased to %s ", x, y, y, x));
+            }
+
+            //make sure that the gateway is a virtual private gateway
+            query = "SELECT ?tag WHERE {<" + gateway.asResource() + "> mrs:hasTag ?tag}";
+            r1 = executeQuery(query, emptyModel, modelAdd);
+            if (!r1.hasNext()) {
+                throw new EJBException(String.format("Label for bidirectional port %s i"
+                        + "s not specified in model addition", gateway));
+            }
+            QuerySolution q1 = r1.next();
+            RDFNode tag = q1.get("tag");
+
+            //look for the lable in the reference model
+            query = "SELECT ?value WHERE {<" + tag.asResource() + "> mrs:type \"gateway\" ."
+                    + "<" + tag.asResource() + "> mrs:value \"vpn\"}";
+            r1 = executeQuery(query, model, emptyModel);
+            if (!r1.hasNext()) {
+                throw new EJBException(String.format("%s is not a VPN gateway", gateway));
+            }
+
+            String gatewayIdTag = gateway.asResource().toString().replace(topologyUri, "");
+            String interfaceId = vInterface.asResource().toString().replace(topologyUri, "");
+
+            requests += String.format("AcceptVirtualInterface %s %s \n", interfaceId, gatewayIdTag);
+        }
+        return requests;
+    }
+
+    /**
+     * ****************************************************************
+     * shut down and delete an available virtual interface
+     * ****************************************************************
+     */
+    public String deleteVirtualInterfaceRequests(OntModel model, OntModel modelReduct) {
+        String requests = "";
+
+        //check for aliasing of an interface
+        String query = "SELECT  ?x ?y  WHERE {?x  nml:isAlias  ?y}";
+        ResultSet r = executeQuery(query, emptyModel, modelReduct);
+        while (r.hasNext()) {
+            //we dont know who is the gateway and who is the interface
+            QuerySolution q = r.next();
+            RDFNode x = q.get("x");
+            RDFNode y = q.get("y");
+            RDFNode gateway = null;
+            RDFNode vInterface = null;
+
+            //check to see if x is the virtual interface
+            query = "SELECT  ?tag WHERE {<" + x.asResource() + ">  a  nml:BidirectionalPort ."
+                    + "<" + x.asResource() + "> mrs:hasTag ?tag ."
+                    + "?tag mrs:type \"interface\" ."
+                    + "?tag mrs:value \"virtual\"}";
+            ResultSet r1 = executeQuery(query, model, emptyModel);
+            if (r1.hasNext()) {
+                gateway = y;
+                vInterface = x;
+            }
+
+            //check to see if y is the interface
+            //check to see if x is the virtual interface
+            query = "SELECT  ?tag WHERE {<" + y.asResource() + ">  a  nml:BidirectionalPort ."
+                    + "<" + y.asResource() + "> mrs:hasTag ?tag ."
+                    + "?tag mrs:type \"interface\" ."
+                    + "?tag mrs:value \"virtual\"}";
+            r1 = executeQuery(query, model, emptyModel);
+            if (r1.hasNext()) {
+                gateway = x;
+                vInterface = y;
+            } //the delta model might be used for something else, just skip this loop
+            else {
+                continue;
+            }
+
+            //one resource is aliased to the second resource, make sure that the 
+            //reverse also happens in the elta model
+            query = "SELECT  ?a  WHERE {<" + y.asResource() + ">  nml:isAlias  <" + x.asResource() + ">}";
+            r1 = executeQuery(query, emptyModel, modelReduct);
+            if (!r1.hasNext()) {
+                throw new EJBException(String.format("%s is aliased to %s but %s is not aliased to %s ", x, y, y, x));
+            }
+
+            //make sure that the gateway is a virtual private gateway
+            query = "SELECT ?tag WHERE {<" + gateway.asResource() + "> mrs:hasTag ?tag}";
+            r1 = executeQuery(query, emptyModel, modelReduct);
+            if (!r1.hasNext()) {
+                throw new EJBException(String.format("Label for bidirectional port %s i"
+                        + "s not specified in model addition", gateway));
+            }
+            QuerySolution q1 = r1.next();
+            RDFNode tag = q1.get("tag");
+
+            //look for the lable in the reference model
+            query = "SELECT ?value WHERE {<" + tag.asResource() + "> mrs:type \"gateway\" ."
+                    + "<" + tag.asResource() + "> mrs:value \"vpn\"}";
+            r1 = executeQuery(query, model, emptyModel);
+            if (!r1.hasNext()) {
+                throw new EJBException(String.format("%s is not a VPN gateway", gateway));
+            }
+
+            String gatewayIdTag = gateway.asResource().toString().replace(topologyUri, "");
+            String interfaceId = vInterface.asResource().toString().replace(topologyUri, "");
+
+            requests += String.format("DeleteVirtualInterface %s %s \n", interfaceId, gatewayIdTag);
         }
         return requests;
     }
@@ -2700,8 +2895,8 @@ public class AwsPush {
         }
         return tag;
     }
-    
-     /**
+
+    /**
      * ****************************************************************
      * function to get the Id from a vpnGateway tag
      * ****************************************************************
@@ -2736,7 +2931,7 @@ public class AwsPush {
         tagRequest.withResources(id);
         while (true) {
             try {
-                client.createTags(tagRequest);
+                ec2.createTags(tagRequest);
                 break;
             } catch (AmazonServiceException e) {
             }

@@ -11,6 +11,8 @@ import com.hp.hpl.jena.rdf.model.ModelFactory;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
@@ -21,7 +23,11 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 import net.maxgigapop.mrs.bean.persist.PersistentEntity;
+import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.core.SystemModelCoordinator;
+import net.maxgigapop.mrs.service.compute.MCE_MPVlanConnection;
 
 /**
  *
@@ -47,6 +53,9 @@ public class VersionGroup extends PersistentEntity implements Serializable {
                 @JoinColumn(name = "item_id", referencedColumnName = "id")})
     private List<VersionItem> versionItems = null;
 
+    @Transient 
+    ModelBase cachedModelBase = null;
+    
     private String status = "";
     
     public Long getId() {
@@ -79,10 +88,9 @@ public class VersionGroup extends PersistentEntity implements Serializable {
             return false;
         }
         VersionGroup other = (VersionGroup) object;
-        if ((this.id != null && other.id != null && this.id.equals(other.id))) {
+        if ((this.refUuid != null && other.refUuid != null) && (this.refUuid.equals(other.refUuid))) {
             return true;
-        } else if (this.getVersionItems() == null || other.getVersionItems() == null
-                || this.getVersionItems().isEmpty() || other.getVersionItems().isEmpty()) {
+        } else if (this.getVersionItems() == null || other.getVersionItems() == null) {
             return false;
         } else if (this.getVersionItems().size() != other.getVersionItems().size()) {
             return false;
@@ -127,9 +135,13 @@ public class VersionGroup extends PersistentEntity implements Serializable {
         this.status = status;
     }
 
+    public ModelBase getCachedModelBase() {
+        return cachedModelBase;
+    }
+
     @Override
     public String toString() {
-        return "net.maxgigapop.mrs.bean.VersionGroup[ id=" + id + " ]";
+        return "net.maxgigapop.mrs.bean.VersionGroup[ uuid=" + refUuid + " ]";
     }
 
     public ModelBase createUnionModel() {
@@ -143,7 +155,8 @@ public class VersionGroup extends PersistentEntity implements Serializable {
                 throw new EJBException(String.format("%s method createUnionModel encounters empty %s", this, vi));
             }
             newModel.getOntModel().add(vi.getModelRef().getOntModel().getBaseModel());
-        }
+       }
+        this.cachedModelBase = newModel;
         //@TBD: rebind / rerun inference for referenceModel
         return newModel;
     }
