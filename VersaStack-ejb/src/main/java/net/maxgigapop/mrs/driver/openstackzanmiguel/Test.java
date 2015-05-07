@@ -26,7 +26,7 @@ public class Test {
        //openstackget.getSubnets();
        //openstackget.getNetworks();
        //OpenStackModelBuilder.createOntology("http://max-vlsr2.dragon.maxgigapop.net", "admin", "1234", "urn:ogf:network:max-vlsr2.dragon.maxgigapop.net:openstack-neutron");
-        createOntology("http://lab-blade.maxgigapop.net","lab-blade.maxgigapop.net","cjohnson","67ou2UbR3","admin");
+        createOntology("http://lab-blade.maxgigapop.net","lab-blade.maxgigapop.net","username","password","admin");
         
         
     }
