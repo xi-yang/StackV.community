@@ -36,10 +36,7 @@ import net.maxgigapop.mrs.common.ModelUtil;
  *
  * @author muzcategui
  */
-// TODO attach network interfaces and volumes to existing instances,tag root device
-// change the address type in network interfaces , recognize network interface by 
-// bidirectional port and the lable that says NetworkInterface
-//availability zone problems in volumes 
+//TODO availability zone problems in volumes and subnets add a property in the model
 public class AwsPush {
 
     private AmazonEC2Client ec2 = null;
@@ -558,6 +555,7 @@ public class AwsPush {
                     portSpecification.add(s);
                 }
                 runInstance.withNetworkInterfaces(portSpecification);
+                runInstance.withKeyName("driver_key");
                 RunInstancesResult result = ec2.runInstances(runInstance);
 
                 //tag the new instance
@@ -622,7 +620,7 @@ public class AwsPush {
     private String detachVolumeRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
 
-        //check if the volume is new therefore it should be in the model additiom
+        //check fornew association between intsnce and volume
         String query = "SELECT  ?node ?volume  WHERE {?node  mrs:hasVolume  ?volume}";
 
         ResultSet r1 = executeQuery(query, emptyModel, modelReduct);
@@ -2556,7 +2554,7 @@ public class AwsPush {
     private String attachVolumeRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
 
-        //check if the volume is new therefore it should be in the model additiom
+        //check fornew association between intsnce and volume
         String query = "SELECT  ?node ?volume  WHERE {?node  mrs:hasVolume  ?volume}";
 
         ResultSet r1 = executeQuery(query, emptyModel, modelAdd);

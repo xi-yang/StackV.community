@@ -6,6 +6,7 @@
 package net.maxgigapop.mrs.driver.openstackzanmiguel;
 
 import org.openstack4j.api.OSClient;
+import org.openstack4j.core.transport.Config;
 import org.openstack4j.openstack.OSFactory;
 
 /**
@@ -16,13 +17,13 @@ public class Authenticate {
 
     public OSClient openStackAuthenticate(String url, String username, String password, String tenantName) {
         
-        //add the keystone port and version to authenticate
-        url+=":35357/v2.0";
         // Authenticate
+        Config conf = Config.DEFAULT;
         OSClient client = OSFactory.builder()
                 .endpoint(url)
                 .credentials(username,password)
                 .tenantName(tenantName)
+                .withConfig(Config.newConfig().withEndpointNATResolution("206.196.176.151"))
                 .authenticate();
         
         return client;
