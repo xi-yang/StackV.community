@@ -6,6 +6,7 @@
 package net.maxgigapop.mrs.driver.openstackzanmiguel;
 
 import org.openstack4j.api.OSClient;
+import org.openstack4j.core.transport.Config;
 import org.openstack4j.openstack.OSFactory;
 
 /**
@@ -23,6 +24,7 @@ public class Authenticate {
                 .endpoint(url)
                 .credentials(username,password)
                 .tenantName(tenantName)
+                .withConfig(Config.newConfig().withEndpointNATResolution("206.196.176.151"))
                 .authenticate();
         
         return client;
