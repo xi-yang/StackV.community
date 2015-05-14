@@ -24,7 +24,7 @@ public class Authenticate {
                 .endpoint(url)
                 .credentials(username,password)
                 .tenantName(tenantName)
-                .withConfig(Config.newConfig().withEndpointNATResolution("206.196.176.151"))
+                //.withConfig(Config.newConfig().withEndpointNATResolution("206.196.176.151"))
                 .authenticate();
         
         return client;

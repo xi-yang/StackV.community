@@ -17,6 +17,7 @@ import org.openstack4j.model.network.*;
 import org.openstack4j.model.storage.block.*;
 import org.openstack4j.openstack.compute.domain.NovaInterfaceAttachment;
 import org.openstack4j.openstack.compute.internal.ext.InterfaceServiceImpl;
+import org.openstack4j.openstack.networking.domain.NeutronRouterInterface;
 
 /**
  *
@@ -39,6 +40,8 @@ public class OpenStackGet {
     public  OpenStackGet(String url, String username, String password, String tenantName) {
         //authenticate
         Authenticate authenticate = new Authenticate();
+        NeutronRouterInterface ri = new NeutronRouterInterface();
+        
         client = authenticate.openStackAuthenticate(url, username, password, tenantName);
 
         //get the resources
@@ -270,6 +273,15 @@ public class OpenStackGet {
         } else {
             return r.getName();
         }
+    }
+    public String getInterfaceSubnetID(NeutronRouterInterface i){
+        return i.getSubnetId();
+    }
+    public String getInterfacePortID(NeutronRouterInterface i){
+        return i.getPortId();
+    }
+    public String getInterfaceRouterID(NeutronRouterInterface i){
+        return i.getId();
     }
     
    
