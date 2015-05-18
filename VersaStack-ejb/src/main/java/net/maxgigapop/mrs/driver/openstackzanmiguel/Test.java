@@ -10,6 +10,7 @@ import org.openstack4j.model.network.NetworkType;
 
 
 
+import static net.maxgigapop.mrs.driver.openstackzanmiguel.OpenStackNeutronModelBuilder.createOntology;
 
 
 
@@ -19,7 +20,7 @@ import org.openstack4j.model.network.NetworkType;
  * @author tcm
  */
 public class Test {
-    public static void main(String args[]) throws IOException, Exception{       
-       OpenStackNeutronModelBuilder.createOntology("","","","","");        
+    public static void main(String args[]) throws IOException, Exception{
+        createOntology("http://lab-blade.maxgigapop.net:35357/v2.0","","","","","");      
     }
 }

@@ -36,7 +36,13 @@ import net.maxgigapop.mrs.common.ModelUtil;
  *
  * @author muzcategui
  */
-//TODO availability zone problems in volumes and subnets add a property in the model
+
+//TODO availability zone problems in volumes and subnets and instancees.
+//add a property in the model to speicfy availability zone.
+
+//TODO associate and disassociate address methods do not do anything. Reason is
+//elastic IPs are not linked in any way to the root topology, find a way to do this
+//in the model to make the two methods work.
 public class AwsPush {
 
     private AmazonEC2Client ec2 = null;

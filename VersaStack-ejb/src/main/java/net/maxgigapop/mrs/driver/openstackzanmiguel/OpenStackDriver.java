@@ -52,12 +52,13 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         String tenant = driverInstance.getProperty("tenant");
         String topologyURI = driverInstance.getProperty("topologyUri");
         String url = driverInstance.getProperty("url");
+        String NATServer = driverInstance.getProperty("NATServer");
 
         OntModel model = driverInstance.getHeadVersionItem().getModelRef().getOntModel();
         OntModel modelAdd = aDelta.getModelAddition().getOntModel();
         OntModel modelReduc = aDelta.getModelReduction().getOntModel();
 
-        OpenStackPush push = new OpenStackPush(url, username, password, tenant, topologyURI);
+        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, topologyURI);
         List<JSONObject> requests = null;
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         try {
@@ -86,10 +87,11 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         String tenant = driverInstance.getProperty("tenant");
         String topologyURI = driverInstance.getProperty("topologyUri");
         String url = driverInstance.getProperty("url");
+        String NATServer = driverInstance.getProperty("NATServer");
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         String requests = driverInstance.getProperty(requestId);
 
-        OpenStackPush push = new OpenStackPush(url, username, password, tenant, topologyURI);
+        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, topologyURI);
         ObjectMapper mapper = new ObjectMapper();
         List<JSONObject> r = new ArrayList();
         try {
@@ -122,10 +124,11 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
             String tenant = driverInstance.getProperty("tenant");
             String url = driverInstance.getProperty("url");
             String topologyUri = driverInstance.getProperty("topologyUri");
+            String NATServer = driverInstance.getProperty("NATServer");
 
-            OntModel ontModel = OpenStackNeutronModelBuilder.createOntology(url, topologyUri, username, password, tenant);
+            OntModel ontModel = OpenStackNeutronModelBuilder.createOntology(url,NATServer, topologyUri, username, password, tenant);
 
-            if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getTtlModel().equals(ModelUtil.marshalOntModel(ontModel))) {
+            if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();
                 dm.setCommitted(true);
                 dm.setOntModel(ontModel);

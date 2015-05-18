@@ -23,6 +23,11 @@ import net.maxgigapop.mrs.common.*;
 //TODO add the public ip address that an instance might have that is not an
 //elastic ip
 
+/*TODO: Intead of having separate routeFrom statements for routes in a route table 
+associated with subnets. Include the routeFrom statement just once in the model, 
+meaning that look just once for the associations of the route table, 
+do not do a routeFrom statement for every route.*/
+
 /*
  *
  * @author muzcategui

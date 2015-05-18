@@ -63,8 +63,8 @@ public class OpenStackPush {
      OpenStackPush test = new OpenStackPush();
 
      }*/
-    public OpenStackPush(String url, String username, String password, String tenantName, String topologyUri) {
-        client = new OpenStackGet(url, username, password, tenantName);
+    public OpenStackPush(String url,String NATServer, String username, String password, String tenantName, String topologyUri) {
+        client = new OpenStackGet(url, NATServer, username, password, tenantName);
         osClient = client.getClient();
 
         //do an adjustment to the topologyUri
