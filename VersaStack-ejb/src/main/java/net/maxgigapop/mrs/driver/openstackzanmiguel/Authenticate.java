@@ -6,6 +6,7 @@
 package net.maxgigapop.mrs.driver.openstackzanmiguel;
 
 import org.openstack4j.api.OSClient;
+import org.openstack4j.core.transport.Config;
 import org.openstack4j.openstack.OSFactory;
 
 /**
@@ -14,17 +15,32 @@ import org.openstack4j.openstack.OSFactory;
  */
 public class Authenticate {
 
-    public OSClient openStackAuthenticate(String url, String username, String password, String tenantName) {
+    public OSClient openStackAuthenticate(String url,String NATServer, String username, String password, String tenantName) {
+
+        //define OS Client
+        OSClient client = null;
         
-        //add the keystone port and version to authenticate
-        url+=":35357/v2.0";
-        // Authenticate
-        OSClient client = OSFactory.builder()
-                .endpoint(url)
-                .credentials(username,password)
-                .tenantName(tenantName)
-                .authenticate();
         
+       // If the OpenStack controller  is behind NAT, it needs to be specified
+       //to authenticate 
+        if (NATServer == null || NATServer.isEmpty()) {
+            client = OSFactory.builder()
+                    .endpoint(url)
+                    .credentials(username, password)
+                    .tenantName(tenantName)
+                    .authenticate();
+
+        } 
+        else {
+            Config conf = Config.DEFAULT;
+            client = OSFactory.builder()
+                    .endpoint(url)
+                    .credentials(username, password)
+                    .tenantName(tenantName)
+                    .withConfig(Config.newConfig().withEndpointNATResolution(NATServer))
+                    .authenticate();
+        }
+
         return client;
     }
 
