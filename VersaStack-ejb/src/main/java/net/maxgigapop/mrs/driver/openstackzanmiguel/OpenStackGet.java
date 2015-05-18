@@ -15,6 +15,7 @@ import org.openstack4j.model.compute.*;
 import org.openstack4j.model.compute.ext.Hypervisor;
 import org.openstack4j.model.network.*;
 import org.openstack4j.model.storage.block.*;
+import org.openstack4j.openstack.compute.domain.NovaFloatingIP;
 import org.openstack4j.openstack.compute.domain.NovaInterfaceAttachment;
 import org.openstack4j.openstack.compute.internal.ext.InterfaceServiceImpl;
 import org.openstack4j.openstack.networking.domain.NeutronRouterInterface;
@@ -36,21 +37,15 @@ public class OpenStackGet {
     private List<? extends RouterInterface> routerinterface = null;
     public List<? extends HostRoute> hostroute = null;
     public List<? extends Hypervisor> hypervisors =null;
-    
-<<<<<<< HEAD
-    public  OpenStackGet(String url, String username, String password, String tenantName) {
-=======
-    public  OpenStackGet(String url, String username, String password, String tenantName,String NATServer) {
->>>>>>> VersaStack-MiguelUzcategui
+    public List<? extends NovaFloatingIP> novafloatingIps =null;
+
+    public  OpenStackGet(String url,String NATServer, String username, String password, String tenantName) {
         //authenticate
         Authenticate authenticate = new Authenticate();
         NeutronRouterInterface ri = new NeutronRouterInterface();
         
-<<<<<<< HEAD
-        client = authenticate.openStackAuthenticate(url, username, password, tenantName);
-=======
-        client = authenticate.openStackAuthenticate(url, username, password, tenantName,NATServer);
->>>>>>> VersaStack-MiguelUzcategui
+         client = authenticate.openStackAuthenticate(url,NATServer, username, password, tenantName);
+
 
         //get the resources
         networks = client.networking().network().list();
@@ -60,6 +55,7 @@ public class OpenStackGet {
         volumes = client.blockStorage().volumes().list();
         floatingIps = client.networking().floatingip().list();
         routers = client.networking().router().list();
+        novafloatingIps = (List<? extends NovaFloatingIP>) client.compute().floatingIps().list();
         
     }
 
@@ -214,7 +210,9 @@ public class OpenStackGet {
         }
         return null;
     }
-
+   public List<? extends NovaFloatingIP> getNovaFloatingIP(){
+       return novafloatingIps;
+   }
     //get a list of all the hypervisors
     public List<? extends Hypervisor> getHypervisors() {
         return hypervisors;

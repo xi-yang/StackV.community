@@ -8,33 +8,17 @@ package net.maxgigapop.mrs.driver.openstackzanmiguel;
 import java.io.IOException;
 import org.openstack4j.model.network.NetworkType;
 
-
-
 import static net.maxgigapop.mrs.driver.openstackzanmiguel.OpenStackNeutronModelBuilder.createOntology;
-
-
-
 
 /**
  *
  * @author tcm
  */
 public class Test {
-    public static void main(String args[]) throws IOException, Exception{
-<<<<<<< HEAD
-       //OpenStackGet openstackget =  new OpenStackGet("http://max-vlsr2.dragon.maxgigapop.net","admin","1234","admin");
-       
-       
-       //openstackget.getSubnets();
-       //openstackget.getNetworks();
-       //OpenStackModelBuilder.createOntology("http://max-vlsr2.dragon.maxgigapop.net", "admin", "1234", "urn:ogf:network:max-vlsr2.dragon.maxgigapop.net:openstack-neutron");
-        createOntology("http://lab-blade.maxgigapop.net","lab-blade.maxgigapop.net","username","password","admin");
-        // createOntology("http://max-vlsr2.dragon.maxgigapop.net","max-vlsr2.dragon.maxgigapop.net","admin","1234","admin");
-        
+
+    public static void main(String args[]) throws IOException, Exception {
+
+        createOntology("http://lab-blade.maxgigapop.net:35357/v2.0","206.196.176.151", "lab-blade.maxgigapop.net", "cjohnson", "67ou2UbR3", "admin");
+
     }
 }
-=======
-        createOntology("http://lab-blade.maxgigapop.net:35357/v2.0","","","","","");      
-    }
-}
->>>>>>> VersaStack-MiguelUzcategui

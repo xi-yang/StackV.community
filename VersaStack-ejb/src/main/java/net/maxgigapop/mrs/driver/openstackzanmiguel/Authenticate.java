@@ -20,19 +20,6 @@ public class Authenticate {
         //define OS Client
         OSClient client = null;
         
-<<<<<<< HEAD
-        //add the keystone port and version to authenticate
-        url+=":35357/v2.0";
-        // Authenticate
-        OSClient client = OSFactory.builder()
-                .endpoint(url)
-                .credentials(username,password)
-                .tenantName(tenantName)
-                .withConfig(Config.newConfig().withEndpointNATResolution("206.196.176.151"))
-                .authenticate();
-=======
->>>>>>> VersaStack-MiguelUzcategui
-        
        // If the OpenStack controller  is behind NAT, it needs to be specified
        //to authenticate 
         if (NATServer == null || NATServer.isEmpty()) {
