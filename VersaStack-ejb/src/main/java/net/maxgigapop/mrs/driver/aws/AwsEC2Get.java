@@ -545,8 +545,8 @@ public class AwsEC2Get {
             }
         }
     }
-    
-       /**
+
+    /**
      * ****************************************************************
      * function to wait for Internet gateway attachment
      * ****************************************************************
@@ -562,8 +562,8 @@ public class AwsEC2Get {
             }
         }
     }
-    
-       /**
+
+    /**
      * ****************************************************************
      * function to wait for Internet gateway attachment
      * ****************************************************************
@@ -611,6 +611,8 @@ public class AwsEC2Get {
         while (true) {
             try {
                 VpnGateway resource = client.describeVpnGateways(request).getVpnGateways().get(0);
+                if(resource.getState().toLowerCase().equals("deleted"))
+                    break;
             } catch (AmazonServiceException | NullPointerException e) {
                 break;
             }
@@ -622,13 +624,16 @@ public class AwsEC2Get {
      * function to wait for Vpn gateway attachment
      * ****************************************************************
      */
-    public void vpnGatewayAttachmentCheck(String id) {
+    public void vpnGatewayAttachmentCheck(String id,String vpcId) {
         DescribeVpnGatewaysRequest request = new DescribeVpnGatewaysRequest();
         request.withVpnGatewayIds(id);
 
         while (true) {
             VpnGateway resource = client.describeVpnGateways(request).getVpnGateways().get(0);
-            if (!resource.getVpcAttachments().isEmpty()) {
+            VpcAttachment att = new VpcAttachment();
+            att.withState(AttachmentStatus.Attached)
+                    .withVpcId(vpcId);
+            if (!resource.getVpcAttachments().isEmpty() && resource.getVpcAttachments().contains(att)) {
                 break;
             }
         }
@@ -639,13 +644,21 @@ public class AwsEC2Get {
      * function to wait for Vpn gateway dettachment
      * ****************************************************************
      */
-    public void vpnGatewayDetachmentCheck(String id) {
+    public void vpnGatewayDetachmentCheck(String id, String vpcId) {
         DescribeVpnGatewaysRequest request = new DescribeVpnGatewaysRequest();
         request.withVpnGatewayIds(id);
 
         while (true) {
             VpnGateway resource = client.describeVpnGateways(request).getVpnGateways().get(0);
+            VpcAttachment att = new VpcAttachment();
+            att.withState(AttachmentStatus.Detaching)
+                    .withVpcId(vpcId);
+            VpcAttachment att2 = new VpcAttachment();
+            att2.withState(AttachmentStatus.Attached)
+                    .withVpcId(vpcId);
             if (resource.getVpcAttachments().isEmpty()) {
+                break;
+            } else if (!resource.getVpcAttachments().contains(att) && !resource.getVpcAttachments().contains(att2)) {
                 break;
             }
         }
@@ -691,7 +704,7 @@ public class AwsEC2Get {
             }
         }
     }
-    
+
     /**
      * ****************************************************************
      * function to wait for Volume attachment
@@ -711,8 +724,8 @@ public class AwsEC2Get {
             }
         }
     }
-    
-        /**
+
+    /**
      * ****************************************************************
      * function to wait for Volume detachment
      * ****************************************************************
@@ -732,8 +745,8 @@ public class AwsEC2Get {
             }
         }
     }
-    
-       /**
+
+    /**
      * ****************************************************************
      * function to wait for NetworkInterface addition
      * ****************************************************************
@@ -752,8 +765,8 @@ public class AwsEC2Get {
             }
         }
     }
-    
-        /**
+
+    /**
      * ****************************************************************
      * function to wait for NetworkInterface deletion
      * ****************************************************************
@@ -773,7 +786,7 @@ public class AwsEC2Get {
             }
         }
     }
-    
+
     /**
      * ****************************************************************
      * function to wait for NetworkInterface attachment
@@ -793,7 +806,7 @@ public class AwsEC2Get {
             }
         }
     }
-    
+
     /**
      * ****************************************************************
      * function to wait for NetworkInterface attachment

@@ -23,6 +23,11 @@ import net.maxgigapop.mrs.common.*;
 //TODO add the public ip address that an instance might have that is not an
 //elastic ip
 
+/*TODO: Intead of having separate routeFrom statements for routes in a route table 
+associated with subnets. Include the routeFrom statement just once in the model, 
+meaning that look just once for the associations of the route table, 
+do not do a routeFrom statement for every route.*/
+
 /*
  *
  * @author muzcategui
@@ -134,9 +139,8 @@ public class AwsModelBuilder {
             String vpnGatewayId = ec2Client.getIdTag(g.getVpnGatewayId());
             Resource VPNGATEWAY = RdfOwl.createResource(model, topologyURI + ":" + vpnGatewayId, biPort);
             model.add(model.createStatement(VPNGATEWAY, hasTag, VPNGW_TAG));
-            if (g.getVpcAttachments().isEmpty()) {
-                 model.add(model.createStatement(awsTopology, hasBidirectionalPort, VPNGATEWAY));
-            }
+            model.add(model.createStatement(awsTopology, hasBidirectionalPort, VPNGATEWAY));
+
             for (VirtualInterface vi : dcClient.getVirtualInterfaces(g.getVpnGatewayId())) {
                 String viId = vi.getVirtualGatewayId();
                 String vlanNum = Integer.toString(vi.getVlan());
@@ -158,6 +162,25 @@ public class AwsModelBuilder {
 
                 }
             }
+            //TODO: Ad a statement to indicate the status of the virtual interface
+        }
+
+        //get a list of all the virtual interfaces that do not bellong to a VPN gateway
+        //as this Virtual interfaces could be accepted or denied to be a part of a dc connection
+        //in the push part
+        for (VirtualInterface vi : dcClient.getNoAssocVirtualInterface()) {
+            String viId = vi.getVirtualGatewayId();
+            String vlanNum = Integer.toString(vi.getVlan());
+
+            Resource VLAN_LABEL = RdfOwl.createResource(model, topologyURI + ":vlan-" + vlanNum, Nml.Label);
+            model.add(model.createStatement(VLAN_LABEL, Nml.labeltype, vlan));
+            model.add(model.createStatement(VLAN_LABEL, value, vlanNum));
+
+            Resource VIRTUAL_INTERFACE = RdfOwl.createResource(model, topologyURI + ":" + vi.getVirtualInterfaceId(), biPort);
+            model.add(model.createStatement(VIRTUAL_INTERFACE, hasTag, VIRTUAL_INTERFACE_TAG));
+            model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabel, VLAN_LABEL));
+            model.add(model.createStatement(directConnect, hasBidirectionalPort, VIRTUAL_INTERFACE));
+            //TODO: Ad a statement to indicate the status of the virtual interface
         }
 
         //to be used later, a list containing the elatic ips as strings

@@ -37,12 +37,20 @@ public class OpenStackGet {
     public List<? extends HostRoute> hostroute = null;
     public List<? extends Hypervisor> hypervisors =null;
     
+<<<<<<< HEAD
     public  OpenStackGet(String url, String username, String password, String tenantName) {
+=======
+    public  OpenStackGet(String url, String username, String password, String tenantName,String NATServer) {
+>>>>>>> VersaStack-MiguelUzcategui
         //authenticate
         Authenticate authenticate = new Authenticate();
         NeutronRouterInterface ri = new NeutronRouterInterface();
         
+<<<<<<< HEAD
         client = authenticate.openStackAuthenticate(url, username, password, tenantName);
+=======
+        client = authenticate.openStackAuthenticate(url, username, password, tenantName,NATServer);
+>>>>>>> VersaStack-MiguelUzcategui
 
         //get the resources
         networks = client.networking().network().list();

@@ -6,6 +6,7 @@
 package net.maxgigapop.mrs.driver.openstackzanmiguel;
 
 import java.io.IOException;
+import org.openstack4j.model.network.NetworkType;
 
 
 
@@ -20,6 +21,7 @@ import static net.maxgigapop.mrs.driver.openstackzanmiguel.OpenStackNeutronModel
  */
 public class Test {
     public static void main(String args[]) throws IOException, Exception{
+<<<<<<< HEAD
        //OpenStackGet openstackget =  new OpenStackGet("http://max-vlsr2.dragon.maxgigapop.net","admin","1234","admin");
        
        
@@ -31,3 +33,8 @@ public class Test {
         
     }
 }
+=======
+        createOntology("http://lab-blade.maxgigapop.net:35357/v2.0","","","","","");      
+    }
+}
+>>>>>>> VersaStack-MiguelUzcategui

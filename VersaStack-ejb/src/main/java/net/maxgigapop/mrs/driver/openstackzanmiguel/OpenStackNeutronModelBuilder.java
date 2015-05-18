@@ -44,7 +44,7 @@ import org.openstack4j.openstack.networking.domain.NeutronRouterInterface;
  */
 public class OpenStackNeutronModelBuilder {
 
-    public static OntModel createOntology(String url, String topologyURI, String user_name, String password, String tenantName) throws IOException, Exception {
+    public static OntModel createOntology(String url,String NATServer, String topologyURI, String user_name, String password, String tenantName) throws IOException, Exception {
         Logger logger = Logger.getLogger(OpenStackNeutronModelBuilder.class.getName());
 
         //create model object
@@ -120,11 +120,12 @@ public class OpenStackNeutronModelBuilder {
         model.add(model.createStatement(PORT_TAG, type, "interface"));
         model.add(model.createStatement(PORT_TAG, value, "network"));
 
-        OpenStackGet openstackget = new OpenStackGet(url, user_name, password, tenantName);
-
+        OpenStackGet openstackget = new OpenStackGet(url,NATServer, user_name, password, tenantName);
+        
         model.add(model.createStatement(OpenstackTopology, hasService, routingService));
         model.add(model.createStatement(OpenstackTopology, hasService, cinderService));
         model.add(model.createStatement(OpenstackTopology, hasService, networkService));
+        model.add(model.createStatement(OpenstackTopology,hasService, cinderService));
 
         //Left part
         for (Port p : openstackget.getPorts()) {
@@ -330,6 +331,7 @@ public class OpenStackNeutronModelBuilder {
 
                     for (String DES_SUB : openstackget.getPortSubnetID(port)) {
                         String DES_SUB_NAME = openstackget.getResourceName(openstackget.getSubnet(DES_SUB));
+<<<<<<< HEAD
 
                         for (IP ip2 : port.getFixedIps()) {
                             String INTERFACE_IP = ip2.getIpAddress();
@@ -342,6 +344,20 @@ public class OpenStackNeutronModelBuilder {
                             model.add(model.createStatement(ROUTER_INTERFACE_ROUTE, nextHop, ROUTER_INTERFACE_ROUTE_NEXTHOP));
                         }
 
+=======
+
+                        for (IP ip2 : port.getFixedIps()) {
+                            String INTERFACE_IP = ip2.getIpAddress();
+                            Resource ROUTER_INTERFACE_ROUTE_NEXTHOP = RdfOwl.createResource(model, topologyURI + ":-router-interface-route-nexthop"
+                                    + INTERFACE_IP, nextHop);
+                            Resource ROUTER_INTERFACE_ROUTE = RdfOwl.createResource(model, topologyURI + ":-router-interface-route" + openstackget.getResourceName(r) + " sub_name" + DES_SUB_NAME + openstackget.getResourceName(port), route);
+                            Resource ROUTER_INTERFACE_ROUTE_TO = RdfOwl.createResource(model, topologyURI + ":-router-interface-route-to " + DES_SUB_NAME, routeTo);
+                            model.add(model.createStatement(routingService, providesRoutingTable, ROUTER_INTERFACE_ROUTE));
+                            model.add(model.createStatement(ROUTER_INTERFACE_ROUTE, routeTo, ROUTER_INTERFACE_ROUTE_TO));
+                            model.add(model.createStatement(ROUTER_INTERFACE_ROUTE, nextHop, ROUTER_INTERFACE_ROUTE_NEXTHOP));
+                        }
+
+>>>>>>> VersaStack-MiguelUzcategui
                         //external gateway route part
                         if (openstackget.getNetwork(openstackget.getSubnet(DES_SUB).getNetworkId()).isRouterExternal()) {
                             Resource EXTERNAL_GATEWAY_ROUTE = RdfOwl.createResource(model, topologyURI + ":-external-gateway-route" + r.getId(), route);
@@ -397,6 +413,7 @@ public class OpenStackNeutronModelBuilder {
          }
             
          }
+<<<<<<< HEAD
         
        
         
@@ -408,6 +425,10 @@ public class OpenStackNeutronModelBuilder {
         
         
          s.getGateway() != null && !s.getGateway().isEmpty()
+=======
+
+         s.getGateway() != null && !s.getGateway().isEmpty();
+>>>>>>> VersaStack-MiguelUzcategui
          */
         for (NetFloatingIP f : openstackget.getFloatingIp()) {
 

@@ -15,8 +15,12 @@ import org.openstack4j.openstack.OSFactory;
  */
 public class Authenticate {
 
-    public OSClient openStackAuthenticate(String url, String username, String password, String tenantName) {
+    public OSClient openStackAuthenticate(String url,String NATServer, String username, String password, String tenantName) {
+
+        //define OS Client
+        OSClient client = null;
         
+<<<<<<< HEAD
         //add the keystone port and version to authenticate
         url+=":35357/v2.0";
         // Authenticate
@@ -26,7 +30,29 @@ public class Authenticate {
                 .tenantName(tenantName)
                 .withConfig(Config.newConfig().withEndpointNATResolution("206.196.176.151"))
                 .authenticate();
+=======
+>>>>>>> VersaStack-MiguelUzcategui
         
+       // If the OpenStack controller  is behind NAT, it needs to be specified
+       //to authenticate 
+        if (NATServer == null || NATServer.isEmpty()) {
+            client = OSFactory.builder()
+                    .endpoint(url)
+                    .credentials(username, password)
+                    .tenantName(tenantName)
+                    .authenticate();
+
+        } 
+        else {
+            Config conf = Config.DEFAULT;
+            client = OSFactory.builder()
+                    .endpoint(url)
+                    .credentials(username, password)
+                    .tenantName(tenantName)
+                    .withConfig(Config.newConfig().withEndpointNATResolution(NATServer))
+                    .authenticate();
+        }
+
         return client;
     }
 
