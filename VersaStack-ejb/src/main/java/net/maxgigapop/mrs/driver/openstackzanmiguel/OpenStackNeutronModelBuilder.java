@@ -196,6 +196,9 @@ public class OpenStackNeutronModelBuilder {
 
             model.add(model.createStatement(NETWORK, hasService, SWITCHINGSERVICE));
 
+            Resource ROUTINGSERVICE = RdfOwl.createResource(model, topologyURI + ":routingservice-" + networkID, RoutingService);
+            model.add(model.createStatement(NETWORK, hasService, ROUTINGSERVICE));
+
             //TO FIND THE EXTERNAL OR INTERNAL NETWORK
             if (n.isRouterExternal()) {
                 model.add(model.createStatement(NETWORK, hasTag, EXTERNALNETWORK));
@@ -207,7 +210,7 @@ public class OpenStackNeutronModelBuilder {
 
                     for (Pool ap : s.getAllocationPools()) {
                         String START = ap.getStart();
-                        String END =ap.getEnd();
+                        String END = ap.getEnd();
                         String FLOATING_IP_INUSE = fip.toString();
                         String subnetId = openstackget.getResourceName(s);
 
@@ -220,7 +223,7 @@ public class OpenStackNeutronModelBuilder {
                         Resource FLOATING_IP_INUSING
                                 = RdfOwl.createResource(model, topologyURI + ":floatingip-inuse-" + subnetId, networkAddress);
                         Resource FLOATING_IP_POOL = RdfOwl.createResource(model, topologyURI + ":floatingip-pool-" + subnetId, networkAddress);
-                                   
+
                         model.add(model.createStatement(FLOATING_IP_INUSING, type, "ipv4-floatingip"));
                         model.add(model.createStatement(FLOATING_IP_INUSING, value, FLOATING_IP_INUSE));//need to modify here
                         model.add(model.createStatement(FLOATING_IP_POOL, type, "ipv4-floatingip-pool"));
@@ -273,7 +276,6 @@ public class OpenStackNeutronModelBuilder {
                     model.add(model.createStatement(SWITCHINGSERVICE, providesSubnet, SUBNET));
                     Resource SUBNET_NETWORK_ADDRESS
                             = RdfOwl.createResource(model, topologyURI + ":subnetnetworkaddress-" + subnetId, networkAddress);
-                    Resource ROUTINGSERVICE = RdfOwl.createResource(model, topologyURI + ":routingservice-" + subnetId, RoutingService);
                     Resource ROUTE_LOCAL = RdfOwl.createResource(model, topologyURI + ":route-" + SUBNET_NETWORK_ADDRESS + subnetId, route);
 
                     model.add(model.createStatement(SUBNET, hasTag, PRIVATESUBNET));
@@ -291,7 +293,6 @@ public class OpenStackNeutronModelBuilder {
                     }
 
                     //subnet route modeling 
-                    model.add(model.createStatement(routingService, hasService, ROUTINGSERVICE));
                     model.add(model.createStatement(ROUTINGSERVICE, providesRoute, ROUTE_LOCAL));
 
                     model.add(model.createStatement(ROUTE_LOCAL, routeFrom, subnetId));
