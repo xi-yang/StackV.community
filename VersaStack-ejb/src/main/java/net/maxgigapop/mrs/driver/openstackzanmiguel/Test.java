@@ -18,7 +18,7 @@ public class Test {
 
     public static void main(String args[]) throws IOException, Exception {
 
-        createOntology("http://lab-blade.maxgigapop.net:35357/v2.0","206.196.176.151", "lab-blade.maxgigapop.net", "cjohnson", "67ou2UbR3", "admin");
+        createOntology("","", "", "", "", "");
 
     }
 }
