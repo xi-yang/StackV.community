@@ -84,10 +84,10 @@ public class VersionItem extends PersistentEntity implements Serializable {
             return false;
         }
         VersionItem other = (VersionItem) object;
-        if ((this.id == null && other.id != null) || (this.id != null && !this.id.equals(other.id))) {
-            return false;
+        if ((this.referenceUUID != null && other.referenceUUID != null) && (this.referenceUUID.equals(other.referenceUUID))) {
+            return true;
         }
-        return true;
+        return false;
     }
 
     public List<VersionGroup> getVersionGroups() {

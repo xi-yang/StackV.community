@@ -14,7 +14,7 @@ import javax.ws.rs.core.Application;
  *
  * @author xyang
  */
-@ApplicationPath("/")
+@ApplicationPath("/restapi/")
 public class ApplicationConfig extends Application {
 
     @Override
