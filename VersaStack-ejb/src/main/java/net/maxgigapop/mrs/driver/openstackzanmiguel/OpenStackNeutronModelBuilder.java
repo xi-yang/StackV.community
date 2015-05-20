@@ -14,6 +14,7 @@ import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -35,6 +36,7 @@ import org.openstack4j.model.network.Router;
 import org.openstack4j.model.network.RouterInterface;
 import org.openstack4j.model.network.Subnet;
 import org.openstack4j.model.storage.block.Volume;
+import org.openstack4j.openstack.compute.domain.NovaFloatingIP;
 import org.openstack4j.openstack.networking.domain.AddRouterInterfaceAction;
 import org.openstack4j.openstack.networking.domain.NeutronRouterInterface;
 
@@ -44,7 +46,9 @@ import org.openstack4j.openstack.networking.domain.NeutronRouterInterface;
  */
 public class OpenStackNeutronModelBuilder {
 
-    public static OntModel createOntology(String url,String NATServer, String topologyURI, String user_name, String password, String tenantName) throws IOException, Exception {
+    public static OntModel createOntology(String url, String NATServer, String topologyURI, String user_name, String password, String tenantName) throws IOException, Exception {
+        ArrayList fip = new ArrayList();
+        String POOL = null;
         Logger logger = Logger.getLogger(OpenStackNeutronModelBuilder.class.getName());
 
         //create model object
@@ -120,20 +124,18 @@ public class OpenStackNeutronModelBuilder {
         model.add(model.createStatement(PORT_TAG, type, "interface"));
         model.add(model.createStatement(PORT_TAG, value, "network"));
 
-        OpenStackGet openstackget = new OpenStackGet(url,NATServer, user_name, password, tenantName);
-        
+        OpenStackGet openstackget = new OpenStackGet(url, NATServer, user_name, password, tenantName);
+
         model.add(model.createStatement(OpenstackTopology, hasService, routingService));
         model.add(model.createStatement(OpenstackTopology, hasService, cinderService));
         model.add(model.createStatement(OpenstackTopology, hasService, networkService));
-        model.add(model.createStatement(OpenstackTopology,hasService, cinderService));
+        model.add(model.createStatement(OpenstackTopology, hasService, cinderService));
 
         //Left part
         for (Port p : openstackget.getPorts()) {
             String PortID = openstackget.getResourceName(p);
             Resource PORT = RdfOwl.createResource(model, topologyURI + ":" + PortID, biPort);
-            for (AllowedAddressPair a : p.getAllowedAddressPairs()) {
-                System.out.println("1234455" + a.getIpAddress());
-            }
+
             for (IP q : p.getFixedIps()) {
                 if (q.getIpAddress() != null || !q.getIpAddress().isEmpty()) {
                     if (openstackget.getNetwork(p.getNetworkId()).isRouterExternal()) {
@@ -198,55 +200,69 @@ public class OpenStackNeutronModelBuilder {
             if (n.isRouterExternal()) {
                 model.add(model.createStatement(NETWORK, hasTag, EXTERNALNETWORK));
                 for (Subnet s : n.getNeutronSubnets()) {
-                    String subnetId = openstackget.getResourceName(s);
+                    for (NetFloatingIP f : openstackget.getFloatingIp()) {
+                        fip.add(f.getFloatingIpAddress());
 
-                    Resource SUBNET = RdfOwl.createResource(model, topologyURI + ":" + subnetId, switchingSubnet);
-
-                    model.add(model.createStatement(SUBNET, hasTag, PUBLICSUBNET));
-                    model.add(model.createStatement(SWITCHINGSERVICE, providesSubnet, SUBNET));
-                    Resource SUBNET_NETWORK_ADDRESS
-                            = RdfOwl.createResource(model, topologyURI + ":subnetnetworkaddress-" + subnetId, networkAddress);
-
-                    model.add(model.createStatement(SUBNET_NETWORK_ADDRESS, type, "ipv4-floatingip"));
-                    model.add(model.createStatement(SUBNET_NETWORK_ADDRESS, value, s.getCidr()));//need to modify here
-                    model.add(model.createStatement(SUBNET, hasNetworkAddress, SUBNET_NETWORK_ADDRESS));
-
-                    //FOR THE GATEWAY
-                    if (s.getGateway() != null && !s.getGateway().isEmpty()) {
-                        String GATEWAYADDRESS = s.getGateway();
-                        Resource GATEWAY = RdfOwl.createResource(model, topologyURI + ":" + GATEWAYADDRESS, biPort);
-                        model.add(model.createStatement(SUBNET, hasBidirectionalPort, GATEWAY));
-                        model.add(model.createStatement(GATEWAY, hasNetworkAddress, GATEWAYADDRESS));//LEAVE FOR THE FUTHER DEVELOP FOR THE MANNER
-                        model.add(model.createStatement(GATEWAY, type, "gateway"));
                     }
-                    for (Port port : openstackget.getPorts()) {
-                        for (String subID : openstackget.getPortSubnetID(port)) {
-                            String subName = openstackget.getResourceName(openstackget.getSubnet(subID));
-                            if (subnetId.equals(subName)) {
-                                Resource Port = model.getResource(topologyURI + ":" + openstackget.getResourceName(port));
-                                model.add(model.createStatement(SUBNET, hasBidirectionalPort, Port));
-                                model.add(model.createStatement(Port, hasTag, PORT_TAG));
+
+                    for (Pool ap : s.getAllocationPools()) {
+                        String START = ap.getStart();
+                        String END =ap.getEnd();
+                        String FLOATING_IP_INUSE = fip.toString();
+                        String subnetId = openstackget.getResourceName(s);
+
+                        Resource SUBNET = RdfOwl.createResource(model, topologyURI + ":" + subnetId, switchingSubnet);
+
+                        model.add(model.createStatement(SUBNET, hasTag, PUBLICSUBNET));
+                        model.add(model.createStatement(SWITCHINGSERVICE, providesSubnet, SUBNET));
+                        Resource SUBNET_NETWORK_ADDRESS
+                                = RdfOwl.createResource(model, topologyURI + ":subnetnetworkaddress-" + subnetId, networkAddress);
+                        Resource FLOATING_IP_INUSING
+                                = RdfOwl.createResource(model, topologyURI + ":floatingip-inuse-" + subnetId, networkAddress);
+                        Resource FLOATING_IP_POOL = RdfOwl.createResource(model, topologyURI + ":floatingip-pool-" + subnetId, networkAddress);
+                                   
+                        model.add(model.createStatement(FLOATING_IP_INUSING, type, "ipv4-floatingip"));
+                        model.add(model.createStatement(FLOATING_IP_INUSING, value, FLOATING_IP_INUSE));//need to modify here
+                        model.add(model.createStatement(FLOATING_IP_POOL, type, "ipv4-floatingip-pool"));
+                        model.add(model.createStatement(FLOATING_IP_POOL, value, START + "-" + END));
+                        model.add(model.createStatement(SUBNET, hasNetworkAddress, SUBNET_NETWORK_ADDRESS));
+
+                        //FOR THE GATEWAY
+                        if (s.getGateway() != null && !s.getGateway().isEmpty()) {
+                            String GATEWAYADDRESS = s.getGateway();
+                            Resource GATEWAY = RdfOwl.createResource(model, topologyURI + ":" + GATEWAYADDRESS, biPort);
+                            model.add(model.createStatement(SUBNET, hasBidirectionalPort, GATEWAY));
+                            model.add(model.createStatement(GATEWAY, hasNetworkAddress, GATEWAYADDRESS));//LEAVE FOR THE FUTHER DEVELOP FOR THE MANNER
+                            model.add(model.createStatement(GATEWAY, type, "gateway"));
+                        }
+                        for (Port port : openstackget.getPorts()) {
+                            for (String subID : openstackget.getPortSubnetID(port)) {
+                                String subName = openstackget.getResourceName(openstackget.getSubnet(subID));
+                                if (subnetId.equals(subName)) {
+                                    Resource Port = model.getResource(topologyURI + ":" + openstackget.getResourceName(port));
+                                    model.add(model.createStatement(SUBNET, hasBidirectionalPort, Port));
+                                    model.add(model.createStatement(Port, hasTag, PORT_TAG));
+
+                                }
 
                             }
-
                         }
+
+                        //external routing table
+                        String dest = "0.0.0.0/24";
+                        //String destIP = destIp.replace("/", "");
+                        String nextHOP = s.getGateway();
+                        //System.out.println("aaaa" + destIP);
+                        Resource EXROUTE = RdfOwl.createResource(model, topologyURI + ":route-external" + dest + subnetId, route);
+                        Resource EXROUTEFROM = RdfOwl.createResource(model, topologyURI + ":route-external" + subnetId, routeFrom);
+                        Resource EXROUTETO = RdfOwl.createResource(model, topologyURI + ":route-external" + dest, routeTo);
+                        Resource EXNEXTHOP = RdfOwl.createResource(model, topologyURI + ":route-external" + nextHOP, nextHop);
+
+                        model.add(model.createStatement(routingService, providesRoute, EXROUTE));
+                        model.add(model.createStatement(EXROUTE, routeFrom, EXROUTEFROM));
+                        model.add(model.createStatement(EXROUTE, routeTo, EXROUTETO));
+                        model.add(model.createStatement(EXROUTE, nextHop, EXNEXTHOP));
                     }
-
-                    //external routing table
-                    String dest = "external";
-                    //String destIP = destIp.replace("/", "");
-                    String nextHOP = s.getGateway();
-                    //System.out.println("aaaa" + destIP);
-                    Resource EXROUTE = RdfOwl.createResource(model, topologyURI + ":route-external" + dest + subnetId, route);
-                    Resource EXROUTEFROM = RdfOwl.createResource(model, topologyURI + ":route-external" + subnetId, routeFrom);
-                    Resource EXROUTETO = RdfOwl.createResource(model, topologyURI + ":route-external" + dest, routeTo);
-                    Resource EXNEXTHOP = RdfOwl.createResource(model, topologyURI + ":route-external" + nextHOP, nextHop);
-
-                    model.add(model.createStatement(routingService, providesRoute, EXROUTE));
-                    model.add(model.createStatement(EXROUTE, routeFrom, EXROUTEFROM));
-                    model.add(model.createStatement(EXROUTE, routeTo, EXROUTETO));
-                    model.add(model.createStatement(EXROUTE, nextHop, EXNEXTHOP));
-
                 }
             } else {
                 model.add(model.createStatement(NETWORK, hasTag, TENANTNETWORK));
@@ -336,9 +352,11 @@ public class OpenStackNeutronModelBuilder {
                             String INTERFACE_IP = ip2.getIpAddress();
                             Resource ROUTER_INTERFACE_ROUTE_NEXTHOP = RdfOwl.createResource(model, topologyURI + ":-router-interface-route-nexthop"
                                     + INTERFACE_IP, nextHop);
-                            Resource ROUTER_INTERFACE_ROUTE = RdfOwl.createResource(model, topologyURI + ":-router-interface-route" + openstackget.getResourceName(r) + " sub_name" + DES_SUB_NAME + openstackget.getResourceName(port), route);
+                            Resource ROUTER_INTERFACE_ROUTINGTABLE = RdfOwl.createResource(model, topologyURI + ":-router-interface-routingtable" + openstackget.getResourceName(r), RoutingTable);
+                            Resource ROUTER_INTERFACE_ROUTE = RdfOwl.createResource(model, topologyURI + ": + router-interface-route" + openstackget.getResourceName(r), route);
                             Resource ROUTER_INTERFACE_ROUTE_TO = RdfOwl.createResource(model, topologyURI + ":-router-interface-route-to " + DES_SUB_NAME, routeTo);
-                            model.add(model.createStatement(routingService, providesRoutingTable, ROUTER_INTERFACE_ROUTE));
+                            model.add(model.createStatement(routingService, providesRoutingTable, ROUTER_INTERFACE_ROUTINGTABLE));
+                            model.add(model.createStatement(ROUTER_INTERFACE_ROUTINGTABLE, hasRoute, ROUTER_INTERFACE_ROUTE));
                             model.add(model.createStatement(ROUTER_INTERFACE_ROUTE, routeTo, ROUTER_INTERFACE_ROUTE_TO));
                             model.add(model.createStatement(ROUTER_INTERFACE_ROUTE, nextHop, ROUTER_INTERFACE_ROUTE_NEXTHOP));
                         }
@@ -346,7 +364,7 @@ public class OpenStackNeutronModelBuilder {
                         //external gateway route part
                         if (openstackget.getNetwork(openstackget.getSubnet(DES_SUB).getNetworkId()).isRouterExternal()) {
                             Resource EXTERNAL_GATEWAY_ROUTE = RdfOwl.createResource(model, topologyURI + ":-external-gateway-route" + r.getId(), route);
-                            String EXTERNAL_GATEWAY_ROUTE_TO = "external";
+                            String EXTERNAL_GATEWAY_ROUTE_TO = "0.0.0.0/0";
                             Resource EXTERNAL_GATEWAY_ROUTE_NEXTHOP = RdfOwl.createResource(model, topologyURI + ": -external-gateway-route-nexthop" + DES_SUB_NAME, nextHop);
                             model.add(model.createStatement(routingService, providesRoutingTable, EXTERNAL_GATEWAY_ROUTE));
                             model.add(model.createStatement(EXTERNAL_GATEWAY_ROUTE, routeTo, EXTERNAL_GATEWAY_ROUTE_TO));
@@ -399,7 +417,10 @@ public class OpenStackNeutronModelBuilder {
             
          }
 
-         s.getGateway() != null && !s.getGateway().isEmpty();
+        
+      
+         s.getGateway() != null && !s.getGateway().isEmpty()
+
          */
         for (NetFloatingIP f : openstackget.getFloatingIp()) {
 
