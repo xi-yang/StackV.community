@@ -276,8 +276,8 @@ public class AwsPush {
             } else if (request.contains("DeleteInternetGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
 
-                InternetGateway gateway = ec2Client.getInternetGateway(parameters[1]);
-                Vpc v = ec2Client.getVpc(getResourceId(parameters[2]));
+                InternetGateway gateway = ec2Client.getInternetGateway(getResourceId(parameters[1]));
+                Vpc v = ec2Client.getVpc(getVpcId(parameters[2]));
                 DetachInternetGatewayRequest gwRequest = new DetachInternetGatewayRequest();
                 gwRequest.withInternetGatewayId(getResourceId(parameters[1]))
                         .withVpcId(getVpcId(parameters[2]));
