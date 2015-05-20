@@ -91,7 +91,7 @@ public class AwsPush {
         requests += detachPortRequest(modelRef, modelReduct);
 
         //disassociate an address from a network interface
-        requests += disassociateAddressRequest(modelRef, modelReduct);
+        //requests += disassociateAddressRequest(modelRef, modelReduct);
 
         //Delete the network interfaces that need to be deleted
         requests += deletePortsRequests(modelRef, modelReduct);
@@ -151,7 +151,7 @@ public class AwsPush {
         requests += createPortsRequests(modelRef, modelAdd);
 
         //Associate an address with a  interface
-        requests += associateAddressRequest(modelRef, modelAdd);
+        //requests += associateAddressRequest(modelRef, modelAdd);
 
         //attach ports to existing instances
         requests += attachPortRequest(modelRef, modelAdd);

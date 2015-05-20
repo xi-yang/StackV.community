@@ -8,19 +8,17 @@ package net.maxgigapop.mrs.driver.openstackzanmiguel;
 import java.io.IOException;
 import org.openstack4j.model.network.NetworkType;
 
-
-
 import static net.maxgigapop.mrs.driver.openstackzanmiguel.OpenStackNeutronModelBuilder.createOntology;
-
-
-
 
 /**
  *
  * @author tcm
  */
 public class Test {
-    public static void main(String args[]) throws IOException, Exception{
-        createOntology("http://lab-blade.maxgigapop.net:35357/v2.0","","","","","");      
+
+    public static void main(String args[]) throws IOException, Exception {
+
+        createOntology("","", "", "", "", "");
+
     }
 }
