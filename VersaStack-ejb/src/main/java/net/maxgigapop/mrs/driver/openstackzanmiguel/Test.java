@@ -30,7 +30,7 @@ public class Test {
 
     public static void main(String args[]) throws IOException, Exception {
 
-        //createOntology("http://lab-blade.maxgigapop.net:35357/v2.0", "206.196.176.151", "lab-blade.maxgigapop.net", "cjohnson", "67ou2UbR3", "admin");
+        //createOntology();
         OpenStackGet client  = new OpenStackGet("", "", "", "", "");
         //client.getRouter("miguel's router").toBuilder().route("150.0.0.0/24", "10.196.175.1");
         //client.getClient().networking().router().update(client.getRouter("miguel's router"));
