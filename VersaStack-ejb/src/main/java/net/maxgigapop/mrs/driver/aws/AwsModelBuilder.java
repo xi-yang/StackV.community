@@ -198,7 +198,7 @@ public class AwsModelBuilder {
             String subnetId = ec2Client.getIdTag(p.getSubnetId());
             Resource SUBNET = RdfOwl.createResource(model, topologyURI + ":" + subnetId, switchingSubnet);
             Resource SUBNET_NETWORK_ADDRESS
-                    = RdfOwl.createResource(model, topologyURI + ":subnetnetworkaddress-" + p.getSubnetId(), networkAddress);
+                    = RdfOwl.createResource(model, topologyURI + ":subnetnetworkaddress-" + subnetId, networkAddress);
             model.add(model.createStatement(SUBNET_NETWORK_ADDRESS, type, "ipv4-prefix"));
             model.add(model.createStatement(SUBNET_NETWORK_ADDRESS, value, p.getCidrBlock()));
             model.add(model.createStatement(SUBNET, hasNetworkAddress, SUBNET_NETWORK_ADDRESS));
