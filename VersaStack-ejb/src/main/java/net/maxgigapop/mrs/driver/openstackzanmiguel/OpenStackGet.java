@@ -37,6 +37,7 @@ public class OpenStackGet {
     private List<RouterInterface> routerinterface = new ArrayList();
     public List<HostRoute> hostroute = new ArrayList();
     public List<Hypervisor> hypervisors = new ArrayList();
+<<<<<<< HEAD
     public List<NovaFloatingIP> novafloatingIps =new ArrayList();
 
     public  OpenStackGet(String url,String NATServer, String username, String password, String tenantName) {
@@ -55,6 +56,24 @@ public class OpenStackGet {
         volumes = (List<Volume>)client.blockStorage().volumes().list();
         floatingIps = (List<NetFloatingIP>)client.networking().floatingip().list();
         routers = (List<Router>)client.networking().router().list();
+=======
+    public List<NovaFloatingIP> novafloatingIps = new ArrayList();
+
+    public OpenStackGet(String url, String NATServer, String username, String password, String tenantName) {
+        //authenticate
+        Authenticate authenticate = new Authenticate();
+
+        client = authenticate.openStackAuthenticate(url, NATServer, username, password, tenantName);
+
+        //get the resources
+        networks = (List<Network>) client.networking().network().list();
+        subnets = (List<Subnet>) client.networking().subnet().list();
+        ports = (List<Port>) client.networking().port().list();
+        servers = (List<Server>) client.compute().servers().list();
+        volumes = (List<Volume>) client.blockStorage().volumes().list();
+        floatingIps = (List<NetFloatingIP>) client.networking().floatingip().list();
+        routers = (List<Router>) client.networking().router().list();
+>>>>>>> VersaStack-MiguelUzcategui
         novafloatingIps = (List<NovaFloatingIP>) client.compute().floatingIps().list();
     }
 
@@ -209,10 +228,20 @@ public class OpenStackGet {
         }
         return null;
     }
+<<<<<<< HEAD
    public List<NovaFloatingIP> getNovaFloatingIP(){
        return novafloatingIps;
    }
     //get a list of all the hypervisors
+=======
+
+    public List<NovaFloatingIP> getNovaFloatingIP() {
+        return novafloatingIps;
+    }
+
+    //get a list of all the hypervisors
+
+>>>>>>> VersaStack-MiguelUzcategui
     public List<Hypervisor> getHypervisors() {
         return hypervisors;
     }
@@ -226,16 +255,19 @@ public class OpenStackGet {
         }
         return null;
     }
-    
+
     //get all the routers
+<<<<<<< HEAD
     public List<Router> getRouters()
     {
+=======
+    public List<Router> getRouters() {
+>>>>>>> VersaStack-MiguelUzcategui
         return routers;
     }
-    
+
     //get a specific route by id or name
-    public Router getRouter(String id)
-    {
+    public Router getRouter(String id) {
         for (Router router : routers) {
             if (router.getId().equals(id) || router.getName().equals(id)) {
                 return router;
@@ -263,15 +295,20 @@ public class OpenStackGet {
     //get the name of a server 
     public String getServereName(Server r) {
         String name = r.getName();
-        if (name ==null || name.isEmpty()) {
+        if (name == null || name.isEmpty()) {
             return r.getId();
         } else {
             return r.getName();
         }
     }
+<<<<<<< HEAD
     
     public String getVolumeName(Volume r)
     {
+=======
+
+    public String getVolumeName(Volume r) {
+>>>>>>> VersaStack-MiguelUzcategui
         String name = r.getName();
         if (name == null || name.isEmpty()) {
             return r.getId();
@@ -279,6 +316,7 @@ public class OpenStackGet {
             return r.getName();
         }
     }
+<<<<<<< HEAD
     public String getInterfaceSubnetID(NeutronRouterInterface i){
         return i.getSubnetId();
     }
@@ -290,4 +328,19 @@ public class OpenStackGet {
     }
     
    
+=======
+
+    public String getInterfaceSubnetID(NeutronRouterInterface i) {
+        return i.getSubnetId();
+    }
+
+    public String getInterfacePortID(NeutronRouterInterface i) {
+        return i.getPortId();
+    }
+
+    public String getInterfaceRouterID(NeutronRouterInterface i) {
+        return i.getId();
+    }
+
+>>>>>>> VersaStack-MiguelUzcategui
 }

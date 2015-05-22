@@ -18,8 +18,12 @@ public class Authenticate {
     public OSClient openStackAuthenticate(String url,String NATServer, String username, String password, String tenantName) {
 
         //define OS Client
+<<<<<<< HEAD
         OSClient client = null;
         
+=======
+        OSClient client = null;        
+>>>>>>> VersaStack-MiguelUzcategui
        // If the OpenStack controller  is behind NAT, it needs to be specified
        //to authenticate 
         if (NATServer == null || NATServer.isEmpty()) {
