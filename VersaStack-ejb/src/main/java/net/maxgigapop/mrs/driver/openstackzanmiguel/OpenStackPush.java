@@ -224,7 +224,7 @@ public class OpenStackPush {
         List<JSONObject> requests = new ArrayList();
         String returns = "";
         String query;
-
+         
         //1 check to see if any operations involves network creation/deletion
         query = "SELECT ?network WHERE {?service mrs:providesVPC  ?network ."
                 + "?network a nml:Topology}";
@@ -234,7 +234,7 @@ public class OpenStackPush {
             RDFNode network = querySolution.get("network");
             String networkName = network.asResource().toString().replace(topologyUri, "");
             Network net = client.getNetwork(networkName);
-
+            
             //1.1 see if the operation desired is valid
             if (net != null ^ creation) // if network  exists, no need to create it
             {
@@ -1021,7 +1021,7 @@ public class OpenStackPush {
         while (r.hasNext()) {
             QuerySolution q = r.next();
             RDFNode routeResource = q.get("route");
-            String nextHop = q.get("nextHop").asLiteral().toString();
+            RDFNode nextHopResource = q.get("nextHop");
             RDFNode routeToResource = q.get("routeTo");
 
             //1.0 make sure that the operation being done is valid
@@ -1122,9 +1122,11 @@ public class OpenStackPush {
                 //get the router which is the routing table
                 String router = tableResource.asResource().toString().replace(topologyUri, "");
 
-                //3.2 if the router has not routeFrom it means that is a router host route
-                //TODO figure out how to differentiate router interface attachments from router host routes
-                if (routeFromValue == null) {
+                //3.2 if the nextHop is a port resource, means that is a router interface new route
+                //otherwise is a router host route
+                if (nextHopResource.isLiteral()) {
+                    // 3.2.1 create/delete a router host route
+                    String nextHop = nextHopResource.asResource().toString().replace(topologyUri,"");
                     if (creation == true) {
                         o.put("request", "CreateRouterHostRouteRequest");
                     } else {
@@ -1133,25 +1135,53 @@ public class OpenStackPush {
                     o.put("router", router);
                     o.put("destination", toValue);
                     o.put("next hop", nextHop);
-                } else { //for the router interface creation
-
+                } else {
+                    //3.2.2 attach/detach interface to a router
+                    String nextHop = nextHopResource.asLiteral().toString();
+                    
+                    //3.2.2.1 since it has to be a router network interface, make sure that the
+                    //user has specified this in the model
+                    query = "SELECT ?x WHERE {<"+nextHopResource.asResource()+"> a nml:BidirectionalPort}";
+                    r1 = executeQuery(query,modelRef,modelDelta);
+                    if(!r1.hasNext())
+                    {
+                        throw new EJBException(String.format("Route %s which is a router interface"
+                                + "does not offer a bidirectional port as next hop", routeResource));
+                    }
+                    
+                    //3.2.2.2 check that the route to is a subnet
+                    String subnetResource = topologyUri +  routeToValue;
+                    query = "SELECT ?x WHERE {<"+subnetResource +"> a nml:SwitchingSubnet}";
+                    r1 = executeQuery(query,modelRef,modelDelta);
+                    if(!r1.hasNext())
+                    {
+                        throw new EJBException(String.format("Route %s which is a router interface"
+                                + "does not have a subnet as destination", routeResource));
+                    }
+                    
+                    //3.2.2.3 check that the subnet has the port to be atatched
+                    query = "SELECT ?x WHERE {<"+subnetResource+"> nml:hasBidirectionalPort <"+nextHopResource.asResource()+"> }";
+                    r1 = executeQuery(query,modelRef,modelDelta);
+                    if(!r1.hasNext())
+                    {
+                        throw new EJBException(String.format("subnet %s does not have router interface %s, "
+                                + "cannot do layer3 route operation", subnetResource, nextHopResource));
+                    }
+                    
+                    
                     if (creation == true) {
                         o.put("request", "AttachRouterInterface");
                     } else {
                         o.put("request", "DetachRouterInterface");
                     }
-
-                    //3.2.1 fid which port this is with the nexh hop ip
-                    query = "SELECT ?port ?address ?value WHERE {?port mrs:hasNetworkAddress ?address ."
-                            + "?address mrs:value ?value}";
-                    r1 = executeQuery(query, modelRef, modelDelta);
-                    if (!r1.hasNext()) {
-                        throw new EJBException(String.format("taale %s is not a routing table", tableResource));
-                    }
+                    o.put("router name", router);
+                    o.put("subnet name",toValue);
+                    o.put("port name", nextHop);
                 }
 
             } //4 create subnet host routes
             else {
+                String nextHop = nextHopResource.asLiteral().toString();
                 //this are subnet host routes, subnet local routes shouls have been created with subnet
                 //skip loop if it is subnet local route
                 if (nextHop.equals("local")) {
