@@ -14,7 +14,7 @@ import com.hp.hpl.jena.rdf.model.*;
 public class RdfOwl {
     private static Model m_model = ModelFactory.createDefaultModel();
 
-    public static final String rdfNS = "http://schemas.ogf.org/nml/2013/03/base#";
+    public static final String rdfNS = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
     public static String getRdfURI() {return rdfNS;}
 
     public static final String rdfsNS = "http://www.w3.org/2000/01/rdf-schema#";
@@ -27,7 +27,7 @@ public class RdfOwl {
     public static String getXsdURI() {return xsdNS;}
 
     public static final Property type = m_model.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
-    public static final Resource NamedIndividual = m_model.createResource("http://www.w3.org/2002/07/owl#NamedIndividual");    
+    public static final Resource NamedIndividual = m_model.createResource("http://www.w3.org/2002/07/owl#NamedIndividual");
 
     public static Resource createResource(OntModel model, String uri, Resource type) {
         Resource res = model.createResource(uri);

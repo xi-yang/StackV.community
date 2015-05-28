@@ -11,6 +11,7 @@ import com.hp.hpl.jena.rdf.model.ModelFactory;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Future;
 import javax.ejb.EJBException;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
@@ -42,6 +43,9 @@ public class SystemInstance extends PersistentEntity implements Serializable {
     @JoinColumn(name = "systemDeltaId")
     protected SystemDelta systemDelta = null;    
 
+    @Transient 
+    Future<String> commitStatus = null;
+    
     public Long getId() {
         return id;
     }
@@ -89,6 +93,14 @@ public class SystemInstance extends PersistentEntity implements Serializable {
     @Override
     public String toString() {
         return "net.maxgigapop.mrs.model.SystemInstance[ id=" + id + " ]";
+    }
+
+    public Future<String> getCommitStatus() {
+        return commitStatus;
+    }
+
+    public void setCommitStatus(Future<String> commitStatus) {
+        this.commitStatus = commitStatus;
     }
     
 }

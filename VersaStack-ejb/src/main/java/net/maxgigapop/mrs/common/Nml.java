@@ -27,6 +27,8 @@ public class Nml {
     
     public static final Property belongsTo = m_model.createProperty( "http://schemas.ogf.org/nml/2013/03/base#belongsTo" );
     
+    public static final Property connectsTo = m_model.createProperty( "http://schemas.ogf.org/nml/2013/03/base#connectsTo" );
+
     public static final Property canProvidePort = m_model.createProperty( "http://schemas.ogf.org/nml/2013/03/base#canProvidePort" );
     
     public static final Property encoding = m_model.createProperty( "http://schemas.ogf.org/nml/2013/03/base#encoding" );
@@ -128,6 +130,7 @@ public class Nml {
     public static final Resource Location = m_model.createResource( "http://schemas.ogf.org/nml/2013/03/base#Location" );
     
     public static final Resource NetworkObject = m_model.createResource( "http://schemas.ogf.org/nml/2013/03/base#NetworkObject" );
+    
     
     public static final Resource Node = m_model.createResource( "http://schemas.ogf.org/nml/2013/03/base#Node" );
     

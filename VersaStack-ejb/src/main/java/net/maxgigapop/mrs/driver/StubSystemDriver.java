@@ -40,7 +40,7 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
     @Override
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
-        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
+        //driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
         aDelta = (DriverSystemDelta)DeltaPersistenceManager.findById(aDelta.getId());
         String ttlModel = driverInstance.getProperty("stubModelTtl");
         if (ttlModel == null) {
@@ -53,6 +53,8 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
             ontModel = dm.applyDelta(aDelta);
             ttlModel = ModelUtil.marshalOntModel(ontModel);
             driverInstance.putProperty("stubModelTtl", ttlModel);
+            driverInstance.putProperty("stubModelTtl2", ttlModel);
+            DriverInstancePersistenceManager.merge(driverInstance);
         } catch (Exception e) {
             throw new EJBException(String.format("propagateDelta for %s with %s raised exception(%s)", driverInstance, aDelta, e.getMessage()));
         }
