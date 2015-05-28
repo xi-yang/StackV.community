@@ -6,6 +6,7 @@
 package net.maxgigapop.mrs.rest.api;
 
 import com.hp.hpl.jena.ontology.OntModel;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import javax.ejb.EJB;
 import javax.ejb.EJBException;
@@ -43,16 +44,19 @@ public class DeltaResource {
     @PUT
 //    @Consumes({"application/xml","application/json"})
     @Path("/{refUUID}/{action}")
-    public String commit(@PathParam("refUUID")String refUUID, @PathParam("action") String action){
+    public String commit(@PathParam("refUUID")String refUUID, @PathParam("action") String action) throws ExecutionException, InterruptedException{
         if (!action.toLowerCase().equals("commit")) {
             throw new BadRequestException("Invalid action: "+action);
         }
+        Future<String> commitStatus;
         try{
-            systemCallHandler.commitDelta(refUUID);
+            commitStatus = systemCallHandler.commitDelta(refUUID);
         }catch(EJBException e){
             return e.getMessage();
         }
-        return "commit successfully";
+        while(!commitStatus.isDone()){
+        }
+        return commitStatus.get();
     }
     
     @POST
