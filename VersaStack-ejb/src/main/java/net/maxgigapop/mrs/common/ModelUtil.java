@@ -55,6 +55,18 @@ public class ModelUtil {
         return ttl;
     }
 
+    static public String marshalOntModelJson (OntModel model) throws Exception {
+        //$$ TODO: add namespace handling code
+        StringWriter out = new StringWriter();
+        try {
+            model.write(out, "RDF/JSON");
+        } catch (Exception e) {
+            throw new Exception(String.format("failure to marshall ontology model, due to %s", e.getMessage()));
+        }
+        String ttl = out.toString();
+        return ttl;
+    }
+
     static public String marshalModel (Model model) throws Exception {
         //$$ TODO: add namespace handling code
         StringWriter out = new StringWriter();
