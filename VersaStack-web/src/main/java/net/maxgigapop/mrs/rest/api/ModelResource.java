@@ -23,6 +23,7 @@ import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.rest.api.model.ApiModelBase;
 import net.maxgigapop.mrs.system.HandleSystemCall;
+import net.maxgigapop.mrs.common.ModelUtil;
 
 /**
  * REST Web Service
@@ -55,18 +56,12 @@ public class ModelResource {
     public ApiModelBase pullXml(@PathParam("refUUID") String refUUID) throws Exception{
         VersionGroup vg = VersionGroupPersistenceManager.findByReferenceId(refUUID);
         ModelBase modelBase = systemCallHandler.retrieveVersionGroupModel(refUUID);
-        StringWriter out = new StringWriter();
-        try {
-            modelBase.getOntModel().write(out, "TURTLE");
-        } catch (Exception e) {
-            throw new Exception(String.format("failure to marshall ontology model, due to %s", e.getMessage()));
-        }
         ApiModelBase apiModelBase = new ApiModelBase();
         apiModelBase.setId(modelBase.getId());
         apiModelBase.setVersion(refUUID);
         apiModelBase.setCreationTime(modelBase.getCreationTime());
         apiModelBase.setStatus(vg.getStatus());
-        apiModelBase.setTtlModel(out.toString());
+        apiModelBase.setTtlModel(ModelUtil.marshalOntModel(modelBase.getOntModel()));
         return apiModelBase;
     }
     @GET
@@ -75,18 +70,12 @@ public class ModelResource {
     public ApiModelBase pullJson(@PathParam("refUUID") String refUUID) throws Exception{
         VersionGroup vg = VersionGroupPersistenceManager.findByReferenceId(refUUID);
         ModelBase modelBase = systemCallHandler.retrieveVersionGroupModel(refUUID);
-        StringWriter out = new StringWriter();
-        try {
-            modelBase.getOntModel().write(out, "RDF/JSON");
-        } catch (Exception e) {
-            throw new Exception(String.format("failure to marshall ontology model, due to %s", e.getMessage()));
-        }
         ApiModelBase apiModelBase = new ApiModelBase();
         apiModelBase.setId(modelBase.getId());
         apiModelBase.setVersion(refUUID);
         apiModelBase.setCreationTime(modelBase.getCreationTime());
         apiModelBase.setStatus(vg.getStatus());        
-        apiModelBase.setTtlModel(out.toString());
+        apiModelBase.setTtlModel(ModelUtil.marshalOntModelJson(modelBase.getOntModel()));
         return apiModelBase;
     }
 
