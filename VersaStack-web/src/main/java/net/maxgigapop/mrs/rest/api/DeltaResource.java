@@ -12,6 +12,7 @@ import javax.ejb.EJB;
 import javax.ejb.EJBException;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -20,6 +21,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.SystemDelta;
+import net.maxgigapop.mrs.bean.SystemInstance;
+import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.rest.api.model.ApiDeltaBase;
@@ -42,22 +45,40 @@ public class DeltaResource {
     
     
     @PUT
-//    @Consumes({"application/xml","application/json"})
     @Path("/{refUUID}/{action}")
     public String commit(@PathParam("refUUID")String refUUID, @PathParam("action") String action) throws ExecutionException, InterruptedException{
         if (!action.toLowerCase().equals("commit")) {
             throw new BadRequestException("Invalid action: "+action);
         }
-        Future<String> commitStatus;
+        Future<String> result;
         try{
-            commitStatus = systemCallHandler.commitDelta(refUUID);
+            result = systemCallHandler.commitDelta(refUUID);
         }catch(EJBException e){
             return e.getMessage();
         }
-        while(!commitStatus.isDone()){
-        }
-        return commitStatus.get();
+        
+        if(!result.isDone())
+            return "PROCESSING";
+        return result.get();
     }
+    
+    @GET
+    @Path("/{refUUID}/{action}")
+    public String checkStatus(@PathParam("refUUID")String refUUID, @PathParam("action") String action) throws InterruptedException, ExecutionException{
+        if (!action.toLowerCase().equals("checkstatus")) {
+            throw new BadRequestException("Invalid action: "+action);
+        }
+        SystemInstance systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(refUUID);
+        if(systemInstance.getSystemDelta() == null)
+            return "System Instance has not yet propagated";
+        Future<String> status = systemInstance.getCommitStatus();        
+        if(status == null)
+            return "System Instance has not yet commit";
+        if(!status.isDone())
+            return "PROCESSING";
+        return status.get();
+    }
+    
     
     @POST
     @Consumes({"application/xml","application/json"})
