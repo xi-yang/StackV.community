@@ -20,6 +20,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 import net.maxgigapop.mrs.bean.DriverInstance;
+import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.rest.api.model.ApiDriverInstance;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
@@ -49,7 +50,7 @@ public class DriverResource {
     }
     
     @GET
-    @Produces({"application/xml","application/json"})
+    @Produces("application/xml")
     @Path("/{topoUri}")
     public ApiDriverInstance pull(@PathParam("topoUri")String topoUri){
         DriverInstance driverInstance = systemCallHandler.retrieveDriverInstance(topoUri);
@@ -58,6 +59,27 @@ public class DriverResource {
         return adi;
     }
 
+    @GET
+    @Produces("application/json")
+    @Path("/{topoUri}")
+    public ApiDriverInstance pullJson(@PathParam("topoUri")String topoUri) throws Exception{
+        DriverInstance driverInstance = systemCallHandler.retrieveDriverInstance(topoUri);
+        ApiDriverInstance adi = new ApiDriverInstance();
+        Map<String, String> properties = driverInstance.getProperties();
+        Set<String> keySet = properties.keySet();
+        String ttlKey = "";
+        for(String key : keySet)
+            if(key.toLowerCase().contains("ttl")){
+                ttlKey += key;
+                break;
+            }
+        if(!ttlKey.equals("")){
+            String ttl = properties.get(ttlKey);
+            properties.replace(ttlKey, ttl, ModelUtil.marshalOntModelJson(ModelUtil.unmarshalOntModel(ttl)));            
+        }
+        adi.setProperties(driverInstance.getProperties());
+        return adi;
+    }
     
     @DELETE
     @Path("/{topoUri}")    
