@@ -56,9 +56,9 @@ public class DeltaResource {
         }catch(EJBException e){
             return e.getMessage();
         }
-        
-        if(!result.isDone())
+        if(!result.isDone()){
             return "PROCESSING";
+        }
         return result.get();
     }
     
@@ -68,15 +68,15 @@ public class DeltaResource {
         if (!action.toLowerCase().equals("checkstatus")) {
             throw new BadRequestException("Invalid action: "+action);
         }
-        SystemInstance systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(refUUID);
-        if(systemInstance.getSystemDelta() == null)
+        SystemInstance siCache = SystemInstancePersistenceManager.findByReferenceUUID(refUUID);
+        SystemInstance siDb = SystemInstancePersistenceManager.findById(siCache.getId());
+        if(siDb.getSystemDelta() == null)
             return "System Instance has not yet propagated";
-        Future<String> status = systemInstance.getCommitStatus();        
-        if(status == null)
+        if(!siCache.getCommitFlag())
             return "System Instance has not yet commit";
-        if(!status.isDone())
+        if(siCache.getCommitStatus() == null)
             return "PROCESSING";
-        return status.get();
+        return siCache.getCommitStatus().get();
     }
     
     
