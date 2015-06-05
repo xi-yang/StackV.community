@@ -46,6 +46,7 @@ public class SystemInstance extends PersistentEntity implements Serializable {
     @Transient 
     Future<String> commitStatus = null;
     
+    @Transient
     private boolean commitFlag = false;
     
     public Long getId() {
