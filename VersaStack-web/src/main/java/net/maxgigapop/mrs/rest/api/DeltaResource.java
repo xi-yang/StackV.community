@@ -69,6 +69,9 @@ public class DeltaResource {
             throw new BadRequestException("Invalid action: "+action);
         }
         SystemInstance siCache = SystemInstancePersistenceManager.findByReferenceUUID(refUUID);
+        if (siCache == null) {
+            return ("Unknown systemInstance with referenceUUID="+ refUUID);
+        }
         SystemInstance siDb = SystemInstancePersistenceManager.findById(siCache.getId());
         if(siDb.getSystemDelta() == null)
             return "System Instance has not yet propagated";
