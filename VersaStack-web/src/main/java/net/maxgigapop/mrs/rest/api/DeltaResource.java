@@ -70,7 +70,7 @@ public class DeltaResource {
         }
         SystemInstance siCache = SystemInstancePersistenceManager.findByReferenceUUID(refUUID);
         if (siCache == null) {
-            return ("Unknown systemInstance with referenceUUID="+ refUUID);
+            throw new EJBException ("checkStatus encounters unknown systemInstance with referenceUUID="+ refUUID);
         }
         SystemInstance siDb = SystemInstancePersistenceManager.findById(siCache.getId());
         if(siDb.getSystemDelta() == null)
