@@ -64,8 +64,7 @@ public class DriverResource {
     @Path("/{topoUri}")
     public ApiDriverInstance pullJson(@PathParam("topoUri")String topoUri) throws Exception{
         DriverInstance driverInstance = systemCallHandler.retrieveDriverInstance(topoUri);
-        ApiDriverInstance adi = new ApiDriverInstance();
-        Map<String, String> properties = driverInstance.getProperties();
+        Map<String, String> properties = new HashMap<String, String>(driverInstance.getProperties());
         Set<String> keySet = properties.keySet();
         String ttlKey = "";
         for(String key : keySet)
@@ -75,9 +74,10 @@ public class DriverResource {
             }
         if(!ttlKey.equals("")){
             String ttl = properties.get(ttlKey);
-            properties.replace(ttlKey, ttl, ModelUtil.marshalOntModelJson(ModelUtil.unmarshalOntModel(ttl)));            
+            properties.put(ttlKey, ModelUtil.marshalOntModelJson(ModelUtil.unmarshalOntModel(ttl)));            
         }
-        adi.setProperties(driverInstance.getProperties());
+        ApiDriverInstance adi = new ApiDriverInstance();
+        adi.setProperties(properties);
         return adi;
     }
     
