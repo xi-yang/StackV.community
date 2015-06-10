@@ -153,6 +153,13 @@
         </div>
 
         <script type="text/javascript">
+            //Debug, break out "model" to a top level object
+            var model;
+            require(["local/versastack/model"],function(foo){
+                model=foo;
+                model.init();
+            });
+            
             require(["dojo/on", "dijit/registry", "dojo/ready", "dijit/layout/ContentPane"], function(on, registry, ready, ContentPane) {
                 ready(function() {
                     var overviewPanel = registry.byId("overview");
