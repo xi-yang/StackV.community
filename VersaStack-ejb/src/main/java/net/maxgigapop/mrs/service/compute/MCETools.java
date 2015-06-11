@@ -13,6 +13,7 @@ import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
+import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.InfModel;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
@@ -30,9 +31,13 @@ import static java.lang.System.exit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.ejb.EJBException;
+import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.Nml;
 
 /**
  *
@@ -295,5 +300,64 @@ public class MCETools {
         OntModel outputModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         outputModel.add(infModel);
         return outputModel;
+    }
+    
+    // define constraint sets (@TODO: combine the multuple rules into one in each set)
+    private static String[] l2PathTakeOffConstraints = {
+            "SELECT $s $p $o WHERE {$s a nml:Topology. $o a nml:Node FILTER($s = <$$s> && $o = <$$o>)}",
+            "SELECT $s $p $o WHERE {$s a nml:Node. $o a nml:BidirectionalPort FILTER($s = <$$s> && $o = <$$o>)}",
+            "SELECT $s $p $o WHERE {$s a nml:Topology. $o a nml:BidirectionalPort FILTER($s = <$$s> && $o = <$$o>)}",
+            "SELECT $s $p $o WHERE {$s a nml:Node. $o a nml:SwitchingService FILTER($s = <$$s> && $o = <$$o>)}",
+            "SELECT $s $p $o WHERE {$s a nml:Topology. $o a nml:SwitchingService FILTER($s = <$$s> && $o = <$$o>)}",
+    };
+    private static String[] l2PathTransitConstraints = {
+            "SELECT $s $p $o WHERE {$s a nml:BidirectionalPort. $o a nml:SwitchingService FILTER($s = <$$s> && $o = <$$o>)}",
+            "SELECT $s $p $o WHERE {$s a nml:SwitchingService. $o a nml:BidirectionalPort FILTER($s = <$$s> && $o = <$$o>)}",
+            "SELECT $s $p $o WHERE {$s a nml:BidirectionalPort. $o a nml:BidirectionalPort FILTER($s = <$$s> && $o = <$$o>)}",
+    };
+    private static String[] l2PathLandingConstraints = {
+            "SELECT $s $p $o WHERE {$s a nml:SwitchingService. $o a nml:Node FILTER($s = <$$s> && $o = <$$o>)}",
+            "SELECT $s $p $o WHERE {$s a nml:SwitchingService. $o a nml:Topology FILTER($s = <$$s> && $o = <$$o>)}",
+            "SELECT $s $p $o WHERE {$s a nml:BidirectionalPort. $o a nml:Node FILTER($s = <$$s> && $o = <$$o>)}",
+            "SELECT $s $p $o WHERE {$s a nml:Node. $o a nml:Topology FILTER($s = <$$s> && $o = <$$o>)}",
+            "SELECT $s $p $o WHERE {$s a nml:BidirectionalPort. $o a nml:Topology FILTER($s = <$$s> && $o = <$$o>)}",
+    };
+    
+    public static boolean verifyL2Path(Model model, Path path) {
+        String stage = "TAKEOFF";
+        Iterator<Statement> itS = path.iterator();
+        while (itS.hasNext()) {
+            Statement stmt = itS.next();
+            if (stage.equals("TRANSIT") && stmt.getObject().isResource() &&
+                    ( ModelUtil.isResourceOfType(model,stmt.getObject().asResource(), Nml.Node)
+                    || ModelUtil.isResourceOfType(model,stmt.getObject().asResource(), Nml.Topology) )
+                    )
+                stage = "LANDING";
+            if (stage.equals("TAKEOFF") &&
+                    ( ModelUtil.isResourceOfType(model,stmt.getSubject(), Nml.BidirectionalPort)
+                    || ModelUtil.isResourceOfType(model,stmt.getSubject(), Nml.SwitchingService) )
+                    )
+                stage = "TRANSIT";
+
+            if (stage.equals("TAKEOFF")) {
+                if (!evaluateStatement_AnyTrue(model, stmt, l2PathTakeOffConstraints))
+                    return false;
+            } else if (stage.equals("TRANSIT")) {
+                if (!evaluateStatement_AnyTrue(model, stmt, l2PathTransitConstraints))
+                    return false;
+            } else if (stage.equals("LANDING")) {
+                if (!evaluateStatement_AnyTrue(model, stmt, l2PathLandingConstraints))
+                    return false;                
+            }
+        }
+        return true;
+    }
+    
+    public static boolean evaluateStatement_AnyTrue(Model model, Statement stmt, String[] constraints) {
+        for (String sparql: constraints) {
+            if (ModelUtil.evaluateStatement(model, stmt, sparql))
+                return true;
+        }
+        return false;
     }
 }

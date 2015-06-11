@@ -143,9 +143,15 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
         Iterator<MCETools.Path> itP = KSP.iterator();
         while (itP.hasNext()) {
             MCETools.Path candidatePath = itP.next();
-            //@@ doVerify (together with generating connection subnets)
-            //$$ if(!verified)
-                // itP.remove();
+            // verify path
+            if(!MCETools.verifyL2Path(transformedModel, candidatePath)) {
+                itP.remove();
+            }
+            // generating connection subnets (statements added to candidatePath) while verifying VLAN availability
+            //if(!MCETools.allcocateSubnetsOnL2Path(transformedModel, candidatePath)) {
+            //    itP.remove();
+            //}
+
         }
         if (KSP.size() == 0)
             return null;
