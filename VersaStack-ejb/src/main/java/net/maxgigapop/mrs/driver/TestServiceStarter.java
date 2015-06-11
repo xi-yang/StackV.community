@@ -64,7 +64,7 @@ public class TestServiceStarter {
                 + "        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1>,\n"
                 + "        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-4>.");
         try {
-            model1.setTtlModel(new String(Files.readAllBytes(Paths.get("/Users/max/NetBeansProjects/VersaStack/VersaStack-web/src/main/webapp/data/stub-driver1.ttl"))));
+            model1.setTtlModel(new String(Files.readAllBytes(Paths.get("/Users/max/NetBeansProjects/VersaStack/VersaStack-web/src/main/webapp/data/model2.ttl"))));
         } catch (IOException ex) {
             Logger.getLogger(TestServiceStarter.class.getName()).log(Level.SEVERE, null, ex);
         }
