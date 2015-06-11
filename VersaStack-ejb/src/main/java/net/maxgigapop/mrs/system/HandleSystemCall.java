@@ -367,6 +367,7 @@ public class HandleSystemCall {
             throw new EJBException("commitDelta has already been done once with systemInstance with referenceUUID="+sysInstanceUUID);
         }
         
+        systemInstance.setCommitFlag(true);
         Future<String> commitStatus = this.commitDelta(systemInstance);
         systemInstance.setCommitStatus(commitStatus);
         return commitStatus;

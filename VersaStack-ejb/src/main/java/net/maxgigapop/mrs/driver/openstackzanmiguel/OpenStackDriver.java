@@ -3,11 +3,14 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package net.maxgigapop.mrs.driver.aws;
+package net.maxgigapop.mrs.driver.openstackzanmiguel;
 
-import com.amazonaws.regions.Regions;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hp.hpl.jena.ontology.OntModel;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
@@ -28,21 +31,16 @@ import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
+import org.json.simple.JSONObject;
 
 /**
  *
  * @author muzcategui
  */
-
-//TODO make the stirng returned by the push.progate function to be in JSON format
-// and adapt it to the driver
-
-//TODO make request not to be in the database as a driver property, as they do not
-//truly get deleted.
 @Stateless
-public class AwsDriver implements IHandleDriverSystemCall {
+public class OpenStackDriver implements IHandleDriverSystemCall {
 
-    Logger logger = Logger.getLogger(AwsDriver.class.getName());
+    static final Logger logger = Logger.getLogger(OpenStackDriver.class.getName());
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
@@ -50,28 +48,30 @@ public class AwsDriver implements IHandleDriverSystemCall {
 
         aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId());
 
-        String access_key_id = driverInstance.getProperty("aws_access_key_id");
-        String secret_access_key = driverInstance.getProperty("aws_secret_access_key");
-        String r = driverInstance.getProperty("region");
+        String username = driverInstance.getProperty("username");
+        String password = driverInstance.getProperty("password");
+        String tenant = driverInstance.getProperty("tenant");
         String topologyURI = driverInstance.getProperty("topologyUri");
-        Regions region = Regions.fromName(r);
+        String url = driverInstance.getProperty("url");
+        String NATServer = driverInstance.getProperty("NATServer");
 
-        String model = driverInstance.getHeadVersionItem().getModelRef().getTtlModel();
-        String modelAdd = aDelta.getModelAddition().getTtlModel();
-        String modelReduc = aDelta.getModelReduction().getTtlModel();
+        OntModel model = driverInstance.getHeadVersionItem().getModelRef().getOntModel();
+        OntModel modelAdd = aDelta.getModelAddition().getOntModel();
+        OntModel modelReduc = aDelta.getModelReduction().getOntModel();
 
-        AwsPush push = new AwsPush(access_key_id, secret_access_key, region, topologyURI);
-        String requests = null;
+        OpenStackPush push = new OpenStackPush(url, NATServer, username, password, tenant, topologyURI);
+        String requests = "";
+        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         try {
-            requests = push.pushPropagate(model, modelAdd, modelReduc);
+            requests = push.propagate(model, modelAdd, modelReduc);
         } catch (Exception ex) {
-            Logger.getLogger(AwsDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
+            Logger.getLogger(OpenStackDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
         }
 
-        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         driverInstance.putProperty(requestId, requests);
+
         DriverInstancePersistenceManager.merge(driverInstance);
-        Logger.getLogger(AwsDriver.class.getName()).log(Level.INFO, "AWS driver delta models succesfully propagated");
+        Logger.getLogger(OpenStackDriver.class.getName()).log(Level.INFO, "OpenStack driver delta models succesfully propagated");
     }
 
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
@@ -84,21 +84,40 @@ public class AwsDriver implements IHandleDriverSystemCall {
             throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
         }
 
-        String access_key_id = driverInstance.getProperty("aws_access_key_id");
-        String secret_access_key = driverInstance.getProperty("aws_secret_access_key");
-        String r = driverInstance.getProperty("region");
+        String username = driverInstance.getProperty("username");
+        String password = driverInstance.getProperty("password");
+        String tenant = driverInstance.getProperty("tenant");
         String topologyURI = driverInstance.getProperty("topologyUri");
-        Regions region = Regions.fromName(r);
+        String url = driverInstance.getProperty("url");
+        String NATServer = driverInstance.getProperty("NATServer");
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         String requests = driverInstance.getProperty(requestId);
+        List<JSONObject> JSONRequests = new ArrayList();
+        OpenStackPush push = new OpenStackPush(url, NATServer, username, password, tenant, topologyURI);
 
-        AwsPush push = new AwsPush(access_key_id, secret_access_key, region, topologyURI);
-        push.pushCommit(requests);
+        //organize the requests into JSON format
+        String[] splits = requests.split("[\\n]");
+        for (String s : splits) {
+            HashMap<String, Object> result = new HashMap();
+            try {
+                result
+                        = new ObjectMapper().readValue(requests, HashMap.class);
+                JSONObject m = new JSONObject(result);
+            } catch (IOException ex) {
+                Logger.getLogger(OpenStackDriver.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            
+            JSONRequests.add(new JSONObject(result));
+
+        }
+
+        //commit into Openstack
+        push.pushCommit(JSONRequests);
 
         driverInstance.getProperties().remove(requestId);
         DriverInstancePersistenceManager.merge(driverInstance);
 
-        Logger.getLogger(AwsDriver.class.getName()).log(Level.INFO, "AWS driver delta models succesfully commited");
+        Logger.getLogger(OpenStackDriver.class.getName()).log(Level.INFO, "OpenStack driver delta models succesfully commited");
         return new AsyncResult<String>("SUCCESS");
     }
 
@@ -113,13 +132,14 @@ public class AwsDriver implements IHandleDriverSystemCall {
         }
 
         try {
-            String access_key_id = driverInstance.getProperty("aws_access_key_id");
-            String secret_access_key = driverInstance.getProperty("aws_secret_access_key");
-            String r = driverInstance.getProperty("region");
-            String topologyURI = driverInstance.getProperty("topologyUri");
-            Regions region = Regions.fromName(r);
+            String username = driverInstance.getProperty("username");
+            String password = driverInstance.getProperty("password");
+            String tenant = driverInstance.getProperty("tenant");
+            String url = driverInstance.getProperty("url");
+            String topologyUri = driverInstance.getProperty("topologyUri");
+            String NATServer = driverInstance.getProperty("NATServer");
 
-            OntModel ontModel = AwsModelBuilder.createOntology(access_key_id, secret_access_key, region, topologyURI);
+            OntModel ontModel = OpenStackNeutronModelBuilder.createOntology(url, NATServer, topologyUri, username, password, tenant);
 
             if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();
@@ -138,7 +158,7 @@ public class AwsDriver implements IHandleDriverSystemCall {
         } catch (IOException e) {
             throw new EJBException(String.format("pullModel on %s raised exception[%s]", driverInstance, e.getMessage()));
         } catch (Exception ex) {
-            Logger.getLogger(AwsDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
+            Logger.getLogger(OpenStackDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
         }
 
         //Logger.getLogger(AwsDriver.class.getName()).log(Level.INFO, "AWS driver ontology model succesfully pulled");

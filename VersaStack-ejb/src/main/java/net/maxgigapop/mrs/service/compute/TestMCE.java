@@ -15,7 +15,7 @@ import javax.ejb.Stateless;
 import javax.ejb.LocalBean;
 import net.maxgigapop.mrs.bean.DeltaBase;
 import net.maxgigapop.mrs.bean.ModelBase;
-import net.maxgigapop.mrs.driver.openstack.OpenStackModelBuilder;
+
 
 /**
  *
