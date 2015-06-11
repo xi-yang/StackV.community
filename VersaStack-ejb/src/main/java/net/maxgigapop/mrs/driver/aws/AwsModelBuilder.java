@@ -23,6 +23,11 @@ import net.maxgigapop.mrs.common.*;
 //TODO add the public ip address that an instance might have that is not an
 //elastic ip
 
+/*TODO: Intead of having separate routeFrom statements for routes in a route table 
+associated with subnets. Include the routeFrom statement just once in the model, 
+meaning that look just once for the associations of the route table, 
+do not do a routeFrom statement for every route.*/
+
 /*
  *
  * @author muzcategui
@@ -131,50 +136,69 @@ public class AwsModelBuilder {
 
         //put all the Vpn gateways into the model
         for (VpnGateway g : ec2Client.getVirtualPrivateGateways()) {
-            if (!g.getVpcAttachments().isEmpty()) {
-                String vpnGatewayId = ec2Client.getIdTag(g.getVpnGatewayId());
-                Resource VPNGATEWAY = RdfOwl.createResource(model, topologyURI + ":" + vpnGatewayId, biPort);
-                model.add(model.createStatement(VPNGATEWAY, hasTag, VPNGW_TAG));
-                for (VirtualInterface vi : dcClient.getVirtualInterfaces(g.getVpnGatewayId())) {
-                    String viId = vi.getVirtualGatewayId();
-                    String vlanNum = Integer.toString(vi.getVlan());
+            String vpnGatewayId = ec2Client.getIdTag(g.getVpnGatewayId());
+            Resource VPNGATEWAY = RdfOwl.createResource(model, topologyURI + ":" + vpnGatewayId, biPort);
+            model.add(model.createStatement(VPNGATEWAY, hasTag, VPNGW_TAG));
+            model.add(model.createStatement(awsTopology, hasBidirectionalPort, VPNGATEWAY));
 
-                    Resource VLAN_LABEL = RdfOwl.createResource(model, topologyURI + ":vlan-" + vlanNum, Nml.Label);
-                    model.add(model.createStatement(VLAN_LABEL, Nml.labeltype, vlan));
-                    model.add(model.createStatement(VLAN_LABEL, value, vlanNum));
+            for (VirtualInterface vi : dcClient.getVirtualInterfaces(g.getVpnGatewayId())) {
+                String viId = vi.getVirtualGatewayId();
+                String vlanNum = Integer.toString(vi.getVlan());
 
-                    Resource VIRTUAL_INTERFACE = RdfOwl.createResource(model, topologyURI + ":" + vi.getVirtualInterfaceId(), biPort);
-                    model.add(model.createStatement(VIRTUAL_INTERFACE, hasTag, VIRTUAL_INTERFACE_TAG));
-                    model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabel, VLAN_LABEL));
-                    model.add(model.createStatement(VPNGATEWAY, Nml.isAlias, VIRTUAL_INTERFACE));
-                    model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.isAlias, VPNGATEWAY));
-                    model.add(model.createStatement(directConnect, hasBidirectionalPort, VIRTUAL_INTERFACE));
+                Resource VLAN_LABEL = RdfOwl.createResource(model, topologyURI + ":vlan-" + vlanNum, Nml.Label);
+                model.add(model.createStatement(VLAN_LABEL, Nml.labeltype, vlan));
+                model.add(model.createStatement(VLAN_LABEL, value, vlanNum));
 
-                    Connection c = dcClient.getConnection(vi);
-                    if (c != null) {
-                        //model.add(model.createStatement(VLAN,Mrs.capacity,c.getBandwidth()));
+                Resource VIRTUAL_INTERFACE = RdfOwl.createResource(model, topologyURI + ":" + vi.getVirtualInterfaceId(), biPort);
+                model.add(model.createStatement(VIRTUAL_INTERFACE, hasTag, VIRTUAL_INTERFACE_TAG));
+                model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabel, VLAN_LABEL));
+                model.add(model.createStatement(VPNGATEWAY, Nml.isAlias, VIRTUAL_INTERFACE));
+                model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.isAlias, VPNGATEWAY));
+                model.add(model.createStatement(directConnect, hasBidirectionalPort, VIRTUAL_INTERFACE));
 
-                    }
+                Connection c = dcClient.getConnection(vi);
+                if (c != null) {
+                    //model.add(model.createStatement(VLAN,Mrs.capacity,c.getBandwidth()));
+
                 }
             }
+            //TODO: Ad a statement to indicate the status of the virtual interface
+        }
+
+        //get a list of all the virtual interfaces that do not bellong to a VPN gateway
+        //as this Virtual interfaces could be accepted or denied to be a part of a dc connection
+        //in the push part
+        for (VirtualInterface vi : dcClient.getNoAssocVirtualInterface()) {
+            String viId = vi.getVirtualGatewayId();
+            String vlanNum = Integer.toString(vi.getVlan());
+
+            Resource VLAN_LABEL = RdfOwl.createResource(model, topologyURI + ":vlan-" + vlanNum, Nml.Label);
+            model.add(model.createStatement(VLAN_LABEL, Nml.labeltype, vlan));
+            model.add(model.createStatement(VLAN_LABEL, value, vlanNum));
+
+            Resource VIRTUAL_INTERFACE = RdfOwl.createResource(model, topologyURI + ":" + vi.getVirtualInterfaceId(), biPort);
+            model.add(model.createStatement(VIRTUAL_INTERFACE, hasTag, VIRTUAL_INTERFACE_TAG));
+            model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabel, VLAN_LABEL));
+            model.add(model.createStatement(directConnect, hasBidirectionalPort, VIRTUAL_INTERFACE));
+            //TODO: Ad a statement to indicate the status of the virtual interface
         }
 
         //to be used later, a list containing the elatic ips as strings
         List<String> elasticIps = new ArrayList();
         //put all the elastic ips under the account into the model
-        for (Address ip : ec2Client.getElasticIps()) {
+        /*for (Address ip : ec2Client.getElasticIps()) {
             Resource PUBLIC_ADDRESS = RdfOwl.createResource(model, topologyURI + ":" + ip.getPublicIp(), networkAddress);
             model.add(model.createStatement(PUBLIC_ADDRESS, type, "ipv4:public"));
             model.add(model.createStatement(PUBLIC_ADDRESS, value, ip.getPublicIp()));
             elasticIps.add(ip.getPublicIp());
-        }
+        }*/
 
         //Put all the subnets into the model
         for (Subnet p : ec2Client.getSubnets()) {
             String subnetId = ec2Client.getIdTag(p.getSubnetId());
             Resource SUBNET = RdfOwl.createResource(model, topologyURI + ":" + subnetId, switchingSubnet);
             Resource SUBNET_NETWORK_ADDRESS
-                    = RdfOwl.createResource(model, topologyURI + ":subnetnetworkaddress-" + p.getSubnetId(), networkAddress);
+                    = RdfOwl.createResource(model, topologyURI + ":subnetnetworkaddress-" + subnetId, networkAddress);
             model.add(model.createStatement(SUBNET_NETWORK_ADDRESS, type, "ipv4-prefix"));
             model.add(model.createStatement(SUBNET_NETWORK_ADDRESS, value, p.getCidrBlock()));
             model.add(model.createStatement(SUBNET, hasNetworkAddress, SUBNET_NETWORK_ADDRESS));
@@ -197,7 +221,7 @@ public class AwsModelBuilder {
                 }
             }
 
-            //put the public Ip (if any) of the network interface into the model3
+            /*//put the public Ip (if any) of the network interface into the model3
             if (n.getAssociation() != null && n.getAssociation().getPublicIp() != null) {
                 String publicIp = n.getAssociation().getPublicIp();
                 Resource PUBLIC_ADDRESS;
@@ -209,7 +233,7 @@ public class AwsModelBuilder {
                     model.add(model.createStatement(PUBLIC_ADDRESS, value, publicIp));
                 }
                 model.add(model.createStatement(PORT, hasNetworkAddress, PUBLIC_ADDRESS));
-            }
+            }*/
 
             //specify the subnet of the network interface 
             String subnetId = ec2Client.getIdTag(n.getSubnetId());

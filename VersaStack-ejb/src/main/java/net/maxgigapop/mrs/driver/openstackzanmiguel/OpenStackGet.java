@@ -6,15 +6,19 @@
 package net.maxgigapop.mrs.driver.openstackzanmiguel;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.model.common.Resource;
 import org.openstack4j.model.compute.*;
 import org.openstack4j.model.compute.ext.Hypervisor;
 import org.openstack4j.model.network.*;
 import org.openstack4j.model.storage.block.*;
+import org.openstack4j.openstack.compute.domain.NovaFloatingIP;
 import org.openstack4j.openstack.compute.domain.NovaInterfaceAttachment;
 import org.openstack4j.openstack.compute.internal.ext.InterfaceServiceImpl;
+import org.openstack4j.openstack.networking.domain.NeutronRouterInterface;
 
 /**
  *
@@ -23,32 +27,37 @@ import org.openstack4j.openstack.compute.internal.ext.InterfaceServiceImpl;
 public class OpenStackGet {
 
     private OSClient client = null;
-    private List<? extends Network> networks = null;
-    private List<? extends Subnet> subnets = null;
-    private List<? extends Port> ports = null;
-    private List<? extends Server> servers = null;
-    private List<? extends Volume> volumes = null;
-    private List<? extends NetFloatingIP> floatingIps = null;
-    private List<? extends Hypervisor> hypervisors = null;
+    private List< Network> networks = new ArrayList();
+    private List<Subnet> subnets = new ArrayList();
+    private List<Port> ports = new ArrayList();
+    private List<Server> servers = new ArrayList();
+    private List<Volume> volumes = new ArrayList();
+    private List<NetFloatingIP> floatingIps = new ArrayList();
+    private List<Router> routers = new ArrayList();
+    private List<RouterInterface> routerinterface = new ArrayList();
+    public List<HostRoute> hostroute = new ArrayList();
+    public List<Hypervisor> hypervisors = new ArrayList();
+    public List<NovaFloatingIP> novafloatingIps = new ArrayList();
 
-    public OpenStackGet(String url, String username, String password, String tenantName) {
+    public OpenStackGet(String url, String NATServer, String username, String password, String tenantName) {
         //authenticate
         Authenticate authenticate = new Authenticate();
-        client = authenticate.openStackAuthenticate(url, username, password, tenantName);
+
+        client = authenticate.openStackAuthenticate(url, NATServer, username, password, tenantName);
 
         //get the resources
-        networks = client.networking().network().list();
-        subnets = client.networking().subnet().list();
-        ports = client.networking().port().list();
-        servers = client.compute().servers().list();
-        volumes = client.blockStorage().volumes().list();
-        floatingIps = client.networking().floatingip().list();
-        //hypervisors = client.compute().hypervisors().list();
-
+        networks = (List<Network>) client.networking().network().list();
+        subnets = (List<Subnet>) client.networking().subnet().list();
+        ports = (List<Port>) client.networking().port().list();
+        servers = (List<Server>) client.compute().servers().list();
+        volumes = (List<Volume>) client.blockStorage().volumes().list();
+        floatingIps = (List<NetFloatingIP>) client.networking().floatingip().list();
+        routers = (List<Router>) client.networking().router().list();
+        novafloatingIps = (List<NovaFloatingIP>) client.compute().floatingIps().list();
     }
 
     //get all the nets in the tenant
-    public List<? extends Network> getNetworks() {
+    public List<Network> getNetworks() {
         return networks;
     }
 
@@ -63,7 +72,7 @@ public class OpenStackGet {
     }
 
     //get all the subnets in the tenant
-    public List<? extends Subnet> getSubnets() {
+    public List<Subnet> getSubnets() {
         return subnets;
     }
 
@@ -77,8 +86,21 @@ public class OpenStackGet {
         return null;
     }
 
+    //get a Lsit of subnets under a network
+    public List<Subnet> getSubnets(String id) {
+        List<Subnet> subnetList = new ArrayList();
+        for (Subnet sub : subnets) {
+            if (sub.getNetworkId().equals(id)) {
+                subnetList.add(sub);
+            } else if (sub.getId().equals(id)) {
+                subnetList.add(sub);
+            }
+        }
+        return subnetList;
+    }
+
     //get all the ports in the tenant
-    public List<? extends Port> getPorts() {
+    public List<Port> getPorts() {
         return ports;
     }
 
@@ -92,8 +114,18 @@ public class OpenStackGet {
         return null;
     }
 
+    //get port subnet id
+    public List<String> getPortSubnetID(Port port) {
+        List<IP> snID = new ArrayList();
+        List<String> subID = new ArrayList();
+        for (IP ip : port.getFixedIps()) {
+            subID.add(ip.getSubnetId());
+        }
+        return subID;
+    }
+
     //get all servers in the tenant
-    public List<? extends Server> getServers() {
+    public List<Server> getServers() {
         return servers;
     }
 
@@ -118,35 +150,36 @@ public class OpenStackGet {
         }
         return nets;
     }
-    
+
     //get the Subnets of  a server
     public List<Subnet> getServerSubnets(Server server) {
         List<Subnet> nets = new ArrayList();
         InterfaceServiceImpl impl = new InterfaceServiceImpl();
-        for (InterfaceAttachment att: impl.list(server.getId())) {
-                for(InterfaceAttachment.FixedIp attIp : att.getFixedIps())
-                {
-                    if(!nets.contains(getSubnet(attIp.getSubnetId())))
+        for (InterfaceAttachment att : impl.list(server.getId())) {
+            for (InterfaceAttachment.FixedIp attIp : att.getFixedIps()) {
+                if (!nets.contains(getSubnet(attIp.getSubnetId()))) {
                     nets.add(getSubnet(attIp.getSubnetId()));
                 }
             }
+        }
         return nets;
     }
-    
+
     //get the ports of  a server
     public List<Port> getServerPorts(Server server) {
-        List<Port> ports = new ArrayList();
+        List<Port> portList = new ArrayList();
         InterfaceServiceImpl impl = new InterfaceServiceImpl();
-        for (InterfaceAttachment att: impl.list(server.getId())) {
-                Port p = getPort(att.getPortId());
-                if(!ports.contains(p))
-                    ports.add(p);
+        for (InterfaceAttachment att : impl.list(server.getId())) {
+            Port p = getPort(att.getPortId());
+            if (!portList.contains(p)) {
+                portList.add(p);
             }
-        return ports;
+        }
+        return portList;
     }
 
     //get all volumes in the tenant
-    public List<? extends Volume> getVolumes() {
+    public List<Volume> getVolumes() {
         return volumes;
     }
 
@@ -161,7 +194,7 @@ public class OpenStackGet {
     }
 
     //get all floating ips in the tenant
-    public List<? extends NetFloatingIP> getFloatingIp() {
+    public List<NetFloatingIP> getFloatingIp() {
         return floatingIps;
     }
 
@@ -175,8 +208,13 @@ public class OpenStackGet {
         return null;
     }
 
+    public List<NovaFloatingIP> getNovaFloatingIP() {
+        return novafloatingIps;
+    }
+
     //get a list of all the hypervisors
-    public List<? extends Hypervisor> getHypervisors() {
+
+    public List<Hypervisor> getHypervisors() {
         return hypervisors;
     }
 
@@ -185,6 +223,21 @@ public class OpenStackGet {
         for (Hypervisor h : hypervisors) {
             if (h.getId().equals(id)) {
                 return h;
+            }
+        }
+        return null;
+    }
+
+    //get all the routers
+    public List<Router> getRouters() {
+        return routers;
+    }
+
+    //get a specific route by id or name
+    public Router getRouter(String id) {
+        for (Router router : routers) {
+            if (router.getId().equals(id) || router.getName().equals(id)) {
+                return router;
             }
         }
         return null;
@@ -205,4 +258,36 @@ public class OpenStackGet {
             return r.getName();
         }
     }
+
+    //get the name of a server 
+    public String getServereName(Server r) {
+        String name = r.getName();
+        if (name == null || name.isEmpty()) {
+            return r.getId();
+        } else {
+            return r.getName();
+        }
+    }
+
+    public String getVolumeName(Volume r) {
+        String name = r.getName();
+        if (name == null || name.isEmpty()) {
+            return r.getId();
+        } else {
+            return r.getName();
+        }
+    }
+
+    public String getInterfaceSubnetID(NeutronRouterInterface i) {
+        return i.getSubnetId();
+    }
+
+    public String getInterfacePortID(NeutronRouterInterface i) {
+        return i.getPortId();
+    }
+
+    public String getInterfaceRouterID(NeutronRouterInterface i) {
+        return i.getId();
+    }
+
 }
