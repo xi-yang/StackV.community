@@ -155,8 +155,10 @@
         <script type="text/javascript">
             //Debug, break out "model" to a top level object
             var model;
+            var m;
             require(["local/versastack/model"],function(foo){
                 model=foo;
+                m=model;
                 model.init();
             });
             

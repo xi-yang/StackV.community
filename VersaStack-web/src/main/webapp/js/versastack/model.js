@@ -1,81 +1,37 @@
 define([
+   "local/versastack/utils"
+ ], function(utils) {
+    var map_=utils.map_;
    
-], function() {
-   //For debuging
-   breakout={};
+   var rootNodes=[];
    
-   var nodeList,edgeList;
+   /**
+    * Initialize the model. This asyncronasly loads and parsed the model from the backend.
+    * @returns {undefined}
+    */
    function init(){
        var request = new XMLHttpRequest();
         request.open("GET","/VersaStack-web/restapi/model/");
-//        request.open("GET","/VersaStack-web/data/graph-full.json");// A sample graph
-        request.setRequestHeader("Accept","application/json",false);
+        request.setRequestHeader("Accept","application/json");
         request.onload=function(){
-            data=request.responseText;
+            var data=request.responseText;
             data=JSON.parse(data);
-            map=JSON.parse(data.ttlModel);
-//            map=data;//For use with data/graph-full.json
-            breakout.map=map;
+            var map=JSON.parse(data.ttlModel);
             
-            //map is an associate array containing all of the elements
-            //the key is the element id as refered to by other elements
-            //The elements themselves are associative arrays
-            //Here, we alias the keys used in the elements' associative arrays, and some common values
-            values={
-                type : "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
-                hasBidirectionalPort : "http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort",
-                isAlias : "http://schemas.ogf.org/nml/2013/03/base#isAlias",
-                namedIndividual:"http://www.w3.org/2002/07/owl#NamedIndividual",
-                topology:"http://schemas.ogf.org/nml/2013/03/base#Topology",
-                node:"http://schemas.ogf.org/nml/2013/03/base#Node",
-                bidirectionalPort:"http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort",
-                hypervisorService:"http://schemas.ogf.org/mrs/2013/12/topology#HypervisorService",
-                labelGroup:"http://schemas.ogf.org/nml/2013/03/base#LabelGroup",
-                label:"http://schemas.ogf.org/nml/2013/03/base#Label",
-                hasNode: "http://schemas.ogf.org/nml/2013/03/base#hasNode",
-                hasService: "http://schemas.ogf.org/nml/2013/03/base#hasService",
-                hasTopology: "http://schemas.ogf.org/nml/2013/03/base#hasTopology",
-                networkAdress: "http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress",
-                bucket: "http://schemas.ogf.org/mrs/2013/12/topology#Bucket",
-                routingService: "http://schemas.ogf.org/mrs/2013/12/topology#RoutingService",
-                switchingSubnet: "http://schemas.ogf.org/mrs/2013/12/topology#SwitchingSubnet", 
-                hasNetworkAddress: "http://schemas.ogf.org/mrs/2013/12/topology#hasNetworkAddress",
-                provideByService: "http://schemas.ogf.org/mrs/2013/12/topology#providedByService",
-                hasBucket: "http://schemas.ogf.org/mrs/2013/12/topology#hasBucket",
-                belongsTo: "http://schemas.ogf.org/nml/2013/03/base#belongsTo",
-                name: "http://schemas.ogf.org/nml/2013/03/base#name",
-                tag: "http://schemas.ogf.org/mrs/2013/12/topology#Tag",
-                route: "http://schemas.ogf.org/mrs/2013/12/topology#Route",
-                volume: "http://schemas.ogf.org/mrs/2013/12/topology#Volume",
-                virtualCloudService: "http://schemas.ogf.org/mrs/2013/12/topology#VirtualCloudService",
-                blockStorageService: "http://schemas.ogf.org/mrs/2013/12/topology#BlockStorageService",
-                routingTable: "http://schemas.ogf.org/mrs/2013/12/topology#RoutingTable",
-                switchingService:"http://schemas.ogf.org/nml/2013/03/base#SwitchingService",
-                topopolgySwitchingService:"http://schemas.ogf.org/mrs/2013/12/topology#SwitchingService",
-                hasVolume:"http://schemas.ogf.org/mrs/2013/12/topology#hasVolume",
-                objectStorageService:"http://schemas.ogf.org/mrs/2013/12/topology#ObjectStorageService"
-            };
-            
-            
-            //To assist in debuging, we mark all values as "processed" once we have done so
-            //This allows us to easily check if their is a type that we have not handled
             //We begin by extracting all nodes/topologies
-            nodeList=[];
+            var nodeMap={};
+            var nodeList=[];
             for(var key in map){
-                val=map[key];
-                types=val[values.type];
-                breakout.type=types;
-                for(var typeKey in types){
-                    type=types[typeKey];
+                var val=map[key];
+                var types=val[values.type];
+                map_(types,function(type){
                     type=type.value;
                     switch(type){
                         case values.topology:
                         case values.node:
-                            //We will later want to determine which nodes/topologies are root
-                            //  that is to say, which nodes/topologies do not have a parent node/topology
-                            val.isRoot=false;
-                            val.processed=true;
-                            nodeList.push(val);
+                            var toAdd = new Node(val);
+                            nodeMap[key]=toAdd;
+                            nodeList.push(toAdd);
                             break;
                         case values.bidirectionalPort:
                             if(values.hasBidirectionalPort in val){
@@ -109,7 +65,7 @@ define([
                             console.log("Unknown type: "+type);
                             break;
                     }
-                }
+                });
             }
             
             //We will construct a list of edges
@@ -118,33 +74,40 @@ define([
             //We also create a backlink in the port back to the node so that we can later convert the edge into an edge between nodes
             //To avoid duplicate edges, we mark the alias port as visited, and if we see a visted port, we do not add an edge
             //This requires that no port has multiple aliases (otherwise we risk missing edges)
-            edgeList=[];
-            for(var key in nodeList){
-                node=nodeList[key];
-                for(var key in node){
+            var edgeList=[];
+            map_(nodeList,/**@param {Node} node**/function(node){
+                var node_=node._backing;
+                for(var key in node_){
                     switch(key){
                         case values.hasBidirectionalPort:
-                            ports=node[key];
-                            for(var key in ports){
-                                portKey=ports[key].value;
-                                port=map[portKey];
+                            var ports=node_[key];
+                            map_(ports,function(portKey){
+                                portKey=portKey.value;
+                                var port=map[portKey];
                                 port.node=node;
                                 if(!port.processed && values.isAlias in port){
-                                    aliasPortKey=port[values.isAlias][0].value;
-                                    aliasPort=map[aliasPortKey];
-                                    newEdge={portA:port, portB:aliasPort};
+                                    var aliasPortKey=port[values.isAlias][0].value;
+                                    var aliasPort=map[aliasPortKey];
+                                    var newEdge={portA:port, portB:aliasPort};
                                     edgeList.push(newEdge);
                                     aliasPort.processed=true;
                                 }
                                 port.processed=true;
-                            }
+                            });
+                            break;
+                        case values.hasNode:
+                        case values.hasTopology:
+                            var subNodes=node_[key];
+                            map_(subNodes,function(subNodeKey){
+                                var subNode=nodeMap[subNodeKey.value];
+                                subNode.isRoot=false;
+                                node.children.push(subNode);
+                            });
                             break;
                         case "isRoot": //This is a key that we added to determine which elements are root in the node/topology tree
                         case "processed":  //This is key that we added to assist in detecting when we fail to handle a case
                         case values.type:
-                        case values.hasNode:
                         case values.hasService:
-                        case values.hasTopology:
                         case values.hasNetworkAddress:
                         case values.provideByService:
                         case values.hasBucket:
@@ -156,21 +119,39 @@ define([
                             console.log("Unknown key: "+key); 
                     }
                 }
-            }
+            });
             
             
             //clean up the edgelist so it associates nodes instead of ports
-            for(var key in edgeList){
-                edge=edgeList[key];
+            map_(edgeList,/**@param {Edge} edge**/ function(edge){
                 edge.nodeA=getNodeOfPort(edge.portA);
                 edge.nodeB=getNodeOfPort(edge.portB);
                 delete edge.portA;
                 delete edge.portB;
-            }
+                
+                edge.nodeA.primaryNeighboors.push(edge.nodeB);
+                edge.nodeB.primaryNeighboors.push(edge.nodeA);
+            });
+            
+            map_(nodeList,/**@param {Node} node**/ function(node){
+               if(node.isRoot){
+                   rootNodes.push(node);
+                   node._complete();
+               } 
+            });
         };
-        breakout.request=request; 
         request.send();
    }
+   
+   /**
+    * The model allows for nested ports
+    * As part of our first pass of parsing the model, we created backlinks in
+    *  in children ports to link back to the parent. Here we traverse that chain
+    *  to find the original Node
+    * 
+    * @param {Object} port
+    * @returns {Node}
+    */
    function getNodeOfPort(port){
        while("parentPort" in port){
            port=port.parentPort;
@@ -178,12 +159,240 @@ define([
        return port.node;
    }
 
+    /**
+     * There are two graphs we want to consider. The first is the tree representing the node/subnode relationships
+     * The second is the model graph, representing the connections as understood by the model
+     * We want to be able to generate a model graph when some, all, or none of the non-leaf nodes are folded
+     * When a node is folded, it assumes all the connections of its children in the model graph
+     * 
+     * We say that a node is external if it is not the current node, nor a descendent of the current node
+     * 
+     * In the below data structure each Node corresponds directly to a model node (or topology), given by _backing
+     * The children field represents the tree structure of subnodes
+     * The primary neighboors refer to Nodes that connect directly to the current one
+     * the secondary neighboors refers to external nodes that connect to a descendent of the current node
+     * 
+    **/
+    var i=0;
+    function Node(backing){
+        this._backing=backing;//the node/topology from the model
+        this.children=[];
+        this.primaryNeighboors=[];
+        this.secondaryNeighboors=[];
+        this.isRoot=true;
+        this.uid=-1;
+        this.isFolded=false;
+        this.isVisible=true;
+        this._parent=null;
+        
+        var that=this;
+        
+        this.fold=function(){
+            this.isFolded=true;
+            this._updateVisible(this.isVisible);//this will update our children appropriatly
+        };
+        this.unfold=function(){
+            this.isFolded=false;
+            this._updateVisible(this.isVisible);
+        };
+   
+        this._updateVisible=function(vis){
+            this.isVisible=vis;
+            var showChildren=vis&&!this.isFolded;
+                map_(this.children,function(child){
+                    child._updateVisible(showChildren);
+                });
+        };
+        this._complete=function(){
+            this.uid=i++;
+            map_(this.children,/**@param {Node} child**/function(child){
+                child.parent=that;
+                child._complete();
+                that.secondaryNeighboors=that.secondaryNeighboors.concat(child.secondaryNeighboors,child.primaryNeighboors);
+            });
+        };
+        
+        this._getEdges= function(){
+            
+            var ans=[];
+            map_(this.primaryNeighboors,/**@param {Node} neighboor**/function(neighboor){
+                if(neighboor.uid>that.uid){
+                    var toAdd=new Edge(that,neighboor);
+                    ans.push(toAdd);
+                }
+            });
+            if(this.isFolded){
+                map_(this.secondaryNeighboors,/**@param {Node} neighboor**/function(neighboor){
+                    if(neighboor.uid>that.uid){
+                        var toAdd=new Edge(that,neighboor);
+                        ans.push(toAdd);
+                    }
+                });
+            }else{
+                map_(this.children,/**@param {Node} child**/function(child){
+                    ans=ans.concat(child._getEdges());
+                });
+            }
+            return ans;
+        };
+        this._getNodes=function(){
+            var ans=[that];
+            if(!this.isFolded){
+                map_(this.children,/**@param {Node} child**/function(child){
+                    ans=ans.concat(child._getNodes());
+                });
+            }
+            return ans;
+        };
+    }
+    
+    function Edge(left,right){
+        this.left=left;
+        this.right=right;
+        
+        this._isProper=function(){
+            var ans=true;
+            while(!this.left.isVisible){
+                this.left=this.left.parent;
+            }
+            while(!this.right.isVisible){
+                this.right=this.right.parent;
+            }
+            ans&=this.left.uid<this.right.uid;
+            return ans;
+        };
+    }
+    
+    function listNodes(){
+        ans=[];
+        map_(rootNodes,/**@param {Node} node**/function(node){
+            ans=ans.concat(node._getNodes());
+        });
+        return ans;
+    }
+    
+    function listEdges(){
+        ans=[];
+        map_(rootNodes,/**@param {Node} node**/function(node){
+            map_(node._getEdges(),/**@param {Edge} edge**/function(edge){
+                if(edge._isProper()){
+                    ans.push(edge);
+                }
+            });
+        });
+        return ans;
+    }
+
+    /**These are the strings used in the model**/
+    var values={
+        type : "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+        hasBidirectionalPort : "http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort",
+        isAlias : "http://schemas.ogf.org/nml/2013/03/base#isAlias",
+        namedIndividual:"http://www.w3.org/2002/07/owl#NamedIndividual",
+        topology:"http://schemas.ogf.org/nml/2013/03/base#Topology",
+        node:"http://schemas.ogf.org/nml/2013/03/base#Node",
+        bidirectionalPort:"http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort",
+        hypervisorService:"http://schemas.ogf.org/mrs/2013/12/topology#HypervisorService",
+        labelGroup:"http://schemas.ogf.org/nml/2013/03/base#LabelGroup",
+        label:"http://schemas.ogf.org/nml/2013/03/base#Label",
+        hasNode: "http://schemas.ogf.org/nml/2013/03/base#hasNode",
+        hasService: "http://schemas.ogf.org/nml/2013/03/base#hasService",
+        hasTopology: "http://schemas.ogf.org/nml/2013/03/base#hasTopology",
+        networkAdress: "http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress",
+        bucket: "http://schemas.ogf.org/mrs/2013/12/topology#Bucket",
+        routingService: "http://schemas.ogf.org/mrs/2013/12/topology#RoutingService",
+        switchingSubnet: "http://schemas.ogf.org/mrs/2013/12/topology#SwitchingSubnet", 
+        hasNetworkAddress: "http://schemas.ogf.org/mrs/2013/12/topology#hasNetworkAddress",
+        provideByService: "http://schemas.ogf.org/mrs/2013/12/topology#providedByService",
+        hasBucket: "http://schemas.ogf.org/mrs/2013/12/topology#hasBucket",
+        belongsTo: "http://schemas.ogf.org/nml/2013/03/base#belongsTo",
+        name: "http://schemas.ogf.org/nml/2013/03/base#name",
+        tag: "http://schemas.ogf.org/mrs/2013/12/topology#Tag",
+        route: "http://schemas.ogf.org/mrs/2013/12/topology#Route",
+        volume: "http://schemas.ogf.org/mrs/2013/12/topology#Volume",
+        virtualCloudService: "http://schemas.ogf.org/mrs/2013/12/topology#VirtualCloudService",
+        blockStorageService: "http://schemas.ogf.org/mrs/2013/12/topology#BlockStorageService",
+        routingTable: "http://schemas.ogf.org/mrs/2013/12/topology#RoutingTable",
+        switchingService:"http://schemas.ogf.org/nml/2013/03/base#SwitchingService",
+        topopolgySwitchingService:"http://schemas.ogf.org/mrs/2013/12/topology#SwitchingService",
+        hasVolume:"http://schemas.ogf.org/mrs/2013/12/topology#hasVolume",
+        objectStorageService:"http://schemas.ogf.org/mrs/2013/12/topology#ObjectStorageService"
+    };
+
+    /**Begin debug functions**/
+    function listNodesPretty(){
+        var nodes = listNodes();
+        var ans="";
+        map_(nodes,/**@param {Node} n**/function(n){
+            ans+=n.uid+",";
+        });
+        return ans;
+    }
+    function listEdgesPretty(){
+        var edges = listEdges();
+        var ans="";
+        map_(edges,/**@param {Edge} e**/function(e){
+            ans+="("+e.left.uid+","+e.right.uid+"), ";
+        });
+        return ans;
+    }
+    
+    /**Note that these fold and unfold functions are inteded for testing only
+     * If a node is not currently visible, they will have no effect
+     **/
+    
+    function fold(i){
+        map_(listNodes(),/**@param {Node} n**/function(n){
+            if(n.uid===i){
+                n.fold();
+            }
+        });
+    }
+    function unfold(i){
+        map_(listNodes(),/**@param {Node} n**/function(n){
+            if(n.uid===i){
+                n.unfold();
+            }
+        });
+    }
+    
+    function printTree(){
+        var ans="\n";
+        map_(rootNodes,/**@param {Node} n**/function(n){
+            map_(printTree_(n),/**@param {String} n**/function(line){
+                ans+=line;
+                ans+="\n";
+            });
+        });
+        return ans;
+    }
+    
+    /**
+     * 
+     * @param {Node} n
+     */
+    function printTree_(n){
+        var ans=[];
+        ans.push(String(n.uid));
+        map_(n.children,/**@param {Node} child**/function(child){
+            map_(printTree_(child),/**@param {String} line**/function(line){
+                ans.push(" "+line);
+            });
+        });
+        return ans;
+    }
+
     /** PUBLIC INTERFACE **/
     return {
         init : init,
-        nodeList: function(){return nodeList},
-        edgeList: function(){return edgeList},
-        breakout : breakout
+        listNodes: listNodes,
+        listEdges: listEdges,
+        /** begin debug functions **/
+        listNodesPretty: listNodesPretty,
+        listEdgesPretty: listEdgesPretty,
+        fold: fold,
+        unfold: unfold,
+        printTree: printTree
     };
     /** END PUBLIC INTERFACE **/
 
