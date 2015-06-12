@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hp.hpl.jena.ontology.OntModel;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Future;
@@ -58,15 +59,21 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         OntModel modelAdd = aDelta.getModelAddition().getOntModel();
         OntModel modelReduc = aDelta.getModelReduction().getOntModel();
 
+<<<<<<< HEAD
         OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, topologyURI);
         List<JSONObject> requests = null;
+=======
+        OpenStackPush push = new OpenStackPush(url, NATServer, username, password, tenant, topologyURI);
+        String requests = "";
+>>>>>>> VersaStack-MiguelUzcategui
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         try {
             requests = push.propagate(model, modelAdd, modelReduc);
-            driverInstance.putProperty(requestId, requests.toString());
         } catch (Exception ex) {
             Logger.getLogger(OpenStackDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
         }
+
+        driverInstance.putProperty(requestId, requests);
 
         DriverInstancePersistenceManager.merge(driverInstance);
         Logger.getLogger(OpenStackDriver.class.getName()).log(Level.INFO, "OpenStack driver delta models succesfully propagated");
@@ -90,7 +97,24 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         String NATServer = driverInstance.getProperty("NATServer");
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         String requests = driverInstance.getProperty(requestId);
+        List<JSONObject> JSONRequests = new ArrayList();
+        OpenStackPush push = new OpenStackPush(url, NATServer, username, password, tenant, topologyURI);
 
+        //organize the requests into JSON format
+        String[] splits = requests.split("[\\n]");
+        for (String s : splits) {
+            HashMap<String, Object> result = new HashMap();
+            try {
+                result
+                        = new ObjectMapper().readValue(requests, HashMap.class);
+                JSONObject m = new JSONObject(result);
+            } catch (IOException ex) {
+                Logger.getLogger(OpenStackDriver.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            
+            JSONRequests.add(new JSONObject(result));
+
+<<<<<<< HEAD
         OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, topologyURI);
         ObjectMapper mapper = new ObjectMapper();
         List<JSONObject> r = new ArrayList();
@@ -98,8 +122,12 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
             r = mapper.readValue(requests, mapper.getTypeFactory().constructCollectionType(List.class, JSONObject.class));
         } catch (IOException ex) {
             Logger.getLogger(OpenStackDriver.class.getName()).log(Level.SEVERE, null, ex);
+=======
+>>>>>>> VersaStack-MiguelUzcategui
         }
-        push.pushCommit(r);
+
+        //commit into Openstack
+        push.pushCommit(JSONRequests);
 
         driverInstance.getProperties().remove(requestId);
         DriverInstancePersistenceManager.merge(driverInstance);
@@ -126,7 +154,11 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
             String topologyUri = driverInstance.getProperty("topologyUri");
             String NATServer = driverInstance.getProperty("NATServer");
 
+<<<<<<< HEAD
             OntModel ontModel = OpenStackNeutronModelBuilder.createOntology(url,NATServer, topologyUri, username, password, tenant);
+=======
+            OntModel ontModel = OpenStackNeutronModelBuilder.createOntology(url, NATServer, topologyUri, username, password, tenant);
+>>>>>>> VersaStack-MiguelUzcategui
 
             if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();

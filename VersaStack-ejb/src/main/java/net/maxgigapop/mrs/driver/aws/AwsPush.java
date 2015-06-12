@@ -91,7 +91,7 @@ public class AwsPush {
         requests += detachPortRequest(modelRef, modelReduct);
 
         //disassociate an address from a network interface
-        requests += disassociateAddressRequest(modelRef, modelReduct);
+        //requests += disassociateAddressRequest(modelRef, modelReduct);
 
         //Delete the network interfaces that need to be deleted
         requests += deletePortsRequests(modelRef, modelReduct);
@@ -151,7 +151,7 @@ public class AwsPush {
         requests += createPortsRequests(modelRef, modelAdd);
 
         //Associate an address with a  interface
-        requests += associateAddressRequest(modelRef, modelAdd);
+        //requests += associateAddressRequest(modelRef, modelAdd);
 
         //attach ports to existing instances
         requests += attachPortRequest(modelRef, modelAdd);
@@ -276,8 +276,8 @@ public class AwsPush {
             } else if (request.contains("DeleteInternetGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
 
-                InternetGateway gateway = ec2Client.getInternetGateway(parameters[1]);
-                Vpc v = ec2Client.getVpc(getResourceId(parameters[2]));
+                InternetGateway gateway = ec2Client.getInternetGateway(getResourceId(parameters[1]));
+                Vpc v = ec2Client.getVpc(getVpcId(parameters[2]));
                 DetachInternetGatewayRequest gwRequest = new DetachInternetGatewayRequest();
                 gwRequest.withInternetGatewayId(getResourceId(parameters[1]))
                         .withVpcId(getVpcId(parameters[2]));

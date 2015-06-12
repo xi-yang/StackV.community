@@ -186,19 +186,19 @@ public class AwsModelBuilder {
         //to be used later, a list containing the elatic ips as strings
         List<String> elasticIps = new ArrayList();
         //put all the elastic ips under the account into the model
-        for (Address ip : ec2Client.getElasticIps()) {
+        /*for (Address ip : ec2Client.getElasticIps()) {
             Resource PUBLIC_ADDRESS = RdfOwl.createResource(model, topologyURI + ":" + ip.getPublicIp(), networkAddress);
             model.add(model.createStatement(PUBLIC_ADDRESS, type, "ipv4:public"));
             model.add(model.createStatement(PUBLIC_ADDRESS, value, ip.getPublicIp()));
             elasticIps.add(ip.getPublicIp());
-        }
+        }*/
 
         //Put all the subnets into the model
         for (Subnet p : ec2Client.getSubnets()) {
             String subnetId = ec2Client.getIdTag(p.getSubnetId());
             Resource SUBNET = RdfOwl.createResource(model, topologyURI + ":" + subnetId, switchingSubnet);
             Resource SUBNET_NETWORK_ADDRESS
-                    = RdfOwl.createResource(model, topologyURI + ":subnetnetworkaddress-" + p.getSubnetId(), networkAddress);
+                    = RdfOwl.createResource(model, topologyURI + ":subnetnetworkaddress-" + subnetId, networkAddress);
             model.add(model.createStatement(SUBNET_NETWORK_ADDRESS, type, "ipv4-prefix"));
             model.add(model.createStatement(SUBNET_NETWORK_ADDRESS, value, p.getCidrBlock()));
             model.add(model.createStatement(SUBNET, hasNetworkAddress, SUBNET_NETWORK_ADDRESS));
@@ -221,7 +221,7 @@ public class AwsModelBuilder {
                 }
             }
 
-            //put the public Ip (if any) of the network interface into the model3
+            /*//put the public Ip (if any) of the network interface into the model3
             if (n.getAssociation() != null && n.getAssociation().getPublicIp() != null) {
                 String publicIp = n.getAssociation().getPublicIp();
                 Resource PUBLIC_ADDRESS;
@@ -233,7 +233,7 @@ public class AwsModelBuilder {
                     model.add(model.createStatement(PUBLIC_ADDRESS, value, publicIp));
                 }
                 model.add(model.createStatement(PORT, hasNetworkAddress, PUBLIC_ADDRESS));
-            }
+            }*/
 
             //specify the subnet of the network interface 
             String subnetId = ec2Client.getIdTag(n.getSubnetId());

@@ -27,17 +27,18 @@ import org.openstack4j.openstack.networking.domain.NeutronRouterInterface;
 public class OpenStackGet {
 
     private OSClient client = null;
-    private List<? extends Network> networks = null;
-    private List<? extends Subnet> subnets = null;
-    private List<? extends Port> ports = null;
-    private List<? extends Server> servers = null;
-    private List<? extends Volume> volumes = null;
-    private List<? extends NetFloatingIP> floatingIps = null;
-    private List<? extends Router> routers = null;
-    private List<? extends RouterInterface> routerinterface = null;
-    public List<? extends HostRoute> hostroute = null;
-    public List<? extends Hypervisor> hypervisors =null;
-    public List<? extends NovaFloatingIP> novafloatingIps =null;
+    private List< Network> networks = new ArrayList();
+    private List<Subnet> subnets = new ArrayList();
+    private List<Port> ports = new ArrayList();
+    private List<Server> servers = new ArrayList();
+    private List<Volume> volumes = new ArrayList();
+    private List<NetFloatingIP> floatingIps = new ArrayList();
+    private List<Router> routers = new ArrayList();
+    private List<RouterInterface> routerinterface = new ArrayList();
+    public List<HostRoute> hostroute = new ArrayList();
+    public List<Hypervisor> hypervisors = new ArrayList();
+<<<<<<< HEAD
+    public List<NovaFloatingIP> novafloatingIps =new ArrayList();
 
     public  OpenStackGet(String url,String NATServer, String username, String password, String tenantName) {
         //authenticate
@@ -48,19 +49,41 @@ public class OpenStackGet {
 
 
         //get the resources
-        networks = client.networking().network().list();
-        subnets = client.networking().subnet().list();
-        ports = client.networking().port().list();
-        servers = client.compute().servers().list();
-        volumes = client.blockStorage().volumes().list();
-        floatingIps = client.networking().floatingip().list();
-        routers = client.networking().router().list();
-        novafloatingIps = (List<? extends NovaFloatingIP>) client.compute().floatingIps().list();
+        networks = (List<Network>) client.networking().network().list();
+        subnets = (List<Subnet>)client.networking().subnet().list();
+        ports = (List<Port>)client.networking().port().list();
+        servers = (List<Server>)client.compute().servers().list();
+        volumes = (List<Volume>)client.blockStorage().volumes().list();
+        floatingIps = (List<NetFloatingIP>)client.networking().floatingip().list();
+        routers = (List<Router>)client.networking().router().list();
+=======
+    public List<NovaFloatingIP> novafloatingIps = new ArrayList();
+
+    public OpenStackGet(String url, String NATServer, String username, String password, String tenantName) {
+        //authenticate
+        Authenticate authenticate = new Authenticate();
+
+        client = authenticate.openStackAuthenticate(url, NATServer, username, password, tenantName);
+
+        //get the resources
+        networks = (List<Network>) client.networking().network().list();
+        subnets = (List<Subnet>) client.networking().subnet().list();
+        ports = (List<Port>) client.networking().port().list();
+        servers = (List<Server>) client.compute().servers().list();
+        volumes = (List<Volume>) client.blockStorage().volumes().list();
+        floatingIps = (List<NetFloatingIP>) client.networking().floatingip().list();
+        routers = (List<Router>) client.networking().router().list();
+>>>>>>> VersaStack-MiguelUzcategui
+        novafloatingIps = (List<NovaFloatingIP>) client.compute().floatingIps().list();
+    }
+
+    OpenStackGet(String url, String user_name, String password, String tenantName) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         
     }
 
     //get all the nets in the tenant
-    public List<? extends Network> getNetworks() {
+    public List<Network> getNetworks() {
         return networks;
     }
 
@@ -75,7 +98,7 @@ public class OpenStackGet {
     }
 
     //get all the subnets in the tenant
-    public List<? extends Subnet> getSubnets() {
+    public List<Subnet> getSubnets() {
         return subnets;
     }
 
@@ -103,7 +126,7 @@ public class OpenStackGet {
     }
 
     //get all the ports in the tenant
-    public List<? extends Port> getPorts() {
+    public List<Port> getPorts() {
         return ports;
     }
 
@@ -128,7 +151,7 @@ public class OpenStackGet {
     }
 
     //get all servers in the tenant
-    public List<? extends Server> getServers() {
+    public List<Server> getServers() {
         return servers;
     }
 
@@ -182,7 +205,7 @@ public class OpenStackGet {
     }
 
     //get all volumes in the tenant
-    public List<? extends Volume> getVolumes() {
+    public List<Volume> getVolumes() {
         return volumes;
     }
 
@@ -197,7 +220,7 @@ public class OpenStackGet {
     }
 
     //get all floating ips in the tenant
-    public List<? extends NetFloatingIP> getFloatingIp() {
+    public List<NetFloatingIP> getFloatingIp() {
         return floatingIps;
     }
 
@@ -210,11 +233,21 @@ public class OpenStackGet {
         }
         return null;
     }
-   public List<? extends NovaFloatingIP> getNovaFloatingIP(){
+<<<<<<< HEAD
+   public List<NovaFloatingIP> getNovaFloatingIP(){
        return novafloatingIps;
    }
     //get a list of all the hypervisors
-    public List<? extends Hypervisor> getHypervisors() {
+=======
+
+    public List<NovaFloatingIP> getNovaFloatingIP() {
+        return novafloatingIps;
+    }
+
+    //get a list of all the hypervisors
+
+>>>>>>> VersaStack-MiguelUzcategui
+    public List<Hypervisor> getHypervisors() {
         return hypervisors;
     }
 
@@ -227,16 +260,19 @@ public class OpenStackGet {
         }
         return null;
     }
-    
+
     //get all the routers
-    public List<? extends Router> getRouters()
+<<<<<<< HEAD
+    public List<Router> getRouters()
     {
+=======
+    public List<Router> getRouters() {
+>>>>>>> VersaStack-MiguelUzcategui
         return routers;
     }
-    
+
     //get a specific route by id or name
-    public Router getRouter(String id)
-    {
+    public Router getRouter(String id) {
         for (Router router : routers) {
             if (router.getId().equals(id) || router.getName().equals(id)) {
                 return router;
@@ -264,15 +300,20 @@ public class OpenStackGet {
     //get the name of a server 
     public String getServereName(Server r) {
         String name = r.getName();
-        if (name ==null || name.isEmpty()) {
+        if (name == null || name.isEmpty()) {
             return r.getId();
         } else {
             return r.getName();
         }
     }
+<<<<<<< HEAD
     
     public String getVolumeName(Volume r)
     {
+=======
+
+    public String getVolumeName(Volume r) {
+>>>>>>> VersaStack-MiguelUzcategui
         String name = r.getName();
         if (name == null || name.isEmpty()) {
             return r.getId();
@@ -280,6 +321,7 @@ public class OpenStackGet {
             return r.getName();
         }
     }
+<<<<<<< HEAD
     public String getInterfaceSubnetID(NeutronRouterInterface i){
         return i.getSubnetId();
     }
@@ -291,4 +333,19 @@ public class OpenStackGet {
     }
     
    
+=======
+
+    public String getInterfaceSubnetID(NeutronRouterInterface i) {
+        return i.getSubnetId();
+    }
+
+    public String getInterfacePortID(NeutronRouterInterface i) {
+        return i.getPortId();
+    }
+
+    public String getInterfaceRouterID(NeutronRouterInterface i) {
+        return i.getId();
+    }
+
+>>>>>>> VersaStack-MiguelUzcategui
 }

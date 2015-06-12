@@ -6,6 +6,7 @@
 
 package net.maxgigapop.mrs.bean.persist;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import javax.ejb.EJBException;
@@ -34,7 +35,7 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
         }
     }
 
-    public static VersionGroup refreshToHead(VersionGroup vg, boolean doUpdate) {
+    public static VersionGroup refreshToHead(VersionGroup vg, boolean doUpdatePersist) {
         if (vg == null) {
             throw new EJBException(String.format("VersionGroupPersistenceManager::refreshToHead encounters null VG"));
         }
@@ -46,25 +47,31 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
         if (ditMap.isEmpty()) {
             throw new EJBException(String.format("VersionGroupPersistenceManager::refreshToHead canont find driverInstance in the system"));
         }
-        VersionGroup vgNew = null;
+        VersionGroup newVG = new VersionGroup();
+        newVG.setRefUuid(vg.getRefUuid());
+        boolean needToUpdate = false;
+        List<DriverInstance> listDI = new ArrayList<>();
         for (VersionItem vi : vg.getVersionItems()) {
             DriverInstance di = vi.getDriverInstance();
-            VersionItem newVi = di.getHeadVersionItem();
-            if (di != null && !newVi.equals(vi)) {
-                if (vgNew == null) {
-                    vgNew = new VersionGroup();
+            if (di != null) {
+                if (listDI.contains(di))
+                    continue;
+                listDI.add(di);
+                VersionItem newVi = di.getHeadVersionItem();
+                if (!newVi.equals(vi)) {
+                    needToUpdate = true;
                 }
-                vgNew.addVersionItem(newVi);
-                //newVi.addVersionGroup(vgNew);
+                newVG.addVersionItem(newVi);
+                if (!newVi.getVersionGroups().contains(vg))
+                    newVi.addVersionGroup(vg);
             }
         }
-        if (vgNew != null) {
-            vgNew.setRefUuid(vg.getRefUuid());
-            if (doUpdate) {
-                VersionGroupPersistenceManager.save(vgNew);
-                VersionGroupPersistenceManager.delete(vg);
-            }
-            return vgNew;
+        if (!doUpdatePersist)
+            return newVG;
+        if (needToUpdate) {
+            vg = findByReferenceId(vg.getRefUuid());
+            vg.setVersionItems(newVG.getVersionItems());
+            VersionGroupPersistenceManager.save(vg);
         }
         return vg;
     }

@@ -18,26 +18,37 @@ public class Authenticate {
     public OSClient openStackAuthenticate(String url,String NATServer, String username, String password, String tenantName) {
 
         //define OS Client
+<<<<<<< HEAD
         OSClient client = null;
         
+=======
+        OSClient client = null;        
+>>>>>>> VersaStack-MiguelUzcategui
        // If the OpenStack controller  is behind NAT, it needs to be specified
        //to authenticate 
-        if (NATServer == null || NATServer.isEmpty()) {
-            client = OSFactory.builder()
+        if (NATServer.isEmpty()) {
+           try{ client = OSFactory.builder()
                     .endpoint(url)
                     .credentials(username, password)
                     .tenantName(tenantName)
+                    .withConfig(Config.DEFAULT)
                     .authenticate();
+           }catch(Exception e){
+               System.out.println("Caught Exception"+ e.getMessage());
+           }
+           
 
         } 
         else {
-            Config conf = Config.DEFAULT;
-            client = OSFactory.builder()
+            try{client = OSFactory.builder()
                     .endpoint(url)
                     .credentials(username, password)
                     .tenantName(tenantName)
                     .withConfig(Config.newConfig().withEndpointNATResolution(NATServer))
                     .authenticate();
+            }catch(Exception e){
+                 System.out.println("Caught Exception"+ e.getMessage());
+            }
         }
 
         return client;
