@@ -3,14 +3,16 @@ define([
 ], function (d3, utils) {
     var map_ = utils.map_;
 
-    /**@param {outputApi} outputApi**/
-    function doRender(outputApi, nodeList, edgeList) {
+    /**@param {outputApi} outputApi
+     * @param {Model} model**/
+    function doRender(outputApi, model) {
         var svgContainer = outputApi.getSvgContainer();
-
         redraw();
 
         function redraw() {
             svgContainer.selectAll("*").remove();
+            var nodeList = model.listNodes();
+            var edgeList = model.listEdges();
             map_(nodeList, drawTopology);
             map_(edgeList, drawEdge);
             map_(nodeList, drawNode);
@@ -19,14 +21,18 @@ define([
         /**@param {Node} n**/
         function drawNode(n) {
             if (n.isLeaf()) {
-                var svgNode = svgContainer.append("circle")
-                        .attr("cx", n.x)
-                        .attr("cy", n.y)
-                        .attr("r", 10)
-                        .on("click", onNodeClick.bind(undefined, n));
+                var svgNode = svgContainer.append("image")
+                        .attr("x", n.x - settings.NODE_SIZE / 2)
+                        .attr("y", n.y - settings.NODE_SIZE / 2)
+                        .attr("xlink:href", n.getIconPath())
+                        .attr('height', settings.NODE_SIZE)
+                        .attr('width', settings.NODE_SIZE)
+                        .on("click", onNodeClick.bind(undefined, n))
+                        .on("dblclick", onNodeDblClick.bind(undefined, n));
                 //register the drag listener
                 var drag = d3.behavior.drag()
                         .on("drag", function () {
+                            console.log("DRAG");
                             var e = d3.event;
                             n.x = e.x;
                             n.y = e.y;
@@ -57,10 +63,10 @@ define([
                             return n.y;
                         })
                         (leaves);
-                svgContainer.append("path")
+                var hull = svgContainer.append("path")
                         .style("fill", "steelblue")
                         .style("stroke", "steelblue")
-                        .style("stroke-width", "32px")
+                        .style("stroke-width", settings.TOPOLOGY_SIZE)
                         .style("stroke-linejoin", "round")
                         .style("stroke-opacity", "20%")
                         .datum(path)
@@ -76,7 +82,18 @@ define([
                             }
                             ans += "Z"
                             return ans;
+                        })
+                        .on("click", onNodeClick.bind(undefined, n))
+                        .on("dblclick", onNodeDblClick.bind(undefined, n));
+                //register the onDrag container
+
+                var drag = d3.behavior.drag()
+                        .on("drag", function () {
+                            var e = d3.event;
+                            move(n, e.dx, e.dy);
+                            redraw();
                         });
+                hull.call(drag);
             }
 
         }
@@ -87,15 +104,38 @@ define([
                     .attr("y1", e.source.y)
                     .attr("x2", e.target.x)
                     .attr("y2", e.target.y)
-                    .attr("style", "stroke:rgb(255,0,0);stroke-width:2");
+                    .attr("style", "stroke:rgb(0,0,0);stroke-width:2");
 
         }
 
-        /**@param {Node} n**/
+        /**
+         * Note that n could also be a topology
+         * @param {Node} n**/
         function onNodeClick(n) {
             outputApi.setActiveName(n.getName());
         }
+        /**
+         * Note that n could also be a topology
+         * @param {Node} n**/
+        function onNodeDblClick(n) {
+            n.toggleFold();
+            redraw();
+        }
 
+
+        /**@param {Node} n**/
+        function move(n, dx, dy) {
+            n.x += dx;
+            n.y += dy;
+            map_(n.children, function (child) {
+                move(child, dx, dy);
+            });
+        }
+    }
+
+    var settings = {
+        NODE_SIZE: 30,
+        TOPOLOGY_SIZE: 45
     }
 
     return{
