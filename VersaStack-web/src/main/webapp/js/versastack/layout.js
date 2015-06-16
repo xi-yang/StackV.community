@@ -1,3 +1,4 @@
+"use strict";
 define([
     "local/d3", "local/versastack/utils", "local/versastack/model"
 ], function (d3, utils, model) {
@@ -21,6 +22,7 @@ define([
             force.tick();
         }
         force.stop();
+        
     }
     
     function stop(){

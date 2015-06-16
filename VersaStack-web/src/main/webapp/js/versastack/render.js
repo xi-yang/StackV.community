@@ -1,3 +1,4 @@
+"use strict";
 define([
     "local/d3", "local/versastack/utils"
 ], function (d3, utils) {
@@ -32,10 +33,8 @@ define([
                 //register the drag listener
                 var drag = d3.behavior.drag()
                         .on("drag", function () {
-                            console.log("DRAG");
                             var e = d3.event;
-                            n.x = e.x;
-                            n.y = e.y;
+                            move(n, e.dx, e.dy);
                             redraw();
                         });
                 svgNode.call(drag);
@@ -118,7 +117,14 @@ define([
          * Note that n could also be a topology
          * @param {Node} n**/
         function onNodeDblClick(n) {
+            var e=d3.event;
             n.toggleFold();
+            if(n.isFolded){
+                //there is no guarantee that n is posistioned anywhere near its children
+                //to solve this, we force n to be located at the click
+                n.x=e.x;
+                n.y=e.y;
+            }
             redraw();
         }
 

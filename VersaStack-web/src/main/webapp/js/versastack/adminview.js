@@ -1,3 +1,4 @@
+"use strict";
 define([
     "local/d3", "local/versastack/model", "local/versastack/utils", "local/versastack/loading", "local/d3.tip.v0.6.3"
 ], function(d3, model, utils, loading) {

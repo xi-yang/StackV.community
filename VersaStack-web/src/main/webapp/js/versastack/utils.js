@@ -1,3 +1,4 @@
+"use strict";
 define([], function() {
     function map_(arr,f){
         var ans=new Array(arr.length);

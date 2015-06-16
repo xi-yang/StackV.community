@@ -1,8 +1,8 @@
+"use strict";
 define([
     "local/versastack/utils"
 ], function (utils) {
     var map_ = utils.map_;
-
     var rootNodes = [];
 
     /**
@@ -336,7 +336,7 @@ define([
     }
 
     function listNodes() {
-        ans = [];
+        var ans = [];
         map_(rootNodes, /**@param {Node} node**/function (node) {
             ans = ans.concat(node._getNodes());
         });
@@ -344,7 +344,7 @@ define([
     }
 
     function listEdges() {
-        ans = [];
+        var ans = [];
         map_(rootNodes, /**@param {Node} node**/function (node) {
             map_(node._getEdges(), /**@param {Edge} edge**/function (edge) {
                 if (edge._isProper()) {
