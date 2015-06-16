@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+
+
+<!DOCTYPE html>
+<html style="width:100%; height: 100%">
+    <head>
+        <meta charset="utf-8">
+        <title>Test</title>
+        <script>
+            //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
+            dojoConfig = {
+                has: {
+                    "dojo-firebug": true,
+                    "dojo-debug-messages": true
+                },
+                async: true,
+                parseOnLoad: true,
+                packages: [
+                    {
+                        name: "d3",
+                        location: "//d3js.org/",
+                        main: "d3.v3"
+                    },
+                    {
+                        name: "local",
+                        location: location.pathname.replace(/\/[^/]+$/, '') + '/js/'
+                    }
+                ]
+            };
+        </script>
+        <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
+
+        <script type="text/javascript">
+            require([
+                "dojo/parser", "dojo/ready", "dijit/layout/BorderContainer", "dijit/form/Button",
+                "dijit/layout/TabContainer", "dijit/layout/AccordionContainer", "dijit/layout/ContentPane"
+            ]);
+        </script>
+        
+        <script type="text/javascript">
+            var model;
+            var layout;
+            var render;
+            var d3;
+
+            function onload() {
+                require(["local/versastack/model", "local/versastack/layout", "local/versastack/render","local/d3"], function (m, l, r,d3_) {
+                    model = m;
+                    model.init(drawGraph);
+                    layout = l;
+                    render = r;
+                    d3=d3_;
+                });
+            }
+            function drawGraph() {
+                var nodeList = model.listNodes();
+                var edgeList = model.listEdges();
+                var width = document.documentElement.clientWidth;
+                var height = document.documentElement.clientHeight;
+                //TODO, figure out why we need to call this twice
+                //If we do not, the layout does to converge as nicely, even if we double the number of iterations
+                layout.doLayout(nodeList, edgeList, width, height);
+                layout.doLayout(nodeList, edgeList, width, height);
+
+                
+                render.doRender(new outputApi(), nodeList, edgeList);
+            }
+            
+            function outputApi(){
+                this.getSvgContainer=function(){
+                    return d3.select("#viz");
+                };
+                this.setActiveName=function(str){
+                    document.getElementById("displayPanelName").innerText=str;
+                };
+            }
+        </script>
+    </head>
+
+    <body onload="onload()" style="width:100%; height: 100%">
+        <div id="displayPanel" style="float:right;">
+            <div id="displayPanelName"></div>
+        </div>
+        <svg id="viz" style="width:100%; height: 100%"/>
+    </body>
+</html>

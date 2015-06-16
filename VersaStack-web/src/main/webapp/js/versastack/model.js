@@ -9,20 +9,28 @@ define([
     * Initialize the model. This asyncronasly loads and parsed the model from the backend.
     * @returns {undefined}
     */
-   function init(){
+   function init(callback){
        var request = new XMLHttpRequest();
-        request.open("GET","/VersaStack-web/restapi/model/");
+       // request.open("GET","/VersaStack-web/restapi/model/");
+        request.open("GET","/VersaStack-web/data/graph1.json");
+
         request.setRequestHeader("Accept","application/json");
         request.onload=function(){
             var data=request.responseText;
             data=JSON.parse(data);
             var map=JSON.parse(data.ttlModel);
             
-            //We begin by extracting all nodes/topologies
+            /*
+             * We begin by extracting all nodes/topologies
+             * We also begin to handle the case of nested bidirectional ports,
+             *  we do this by creating backlinks, so that a nested port will have
+             *  a link to its parent.
+             */
             var nodeMap={};
             var nodeList=[];
             for(var key in map){
                 var val=map[key];
+                val.name=key;
                 var types=val[values.type];
                 map_(types,function(type){
                     type=type.value;
@@ -104,6 +112,7 @@ define([
                                 node.children.push(subNode);
                             });
                             break;
+                        case "name":
                         case "isRoot": //This is a key that we added to determine which elements are root in the node/topology tree
                         case "processed":  //This is key that we added to assist in detecting when we fail to handle a case
                         case values.type:
@@ -139,6 +148,7 @@ define([
                    node._complete();
                } 
             });
+            callback();
         };
         request.send();
    }
@@ -196,6 +206,17 @@ define([
             this._updateVisible(this.isVisible);
         };
    
+        this.setFolded=function(b){
+            if(b){
+                this.fold();
+            }else{
+                this.unfold();
+            }
+        };
+        this.getFolded=function(){
+            return this.isFolded;
+        }
+   
         this._updateVisible=function(vis){
             this.isVisible=vis;
             var showChildren=vis&&!this.isFolded;
@@ -244,11 +265,43 @@ define([
             }
             return ans;
         };
+        
+        //Return the number of visible nodes in the subtree rooted at this;
+        this.visibleSize=function(){
+            var ans=0;
+            if(this.isVisible){
+                ans=1;
+                map_(this.children,/**@param {Node} child**/function(child){
+                    ans+=child.visibleSize();
+                });
+            }
+            return ans;
+        };
+        this.isLeaf=function(){
+            return this.isFolded || this.children.length===0;
+        };
+        this.getLeaves=function(){
+            if(this.isLeaf()){
+                return [this];
+            }else{
+                var ans=[];
+                map_(this.children,function(n){
+                    ans=ans.concat(n.getLeaves());
+                });
+                return ans;
+            }
+        }
+        this.getName=function(){
+            return this._backing.name;
+        }
     }
     
     function Edge(left,right){
         this.left=left;
         this.right=right;
+        
+        this.source=left;
+        this.target=right;
         
         this._isProper=function(){
             var ans=true;
@@ -259,6 +312,8 @@ define([
                 this.right=this.right.parent;
             }
             ans&=this.left.uid<this.right.uid;
+            this.source=left;
+            this.target=right;
             return ans;
         };
     }
@@ -281,6 +336,20 @@ define([
             });
         });
         return ans;
+    }
+
+    //No node in nodes should be a decedent of another
+    function computeEdges(nodes){
+        map_(nodes,/**@param {Node} node**/function(node){
+            node.__wasFolded=node.getFolded();
+            node.fold();
+        });
+        var edges=listEdges();
+        map_(nodes,/**@param {Node} node**/function(node){
+            node.setFolded(node.__wasFolded);
+            delete node.__wasFolded;
+        });
+        return edges;
     }
 
     /**These are the strings used in the model**/
@@ -337,9 +406,9 @@ define([
         return ans;
     }
     
-    /**Note that these fold and unfold functions are inteded for testing only
+    /*Note that these fold and unfold functions are inteded for testing only
      * If a node is not currently visible, they will have no effect
-     **/
+     */
     
     function fold(i){
         map_(listNodes(),/**@param {Node} n**/function(n){
@@ -359,7 +428,7 @@ define([
     function printTree(){
         var ans="\n";
         map_(rootNodes,/**@param {Node} n**/function(n){
-            map_(printTree_(n),/**@param {String} n**/function(line){
+            map_(printTree_(n),/**@param {String} line**/function(line){
                 ans+=line;
                 ans+="\n";
             });
@@ -387,6 +456,8 @@ define([
         init : init,
         listNodes: listNodes,
         listEdges: listEdges,
+        computeEdges: computeEdges,
+        getRootNodes: function(){return rootNodes},
         /** begin debug functions **/
         listNodesPretty: listNodesPretty,
         listEdgesPretty: listEdgesPretty,

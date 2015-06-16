@@ -4,6 +4,7 @@ define([], function() {
         for(var i=0; i<arr.length; i++){
             ans[i]=f(arr[i]);
         }
+        return ans;
     }
     /** PUBLIC INTERFACE **/
     return {

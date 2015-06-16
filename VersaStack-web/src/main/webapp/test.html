@@ -155,12 +155,14 @@
         <script type="text/javascript">
             //Debug, break out "model" to a top level object
             var model;
-            var m;
-            require(["local/versastack/model"],function(foo){
-                model=foo;
-                m=model;
+            var layout;
+            require(["local/versastack/model","local/versastack/layout"],function(m,l){
+                model=m;
                 model.init();
+                layout=l;
             });
+            var m=model;
+            var l=layout;
             
             require(["dojo/on", "dijit/registry", "dojo/ready", "dijit/layout/ContentPane"], function(on, registry, ready, ContentPane) {
                 ready(function() {
