@@ -1,10 +1,34 @@
+/**
+ * The goal of this class is to download the model from the back-end and convert
+ * it into a format more convinient for displaying graphically.
+ * 
+ * Specifically, we output a list nodes, and a separate list of the edges between them.
+ * The model itself also has the concept of topologies, subtopologies, and subnodes. 
+ *   The idea being that a topology or node can be thought of as its own node, but
+ *   can also be expanded to show an arbitrarily complicated subnetwork of nodes,
+ *   potential containing aditionaly topologies. Within this program, we use "topology"
+ *   to refer to both topologies, and nodes which have subnodes. 
+ *   Internally, we store the topologie information in a tree structure, defined
+ *   by the children field of the Node class.
+ *   The exported Nodes have a fold/unfold method. When a Node is folded, it should
+ *   be considered to be a leaf node, regardless of if it has children. Decendents
+ *   of this node will not be returned through the listNodes method, and any edges
+ *   that involved a desecendent of said Node will be redirected to said Node when
+ *   in the output of listEdges.
+ */
+
 "use strict";
 define([
-    "local/versastack/utils"
-], function (utils) {
+    "local/versastack/utils",
+    "local/versastack/topology/Node",
+    "local/versastack/topology/Edge",
+    "local/versastack/topology/modelConstants"
+], function (utils,Node,Edge,values) {
     var map_ = utils.map_;
     var rootNodes = [];
 
+    //Associates a name with the corresponding backing
+    var map={};
     /**
      * Initialize the model. This asyncronasly loads and parsed the model from the backend.
      * @returns {undefined}
@@ -13,15 +37,15 @@ define([
         var request = new XMLHttpRequest();
         // request.open("GET","/VersaStack-web/restapi/model/");
         request.open("GET", "/VersaStack-web/data/graph1.json");
-
         request.setRequestHeader("Accept", "application/json");
         request.onload = function () {
             var data = request.responseText;
             data = JSON.parse(data);
-            var map = JSON.parse(data.ttlModel);
+            map = JSON.parse(data.ttlModel);
 
             /*
              * We begin by extracting all nodes/topologies
+             *   nodeMap is used to associate a name with its corresponding Node
              * We also begin to handle the case of nested bidirectional ports,
              *  we do this by creating backlinks, so that a nested port will have
              *  a link to its parent.
@@ -37,7 +61,7 @@ define([
                     switch (type) {
                         case values.topology:
                         case values.node:
-                            var toAdd = new Node(val);
+                            var toAdd = new Node(val,map);
                             nodeMap[key] = toAdd;
                             nodeList.push(toAdd);
                             break;
@@ -131,15 +155,14 @@ define([
             });
 
 
-            //clean up the edgelist so it associates nodes instead of ports
+            //Use the edge information to construct the sibling relationship in the nodes themselves
+            //Because folding changes the edges, we dynamicly re-construct them ondemend in the Node class
             map_(edgeList, /**@param {Edge} edge**/ function (edge) {
-                edge.nodeA = getNodeOfPort(edge.portA);
-                edge.nodeB = getNodeOfPort(edge.portB);
-                delete edge.portA;
-                delete edge.portB;
+                var nodeA = getNodeOfPort(edge.portA);
+                var nodeB = getNodeOfPort(edge.portB);
 
-                edge.nodeA.primaryNeighboors.push(edge.nodeB);
-                edge.nodeB.primaryNeighboors.push(edge.nodeA);
+                nodeA.primaryNeighboors.push(nodeB);
+                nodeB.primaryNeighboors.push(nodeA);
             });
 
             map_(nodeList, /**@param {Node} node**/ function (node) {
@@ -167,172 +190,6 @@ define([
             port = port.parentPort;
         }
         return port.node;
-    }
-
-    /**
-     * There are two graphs we want to consider. The first is the tree representing the node/subnode relationships
-     * The second is the model graph, representing the connections as understood by the model
-     * We want to be able to generate a model graph when some, all, or none of the non-leaf nodes are folded
-     * When a node is folded, it assumes all the connections of its children in the model graph
-     * 
-     * We say that a node is external if it is not the current node, nor a descendent of the current node
-     * 
-     * In the below data structure each Node corresponds directly to a model node (or topology), given by _backing
-     * The children field represents the tree structure of subnodes
-     * The primary neighboors refer to Nodes that connect directly to the current one
-     * the secondary neighboors refers to external nodes that connect to a descendent of the current node
-     * 
-     **/
-    var i = 0;
-    function Node(backing) {
-        this._backing = backing;//the node/topology from the model
-        this.children = [];
-        this.primaryNeighboors = [];
-        this.secondaryNeighboors = [];
-        this.isRoot = true;
-        this.uid = -1;
-        this.isFolded = false;
-        this.isVisible = true;
-        this._parent = null;
-
-        var that = this;
-
-        this.fold = function () {
-            this.isFolded = true;
-            this._updateVisible(this.isVisible);//this will update our children appropriatly
-        };
-        this.unfold = function () {
-            this.isFolded = false;
-            this._updateVisible(this.isVisible);
-        };
-
-        this.setFolded = function (b) {
-            if (b) {
-                this.fold();
-            } else {
-                this.unfold();
-            }
-        };
-        this.getFolded = function () {
-            return this.isFolded;
-        }
-        this.toggleFold = function () {
-            this.setFolded(!this.getFolded());
-        };
-
-        this._updateVisible = function (vis) {
-            this.isVisible = vis;
-            var showChildren = vis && !this.isFolded;
-            map_(this.children, function (child) {
-                child._updateVisible(showChildren);
-            });
-        };
-        this._complete = function () {
-            this.uid = i++;
-            map_(this.children, /**@param {Node} child**/function (child) {
-                child.parent = that;
-                child._complete();
-                that.secondaryNeighboors = that.secondaryNeighboors.concat(child.secondaryNeighboors, child.primaryNeighboors);
-            });
-        };
-
-        this._getEdges = function () {
-
-            var ans = [];
-            map_(this.primaryNeighboors, /**@param {Node} neighboor**/function (neighboor) {
-                if (neighboor.uid > that.uid) {
-                    var toAdd = new Edge(that, neighboor);
-                    ans.push(toAdd);
-                }
-            });
-            if (this.isFolded) {
-                map_(this.secondaryNeighboors, /**@param {Node} neighboor**/function (neighboor) {
-                    if (neighboor.uid > that.uid) {
-                        var toAdd = new Edge(that, neighboor);
-                        ans.push(toAdd);
-                    }
-                });
-            } else {
-                map_(this.children, /**@param {Node} child**/function (child) {
-                    ans = ans.concat(child._getEdges());
-                });
-            }
-            return ans;
-        };
-        this._getNodes = function () {
-            var ans = [that];
-            if (!this.isFolded) {
-                map_(this.children, /**@param {Node} child**/function (child) {
-                    ans = ans.concat(child._getNodes());
-                });
-            }
-            return ans;
-        };
-
-        //Return the number of visible nodes in the subtree rooted at this;
-        this.visibleSize = function () {
-            var ans = 0;
-            if (this.isVisible) {
-                ans = 1;
-                map_(this.children, /**@param {Node} child**/function (child) {
-                    ans += child.visibleSize();
-                });
-            }
-            return ans;
-        };
-        this.isLeaf = function () {
-            return this.isFolded || this.children.length === 0;
-        };
-        this.getLeaves = function () {
-            if (this.isLeaf()) {
-                return [this];
-            } else {
-                var ans = [];
-                map_(this.children, function (n) {
-                    ans = ans.concat(n.getLeaves());
-                });
-                return ans;
-            }
-        }
-        this.getName = function () {
-            return this._backing.name;
-        };
-
-        this.getIconPath = function () {
-            var types = this._backing[values.type];
-            var ans = iconMap.defuault;
-            map_(types, function (type) {
-                type=type.value;
-                if (type in iconMap) {
-                    ans = iconMap[type];
-                } else if (type !== values.namedIndividual) {
-                    console.log("No icon registered for type: " + type);
-                }
-            });
-            return ans;
-        };
-    }
-
-    function Edge(left, right) {
-        this.left = left;
-        this.right = right;
-
-        this.source = left;
-        this.target = right;
-
-        this._isProper = function () {
-            var ans = true;
-            while (!this.left.isVisible) {
-                this.left = this.left.parent;
-            }
-            while (!this.right.isVisible) {
-                this.right = this.right.parent;
-            }
-            ans &= this.left.uid < this.right.uid;
-            this.source = left;
-            this.target = right;
-            return ans;
-        };
     }
 
     function listNodes() {
@@ -369,48 +226,7 @@ define([
         return edges;
     }
 
-    /**These are the strings used in the model**/
-    var values = {
-        type: "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
-        hasBidirectionalPort: "http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort",
-        isAlias: "http://schemas.ogf.org/nml/2013/03/base#isAlias",
-        namedIndividual: "http://www.w3.org/2002/07/owl#NamedIndividual",
-        topology: "http://schemas.ogf.org/nml/2013/03/base#Topology",
-        node: "http://schemas.ogf.org/nml/2013/03/base#Node",
-        bidirectionalPort: "http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort",
-        hypervisorService: "http://schemas.ogf.org/mrs/2013/12/topology#HypervisorService",
-        labelGroup: "http://schemas.ogf.org/nml/2013/03/base#LabelGroup",
-        label: "http://schemas.ogf.org/nml/2013/03/base#Label",
-        hasNode: "http://schemas.ogf.org/nml/2013/03/base#hasNode",
-        hasService: "http://schemas.ogf.org/nml/2013/03/base#hasService",
-        hasTopology: "http://schemas.ogf.org/nml/2013/03/base#hasTopology",
-        networkAdress: "http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress",
-        bucket: "http://schemas.ogf.org/mrs/2013/12/topology#Bucket",
-        routingService: "http://schemas.ogf.org/mrs/2013/12/topology#RoutingService",
-        switchingSubnet: "http://schemas.ogf.org/mrs/2013/12/topology#SwitchingSubnet",
-        hasNetworkAddress: "http://schemas.ogf.org/mrs/2013/12/topology#hasNetworkAddress",
-        provideByService: "http://schemas.ogf.org/mrs/2013/12/topology#providedByService",
-        hasBucket: "http://schemas.ogf.org/mrs/2013/12/topology#hasBucket",
-        belongsTo: "http://schemas.ogf.org/nml/2013/03/base#belongsTo",
-        name: "http://schemas.ogf.org/nml/2013/03/base#name",
-        tag: "http://schemas.ogf.org/mrs/2013/12/topology#Tag",
-        route: "http://schemas.ogf.org/mrs/2013/12/topology#Route",
-        volume: "http://schemas.ogf.org/mrs/2013/12/topology#Volume",
-        virtualCloudService: "http://schemas.ogf.org/mrs/2013/12/topology#VirtualCloudService",
-        blockStorageService: "http://schemas.ogf.org/mrs/2013/12/topology#BlockStorageService",
-        routingTable: "http://schemas.ogf.org/mrs/2013/12/topology#RoutingTable",
-        switchingService: "http://schemas.ogf.org/nml/2013/03/base#SwitchingService",
-        topopolgySwitchingService: "http://schemas.ogf.org/mrs/2013/12/topology#SwitchingService",
-        hasVolume: "http://schemas.ogf.org/mrs/2013/12/topology#hasVolume",
-        objectStorageService: "http://schemas.ogf.org/mrs/2013/12/topology#ObjectStorageService"
-    };
-
-    var iconMap = {};{
-        //The curly brackets are for cold folding purposes
-        iconMap["default"] = "/VersaStack-web/resources/node.png";
-        iconMap[values.node] = "/VersaStack-web/resources/node.png";
-        iconMap[values.topology] = "/VersaStack-web/resources/topology.png";
-    }
+    
 
     /**Begin debug functions**/
     function listNodesPretty() {

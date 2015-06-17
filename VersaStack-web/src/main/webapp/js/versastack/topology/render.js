@@ -1,4 +1,8 @@
 "use strict";
+
+//For debug purpuses only
+var selectedNode;
+
 define([
     "local/d3", "local/versastack/utils"
 ], function (d3, utils) {
@@ -11,9 +15,11 @@ define([
         redraw();
 
         function redraw() {
-            svgContainer.selectAll("*").remove();
+            svgContainer.selectAll("*").remove();//Clear the previous drawing
             var nodeList = model.listNodes();
             var edgeList = model.listEdges();
+            //Recall that topologies are also considered nodes
+            //We render them seperatly to enfore a z-ordering
             map_(nodeList, drawTopology);
             map_(edgeList, drawEdge);
             map_(nodeList, drawNode);
@@ -23,9 +29,9 @@ define([
         function drawNode(n) {
             if (n.isLeaf()) {
                 var svgNode = svgContainer.append("image")
+                        .attr("xlink:href", n.getIconPath())
                         .attr("x", n.x - settings.NODE_SIZE / 2)
                         .attr("y", n.y - settings.NODE_SIZE / 2)
-                        .attr("xlink:href", n.getIconPath())
                         .attr('height', settings.NODE_SIZE)
                         .attr('width', settings.NODE_SIZE)
                         .on("click", onNodeClick.bind(undefined, n))
@@ -45,12 +51,20 @@ define([
             if (!n.isLeaf()) {
                 //render the convex hull surounding the decendents of n
                 var leaves = n.getLeaves();
-                //workaround for small topologies
                 if (leaves.length === 0) {
                     return;
                 }
-                ;
+                if (leaves.length === 1) {
+                    //If all leaves are the same point, then the hull will be just
+                    //A single point, and not get rendered.
+                    //By forcing it to take distinct points, the stroke-width 
+                    //Causes it to render at full size
+                    var leaf = leaves[0];
+                    leaves.push({x: leaf.x + 1, y: leaf.y + 1});
+                }
                 while (leaves.length < 3) {
+                    //Even with two distinct point, the path will not exist
+                    //Adding a third point (even if it is a duplicate) seems to fix this
                     leaves.push(leaves[0]);
                 }
 
@@ -63,11 +77,11 @@ define([
                         })
                         (leaves);
                 var hull = svgContainer.append("path")
-                        .style("fill", "steelblue")
-                        .style("stroke", "steelblue")
+                        .style("fill", settings.HULL_COLOR)
+                        .style("stroke", settings.HULL_COLOR)
                         .style("stroke-width", settings.TOPOLOGY_SIZE)
                         .style("stroke-linejoin", "round")
-                        .style("stroke-opacity", "20%")
+                        .style("stroke-opacity", settings.HULL_OPACITY)
                         .datum(path)
                         .attr("d", function (d) {
                             //@param d is the datum set above
@@ -79,7 +93,7 @@ define([
                             for (var i = 1; i < d.length; i++) {
                                 ans += "L" + d[i].x + " " + d[i].y + " ";
                             }
-                            ans += "Z"
+                            ans += "Z";
                             return ans;
                         })
                         .on("click", onNodeClick.bind(undefined, n))
@@ -103,8 +117,8 @@ define([
                     .attr("y1", e.source.y)
                     .attr("x2", e.target.x)
                     .attr("y2", e.target.y)
-                    .attr("style", "stroke:rgb(0,0,0);stroke-width:2");
-
+                    .style("stroke",settings.EDGE_COLOR)
+                    .style("stroke-width",settings.EDGE_WIDTH);
         }
 
         /**
@@ -112,18 +126,23 @@ define([
          * @param {Node} n**/
         function onNodeClick(n) {
             outputApi.setActiveName(n.getName());
+            var services = map_(n.services, /**@param {Service} service**/function (service) {
+                return service.getTypeBrief();
+            });
+            outputApi.setServices(services);
+            selectedNode = n;
         }
         /**
          * Note that n could also be a topology
          * @param {Node} n**/
         function onNodeDblClick(n) {
-            var e=d3.event;
+            var e = d3.event;
             n.toggleFold();
-            if(n.isFolded){
+            if (n.isFolded) {
                 //there is no guarantee that n is posistioned anywhere near its children
                 //to solve this, we force n to be located at the click
-                n.x=e.x;
-                n.y=e.y;
+                n.x = e.x;
+                n.y = e.y;
             }
             redraw();
         }
@@ -141,8 +160,12 @@ define([
 
     var settings = {
         NODE_SIZE: 30,
-        TOPOLOGY_SIZE: 45
-    }
+        TOPOLOGY_SIZE: 45,
+        HULL_COLOR: "rgb(0,100,255)",
+        HULL_OPACITY: "20%",
+        EDGE_COLOR: "rgb(0,0,0)",
+        EDGE_WIDTH: 2
+    };
 
     return{
         doRender: doRender

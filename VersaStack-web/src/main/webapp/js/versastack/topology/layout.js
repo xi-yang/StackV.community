@@ -1,8 +1,7 @@
 "use strict";
 define([
-    "local/d3", "local/versastack/utils", "local/versastack/model"
-], function (d3, utils, model) {
-    var map_ = utils.map_;
+    "local/d3"
+], function (d3) {
     var force;
 
     function doLayout(nodes, edges, width, height) {

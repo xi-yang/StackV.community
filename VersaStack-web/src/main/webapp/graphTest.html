@@ -42,14 +42,22 @@
             var layout;
             var render;
             var d3;
+            var utils;
 
             function onload() {
-                require(["local/versastack/model", "local/versastack/layout", "local/versastack/render","local/d3"], function (m, l, r,d3_) {
+                require([   "local/versastack/topology/model", 
+                            "local/versastack/topology/layout", 
+                            "local/versastack/topology/render",
+                            "local/d3",
+                            "local/versastack/utils"], 
+                        function (m, l, r,d3_,utils_) {
                     model = m;
                     model.init(drawGraph);
                     layout = l;
                     render = r;
                     d3=d3_;
+                    utils=utils_;
+                    map_=utils.map_;
                 });
             }
             function drawGraph() {
@@ -71,7 +79,15 @@
                     return d3.select("#viz");
                 };
                 this.setActiveName=function(str){
-                    document.getElementById("displayPanelName").innerText=str;
+                    document.getElementById("displayPanelName").innerText="Name: "+str;
+                };
+                this.setServices=function(arr){
+                    var container=document.getElementById("displayServices");
+                    utils.deleteAllChildNodes(container);
+                    map_(arr,function(str){
+                        container.appendChild(document.createTextNode("Service: "+str));
+                        container.appendChild(document.createElement('br'));
+                    });
                 };
             }
         </script>
@@ -80,6 +96,8 @@
     <body onload="onload()" style="width:100%; height: 100%">
         <div id="displayPanel" style="float:right;">
             <div id="displayPanelName"></div>
+            <br/>
+            <div id="displayServices"></div>
         </div>
         <svg id="viz" style="width:100%; height: 100%">
         <!--We nest a g in here because the svg tag itself cannot do transforms-->
