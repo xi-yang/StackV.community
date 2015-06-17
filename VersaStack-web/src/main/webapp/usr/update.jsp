@@ -1,7 +1,7 @@
 <%@page import="java.security.MessageDigest"%>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page errorPage = "/Testing/errorPage.jsp" %>
-<jsp:useBean id="user" class="loginTest.userBeans" scope="session" />
+<%@page errorPage = "/VersaStack-web/errorPage.jsp" %>
+<jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
 <jsp:setProperty name="user" property="*" />  
 <!DOCTYPE html>
 <html >
@@ -19,7 +19,7 @@
     <body>
         <!-- Eventually update this to 2.0 EL spec -->
         <%
-            loginTest.userBeans.update(
+            web.beans.userBeans.update(
                     request.getParameter("username"),
                     request.getParameter("password"),
                     request.getParameter("firstname"),

@@ -397,7 +397,7 @@ body {
     font-size: 14px;
 }
 #registration-result {
-    background: url(/Testing/img/noise-diagonal.png), linear-gradient(#ddd, #aaa);
+    background: url(/VersaStack-web/img/noise-diagonal.png), linear-gradient(#ddd, #aaa);
     border-left: 1px solid #555;
     border-right: 1px solid #777;
     border-top: 1px solid #555;
@@ -407,7 +407,7 @@ body {
 }
 
 .management-table th {
-    background: url(/Testing/img/noise-diagonal.png), linear-gradient(#777, #444);
+    background: url(/VersaStack-web/img/noise-diagonal.png), linear-gradient(#777, #444);
     border-left: 1px solid #555;
     border-right: 1px solid #777;
     border-top: 1px solid #555;

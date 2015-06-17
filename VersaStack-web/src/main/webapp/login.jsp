@@ -1,7 +1,7 @@
 <%@page import="java.security.MessageDigest"%>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page errorPage = "errorPage.jsp" %>
-<jsp:useBean id="user" class="loginTest.userBeans" scope="session" />
+<jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
 <jsp:setProperty name="user" property="*" />  
 <!DOCTYPE html>
 <html >
