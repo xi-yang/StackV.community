@@ -153,6 +153,20 @@ define(["local/versastack/topology/modelConstants",
             });
             return ans;
         };
+        this.getCenterOfMass = function(){
+            var ans={x:0,y:0};
+            var leaves=this.getLeaves();
+            var num=leaves.length;
+            map_(leaves,function(leaf){
+                ans.x+=leaf.x/num;
+                ans.y+=leaf.y/num;
+            });
+            if(num===0){
+                ans.x=this.x;
+                ans.y=this.y;
+            }
+            return ans;
+        };
     }
 
     var iconMap = {};{

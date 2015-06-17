@@ -8,11 +8,22 @@ define([
 ], function (d3, utils) {
     var map_ = utils.map_;
 
+    var settings = {
+        NODE_SIZE: 30,
+        TOPOLOGY_SIZE: 45,
+        HULL_COLOR: "rgb(0,100,255)",
+        HULL_OPACITY: "20%",
+        EDGE_COLOR: "rgb(0,0,0)",
+        EDGE_WIDTH: 2
+    };
+
     /**@param {outputApi} outputApi
      * @param {Model} model**/
     function doRender(outputApi, model) {
         var svgContainer = outputApi.getSvgContainer();
         redraw();
+
+        
 
         function redraw() {
             svgContainer.selectAll("*").remove();//Clear the previous drawing
@@ -136,13 +147,16 @@ define([
          * Note that n could also be a topology
          * @param {Node} n**/
         function onNodeDblClick(n) {
+            //The coordinates provided seem not to line up with where the mouse is,
+            //So we use the center of mass to stay consistent
             var e = d3.event;
+            var chords = n.getCenterOfMass();
             n.toggleFold();
             if (n.isFolded) {
                 //there is no guarantee that n is posistioned anywhere near its children
                 //to solve this, we force n to be located at the click
-                n.x = e.x;
-                n.y = e.y;
+                n.x = chords.x;
+                n.y = chords.y;
             }
             redraw();
         }
@@ -158,14 +172,6 @@ define([
         }
     }
 
-    var settings = {
-        NODE_SIZE: 30,
-        TOPOLOGY_SIZE: 45,
-        HULL_COLOR: "rgb(0,100,255)",
-        HULL_OPACITY: "20%",
-        EDGE_COLOR: "rgb(0,0,0)",
-        EDGE_WIDTH: 2
-    };
 
     return{
         doRender: doRender
