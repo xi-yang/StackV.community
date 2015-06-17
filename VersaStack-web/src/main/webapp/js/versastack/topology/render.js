@@ -2,7 +2,7 @@
 
 //For debug purpuses only
 var selectedNode;
-
+var debugPoint = {x: 0, y: 0};
 define([
     "local/d3", "local/versastack/utils"
 ], function (d3, utils) {
@@ -17,23 +17,35 @@ define([
         EDGE_WIDTH: 2
     };
 
+
+
     /**@param {outputApi} outputApi
-     * @param {Model} model**/
+     * @param {Model} model
+     **/
     function doRender(outputApi, model) {
+        //outputApi may start zoomed in, as a workaround for the limit of how 
+        //far out we can zoom. in order to prevent changes in this parameter 
+        //affecting the meaning of our size related parameters, we scale them 
+        //appropriatly
+        settings.NODE_SIZE /= outputApi.getZoom();
+        settings.TOPOLOGY_SIZE /= outputApi.getZoom();
+        settings.EDGE_WIDTH /= outputApi.getZoom();
+
         var svgContainer = outputApi.getSvgContainer();
         redraw();
 
-        
-
         function redraw() {
             svgContainer.selectAll("*").remove();//Clear the previous drawing
+//            makeGrid();
             var nodeList = model.listNodes();
             var edgeList = model.listEdges();
+
             //Recall that topologies are also considered nodes
             //We render them seperatly to enfore a z-ordering
             map_(nodeList, drawTopology);
             map_(edgeList, drawEdge);
             map_(nodeList, drawNode);
+
         }
 
         /**@param {Node} n**/
@@ -46,15 +58,8 @@ define([
                         .attr('height', settings.NODE_SIZE)
                         .attr('width', settings.NODE_SIZE)
                         .on("click", onNodeClick.bind(undefined, n))
-                        .on("dblclick", onNodeDblClick.bind(undefined, n));
-                //register the drag listener
-                var drag = d3.behavior.drag()
-                        .on("drag", function () {
-                            var e = d3.event;
-                            move(n, e.dx, e.dy);
-                            redraw();
-                        });
-                svgNode.call(drag);
+                        .on("dblclick", onNodeDblClick.bind(undefined, n))
+                        .call(makeDragBehaviour(n));
             }
         }
         /**@param {Node} n**/
@@ -71,7 +76,7 @@ define([
                     //By forcing it to take distinct points, the stroke-width 
                     //Causes it to render at full size
                     var leaf = leaves[0];
-                    leaves.push({x: leaf.x + 1, y: leaf.y + 1});
+                    leaves.push({x: leaf.x + .01, y: leaf.y + .01});
                 }
                 while (leaves.length < 3) {
                     //Even with two distinct point, the path will not exist
@@ -108,19 +113,28 @@ define([
                             return ans;
                         })
                         .on("click", onNodeClick.bind(undefined, n))
-                        .on("dblclick", onNodeDblClick.bind(undefined, n));
-                //register the onDrag container
-
-                var drag = d3.behavior.drag()
-                        .on("drag", function () {
-                            var e = d3.event;
-                            move(n, e.dx, e.dy);
-                            redraw();
-                        });
-                hull.call(drag);
+                        .on("dblclick", onNodeDblClick.bind(undefined, n))
+                        .call(makeDragBehaviour(n));
             }
 
         }
+
+        /**@param {Node} n**/
+        function makeDragBehaviour(n) {
+            return d3.behavior.drag()
+                    .on("drag", function () {
+                        var e = d3.event;
+                        move(n, e.dx, e.dy);
+                        redraw();
+                    })
+                    .on("dragstart", function () {
+                        outputApi.disablePanning();
+                    })
+                    .on("dragend", function () {
+                        outputApi.enablePanning();
+                    });
+        }
+
         /**@param {Edge} e**/
         function drawEdge(e) {
             svgContainer.append("line")
@@ -128,8 +142,35 @@ define([
                     .attr("y1", e.source.y)
                     .attr("x2", e.target.x)
                     .attr("y2", e.target.y)
-                    .style("stroke",settings.EDGE_COLOR)
-                    .style("stroke-width",settings.EDGE_WIDTH);
+                    .style("stroke", settings.EDGE_COLOR)
+                    .style("stroke-width", settings.EDGE_WIDTH);
+        }
+
+        //For debuging
+        function makeGrid() {
+            svgContainer.append("circle")
+                    .attr("cx", debugPoint.x)
+                    .attr("cy", debugPoint.y)
+                    .attr("r", 10)
+                    .style("fill", "red");
+            for (var x = 0; x < 200; x += 20) {
+                for (var y = 0; y < 100; y += 20) {
+                    svgContainer.append("line")
+                            .attr("x1", 0)
+                            .attr("y1", y)
+                            .attr("x2", 1000)
+                            .attr("y2", y)
+                            .style("stroke", "black")
+                            .style("stroke-width", 1);
+                    svgContainer.append("line")
+                            .attr("x1", x)
+                            .attr("y1", 0)
+                            .attr("x2", x)
+                            .attr("y2", 1000)
+                            .style("stroke", "black")
+                            .style("stroke-width", 1);
+                }
+            }
         }
 
         /**

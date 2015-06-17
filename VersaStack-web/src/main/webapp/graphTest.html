@@ -36,8 +36,14 @@
                 "dijit/layout/TabContainer", "dijit/layout/AccordionContainer", "dijit/layout/ContentPane"
             ]);
         </script>
-        
+
         <script type="text/javascript">
+
+            var settings = {
+                ZOOM_FACTOR: .005,
+                ZOOM_MIN: .2, //As we zoom further out, there is increasing error in the correction pan
+                INIT_ZOOM: 4  //Staring zoomed in allows a larger effective zoomout given our ZOOM_MIN
+            };
             var model;
             var layout;
             var render;
@@ -45,50 +51,142 @@
             var utils;
 
             function onload() {
-                require([   "local/versastack/topology/model", 
-                            "local/versastack/topology/layout", 
-                            "local/versastack/topology/render",
-                            "local/d3",
-                            "local/versastack/utils"], 
-                        function (m, l, r,d3_,utils_) {
-                    model = m;
-                    model.init(drawGraph);
-                    layout = l;
-                    render = r;
-                    d3=d3_;
-                    utils=utils_;
-                    map_=utils.map_;
-                });
+                require(["local/versastack/topology/model",
+                    "local/versastack/topology/layout",
+                    "local/versastack/topology/render",
+                    "local/d3",
+                    "local/versastack/utils"],
+                        function (m, l, r, d3_, utils_) {
+                            model = m;
+                            model.init(drawGraph);
+                            layout = l;
+                            render = r;
+                            d3 = d3_;
+                            utils = utils_;
+                            map_ = utils.map_;
+                        });
             }
             function drawGraph() {
                 var nodeList = model.listNodes();
                 var edgeList = model.listEdges();
-                var width = document.documentElement.clientWidth;
-                var height = document.documentElement.clientHeight;
+                var width = document.documentElement.clientWidth/settings.INIT_ZOOM;
+                var height = document.documentElement.clientHeight/settings.INIT_ZOOM;
                 //TODO, figure out why we need to call this twice
                 //If we do not, the layout does to converge as nicely, even if we double the number of iterations
                 layout.doLayout(nodeList, edgeList, width, height);
                 layout.doLayout(nodeList, edgeList, width, height);
 
-                
+
                 render.doRender(new outputApi(), model);
             }
-            
-            function outputApi(){
-                this.getSvgContainer=function(){
+
+            function outputApi() {
+                var that = this;
+                this.getSvgContainer = function () {
                     return d3.select("#viz");
                 };
-                this.setActiveName=function(str){
-                    document.getElementById("displayPanelName").innerText="Name: "+str;
+                this.setActiveName = function (str) {
+                    document.getElementById("displayPanelName").innerText = "Name: " + str;
                 };
-                this.setServices=function(arr){
-                    var container=document.getElementById("displayServices");
+                this.setServices = function (arr) {
+                    var container = document.getElementById("displayServices");
                     utils.deleteAllChildNodes(container);
-                    map_(arr,function(str){
-                        container.appendChild(document.createTextNode("Service: "+str));
+                    map_(arr, function (str) {
+                        container.appendChild(document.createTextNode("Service: " + str));
                         container.appendChild(document.createElement('br'));
                     });
                 };
+
+                var zoomFactor = settings.INIT_ZOOM;
+                var offsetX = 0, offsetY = 0;
+                this.zoom = function (amount, mouseX, mouseY) {
+                    /*
+                     * There seems to be some error (rounding?) when we zoom far out
+                     * 
+                     * In addition to zooming, we also translate the image so that the point under the cursor appears stationary.
+                     * To understand this conversion, there are two coordinate systems to consdier:
+                     *      the svg coordinate system (in which all svg objects are stationary throughout the translation), and
+                     *      the mouse coordinate system, that corresponds to what we see
+                     *      
+                     *       The conversion (along a single axis) between these two systems is given by:
+                     *       X_mouse=zoomFactor*(X_svg + offsetX)
+                     *       To find the new offset, after increasing zoomFactor by zoomDelta, we solve:
+                     *         zoomFactor*(X_svg + offsetX)=(zoomFactor+zoomDelta)*(X_svg + (offsetX+doX))
+                     *        for doX.
+                     *        the new offset is now offsetX+doX
+                     *        
+                     */
+                    var zoomFactorNew=zoomFactor*(1+amount);
+                    var zoomDelta=zoomFactorNew-zoomFactor;
+                    if (zoomFactorNew < settings.ZOOM_MIN) {
+                        return;
+                    }
+                    zoomFactor = zoomFactorNew;
+                    //Translate so that the point under the mouse does not move
+                    //get the svg coordinate of the mouse
+                    var svgCoords = this.convertCoords(mouseX, mouseY);
+                    offsetX -= zoomDelta * (svgCoords.x + offsetX) / zoomFactor;
+                    offsetY -= zoomDelta * (svgCoords.y + offsetY) / zoomFactor;
+                    this._updateTransform();
+                };
+                this.getZoom=function(){
+                    return zoomFactor;
+                }
+                this.scroll = function (dx, dy) {
+                    offsetX += dx / zoomFactor;
+                    offsetY += dy / zoomFactor;
+                    this._updateTransform();
+                };
+
+                this._updateTransform = function () {
+                    this.getSvgContainer().
+                            attr("transform", "scale(" + zoomFactor + ")translate(" + offsetX + "," + offsetY + ")");
+                };
+                this._updateTransform();
+                //Return the svg coordinates of the point under the given mouse coords
+                //The mouseCoords should be from event.offsetX (offsetY)
+                this.convertCoords = function (mouseX, mouseY) {
+                    var ans = {};
+                    ans.x = mouseX / zoomFactor - offsetX;
+                    ans.y = mouseY / zoomFactor - offsetY;
+                    return ans;
+                };
+
+
+
+                var svg = document.getElementById("vizParent");
+                svg.addEventListener("mousewheel", function (e) {
+                    e.preventDefault();
+                    that.zoom(e.wheelDeltaY * settings.ZOOM_FACTOR, e.offsetX, e.offsetY);
+                    return false;
+                }, false);
+
+                //Panning
+                //d3 does not seem to provide a way for us to avoid capturing mouse events that are handled by nodes
+                //This means that our panning code will be called even when the user is only trying to move a node
+                //as a work around, we provide a way to enable/disable panning
+                var panningEnabled = true;
+                var isPanning = false;
+                this.enablePanning = function () {
+                    panningEnabled = true;
+                }
+                this.disablePanning = function () {
+                    panningEnabled = false;
+                }
+                svg.addEventListener("mousedown", function (e) {
+                    isPanning = true;
+                    return false;
+                }, false);
+                svg.addEventListener("mousemove", function (e) {
+                    if (isPanning && panningEnabled) {
+                        that.scroll(e.movementX, e.movementY);
+                    }
+                    return false;
+                }, false);
+                svg.addEventListener("mouseup", function (e) {
+                    isPanning = false;
+                    return false;
+                }, false);
             }
         </script>
     </head>
@@ -99,9 +197,9 @@
             <br/>
             <div id="displayServices"></div>
         </div>
-        <svg id="viz" style="width:100%; height: 100%">
+        <svg id="vizParent" style="width:100%; height: 100%">
         <!--We nest a g in here because the svg tag itself cannot do transforms-->
-        <!--<g id="viz"/>-->
+        <g id="viz"/>
         </svg>
     </body>
 </html>
