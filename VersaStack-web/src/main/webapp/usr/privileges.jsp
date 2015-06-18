@@ -43,7 +43,43 @@
         <div id="sidebar">            
         </div>
         <!-- MAIN PANEL -->
-        <div id="main-pane">                        
+        <div id="main-pane"> 
+            <sql:query dataSource="${front_conn}" sql="SELECT acl_id FROM acl WHERE service_id = ?" var="acllist">
+                <sql:param value="${param.id}"/>
+            </sql:query>
+            <c:if test="${not empty param.add_usergroup_id}">            
+                <c:forEach var="acl" items="${acllist.rows}">
+                    <sql:update dataSource="${front_conn}" sql="INSERT INTO acl_entry_group VALUES (?, ?)" var="count">
+                        <sql:param value="${acl.acl_id}" />
+                        <sql:param value="${param.add_usergroup_id}" />
+                    </sql:update>
+                </c:forEach>
+            </c:if>
+            <c:if test="${not empty param.remove_usergroup_id}">
+                <c:forEach var="acl" items="${acllist.rows}">
+                    <sql:update dataSource="${front_conn}" sql="DELETE FROM acl_entry_group WHERE acl_id = ? AND usergroup_id = ?" var="count">
+                        <sql:param value="${acl.acl_id}" />
+                        <sql:param value="${param.remove_usergroup_id}" />
+                    </sql:update>
+                </c:forEach>
+            </c:if>
+            <c:if test="${not empty param.add_user_id}">            
+                <c:forEach var="acl" items="${acllist.rows}">
+                    <sql:update dataSource="${front_conn}" sql="INSERT INTO acl_entry_user VALUES (?, ?)" var="count">
+                        <sql:param value="${acl.acl_id}" />
+                        <sql:param value="${param.add_user_id}" />
+                    </sql:update>
+                </c:forEach>
+            </c:if>
+            <c:if test="${not empty param.remove_user_id}">
+                <c:forEach var="acl" items="${acllist.rows}">
+                    <sql:update dataSource="${front_conn}" sql="DELETE FROM acl_entry_user WHERE acl_id = ? AND user_id = ?" var="count">
+                        <sql:param value="${acl.acl_id}" />
+                        <sql:param value="${param.remove_user_id}" />
+                    </sql:update>
+                </c:forEach>
+            </c:if>
+            
             <form>
                 <sql:query dataSource="${front_conn}" sql="SELECT name, service_id FROM service" var="servicelist" />
                 <select id="acl-select" onchange="aclSelect(this)">
@@ -81,21 +117,35 @@
                                 <td>${group.title}</td>
                                 <td>${group.ucount}</td>
                                 <td><div class="float-right inline">
-                                    <form action="" method="POST">
-                                        <input type="hidden" name="usergroup_id" value="${group.usergroup_id}"/>
-                                        <input type="submit" value="Remove" />  
-                                    </form>
-                                </div>
-                                <div class="float-right inline">
-                                    <form action="user_groups.jsp" method="GET">
-                                        <input type="hidden" name="id" value="${group.usergroup_id}"/>
-                                        <input type="submit" value="Edit" />    
-                                    </form>
-                                </div></td>
+                                        <form action="privileges.jsp?id=${param.id}" method="POST">
+                                            <input type="hidden" name="remove_usergroup_id" value="${group.usergroup_id}"/>
+                                            <input type="submit" value="Remove" />  
+                                        </form>
+                                    </div>
+                                    <div class="float-right inline">
+                                        <form action="user_groups.jsp" method="GET">
+                                            <input type="hidden" name="id" value="${group.usergroup_id}"/>
+                                            <input type="submit" value="Edit" />    
+                                        </form>
+                                    </div></td>
                             </tr>
                         </c:forEach>
                     </tbody>
                 </table>
+                <form id="button-add-groups" action="privileges.jsp?id=${param.id}" method="post">                    
+                    <sql:query dataSource="${front_conn}" sql="SELECT G.usergroup_id, G.title 
+                               FROM usergroup G, acl A, acl_entry_group E 
+                               WHERE G.usergroup_id <> E.usergroup_id AND E.acl_id = A.acl_id AND A.service_id = ? 
+                               GROUP BY G.title" var="ugrouplist">
+                        <sql:param value="${param.id}"/>
+                    </sql:query>
+                    <select name="add_usergroup_id">
+                        <c:forEach var="group" items="${ugrouplist.rows}">
+                            <option value="${group.usergroup_id}">${group.title}</option>
+                        </c:forEach>
+                    </select>
+                    <input type="submit" value="Add" /> 
+                </form>
                 <table class="management-table" id="service-user-table">
                     <thead>
                         <tr>
@@ -110,8 +160,8 @@
                             <td>${usr.first_name} ${usr.last_name}</td>
                             <td>
                                 <div class="float-right inline">
-                                    <form action="" method="POST">
-                                        <input type="hidden" name="user_id" value="${usr.user_id}"/>
+                                    <form action="privileges.jsp?id=${param.id}" method="POST">
+                                        <input type="hidden" name="remove_user_id" value="${usr.user_id}"/>
                                         <input type="submit" value="Remove" />  
                                     </form>
                                 </div>
@@ -127,6 +177,20 @@
                         </tr>
                     </c:forEach>
                 </table>
+                <form id="button-add-users" action="privileges.jsp?id=${param.id}" method="post">                    
+                    <sql:query dataSource="${front_conn}" sql="SELECT I.user_id, I.username, I.first_name, I.last_name
+                               FROM user_info I, acl A, acl_entry_user U 
+                               WHERE I.user_id <> U.user_id AND U.acl_id = A.acl_id AND A.service_id = ?" var="users">
+                        <sql:param value="${param.id}" />
+                    </sql:query>
+
+                    <select name="add_user_id">
+                        <c:forEach var="usr" items="${users.rows}">
+                            <option value="${usr.user_id}">${usr.username} (${usr.first_name} ${usr.last_name})</option>
+                        </c:forEach>
+                    </select>
+                    <input type="submit" value="Add" /> 
+                </form>
             </div>
         </div>        
         <!-- JS -->

@@ -120,8 +120,8 @@
                             </sql:query>
 
                             <select name="add_user_id">
-                                <c:forEach var="user" items="${users.rows}">
-                                    <option value="${user.user_id}">${user.username} (${user.first_name} ${user.last_name})</option>
+                                <c:forEach var="usr" items="${users.rows}">
+                                    <option value="${usr.user_id}">${usr.username} (${usr.first_name} ${usr.last_name})</option>
                                 </c:forEach>
                             </select>
                             <input type="submit" value="Switch User to Current Group" />

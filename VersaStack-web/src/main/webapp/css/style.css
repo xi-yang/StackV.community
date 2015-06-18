@@ -491,11 +491,19 @@ body {
     margin: 0px 71px;
 }
 
-#button-add-users {
-
+#button-add-groups {
     font-size: 12px;
-    margin: 10px auto;
-    width: 750px;
+    margin-left: 7%;
+    margin-bottom: 0;
+    text-align: left;
+    
+}
+
+#button-add-users {
+    font-size: 12px;
+    margin-left: 7%;
+    text-align: left;
+    
 }
 
 #button-service-cancel {
