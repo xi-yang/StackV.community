@@ -1,248 +1,62 @@
+
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8">
-        <title>Test</title>
-        <link href="css/topology.css" rel="stylesheet">
-        <link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/dojo/1.9.0/dijit/themes/claro/claro.css">
+<html >    
+    <head>   
+        <meta charset="UTF-8">
+        <title>Overview</title>
+        <script src="js/jquery/jquery.js"></script>
+        <script src="js/bootstrap.js"></script>
 
-        <style type="text/css">
-            .floatTL {
-                position: fixed;
-                top: 0px;
-                left: 0px;
-            }
-
-            .floatTR {
-                position: fixed;
-                top: 0px;
-                right: 15px;
-            }
-
-            .loading-image {
-                margin: auto;
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                z-index: 1000;
-            }
-
-            .d3-tip {
-                line-height: 1;
-                font-weight: bold;
-                padding: 12px;
-                background: rgba(0, 0, 0, 0.8);
-                color: #fff;
-                border-radius: 3px;
-            }
-
-            /* Creates a small triangle extender for the tooltip */
-            .d3-tip:after {
-                box-sizing: border-box;
-                display: inline;
-                font-size: 10px;
-                width: 100%;
-                line-height: 1;
-                color: rgba(0, 0, 0, 0.8);
-                content: "\25BC";
-                position: absolute;
-                text-align: center;
-            }
-
-            /* Style northward tooltips differently */
-            .d3-tip.n:after {
-                margin: -1px 0 0 0;
-                top: 100%;
-                left: 0;
-            }
-
-            body {
-                -moz-user-select: none;
-                -khtml-user-select: none;
-                -webkit-user-select: none;
-                user-select: none;
-            }
-
-            #networks {
-                word-wrap: break-word;
-            }
-
-            html, body {
-                width: 100%;
-                height: 100%;
-                margin: 0;
-                padding: 0;
-            }
-
-            .pageOverlay {
-                top: 0;
-                left: 0;
-                position: absolute;
-                height: 100%;
-                width: 100%;
-                z-index: 1001;
-                display: block;
-            }
-
-            #loadingOverlay {
-                width: 100%;
-                height: 100%;
-                display: none;
-                z-index: 999;
-                /*background:  #fff url('//ajax.googleapis.com/ajax/libs/dojo/1.9.3/dijit/themes/claro/images/loadingAnimation.gif') no-repeat 10px 23px;*/
-            }
-
-            .loadingMessage {
-                padding: 25px 40px;
-                color: #999;
-            }
-        </style>
-
-        <script>
-            //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
-            dojoConfig = {
-                has: {
-                    "dojo-firebug": true,
-                    "dojo-debug-messages": true
-                },
-                async: true,
-                parseOnLoad: true,
-                packages: [
-                    {
-                        name: "d3",
-                        location: "//d3js.org/",
-                        main: "d3.v3.min"
-                    },
-                    {
-                        name: "local",
-                        location: location.pathname.replace(/\/[^/]+$/, '') + '/js/'
-                    }
-                ]
-            };
-        </script>
-        <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
-
-        <script type="text/javascript">
-            require([
-                "dojo/parser", "dojo/ready", "dijit/layout/BorderContainer", "dijit/form/Button",
-                "dijit/layout/TabContainer", "dijit/layout/AccordionContainer", "dijit/layout/ContentPane"
-            ]);
-        </script>
+        <link rel="stylesheet" href="css/animate.min.css">
+        <link rel="stylesheet" href="css/font-awesome.min.css">
+        <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
+        <link rel="stylesheet" href="css/bootstrap.css">
+        <link rel="stylesheet" href="css/style.css">
     </head>
 
-    <body class="claro">
-        <div id="root" data-dojo-type="dijit/layout/BorderContainer" style="width: 100%; height: 100%;">
-            <div data-dojo-type="dijit/layout/AccordionContainer" data-dojo-props="region:'leading'" style="width:15%">
-                <div id="overview" data-dojo-type="dijit/layout/ContentPane" title="Overview">Overview Placeholder</div>
-                <div id="networks" data-dojo-type="dijit/layout/ContentPane" title="Networks">
-                    <button id="networksButton" data-dojo-type="dijit/form/Button" type="button">
-                        Show Test Networks
-                    </button>
-                </div>
-                <div id="users" data-dojo-type="dijit/layout/ContentPane" title="Users">Users Placeholder<br /><a href="users">Go to User Management</a></div>
-                <div id="settings" data-dojo-type="dijit/layout/ContentPane" title="Settings">Settings Placeholder</div>
-                <div id="logout" data-dojo-type="dijit/layout/ContentPane" title="Logout">Logout Placeholder</div>
-            </div>
-            <div id="mainTabList" data-dojo-type="dijit/layout/TabContainer" data-dojo-props="region:'center'">
-                <div id="loadingOverlay" class="loadingOverlay pageOverlay">
-                    <img src="resources/loading-indicator-large.gif" alt="loading..." class="loading-image" />
-                </div>
-            </div>
+    <body>        
+        <!-- NAV BAR -->
+        <div id="nav">
         </div>
-
-        <script type="text/javascript">
-            require(["dojo/on", "dijit/registry", "dojo/ready", "dijit/layout/ContentPane"], function(on, registry, ready, ContentPane) {
-                ready(function() {
-                    var overviewPanel = registry.byId("overview");
-                    var networksPanel = registry.byId("networks");
-                    var usersPanel = registry.byId("users");
-                    var settingsPanel = registry.byId("settings");
-                    var logoutPanel = registry.byId("logout");
-
-                    on(networksPanel, 'click', callSwitchPanelsWith("Networks"));
-                    on(overviewPanel, 'show', callSwitchPanelsWith("Overview"));
-                    on(usersPanel, 'show', callSwitchPanelsWith("Users"));
-                    on(settingsPanel, 'show', callSwitchPanelsWith("Settings"));
-                    on(logoutPanel, 'show', callSwitchPanelsWith("Logout"));
-
-                    new ContentPane({
-                        title: 'Small test data-set',
-                        id: 'networkTabSmall',
-                        closable: true,
-                        content: '<svg id="topologySmall" />',
-                        onClose: function() {
-                            dijit.getEnclosingWidget(this.domNode.parentNode).removeChild(this);
-                        }
-                    });
-
-                    new ContentPane({
-                        title: 'Large test data-set',
-                        id: 'networkTabLarge',
-                        closable: true,
-                        content: '<svg id="topologyLarge" />',
-                        onClose: function() {
-                            dijit.getEnclosingWidget(this.domNode.parentNode).removeChild(this);
-                        }
-                    });
-                });
+        <!-- SIDE BAR -->
+        <div id="sidebar">            
+        </div>
+        <!-- MAIN PANEL -->
+        <div id="main-pane">
+            <div>
+                <form method="get">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Usergroup</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Test1</strong></td>
+                            <td><input placeholder="hah" type="text" name="1" /></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Test2</strong></td>
+                            <td><input type="text" name="2" /></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Test3</strong></td>
+                            <td><input type="text" name="3" /></td>
+                        </tr>                        
+                    </tbody>
+                    <input type="submit" value="Submit" />
+                </table>
+                    </form>
+            </div>
+        </div>        
+        <!-- JS -->
+        <script>
+            $(function () {
+                $("#sidebar").load("/VersaStack-web/sidebar.html");
+                $("#nav").load("/VersaStack-web/navbar.html");
             });
-
-            function callSwitchPanelsWith(data) {
-                return function(evt) {
-                    switchPanels(data);
-                };
-            }
-
-            function addTabs(tabContainer, tabsList) {
-                for (var t in tabsList) {
-                    var tab = tabsList[t];
-
-                    if (tab != null) {
-                        tabContainer.addChild(tab);
-                        tab = null;
-                    }
-                }
-            }
-
-            function removeTabs(tabContainer, tabsList) {
-                var tabs = tabContainer.getChildren();
-
-                for (var child in tabs) {
-                    for (var i = 0, l = tabsList.length; i < l; ++i) {
-                        var remove = tabsList[i];
-                        if (remove != null && remove.id === tabs[child].id) {
-                            tabContainer.removeChild(remove);
-                        }
-                    }
-                }
-            }
-
-            function switchPanels(panelName) {
-                require(["dijit/registry", "dojo/ready", "local/versastack/model", "local/versastack/adminview", "local/versastack/loading"], function(registry, ready, model, adminview, loading) {
-                    ready(function() {
-                        var mainTabs = registry.byId("mainTabList");
-
-                        var networkTabSmall = registry.byId("networkTabSmall");
-                        var networkTabLarge = registry.byId("networkTabLarge");
-                        var networkTabs = [networkTabLarge, networkTabSmall];
-
-                        removeTabs(mainTabs, networkTabs);
-
-                        if (panelName === "Networks") {
-                            loading.createItem('loadTopology');
-                            loading.attach('loadTopology', '#loadingOverlay', 'display');
-
-                            networkTabLarge.set("content", '<svg id="topologyLarge" />');
-                            addTabs(mainTabs, networkTabs);
-
-                            model.createModel("data/graph-full.json", 'loadTopology');
-                            adminview.display('loadTopology');
-                        }
-                    });
-                });
-            }
-        </script>
+        </script>        
     </body>
 </html>
