@@ -36,12 +36,15 @@ define([
     function init(callback) {
         var request = new XMLHttpRequest();
         // request.open("GET","/VersaStack-web/restapi/model/");
-        request.open("GET", "/VersaStack-web/data/graph1.json");
+//        request.open("GET", "/VersaStack-web/data/graph1.json");
+        request.open("GET", "/VersaStack-web/data/graph-full.json");
+
         request.setRequestHeader("Accept", "application/json");
         request.onload = function () {
             var data = request.responseText;
             data = JSON.parse(data);
-            map = JSON.parse(data.ttlModel);
+//            map = JSON.parse(data.ttlModel);
+            map=data;
 
             /*
              * We begin by extracting all nodes/topologies
@@ -67,11 +70,15 @@ define([
                             break;
                         case values.bidirectionalPort:
                             if (values.hasBidirectionalPort in val) {
-                                subPortKeys = val[values.hasBidirectionalPort];
+                                var subPortKeys = val[values.hasBidirectionalPort];
                                 for (key in subPortKeys) {
-                                    subPortKey = subPortKeys[key].value;
-                                    subPort = map[subPortKey];
-                                    subPort.parentPort = val;
+                                    var subPortKey = subPortKeys[key].value;
+                                    var subPort = map[subPortKey];
+                                    if(subPort){
+                                        subPort.parentPort = val;
+                                    }else{
+                                        console.log("Subport does not exist: "+subPortKey);
+                                    }
                                 }
                             }
                         case values.namedIndividual://All elements have this
@@ -120,9 +127,13 @@ define([
                                 if (!port.processed && values.isAlias in port) {
                                     var aliasPortKey = port[values.isAlias][0].value;
                                     var aliasPort = map[aliasPortKey];
-                                    var newEdge = {portA: port, portB: aliasPort};
-                                    edgeList.push(newEdge);
-                                    aliasPort.processed = true;
+                                    if(aliasPort){
+                                        var newEdge = {portA: port, portB: aliasPort};
+                                        edgeList.push(newEdge);
+                                        aliasPort.processed = true;
+                                    }else{
+                                        console.log("aliasPort does not exist: "+aliasPortKey);
+                                    }
                                 }
                                 port.processed = true;
                             });

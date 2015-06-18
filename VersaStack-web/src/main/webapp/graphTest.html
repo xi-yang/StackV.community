@@ -198,8 +198,14 @@
             <div id="displayServices"></div>
         </div>
         <svg id="vizParent" style="width:100%; height: 100%">
-        <!--We nest a g in here because the svg tag itself cannot do transforms-->
-        <g id="viz"/>
+        <!--We nest a g in here because the svg tag itself cannot do transforms
+            we separate topologies, edges, and nodes to create an explicit z-order
+        -->
+        <g id="viz">
+        <g id="topology"/>
+        <g id="edge"/>
+        <g id="node"/>
+        </g>
         </svg>
     </body>
 </html>

@@ -12,7 +12,7 @@ define([
         NODE_SIZE: 30,
         TOPOLOGY_SIZE: 45,
         HULL_COLOR: "rgb(0,100,255)",
-        HULL_OPACITY: "20%",
+        HULL_OPACITY: .2,
         EDGE_COLOR: "rgb(0,0,0)",
         EDGE_WIDTH: 2
     };
@@ -35,8 +35,9 @@ define([
         redraw();
 
         function redraw() {
-            svgContainer.selectAll("*").remove();//Clear the previous drawing
-//            makeGrid();
+            svgContainer.select("#topology").selectAll("*").remove();//Clear the previous drawing
+            svgContainer.select("#edge").selectAll("*").remove();//Clear the previous drawing
+            svgContainer.select("#node").selectAll("*").remove();//Clear the previous drawing
             var nodeList = model.listNodes();
             var edgeList = model.listEdges();
 
@@ -51,7 +52,7 @@ define([
         /**@param {Node} n**/
         function drawNode(n) {
             if (n.isLeaf()) {
-                var svgNode = svgContainer.append("image")
+                svgContainer.select("#node").append("image")
                         .attr("xlink:href", n.getIconPath())
                         .attr("x", n.x - settings.NODE_SIZE / 2)
                         .attr("y", n.y - settings.NODE_SIZE / 2)
@@ -92,12 +93,14 @@ define([
                             return n.y;
                         })
                         (leaves);
-                var hull = svgContainer.append("path")
+                svgContainer.select("#topology").append("path")
                         .style("fill", settings.HULL_COLOR)
                         .style("stroke", settings.HULL_COLOR)
                         .style("stroke-width", settings.TOPOLOGY_SIZE)
                         .style("stroke-linejoin", "round")
-                        .style("stroke-opacity", settings.HULL_OPACITY)
+//                        .style("stroke-opacity", settings.HULL_OPACITY)
+//                        .style("fill-opacity", settings.HULL_OPACITY)
+                        .style("opacity",settings.HULL_OPACITY)
                         .datum(path)
                         .attr("d", function (d) {
                             //@param d is the datum set above
@@ -137,40 +140,13 @@ define([
 
         /**@param {Edge} e**/
         function drawEdge(e) {
-            svgContainer.append("line")
+            svgContainer.select("#edge").append("line")
                     .attr("x1", e.source.x)
                     .attr("y1", e.source.y)
                     .attr("x2", e.target.x)
                     .attr("y2", e.target.y)
                     .style("stroke", settings.EDGE_COLOR)
                     .style("stroke-width", settings.EDGE_WIDTH);
-        }
-
-        //For debuging
-        function makeGrid() {
-            svgContainer.append("circle")
-                    .attr("cx", debugPoint.x)
-                    .attr("cy", debugPoint.y)
-                    .attr("r", 10)
-                    .style("fill", "red");
-            for (var x = 0; x < 200; x += 20) {
-                for (var y = 0; y < 100; y += 20) {
-                    svgContainer.append("line")
-                            .attr("x1", 0)
-                            .attr("y1", y)
-                            .attr("x2", 1000)
-                            .attr("y2", y)
-                            .style("stroke", "black")
-                            .style("stroke-width", 1);
-                    svgContainer.append("line")
-                            .attr("x1", x)
-                            .attr("y1", 0)
-                            .attr("x2", x)
-                            .attr("y2", 1000)
-                            .style("stroke", "black")
-                            .style("stroke-width", 1);
-                }
-            }
         }
 
         /**
