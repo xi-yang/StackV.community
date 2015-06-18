@@ -1,10 +1,21 @@
 "use strict";
 define([
-    "local/d3"
-], function (d3) {
+    "local/d3",
+    "local/versastack/utils",
+    "local/versastack/topology/Edge"
+], function (d3,utils,Edge) {
+    var map_=utils.map_;
     var force;
-
+    
     function doLayout(nodes, edges, width, height) {
+        //To encourage topologies to clump, we add edges between topolgies and 
+        //their children
+        map_(nodes,/**@param {Node} n**/function(n){
+            map_(n.children,function(child){
+                edges.push(new Edge(n,child));
+            });
+        });
+        
         force = d3.layout.force()
                 .nodes(nodes)
                 .links(edges)
