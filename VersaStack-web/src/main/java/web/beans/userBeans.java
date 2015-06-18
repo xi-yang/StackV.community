@@ -17,12 +17,12 @@ import java.util.logging.Logger;
 
 public class userBeans {
 
-    static String login_db_user = "root";
-    static String login_db_pass = "takehaya";
-    static String reg_db_user = "root";
-    static String reg_db_pass = "takehaya";
-    static String front_db_user = "root";
-    static String front_db_pass = "takehaya";
+    String login_db_user = "root";
+    String login_db_pass = "takehaya";
+    String reg_db_user = "root";
+    String reg_db_pass = "takehaya";
+    String front_db_user = "root";
+    String front_db_pass = "takehaya";
 
     String username = "";
     String firstName = "";
@@ -168,7 +168,7 @@ public class userBeans {
      - 0: success
      - 3: duplicate username
      */
-    public static int register(String user, String pass, String first_name,
+    public int register(String user, String pass, String first_name,
             String last_name, String usergroup_id, String email) {
         user = user.trim();
         pass = pass.trim();
@@ -245,7 +245,7 @@ public class userBeans {
     }
 
     // Update
-    public static void update(String username, String pass, String first_name,
+    public void update(String username, String pass, String first_name,
             String last_name, String email) {
         try {
             if (!pass.isEmpty()) {

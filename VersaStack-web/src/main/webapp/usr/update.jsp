@@ -19,7 +19,7 @@
     <body>
         <!-- Eventually update this to 2.0 EL spec -->
         <%
-            web.beans.userBeans.update(
+            user.update(
                     request.getParameter("username"),
                     request.getParameter("password"),
                     request.getParameter("firstname"),

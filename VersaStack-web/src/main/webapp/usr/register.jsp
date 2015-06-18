@@ -19,7 +19,7 @@
     <body>
         <!-- Eventually update this to 2.0 EL spec -->
         <%
-            int retCode = web.beans.userBeans.register(
+            int retCode = user.register(
                     request.getParameter("username"),
                     request.getParameter("password"),
                     request.getParameter("firstname"),

@@ -5,6 +5,8 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
 <jsp:setProperty name="user" property="*" />  
+<jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
+<jsp:setProperty name="serv" property="*" />  
 <c:if test="${user.loggedIn == false}">
     <c:redirect url="/index.jsp" />
 </c:if>
@@ -33,7 +35,6 @@
         <!-- MAIN PANEL -->
         <div id="main-pane">
             <c:choose>
-                <!-- Form View -->
                 <c:when test="${param.ret != 'sub'}">
                     <div id="service-specific">                
                         <form action="/VersaStack-web/ops/srvc/example.jsp" method="post">
@@ -68,7 +69,6 @@
                         </form>
                     </div>
                 </c:when>
-                <!-- Result View -->
                 <c:otherwise>
                     <div id="service-result">
                         <c:forEach begin="1" end="${param.count}" varStatus="loop">
