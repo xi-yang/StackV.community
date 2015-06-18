@@ -12,7 +12,7 @@
 <html >    
     <head>   
         <meta charset="UTF-8">
-        <title>Example></title>
+        <title>Driver Service></title>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
 
@@ -36,27 +36,19 @@
                 <!-- Form View -->
                 <c:when test="${param.ret != 'sub'}">
                     <div id="service-specific">                
-                        <form action="/VersaStack-web/ops/srvc/example.jsp" method="post">
+                        <form action="/VersaStack-web/ops/srvc/driver.jsp" method="post">
                             <input type="hidden" name="ret" value="sub" />
                             <table class="management-table" id="service-form">                    
                                 <thead>
                                     <tr>
-                                        <th>Form Header</th>
+                                        <th>Driver Details</th>
                                         <th style="text-align: right"></th>                            
                                     </tr>
                                 </thead>
                                 <tbody>                    
                                     <tr>
-                                        <td>How many times do you want to print the user's name?</td>
-                                        <td><input type="number" name="count" required/></td>
-                                    </tr>
-                                    <tr>
-                                        <td>What color should it be?</td>
-                                        <td><select name="color">
-                                                <option value="red">Red</option>
-                                                <option value="green">Green</option>
-                                                <option value="blue">Blue</option>
-                                            </select></td>
+                                        <td>Driver ID/Name</td>
+                                        <td><input name="driver-id" type="text" placeholder='Driver ID'/></td>
                                     </tr>
                                     <tr>
                                         <td></td>
@@ -71,6 +63,8 @@
                 <!-- Result View -->
                 <c:otherwise>
                     <div id="service-result">
+                        <!-- ${serv.driverInstall(driver-id)} -->
+                        
                         <c:forEach begin="1" end="${param.count}" varStatus="loop">
                             <p style="color: ${param.color}">${user.getFirstName()} ${user.getLastName()}</p>
                         </c:forEach>
@@ -97,10 +91,10 @@
                     }
                 });
                 $("#nav").load("/VersaStack-web/navbar.html");
-                
+
                 $("#button-service-cancel").click(function (evt) {
                     $("#service-specific").load("/VersaStack-web/ops/catalog.jsp");
-                    
+
                     evt.preventDefault();
                 });
             });
