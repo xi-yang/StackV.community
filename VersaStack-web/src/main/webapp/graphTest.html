@@ -40,7 +40,7 @@
         <script type="text/javascript">
 
             var settings = {
-                ZOOM_FACTOR: .005,
+                ZOOM_FACTOR: .02,
                 ZOOM_MIN: .2, //As we zoom further out, there is increasing error in the correction pan
                 INIT_ZOOM: 4  //Staring zoomed in allows a larger effective zoomout given our ZOOM_MIN
             };
@@ -78,12 +78,33 @@
 
 
                 render.doRender(new outputApi(), model);
+//                animStart(30);
+
+            }
+
+            //animStart and animStop are primarily intended as debug functions
+            //They can be used to see how the layout engine behaves, and restore
+            //a sane layout it it has been messed up.
+            var animIntervalId;
+            function animStart(rate){
+                animStop();
+                animIntervalId=setInterval(function(){
+                    layout.tick();
+                    render.redraw();
+                },rate);
+            }
+            function animStop(){
+                clearInterval(animIntervalId);
             }
 
             function outputApi() {
                 var that = this;
                 this.getSvgContainer = function () {
                     return d3.select("#viz");
+                };
+                this.panelClear=function(){
+                    this.setActiveName("");
+                    this.setServices([]);
                 };
                 this.setActiveName = function (str) {
                     document.getElementById("displayPanelName").innerText = "Name: " + str;
@@ -131,7 +152,7 @@
                 };
                 this.getZoom=function(){
                     return zoomFactor;
-                }
+                };
                 this.scroll = function (dx, dy) {
                     offsetX += dx / zoomFactor;
                     offsetY += dy / zoomFactor;
@@ -139,7 +160,7 @@
                 };
 
                 this._updateTransform = function () {
-                    this.getSvgContainer().
+                    d3.select("#transform").
                             attr("transform", "scale(" + zoomFactor + ")translate(" + offsetX + "," + offsetY + ")");
                 };
                 this._updateTransform();
@@ -154,10 +175,12 @@
 
 
 
-                var svg = document.getElementById("vizParent");
+                var svg = document.getElementById("viz");
                 svg.addEventListener("mousewheel", function (e) {
                     e.preventDefault();
-                    that.zoom(e.wheelDeltaY * settings.ZOOM_FACTOR, e.offsetX, e.offsetY);
+                    //The OSX trackpad seems to produce scrolls two orders of magnitude large when using pinch to zoom,
+                    //so we ignore the magnitude entirely
+                    that.zoom(Math.sign(e.wheelDeltaY) * settings.ZOOM_FACTOR, e.offsetX, e.offsetY);
                     return false;
                 }, false);
 
@@ -169,39 +192,37 @@
                 var isPanning = false;
                 this.enablePanning = function () {
                     panningEnabled = true;
-                }
+                };
                 this.disablePanning = function () {
                     panningEnabled = false;
-                }
+                };
                 svg.addEventListener("mousedown", function (e) {
                     isPanning = true;
-                    return false;
-                }, false);
+                });
                 svg.addEventListener("mousemove", function (e) {
                     if (isPanning && panningEnabled) {
                         that.scroll(e.movementX, e.movementY);
                     }
-                    return false;
-                }, false);
+                });
                 svg.addEventListener("mouseup", function (e) {
                     isPanning = false;
-                    return false;
-                }, false);
+                });
+                
             }
         </script>
     </head>
 
-    <body onload="onload()" style="width:100%; height: 100%">
-        <div id="displayPanel" style="float:right;">
+    <body onload="onload()" style="width:100%; height: 100%; margin-top:0px">
+        <div id="displayPanel" style="float:right; background: rgba(255,190,190,1); height: 100%; width: 30%; padding:5px; position: fixed; right:0;">
             <div id="displayPanelName"></div>
             <br/>
             <div id="displayServices"></div>
         </div>
-        <svg id="vizParent" style="width:100%; height: 100%">
+        <svg id="viz" style="width:100%; height: 100%">
         <!--We nest a g in here because the svg tag itself cannot do transforms
             we separate topologies, edges, and nodes to create an explicit z-order
         -->
-        <g id="viz">
+        <g id="transform">
         <g id="topology"/>
         <g id="edge"/>
         <g id="node"/>

@@ -16,8 +16,8 @@ define([
         EDGE_COLOR: "rgb(0,0,0)",
         EDGE_WIDTH: 2
     };
-
-
+    
+    var redraw_;
 
     /**@param {outputApi} outputApi
      * @param {Model} model
@@ -32,6 +32,7 @@ define([
         settings.EDGE_WIDTH /= outputApi.getZoom();
 
         var svgContainer = outputApi.getSvgContainer();
+
         redraw();
 
         function redraw() {
@@ -48,7 +49,7 @@ define([
             map_(nodeList, drawNode);
 
         }
-
+        redraw_=redraw;
         /**@param {Node} n**/
         function drawNode(n) {
             if (n.isLeaf()) {
@@ -153,6 +154,7 @@ define([
          * Note that n could also be a topology
          * @param {Node} n**/
         function onNodeClick(n) {
+            d3.event.stopPropagation();//prevent the click from being handled by the background, which would hide the panel
             outputApi.setActiveName(n.getName());
             var services = map_(n.services, /**@param {Service} service**/function (service) {
                 return service.getTypeBrief();
@@ -191,6 +193,7 @@ define([
 
 
     return{
-        doRender: doRender
+        doRender: doRender,
+        redraw: function(){redraw_();}
     };
 });

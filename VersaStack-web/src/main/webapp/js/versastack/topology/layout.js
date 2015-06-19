@@ -1,4 +1,6 @@
 "use strict";
+var forceGlobal;
+
 define([
     "local/d3",
     "local/versastack/utils",
@@ -32,6 +34,7 @@ define([
             force.tick();
         }
         force.stop();
+        forceGlobal=force;
         
     }
     
@@ -39,10 +42,21 @@ define([
         force.stop();
     }
 
+    function tick(){
+        force.start();
+        for(var i=0; i<1; i++){
+            force.tick();
+        }
+        force.stop();
+    }
+
     /** PUBLIC INTERFACE **/
     return {
         doLayout: doLayout,
-        stop: stop
+        stop: stop,
+        tick: tick,
+        //Debug functions
+        force: function(){return force;}
     };
     /** END PUBLIC INTERFACE **/
 });
