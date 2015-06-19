@@ -132,7 +132,7 @@ public class ModelUtil {
     }
     
     public static boolean evaluateStatement(Model model, Statement stmt, String sparql) {
-        // static bindings stmt->subject => $s; stmt->predicate => $p; $stmt->object => $o
+        // static bindings stmt->subject => $$s; stmt->predicate => $$p; $stmt->object => $$o
         // sparql example "SELECT $s $p $o WHERE $s a nml:Topology; $o a nml:Node FILTER ($p = <http://schemas.ogf.org/nml/2013/03/base#hasNode>)"
         sparql = sparql.replace("$$s", stmt.getSubject().getURI());
         sparql = sparql.replace("$$p", stmt.getPredicate().getURI());

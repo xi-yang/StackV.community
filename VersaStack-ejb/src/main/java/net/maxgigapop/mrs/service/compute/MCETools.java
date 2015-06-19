@@ -33,11 +33,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
+import net.maxgigapop.mrs.common.RdfOwl;
+import net.maxgigapop.mrs.common.TagSet;
 
 /**
  *
@@ -359,5 +363,222 @@ public class MCETools {
                 return true;
         }
         return false;
+    }
+    
+    public static OntModel createL2PathVlanSubnets(Model model, Path path) {
+        HashMap<Resource, HashMap<String, Object>> portParamMap = new HashMap<>();
+        ListIterator<Statement> itS = path.listIterator();
+        boolean last = false;
+        Resource prevHop = null, currentHop = null, nextHop = null;
+        Resource lastPort = null;
+        // Forward iteration to calculate and collect information
+        while (itS.hasNext()) {
+            Statement stmt = itS.next();
+            if (!itS.hasNext())
+                last = true;
+            currentHop = stmt.getSubject();
+            nextHop = stmt.getObject().asResource();
+            if ( prevHop != null && 
+                    (ModelUtil.isResourceOfType(model, prevHop, Nml.Node)
+                    || ModelUtil.isResourceOfType(model, prevHop, Nml.Topology)) ) {
+                Resource prevSwSvc = getSwitchingServiceForHop(model, prevHop, currentHop);
+                if (prevSwSvc != null)
+                    prevHop = prevSwSvc;
+                Resource nextSwSvc = getSwitchingServiceForHop(model, nextHop, currentHop);
+                if (nextSwSvc != null)
+                    nextHop = nextSwSvc;
+            }
+            if (ModelUtil.isResourceOfType(model, currentHop, Nml.BidirectionalPort)) {
+                try {
+                    handleL2PathHop(model, prevHop, currentHop, nextHop, portParamMap, lastPort);
+                    lastPort = currentHop;
+                } catch (TagSet.NoneVlanExeption ex) {
+                    ;
+                } catch (TagSet.EmptyTagSetExeption ex) {
+                  return null; // throw Exception ?
+                }
+            }
+            prevHop = currentHop;
+            if (last) {
+                prevHop = currentHop;
+                currentHop = nextHop;
+                nextHop = null;
+                Resource prevSwSvc = getSwitchingServiceForHop(model, prevHop, currentHop);
+                if (prevSwSvc != null)
+                    prevHop = prevSwSvc;
+                if (ModelUtil.isResourceOfType(model, currentHop, Nml.BidirectionalPort)) {
+                    try {
+                        handleL2PathHop(model, prevHop, currentHop, nextHop, portParamMap, lastPort);
+                        lastPort = currentHop;
+                    } catch (TagSet.NoneVlanExeption ex) {
+                        ;
+                    } catch (TagSet.EmptyTagSetExeption ex) {
+                        return null; // throw Exception ?
+                    }
+                }
+            }
+        }
+        // Reverse iteration to calculate suggestedVlan and create SwitchingSubnet
+        OntModel l2PathModel = ModelUtil.newMrsOntModel("");
+        nextHop = null;
+        while (itS.hasPrevious()) {
+            Statement stmt = itS.previous();
+            prevHop = stmt.getSubject();
+            currentHop = stmt.getObject().asResource();
+            if (portParamMap.containsKey(currentHop)) {
+                OntModel subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, portParamMap, lastPort);
+                if (subnetModel != null) {
+                    l2PathModel.add(subnetModel.getBaseModel());
+                }
+                lastPort = currentHop; // last port in reverse order
+            }
+            nextHop = currentHop; // prev and next hops are still in forward order
+            if (!itS.hasPrevious() && stmt.getObject().isResource()) {
+                nextHop = currentHop;
+                currentHop = prevHop;
+                prevHop = null;
+                if (portParamMap.containsKey(currentHop)) {
+                    OntModel subnetModel  = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, portParamMap, lastPort);
+                    if (subnetModel != null) {
+                    l2PathModel.add(subnetModel.getBaseModel());
+                    }
+                }
+            }
+        }
+        return l2PathModel;
+    }
+    
+ 
+    //add hashMap (port, availableVlanRange + translation + ingressForSwService, egressForSwService) as param
+    private static void handleL2PathHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, HashMap portParamMap, Resource lastPort) 
+            throws TagSet.NoneVlanExeption, TagSet.EmptyTagSetExeption {
+        if (ModelUtil.isResourceOfType(model, prevHop, Nml.BidirectionalPort)) {
+            //TODO: handling adaptation?
+        }
+        HashMap<String, Object> paramMap = new HashMap<>();
+        HashMap<String, Object> lastParamMap = null;
+        if (lastPort != null && portParamMap.containsKey(lastPort))
+            lastParamMap = (HashMap<String, Object>) portParamMap.get(lastPort);
+        // Get VLAN range
+        TagSet vlanRange = getVlanRangeForPort(model, currentHop);
+        // do nothing for port without a Vlan labelGroup
+        if (vlanRange == null)
+            throw new TagSet.NoneVlanExeption();
+        // interception with input availableVlanRange 
+        Boolean vlanTranslation = true;
+        Resource egressSwithingService = null; 
+        if (!vlanRange.isEmpty() && lastParamMap != null && lastParamMap.containsKey("vlanRange")) {
+            // vlan translation
+            TagSet lastVlanRange = TagSet.VlanRangeANY;
+            String sparql = String.format("SELECT $swapping WHERE {<%s> a nml:SwitchingService. <%s> nml:labelSwapping $swapping.}", prevHop, prevHop);
+            ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
+            if (rs.hasNext())
+                egressSwithingService = prevHop;
+            if (!rs.hasNext() || !rs.next().getLiteral(sparql).getBoolean()) {
+                // non-translation
+                vlanTranslation = false;
+                lastVlanRange = (TagSet) lastParamMap.get("vlanRange");
+            }
+            vlanRange.intersect(lastVlanRange);
+        }
+        // exception if empty        
+        if (vlanRange.isEmpty())
+            throw new TagSet.EmptyTagSetExeption();
+        paramMap.put("vlanRange", vlanRange);
+        if (egressSwithingService != null) {
+            paramMap.put("egressSwithingService", egressSwithingService);
+            if (lastParamMap != null)
+                lastParamMap.put("ingressSwithingService", egressSwithingService);
+        }
+        paramMap.put("vlanTranslation", vlanTranslation);
+        portParamMap.put(currentHop, paramMap);
+    }
+    
+    private static OntModel createVlanSubnetOnHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, HashMap portParamMap, Resource lastPort) {
+        HashMap paramMap = (HashMap) portParamMap.get(currentHop);
+        if (!paramMap.containsKey("vlanRange")) {
+            return null;
+        }
+        TagSet vlanRange = (TagSet) paramMap.get("vlanRange");
+        if (vlanRange.isEmpty()) {
+            return null;
+        }
+        HashMap lastParamMap = null;
+        if (lastPort != null && portParamMap.containsKey(lastPort))
+            lastParamMap = (HashMap) portParamMap.get(lastPort);
+        Integer suggestedVlan = null;
+        if (lastParamMap != null && lastParamMap.containsKey("suggestedVlan")) {
+            if (vlanRange.hasTag(suggestedVlan)) { // non-translation
+                suggestedVlan = (Integer) lastParamMap.get("suggestedVlan");
+            } else if (!paramMap.containsKey("vlanTranslation") 
+                        || !(Boolean)paramMap.get("vlanTranslation") ) { // try translation but not able to
+                return null;
+            }
+        }
+        // init without lastPort or do tanslation
+        if (suggestedVlan == null)
+            suggestedVlan = vlanRange.getRandom();        
+        paramMap.put("suggestedVlan", suggestedVlan);
+        
+        // create port and subnet statements
+        OntModel vlanSubnetModel = ModelUtil.newMrsOntModel("");
+
+        // create new VLAN port with vlan label
+        String vlanPortUrn = currentHop.toString() + ":vlanport+" + suggestedVlan;
+        Resource resVlanPort = RdfOwl.createResource(vlanSubnetModel, vlanPortUrn, Nml.BidirectionalPort);
+        String vlanLabelUrn = vlanPortUrn+":label";
+        Resource resVlanPortLabel = RdfOwl.createResource(vlanSubnetModel, vlanLabelUrn, Nml.Label);
+        vlanSubnetModel.createStatement(resVlanPort, Nml.hasLabel, resVlanPortLabel);
+        vlanSubnetModel.createStatement(resVlanPortLabel, Nml.labeltype, RdfOwl.labelTypeVLAN);
+        vlanSubnetModel.createStatement(resVlanPortLabel, Nml.value, suggestedVlan.toString());
+
+        // create ingressSubnet for ingressSwitchingService and add port the the new subnet
+        if (paramMap.containsKey("ingressSwitchingService")) {
+            Resource ingressSwitchingService = (Resource) paramMap.get("ingressSwitchingService");
+            String vlanSubnetUrn = ingressSwitchingService.toString() + ":vlan+" + suggestedVlan;
+            Resource ingressSwitchingSubnet = RdfOwl.createResource(vlanSubnetModel, vlanSubnetUrn, Mrs.SwitchingSubnet);
+            vlanSubnetModel.createStatement(ingressSwitchingService, Mrs.providesSubnet, ingressSwitchingSubnet);
+            vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.belongsTo, ingressSwitchingService);
+            vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.hasBidirectionalPort, resVlanPort);
+            vlanSubnetModel.createStatement(resVlanPort, Nml.belongsTo, ingressSwitchingSubnet);
+        }
+        
+        // get egressSubnet for egressSwitchingService and add port the this existing subnet
+        if (paramMap.containsKey("egressSwitchingSubnet")) {
+            Resource egressSwitchingSubnet = (Resource) paramMap.get("egressSwitchingService");
+            vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.hasBidirectionalPort, resVlanPort);
+            vlanSubnetModel.createStatement(resVlanPort, Nml.belongsTo, egressSwitchingSubnet);
+        }
+        
+        return vlanSubnetModel;
+    }
+    
+    private static Resource getSwitchingServiceForHop(Model model, Resource nodeOrTopo, Resource port) {
+            String sparql = String.format("SELECT $sw WHERE {<%s> nml:hasService $sw. $sw a nml:SwitchingService. $sw nml:hasBidirectionalPort <%s>.}", nodeOrTopo, port);
+            ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
+            if (!rs.hasNext())
+                return null;
+            return rs.next().getResource("sw");
+    }
+    
+    //TODO: get VLAN range and remove allocated ports
+    private static TagSet getVlanRangeForPort(Model model, Resource port) {
+            String sparql = String.format("SELECT $range WHERE {"
+                    + "<%s> nml:hasLabelGroup $lg. $lg nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. $lg nml:values $range."
+                    + "}", port);
+            ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
+            if (!rs.hasNext())
+                return null;
+            TagSet vlanRange = new TagSet(rs.next().getLiteral("$range").toString());
+            sparql = String.format("SELECT $range WHERE {"
+                    + "<%s> nml:hasBidirectionalPort $vlan_port. $vlan_port nml:hasLabel $l. $l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. $l nml:value $vlan."
+                    + "}", port);            
+            rs = ModelUtil.sparqlQuery(model, sparql);
+            while (rs.hasNext()) {
+                String vlanStr = rs.next().getLiteral("$vlan").toString();
+                Integer vlan = Integer.getInteger(vlanStr);
+                vlanRange.removeTag(vlan);
+            }
+            return vlanRange;
     }
 }
