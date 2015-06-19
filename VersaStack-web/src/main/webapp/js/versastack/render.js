@@ -29,6 +29,8 @@ define([
                         .attr('height', settings.NODE_SIZE)
                         .attr('width', settings.NODE_SIZE)
                         .on("click", onNodeClick.bind(undefined, n))
+                        .on("mousemove", onNodeMouseMove.bind(undefined, n))
+                        .on("mouseout", onNodeMouseOut)
                         .on("dblclick", onNodeDblClick.bind(undefined, n));
                 //register the drag listener
                 var drag = d3.behavior.drag()
@@ -113,6 +115,21 @@ define([
         function onNodeClick(n) {
             outputApi.setActiveName(n.getName());
         }
+        /**
+         * Note that n could also be a topology
+        @param {Node} n**/
+        
+        function onNodeMouseMove(n){
+            var hovertext= n.getName();
+            document.getElementById("hoverdiv").innerText= hovertext
+            document.getElementById("hoverdiv").style.left=d3.event.x + "px"
+            document.getElementById("hoverdiv").style.top=d3.event.y + "px"
+            document.getElementById("hoverdiv").style.visibility = "visible"
+        }
+        
+        function onNodeMouseOut(){
+            document.getElementById("hoverdiv").style.visibility= "hidden"
+        } 
         /**
          * Note that n could also be a topology
          * @param {Node} n**/
