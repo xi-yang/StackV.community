@@ -16,7 +16,7 @@ define([
         EDGE_COLOR: "rgb(0,0,0)",
         EDGE_WIDTH: 2
     };
-    
+
     var redraw_;
 
     /**@param {outputApi} outputApi
@@ -49,7 +49,7 @@ define([
             map_(nodeList, drawNode);
 
         }
-        redraw_=redraw;
+        redraw_ = redraw;
         /**@param {Node} n**/
         function drawNode(n) {
             if (n.isLeaf()) {
@@ -61,6 +61,8 @@ define([
                         .attr('width', settings.NODE_SIZE)
                         .on("click", onNodeClick.bind(undefined, n))
                         .on("dblclick", onNodeDblClick.bind(undefined, n))
+                        .on("mousemove", onNodeMouseMove.bind(undefined, n))
+                        .on("mouseleave", onNodeMouseLeave)
                         .call(makeDragBehaviour(n));
             }
         }
@@ -101,7 +103,7 @@ define([
                         .style("stroke-linejoin", "round")
 //                        .style("stroke-opacity", settings.HULL_OPACITY)
 //                        .style("fill-opacity", settings.HULL_OPACITY)
-                        .style("opacity",settings.HULL_OPACITY)
+                        .style("opacity", settings.HULL_OPACITY)
                         .datum(path)
                         .attr("d", function (d) {
                             //@param d is the datum set above
@@ -118,6 +120,8 @@ define([
                         })
                         .on("click", onNodeClick.bind(undefined, n))
                         .on("dblclick", onNodeDblClick.bind(undefined, n))
+                        .on("mousemove", onNodeMouseMove.bind(undefined, n))
+                        .on("mouseleave", onNodeMouseLeave)
                         .call(makeDragBehaviour(n));
             }
 
@@ -166,6 +170,8 @@ define([
          * Note that n could also be a topology
          * @param {Node} n**/
         function onNodeDblClick(n) {
+            //We will never send a mouseleave event as the node is being removed
+            document.getElementById("hoverdiv").style.visibility = "hidden";
             //The coordinates provided seem not to line up with where the mouse is,
             //So we use the center of mass to stay consistent
             var e = d3.event;
@@ -179,7 +185,17 @@ define([
             }
             redraw();
         }
+        function onNodeMouseMove(n) {
+            var hovertext = n.getName();
+            document.getElementById("hoverdiv").innerText = hovertext;
+            document.getElementById("hoverdiv").style.left = d3.event.x + "px";
+            document.getElementById("hoverdiv").style.top = d3.event.y + 10 + "px";
+            document.getElementById("hoverdiv").style.visibility = "visible";
+        }
 
+        function onNodeMouseLeave() {
+            document.getElementById("hoverdiv").style.visibility = "hidden";
+        }
 
         /**@param {Node} n**/
         function move(n, dx, dy) {
@@ -194,6 +210,8 @@ define([
 
     return{
         doRender: doRender,
-        redraw: function(){redraw_();}
+        redraw: function () {
+            redraw_();
+        }
     };
 });
