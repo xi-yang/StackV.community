@@ -149,6 +149,13 @@ define([
                         .on("mousemove", onNodeMouseMove.bind(undefined, n))
                         .on("mouseleave", onNodeMouseLeave)
                         .call(makeDragBehaviour(n));
+
+//                //Debug, show the coordinate of the topology node itself
+//                svgContainer.select("#topology").append("circle")
+//                        .attr("cx", n.x)
+//                        .attr("cy", n.y)
+//                        .attr("r", 2)
+//                        .style("fill", "red")
             }
 
         }
@@ -171,11 +178,13 @@ define([
 
         /**@param {Edge} e**/
         function drawEdge(e) {
+            var src = e.source.getCenterOfMass();
+            var tgt = e.target.getCenterOfMass();
             svgContainer.select("#edge").append("line")
-                    .attr("x1", e.source.x)
-                    .attr("y1", e.source.y)
-                    .attr("x2", e.target.x)
-                    .attr("y2", e.target.y)
+                    .attr("x1", src.x)
+                    .attr("y1", src.y)
+                    .attr("x2", tgt.x)
+                    .attr("y2", tgt.y)
                     .style("stroke", settings.EDGE_COLOR)
                     .style("stroke-width", settings.EDGE_WIDTH);
         }
