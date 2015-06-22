@@ -21,7 +21,7 @@ import javax.ejb.Startup;
 @LocalBean
 @Startup
 public class WorkflowTestStarter {
-    //@PostConstruct
+    @PostConstruct
     void runTests() {
         /*
         try {

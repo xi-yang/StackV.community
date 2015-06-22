@@ -89,15 +89,15 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
 
         // compute a List<Model> of MPVlan connections
         for (Resource resLink : connPolicyMap.keySet()) {
-            OntModel connModel = this.doPathFinding(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), resLink, connPolicyMap.get(resLink));
-            if (connModel == null)
+            MCETools.Path l2path = this.doPathFinding(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), resLink, connPolicyMap.get(resLink));
+            if (l2path == null)
                 throw new EJBException(String.format("%s::process cannot find a path for %s", this.getClass().getName(), resLink));
                         
             //2. merge the placement satements into spaModel
-            outputDelta.getModelAddition().getOntModel().add(connModel.getBaseModel());
+            outputDelta.getModelAddition().getOntModel().add(l2path.getOntModel().getBaseModel());
 
             //3. update policyData this action exportTo 
-            this.exportPolicyData(outputDelta.getModelAddition().getOntModel(), resLink, connModel);
+            this.exportPolicyData(outputDelta.getModelAddition().getOntModel(), resLink, l2path);
             
             //4. remove policy and all related SPA statements receursively under link from spaModel
             //   and also remove all statements that say dependOn this 'policy'
@@ -106,7 +106,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
         return new AsyncResult(outputDelta);
     }
     
-    private OntModel doPathFinding(OntModel systemModel, OntModel spaModel, Resource resLink, List<Map> connTerminalData) {
+    private MCETools.Path doPathFinding(OntModel systemModel, OntModel spaModel, Resource resLink, List<Map> connTerminalData) {
         // transform network graph
         // filter out irrelevant statements (based on property type, label type, has switchingService etc.)
         OntModel transformedModel = MCETools.transformL2NetworkModel(systemModel);
@@ -139,33 +139,31 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             throw new EJBException(String.format("%s::process doPathFinding cannot find feasible path for <%s>", resLink));
         }
         // Verify TE constraints (switching label and ?adaptation?), 
-        OntModel connectionModel = null;
         Iterator<MCETools.Path> itP = KSP.iterator();
         while (itP.hasNext()) {
             MCETools.Path candidatePath = itP.next();
             // verify path
             if(!MCETools.verifyL2Path(transformedModel, candidatePath)) {
                 itP.remove();
+            } else {
+                // generating connection subnets (statements added to candidatePath) while verifying VLAN availability
+                OntModel l2PathModel = MCETools.createL2PathVlanSubnets(transformedModel, candidatePath);
+                if(l2PathModel == null) {
+                    itP.remove();
+                } else {
+                    candidatePath.setOntModel(l2PathModel);
+                }
             }
-            // generating connection subnets (statements added to candidatePath) while verifying VLAN availability
-            //if(!MCETools.allcocateSubnetsOnL2Path(transformedModel, candidatePath)) {
-            //    itP.remove();
-            //}
-
         }
         if (KSP.size() == 0)
             return null;
 
-        // pick the shortest path from remaining/feasible paths in KSP and add to connectionModel
-        connectionModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-        //@@ add subnet intefaces and xconn's
-            //$$ extract vlan's
-        connectionModel.add(MCETools.getLeastCostPath(KSP));
-        return connectionModel;
+        // pick the shortest path from remaining/feasible paths in KSP
+        return MCETools.getLeastCostPath(KSP);
     }
     
-    private void exportPolicyData(OntModel spaModel, Resource resLink, OntModel connModel) {
-        // find Placement policy -> exportTo -> policyData
+    private void exportPolicyData(OntModel spaModel, Resource resLink, MCETools.Path l2Path) {
+        // find Connection policy -> exportTo -> policyData
         String sparql = "SELECT ?link ?policyAction ?policyData WHERE {"
                 + String.format("<%s> spa:dependOn ?policyAction .", resLink.getURI())
                 + "?policyAction a spa:Connection."
@@ -180,13 +178,51 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
         for (QuerySolution querySolution: solutions) {
             Resource resPolicy = querySolution.get("policyAction").asResource();
             Resource resData = querySolution.get("policyData").asResource();
-            //@@ add VLANs to export data (vlan's from connModel)
-            //
-            // remove VM->exportTo statement so the exportData can be kept in spaModel during receurive removal
+            // add to export data with references to (terminal (src/dst) vlan labels from l2Path
+            List<QuerySolution> results = getTerminalVlanLabels(l2Path);
+            // require two terminal vlan ports and labels.
+            if (results.size() != 2)
+                throw new EJBException("exportPolicyData failed to find '2' terminal Vlan tags for " + l2Path);
+            String srcVlan = results.get(0).getLiteral("tag").toString();
+            String dstVlan = results.get(1).getLiteral("tag").toString();
+            // ?? use results.get(x).get("vlan").asResource() instead ?
+            spaModel.add(resData, Spa.type, "sourceVlan");
+            spaModel.add(resData, Spa.value, srcVlan);
+            spaModel.add(resData, Spa.type, "destinationVlan");
+            spaModel.add(resData, Spa.value, dstVlan);
+            // remove Connection->exportTo statement so the exportData can be kept in spaModel during receurive removal
             spaModel.remove(resPolicy, Spa.exportTo, resData);
         }
     }
 
+    private List<QuerySolution> getTerminalVlanLabels(MCETools.Path l2path) {
+        Resource resSrc = l2path.get(0).getSubject();
+        Resource resDst = l2path.get(l2path.size()-1).getObject().asResource();
+        OntModel model = l2path.getOntModel();
+        String sparql = String.format("SELECT ?vlan ?tag WHERE { {"
+                + " ?bp a nml:BidirectionalPort. "
+                + " ?bp nml:hasLabel ?vlan."
+                + " ?vlan nml:value ?tag."
+                + " ?vlan nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>"
+                + " FILTER (?bp in (<%s>, <%s>))"
+                + "} UNION {"
+                + " ?tn nml:hasService ?sw. "
+                + " ?sw nml:providesSubnet ?subnet. "
+                + " ?subnet nml:hasBidirectionalPort ?bp."
+                + " ?bp a nml:BidirectionalPort. "
+                + " ?vlan nml:value ?tag."
+                + " ?vlan nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>"
+                + " FILTER (?tn in (<%s>, <%s>))"
+                + "} }", resSrc, resDst, resSrc, resDst);
+        ResultSet r = ModelUtil.sparqlQuery(model, sparql);
+        List<QuerySolution> solutions = new ArrayList<>();
+        if (r.hasNext()) {
+            solutions.add(r.next());
+        }
+        return solutions;
+    }
+    
+    // @TODO: make this an MCE common function
     private void removeResolvedAnnotation(OntModel spaModel, Resource resLink) {
         List<Statement> listStmtsToRemove = new ArrayList<>();
         Resource resVm = spaModel.getResource(resLink.getURI());
@@ -214,5 +250,4 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
         }
         spaModel.remove(listStmtsToRemove);
     }
-
 }

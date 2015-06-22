@@ -51,7 +51,8 @@ public class MCETools {
     public static class Path extends com.hp.hpl.jena.ontology.OntTools.Path {
         private HashSet<Statement> maskedLinks = null;
         Resource deviationNode = null;
-
+        OntModel ontModel = null;
+        
         public Path() {
             super();
         }
@@ -75,7 +76,14 @@ public class MCETools {
         public void setDeviationNode(Resource deviationNode) {
             this.deviationNode = deviationNode;
         }
-        
+
+        public OntModel getOntModel() {
+            return ontModel;
+        }
+
+        public void setOntModel(OntModel ontModel) {
+            this.ontModel = ontModel;
+        } 
     }
 
     public static Path getLeastCostPath(List<Path> candidates) {
@@ -378,12 +386,13 @@ public class MCETools {
                 last = true;
             currentHop = stmt.getSubject();
             nextHop = stmt.getObject().asResource();
-            if ( prevHop != null && 
-                    (ModelUtil.isResourceOfType(model, prevHop, Nml.Node)
-                    || ModelUtil.isResourceOfType(model, prevHop, Nml.Topology)) ) {
-                Resource prevSwSvc = getSwitchingServiceForHop(model, prevHop, currentHop);
-                if (prevSwSvc != null)
-                    prevHop = prevSwSvc;
+            if (ModelUtil.isResourceOfType(model, prevHop, Nml.Node)
+                    || ModelUtil.isResourceOfType(model, prevHop, Nml.Topology)) {
+                if (prevHop != null) {
+                    Resource prevSwSvc = getSwitchingServiceForHop(model, prevHop, currentHop);
+                    if (prevSwSvc != null)
+                        prevHop = prevSwSvc;
+                }
                 Resource nextSwSvc = getSwitchingServiceForHop(model, nextHop, currentHop);
                 if (nextSwSvc != null)
                     nextHop = nextSwSvc;
@@ -452,7 +461,7 @@ public class MCETools {
     //add hashMap (port, availableVlanRange + translation + ingressForSwService, egressForSwService) as param
     private static void handleL2PathHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, HashMap portParamMap, Resource lastPort) 
             throws TagSet.NoneVlanExeption, TagSet.EmptyTagSetExeption {
-        if (ModelUtil.isResourceOfType(model, prevHop, Nml.BidirectionalPort)) {
+        if (prevHop != null && ModelUtil.isResourceOfType(model, prevHop, Nml.BidirectionalPort)) {
             //TODO: handling adaptation?
         }
         HashMap<String, Object> paramMap = new HashMap<>();
@@ -467,10 +476,10 @@ public class MCETools {
         // interception with input availableVlanRange 
         Boolean vlanTranslation = true;
         Resource egressSwithingService = null; 
-        if (!vlanRange.isEmpty() && lastParamMap != null && lastParamMap.containsKey("vlanRange")) {
+        if (prevHop != null && !vlanRange.isEmpty() && lastParamMap != null && lastParamMap.containsKey("vlanRange")) {
             // vlan translation
             TagSet lastVlanRange = TagSet.VlanRangeANY;
-            String sparql = String.format("SELECT $swapping WHERE {<%s> a nml:SwitchingService. <%s> nml:labelSwapping $swapping.}", prevHop, prevHop);
+            String sparql = String.format("SELECT ?swapping WHERE {<%s> a nml:SwitchingService. <%s> nml:labelSwapping ?swapping.}", prevHop, prevHop);
             ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
             if (rs.hasNext())
                 egressSwithingService = prevHop;
@@ -554,7 +563,7 @@ public class MCETools {
     }
     
     private static Resource getSwitchingServiceForHop(Model model, Resource nodeOrTopo, Resource port) {
-            String sparql = String.format("SELECT $sw WHERE {<%s> nml:hasService $sw. $sw a nml:SwitchingService. $sw nml:hasBidirectionalPort <%s>.}", nodeOrTopo, port);
+            String sparql = String.format("SELECT ?sw WHERE {<%s> nml:hasService ?sw. ?sw a nml:SwitchingService. ?sw nml:hasBidirectionalPort <%s>.}", nodeOrTopo, port);
             ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
             if (!rs.hasNext())
                 return null;
@@ -563,19 +572,19 @@ public class MCETools {
     
     //TODO: get VLAN range and remove allocated ports
     private static TagSet getVlanRangeForPort(Model model, Resource port) {
-            String sparql = String.format("SELECT $range WHERE {"
-                    + "<%s> nml:hasLabelGroup $lg. $lg nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. $lg nml:values $range."
+            String sparql = String.format("SELECT ?range WHERE {"
+                    + "<%s> nml:hasLabelGroup ?lg. ?lg nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. ?lg nml:values ?range."
                     + "}", port);
             ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
             if (!rs.hasNext())
                 return null;
-            TagSet vlanRange = new TagSet(rs.next().getLiteral("$range").toString());
-            sparql = String.format("SELECT $range WHERE {"
-                    + "<%s> nml:hasBidirectionalPort $vlan_port. $vlan_port nml:hasLabel $l. $l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. $l nml:value $vlan."
+            TagSet vlanRange = new TagSet(rs.next().getLiteral("range").toString());
+            sparql = String.format("SELECT ?range WHERE {"
+                    + "<%s> nml:hasBidirectionalPort ?vlan_port. ?vlan_port nml:hasLabel ?l. ?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. ?l nml:value ?vlan."
                     + "}", port);            
             rs = ModelUtil.sparqlQuery(model, sparql);
             while (rs.hasNext()) {
-                String vlanStr = rs.next().getLiteral("$vlan").toString();
+                String vlanStr = rs.next().getLiteral("?vlan").toString();
                 Integer vlan = Integer.getInteger(vlanStr);
                 vlanRange.removeTag(vlan);
             }

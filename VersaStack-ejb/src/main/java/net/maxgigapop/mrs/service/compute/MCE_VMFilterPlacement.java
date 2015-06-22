@@ -254,7 +254,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
                 spaModel.add(resData, Spa.type, Nml.Node);
             }
             spaModel.add(resData, Spa.value, resHost);
-            // remove VM->exportTo statement so the exportData can be kept in spaModel during receurive removal
+            // remove Placement->exportTo statement so the exportData can be kept in spaModel during receurive removal
             spaModel.remove(resPolicy, Spa.exportTo, resData);
         }
     }
