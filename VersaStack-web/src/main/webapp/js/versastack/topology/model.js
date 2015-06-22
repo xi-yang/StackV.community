@@ -35,16 +35,16 @@ define([
      */
     function init(callback) {
         var request = new XMLHttpRequest();
-        // request.open("GET","/VersaStack-web/restapi/model/");
+         request.open("GET","/VersaStack-web/restapi/model/");
 //        request.open("GET", "/VersaStack-web/data/graph1.json");
-        request.open("GET", "/VersaStack-web/data/graph-full.json");
+//        request.open("GET", "/VersaStack-web/data/graph-full.json");
 
         request.setRequestHeader("Accept", "application/json");
         request.onload = function () {
             var data = request.responseText;
             data = JSON.parse(data);
-//            map = JSON.parse(data.ttlModel);
-            map=data;
+            map = JSON.parse(data.ttlModel);
+//            map=data;
 
             /*
              * We begin by extracting all nodes/topologies
