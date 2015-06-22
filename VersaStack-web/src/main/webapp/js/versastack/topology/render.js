@@ -68,12 +68,12 @@ define([
                         .on("mousemove", onNodeMouseMove.bind(undefined, n))
                         .on("mouseleave", onNodeMouseLeave)
                         .call(makeDragBehaviour(n));
-                y+=settings.NODE_SIZE;//make the services appear below the node
+                y += settings.NODE_SIZE;//make the services appear below the node
                 map_(n.services, /**@param {Service} service**/function (service) {
                     svgContainer.select("#node").append("image")
                             .attr("xlink:href", service.getIconPath())
-                            .attr("x",x)
-                            .attr("y",y)
+                            .attr("x", x)
+                            .attr("y", y)
                             .attr('height', settings.SERVICE_SIZE)
                             .attr('width', settings.SERVICE_SIZE)
                             //The click events fold move, and select nodes, in 
@@ -82,12 +82,12 @@ define([
                             //contrast, the mousMove event is for the popup, and
                             //we may want to display different info when we
                             //hover over a service
-                            .on("click", onNodeClick.bind(undefined, n))
+                            .on("click", onNodeClick.bind(undefined, service))
                             .on("dblclick", onNodeDblClick.bind(undefined, n))
                             .on("mousemove", onNodeMouseMove.bind(undefined, service))
                             .on("mouseleave", onNodeMouseLeave)
                             .call(makeDragBehaviour(n));
-                    x+=settings.SERVICE_SIZE;
+                    x += settings.SERVICE_SIZE;
                 });
             }
 
@@ -186,9 +186,12 @@ define([
         function onNodeClick(n) {
             d3.event.stopPropagation();//prevent the click from being handled by the background, which would hide the panel
             outputApi.setActiveName(n.getName());
-            var services = map_(n.services, /**@param {Service} service**/function (service) {
-                return service.getTypeBrief();
-            });
+            var services = [];
+            if (n.services) {
+                services = map_(n.services, /**@param {Service} service**/function (service) {
+                    return service.getTypeBrief();
+                });
+            }
             outputApi.setServices(services);
             selectedNode = n;
         }

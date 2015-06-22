@@ -316,7 +316,7 @@ define([
         listEdges: listEdges,
         computeEdges: computeEdges,
         getRootNodes: function () {
-            return rootNodes
+            return rootNodes;
         },
         /** begin debug functions **/
         listNodesPretty: listNodesPretty,
