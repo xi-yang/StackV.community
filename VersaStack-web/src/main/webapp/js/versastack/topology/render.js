@@ -150,6 +150,34 @@ define([
                         .on("mouseleave", onNodeMouseLeave)
                         .call(makeDragBehaviour(n));
 
+                var x=n.getCenterOfMass().x-settings.SERVICE_SIZE*n.services.length/2;
+                //This y offset from center has two purposes. In the event that something links to
+                //this topology, offseting prvents the service icons from overlapping with the end of the edges
+                //In the case of a topology with only a single node, offsetting prevents the node from hiding the services
+                //We move the services up, to avoid making them appear where they would appear if they belonged to the sub node
+                var y=n.getCenterOfMass().y-settings.NODE_SIZE;
+                map_(n.services, /**@param {Service} service**/function (service) {
+                    svgContainer.select("#node").append("image")
+                            .attr("xlink:href", service.getIconPath())
+                            .attr("x", x)
+                            .attr("y", y)
+                            .attr('height', settings.SERVICE_SIZE)
+                            .attr('width', settings.SERVICE_SIZE)
+                            //The click events fold move, and select nodes, in 
+                            //which case, we want to behave the same regardless
+                            //of if a node or its service was the target. In 
+                            //contrast, the mousMove event is for the popup, and
+                            //we may want to display different info when we
+                            //hover over a service
+                            .on("click", onNodeClick.bind(undefined, service))
+                            .on("dblclick", onNodeDblClick.bind(undefined, n))
+                            .on("mousemove", onNodeMouseMove.bind(undefined, service))
+                            .on("mouseleave", onNodeMouseLeave)
+                            .call(makeDragBehaviour(n));
+                    x += settings.SERVICE_SIZE;
+                });
+
+
 //                //Debug, show the coordinate of the topology node itself
 //                svgContainer.select("#topology").append("circle")
 //                        .attr("cx", n.x)
