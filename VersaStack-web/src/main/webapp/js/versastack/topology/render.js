@@ -10,6 +10,7 @@ define([
 
     var settings = {
         NODE_SIZE: 30,
+        SERVICE_SIZE: 10,
         TOPOLOGY_SIZE: 45,
         HULL_COLOR: "rgb(0,100,255)",
         HULL_OPACITY: .2,
@@ -28,6 +29,7 @@ define([
         //affecting the meaning of our size related parameters, we scale them 
         //appropriatly
         settings.NODE_SIZE /= outputApi.getZoom();
+        settings.SERVICE_SIZE /= outputApi.getZoom();
         settings.TOPOLOGY_SIZE /= outputApi.getZoom();
         settings.EDGE_WIDTH /= outputApi.getZoom();
 
@@ -53,10 +55,12 @@ define([
         /**@param {Node} n**/
         function drawNode(n) {
             if (n.isLeaf()) {
+                var x = n.x - settings.NODE_SIZE / 2;
+                var y = n.y - settings.NODE_SIZE / 2;
                 svgContainer.select("#node").append("image")
                         .attr("xlink:href", n.getIconPath())
-                        .attr("x", n.x - settings.NODE_SIZE / 2)
-                        .attr("y", n.y - settings.NODE_SIZE / 2)
+                        .attr("x", x)
+                        .attr("y", y)
                         .attr('height', settings.NODE_SIZE)
                         .attr('width', settings.NODE_SIZE)
                         .on("click", onNodeClick.bind(undefined, n))
@@ -64,7 +68,29 @@ define([
                         .on("mousemove", onNodeMouseMove.bind(undefined, n))
                         .on("mouseleave", onNodeMouseLeave)
                         .call(makeDragBehaviour(n));
+                y+=settings.NODE_SIZE;//make the services appear below the node
+                map_(n.services, /**@param {Service} service**/function (service) {
+                    svgContainer.select("#node").append("image")
+                            .attr("xlink:href", service.getIconPath())
+                            .attr("x",x)
+                            .attr("y",y)
+                            .attr('height', settings.SERVICE_SIZE)
+                            .attr('width', settings.SERVICE_SIZE)
+                            //The click events fold move, and select nodes, in 
+                            //which case, we want to behave the same regardless
+                            //of if a node or its service was the target. In 
+                            //contrast, the mousMove event is for the popup, and
+                            //we may want to display different info when we
+                            //hover over a service
+                            .on("click", onNodeClick.bind(undefined, n))
+                            .on("dblclick", onNodeDblClick.bind(undefined, n))
+                            .on("mousemove", onNodeMouseMove.bind(undefined, service))
+                            .on("mouseleave", onNodeMouseLeave)
+                            .call(makeDragBehaviour(n));
+                    x+=settings.SERVICE_SIZE;
+                });
             }
+
         }
         /**@param {Node} n**/
         function drawTopology(n) {

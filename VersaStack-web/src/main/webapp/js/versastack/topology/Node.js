@@ -47,7 +47,7 @@ define(["local/versastack/topology/modelConstants",
         };
         this.getFolded = function () {
             return this.isFolded;
-        }
+        };
         this.toggleFold = function () {
             this.setFolded(!this.getFolded());
         };
@@ -72,12 +72,12 @@ define(["local/versastack/topology/modelConstants",
                     service = map[service.value];
                     if (!service) {
                         //service is undefined
-                        console.log("No service: " + servce.value);
+                        console.log("No service: " + service.value);
                         return;
                     }
-                    var toAdd = new Service(service);
+                    var toAdd = new Service(service,this);
                     that.services.push(toAdd);
-                })
+                });
             }
         };
         this._getEdges = function () {
@@ -136,13 +136,14 @@ define(["local/versastack/topology/modelConstants",
                 });
                 return ans;
             }
-        }
+        };
         this.getName = function () {
             return this._backing.name;
         };
         this.getIconPath = function () {
+            var prefix="/VersaStack-web/resources/";
             var types = this._backing[values.type];
-            var ans = iconMap.defuault;
+            var ans = iconMap.default;
             map_(types, function (type) {
                 type = type.value;
                 if (type in iconMap) {
@@ -151,7 +152,7 @@ define(["local/versastack/topology/modelConstants",
                     console.log("No icon registered for type: " + type);
                 }
             });
-            return ans;
+            return prefix+ans;
         };
         this.getCenterOfMass = function(){
             var ans={x:0,y:0};
@@ -171,9 +172,9 @@ define(["local/versastack/topology/modelConstants",
 
     var iconMap = {};{
 //The curly brackets are for cold folding purposes
-        iconMap["default"] = "/VersaStack-web/resources/node.png";
-        iconMap[values.node] = "/VersaStack-web/resources/node.png";
-        iconMap[values.topology] = "/VersaStack-web/resources/topology.png";
+        iconMap["default"] = "default.png";
+        iconMap[values.node] = "node.png";
+        iconMap[values.topology] = "topology.png";
     }
 
     return Node;

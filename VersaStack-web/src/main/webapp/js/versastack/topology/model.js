@@ -99,6 +99,13 @@ define([
                         case values.routingTable:
                         case values.switchingService:
                         case values.objectStorageService:
+                        case values.virtualSwitchingService:
+                        case values.ontology:
+                        case values.hypervisorBypassInterfaceService:
+                        case values.POSIX_IOBenchmark:
+                        case values.storageService:
+                        case values.IOPerformanceMeasurementService:
+                        case values.address:
                             break;
                         default:
                             console.log("Unknown type: " + type);
