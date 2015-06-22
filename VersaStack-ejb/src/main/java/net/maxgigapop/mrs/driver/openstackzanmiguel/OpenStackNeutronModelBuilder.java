@@ -179,6 +179,7 @@ public class OpenStackNeutronModelBuilder {
 
                 for (Port port : openstackget.getServerPorts(server)) {
                     Resource Port = model.getResource(topologyURI + ":"+ "port+"+ openstackget.getResourceName(port));  //use function
+            
                     model.add(model.createStatement(VM, hasBidirectionalPort, Port));
                     model.add(model.createStatement(Port, hasTag, PORT_TAG));
                 }
@@ -339,7 +340,7 @@ public class OpenStackNeutronModelBuilder {
                     Resource ROUTINGSERVICE = RdfOwl.createResource(model, topologyURI + ":netowrk+"+networkID+ ":network-routingservice" , RoutingService);
                     Resource ROUTINGTABLEPERNET = RdfOwl.createResource(model, topologyURI + ":network+"+networkID+ ":routingtable" , Mrs.RoutingTable);
                    
-                    Resource TENANT_SUBNET_TAG = RdfOwl.createResource(model, topologyURI +"subnet_tag_private" , Mrs.Tag);
+                    Resource TENANT_SUBNET_TAG = RdfOwl.createResource(model, topologyURI +":subnet_tag_private" , Mrs.Tag);
                     Resource LOCAL_ROUTE = RdfOwl.createResource(model, topologyURI +":network+"+networkID+":subnet+"+subnetId+ ":local-route", Mrs.Route);
                     
                     model.add(model.createStatement(SUBNET, hasTag, TENANT_SUBNET_TAG));
@@ -493,7 +494,7 @@ public class OpenStackNeutronModelBuilder {
 
         for (Volume v : openstackget.getVolumes()) {
             String volumeName = openstackget.getVolumeName(v);
-            Resource VOLUME = RdfOwl.createResource(model, topologyURI + ":" + volumeName, volume);
+            Resource VOLUME = RdfOwl.createResource(model, topologyURI + ":volume+" + volumeName, volume);
             model.add(model.createStatement(cinderService, providesVolume, VOLUME));
             model.add(model.createStatement(VOLUME, value, v.getVolumeType()));
             model.add(model.createStatement(VOLUME, Mrs.disk_gb, Integer.toString(v.getSize())));
@@ -536,15 +537,32 @@ public class OpenStackNeutronModelBuilder {
          s.getGateway() != null && !s.getGateway().isEmpty()
 
          */
-        for (NetFloatingIP f : openstackget.getFloatingIp()) {
+        for (Port po : openstackget.getPorts()) {
 
-            if (f.getFixedIpAddress() != null && !f.getFixedIpAddress().isEmpty() && f.getFloatingIpAddress() != null && !f.getFloatingIpAddress().isEmpty()) {
+            for (NetFloatingIP f : openstackget.getFloatingIp()) {
+                Resource FLOATADD = null;
+                if (f.getFixedIpAddress() != null && !f.getFixedIpAddress().isEmpty() && f.getFloatingIpAddress() != null && !f.getFloatingIpAddress().isEmpty()) {
+                    for (IP ips : po.getFixedIps()) {
+                        if (ips.getIpAddress().equals(f.getFloatingIpAddress())) {
+                            FLOATADD = RdfOwl.createResource(model, topologyURI + ":port+" + openstackget.getResourceName(po) + ":floatingip+" + f.getFloatingIpAddress(), networkAddress);
 
-                Resource FIXEDADD = RdfOwl.createResource(model, topologyURI + ":fixedip+" + f.getFixedIpAddress(), networkAddress);
-                Resource FLOATADD = RdfOwl.createResource(model, topologyURI + ":floatingip+" + f.getFloatingIpAddress(), networkAddress);
-                model.add(model.createStatement(FIXEDADD, isAlias, FLOATADD));
+                        }
+                    }
+                    Resource FIXEDADD = RdfOwl.createResource(model, topologyURI + ":port+" + openstackget.getResourceName(openstackget.getPort(f.getPortId())) + ":fixedip+" + f.getFixedIpAddress(), networkAddress);
+                    try{
+                        if (FLOATADD != null){
+                        model.add(model.createStatement(FIXEDADD, isAlias, FLOATADD));
+                       }
+                    }
+                    catch(Exception e){
+                        throw new Exception(e.toString());
+                    }
+                    
+                }
+
             }
         }
+
 
         StringWriter out = new StringWriter();
         try {
