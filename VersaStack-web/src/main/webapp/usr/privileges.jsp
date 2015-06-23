@@ -24,6 +24,7 @@
 
         <script>
             function aclSelect(sel) {
+                
                 $ref = "privileges.jsp?id=" + sel.value + " #acl-tables";
                 $("#acl-tables").load($ref);
             }
@@ -79,13 +80,20 @@
                     </sql:update>
                 </c:forEach>
             </c:if>
-            
+
             <form>
                 <sql:query dataSource="${front_conn}" sql="SELECT name, service_id FROM service" var="servicelist" />
                 <select id="acl-select" onchange="aclSelect(this)">
                     <option value=""></option>
                     <c:forEach var="service" items="${servicelist.rows}">
-                        <option value="${service.service_id}">${service.name}</option>
+                        <c:choose>
+                            <c:when test="${param.id == service.service_id}">
+                                <option value="${service.service_id}" selected>${service.name}</option>
+                            </c:when>
+                            <c:otherwise>
+                                <option value="${service.service_id}">${service.name}</option>
+                            </c:otherwise>
+                        </c:choose>
                     </c:forEach>
                 </select>
             </form>
@@ -132,20 +140,23 @@
                         </c:forEach>
                     </tbody>
                 </table>
-                <form id="button-add-groups" action="privileges.jsp?id=${param.id}" method="post">                    
-                    <sql:query dataSource="${front_conn}" sql="SELECT G.usergroup_id, G.title 
-                               FROM usergroup G, acl A, acl_entry_group E 
-                               WHERE G.usergroup_id <> E.usergroup_id AND E.acl_id = A.acl_id AND A.service_id = ? 
-                               GROUP BY G.title" var="ugrouplist">
-                        <sql:param value="${param.id}"/>
-                    </sql:query>
-                    <select name="add_usergroup_id">
-                        <c:forEach var="group" items="${ugrouplist.rows}">
-                            <option value="${group.usergroup_id}">${group.title}</option>
-                        </c:forEach>
-                    </select>
-                    <input type="submit" value="Add" /> 
-                </form>
+                <c:if test="${not empty param.id}">
+                    <form id="button-add-groups" action="privileges.jsp?id=${param.id}" method="post">                    
+                        <sql:query dataSource="${front_conn}" sql="SELECT G.usergroup_id, G.title 
+                                   FROM usergroup G WHERE G.usergroup_id NOT IN 
+                                   (SELECT G.usergroup_id FROM usergroup G, acl A, acl_entry_group E 
+                                   WHERE G.usergroup_id = E.usergroup_id AND E.acl_id = A.acl_id AND A.service_id = ?)
+                                   GROUP BY G.title" var="ugrouplist">
+                            <sql:param value="${param.id}"/>
+                        </sql:query>
+                        <select name="add_usergroup_id">
+                            <c:forEach var="group" items="${ugrouplist.rows}">
+                                <option value="${group.usergroup_id}">${group.title}</option>
+                            </c:forEach>
+                        </select>
+                        <input type="submit" value="Add" /> 
+                    </form>
+                </c:if>
                 <table class="management-table" id="service-user-table">
                     <thead>
                         <tr>
@@ -177,20 +188,22 @@
                         </tr>
                     </c:forEach>
                 </table>
-                <form id="button-add-users" action="privileges.jsp?id=${param.id}" method="post">                    
-                    <sql:query dataSource="${front_conn}" sql="SELECT I.user_id, I.username, I.first_name, I.last_name
-                               FROM user_info I, acl A, acl_entry_user U 
-                               WHERE I.user_id <> U.user_id AND U.acl_id = A.acl_id AND A.service_id = ?" var="users">
-                        <sql:param value="${param.id}" />
-                    </sql:query>
+                <c:if test="${not empty param.id}">
+                    <form id="button-add-users" action="privileges.jsp?id=${param.id}" method="post">                    
+                        <sql:query dataSource="${front_conn}" sql="SELECT I.user_id, I.username, I.first_name, I.last_name
+                                   FROM user_info I WHERE I.user_id NOT IN (SELECT I.user_id FROM user_info I, acl A, acl_entry_user U 
+                                   WHERE I.user_id = U.user_id AND U.acl_id = A.acl_id AND A.service_id = ?)" var="users">
+                            <sql:param value="${param.id}" />
+                        </sql:query>
 
-                    <select name="add_user_id">
-                        <c:forEach var="usr" items="${users.rows}">
-                            <option value="${usr.user_id}">${usr.username} (${usr.first_name} ${usr.last_name})</option>
-                        </c:forEach>
-                    </select>
-                    <input type="submit" value="Add" /> 
-                </form>
+                        <select name="add_user_id">
+                            <c:forEach var="usr" items="${users.rows}">
+                                <option value="${usr.user_id}">${usr.username} (${usr.first_name} ${usr.last_name})</option>
+                            </c:forEach>
+                        </select>
+                        <input type="submit" value="Add" /> 
+                    </form>
+                </c:if>
             </div>
         </div>        
         <!-- JS -->
