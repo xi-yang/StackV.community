@@ -13,7 +13,7 @@ define([
         SERVICE_SIZE: 10,
         TOPOLOGY_SIZE: 15,
         TOPOLOGY_BUFFER: 30,
-        HULL_COLORS: ["rgb(0,100,255)","rgb(255,0,255)"],
+        HULL_COLORS: ["rgb(0,100,255)", "rgb(255,0,255)"],
         HULL_OPACITY: .2,
         EDGE_COLOR: "rgb(0,0,0)",
         EDGE_WIDTH: 2
@@ -99,6 +99,7 @@ define([
             if (!n.isLeaf()) {
                 //render the convex hull surounding the decendents of n
                 var leaves = n.getLeaves();
+                var isSingleton = false;
                 if (leaves.length === 0) {
                     return;
                 }
@@ -109,6 +110,7 @@ define([
                     //Causes it to render at full size
                     var leaf = leaves[0];
                     leaves.push({x: leaf.x + .01, y: leaf.y + .01});
+                    isSingleton = true;
                 }
                 while (leaves.length < 3) {
                     //Even with two distinct point, the path will not exist
@@ -124,11 +126,11 @@ define([
                             return n.y;
                         })
                         (leaves);
-                var color=settings.HULL_COLORS[n.getDepth()%settings.HULL_COLORS.length];
+                var color = settings.HULL_COLORS[n.getDepth() % settings.HULL_COLORS.length];
                 svgContainer.select("#topology").append("path")
                         .style("fill", color)
                         .style("stroke", color)
-                        .style("stroke-width", settings.TOPOLOGY_SIZE+settings.TOPOLOGY_BUFFER*n.getHeight())
+                        .style("stroke-width", settings.TOPOLOGY_SIZE + settings.TOPOLOGY_BUFFER * n.getHeight())
                         .style("stroke-linejoin", "round")
 //                        .style("stroke-opacity", settings.HULL_OPACITY)
 //                        .style("fill-opacity", settings.HULL_OPACITY)
@@ -152,22 +154,47 @@ define([
                         .on("mousemove", onNodeMouseMove.bind(undefined, n))
                         .on("mouseleave", onNodeMouseLeave)
                         .call(makeDragBehaviour(n));
-
-                //Draw the services that this topology has
-                //We will do this above the highest node
-                //Recall that the highest node will have the lowest y value
-                //TODO handle horizontal-ish rooves better
-                var highestPoint=path[0];
-                map_(path,/**@param {Node} n**/ function(n){
-                    if(n.y<highestPoint.y){
-                        highestPoint=n;
+                var serviceContainer = svgContainer.select("#node").append("g");
+                if (!isSingleton) {
+                    //Get the two highest points
+                    var p1 = path[0];
+                    var p2 = path[1];
+                    if (p2.y < p1.y) {
+                        var tmp = p1;
+                        p1 = p2;
+                        p2 = tmp;
                     }
-                });
-
-                var x=highestPoint.x-settings.SERVICE_SIZE*n.services.length/2;
-                var y=highestPoint.y-settings.TOPOLOGY_SIZE/2-settings.TOPOLOGY_BUFFER/2*(n.getHeight())-settings.SERVICE_SIZE;
+                    map_(path, /**@param {Node} n**/ function (n) {
+                        if (n.y < p1.y) {
+                            p2 = p1;
+                            p1 = n;
+                        } else if (n.y < p2.y && n !== p1) {
+                            p2 = n;
+                        }
+                    });
+                    var p = {x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2};
+                    //compute the desired distance between the services, and the line p1p2 
+                    var normalOffset = settings.TOPOLOGY_SIZE / 2 + settings.TOPOLOGY_BUFFER / 2 * (n.getHeight()) + settings.SERVICE_SIZE;
+                    //convert the above offset into the xy plane, and apply it to p
+                    var theta = Math.atan2(p1.y - p2.y, p1.x - p2.x);
+                    if(theta<-Math.PI/2){
+                        theta+=Math.PI;
+                    }
+                    if(theta>Math.PI/2){
+                        theta-=Math.PI;
+                    }
+                    p.x+=normalOffset*Math.sin(theta);
+                    p.y-=normalOffset*Math.cos(theta);
+                    
+                    var x = p.x - settings.SERVICE_SIZE * n.services.length / 2;
+                    var y = p.y;
+                    serviceContainer.attr("transform", "rotate(" + theta*180/Math.PI + " " + p.x + " " + (y + settings.SERVICE_SIZE / 2) + ")");
+                } else {
+                    x = path[0].x - settings.SERVICE_SIZE * n.services.length / 2;
+                    y = path[0].y - settings.TOPOLOGY_SIZE / 2 - settings.TOPOLOGY_BUFFER / 2 * (n.getHeight()) - settings.SERVICE_SIZE;
+                }
                 map_(n.services, /**@param {Service} service**/function (service) {
-                    svgContainer.select("#node").append("image")
+                    serviceContainer.append("image")
                             .attr("xlink:href", service.getIconPath())
                             .attr("x", x)
                             .attr("y", y)

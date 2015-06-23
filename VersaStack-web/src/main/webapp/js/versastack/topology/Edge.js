@@ -9,11 +9,13 @@ define([], function () {
 
         this._isProper = function () {
             var ans = true;
-            while (!this.left.isVisible) {
-                this.left = this.left.parent;
+            var leftCursor=this.left;
+            var rightCursor=this.right;
+            while (!leftCursor.isVisible) {
+                leftCursor = leftCursor._parent;
             }
-            while (!this.right.isVisible) {
-                this.right = this.right.parent;
+            while (!rightCursor.isVisible) {
+                rightCursor = rightCursor._parent;
             }
             ans &= this.left.uid < this.right.uid;
             this.source = left;
