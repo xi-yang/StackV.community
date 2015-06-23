@@ -11,7 +11,8 @@ define([
     var settings = {
         NODE_SIZE: 30,
         SERVICE_SIZE: 10,
-        TOPOLOGY_SIZE: 45,
+        TOPOLOGY_SIZE: 15,
+        TOPOLOGY_BUFFER: 30,
         HULL_COLORS: ["rgb(0,100,255)","rgb(255,0,255)"],
         HULL_OPACITY: .2,
         EDGE_COLOR: "rgb(0,0,0)",
@@ -31,6 +32,7 @@ define([
         settings.NODE_SIZE /= outputApi.getZoom();
         settings.SERVICE_SIZE /= outputApi.getZoom();
         settings.TOPOLOGY_SIZE /= outputApi.getZoom();
+        settings.TOPOLOGY_BUFFER /= outputApi.getZoom();
         settings.EDGE_WIDTH /= outputApi.getZoom();
 
         var svgContainer = outputApi.getSvgContainer();
@@ -126,7 +128,7 @@ define([
                 svgContainer.select("#topology").append("path")
                         .style("fill", color)
                         .style("stroke", color)
-                        .style("stroke-width", settings.TOPOLOGY_SIZE)
+                        .style("stroke-width", settings.TOPOLOGY_SIZE+settings.TOPOLOGY_BUFFER*n.getHeight())
                         .style("stroke-linejoin", "round")
 //                        .style("stroke-opacity", settings.HULL_OPACITY)
 //                        .style("fill-opacity", settings.HULL_OPACITY)
@@ -151,12 +153,19 @@ define([
                         .on("mouseleave", onNodeMouseLeave)
                         .call(makeDragBehaviour(n));
 
-                var x=n.getCenterOfMass().x-settings.SERVICE_SIZE*n.services.length/2;
-                //This y offset from center has two purposes. In the event that something links to
-                //this topology, offseting prvents the service icons from overlapping with the end of the edges
-                //In the case of a topology with only a single node, offsetting prevents the node from hiding the services
-                //We move the services up, to avoid making them appear where they would appear if they belonged to the sub node
-                var y=n.getCenterOfMass().y-settings.NODE_SIZE;
+                //Draw the services that this topology has
+                //We will do this above the highest node
+                //Recall that the highest node will have the lowest y value
+                //TODO handle horizontal-ish rooves better
+                var highestPoint=path[0];
+                map_(path,/**@param {Node} n**/ function(n){
+                    if(n.y<highestPoint.y){
+                        highestPoint=n;
+                    }
+                });
+
+                var x=highestPoint.x-settings.SERVICE_SIZE*n.services.length/2;
+                var y=highestPoint.y-settings.TOPOLOGY_SIZE/2-settings.TOPOLOGY_BUFFER/2*(n.getHeight())-settings.SERVICE_SIZE;
                 map_(n.services, /**@param {Service} service**/function (service) {
                     svgContainer.select("#node").append("image")
                             .attr("xlink:href", service.getIconPath())

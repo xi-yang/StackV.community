@@ -179,6 +179,15 @@ define(["local/versastack/topology/modelConstants",
             }
             return ans;
         };
+        //the depth of the deepest child
+        this.getHeight=function(){
+            var ans=-1;
+            map_(this.children,/**@param {Node} child**/function(child){
+                ans=Math.max(ans,child.getHeight());
+            });
+            ans+=1;
+            return ans;
+        };
     }
 
     var iconMap = {};{

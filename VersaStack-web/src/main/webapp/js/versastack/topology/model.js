@@ -35,8 +35,8 @@ define([
      */
     function init(callback) {
         var request = new XMLHttpRequest();
-         request.open("GET","/VersaStack-web/restapi/model/");
-//        request.open("GET", "/VersaStack-web/data/graph1.json");
+//         request.open("GET","/VersaStack-web/restapi/model/");
+        request.open("GET", "/VersaStack-web/data/json/max-aws.json");
 //        request.open("GET", "/VersaStack-web/data/graph-full.json");
 
         request.setRequestHeader("Accept", "application/json");
