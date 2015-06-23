@@ -163,6 +163,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
     }
     
     private void exportPolicyData(OntModel spaModel, Resource resLink, MCETools.Path l2Path) {
+        spaModel.add(l2Path.getOntModel());
         // find Connection policy -> exportTo -> policyData
         String sparql = "SELECT ?link ?policyAction ?policyData WHERE {"
                 + String.format("<%s> spa:dependOn ?policyAction .", resLink.getURI())
@@ -172,24 +173,23 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
                 + "}";
         ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
         List<QuerySolution> solutions = new ArrayList<>();
-        if (r.hasNext()) {
+        while (r.hasNext()) {
             solutions.add(r.next());
         }
         for (QuerySolution querySolution: solutions) {
             Resource resPolicy = querySolution.get("policyAction").asResource();
             Resource resData = querySolution.get("policyData").asResource();
             // add to export data with references to (terminal (src/dst) vlan labels from l2Path
-            List<QuerySolution> results = getTerminalVlanLabels(l2Path);
+            solutions = getTerminalVlanLabels(l2Path);
             // require two terminal vlan ports and labels.
-            if (results.size() != 2)
+            if (solutions.isEmpty())
                 throw new EJBException("exportPolicyData failed to find '2' terminal Vlan tags for " + l2Path);
-            String srcVlan = results.get(0).getLiteral("tag").toString();
-            String dstVlan = results.get(1).getLiteral("tag").toString();
-            // ?? use results.get(x).get("vlan").asResource() instead ?
-            spaModel.add(resData, Spa.type, "sourceVlan");
-            spaModel.add(resData, Spa.value, srcVlan);
-            spaModel.add(resData, Spa.type, "destinationVlan");
-            spaModel.add(resData, Spa.value, dstVlan);
+            spaModel.add(resData, Spa.type, "VlanPorts");
+            for (QuerySolution solution: solutions) {
+                Resource bidrPort = solution.getResource("bp");
+                Resource vlanTag = solution.getResource("vlan");
+                spaModel.add(resData, Spa.value, bidrPort);
+            }
             // remove Connection->exportTo statement so the exportData can be kept in spaModel during receurive removal
             spaModel.remove(resPolicy, Spa.exportTo, resData);
         }
@@ -199,24 +199,22 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
         Resource resSrc = l2path.get(0).getSubject();
         Resource resDst = l2path.get(l2path.size()-1).getObject().asResource();
         OntModel model = l2path.getOntModel();
-        String sparql = String.format("SELECT ?vlan ?tag WHERE { {"
+        String sparql = String.format("SELECT ?bp ?vlan ?tag WHERE {"
                 + " ?bp a nml:BidirectionalPort. "
                 + " ?bp nml:hasLabel ?vlan."
                 + " ?vlan nml:value ?tag."
-                + " ?vlan nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>"
-                + " FILTER (?bp in (<%s>, <%s>))"
-                + "} UNION {"
-                + " ?tn nml:hasService ?sw. "
-                + " ?sw nml:providesSubnet ?subnet. "
-                + " ?subnet nml:hasBidirectionalPort ?bp."
-                + " ?bp a nml:BidirectionalPort. "
-                + " ?vlan nml:value ?tag."
-                + " ?vlan nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>"
-                + " FILTER (?tn in (<%s>, <%s>))"
-                + "} }", resSrc, resDst, resSrc, resDst);
+                + " ?vlan nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>}");
+        /*
+        try {
+            log.log(Level.INFO, "\n>>>MCE_MPVlanConnection--getTerminalVlanLabels from Model=\n" + ModelUtil.marshalModel(model)
+                +"\n SPARQL=\n" + sparql) ;
+        } catch (Exception ex) {
+            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        */
         ResultSet r = ModelUtil.sparqlQuery(model, sparql);
         List<QuerySolution> solutions = new ArrayList<>();
-        if (r.hasNext()) {
+        while (r.hasNext()) {
             solutions.add(r.next());
         }
         return solutions;
@@ -239,7 +237,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
                 + "}";
         ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
         List<QuerySolution> solutions = new ArrayList<>();
-        if (r.hasNext()) {
+        while (r.hasNext()) {
             solutions.add(r.next());
         }
 

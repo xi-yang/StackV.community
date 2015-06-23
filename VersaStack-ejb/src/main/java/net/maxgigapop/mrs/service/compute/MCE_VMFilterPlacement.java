@@ -240,7 +240,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
                 + "}";
         ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
         List<QuerySolution> solutions = new ArrayList<>();
-        if (r.hasNext()) {
+        while (r.hasNext()) {
             solutions.add(r.next());
         }
         for (QuerySolution querySolution: solutions) {
@@ -275,7 +275,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
                 + "}";
         ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
         List<QuerySolution> solutions = new ArrayList<>();
-        if (r.hasNext()) {
+        while (r.hasNext()) {
             solutions.add(r.next());
         }
 

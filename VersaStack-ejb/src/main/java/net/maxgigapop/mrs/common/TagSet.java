@@ -169,9 +169,9 @@ public class TagSet {
         for (int i = 0; i < fragments.size(); i++) {
             int[] tmp = fragments.get(i);
             if (tmp[0] == tmp[1]) {
-                range += tmp[0]*interval + 1;
+                range += tmp[0]*interval;
             } else {
-                range += (tmp[0]*interval + 1)+"-"+(tmp[1]*interval + 1);
+                range += (tmp[0]*interval)+"-"+(tmp[1]*interval);
             }
             if (i < fragments.size() -1) {
                 range += ",";

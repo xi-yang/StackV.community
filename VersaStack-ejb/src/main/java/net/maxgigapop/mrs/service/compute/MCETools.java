@@ -386,17 +386,21 @@ public class MCETools {
                 last = true;
             currentHop = stmt.getSubject();
             nextHop = stmt.getObject().asResource();
-            if (ModelUtil.isResourceOfType(model, prevHop, Nml.Node)
-                    || ModelUtil.isResourceOfType(model, prevHop, Nml.Topology)) {
-                if (prevHop != null) {
-                    Resource prevSwSvc = getSwitchingServiceForHop(model, prevHop, currentHop);
-                    if (prevSwSvc != null)
-                        prevHop = prevSwSvc;
-                }
+            if (prevHop != null && (ModelUtil.isResourceOfType(model, prevHop, Nml.Node)
+                    || ModelUtil.isResourceOfType(model, prevHop, Nml.Topology)) ) {
+                Resource prevSwSvc = getSwitchingServiceForHop(model, prevHop, currentHop);
+                if (prevSwSvc != null)
+                    prevHop = prevSwSvc;
+            }
+            if (nextHop != null && (ModelUtil.isResourceOfType(model, nextHop, Nml.Node)
+                    || ModelUtil.isResourceOfType(model, nextHop, Nml.Topology)) ) {
                 Resource nextSwSvc = getSwitchingServiceForHop(model, nextHop, currentHop);
                 if (nextSwSvc != null)
                     nextHop = nextSwSvc;
             }
+            // handle a special case where port exits a switch Node or Topology and goes back to SwitchingService under this Node or Topology
+            if (prevHop == nextHop)
+                return null;
             if (ModelUtil.isResourceOfType(model, currentHop, Nml.BidirectionalPort)) {
                 try {
                     handleL2PathHop(model, prevHop, currentHop, nextHop, portParamMap, lastPort);
@@ -428,7 +432,7 @@ public class MCETools {
             }
         }
         // Reverse iteration to calculate suggestedVlan and create SwitchingSubnet
-        OntModel l2PathModel = ModelUtil.newMrsOntModel("");
+        OntModel l2PathModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         nextHop = null;
         while (itS.hasPrevious()) {
             Statement stmt = itS.previous();
@@ -464,6 +468,7 @@ public class MCETools {
         if (prevHop != null && ModelUtil.isResourceOfType(model, prevHop, Nml.BidirectionalPort)) {
             //TODO: handling adaptation?
         }
+        String vlanAny = TagSet.VlanRangeANY.toString();
         HashMap<String, Object> paramMap = new HashMap<>();
         HashMap<String, Object> lastParamMap = null;
         if (lastPort != null && portParamMap.containsKey(lastPort))
@@ -476,18 +481,21 @@ public class MCETools {
         // interception with input availableVlanRange 
         Boolean vlanTranslation = true;
         Resource egressSwithingService = null; 
-        if (prevHop != null && !vlanRange.isEmpty() && lastParamMap != null && lastParamMap.containsKey("vlanRange")) {
-            // vlan translation
-            TagSet lastVlanRange = TagSet.VlanRangeANY;
+        if (prevHop != null && !vlanRange.isEmpty()) {
+            // check vlan translation
             String sparql = String.format("SELECT ?swapping WHERE {<%s> a nml:SwitchingService. <%s> nml:labelSwapping ?swapping.}", prevHop, prevHop);
             ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
             if (rs.hasNext())
                 egressSwithingService = prevHop;
-            if (!rs.hasNext() || !rs.next().getLiteral(sparql).getBoolean()) {
+            if (!rs.hasNext() || !rs.next().getLiteral("swapping").getBoolean()) {
                 // non-translation
                 vlanTranslation = false;
-                lastVlanRange = (TagSet) lastParamMap.get("vlanRange");
             }
+            // vlan translation
+            TagSet lastVlanRange = TagSet.VlanRangeANY;
+            // no vlan translation
+            if (!vlanTranslation && lastParamMap != null && lastParamMap.containsKey("vlanRange"))
+                lastVlanRange = (TagSet) lastParamMap.get("vlanRange");
             vlanRange.intersect(lastVlanRange);
         }
         // exception if empty        
@@ -517,46 +525,47 @@ public class MCETools {
             lastParamMap = (HashMap) portParamMap.get(lastPort);
         Integer suggestedVlan = null;
         if (lastParamMap != null && lastParamMap.containsKey("suggestedVlan")) {
-            if (vlanRange.hasTag(suggestedVlan)) { // non-translation
-                suggestedVlan = (Integer) lastParamMap.get("suggestedVlan");
-            } else if (!paramMap.containsKey("vlanTranslation") 
-                        || !(Boolean)paramMap.get("vlanTranslation") ) { // try translation but not able to
+            suggestedVlan = (Integer) lastParamMap.get("suggestedVlan");
+            if (!vlanRange.hasTag(suggestedVlan) &&  // if no continuous vlan
+                    (!paramMap.containsKey("vlanTranslation") 
+                    || !(Boolean)paramMap.get("vlanTranslation") ) ) { // try translation but not able to
                 return null;
             }
         }
-        // init without lastPort or do tanslation
+        // init vlan or do tanslation to any tag
         if (suggestedVlan == null)
             suggestedVlan = vlanRange.getRandom();        
         paramMap.put("suggestedVlan", suggestedVlan);
         
         // create port and subnet statements
-        OntModel vlanSubnetModel = ModelUtil.newMrsOntModel("");
+        OntModel vlanSubnetModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 
         // create new VLAN port with vlan label
         String vlanPortUrn = currentHop.toString() + ":vlanport+" + suggestedVlan;
         Resource resVlanPort = RdfOwl.createResource(vlanSubnetModel, vlanPortUrn, Nml.BidirectionalPort);
         String vlanLabelUrn = vlanPortUrn+":label";
         Resource resVlanPortLabel = RdfOwl.createResource(vlanSubnetModel, vlanLabelUrn, Nml.Label);
-        vlanSubnetModel.createStatement(resVlanPort, Nml.hasLabel, resVlanPortLabel);
-        vlanSubnetModel.createStatement(resVlanPortLabel, Nml.labeltype, RdfOwl.labelTypeVLAN);
-        vlanSubnetModel.createStatement(resVlanPortLabel, Nml.value, suggestedVlan.toString());
+        vlanSubnetModel.add(vlanSubnetModel.createStatement(currentHop, Nml.hasBidirectionalPort, resVlanPort));
+        vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.hasLabel, resVlanPortLabel));
+        vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPortLabel, Nml.labeltype, RdfOwl.labelTypeVLAN));
+        vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPortLabel, Nml.value, suggestedVlan.toString()));
 
         // create ingressSubnet for ingressSwitchingService and add port the the new subnet
         if (paramMap.containsKey("ingressSwitchingService")) {
             Resource ingressSwitchingService = (Resource) paramMap.get("ingressSwitchingService");
             String vlanSubnetUrn = ingressSwitchingService.toString() + ":vlan+" + suggestedVlan;
             Resource ingressSwitchingSubnet = RdfOwl.createResource(vlanSubnetModel, vlanSubnetUrn, Mrs.SwitchingSubnet);
-            vlanSubnetModel.createStatement(ingressSwitchingService, Mrs.providesSubnet, ingressSwitchingSubnet);
-            vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.belongsTo, ingressSwitchingService);
-            vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.hasBidirectionalPort, resVlanPort);
-            vlanSubnetModel.createStatement(resVlanPort, Nml.belongsTo, ingressSwitchingSubnet);
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingService, Mrs.providesSubnet, ingressSwitchingSubnet));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.belongsTo, ingressSwitchingService));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.hasBidirectionalPort, resVlanPort));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.belongsTo, ingressSwitchingSubnet));
         }
         
         // get egressSubnet for egressSwitchingService and add port the this existing subnet
         if (paramMap.containsKey("egressSwitchingSubnet")) {
             Resource egressSwitchingSubnet = (Resource) paramMap.get("egressSwitchingService");
-            vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.hasBidirectionalPort, resVlanPort);
-            vlanSubnetModel.createStatement(resVlanPort, Nml.belongsTo, egressSwitchingSubnet);
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.hasBidirectionalPort, resVlanPort));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.belongsTo, egressSwitchingSubnet));
         }
         
         return vlanSubnetModel;
