@@ -61,7 +61,7 @@ define(["local/versastack/topology/modelConstants",
         this._complete = function () {
             this.uid = i++;
             map_(this.children, /**@param {Node} child**/function (child) {
-                child.parent = that;
+                child._parent = that;
                 child._complete();
                 that.secondaryNeighboors = that.secondaryNeighboors.concat(child.secondaryNeighboors, child.primaryNeighboors);
             });
@@ -165,6 +165,17 @@ define(["local/versastack/topology/modelConstants",
             if(num===0){
                 ans.x=this.x;
                 ans.y=this.y;
+            }
+            return ans;
+        };
+        //Return the depth of this node in the topology tree
+        //This is used to determine what color to use when drawing topologies
+        this.getDepth=function(){
+            var ans=0;
+            var cursor=this._parent;
+            while(cursor){
+                ans++;
+                cursor=cursor._parent;
             }
             return ans;
         };

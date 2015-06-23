@@ -12,7 +12,7 @@ define([
         NODE_SIZE: 30,
         SERVICE_SIZE: 10,
         TOPOLOGY_SIZE: 45,
-        HULL_COLOR: "rgb(0,100,255)",
+        HULL_COLORS: ["rgb(0,100,255)","rgb(255,0,255)"],
         HULL_OPACITY: .2,
         EDGE_COLOR: "rgb(0,0,0)",
         EDGE_WIDTH: 2
@@ -122,9 +122,10 @@ define([
                             return n.y;
                         })
                         (leaves);
+                var color=settings.HULL_COLORS[n.getDepth()%settings.HULL_COLORS.length];
                 svgContainer.select("#topology").append("path")
-                        .style("fill", settings.HULL_COLOR)
-                        .style("stroke", settings.HULL_COLOR)
+                        .style("fill", color)
+                        .style("stroke", color)
                         .style("stroke-width", settings.TOPOLOGY_SIZE)
                         .style("stroke-linejoin", "round")
 //                        .style("stroke-opacity", settings.HULL_OPACITY)
