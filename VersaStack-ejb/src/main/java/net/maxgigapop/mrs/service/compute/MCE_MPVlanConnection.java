@@ -47,9 +47,9 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
     */
     @Override
     @Asynchronous
-    public Future<DeltaBase> process(ModelBase systemModel, DeltaBase annotatedDelta) {        
+    public Future<DeltaBase> process(ModelBase systemModel, DeltaBase annotatedDelta) {
         try {
-            log.log(Level.INFO, "\n>>>MCE_MPVlanConnection--DeltaAddModel=\n" + ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
+            log.log(Level.INFO, "\n>>>MCE_MPVlanConnection--DeltaAddModel Input=\n" + ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -102,7 +102,13 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             //4. remove policy and all related SPA statements receursively under link from spaModel
             //   and also remove all statements that say dependOn this 'policy'
             this.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), resLink);   
-        }        
+        }
+        try {
+            log.log(Level.INFO, "\n>>>MCE_MPVlanConnection--DeltaAddModel Output=\n" + ModelUtil.marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()));
+        } catch (Exception ex) {
+            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
         return new AsyncResult(outputDelta);
     }
     
@@ -163,9 +169,8 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
     }
     
     private void exportPolicyData(OntModel spaModel, Resource resLink, MCETools.Path l2Path) {
-        spaModel.add(l2Path.getOntModel());
         // find Connection policy -> exportTo -> policyData
-        String sparql = "SELECT ?link ?policyAction ?policyData WHERE {"
+        String sparql = "SELECT ?policyAction ?policyData WHERE {"
                 + String.format("<%s> spa:dependOn ?policyAction .", resLink.getURI())
                 + "?policyAction a spa:Connection."
                 + "?policyAction spa:exportTo ?policyData . "
@@ -180,18 +185,18 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             Resource resPolicy = querySolution.get("policyAction").asResource();
             Resource resData = querySolution.get("policyData").asResource();
             // add to export data with references to (terminal (src/dst) vlan labels from l2Path
-            solutions = getTerminalVlanLabels(l2Path);
+            List<QuerySolution> terminalVlanSolutions = getTerminalVlanLabels(l2Path);
             // require two terminal vlan ports and labels.
             if (solutions.isEmpty())
                 throw new EJBException("exportPolicyData failed to find '2' terminal Vlan tags for " + l2Path);
             spaModel.add(resData, Spa.type, "VlanPorts");
-            for (QuerySolution solution: solutions) {
-                Resource bidrPort = solution.getResource("bp");
-                Resource vlanTag = solution.getResource("vlan");
+            for (QuerySolution aSolution: terminalVlanSolutions) {
+                Resource bidrPort = aSolution.getResource("bp");
+                Resource vlanTag = aSolution.getResource("vlan");
                 spaModel.add(resData, Spa.value, bidrPort);
             }
             // remove Connection->exportTo statement so the exportData can be kept in spaModel during receurive removal
-            spaModel.remove(resPolicy, Spa.exportTo, resData);
+            //spaModel.remove(resPolicy, Spa.exportTo, resData);
         }
     }
 
@@ -221,19 +226,18 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
     }
     
     // @TODO: make this an MCE common function
-    private void removeResolvedAnnotation(OntModel spaModel, Resource resLink) {
+    private void removeResolvedAnnotation(OntModel spaModel, Resource link) {
         List<Statement> listStmtsToRemove = new ArrayList<>();
-        Resource resVm = spaModel.getResource(resLink.getURI());
-        ModelUtil.listRecursiveDownTree(resVm, Spa.getURI(), listStmtsToRemove);
+        Resource resLink = spaModel.getResource(link.getURI());
+        ModelUtil.listRecursiveDownTree(resLink, Spa.getURI(), listStmtsToRemove);
         if (listStmtsToRemove.isEmpty()) {
-            throw new EJBException(String.format("%s::process cannot remove SPA statements under %s", this.getClass().getName(), resLink));
+            throw new EJBException(String.format("%s::process cannot remove SPA statements under %s", this.getClass().getName(), link));
         }
 
         String sparql = "SELECT ?anyOther ?policyAction WHERE {"
-                + String.format("<%s> spa:dependOn ?policyAction .", resLink.getURI())
+                + String.format("<%s> spa:dependOn ?policyAction .", link.getURI())
                 + "?policyAction a spa:Connection."
                 + "?anyOther spa:dependOn ?policyAction . "
-                + "?policyData a spa:PolicyData . "
                 + "}";
         ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
         List<QuerySolution> solutions = new ArrayList<>();
@@ -246,6 +250,6 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             Resource resPolicy = querySolution.get("policyAction").asResource();
             spaModel.remove(resAnyOther, Spa.dependOn, resPolicy);
         }
-        spaModel.remove(listStmtsToRemove);
+        //spaModel.remove(listStmtsToRemove);
     }
 }

@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
@@ -125,13 +126,11 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             //$$ TODO: change VM URI (and all other virtual resources) into a unique string either during compile or in stitching action
             //$$ TODO: Add dependOn->Abstraction annotation to root level spaModel and add a generic Action to remvoe that abstract nml:Topology
         }
-        /*
         try {
-            log.log(Level.INFO, "\n>>>MCE_VMFilterPlacement--outputDelta(stage 3)=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
+            log.log(Level.INFO, "\n>>>MCE_VMFilterPlacement--outputDelta Output=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_VMFilterPlacement.class.getName()).log(Level.SEVERE, null, ex);
         }
-        */
         return new AsyncResult(outputDelta);
     }
     
@@ -255,7 +254,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             }
             spaModel.add(resData, Spa.value, resHost);
             // remove Placement->exportTo statement so the exportData can be kept in spaModel during receurive removal
-            spaModel.remove(resPolicy, Spa.exportTo, resData);
+            //spaModel.remove(resPolicy, Spa.exportTo, resData);
         }
     }
 
@@ -284,7 +283,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             Resource resPolicy = querySolution.get("policyAction").asResource();
             spaModel.remove(resAnyOther, Spa.dependOn, resPolicy);
         }
-        spaModel.remove(listStmtsToRemove);
+        //spaModel.remove(listStmtsToRemove);
     }
 
     //$$ TODO: matchingRegExURIFilter

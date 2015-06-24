@@ -25,8 +25,10 @@ import javax.naming.NamingException;
 import net.maxgigapop.mrs.bean.DeltaBase;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.VersionGroup;
+import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.core.SystemModelCoordinator;
 import net.maxgigapop.mrs.service.compute.IModelComputationElement;
+import net.maxgigapop.mrs.service.compute.MCE_MPVlanConnection;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
@@ -96,22 +98,27 @@ public class WorkerBase {
         //$$ Timeout for the top loop ?
         while (!batchOfActions.isEmpty()) {
             //3. execute the idle actions in the list (asynchronously)
-            for (ActionBase action: batchOfActions) {
+            Iterator<ActionBase> itA = batchOfActions.iterator();
+            while (itA.hasNext()){
+                ActionBase action = itA.next();
                 if (action.getState().equals(ActionState.IDLE)) {
                     action.setReferenceModel(this.referenceSystemModel);
                     Future<DeltaBase> asyncResult = action.execute();
                     resultMap.put(action, asyncResult);
+                } else if (action.getState().equals(ActionState.FINISHED) 
+                        || action.getState().equals(ActionState.MERGED)) {
+                    itA.remove();
                 }
             }
             //4. poll action status 
             long timeout = 3000; // 3000 intervals x 100ms = 300 seconds 
-            while (timeout-- > 0) {
+            while (timeout-- > 0 && !resultMap.isEmpty()) {
                 try {
                     sleep(100);
                 } catch (InterruptedException ex) {
                     ;
                 }
-                Iterator<ActionBase> itA = resultMap.keySet().iterator();
+                itA = resultMap.keySet().iterator();
                 while (itA.hasNext()) {
                     ActionBase action = itA.next();
                     Future<DeltaBase> asyncResult = resultMap.get(action);
@@ -150,12 +157,19 @@ public class WorkerBase {
                     batchOfActions.addAll(this.lookupIndependentActions(nextAction));
                     break;
                 }
-                // continue to batch execution (to exectute new action and/or wait ones in processing)
             }
-            //$$ TODO: throw exception if top loop times out
-            
-            this.resultModelDelta = mergedRoot.getOutputDelta();
+            // continue to batch execution (to exectute new action and/or wait ones in processing)            
         }
+        //$$ TODO: throw exception if top loop times out
+        
+        mergedRoot.cleanupOutputDelta();
+        try {
+            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.INFO, "\n>>>Workflow--DeltaAddModel Output=\n" + ModelUtil.marshalOntModel(mergedRoot.getOutputDelta().getModelAddition().getOntModel()));
+        } catch (Exception ex) {
+            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        this.resultModelDelta = mergedRoot.getOutputDelta();
     }
     
     protected void retrieveSystemModel() {
