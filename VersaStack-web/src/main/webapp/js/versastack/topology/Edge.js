@@ -1,4 +1,4 @@
-"use strict"
+"use strict";
 define([], function () {
     function Edge(left, right) {
         this.left = left;
@@ -11,15 +11,15 @@ define([], function () {
             var ans = true;
             var leftCursor=this.left;
             var rightCursor=this.right;
-            while (!leftCursor.isVisible) {
+            while (!leftCursor.getVisible()) {
                 leftCursor = leftCursor._parent;
             }
-            while (!rightCursor.isVisible) {
+            while (!rightCursor.getVisible()) {
                 rightCursor = rightCursor._parent;
             }
-            ans &= this.left.uid < this.right.uid;
-            this.source = left;
-            this.target = right;
+            this.source = leftCursor;
+            this.target = rightCursor;
+            ans = ans && (this.source.uid < this.target.uid);
             return ans;
         };
     }

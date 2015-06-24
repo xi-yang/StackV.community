@@ -163,7 +163,7 @@ define([
                             ans=i;
                         }
                     }
-                    var p1=path[ans]
+                    var p1=path[ans];
                     //we know want to determine which neighbors of path[ans] give the shallower edge
                     var left=ans===0?path.length-1:ans-1;
                     var right=(ans+1)%path.length;
