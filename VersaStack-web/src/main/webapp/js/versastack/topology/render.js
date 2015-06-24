@@ -156,22 +156,28 @@ define([
                         .call(makeDragBehaviour(n));
                 var serviceContainer = svgContainer.select("#node").append("g");
                 if (!isSingleton) {
-                    //Get the two highest points
-                    var p1 = path[0];
-                    var p2 = path[1];
-                    if (p2.y < p1.y) {
-                        var tmp = p1;
-                        p1 = p2;
-                        p2 = tmp;
-                    }
-                    map_(path, /**@param {Node} n**/ function (n) {
-                        if (n.y < p1.y) {
-                            p2 = p1;
-                            p1 = n;
-                        } else if (n.y < p2.y && n !== p1) {
-                            p2 = n;
+                    //Get the highest point.
+                    var ans=0;
+                    for(var i=0; i<path.length; i++){
+                        if(path[i].y<path[ans].y){
+                            ans=i;
                         }
-                    });
+                    }
+                    var p1=path[ans]
+                    //we know want to determine which neighbors of path[ans] give the shallower edge
+                    var left=ans===0?path.length-1:ans-1;
+                    var right=(ans+1)%path.length;
+                    left=path[left];
+                    right=path[right];
+                    var leftSlope=Math.abs((p1.y-left.y)/(p1.x-left.x));
+                    var rightSlope=Math.abs((p1.y-right.y)/(p1.x-right.x));
+                    var p2;
+                    if(leftSlope<rightSlope){
+                        p2=left;
+                    }else{
+                        p2=right;
+                    }
+                    
                     var p = {x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2};
                     //compute the desired distance between the services, and the line p1p2 
                     var normalOffset = settings.TOPOLOGY_SIZE / 2 + settings.TOPOLOGY_BUFFER / 2 * (n.getHeight()) + settings.SERVICE_SIZE;
