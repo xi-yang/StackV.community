@@ -7,6 +7,8 @@ define([], function () {
         this.source = left;
         this.target = right;
 
+        this.svgNode=null;
+
         this._isProper = function () {
             var ans = true;
             var leftCursor=this.left;

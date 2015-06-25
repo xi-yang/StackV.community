@@ -28,6 +28,8 @@ define(["local/versastack/topology/modelConstants",
                 this.isFolded = false;
                 this.isVisible = true;
                 this._parent = null;
+                this.svgNode=null;
+                this.svgNodeServices=null;
                 this.services = [];
                 var that = this;
                 this.fold = function () {

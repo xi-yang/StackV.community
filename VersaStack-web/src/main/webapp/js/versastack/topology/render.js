@@ -39,19 +39,19 @@ define([
 
         redraw();
 
+        var nodeList,edgeList;
         function redraw() {
             svgContainer.select("#topology").selectAll("*").remove();//Clear the previous drawing
             svgContainer.select("#edge").selectAll("*").remove();//Clear the previous drawing
             svgContainer.select("#node").selectAll("*").remove();//Clear the previous drawing
-            var nodeList = model.listNodes();
-            var edgeList = model.listEdges();
+            nodeList = model.listNodes();
+            edgeList = model.listEdges();
 
             //Recall that topologies are also considered nodes
             //We render them seperatly to enfore a z-ordering
             map_(nodeList, drawTopology);
             map_(edgeList, drawEdge);
             map_(nodeList, drawNode);
-
         }
         redraw_ = redraw;
         /**@param {Node} n**/
@@ -59,7 +59,7 @@ define([
             if (n.isLeaf()) {
                 var x = n.x - settings.NODE_SIZE / 2;
                 var y = n.y - settings.NODE_SIZE / 2;
-                svgContainer.select("#node").append("image")
+                n.svgNode=svgContainer.select("#node").append("image")
                         .attr("xlink:href", n.getIconPath())
                         .attr("x", x)
                         .attr("y", y)
@@ -70,64 +70,16 @@ define([
                         .on("mousemove", onNodeMouseMove.bind(undefined, n))
                         .on("mouseleave", onNodeMouseLeave)
                         .call(makeDragBehaviour(n));
-                y += settings.NODE_SIZE;//make the services appear below the node
-                map_(n.services, /**@param {Service} service**/function (service) {
-                    svgContainer.select("#node").append("image")
-                            .attr("xlink:href", service.getIconPath())
-                            .attr("x", x)
-                            .attr("y", y)
-                            .attr('height', settings.SERVICE_SIZE)
-                            .attr('width', settings.SERVICE_SIZE)
-                            //The click events fold move, and select nodes, in 
-                            //which case, we want to behave the same regardless
-                            //of if a node or its service was the target. In 
-                            //contrast, the mousMove event is for the popup, and
-                            //we may want to display different info when we
-                            //hover over a service
-                            .on("click", onNodeClick.bind(undefined, service))
-                            .on("dblclick", onNodeDblClick.bind(undefined, n))
-                            .on("mousemove", onNodeMouseMove.bind(undefined, service))
-                            .on("mouseleave", onNodeMouseLeave)
-                            .call(makeDragBehaviour(n));
-                    x += settings.SERVICE_SIZE;
-                });
+                drawServices(n);
             }
-
         }
         /**@param {Node} n**/
         function drawTopology(n) {
             if (!n.isLeaf()) {
                 //render the convex hull surounding the decendents of n
-                var leaves = n.getLeaves();
-                var isSingleton = false;
-                if (leaves.length === 0) {
-                    return;
-                }
-                if (leaves.length === 1) {
-                    //If all leaves are the same point, then the hull will be just
-                    //A single point, and not get rendered.
-                    //By forcing it to take distinct points, the stroke-width 
-                    //Causes it to render at full size
-                    var leaf = leaves[0];
-                    leaves.push({x: leaf.x + .01, y: leaf.y + .01});
-                    isSingleton = true;
-                }
-                while (leaves.length < 3) {
-                    //Even with two distinct point, the path will not exist
-                    //Adding a third point (even if it is a duplicate) seems to fix this
-                    leaves.push(leaves[0]);
-                }
-
-                var path = d3.geom.hull()
-                        .x(function (n) {
-                            return n.x;
-                        })
-                        .y(function (n) {
-                            return n.y;
-                        })
-                        (leaves);
+                var path=getTopolgyPath(n);
                 var color = settings.HULL_COLORS[n.getDepth() % settings.HULL_COLORS.length];
-                svgContainer.select("#topology").append("path")
+                n.svgNode=svgContainer.select("#topology").append("path")
                         .style("fill", color)
                         .style("stroke", color)
                         .style("stroke-width", settings.TOPOLOGY_SIZE + settings.TOPOLOGY_BUFFER * n.getHeight())
@@ -135,38 +87,67 @@ define([
 //                        .style("stroke-opacity", settings.HULL_OPACITY)
 //                        .style("fill-opacity", settings.HULL_OPACITY)
                         .style("opacity", settings.HULL_OPACITY)
-                        .datum(path)
-                        .attr("d", function (d) {
-                            //@param d is the datum set above
-                            //see https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/d
-                            if (d.length === 0) {
-                                return;
-                            }
-                            var ans = "M" + d[0].x + " " + d[0].y + " ";
-                            for (var i = 1; i < d.length; i++) {
-                                ans += "L" + d[i].x + " " + d[i].y + " ";
-                            }
-                            ans += "Z";
-                            return ans;
-                        })
+                        .attr("d",topologyPathToString(path))
                         .on("click", onNodeClick.bind(undefined, n))
                         .on("dblclick", onNodeDblClick.bind(undefined, n))
                         .on("mousemove", onNodeMouseMove.bind(undefined, n))
                         .on("mouseleave", onNodeMouseLeave)
                         .call(makeDragBehaviour(n));
-                var serviceContainer = svgContainer.select("#node").append("g");
-                if (!isSingleton) {
+                drawServices(n);
+
+//                //Debug, show the coordinate of the topology node itself
+//                svgContainer.select("#topology").append("circle")
+//                        .attr("cx", n.x)
+//                        .attr("cy", n.y)
+//                        .attr("r", 2)
+//                        .style("fill", "red")
+            }
+
+        }
+        
+        /**@param {Node} n**/
+        function drawServices(n){
+            n.svgNodeServices = svgContainer.select("#node").append("g");
+            map_(n.services, /**@param {Service} service**/function (service) {
+                n.svgNodeServices.append("image")
+                        .attr("xlink:href", service.getIconPath())
+                        .attr('height', settings.SERVICE_SIZE)
+                        .attr('width', settings.SERVICE_SIZE)
+                        //The click events fold move, and select nodes, in 
+                        //which case, we want to behave the same regardless
+                        //of if a node or its service was the target. In 
+                        //contrast, the mousMove event is for the popup, and
+                        //we may want to display different info when we
+                        //hover over a service
+                        .on("click", onNodeClick.bind(undefined, service))
+                        .on("dblclick", onNodeDblClick.bind(undefined, n))
+                        .on("mousemove", onNodeMouseMove.bind(undefined, service))
+                        .on("mouseleave", onNodeMouseLeave)
+                        .call(makeDragBehaviour(n));
+            });
+            updateSvgChoordsService(n);
+        }
+        
+        /**@param {Node} n**/
+        function computeServiceCoords(n){
+            var ans={x:null,y:null,transform:""}
+            if(n.isLeaf()){
+                ans.x = n.x - settings.NODE_SIZE / 2;
+                ans.y = n.y + settings.NODE_SIZE / 2;
+            }else{ 
+                var path=getTopolgyPath(n);
+                if (n.getLeaves().length>1) {
                     //Get the highest point.
-                    var ans=0;
+                    var highest=0;
                     for(var i=0; i<path.length; i++){
-                        if(path[i].y<path[ans].y){
-                            ans=i;
+                        if(path[i].y<path[highest].y){
+                            highest=i;
                         }
                     }
-                    var p1=path[ans];
+                    var p1=path[highest];
                     //we know want to determine which neighbors of path[ans] give the shallower edge
-                    var left=ans===0?path.length-1:ans-1;
-                    var right=(ans+1)%path.length;
+                    var left=highest===0?path.length-1:highest-1;
+                    var right=(highest+1)%path.length;
                     left=path[left];
                     right=path[right];
                     var leftSlope=Math.abs((p1.y-left.y)/(p1.x-left.x));
@@ -192,48 +173,100 @@ define([
                     p.x+=normalOffset*Math.sin(theta);
                     p.y-=normalOffset*Math.cos(theta);
                     
-                    var x = p.x - settings.SERVICE_SIZE * n.services.length / 2;
-                    var y = p.y;
-                    serviceContainer.attr("transform", "rotate(" + theta*180/Math.PI + " " + p.x + " " + (y + settings.SERVICE_SIZE / 2) + ")");
+                    ans.x = p.x - settings.SERVICE_SIZE * n.services.length / 2;
+                    ans.y = p.y;
+                    ans.transform="rotate(" + theta*180/Math.PI + " " + p.x + " " + (ans.y + settings.SERVICE_SIZE / 2) + ")";
                 } else {
-                    x = path[0].x - settings.SERVICE_SIZE * n.services.length / 2;
-                    y = path[0].y - settings.TOPOLOGY_SIZE / 2 - settings.TOPOLOGY_BUFFER / 2 * (n.getHeight()) - settings.SERVICE_SIZE;
+                    ans.x = path[0].x - settings.SERVICE_SIZE * n.services.length / 2;
+                    ans.y = path[0].y - settings.TOPOLOGY_SIZE / 2 - settings.TOPOLOGY_BUFFER / 2 * (n.getHeight()) - settings.SERVICE_SIZE;
                 }
-                map_(n.services, /**@param {Service} service**/function (service) {
-                    serviceContainer.append("image")
-                            .attr("xlink:href", service.getIconPath())
-                            .attr("x", x)
-                            .attr("y", y)
-                            .attr('height', settings.SERVICE_SIZE)
-                            .attr('width', settings.SERVICE_SIZE)
-                            //The click events fold move, and select nodes, in 
-                            //which case, we want to behave the same regardless
-                            //of if a node or its service was the target. In 
-                            //contrast, the mousMove event is for the popup, and
-                            //we may want to display different info when we
-                            //hover over a service
-                            .on("click", onNodeClick.bind(undefined, service))
-                            .on("dblclick", onNodeDblClick.bind(undefined, n))
-                            .on("mousemove", onNodeMouseMove.bind(undefined, service))
-                            .on("mouseleave", onNodeMouseLeave)
-                            .call(makeDragBehaviour(n));
-                    x += settings.SERVICE_SIZE;
-                });
+            }
+            return ans;
+        }
 
-
-//                //Debug, show the coordinate of the topology node itself
-//                svgContainer.select("#topology").append("circle")
-//                        .attr("cx", n.x)
-//                        .attr("cy", n.y)
-//                        .attr("r", 2)
-//                        .style("fill", "red")
+        function getTopolgyPath(n){
+            var leaves = n.getLeaves();
+            if (leaves.length === 0) {
+                return;
+            }
+            if (leaves.length === 1) {
+                //If all leaves are the same point, then the hull will be just
+                //A single point, and not get rendered.
+                //By forcing it to take distinct points, the stroke-width 
+                //Causes it to render at full size
+                var leaf = leaves[0];
+                leaves.push({x: leaf.x + .01, y: leaf.y + .01});
+            }
+            while (leaves.length < 3) {
+                //Even with two distinct point, the path will not exist
+                //Adding a third point (even if it is a duplicate) seems to fix this
+                leaves.push(leaves[0]);
             }
 
+            var path = d3.geom.hull()
+                    .x(function (n) {
+                        return n.x;
+                    })
+                    .y(function (n) {
+                        return n.y;
+                    })
+                    (leaves);
+            return path;
+        }
+        function topologyPathToString(path){
+            //@param d is the datum set above
+            //see https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/d
+            if (path.length === 0) {
+                return;
+            }
+            var ans = "M" + path[0].x + " " + path[0].y + " ";
+            for (var i = 1; i < path.length; i++) {
+                ans += "L" + path[i].x + " " + path[i].y + " ";
+            }
+            ans += "Z";
+            return ans;
         }
 
         /**@param {Node} n**/
+        function updateSvgChoordsNode(n){
+           var svg=n.svgNode;
+           if(!svg){
+               console.log("No svg element in node");
+           }
+           if(n.isLeaf()){
+               svg.attr("x",n.x-settings.NODE_SIZE/2);
+               svg.attr("y",n.y-settings.NODE_SIZE/2);
+           }else{
+               var path=getTopolgyPath(n);
+               svg.attr("d",topologyPathToString(path));
+           }
+           
+           updateSvgChoordsService(n);
+        }
+        
+        function updateSvgChoordsService(n){
+           var svgServiceContainer=n.svgNodeServices;
+           var coords=computeServiceCoords(n);
+           svgServiceContainer.selectAll("image")
+                   .attr("y",coords.y)
+                   .attr("x",function(d,i){
+                       return coords.x+settings.SERVICE_SIZE*i;
+                    })
+                   .attr("transform",coords.transform);
+        }
+        
+        /**@param {Edge} e**/
+        function updateSvgChoordsEdge(e){
+            var src = e.source.getCenterOfMass();
+            var tgt = e.target.getCenterOfMass();
+            e.svgNode.attr("x1", src.x)
+                     .attr("y1", src.y)
+                     .attr("x2", tgt.x)
+                     .attr("y2", tgt.y);
+        }
         
         var lastMouse;
+        /**@param {Node} n**/
         function makeDragBehaviour(n) {
             return d3.behavior.drag()
                     .on("drag", function () {
@@ -244,7 +277,16 @@ define([
                         var dy=(e.clientY-lastMouse.clientY)/outputApi.getZoom();
                         lastMouse=e;
                         move(n, dx, dy);
-                        redraw();
+                        
+                        //Fix the topolgies above us
+                        var cursor=n._parent;
+                        while(cursor){
+                            updateSvgChoordsNode(cursor);
+                            cursor=cursor._parent;
+                        }
+                        
+                        //fix all edges
+                        map_(edgeList,updateSvgChoordsEdge);
                     })
                     .on("dragstart", function () {
                         lastMouse=d3.event.sourceEvent;
@@ -257,15 +299,10 @@ define([
 
         /**@param {Edge} e**/
         function drawEdge(e) {
-            var src = e.source.getCenterOfMass();
-            var tgt = e.target.getCenterOfMass();
-            svgContainer.select("#edge").append("line")
-                    .attr("x1", src.x)
-                    .attr("y1", src.y)
-                    .attr("x2", tgt.x)
-                    .attr("y2", tgt.y)
+            e.svgNode=svgContainer.select("#edge").append("line")
                     .style("stroke", settings.EDGE_COLOR)
                     .style("stroke-width", settings.EDGE_WIDTH);
+            updateSvgChoordsEdge(e);
         }
 
         /**
@@ -321,6 +358,7 @@ define([
             map_(n.children, function (child) {
                 move(child, dx, dy);
             });
+            updateSvgChoordsNode(n);
         }
     }
 
