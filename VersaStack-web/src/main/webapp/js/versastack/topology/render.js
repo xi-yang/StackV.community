@@ -232,14 +232,22 @@ define([
         }
 
         /**@param {Node} n**/
+        
+        var lastMouse;
         function makeDragBehaviour(n) {
             return d3.behavior.drag()
                     .on("drag", function () {
-                        var e = d3.event;
-                        move(n, e.dx, e.dy);
+                        //Using the dx,dy from d3 can lead to some artifacts when also using
+                        //These seem to occur when moving between different transforms
+                        var e = d3.event.sourceEvent;
+                        var dx=(e.clientX-lastMouse.clientX)/outputApi.getZoom();
+                        var dy=(e.clientY-lastMouse.clientY)/outputApi.getZoom();
+                        lastMouse=e;
+                        move(n, dx, dy);
                         redraw();
                     })
                     .on("dragstart", function () {
+                        lastMouse=d3.event.sourceEvent;
                         outputApi.disablePanning();
                     })
                     .on("dragend", function () {

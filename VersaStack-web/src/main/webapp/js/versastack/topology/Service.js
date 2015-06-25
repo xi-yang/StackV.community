@@ -53,7 +53,7 @@ define(["local/versastack/topology/modelConstants"], function (values) {
             iconMap[values.virtualSwitchingService]="virtual_switch_service.png";
             iconMap[values.switchingService]="switching_service.png";
             iconMap[values.topopolgySwitchingService]=iconMap[values.switchingService];
-            iconMap[values.virtualCloudService]=iconMap["default"];
+//            iconMap[values.virtualCloudService]="";
             
         }
     }
