@@ -105,9 +105,9 @@
                     <sql:param value="${param.id}"/>
                 </sql:query>
 
-                <sql:query dataSource="${front_conn}" sql="SELECT I.user_id, I.username, I.first_name, I.last_name, I.usergroup_id 
-                           FROM user_info I, acl A, acl_entry_user U 
-                           WHERE I.user_id = U.user_id AND U.acl_id = A.acl_id AND A.service_id = ?" var="userlist">
+                <sql:query dataSource="${front_conn}" sql="SELECT I.user_id, I.username, I.first_name, I.last_name, I.usergroup_id, G.title 
+                           FROM user_info I, acl A, acl_entry_user U, usergroup G 
+                           WHERE I.user_id = U.user_id AND U.acl_id = A.acl_id AND I.usergroup_id = G.usergroup_id AND A.service_id = ?" var="userlist">
                     <sql:param value="${param.id}"/>
                 </sql:query>
 
@@ -162,6 +162,7 @@
                         <tr>
                             <th>Username</th>
                             <th>Full Name</th>
+                            <th>Usergroup</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -169,6 +170,7 @@
                         <tr>
                             <td>${usr.username}</td>
                             <td>${usr.first_name} ${usr.last_name}</td>
+                            <td>${usr.title}</td>
                             <td>
                                 <div class="float-right inline">
                                     <form action="privileges.jsp?id=${param.id}" method="POST">
@@ -190,15 +192,15 @@
                 </table>
                 <c:if test="${not empty param.id}">
                     <form id="button-add-users" action="privileges.jsp?id=${param.id}" method="post">                    
-                        <sql:query dataSource="${front_conn}" sql="SELECT I.user_id, I.username, I.first_name, I.last_name
-                                   FROM user_info I WHERE I.user_id NOT IN (SELECT I.user_id FROM user_info I, acl A, acl_entry_user U 
-                                   WHERE I.user_id = U.user_id AND U.acl_id = A.acl_id AND A.service_id = ?)" var="users">
+                        <sql:query dataSource="${front_conn}" sql="SELECT I.user_id, I.username, I.first_name, I.last_name, G.title
+                                   FROM user_info I, usergroup G WHERE I.user_id NOT IN (SELECT I.user_id FROM user_info I, acl A, acl_entry_user U 
+                                   WHERE I.user_id = U.user_id AND U.acl_id = A.acl_id AND A.service_id = ?) AND I.usergroup_id = G.usergroup_id" var="users">
                             <sql:param value="${param.id}" />
                         </sql:query>
 
                         <select name="add_user_id">
                             <c:forEach var="usr" items="${users.rows}">
-                                <option value="${usr.user_id}">${usr.username} (${usr.first_name} ${usr.last_name})</option>
+                                <option value="${usr.user_id}">${usr.username} (${usr.first_name} ${usr.last_name}) [${usr.title}]</option>
                             </c:forEach>
                         </select>
                         <input type="submit" value="Add" /> 
@@ -220,6 +222,10 @@
                     }
                     if (${user.isAllowed(3)}) {
                         var element = document.getElementById("service3");
+                        element.classList.remove("hide");
+                    }
+                    if (${user.isAllowed(4)}) {
+                        var element = document.getElementById("service4");
                         element.classList.remove("hide");
                     }
                 });

@@ -12,3 +12,5 @@
 *.DS_Store
 *.swp
 *.out
+/VersaStack-web/src/main/webapp/Kevin-old/
+/VersaStack-web/src/main/webapp/orch/graphTest.html

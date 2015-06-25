@@ -221,6 +221,9 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
 }
+.center {
+    margin-left: 50%;
+}
 .form input#button-login, .form input#button-register {
     cursor: pointer;
     background: #E60000;
@@ -276,7 +279,7 @@ body {
 
 #sidebar {
     height: 100%;
-    background-color: #e9e9e9;
+    background-color: #d0d0d0;
     text-align: left;
     position: absolute;
     margin-top: 37px;
@@ -300,7 +303,7 @@ body {
     padding: 0; }
 #nav li {
     float: left; }
-#nav li#logout-button {
+#nav li.right-button {
     float: right;
     border-left: 1px solid #ccc;
 }
