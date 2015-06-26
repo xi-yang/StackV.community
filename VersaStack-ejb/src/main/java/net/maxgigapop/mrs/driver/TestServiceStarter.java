@@ -114,10 +114,32 @@ public class TestServiceStarter {
         }
 
     }
+    
+      public void testOpenstackDriver(){
+          if (PersistenceManager.getEntityManager() == null) {
+            PersistenceManager.initialize(entityManager);
+        }
+        try {
+            Context ejbCxt = new InitialContext();
+            HandleSystemCall systemCallHandler = (HandleSystemCall) ejbCxt.lookup("java:module/HandleSystemCall");
+            Map<String, String> driverProperties = new HashMap<>();
+            driverProperties.put("topologyUri", "urn:ogf:network:lab-blade.maxgigapop.net:2015");
+            driverProperties.put("driverEjbPath", "java:module/OpenStackDriver");
+            driverProperties.put("username","cjohnson");
+            driverProperties.put("password","67ou2UbR3");
+            driverProperties.put("tenant","admin");
+            driverProperties.put("NATServer","206.196.176.151");
+            driverProperties.put("url","http://lab-blade.maxgigapop.net:35357/v2.0");
+            systemCallHandler.plugDriverInstance(driverProperties);
+        } catch (Exception ex) {
+            Logger.getLogger(TestServiceStarter.class.getName()).log(Level.SEVERE, null, ex);
+        }
+      }
 
     @PostConstruct
     public void runTests() {
         //this.testStubDriver();
         //this.testVersaNSDriver();
+        //this.testOpenstackDriver();
     }
 }

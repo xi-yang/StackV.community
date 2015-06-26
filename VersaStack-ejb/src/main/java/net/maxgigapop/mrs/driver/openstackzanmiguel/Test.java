@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 package net.maxgigapop.mrs.driver.openstackzanmiguel;
-
+/*
 import java.io.IOException;
 import org.openstack4j.model.network.NetworkType;
 
@@ -14,6 +14,7 @@ import static net.maxgigapop.mrs.driver.openstackzanmiguel.OpenStackNeutronModel
  *
  * @author tcm
  */
+/*
 public class Test {
 
     public static void main(String args[]) throws IOException, Exception {
@@ -24,3 +25,4 @@ public class Test {
 
     }
 }
+*/
