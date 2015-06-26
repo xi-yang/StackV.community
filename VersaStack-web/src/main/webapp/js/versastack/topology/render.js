@@ -13,6 +13,8 @@ define([
         SERVICE_SIZE: 10,
         TOPOLOGY_SIZE: 15,
         TOPOLOGY_BUFFER: 30,
+        TOPOLOGY_ANCHOR_SIZE:2,
+        TOPOLOGY_ANCHOR_STROKE:2,
         HULL_COLORS: ["rgb(0,100,255)", "rgb(255,0,255)"],
         HULL_OPACITY: .2,
         EDGE_COLOR: "rgb(0,0,0)",
@@ -34,6 +36,7 @@ define([
         settings.TOPOLOGY_SIZE /= outputApi.getZoom();
         settings.TOPOLOGY_BUFFER /= outputApi.getZoom();
         settings.EDGE_WIDTH /= outputApi.getZoom();
+        settings.TOPOLOGY_ANCHOR_STROKE/=outputApi.getZoom();
 
         var svgContainer = outputApi.getSvgContainer();
 
@@ -44,6 +47,7 @@ define([
             svgContainer.select("#topology").selectAll("*").remove();//Clear the previous drawing
             svgContainer.select("#edge").selectAll("*").remove();//Clear the previous drawing
             svgContainer.select("#node").selectAll("*").remove();//Clear the previous drawing
+            svgContainer.select("#anchor").selectAll("*").remove();//Clear the previous drawing
             nodeList = model.listNodes();
             edgeList = model.listEdges();
 
@@ -57,12 +61,8 @@ define([
         /**@param {Node} n**/
         function drawNode(n) {
             if (n.isLeaf()) {
-                var x = n.x - settings.NODE_SIZE / 2;
-                var y = n.y - settings.NODE_SIZE / 2;
                 n.svgNode=svgContainer.select("#node").append("image")
                         .attr("xlink:href", n.getIconPath())
-                        .attr("x", x)
-                        .attr("y", y)
                         .attr('height', settings.NODE_SIZE)
                         .attr('width', settings.NODE_SIZE)
                         .on("click", onNodeClick.bind(undefined, n))
@@ -71,6 +71,7 @@ define([
                         .on("mouseleave", onNodeMouseLeave)
                         .call(makeDragBehaviour(n));
                 drawServices(n);
+                updateSvgChoordsNode(n);
             }
         }
         /**@param {Node} n**/
@@ -84,8 +85,6 @@ define([
                         .style("stroke", color)
                         .style("stroke-width", settings.TOPOLOGY_SIZE + settings.TOPOLOGY_BUFFER * n.getHeight())
                         .style("stroke-linejoin", "round")
-//                        .style("stroke-opacity", settings.HULL_OPACITY)
-//                        .style("fill-opacity", settings.HULL_OPACITY)
                         .style("opacity", settings.HULL_OPACITY)
                         .attr("d",topologyPathToString(path))
                         .on("click", onNodeClick.bind(undefined, n))
@@ -93,7 +92,19 @@ define([
                         .on("mousemove", onNodeMouseMove.bind(undefined, n))
                         .on("mouseleave", onNodeMouseLeave)
                         .call(makeDragBehaviour(n));
+                n.svgNodeAnchor=svgContainer.select("#anchor").append("rect")
+                        .style("fill","white")
+                        .style("stroke","black")
+                        .style("stroke-width",settings.TOPOLOGY_ANCHOR_STROKE)
+                        .attr("width",settings.TOPOLOGY_ANCHOR_SIZE)
+                        .attr("height",settings.TOPOLOGY_ANCHOR_SIZE)
+                        .on("click", onNodeClick.bind(undefined, n))
+                        .on("dblclick", onNodeDblClick.bind(undefined, n))
+                        .on("mousemove", onNodeMouseMove.bind(undefined, n))
+                        .on("mouseleave", onNodeMouseLeave)
+                        .call(makeDragBehaviour(n));
                 drawServices(n);
+                updateSvgChoordsNode(n);
 
 //                //Debug, show the coordinate of the topology node itself
 //                svgContainer.select("#topology").append("circle")
@@ -240,7 +251,13 @@ define([
                var path=getTopolgyPath(n);
                svg.attr("d",topologyPathToString(path));
            }
-           
+         
+           var svgAchor=n.svgNodeAnchor;
+           if(svgAchor){
+               var choords=n.getCenterOfMass();
+               svgAchor.attr("x",choords.x-settings.TOPOLOGY_ANCHOR_SIZE/2);
+               svgAchor.attr("y",choords.y-settings.TOPOLOGY_ANCHOR_SIZE/2);
+           }
            updateSvgChoordsService(n);
         }
         
