@@ -171,7 +171,16 @@
                     return ans;
                 };
 
-
+                this.setHoverText = function(str){
+                    document.getElementById("hoverdiv").innerText = str;
+                };
+                this.setHoverLocation = function(x,y){
+                    document.getElementById("hoverdiv").style.left = x + "px";
+                    document.getElementById("hoverdiv").style.top = y + 10 + "px";
+                };
+                this.setHoverVisible = function(vis){
+                    document.getElementById("hoverdiv").style.visibility = vis?"visible":"hidden";
+                }
 
                 var svg = document.getElementById("viz");
                 svg.addEventListener("mousewheel", function (e) {

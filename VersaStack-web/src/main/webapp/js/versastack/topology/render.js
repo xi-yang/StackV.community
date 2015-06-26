@@ -309,8 +309,7 @@ define([
                         //As we drag, the cursor may enter and leave the bounding box of n
                         //In onNodeMouseLeave we make the hoverdiv stay visible in this case,
                         //However, we also want it to continue tracking us.
-                        document.getElementById("hoverdiv").style.left = e.clientX + "px";
-                        document.getElementById("hoverdiv").style.top = e.clientY + 10 + "px";
+                        outputApi.setHoverLocation(e.clientX,e.clientY);
                     })
                     .on("dragstart", function () {
                         lastMouse=d3.event.sourceEvent;
@@ -351,7 +350,7 @@ define([
          * @param {Node} n**/
         function onNodeDblClick(n) {
             //We will never send a mouseleave event as the node is being removed
-            document.getElementById("hoverdiv").style.visibility = "hidden";
+            outputApi.setHoverVisible(false);;
             //The coordinates provided seem not to line up with where the mouse is,
             //So we use the center of mass to stay consistent
             var e = d3.event;
@@ -366,18 +365,20 @@ define([
             redraw();
         }
         function onNodeMouseMove(n) {
-            var hovertext = n.getName();
-            document.getElementById("hoverdiv").innerText = hovertext;
-            document.getElementById("hoverdiv").style.left = d3.event.x + "px";
-            document.getElementById("hoverdiv").style.top = d3.event.y + 10 + "px";
-            document.getElementById("hoverdiv").style.visibility = "visible";
+            //As we drag a node, the cursor may temporarliy leave the bounding box
+            //of said node, causing flicker of the hoverdiv
+            if(!isDragging){
+                outputApi.setHoverText(n.getName());
+                outputApi.setHoverLocation(d3.event.x,d3.event.y);
+                outputApi.setHoverVisible(true);
+            }
         }
 
         function onNodeMouseLeave() {
             //As we drag a node, the cursor may temporarliy leave the bounding box
             //of said node, causing flicker of the hoverdiv
             if(!isDragging){
-                document.getElementById("hoverdiv").style.visibility = "hidden";
+                outputApi.setHoverVisible(false);
             }
         }
 
