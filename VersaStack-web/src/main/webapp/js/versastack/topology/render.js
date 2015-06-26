@@ -284,6 +284,7 @@ define([
         
         var lastMouse;
         /**@param {Node} n**/
+        var isDragging=false;
         function makeDragBehaviour(n) {
             return d3.behavior.drag()
                     .on("drag", function () {
@@ -304,13 +305,21 @@ define([
                         
                         //fix all edges
                         map_(edgeList,updateSvgChoordsEdge);
+                        
+                        //As we drag, the cursor may enter and leave the bounding box of n
+                        //In onNodeMouseLeave we make the hoverdiv stay visible in this case,
+                        //However, we also want it to continue tracking us.
+                        document.getElementById("hoverdiv").style.left = e.clientX + "px";
+                        document.getElementById("hoverdiv").style.top = e.clientY + 10 + "px";
                     })
                     .on("dragstart", function () {
                         lastMouse=d3.event.sourceEvent;
                         outputApi.disablePanning();
+                        isDragging=true;
                     })
                     .on("dragend", function () {
                         outputApi.enablePanning();
+                        isDragging=false;
                     });
         }
 
@@ -365,7 +374,11 @@ define([
         }
 
         function onNodeMouseLeave() {
-            document.getElementById("hoverdiv").style.visibility = "hidden";
+            //As we drag a node, the cursor may temporarliy leave the bounding box
+            //of said node, causing flicker of the hoverdiv
+            if(!isDragging){
+                document.getElementById("hoverdiv").style.visibility = "hidden";
+            }
         }
 
         /**@param {Node} n**/
