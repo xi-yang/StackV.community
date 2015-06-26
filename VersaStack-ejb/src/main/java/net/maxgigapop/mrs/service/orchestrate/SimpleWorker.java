@@ -27,10 +27,6 @@ public class SimpleWorker extends WorkerBase {
             + "\n"
             + "## abstract topology with policy annotations\n"
             + "\n"
-            + "<urn:ogf:network:domain=vo1.versastack.org:network>\n"
-            + "    a            nml:Topology ;\n"
-            + "    nml:hasNode  <urn:ogf:network:domain=vo1.versastack.org:node=left>, <urn:ogf:network:domain=vo1.versastack.org:node=right> .\n"
-            + "\n"
             + "<urn:ogf:network:domain=vo1.versastack.org:node=left>\n"
             + "    a                         nml:Node ;\n"
             + "    nml:belongsTo             <urn:ogf:network:domain=vo1.versastack.org:network> ;\n"
@@ -89,7 +85,7 @@ public class SimpleWorker extends WorkerBase {
             + "    a            spa:Stitching ;\n"
             + "    spa:stitchType <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> ;\n"
             + "    spa:dependOn <x-policy-annotation:action:connect-link1>, <x-policy-annotation:action:place-right> ;\n"
-            + "    spa:importFrom <x-policy-annotation:data:right-location>, <x-policy-annotation:data:link1-vlan> .\n"
+            + "    spa:importFrom <x-policy-annotation:data:right-stitching-type>, <x-policy-annotation:data:right-location>, <x-policy-annotation:data:link1-vlan> .\n"
             + "\n"
             + "<x-policy-annotation:action:connect-link1>\n"
             + "    a            spa:Connection ;\n"
@@ -129,6 +125,11 @@ public class SimpleWorker extends WorkerBase {
             + "    a            spa:PolicyData.\n"
             //+ "    spa:type     nml:labeltype;\n"
             //+ "    spa:value    <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>.\n"
+            + "\n"
+            + "<x-policy-annotation:data:right-stitching-type>\n"
+            + "    a            spa:PolicyData;\n"
+            + "    spa:type     \"InterfaceVlanStitching:StitchingType\";\n"
+            + "    spa:value    \"AWS_VPC\".\n"
             + "\n";
 
     @Override

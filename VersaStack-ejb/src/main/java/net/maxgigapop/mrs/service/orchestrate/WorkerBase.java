@@ -160,15 +160,16 @@ public class WorkerBase {
             }
             // continue to batch execution (to exectute new action and/or wait ones in processing)            
         }
-        //$$ TODO: throw exception if top loop times out
+        //@TODO: throw exception if top loop times out
         
         mergedRoot.cleanupOutputDelta();
         try {
-            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.INFO, "\n>>>Workflow--DeltaAddModel Output=\n" + ModelUtil.marshalOntModel(mergedRoot.getOutputDelta().getModelAddition().getOntModel()));
+            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.FINE, "\n>>>Workflow--DeltaAddModel Output=\n" + ModelUtil.marshalOntModel(mergedRoot.getOutputDelta().getModelAddition().getOntModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
 
+        //@TODO: raise exception if some annotation remains
         this.resultModelDelta = mergedRoot.getOutputDelta();
     }
     

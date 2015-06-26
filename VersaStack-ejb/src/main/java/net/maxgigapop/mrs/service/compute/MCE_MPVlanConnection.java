@@ -49,7 +49,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
     @Asynchronous
     public Future<DeltaBase> process(ModelBase systemModel, DeltaBase annotatedDelta) {
         try {
-            log.log(Level.INFO, "\n>>>MCE_MPVlanConnection--DeltaAddModel Input=\n" + ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
+            log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--DeltaAddModel Input=\n" + ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -104,7 +104,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             this.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), resLink);   
         }
         try {
-            log.log(Level.INFO, "\n>>>MCE_MPVlanConnection--DeltaAddModel Output=\n" + ModelUtil.marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()));
+            log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--DeltaAddModel Output=\n" + ModelUtil.marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -117,7 +117,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
         // filter out irrelevant statements (based on property type, label type, has switchingService etc.)
         OntModel transformedModel = MCETools.transformL2NetworkModel(systemModel);
         try {
-            log.log(Level.INFO, "\n>>>MCE_MPVlanConnection--SystemModel=\n" + ModelUtil.marshalModel(transformedModel));
+            log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--SystemModel=\n" + ModelUtil.marshalModel(transformedModel));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -189,7 +189,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             // require two terminal vlan ports and labels.
             if (solutions.isEmpty())
                 throw new EJBException("exportPolicyData failed to find '2' terminal Vlan tags for " + l2Path);
-            spaModel.add(resData, Spa.type, "VlanPorts");
+            spaModel.add(resData, Spa.type, "MPVlanConnection:VlanPorts");
             for (QuerySolution aSolution: terminalVlanSolutions) {
                 Resource bidrPort = aSolution.getResource("bp");
                 Resource vlanTag = aSolution.getResource("vlan");
@@ -211,7 +211,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
                 + " ?vlan nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>}");
         /*
         try {
-            log.log(Level.INFO, "\n>>>MCE_MPVlanConnection--getTerminalVlanLabels from Model=\n" + ModelUtil.marshalModel(model)
+            log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--getTerminalVlanLabels from Model=\n" + ModelUtil.marshalModel(model)
                 +"\n SPARQL=\n" + sparql) ;
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);

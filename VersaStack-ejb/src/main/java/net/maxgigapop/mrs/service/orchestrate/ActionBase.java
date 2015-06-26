@@ -337,12 +337,16 @@ public class ActionBase {
         }
     }
     
+    //@TODO: raise exception if not completely cleannedup
     private void cleanupSpaModel(OntModel spaModel) {
         List<Statement> listStmtsToRemove = new ArrayList<>();
         String sparql = "SELECT ?policyAction WHERE {"
-                + "?policyAction spa:exportTo ?policyData . "
-                + "FILTER not exists {?someRes spa:dependOn ?policyAction} "
-                + "}";
+                + "{ ?policyAction spa:exportTo ?policyData . "
+                + "FILTER not exists {?someRes spa:dependOn ?policyAction}"
+                + "} UNION {"
+                + "?policyAction spa:importFrom ?policyData . "
+                + "FILTER not exists {?someRes spa:dependOn ?policyAction}"
+                + "} }";
         ResultSet rs = ModelUtil.sparqlQuery(spaModel, sparql);
         while (rs.hasNext()) {
             QuerySolution solution = rs.next();
@@ -354,7 +358,17 @@ public class ActionBase {
                 listStmtsToRemove.addAll(listStmts);
         }
         spaModel.remove(listStmtsToRemove);
+        sparql = "SELECT ?policyX WHERE {"
+                + "?policyX ?p ?o. "
+                + String.format("FILTER(regex(str(?policyX), '^%s'))", Spa.NS)
+                + "}";
+        rs = ModelUtil.sparqlQuery(spaModel, sparql);
+        if (rs.hasNext()) {
+            String policyAnotation = rs.next().getResource("policyX").toString();
+            throw new EJBException(this + ".cleanupSpaModel() failed to clean up policy annotation: " +  policyAnotation);
+        }
     }
+
     public String toString() {
         return "WorkerAction(" + this.name+"->"+this.mceBeanPath+")";
     }

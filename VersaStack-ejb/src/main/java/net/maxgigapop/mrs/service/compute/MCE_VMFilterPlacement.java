@@ -53,13 +53,11 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
         if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
             throw new EJBException(String.format("%s::process ", this.getClass().getName()));
         }
-        /*
         try {
-            log.log(Level.INFO, "\n>>>MCE_VMFilterPlacement--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
+            log.log(Level.FINE, "\n>>>MCE_VMFilterPlacement--DeltaAddModel Input=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
-        */
         // importPolicyData
         String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
                 "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
@@ -111,7 +109,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             outputDelta.getModelAddition().getOntModel().add(placementModel.getBaseModel());
             /*
             try {
-                log.log(Level.INFO, "\n>>>MCE_VMFilterPlacement--outputDelta(stage 2)=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
+                log.log(Level.FINE, "\n>>>MCE_VMFilterPlacement--outputDelta(stage 2)=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
             } catch (Exception ex) {
                 Logger.getLogger(MCE_VMFilterPlacement.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -127,7 +125,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             //$$ TODO: Add dependOn->Abstraction annotation to root level spaModel and add a generic Action to remvoe that abstract nml:Topology
         }
         try {
-            log.log(Level.INFO, "\n>>>MCE_VMFilterPlacement--outputDelta Output=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
+            log.log(Level.FINE, "\n>>>MCE_VMFilterPlacement--outputDelta Output=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_VMFilterPlacement.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -247,11 +245,14 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             Resource resPolicy = querySolution.get("policyAction").asResource();
             Resource resData = querySolution.get("policyData").asResource();
             // add export data
+            /*
             if (spaModel.listStatements(resHost, RdfOwl.type, Nml.Topology).hasNext()) {
                 spaModel.add(resData, Spa.type, Nml.Topology);
             } else if (spaModel.listStatements(resHost, RdfOwl.type, Nml.Node).hasNext()) {
                 spaModel.add(resData, Spa.type, Nml.Node);
             }
+            */
+            spaModel.add(resData, Spa.type, "VMFilterPlacement:HostSite");
             spaModel.add(resData, Spa.value, resHost);
             // remove Placement->exportTo statement so the exportData can be kept in spaModel during receurive removal
             //spaModel.remove(resPolicy, Spa.exportTo, resData);
