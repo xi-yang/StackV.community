@@ -32,6 +32,9 @@ define(["local/versastack/topology/modelConstants",
                 this.svgNodeAnchor=null;//For topologies
                 this.svgNodeServices=null;
                 this.services = [];
+                this.x=0;
+                this.y=0;
+                this.size=0;
                 var that = this;
                 this.fold = function () {
                     this.isFolded = true;
@@ -196,6 +199,9 @@ define(["local/versastack/topology/modelConstants",
                     });
                     ans += 1;
                     return ans;
+                };
+                this.getType=function(){
+                    return this.isLeaf()?"Node":"Topology";
                 };
             }
 

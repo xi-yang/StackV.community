@@ -15,6 +15,7 @@ define([
         TOPOLOGY_BUFFER: 30,
         TOPOLOGY_ANCHOR_SIZE:2,
         TOPOLOGY_ANCHOR_STROKE:2,
+        ENLARGE_FACTOR: .2,
         HULL_COLORS: ["rgb(0,100,255)", "rgb(255,0,255)"],
         HULL_OPACITY: .2,
         EDGE_COLOR: "rgb(0,0,0)",
@@ -63,13 +64,12 @@ define([
             if (n.isLeaf()) {
                 n.svgNode=svgContainer.select("#node").append("image")
                         .attr("xlink:href", n.getIconPath())
-                        .attr('height', settings.NODE_SIZE)
-                        .attr('width', settings.NODE_SIZE)
                         .on("click", onNodeClick.bind(undefined, n))
                         .on("dblclick", onNodeDblClick.bind(undefined, n))
                         .on("mousemove", onNodeMouseMove.bind(undefined, n))
-                        .on("mouseleave", onNodeMouseLeave)
+                        .on("mouseleave", onNodeMouseLeave.bind(undefined, n))
                         .call(makeDragBehaviour(n));
+                setElementSize(n,false);
                 drawServices(n);
                 updateSvgChoordsNode(n);
             }
@@ -90,19 +90,18 @@ define([
                         .on("click", onNodeClick.bind(undefined, n))
                         .on("dblclick", onNodeDblClick.bind(undefined, n))
                         .on("mousemove", onNodeMouseMove.bind(undefined, n))
-                        .on("mouseleave", onNodeMouseLeave)
+                        .on("mouseleave", onNodeMouseLeave.bind(undefined, n))
                         .call(makeDragBehaviour(n));
                 n.svgNodeAnchor=svgContainer.select("#anchor").append("rect")
                         .style("fill","white")
                         .style("stroke","black")
                         .style("stroke-width",settings.TOPOLOGY_ANCHOR_STROKE)
-                        .attr("width",settings.TOPOLOGY_ANCHOR_SIZE)
-                        .attr("height",settings.TOPOLOGY_ANCHOR_SIZE)
                         .on("click", onNodeClick.bind(undefined, n))
                         .on("dblclick", onNodeDblClick.bind(undefined, n))
                         .on("mousemove", onNodeMouseMove.bind(undefined, n))
-                        .on("mouseleave", onNodeMouseLeave)
+                        .on("mouseleave", onNodeMouseLeave.bind(undefined, n))
                         .call(makeDragBehaviour(n));
+                setElementSize(n,false);
                 drawServices(n);
                 updateSvgChoordsNode(n);
 
@@ -120,10 +119,8 @@ define([
         function drawServices(n){
             n.svgNodeServices = svgContainer.select("#node").append("g");
             map_(n.services, /**@param {Service} service**/function (service) {
-                n.svgNodeServices.append("image")
+                service.svgNode=n.svgNodeServices.append("image")
                         .attr("xlink:href", service.getIconPath())
-                        .attr('height', settings.SERVICE_SIZE)
-                        .attr('width', settings.SERVICE_SIZE)
                         //The click events fold move, and select nodes, in 
                         //which case, we want to behave the same regardless
                         //of if a node or its service was the target. In 
@@ -133,8 +130,9 @@ define([
                         .on("click", onNodeClick.bind(undefined, service))
                         .on("dblclick", onNodeDblClick.bind(undefined, n))
                         .on("mousemove", onNodeMouseMove.bind(undefined, service))
-                        .on("mouseleave", onNodeMouseLeave)
+                        .on("mouseleave", onNodeMouseLeave.bind(undefined, service))
                         .call(makeDragBehaviour(n));
+                setElementSize(service,false);
             });
             updateSvgChoordsService(n);
         }
@@ -245,8 +243,8 @@ define([
                console.log("No svg element in node");
            }
            if(n.isLeaf()){
-               svg.attr("x",n.x-settings.NODE_SIZE/2);
-               svg.attr("y",n.y-settings.NODE_SIZE/2);
+               svg.attr("x",n.x-n.size/2);
+               svg.attr("y",n.y-n.size/2);
            }else{
                var path=getTopolgyPath(n);
                svg.attr("d",topologyPathToString(path));
@@ -264,12 +262,15 @@ define([
         function updateSvgChoordsService(n){
            var svgServiceContainer=n.svgNodeServices;
            var coords=computeServiceCoords(n);
-           svgServiceContainer.selectAll("image")
-                   .attr("y",coords.y)
-                   .attr("x",function(d,i){
-                       return coords.x+settings.SERVICE_SIZE*i;
-                    })
-                   .attr("transform",coords.transform);
+           map_(n.services,function(service){
+               service.y=coords.y;
+               service.x=coords.x;
+               service.svgNode
+                       .attr("y",coords.y)
+                       .attr("x",coords.x)
+                       .attr("transform",coords.transform);
+               coords.x+=settings.SERVICE_SIZE;
+           });
         }
         
         /**@param {Edge} e**/
@@ -371,15 +372,57 @@ define([
                 outputApi.setHoverText(n.getName());
                 outputApi.setHoverLocation(d3.event.x,d3.event.y);
                 outputApi.setHoverVisible(true);
+                setElementSize(n,true);
             }
         }
 
-        function onNodeMouseLeave() {
+        function onNodeMouseLeave(n) {
             //As we drag a node, the cursor may temporarliy leave the bounding box
             //of said node, causing flicker of the hoverdiv
             if(!isDragging){
                 outputApi.setHoverVisible(false);
+                setElementSize(n,false);
             }
+        }
+
+        function setElementSize(n,enlarge){
+            var size,svg,ds,x,y;
+            switch(n.getType()){
+                case "Node":
+                    var size=settings.NODE_SIZE;
+                    svg=n.svgNode;
+                    x=n.x-settings.NODE_SIZE/2;
+                    y=n.y-settings.NODE_SIZE/2;
+                    break;
+                case "Topology":
+                    var size=settings.TOPOLOGY_ANCHOR_SIZE;
+                    svg=n.svgNodeAnchor;
+                    var choords=n.getCenterOfMass();
+                    x=choords.x-settings.TOPOLOGY_ANCHOR_SIZE/2;
+                    y=choords.y-settings.TOPOLOGY_ANCHOR_SIZE/2;
+                    enlarge=false;//Enlarging the topology does not look good
+                    break;
+                case "Service":
+                    var size=settings.SERVICE_SIZE;
+                    svg=n.svgNode;
+                    x=n.x;
+                    y=n.y;
+                    break;
+                default:
+                    console.log("Unknown Type: "+n.getType());
+            }
+            if(enlarge){
+                ds=size*settings.ENLARGE_FACTOR;
+                size+=ds;
+            }else{
+                ds=0;
+            }
+            n.size=size;
+            svg
+                    .attr("width",size)
+                    .attr("height",size)
+                    .attr("x",x-ds/2)//make it appear to zoom into center of the icon
+                    .attr("y",y-ds/2);
         }
 
         /**@param {Node} n**/

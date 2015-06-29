@@ -4,6 +4,10 @@ define(["local/versastack/topology/modelConstants"], function (values) {
         this._backing = backing;
         this.owningNode=owningNode;
         this.type = "";
+        this.svgNode=null;
+        this.x=0;
+        this.y=0;
+        this.size=0;
 
         this.getTypeBrief = function () {
             return this.type.split("#")[1];
@@ -56,6 +60,10 @@ define(["local/versastack/topology/modelConstants"], function (values) {
 //            iconMap[values.virtualCloudService]="";
             
         }
+    
+        this.getType=function(){
+            return "Service";
+        };
     }
     return Service;
 });
