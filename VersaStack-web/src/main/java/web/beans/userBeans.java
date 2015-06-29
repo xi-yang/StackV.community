@@ -29,12 +29,13 @@ public class userBeans {
     String lastName = "";
     String id = "";
     String password_hash = "";
-    String usergroup = "";
+    String active_usergroup = "";
     ArrayList<Integer> service_list = new ArrayList<>();
+    ArrayList<Integer> group_list = new ArrayList<>();
 
     boolean loggedIn = false;
 
-    //TEMP
+    //@@TEMP
     public String ret_list() {
         String ret_string = "Size: " + service_list.size() + ". Elements:";
         for (Integer serv_id : service_list) {
@@ -54,13 +55,13 @@ public class userBeans {
     public String getLastName() {
         return lastName;
     }
-    
+
     public String getId() {
         return id;
     }
-    
-    public String getUsergroup() {
-        return usergroup;
+
+    public String getActiveUsergroup() {
+        return active_usergroup;
     }
 
     public boolean isAllowed(int serv_id) {
@@ -118,24 +119,53 @@ public class userBeans {
 
                     //Pull Userdata
                     prep = front_conn.prepareStatement("SELECT first_name, last_name, user_id,"
-                            + " usergroup_id FROM Frontend.user_info U WHERE U.username = ?");
+                            + " active_usergroup FROM Frontend.user_info U WHERE U.username = ?");
                     prep.setString(1, user);
                     ResultSet rs2 = prep.executeQuery();
                     if (rs2.next()) {
                         firstName = rs2.getString(1);
                         lastName = rs2.getString(2);
                         id = rs2.getString(3);
-                        usergroup = rs2.getString(4);
+                        active_usergroup = rs2.getString(4);
                         loggedIn = true;
                     } else {
                         throw new IllegalStateException("SQL Inconsistency!");
+                    }
+
+                    //Collect Usergroups
+                    prep = front_conn.prepareStatement("SELECT usergroup_id FROM user_belongs WHERE user_id = ?");
+                    prep.setString(1, id);
+                    rs2 = prep.executeQuery();
+                    while (rs2.next()) {
+                        group_list.add(rs2.getInt("usergroup_id"));
+                    }
+
+                    //Verify Active Group
+                    if (!group_list.contains(Integer.parseInt(active_usergroup))) {
+                        if (group_list.isEmpty()) {
+                            // @@NOTICE: REPLACE ID WITH DEFAULT USER GROUP IN FUTURE
+                            prep = front_conn.prepareStatement("UPDATE user_info SET `active_usergroup` = 2 WHERE `user_id` = ?");
+                            prep.setString(1, id);
+                        } else {
+                            prep = front_conn.prepareStatement("UPDATE user_info SET `active_usergroup` = ? WHERE `user_id` = ?");
+                            prep.setString(1, String.valueOf(group_list.get(0)));
+                            prep.setString(2, id);
+                        }
+                        prep.executeUpdate();
+
+                        prep = front_conn.prepareStatement("SELECT active_usergroup FROM user_info WHERE user_id = ?");
+                        prep.setString(1, id);
+                        rs2 = prep.executeQuery();
+                        while (rs2.next()) {
+                            active_usergroup = rs2.getString("active_usergroup");
+                        }
                     }
 
                     //Pull ACLs
                     service_list = new ArrayList<>();
                     prep = front_conn.prepareStatement("SELECT DISTINCT A.service_id FROM acl A JOIN acl_entry_group G, acl_entry_user U WHERE"
                             + "(A.acl_id = G.acl_id AND G.usergroup_id = ?) OR (A.acl_id = U.acl_id AND U.user_id = ?)");
-                    prep.setString(1, usergroup);
+                    prep.setString(1, active_usergroup);
                     prep.setString(2, id);
                     rs2 = prep.executeQuery();
                     while (rs2.next()) {
@@ -225,7 +255,7 @@ public class userBeans {
                     front_connectionProps);
 
             prep = front_conn.prepareStatement("INSERT INTO Frontend.user_info "
-                    + "(`username`, `email`, `usergroup_id`, `first_name`, `last_name`)"
+                    + "(`username`, `email`, `active_usergroup`, `first_name`, `last_name`)"
                     + " VALUES (?, ?, ?, ?, ?)");
             prep.setString(1, user);
             prep.setString(2, email);
@@ -233,6 +263,21 @@ public class userBeans {
             prep.setString(4, first_name);
             prep.setString(5, last_name);
             prep.executeUpdate();
+
+            int user_id;
+            prep = front_conn.prepareStatement("SELECT user_id"
+                    + " FROM Frontend.user_info I WHERE I.username = ?");
+            prep.setString(1, user);
+            ResultSet rs2 = prep.executeQuery();
+            if (rs2.next()) {
+                user_id = rs2.getInt("user_id");
+
+                prep = front_conn.prepareStatement("INSERT INTO Frontend.user_belongs (`user_id`, `usergroup_id`)"
+                        + " VALUES (?, ?)");
+                prep.setInt(1, user_id);
+                prep.setInt(2, Integer.parseInt(usergroup_id));
+                prep.executeUpdate();
+            }
 
             front_conn.close();
 
@@ -280,17 +325,17 @@ public class userBeans {
 
                 log_conn.close();
             }
-            
+
             Connection front_conn;
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:8889/Frontend",
                     front_connectionProps);
-            
+
             if (!first_name.isEmpty()) {
                 first_name = first_name.trim();
-                
+
                 PreparedStatement prep = front_conn.prepareStatement("UPDATE Frontend.user_info SET `first_name` = ? WHERE `username` = ?");
                 prep.setString(1, first_name);
                 prep.setString(2, username);
@@ -298,7 +343,7 @@ public class userBeans {
             }
             if (!last_name.isEmpty()) {
                 last_name = last_name.trim();
-                
+
                 PreparedStatement prep = front_conn.prepareStatement("UPDATE Frontend.user_info SET `last_name` = ? WHERE `username` = ?");
                 prep.setString(1, last_name);
                 prep.setString(2, username);
@@ -306,7 +351,7 @@ public class userBeans {
             }
             if (!email.isEmpty()) {
                 email = email.trim();
-                
+
                 PreparedStatement prep = front_conn.prepareStatement("UPDATE Frontend.user_info SET `email` = ? WHERE `username` = ?");
                 prep.setString(1, email);
                 prep.setString(2, username);

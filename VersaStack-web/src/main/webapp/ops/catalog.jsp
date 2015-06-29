@@ -43,6 +43,7 @@
                     <sql:param value="${user.getUsergroup()}" />
                     <sql:param value="${user.getId()}" />
                 </sql:query>
+                
                 <table class="management-table" id="service-table">                    
                     <thead>
                         <tr>
@@ -92,7 +93,7 @@
                     if (${user.isAllowed(4)}) {
                         var element = document.getElementById("service4");
                         element.classList.remove("hide");
-                    }
+                    }                    
                 });
                 $("#nav").load("/VersaStack-web/navbar.html");
 

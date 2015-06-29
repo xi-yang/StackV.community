@@ -100,12 +100,12 @@
             <div id="acl-tables">
                 <sql:query dataSource="${front_conn}" sql="SELECT G.usergroup_id, G.title, COUNT(I.user_id) ucount 
                            FROM usergroup G, user_info I, acl A, acl_entry_group E 
-                           WHERE G.usergroup_id = E.usergroup_id AND G.usergroup_id = I.usergroup_id AND E.acl_id = A.acl_id AND A.service_id = ? 
+                           WHERE G.usergroup_id = E.usergroup_id AND G.usergroup_id = I.active_usergroup AND E.acl_id = A.acl_id AND A.service_id = ? 
                            GROUP BY G.title" var="ugrouplist">
                     <sql:param value="${param.id}"/>
                 </sql:query>
 
-                <sql:query dataSource="${front_conn}" sql="SELECT I.user_id, I.username, I.first_name, I.last_name, I.usergroup_id, G.title 
+                <sql:query dataSource="${front_conn}" sql="SELECT I.user_id, I.username, I.first_name, I.last_name, I.active_usergroup, G.title 
                            FROM user_info I, acl A, acl_entry_user U, usergroup G 
                            WHERE I.user_id = U.user_id AND U.acl_id = A.acl_id AND I.usergroup_id = G.usergroup_id AND A.service_id = ?" var="userlist">
                     <sql:param value="${param.id}"/>
@@ -194,7 +194,7 @@
                     <form id="button-add-users" action="privileges.jsp?id=${param.id}" method="post">                    
                         <sql:query dataSource="${front_conn}" sql="SELECT I.user_id, I.username, I.first_name, I.last_name, G.title
                                    FROM user_info I, usergroup G WHERE I.user_id NOT IN (SELECT I.user_id FROM user_info I, acl A, acl_entry_user U 
-                                   WHERE I.user_id = U.user_id AND U.acl_id = A.acl_id AND A.service_id = ?) AND I.usergroup_id = G.usergroup_id" var="users">
+                                   WHERE I.user_id = U.user_id AND U.acl_id = A.acl_id AND A.service_id = ?) AND I.active_usergroup = G.usergroup_id" var="users">
                             <sql:param value="${param.id}" />
                         </sql:query>
 
