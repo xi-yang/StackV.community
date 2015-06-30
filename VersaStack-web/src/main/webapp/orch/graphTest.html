@@ -40,14 +40,16 @@
             var render;
             var d3;
             var utils;
+            var DropDownTree;
 
             function onload() {
                 require(["local/versastack/topology/model",
                     "local/versastack/topology/layout",
                     "local/versastack/topology/render",
                     "local/d3",
-                    "local/versastack/utils"],
-                        function (m, l, r, d3_, utils_) {
+                    "local/versastack/utils", 
+                    "local/versastack/topology/DropDownTree"],
+                        function (m, l, r, d3_, utils_, tree) {
                             model = m;
                             model.init(drawGraph);
                             layout = l;
@@ -55,13 +57,14 @@
                             d3 = d3_;
                             utils = utils_;
                             map_ = utils.map_;
+                            DropDownTree = tree;
                         });
             }
             function drawGraph() {
                 var nodeList = model.listNodes();
                 var edgeList = model.listEdges();
-                var width = document.documentElement.clientWidth/settings.INIT_ZOOM;
-                var height = document.documentElement.clientHeight/settings.INIT_ZOOM;
+                var width = document.documentElement.clientWidth / settings.INIT_ZOOM;
+                var height = document.documentElement.clientHeight / settings.INIT_ZOOM;
                 //TODO, figure out why we need to call this twice
                 //If we do not, the layout does to converge as nicely, even if we double the number of iterations
                 layout.doLayout(nodeList, edgeList, width, height);
@@ -70,21 +73,20 @@
 
                 render.doRender(new outputApi(), model);
 //                animStart(30);
-
             }
 
             //animStart and animStop are primarily intended as debug functions
             //They can be used to see how the layout engine behaves, and restore
             //a sane layout it it has been messed up.
             var animIntervalId;
-            function animStart(rate){
+            function animStart(rate) {
                 animStop();
-                animIntervalId=setInterval(function(){
+                animIntervalId = setInterval(function () {
                     layout.tick();
                     render.redraw();
-                },rate);
+                }, rate);
             }
-            function animStop(){
+            function animStop() {
                 clearInterval(animIntervalId);
             }
 
@@ -93,21 +95,16 @@
                 this.getSvgContainer = function () {
                     return d3.select("#viz");
                 };
-                this.panelClear=function(){
-                    this.setActiveName("");
-                    this.setServices([]);
+
+                this.getDisplayTree = function () {
+                    var ans = new DropDownTree(document.getElementById("treeMenu"));
+                    return ans;
                 };
-                this.setActiveName = function (str) {
-                    document.getElementById("displayPanelName").innerText = "Name: " + str;
-                };
-                this.setServices = function (arr) {
-                    var container = document.getElementById("displayServices");
-                    utils.deleteAllChildNodes(container);
-                    map_(arr, function (str) {
-                        container.appendChild(document.createTextNode("Service: " + str));
-                        container.appendChild(document.createElement('br'));
-                    });
-                };
+                
+                this.setDisplayName = function(name){
+                    document.getElementById("displayName").innerText=name;
+                }
+
 
                 var zoomFactor = settings.INIT_ZOOM;
                 var offsetX = 0, offsetY = 0;
@@ -128,8 +125,8 @@
                      *        the new offset is now offsetX+doX
                      *        
                      */
-                    var zoomFactorNew=zoomFactor*(1+amount);
-                    var zoomDelta=zoomFactorNew-zoomFactor;
+                    var zoomFactorNew = zoomFactor * (1 + amount);
+                    var zoomDelta = zoomFactorNew - zoomFactor;
                     if (zoomFactorNew < settings.ZOOM_MIN) {
                         return;
                     }
@@ -141,7 +138,7 @@
                     offsetY -= zoomDelta * (svgCoords.y + offsetY) / zoomFactor;
                     this._updateTransform();
                 };
-                this.getZoom=function(){
+                this.getZoom = function () {
                     return zoomFactor;
                 };
                 this.scroll = function (dx, dy) {
@@ -164,15 +161,15 @@
                     return ans;
                 };
 
-                this.setHoverText = function(str){
+                this.setHoverText = function (str) {
                     document.getElementById("hoverdiv").innerText = str;
                 };
-                this.setHoverLocation = function(x,y){
+                this.setHoverLocation = function (x, y) {
                     document.getElementById("hoverdiv").style.left = x + "px";
                     document.getElementById("hoverdiv").style.top = y + 10 + "px";
                 };
-                this.setHoverVisible = function(vis){
-                    document.getElementById("hoverdiv").style.visibility = vis?"visible":"hidden";
+                this.setHoverVisible = function (vis) {
+                    document.getElementById("hoverdiv").style.visibility = vis ? "visible" : "hidden";
                 }
 
                 var svg = document.getElementById("viz");
@@ -207,16 +204,15 @@
                 svg.addEventListener("mouseup", function (e) {
                     isPanning = false;
                 });
-                
+
             }
         </script>
     </head>
 
     <body onload="onload()">
         <div id="displayPanel">
-            <div id="displayPanelName"></div>
-            <br/>
-            <div id="displayServices"></div>
+            <div id="displayName"></div>
+            <div id="treeMenu"></div>
         </div>
         <div id="hoverdiv"></div>
         <svg id="viz">

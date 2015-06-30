@@ -27,3 +27,16 @@ body{
     height: 100%;
     margin-top:0px;
 }
+
+.treeMenu{
+    margin-left:15px;
+}
+
+#displayName{
+    text-align: center;
+    visibility: visible;
+    padding: 7px;
+    width: content-box;
+    font-size: 180%;
+    
+}
