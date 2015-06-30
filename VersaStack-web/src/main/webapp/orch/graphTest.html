@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html style="width:100%; height: 100%">
+    <head>
+        <meta charset="utf-8">
+        <title>Test</title>
+        <link rel="stylesheet" type="text/css" href="/VersaStack-web/css/graphTest.css">
+        <script>
+            //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
+            dojoConfig = {
+                has: {
+                    "dojo-firebug": true,
+                    "dojo-debug-messages": true
+                },
+                async: true,
+                parseOnLoad: true,
+                packages: [
+                    {
+                        name: "d3",
+                        location: "//d3js.org/",
+                        main: "d3.v3"
+                    },
+                    {
+                        name: "local",
+                        location: "/VersaStack-web/js/"
+                    }
+                ]
+            };
+        </script>
+        <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
+
+        <script type="text/javascript">
+
+            var settings = {
+                ZOOM_FACTOR: .02,
+                ZOOM_MIN: .2, //As we zoom further out, there is increasing error in the correction pan
+                INIT_ZOOM: 4  //Staring zoomed in allows a larger effective zoomout given our ZOOM_MIN
+            };
+            var model;
+            var layout;
+            var render;
+            var d3;
+            var utils;
+
+            function onload() {
+                require(["local/versastack/topology/model",
+                    "local/versastack/topology/layout",
+                    "local/versastack/topology/render",
+                    "local/d3",
+                    "local/versastack/utils"],
+                        function (m, l, r, d3_, utils_) {
+                            model = m;
+                            model.init(drawGraph);
+                            layout = l;
+                            render = r;
+                            d3 = d3_;
+                            utils = utils_;
+                            map_ = utils.map_;
+                        });
+            }
+            function drawGraph() {
+                var nodeList = model.listNodes();
+                var edgeList = model.listEdges();
+                var width = document.documentElement.clientWidth/settings.INIT_ZOOM;
+                var height = document.documentElement.clientHeight/settings.INIT_ZOOM;
+                //TODO, figure out why we need to call this twice
+                //If we do not, the layout does to converge as nicely, even if we double the number of iterations
+                layout.doLayout(nodeList, edgeList, width, height);
+                layout.doLayout(nodeList, edgeList, width, height);
+
+
+                render.doRender(new outputApi(), model);
+//                animStart(30);
+
+            }
+
+            //animStart and animStop are primarily intended as debug functions
+            //They can be used to see how the layout engine behaves, and restore
+            //a sane layout it it has been messed up.
+            var animIntervalId;
+            function animStart(rate){
+                animStop();
+                animIntervalId=setInterval(function(){
+                    layout.tick();
+                    render.redraw();
+                },rate);
+            }
+            function animStop(){
+                clearInterval(animIntervalId);
+            }
+
+            function outputApi() {
+                var that = this;
+                this.getSvgContainer = function () {
+                    return d3.select("#viz");
+                };
+                this.panelClear=function(){
+                    this.setActiveName("");
+                    this.setServices([]);
+                };
+                this.setActiveName = function (str) {
+                    document.getElementById("displayPanelName").innerText = "Name: " + str;
+                };
+                this.setServices = function (arr) {
+                    var container = document.getElementById("displayServices");
+                    utils.deleteAllChildNodes(container);
+                    map_(arr, function (str) {
+                        container.appendChild(document.createTextNode("Service: " + str));
+                        container.appendChild(document.createElement('br'));
+                    });
+                };
+
+                var zoomFactor = settings.INIT_ZOOM;
+                var offsetX = 0, offsetY = 0;
+                this.zoom = function (amount, mouseX, mouseY) {
+                    /*
+                     * There seems to be some error (rounding?) when we zoom far out
+                     * 
+                     * In addition to zooming, we also translate the image so that the point under the cursor appears stationary.
+                     * To understand this conversion, there are two coordinate systems to consdier:
+                     *      the svg coordinate system (in which all svg objects are stationary throughout the translation), and
+                     *      the mouse coordinate system, that corresponds to what we see
+                     *      
+                     *       The conversion (along a single axis) between these two systems is given by:
+                     *       X_mouse=zoomFactor*(X_svg + offsetX)
+                     *       To find the new offset, after increasing zoomFactor by zoomDelta, we solve:
+                     *         zoomFactor*(X_svg + offsetX)=(zoomFactor+zoomDelta)*(X_svg + (offsetX+doX))
+                     *        for doX.
+                     *        the new offset is now offsetX+doX
+                     *        
+                     */
+                    var zoomFactorNew=zoomFactor*(1+amount);
+                    var zoomDelta=zoomFactorNew-zoomFactor;
+                    if (zoomFactorNew < settings.ZOOM_MIN) {
+                        return;
+                    }
+                    zoomFactor = zoomFactorNew;
+                    //Translate so that the point under the mouse does not move
+                    //get the svg coordinate of the mouse
+                    var svgCoords = this.convertCoords(mouseX, mouseY);
+                    offsetX -= zoomDelta * (svgCoords.x + offsetX) / zoomFactor;
+                    offsetY -= zoomDelta * (svgCoords.y + offsetY) / zoomFactor;
+                    this._updateTransform();
+                };
+                this.getZoom=function(){
+                    return zoomFactor;
+                };
+                this.scroll = function (dx, dy) {
+                    offsetX += dx / zoomFactor;
+                    offsetY += dy / zoomFactor;
+                    this._updateTransform();
+                };
+
+                this._updateTransform = function () {
+                    d3.select("#transform").
+                            attr("transform", "scale(" + zoomFactor + ")translate(" + offsetX + "," + offsetY + ")");
+                };
+                this._updateTransform();
+                //Return the svg coordinates of the point under the given mouse coords
+                //The mouseCoords should be from event.offsetX (offsetY)
+                this.convertCoords = function (mouseX, mouseY) {
+                    var ans = {};
+                    ans.x = mouseX / zoomFactor - offsetX;
+                    ans.y = mouseY / zoomFactor - offsetY;
+                    return ans;
+                };
+
+                this.setHoverText = function(str){
+                    document.getElementById("hoverdiv").innerText = str;
+                };
+                this.setHoverLocation = function(x,y){
+                    document.getElementById("hoverdiv").style.left = x + "px";
+                    document.getElementById("hoverdiv").style.top = y + 10 + "px";
+                };
+                this.setHoverVisible = function(vis){
+                    document.getElementById("hoverdiv").style.visibility = vis?"visible":"hidden";
+                }
+
+                var svg = document.getElementById("viz");
+                svg.addEventListener("mousewheel", function (e) {
+                    e.preventDefault();
+                    //The OSX trackpad seems to produce scrolls two orders of magnitude large when using pinch to zoom,
+                    //so we ignore the magnitude entirely
+                    that.zoom(Math.sign(e.wheelDeltaY) * settings.ZOOM_FACTOR, e.offsetX, e.offsetY);
+                    return false;
+                }, false);
+
+                //Panning
+                //d3 does not seem to provide a way for us to avoid capturing mouse events that are handled by nodes
+                //This means that our panning code will be called even when the user is only trying to move a node
+                //as a work around, we provide a way to enable/disable panning
+                var panningEnabled = true;
+                var isPanning = false;
+                this.enablePanning = function () {
+                    panningEnabled = true;
+                };
+                this.disablePanning = function () {
+                    panningEnabled = false;
+                };
+                svg.addEventListener("mousedown", function (e) {
+                    isPanning = true;
+                });
+                svg.addEventListener("mousemove", function (e) {
+                    if (isPanning && panningEnabled) {
+                        that.scroll(e.movementX, e.movementY);
+                    }
+                });
+                svg.addEventListener("mouseup", function (e) {
+                    isPanning = false;
+                });
+                
+            }
+        </script>
+    </head>
+
+    <body onload="onload()">
+        <div id="displayPanel">
+            <div id="displayPanelName"></div>
+            <br/>
+            <div id="displayServices"></div>
+        </div>
+        <div id="hoverdiv"></div>
+        <svg id="viz">
+        <!--We nest a g in here because the svg tag itself cannot do transforms
+            we separate topologies, edges, and nodes to create an explicit z-order
+        -->
+        <g id="transform">
+        <g id="topology"/>
+        <g id="edge"/>
+        <g id="anchor"/>
+        <g id="node"/>
+        </g>
+        </svg>
+    </body>
+</html>
