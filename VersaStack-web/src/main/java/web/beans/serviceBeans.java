@@ -15,10 +15,10 @@ import java.util.logging.Logger;
 public class serviceBeans {
 
     private static final Logger logger = Logger.getLogger(serviceBeans.class.getName());
-    String login_db_user = "root";
-    String login_db_pass = "takehaya";
-    String front_db_user = "root";
-    String front_db_pass = "takehaya";
+    String login_db_user = "login_view";
+    String login_db_pass = "loginuser";
+    String front_db_user = "front_view";
+    String front_db_pass = "frontuser";
     String host = "http://localhost:8080/VersaStack-web/restapi/";
 
     public serviceBeans() {
