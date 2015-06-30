@@ -291,7 +291,7 @@ public class userBeans {
 
     // Update
     public void update(String username, String pass, String first_name,
-            String last_name, String email) {
+            String last_name, String email, String activegroup) {
         try {
             if (!pass.isEmpty()) {
                 pass = pass.trim();
@@ -357,6 +357,12 @@ public class userBeans {
                 prep.setString(2, username);
                 prep.executeUpdate();
             }
+
+            PreparedStatement prep = front_conn.prepareStatement("UPDATE Frontend.user_info SET `active_usergroup` = ? WHERE `username` = ?");
+            prep.setString(1, activegroup);
+            prep.setString(2, username);
+            prep.executeUpdate();
+
         } catch (ClassNotFoundException | SQLException | InstantiationException | IllegalAccessException ex) {
             Logger.getLogger(userBeans.class.getName()).log(Level.SEVERE, null, ex);
             throw new IllegalStateException("Cannot log_connect the database!", ex);

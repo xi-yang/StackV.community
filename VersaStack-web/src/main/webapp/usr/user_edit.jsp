@@ -47,7 +47,7 @@
                 <div id="user-overview">
                     <c:choose>
                         <c:when test="${user.isAllowed(1) == true || user.id == param.user_id}">
-                            <sql:query dataSource="${front_conn}" sql="SELECT first_name, last_name, username, email FROM user_info I WHERE I.user_id = ?" var="users">
+                            <sql:query dataSource="${front_conn}" sql="SELECT first_name, last_name, username, email, active_usergroup FROM user_info I WHERE I.user_id = ?" var="users">
                                 <sql:param value="${param.user_id}" />
                             </sql:query>
                             <c:forEach var="edit_user" items="${users.rows}">
@@ -86,6 +86,27 @@
                                             <tr>
                                                 <td><b>Confirm Password</b></td>
                                                 <td><input placeholder='********' type='password' id="password2" size="40" maxlength="20" /></td>
+                                            </tr>
+                                            <tr>
+                                                <sql:query dataSource="${front_conn}" sql="SELECT G.usergroup_id, G.title FROM usergroup G, user_belongs B 
+                                                           WHERE G.usergroup_id = B.usergroup_id AND B.user_id = ?" var="ugroups">
+                                                    <sql:param value="${param.user_id}" />
+                                                </sql:query>
+                                                <td><b>Active Usergroup</b></td>
+                                                <td>
+                                                    <select name="activegroup">
+                                                        <c:forEach var="ugroup" items="${ugroups.rows}">
+                                                            <c:choose>
+                                                                <c:when test="${ugroup.usergroup_id == edit_user.active_usergroup}">
+                                                                    <option value="${ugroup.usergroup_id}" selected>${ugroup.title}</option>
+                                                                </c:when>
+                                                                <c:otherwise>
+                                                                    <option value="${ugroup.usergroup_id}">${ugroup.title}</option>
+                                                                </c:otherwise>
+                                                            </c:choose>
+                                                        </c:forEach>
+                                                    </select>
+                                                </td>
                                             </tr>
                                             <tr>
                                                 <td></td>

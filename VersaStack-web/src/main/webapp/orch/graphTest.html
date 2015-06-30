@@ -2,8 +2,22 @@
 <html style="width:100%; height: 100%">
     <head>
         <meta charset="utf-8">
-        <title>Test</title>
+        <title>Orchestration</title>
+        <script src="/VersaStack-web/js/jquery/jquery.js"></script>
+
         <link rel="stylesheet" type="text/css" href="/VersaStack-web/css/graphTest.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
+        <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
+        <link rel="stylesheet" href="/VersaStack-web/css/bootstrap.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/style.css">       
+
+        <script>
+            $(document).ready(function () {
+                $("#nav").load("/VersaStack-web/navbar.html");
+            });
+        </script> 
+
         <script>
             //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
             dojoConfig = {
@@ -60,8 +74,8 @@
             function drawGraph() {
                 var nodeList = model.listNodes();
                 var edgeList = model.listEdges();
-                var width = document.documentElement.clientWidth/settings.INIT_ZOOM;
-                var height = document.documentElement.clientHeight/settings.INIT_ZOOM;
+                var width = document.documentElement.clientWidth / settings.INIT_ZOOM;
+                var height = document.documentElement.clientHeight / settings.INIT_ZOOM;
                 //TODO, figure out why we need to call this twice
                 //If we do not, the layout does to converge as nicely, even if we double the number of iterations
                 layout.doLayout(nodeList, edgeList, width, height);
@@ -77,14 +91,14 @@
             //They can be used to see how the layout engine behaves, and restore
             //a sane layout it it has been messed up.
             var animIntervalId;
-            function animStart(rate){
+            function animStart(rate) {
                 animStop();
-                animIntervalId=setInterval(function(){
+                animIntervalId = setInterval(function () {
                     layout.tick();
                     render.redraw();
-                },rate);
+                }, rate);
             }
-            function animStop(){
+            function animStop() {
                 clearInterval(animIntervalId);
             }
 
@@ -93,7 +107,7 @@
                 this.getSvgContainer = function () {
                     return d3.select("#viz");
                 };
-                this.panelClear=function(){
+                this.panelClear = function () {
                     this.setActiveName("");
                     this.setServices([]);
                 };
@@ -128,8 +142,8 @@
                      *        the new offset is now offsetX+doX
                      *        
                      */
-                    var zoomFactorNew=zoomFactor*(1+amount);
-                    var zoomDelta=zoomFactorNew-zoomFactor;
+                    var zoomFactorNew = zoomFactor * (1 + amount);
+                    var zoomDelta = zoomFactorNew - zoomFactor;
                     if (zoomFactorNew < settings.ZOOM_MIN) {
                         return;
                     }
@@ -141,7 +155,7 @@
                     offsetY -= zoomDelta * (svgCoords.y + offsetY) / zoomFactor;
                     this._updateTransform();
                 };
-                this.getZoom=function(){
+                this.getZoom = function () {
                     return zoomFactor;
                 };
                 this.scroll = function (dx, dy) {
@@ -164,15 +178,15 @@
                     return ans;
                 };
 
-                this.setHoverText = function(str){
+                this.setHoverText = function (str) {
                     document.getElementById("hoverdiv").innerText = str;
                 };
-                this.setHoverLocation = function(x,y){
+                this.setHoverLocation = function (x, y) {
                     document.getElementById("hoverdiv").style.left = x + "px";
                     document.getElementById("hoverdiv").style.top = y + 10 + "px";
                 };
-                this.setHoverVisible = function(vis){
-                    document.getElementById("hoverdiv").style.visibility = vis?"visible":"hidden";
+                this.setHoverVisible = function (vis) {
+                    document.getElementById("hoverdiv").style.visibility = vis ? "visible" : "hidden";
                 }
 
                 var svg = document.getElementById("viz");
@@ -207,16 +221,21 @@
                 svg.addEventListener("mouseup", function (e) {
                     isPanning = false;
                 });
-                
+
             }
         </script>
     </head>
 
     <body onload="onload()">
+        <!-- NAV BAR -->
+        <div id="nav">
+        </div>
         <div id="displayPanel">
-            <div id="displayPanelName"></div>
-            <br/>
-            <div id="displayServices"></div>
+            <div id="displayPanel-contents">
+                <div id="displayPanelName"></div>
+                <br/>
+                <div id="displayServices"></div>
+            </div>
         </div>
         <div id="hoverdiv"></div>
         <svg id="viz">
@@ -230,5 +249,7 @@
         <g id="node"/>
         </g>
         </svg>
+
     </body>
+
 </html>

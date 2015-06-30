@@ -282,14 +282,18 @@ body {
     background-color: #d0d0d0;
     text-align: left;
     position: absolute;
-    margin-top: 37px;
-    margin-left: 0px;
     width: 225px;
     text-decoration: none;
 }
 
+#sidebar-contents {
+    margin-top: 37px;
+    margin-left: 0px;
+}
+
 #nav {
     position: relative;
+    z-index: 2;
     width: 100%;
     float: left;
     margin: 0 0 0 0;
@@ -322,7 +326,7 @@ body {
 
 #main-pane {
     height: 100%;
-    margin-left: 220px;
+    margin-left: 210px;
     padding: 10px;
     padding-top: 57px;
     border-left: 20px solid rgba(0, 0, 0, .05);
