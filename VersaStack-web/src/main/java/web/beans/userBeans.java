@@ -384,4 +384,25 @@ public class userBeans {
 
         return digest_str;
     }
+   
+    private void refreshACL() throws SQLException {
+        service_list.clear();
+        
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:8889/Frontend",
+                front_connectionProps);
+
+        service_list = new ArrayList<>();
+        PreparedStatement prep = front_conn.prepareStatement("SELECT DISTINCT A.service_id FROM acl A JOIN acl_entry_group G, acl_entry_user U WHERE"
+                + "(A.acl_id = G.acl_id AND G.usergroup_id = ?) OR (A.acl_id = U.acl_id AND U.user_id = ?)");
+        prep.setString(1, active_usergroup);
+        prep.setString(2, id);
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {
+            service_list.add(rs1.getInt("service_id"));
+        }
+    }
 }

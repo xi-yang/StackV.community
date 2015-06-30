@@ -40,7 +40,7 @@
                 <sql:query dataSource="${front_conn}" sql="SELECT DISTINCT S.name, S.description FROM service S JOIN acl A, acl_entry_group G, acl_entry_user U 
                            WHERE S.service_id > 4 AND A.service_id = S.service_id 
                            AND ((A.acl_id = G.acl_id AND G.usergroup_id = ?) OR (A.acl_id = U.acl_id AND U.user_id = ?))" var="servlist">
-                    <sql:param value="${user.getUsergroup()}" />
+                    <sql:param value="${user.getActiveUsergroup()}" />
                     <sql:param value="${user.getId()}" />
                 </sql:query>
                 

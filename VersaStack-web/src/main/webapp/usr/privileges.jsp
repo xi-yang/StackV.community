@@ -107,7 +107,7 @@
 
                 <sql:query dataSource="${front_conn}" sql="SELECT I.user_id, I.username, I.first_name, I.last_name, I.active_usergroup, G.title 
                            FROM user_info I, acl A, acl_entry_user U, usergroup G 
-                           WHERE I.user_id = U.user_id AND U.acl_id = A.acl_id AND I.usergroup_id = G.usergroup_id AND A.service_id = ?" var="userlist">
+                           WHERE I.user_id = U.user_id AND U.acl_id = A.acl_id AND I.active_usergroup = G.usergroup_id AND A.service_id = ?" var="userlist">
                     <sql:param value="${param.id}"/>
                 </sql:query>
 
