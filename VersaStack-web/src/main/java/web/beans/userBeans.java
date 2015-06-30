@@ -17,12 +17,12 @@ import java.util.logging.Logger;
 
 public class userBeans {
 
-    String login_db_user = "root";
-    String login_db_pass = "takehaya";
-    String reg_db_user = "root";
-    String reg_db_pass = "takehaya";
-    String front_db_user = "root";
-    String front_db_pass = "takehaya";
+    String login_db_user = "login_view";
+    String login_db_pass = "loginuser";
+    String reg_db_user = "login_view";
+    String reg_db_pass = "loginuser";
+    String front_db_user = "front_view";
+    String front_db_pass = "frontuser";
 
     String username = "";
     String firstName = "";

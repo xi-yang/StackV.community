@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost:8889
--- Generation Time: Jun 15, 2015 at 04:16 PM
+-- Generation Time: Jun 29, 2015 at 07:17 PM
 -- Server version: 5.5.42
 -- PHP Version: 5.6.7
 
@@ -22,6 +22,7 @@ USE `frontend`;
 -- Table structure for table `acl`
 --
 
+DROP TABLE IF EXISTS `acl`;
 CREATE TABLE `acl` (
   `acl_id` int(11) NOT NULL,
   `service_id` int(11) NOT NULL
@@ -46,6 +47,7 @@ INSERT INTO `acl` (`acl_id`, `service_id`) VALUES
 -- Table structure for table `acl_entry_group`
 --
 
+DROP TABLE IF EXISTS `acl_entry_group`;
 CREATE TABLE `acl_entry_group` (
   `acl_id` int(11) NOT NULL,
   `usergroup_id` int(11) NOT NULL
@@ -63,7 +65,8 @@ INSERT INTO `acl_entry_group` (`acl_id`, `usergroup_id`) VALUES
 (5, 1),
 (6, 1),
 (7, 1),
-(2, 2);
+(2, 2),
+(3, 2);
 
 -- --------------------------------------------------------
 
@@ -71,6 +74,7 @@ INSERT INTO `acl_entry_group` (`acl_id`, `usergroup_id`) VALUES
 -- Table structure for table `acl_entry_user`
 --
 
+DROP TABLE IF EXISTS `acl_entry_user`;
 CREATE TABLE `acl_entry_user` (
   `acl_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL
@@ -81,8 +85,8 @@ CREATE TABLE `acl_entry_user` (
 --
 
 INSERT INTO `acl_entry_user` (`acl_id`, `user_id`) VALUES
-(1, 3),
-(3, 6);
+(2, 1),
+(5, 8);
 
 -- --------------------------------------------------------
 
@@ -90,6 +94,7 @@ INSERT INTO `acl_entry_user` (`acl_id`, `user_id`) VALUES
 -- Table structure for table `service`
 --
 
+DROP TABLE IF EXISTS `service`;
 CREATE TABLE `service` (
   `service_id` int(11) NOT NULL,
   `name` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
@@ -104,10 +109,35 @@ INSERT INTO `service` (`service_id`, `name`, `description`) VALUES
 (1, 'User Management', 'Administrative Management Functions.'),
 (2, 'Provisioning', 'System and Topology Overviews.'),
 (3, 'Orchestration', 'Manipulation of the System Model.'),
-(4, 'Example', 'Test.'),
-(5, 'Connection', ''),
+(4, 'Monitoring', 'System Monitoring and Logging'),
+(5, 'Example', 'Test.'),
 (6, 'Property Addition', ''),
 (7, 'Plug-in Driver', '');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_belongs`
+--
+
+DROP TABLE IF EXISTS `user_belongs`;
+CREATE TABLE `user_belongs` (
+  `user_id` int(11) NOT NULL,
+  `usergroup_id` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Dumping data for table `user_belongs`
+--
+
+INSERT INTO `user_belongs` (`user_id`, `usergroup_id`) VALUES
+(1, 1),
+(7, 1),
+(8, 1),
+(15, 1),
+(1, 2),
+(3, 2),
+(14, 2);
 
 -- --------------------------------------------------------
 
@@ -115,24 +145,27 @@ INSERT INTO `service` (`service_id`, `name`, `description`) VALUES
 -- Table structure for table `user_info`
 --
 
+DROP TABLE IF EXISTS `user_info`;
 CREATE TABLE `user_info` (
   `user_id` int(11) NOT NULL,
   `username` varchar(20) COLLATE utf8_unicode_ci NOT NULL,
   `email` varchar(45) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `usergroup_id` int(11) DEFAULT '2',
+  `active_usergroup` int(11) DEFAULT '2',
   `first_name` varchar(20) COLLATE utf8_unicode_ci NOT NULL,
   `last_name` varchar(20) COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Dumping data for table `user_info`
 --
 
-INSERT INTO `user_info` (`user_id`, `username`, `email`, `usergroup_id`, `first_name`, `last_name`) VALUES
+INSERT INTO `user_info` (`user_id`, `username`, `email`, `active_usergroup`, `first_name`, `last_name`) VALUES
 (1, 'admin', 'neroczan@gmail.com', 1, 'Alberto', 'Jimenez'),
 (3, 'test', 'test@test.com', 2, 'Daikoku', 'Ten'),
-(6, 'test3', 'roger@moore.com', 2, 'Roger', 'Moore'),
-(7, 'test2', 'james@frolick.com', 1, 'James', 'Frolick');
+(7, 'test2', 'james@frolick.com', 1, 'James', 'Frolick'),
+(8, 'test5', 'jim@jenson.edu', 2, 'Jim', 'Jenson'),
+(14, 'test3', 'roger@moore.com', 2, 'Roger', 'Moore'),
+(15, 'test4', 'marc@aur.com', 1, 'Marcus', 'Aurelius');
 
 -- --------------------------------------------------------
 
@@ -140,6 +173,7 @@ INSERT INTO `user_info` (`user_id`, `username`, `email`, `usergroup_id`, `first_
 -- Table structure for table `usergroup`
 --
 
+DROP TABLE IF EXISTS `usergroup`;
 CREATE TABLE `usergroup` (
   `usergroup_id` int(11) NOT NULL,
   `title` varchar(25) COLLATE utf8_unicode_ci NOT NULL
@@ -186,12 +220,19 @@ ALTER TABLE `service`
   ADD PRIMARY KEY (`service_id`);
 
 --
+-- Indexes for table `user_belongs`
+--
+ALTER TABLE `user_belongs`
+  ADD PRIMARY KEY (`user_id`,`usergroup_id`),
+  ADD KEY `user_belongs-usergroup_idx` (`usergroup_id`);
+
+--
 -- Indexes for table `user_info`
 --
 ALTER TABLE `user_info`
   ADD PRIMARY KEY (`user_id`),
   ADD UNIQUE KEY `username` (`username`),
-  ADD KEY `user_info-usergroup_idx` (`usergroup_id`);
+  ADD KEY `user_info-usergroup_idx` (`active_usergroup`);
 
 --
 -- Indexes for table `usergroup`
@@ -218,7 +259,7 @@ ALTER TABLE `service`
 -- AUTO_INCREMENT for table `user_info`
 --
 ALTER TABLE `user_info`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=8;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=16;
 --
 -- AUTO_INCREMENT for table `usergroup`
 --
@@ -249,10 +290,17 @@ ALTER TABLE `acl_entry_user`
   ADD CONSTRAINT `acl_entry_user-user_info` FOREIGN KEY (`user_id`) REFERENCES `user_info` (`user_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 --
+-- Constraints for table `user_belongs`
+--
+ALTER TABLE `user_belongs`
+  ADD CONSTRAINT `user_belongs-usergroup` FOREIGN KEY (`usergroup_id`) REFERENCES `usergroup` (`usergroup_id`) ON DELETE CASCADE ON UPDATE NO ACTION,
+  ADD CONSTRAINT `user_belongs-user_info` FOREIGN KEY (`user_id`) REFERENCES `user_info` (`user_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
+
+--
 -- Constraints for table `user_info`
 --
 ALTER TABLE `user_info`
-  ADD CONSTRAINT `user_info-usergroup` FOREIGN KEY (`usergroup_id`) REFERENCES `usergroup` (`usergroup_id`) ON DELETE SET NULL ON UPDATE NO ACTION;
+  ADD CONSTRAINT `user_info-usergroup` FOREIGN KEY (`active_usergroup`) REFERENCES `usergroup` (`usergroup_id`) ON DELETE SET NULL ON UPDATE NO ACTION;
 --
 -- Database: `login`
 --
@@ -265,6 +313,7 @@ USE `login`;
 -- Table structure for table `cred`
 --
 
+DROP TABLE IF EXISTS `cred`;
 CREATE TABLE `cred` (
   `username` varchar(25) COLLATE utf8_unicode_ci NOT NULL,
   `password_hash` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
@@ -278,8 +327,10 @@ CREATE TABLE `cred` (
 INSERT INTO `cred` (`username`, `password_hash`, `salt`) VALUES
 ('admin', '-974-682329-118-94902114-95-10079105-87-3333121-41-72-14-58-2791-16884139-66-57-2126', 'kXaRVWM1YHHtn9fM'),
 ('test', '5110866491678-43680-84-122-656466-76781181-107-63-1117943-2-99-9491611111117127', 'hujepei844nfh079f54gkp489oeafv3juk2s1khemeqqldglvm7smbcnlmku8lmj'),
-('test2', '108-5035-483-564522-3572-60-539-120-69-1211-25-89103157717-8942-121-15-45108-1761-8', 'gfv6pd666idq41qd28ostqfqs477isdgscc7u73fictinglrrtpbfpkgueb9bvij'),
-('test3', '-102-29-103-328-7472-72-9242-63-60115-6979-101-62589770-8212611531-7705417-9631726', 'fk8pu3cfp532qmjrbd20stf89qjcj6snca4jpt1qflk8k40o67f2bccl0ji0srif');
+('test2', '49-81118-81-92-6-5786-19923576-18-1227210071-18-59101-33-504370-10847-77-9-127-105-7-62', 'qdd85hqc3ev0e4ktgjlmf55m6mebsgjhuk3lg7n7tpcqgshpg50p4vnjmn13iil6'),
+('test3', '-23115-111-9783-10410828-65458325465119-1149489-11411749-15-42-125329-11994-122-94-58-25', '97hpe70nmh5dcp4nvnrc5lrk2qa3pp568f8n2vjgkc2b74265ga2eh5v9550pe4'),
+('test4', '-117-12655-85539997-740-97-9937-703961-112-64-2217368-16119-319423-30-36122-93-13-21', 'aii31mao4uo88travlv6umidd58e4iarvqmadeft50ou8m1ts92973ugupqtrf2v'),
+('test5', '-94-706-1254533-21-39-39-755623012-76-53-60960-699-4387-10-5089-19-27-38204127', 'nm9r2qm2rr1guqkhrkk8su3bck8as03oouig5c6gad8ep4b4frhpcq94sf4635jt');
 
 --
 -- Indexes for dumped tables
