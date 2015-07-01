@@ -21,7 +21,7 @@ define([
                 //Every node automatically indents itself.
                 //In the case of the root node, this is undesired, so we apply 
                 //an opposite indent to counteract it.
-                toAppend.style.marginLeft="-15px";
+//                toAppend.style.marginLeft="-15px";
                 that.containerDiv.appendChild(toAppend);
             });
         };
