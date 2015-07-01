@@ -36,9 +36,9 @@ define([
            text.onclick = function(){
                isExpanded = !isExpanded;
                
-               var vis=isExpanded?"visible":"hidden";
+               var disp=isExpanded?"inherit":"none";
                map_(childNodes,function(child){
-                   child.style.visibility=vis;
+                   child.style.display=disp;
                });
                text.innerText=_getText();
            };

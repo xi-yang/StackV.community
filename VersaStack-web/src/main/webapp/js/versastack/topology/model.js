@@ -16,14 +16,14 @@
  *   that involved a desecendent of said Node will be redirected to said Node when
  *   in the output of listEdges.
  */
-
 "use strict";
 define([
     "local/versastack/utils",
     "local/versastack/topology/Node",
     "local/versastack/topology/Edge",
+    "local/versastack/topology/Port",
     "local/versastack/topology/modelConstants"
-], function (utils,Node,Edge,values) {
+], function (utils,Node,Edge,Port,values) {
     var map_ = utils.map_;
     var rootNodes = [];
 
@@ -130,6 +130,8 @@ define([
                             map_(ports, function (portKey) {
                                 portKey = portKey.value;
                                 var port = map[portKey];
+                                port.name=portKey;
+                                node.ports.push(new Port(port,map));
                                 port.node = node;
                                 if (!port.processed && values.isAlias in port) {
                                     var aliasPortKey = port[values.isAlias][0].value;

@@ -26,7 +26,8 @@ define([
             });
         };
         
-        this.makeRoot=function(name){
+        //We use the same method name as DropDownNode.addChild to enable polymorphism
+        this.addChild=function(name){
             var ans=new DropDownNode(name);
             this.rootNodes.push(ans);
             return ans;

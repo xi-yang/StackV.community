@@ -340,13 +340,8 @@ define([
             /**@type {DropDownTree} displayTree**/
             var displayTree = outputApi.getDisplayTree();
             displayTree.clear();
-            /**@type {DropDownNode} serviceSubmenu**/
-            if (n.services && n.services.length>0) {
-                var serviceSubmenu = displayTree.makeRoot("services");
-                map_(n.services, function (service) {
-                    serviceSubmenu.addChild(service.getTypeBrief())
-                });
-            }
+            
+            n.populateTreeMenu(displayTree);
             displayTree.draw();
             selectedNode = n;
         }

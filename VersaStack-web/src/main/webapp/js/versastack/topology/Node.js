@@ -32,6 +32,7 @@ define(["local/versastack/topology/modelConstants",
                 this.svgNodeAnchor=null;//For topologies
                 this.svgNodeServices=null;
                 this.services = [];
+                this.ports=[];
                 this.x=0;
                 this.y=0;
                 this.size=0;
@@ -202,6 +203,22 @@ define(["local/versastack/topology/modelConstants",
                 };
                 this.getType=function(){
                     return this.isLeaf()?"Node":"Topology";
+                };
+            
+                this.populateTreeMenu=function(tree){
+                    if(this.services.length>0){
+                        var serviceNode=tree.addChild("Services");
+                        map_(this.services,function(service){
+                            service.populateTreeMenu(serviceNode);
+                        })
+                    }
+                    if(this.ports.length>0){
+                        var portsNode=tree.addChild("Ports");
+                        map_(this.ports,function(port){
+                            port.populateTreeMenu(portsNode);
+                        });
+                    }
+                    
                 };
             }
 

@@ -64,6 +64,10 @@ define(["local/versastack/topology/modelConstants"], function (values) {
         this.getType=function(){
             return "Service";
         };
+        
+        this.populateTreeMenu=function(tree){
+            tree.addChild(this.getTypeBrief());
+        };
     }
     return Service;
 });
