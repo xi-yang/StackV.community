@@ -14,7 +14,7 @@
 <html >    
     <head>   
         <meta charset="UTF-8">
-        <title>Driver Service></title>
+        <title>Driver Service</title>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
 
@@ -35,11 +35,10 @@
         <!-- MAIN PANEL -->
         <div id="main-pane">
             <c:choose>                
-                <c:when test="${param.ret != 'sub'}">
-                   
+                <c:when test="${empty param.sub && empty param.ret}">                   
                     <div id="service-specific">                
                         <form action="/VersaStack-web/ops/srvc/driver.jsp" method="post">
-                            <input type="hidden" name="ret" value="sub" />
+                            <input type="hidden" name="sub" value="true" />
                             <table class="management-table" id="service-form">                    
                                 <thead>
                                     <tr>
@@ -49,23 +48,57 @@
                                 </thead>
                                 <tbody>                    
                                     <tr>
-                                        <td>Driver ID/Name</td>
-                                        <td><input name="driver-id" type="text" placeholder='Driver ID'/></td>
+                                        <td>Driver Type</td>
+                                        <td>
+                                            <select name="driver_id" required>
+                                                <option></option>
+                                                <option value="stubdriver">Stub</option>
+                                                <option value="awsdriver">AWS</option>
+                                                <option value="versaNSDriver">VersaNS</option>
+                                                <option value="openStackDriver">OpenStack</option>                                                
+                                            </select>
+                                        </td>
                                     </tr>
                                     <tr>
                                         <td></td>
-                                        <td><input id="button-register" name="change" type="submit" value="Submit" /></td>
+                                        <td>
+                                            <input class="button-register" name="install" type="submit" value="Install" />
+                                            <input class="button-register" name="uninstall" type="submit" value="Uninstall" />
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
-
                         </form>
+                    </div>
+                </c:when>
+                
+                <c:when test="${param.sub == 'true'}">
+                    <div id="service-process">
+                        <c:if test="${not empty param.install}">
+                            <c:redirect url="/ops/srvc/driver.jsp?ret=${serv.driverInstall(param.driver_id)}" />
+                        </c:if>
+                        <c:if test="${not empty param.uninstall}">
+                            <c:redirect url="/ops/srvc/driver.jsp?ret=${serv.driverUninstall(param.driver_id)}" />
+                        </c:if>
                     </div>
                 </c:when>
           
                 <c:otherwise>
-                    <div id="service-result">
-                        ${serv.driverInstall(param.driver-id)}
+                    <div class="form-result" id="service-result">
+                        <c:choose>
+                            <c:when test="${param.ret == '0'}">
+                                Success
+                            </c:when>
+                            <c:when test="${param.ret == '1'}">
+                                Invalid Driver ID
+                            </c:when>
+                            <c:when test="${param.ret == '2'}">
+                                Error (Un)Installing Driver
+                            </c:when>
+                            <c:when test="${param.ret == '3'}">
+                                Connection Error
+                            </c:when>
+                        </c:choose>                        
                                                 
                         <br><br><a href="/VersaStack-web/ops/catalog.jsp">Return to Services.</a>
                     </div>

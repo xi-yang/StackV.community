@@ -35,15 +35,6 @@ public class userBeans {
 
     boolean loggedIn = false;
 
-    //@@TEMP
-    public String ret_list() {
-        String ret_string = "Size: " + service_list.size() + ". Elements:";
-        for (Integer serv_id : service_list) {
-            ret_string = ret_string + " " + serv_id;
-        }
-        return ret_string;
-    }
-
     public userBeans() {
 
     }
@@ -68,11 +59,20 @@ public class userBeans {
         return service_list.contains(serv_id);
     }
 
-    // Login
     public boolean isLoggedIn() {
         return loggedIn;
     }
 
+    public void logOut() {
+        loggedIn = false;
+    }
+    
+    /**
+     * Authenticates user against login database.
+     * @param user username
+     * @param pass unencrypted password
+     * @return true if authentication is successful; false otherwise.
+     */
     public boolean login(String user, String pass) {
         user = user.trim();
         pass = pass.trim();
@@ -189,14 +189,18 @@ public class userBeans {
         return loggedIn;
     }
 
-    public void logOut() {
-        loggedIn = false;
-    }
-
-    // Registration
-    /*  Error codes:
-     - 0: success
-     - 3: duplicate username
+    /**
+     * Registers new user into frontend database.
+     * Parameters self-explanatory.
+     * @param user
+     * @param pass
+     * @param first_name
+     * @param last_name
+     * @param usergroup_id
+     * @param email
+     * @return error code:<br />
+     *  0 - success.<br />
+     *  3 - duplicate username.<br />
      */
     public int register(String user, String pass, String first_name,
             String last_name, String usergroup_id, String email) {
@@ -289,7 +293,16 @@ public class userBeans {
         return 0;
     }
 
-    // Update
+    /**
+     * Updates user information. Only processes fields entered.
+     * Parameters self-explanatory.
+     * @param username
+     * @param pass
+     * @param first_name
+     * @param last_name
+     * @param email
+     * @param activegroup 
+     */
     public void update(String username, String pass, String first_name,
             String last_name, String email, String activegroup) {
         try {
@@ -322,6 +335,7 @@ public class userBeans {
                 prep.setString(2, salt);
                 prep.setString(3, username);
                 prep.executeUpdate();
+                password_hash = pass_enc;
 
                 log_conn.close();
             }
@@ -340,6 +354,7 @@ public class userBeans {
                 prep.setString(1, first_name);
                 prep.setString(2, username);
                 prep.executeUpdate();
+                firstName = first_name;
             }
             if (!last_name.isEmpty()) {
                 last_name = last_name.trim();
@@ -348,6 +363,7 @@ public class userBeans {
                 prep.setString(1, last_name);
                 prep.setString(2, username);
                 prep.executeUpdate();
+                lastName = last_name;
             }
             if (!email.isEmpty()) {
                 email = email.trim();
@@ -357,11 +373,14 @@ public class userBeans {
                 prep.setString(2, username);
                 prep.executeUpdate();
             }
-
+            
             PreparedStatement prep = front_conn.prepareStatement("UPDATE Frontend.user_info SET `active_usergroup` = ? WHERE `username` = ?");
             prep.setString(1, activegroup);
             prep.setString(2, username);
             prep.executeUpdate();
+            active_usergroup = activegroup;
+
+            refreshACL();
 
         } catch (ClassNotFoundException | SQLException | InstantiationException | IllegalAccessException ex) {
             Logger.getLogger(userBeans.class.getName()).log(Level.SEVERE, null, ex);
@@ -370,6 +389,15 @@ public class userBeans {
     }
 
     // Utility Functions
+    
+    /**
+     * Encrypts password using SHA-256 salted encryption.
+     * @param pass unencrypted password
+     * @param salt randomly-generated salt
+     * @return encrypted password.
+     * @throws UnsupportedEncodingException
+     * @throws NoSuchAlgorithmException 
+     */
     private static String shaEnc(String pass, String salt) throws UnsupportedEncodingException, NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("SHA-256");
         String salted_password = pass + salt;
@@ -384,10 +412,14 @@ public class userBeans {
 
         return digest_str;
     }
-   
+
+    /**
+     * Refreshes local ACL permissions list.
+     * @throws SQLException 
+     */
     private void refreshACL() throws SQLException {
         service_list.clear();
-        
+
         Connection front_conn;
         Properties front_connectionProps = new Properties();
         front_connectionProps.put("user", front_db_user);

@@ -61,7 +61,7 @@
                                     </tr>
                                     <tr>
                                         <td></td>
-                                        <td><input id="button-register" name="change" type="submit" value="Submit" /></td>
+                                        <td><input class="button-register" name="change" type="submit" value="Submit" /></td>
                                     </tr>
                                 </tbody>
                             </table>

@@ -110,7 +110,7 @@
                                             </tr>
                                             <tr>
                                                 <td></td>
-                                                <td><input id="button-register" name="change" type="submit" value="Submit Changes" /></td>
+                                                <td><input class="button-register" name="change" type="submit" value="Submit Changes" /></td>
                                             </tr>                            
                                         </tbody>
                                     </table>
@@ -118,7 +118,7 @@
                             </c:forEach>
                         </c:when>
                         <c:otherwise>
-                            <div id="registration-result">Operation Not Allowed.<br>
+                            <div class="form-result">Operation Not Allowed.<br>
                             <a href="/VersaStack-web/index.jsp">Return to Home.</a></div>
                         </c:otherwise>
                     </c:choose>
