@@ -286,9 +286,12 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
         }
         //spaModel.remove(listStmtsToRemove);
     }
+    
+    //@TODO: matchingNetwork (VPC or TenantNetwork)
+    //@TODO: matchingSunbet
 
-    //$$ TODO: matchingRegExURIFilter
-    //$$ TODO: hostCapabilityFilter(s)
+    //$$ regExURIFilter
+    //$$ hostCapabilityFilter(s)
     //$$ placeMatchingRegExURI
     //$$ placeWithMultiFilter
 }
