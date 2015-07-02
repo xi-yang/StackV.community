@@ -49,6 +49,10 @@
                         var element = document.getElementById("service3");
                         element.classList.remove("hide");
                     }
+                    if (${user.isAllowed(4)}) {
+                        var element = document.getElementById("service4");
+                        element.classList.remove("hide");
+                    }
                 });
                 $("#nav").load("/VersaStack-web/navbar.html");
             });

@@ -61,7 +61,7 @@
                                     </tr>
                                     <tr>
                                         <td></td>
-                                        <td><input id="button-register" name="change" type="submit" value="Submit" /></td>
+                                        <td><input class="button-register" name="change" type="submit" value="Submit" /></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -93,6 +93,10 @@
                     }
                     if (${user.isAllowed(3)}) {
                         var element = document.getElementById("service3");
+                        element.classList.remove("hide");
+                    }
+                    if (${user.isAllowed(4)}) {
+                        var element = document.getElementById("service4");
                         element.classList.remove("hide");
                     }
                 });

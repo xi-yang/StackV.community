@@ -37,12 +37,13 @@
         <!-- MAIN PANEL -->
         <div id="main-pane">                                   
             <div id="service-overview">
-                <sql:query dataSource="${front_conn}" sql="SELECT DISTINCT S.name, S.description FROM service S JOIN acl A, acl_entry_group G, acl_entry_user U 
-                           WHERE S.service_id > 3 AND A.service_id = S.service_id 
+                <sql:query dataSource="${front_conn}" sql="SELECT DISTINCT S.name, S.filename, S.description FROM service S JOIN acl A, acl_entry_group G, acl_entry_user U 
+                           WHERE S.service_id > 4 AND A.service_id = S.service_id 
                            AND ((A.acl_id = G.acl_id AND G.usergroup_id = ?) OR (A.acl_id = U.acl_id AND U.user_id = ?))" var="servlist">
-                    <sql:param value="${user.getUsergroup()}" />
+                    <sql:param value="${user.getActiveUsergroup()}" />
                     <sql:param value="${user.getId()}" />
                 </sql:query>
+                
                 <table class="management-table" id="service-table">                    
                     <thead>
                         <tr>
@@ -59,7 +60,7 @@
                                 <td>
                                     <jsp:element name="button">
                                         <jsp:attribute name="class">button-service-select</jsp:attribute>
-                                        <jsp:attribute name="id">${service.name}</jsp:attribute>                                           
+                                        <jsp:attribute name="id">${service.filename}</jsp:attribute>                                           
                                         <jsp:body>Select</jsp:body>
                                     </jsp:element>
                                 </td>
@@ -89,11 +90,15 @@
                         var element = document.getElementById("service3");
                         element.classList.remove("hide");
                     }
+                    if (${user.isAllowed(4)}) {
+                        var element = document.getElementById("service4");
+                        element.classList.remove("hide");
+                    }                    
                 });
                 $("#nav").load("/VersaStack-web/navbar.html");
 
                 $(".button-service-select").click(function (evt) {
-                    $ref = "srvc/" + this.id.toLowerCase().replace(" ", "_") + ".jsp #service-specific";
+                    $ref = "srvc/" + this.id.toLowerCase() + ".jsp #service-specific";
                     // console.log($ref);
 
                     $("#service-table").toggleClass("hide");

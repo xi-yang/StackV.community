@@ -24,11 +24,12 @@
                     request.getParameter("password"),
                     request.getParameter("firstname"),
                     request.getParameter("lastname"),
-                    request.getParameter("email"));
+                    request.getParameter("email"),
+                    request.getParameter("activegroup"));
                        
             if (request.getParameter("return").equals("groups")) {                
                 response.sendRedirect("user_groups.jsp?id=" + request.getParameter("group_id"));
-            } else response.sendRedirect("home.jsp");
+            } else response.sendRedirect("/VersaStack-web/home.jsp");
         %>          
     </body>
 </html>
