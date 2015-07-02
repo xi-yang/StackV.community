@@ -21,10 +21,8 @@ define(["local/versastack/topology/modelConstants",
             function Node(backing, map) {
                 this._backing = backing; //the node/topology from the model
                 this.children = [];
-                this.primaryNeighboors = [];
-                this.secondaryNeighboors = [];
                 this.isRoot = true;
-                this.uid = -1;
+                this.uid = i++;
                 this.isFolded = false;
                 this.isVisible = true;
                 this._parent = null;
@@ -65,49 +63,14 @@ define(["local/versastack/topology/modelConstants",
                         child._updateVisible(showChildren);
                     });
                 };
-                this._complete = function () {
-                    this.uid = i++;
-                    map_(this.children, /**@param {Node} child**/function (child) {
-                        child._parent = that;
-                        child._complete();
-                        that.secondaryNeighboors = that.secondaryNeighboors.concat(child.secondaryNeighboors, child.primaryNeighboors);
-                    });
-                    //extract the services that this node has
-                    var services = this._backing[values.hasService];
-                    if (services) {
-                        map_(services, function (service) {
-                            service = map[service.value];
-                            if (!service) {
-                                //service is undefined
-                                console.log("No service: " + service.value);
-                                return;
-                            }
-                            var toAdd = new Service(service, this);
-                            that.services.push(toAdd);
-                        });
-                    }
-                };
                 this._getEdges = function () {
-
                     var ans = [];
-                    map_(this.primaryNeighboors, /**@param {Node} neighboor**/function (neighboor) {
-                        if (neighboor.uid > that.uid) {
-                            var toAdd = new Edge(that, neighboor);
-                            ans.push(toAdd);
-                        }
+                    map_(this.ports,/**@param {Port} port**/ function (port) {
+                        ans=ans.concat(port.getEdges());
                     });
-                    if (this.isFolded) {
-                        map_(this.secondaryNeighboors, /**@param {Node} neighboor**/function (neighboor) {
-                            if (neighboor.uid > that.uid) {
-                                var toAdd = new Edge(that, neighboor);
-                                ans.push(toAdd);
-                            }
-                        });
-                    } else {
-                        map_(this.children, /**@param {Node} child**/function (child) {
-                            ans = ans.concat(child._getEdges());
-                        });
-                    }
+                    map_(this.children,function(child){
+                        ans=ans.concat(child._getEdges()); 
+                    });
                     return ans;
                 };
                 this._getNodes = function () {

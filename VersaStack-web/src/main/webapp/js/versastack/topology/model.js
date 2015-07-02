@@ -20,15 +20,15 @@
 define([
     "local/versastack/utils",
     "local/versastack/topology/Node",
-    "local/versastack/topology/Edge",
     "local/versastack/topology/Port",
+    "local/versastack/topology/Service",
     "local/versastack/topology/modelConstants"
-], function (utils,Node,Edge,Port,values) {
+], function (utils, Node, Port, Service, values) {
     var map_ = utils.map_;
     var rootNodes = [];
 
     //Associates a name with the corresponding backing
-    var map={};
+    var map = {};
     /**
      * Initialize the model. This asyncronasly loads and parsed the model from the backend.
      * @returns {undefined}
@@ -54,6 +54,7 @@ define([
              *  a link to its parent.
              */
             var nodeMap = {};
+            var portMap = {};
             var nodeList = [];
             for (var key in map) {
                 var val = map[key];
@@ -64,23 +65,14 @@ define([
                     switch (type) {
                         case values.topology:
                         case values.node:
-                            var toAdd = new Node(val,map);
+                            var toAdd = new Node(val, map);
                             nodeMap[key] = toAdd;
                             nodeList.push(toAdd);
                             break;
                         case values.bidirectionalPort:
-                            if (values.hasBidirectionalPort in val) {
-                                var subPortKeys = val[values.hasBidirectionalPort];
-                                for (key in subPortKeys) {
-                                    var subPortKey = subPortKeys[key].value;
-                                    var subPort = map[subPortKey];
-                                    if(subPort){
-                                        subPort.parentPort = val;
-                                    }else{
-                                        console.log("Subport does not exist: "+subPortKey);
-                                    }
-                                }
-                            }
+                            var toAdd = new Port(val, map);
+                            portMap[key] = toAdd;
+                            break;
                         case values.namedIndividual://All elements have this
                         case values.switchingService:
                         case values.topopolgySwitchingService:
@@ -114,13 +106,30 @@ define([
                 });
             }
 
-            //We will construct a list of edges
-            //To do this, we first iterate through the ports of each node.
-            //We use the alias of the port to create an edge between ports
-            //We also create a backlink in the port back to the node so that we can later convert the edge into an edge between nodes
-            //To avoid duplicate edges, we mark the alias port as visited, and if we see a visted port, we do not add an edge
-            //This requires that no port has multiple aliases (otherwise we risk missing edges)
-            var edgeList = [];
+            //Complete the ports
+            //  Create aliases between our Port objects
+            //  Associate a port with its children
+            for (var key in portMap) {
+                var port = portMap[key];
+                var port_ = port._backing;
+                var aliasKey = port_[values.isAlias];
+                if (aliasKey) {
+                    var aliasPort = portMap[aliasKey[0].value];
+                    port.alias = aliasPort;
+                    aliasPort.alias = port;
+                }
+                var childrenKeys = port_[values.hasBidirectionalPort];
+                if (childrenKeys) {
+                    map_(childrenKeys, function (childKey) {
+                        var child = portMap[childKey.value];
+                        port.childrenPorts.push(child);
+                        child.parentPort = port;
+                    });
+                }
+            }
+
+            //Associate ports and subnodes with their parent node
+            //Create services
             map_(nodeList, /**@param {Node} node**/function (node) {
                 var node_ = node._backing;
                 for (var key in node_) {
@@ -129,22 +138,9 @@ define([
                             var ports = node_[key];
                             map_(ports, function (portKey) {
                                 portKey = portKey.value;
-                                var port = map[portKey];
-                                port.name=portKey;
-                                node.ports.push(new Port(port,map));
-                                port.node = node;
-                                if (!port.processed && values.isAlias in port) {
-                                    var aliasPortKey = port[values.isAlias][0].value;
-                                    var aliasPort = map[aliasPortKey];
-                                    if(aliasPort){
-                                        var newEdge = {portA: port, portB: aliasPort};
-                                        edgeList.push(newEdge);
-                                        aliasPort.processed = true;
-                                    }else{
-                                        console.log("aliasPort does not exist: "+aliasPortKey);
-                                    }
-                                }
-                                port.processed = true;
+                                var port = portMap[portKey];
+                                node.ports.push(port);
+                                port.setNode(node);
                             });
                             break;
                         case values.hasNode:
@@ -154,13 +150,26 @@ define([
                                 var subNode = nodeMap[subNodeKey.value];
                                 subNode.isRoot = false;
                                 node.children.push(subNode);
+                                subNode._parent=node;
                             });
                             break;
+                        case values.hasService:
+                            var services = node_[values.hasService];
+                            map_(services, function (service) {
+                                service = map[service.value];
+                                if (!service) {
+                                    //service is undefined
+                                    console.log("No service: " + service.value);
+                                    return;
+                                }
+                                var toAdd = new Service(service, node);
+                                node.services.push(toAdd);
+                            });
+                            break
                         case "name":
                         case "isRoot": //This is a key that we added to determine which elements are root in the node/topology tree
                         case "processed":  //This is key that we added to assist in detecting when we fail to handle a case
                         case values.type:
-                        case values.hasService:
                         case values.hasNetworkAddress:
                         case values.provideByService:
                         case values.hasBucket:
@@ -173,43 +182,16 @@ define([
                     }
                 }
             });
-
-
-            //Use the edge information to construct the sibling relationship in the nodes themselves
-            //Because folding changes the edges, we dynamicly re-construct them ondemend in the Node class
-            map_(edgeList, /**@param {Edge} edge**/ function (edge) {
-                var nodeA = getNodeOfPort(edge.portA);
-                var nodeB = getNodeOfPort(edge.portB);
-
-                nodeA.primaryNeighboors.push(nodeB);
-                nodeB.primaryNeighboors.push(nodeA);
-            });
+            
 
             map_(nodeList, /**@param {Node} node**/ function (node) {
                 if (node.isRoot) {
                     rootNodes.push(node);
-                    node._complete();
                 }
             });
             callback();
         };
         request.send();
-    }
-
-    /**
-     * The model allows for nested ports
-     * As part of our first pass of parsing the model, we created backlinks in
-     *  in children ports to link back to the parent. Here we traverse that chain
-     *  to find the original Node
-     * 
-     * @param {Object} port
-     * @returns {Node}
-     */
-    function getNodeOfPort(port) {
-        while ("parentPort" in port) {
-            port = port.parentPort;
-        }
-        return port.node;
     }
 
     function listNodes() {
@@ -231,22 +213,6 @@ define([
         });
         return ans;
     }
-
-    //No node in nodes should be a decedent of another
-    function computeEdges(nodes) {
-        map_(nodes, /**@param {Node} node**/function (node) {
-            node.__wasFolded = node.getFolded();
-            node.fold();
-        });
-        var edges = listEdges();
-        map_(nodes, /**@param {Node} node**/function (node) {
-            node.setFolded(node.__wasFolded);
-            delete node.__wasFolded;
-        });
-        return edges;
-    }
-
-    
 
     /**Begin debug functions**/
     function listNodesPretty() {
@@ -316,7 +282,6 @@ define([
         init: init,
         listNodes: listNodes,
         listEdges: listEdges,
-        computeEdges: computeEdges,
         getRootNodes: function () {
             return rootNodes;
         },

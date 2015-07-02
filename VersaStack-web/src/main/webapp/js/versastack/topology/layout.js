@@ -14,7 +14,7 @@ define([
         //their children
         map_(nodes,/**@param {Node} n**/function(n){
             map_(n.children,function(child){
-                edges.push(new Edge(n,child));
+                edges.push({source:n,target:child});
             });
         });
         

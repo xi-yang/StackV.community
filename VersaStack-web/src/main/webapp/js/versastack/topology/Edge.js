@@ -1,18 +1,18 @@
 "use strict";
 define([], function () {
-    function Edge(left, right) {
-        this.left = left;
-        this.right = right;
+    function Edge(leftPort, rightPort) {
+        this.leftPort = leftPort;
+        this.rightPort = rightPort;
 
-        this.source = left;
-        this.target = right;
+        this.source = null;
+        this.target = null;
 
         this.svgNode=null;
 
         this._isProper = function () {
             var ans = true;
-            var leftCursor=this.left;
-            var rightCursor=this.right;
+            var leftCursor=this.leftPort.ancestorNode;
+            var rightCursor=this.rightPort.ancestorNode;
             while (!leftCursor.getVisible()) {
                 leftCursor = leftCursor._parent;
             }
