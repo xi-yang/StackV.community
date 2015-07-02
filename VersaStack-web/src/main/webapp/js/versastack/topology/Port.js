@@ -34,7 +34,33 @@ define([
             return ans;
         };
         
+       
         this.setNode=function(node){
+            if(this.ancestorNode){
+                //In some cases, the backend may incorrectly mark a port as belonging to both
+                //a topology, and one of its decendents (specifically, the upper topology
+                //appears to be top level aws). In this case, we only want to store is
+                //as belonging to the lower node
+                var oldNode=this.ancestorNode;
+                var arr=[];
+                map_(oldNode.ports,function(port){
+                    if(port!==that){
+                        arr.push(port);
+                    }
+                });
+                oldNode.ports=arr;
+                
+                arr=[];
+                map_(node.ports,function(port){
+                    if(port!==that){
+                        arr.push(port);
+                    }
+                });
+                node.ports=arr;
+                
+                this.ancestorNode=oldNode.getHeight()>node.getHeight?oldNode:node;
+                this.ancestorNode.ports.push(this);
+            }
             this.ancestorNode=node;
             map_(this.childrenPorts,function(child){
                 child.setNode(node);
