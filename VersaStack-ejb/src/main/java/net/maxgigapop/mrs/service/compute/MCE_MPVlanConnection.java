@@ -28,7 +28,7 @@ import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.EJBException;
 import javax.ejb.Stateless;
-import net.maxgigapop.mrs.bean.DeltaBase;
+import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Nml;
@@ -47,7 +47,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
     */
     @Override
     @Asynchronous
-    public Future<DeltaBase> process(ModelBase systemModel, DeltaBase annotatedDelta) {
+    public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
         try {
             log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--DeltaAddModel Input=\n" + ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
         } catch (Exception ex) {
@@ -85,7 +85,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             connPolicyMap.get(resLink).add(policyData);
         }
         
-        DeltaBase outputDelta = annotatedDelta.clone();
+        ServiceDelta outputDelta = annotatedDelta.clone();
 
         // compute a List<Model> of MPVlan connections
         for (Resource resLink : connPolicyMap.keySet()) {

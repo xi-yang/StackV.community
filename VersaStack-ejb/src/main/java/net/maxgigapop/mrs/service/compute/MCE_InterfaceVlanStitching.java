@@ -26,7 +26,7 @@ import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.EJBException;
 import javax.ejb.Stateless;
-import net.maxgigapop.mrs.bean.DeltaBase;
+import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
@@ -44,14 +44,14 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
     
     @Override
     @Asynchronous
-    public Future<DeltaBase> process(ModelBase systemModel, DeltaBase annotatedDelta) {
+    public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
         log.log(Level.FINE, "MCE_InterfaceVlanStitching::process {0}", annotatedDelta);
         try {
             log.log(Level.FINE, "\n>>>MCE_InterfaceVlanStitching--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_InterfaceVlanStitching.class.getName()).log(Level.SEVERE, null, ex);
         }
-        DeltaBase outputDelta = annotatedDelta.clone();
+        ServiceDelta outputDelta = annotatedDelta.clone();
 
         // importPolicyData : Interface->Stitching->List<PolicyData>
         String sparql =  "SELECT ?netif ?policy ?data ?type ?value WHERE {"

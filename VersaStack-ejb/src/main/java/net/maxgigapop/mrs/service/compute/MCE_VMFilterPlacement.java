@@ -30,7 +30,7 @@ import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.EJBException;
 import javax.ejb.Stateless;
-import net.maxgigapop.mrs.bean.DeltaBase;
+import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
@@ -48,7 +48,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
     
     @Override
     @Asynchronous
-    public Future<DeltaBase> process(ModelBase systemModel, DeltaBase annotatedDelta) {
+    public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
         // $$ MCE_VMFilterPlacement deals with add model only for now.
         if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
             throw new EJBException(String.format("%s::process ", this.getClass().getName()));
@@ -95,7 +95,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             vmPolicyMap.get(resVM).add(policyData);
         }
         
-        DeltaBase outputDelta = annotatedDelta.clone();
+        ServiceDelta outputDelta = annotatedDelta.clone();
         
         for (Resource vm: vmPolicyMap.keySet()) {
             //1. compute placement based on filter/match criteria *data*

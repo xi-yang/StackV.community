@@ -25,7 +25,7 @@ import javax.ejb.EJBException;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-import net.maxgigapop.mrs.bean.DeltaBase;
+import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.common.ModelUtil;
@@ -43,8 +43,8 @@ public class ActionBase {
     protected String mceBeanPath = "";
     protected String state = ActionState.IDLE;
     protected ModelBase referenceModel = null;
-    protected DeltaBase inputDelta = null;
-    protected DeltaBase outputDelta = null;
+    protected ServiceDelta inputDelta = null;
+    protected ServiceDelta outputDelta = null;
     protected List<ActionBase> dependencies = new ArrayList<>();
     protected List<ActionBase> uppers  = new ArrayList<>();
     private static final Logger log = Logger.getLogger(ActionBase.class.getName());
@@ -89,19 +89,19 @@ public class ActionBase {
         this.referenceModel = referenceModel;
     }
 
-    public DeltaBase getInputDelta() {
+    public ServiceDelta getInputDelta() {
         return inputDelta;
     }
 
-    public void setInputDelta(DeltaBase inputDelta) {
+    public void setInputDelta(ServiceDelta inputDelta) {
         this.inputDelta = inputDelta;
     }
 
-    public DeltaBase getOutputDelta() {
+    public ServiceDelta getOutputDelta() {
         return outputDelta;
     }
 
-    public void setOutputDelta(DeltaBase outputDelta) {
+    public void setOutputDelta(ServiceDelta outputDelta) {
         this.outputDelta = outputDelta;
     }
 
@@ -178,12 +178,12 @@ public class ActionBase {
         return true;
     }
     
-    public Future<DeltaBase> execute() {
+    public Future<ServiceDelta> execute() {
         try {
             Context ejbCxt = new InitialContext();
             IModelComputationElement ejbMce = (IModelComputationElement)ejbCxt.lookup(this.mceBeanPath);
             this.state = ActionState.PROCESSING;
-            Future<DeltaBase> asyncResult = ejbMce.process(referenceModel, inputDelta);
+            Future<ServiceDelta> asyncResult = ejbMce.process(referenceModel, inputDelta);
             //# not FINISHED yet
             return asyncResult;
         } catch (NamingException ex) {
@@ -192,7 +192,7 @@ public class ActionBase {
         }        
     }
     
-    public void mergeResult(DeltaBase childDelta) {
+    public void mergeResult(ServiceDelta childDelta) {
         if (inputDelta == null) {
             inputDelta = childDelta;
             return;

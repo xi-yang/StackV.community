@@ -22,8 +22,9 @@ import javax.ejb.EJBException;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-import net.maxgigapop.mrs.bean.DeltaBase;
+import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ModelBase;
+import net.maxgigapop.mrs.bean.SystemDelta;
 import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.core.SystemModelCoordinator;
@@ -36,16 +37,16 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
  * @author xyang
  */
 public class WorkerBase {
-    ModelBase referenceSystemModel = null;
-    DeltaBase annoatedModel = null;
-    DeltaBase resultModelDelta = null;
+    VersionGroup referenceSystemModelVG = null;
+    ServiceDelta annoatedModelDelta = null;
+    SystemDelta resultModelDelta = null;
     List<ActionBase> rootActions = new ArrayList<>();
        
-    public void setAnnoatedModel(DeltaBase annoatedModel) {
-        this.annoatedModel = annoatedModel;
+    public void setAnnoatedModel(ServiceDelta annoatedDelta) {
+        this.annoatedModelDelta = annoatedDelta;
     }
 
-    public DeltaBase getResultModelDelta() {
+    public SystemDelta getResultModelDelta() {
         return resultModelDelta;
     }
 
@@ -87,7 +88,7 @@ public class WorkerBase {
     
     protected void runWorkflow() {
         final ActionBase mergedRoot = rootActions.get(0);
-        Map<ActionBase, Future<DeltaBase>> resultMap = new HashMap<>();
+        Map<ActionBase, Future<ServiceDelta>> resultMap = new HashMap<>();
 
         // start workflow run
         //1. lookupDeepestIdleAction to get an available action;
@@ -102,8 +103,8 @@ public class WorkerBase {
             while (itA.hasNext()){
                 ActionBase action = itA.next();
                 if (action.getState().equals(ActionState.IDLE)) {
-                    action.setReferenceModel(this.referenceSystemModel);
-                    Future<DeltaBase> asyncResult = action.execute();
+                    action.setReferenceModel(this.referenceSystemModelVG.getCachedModelBase());
+                    Future<ServiceDelta> asyncResult = action.execute();
                     resultMap.put(action, asyncResult);
                 } else if (action.getState().equals(ActionState.FINISHED) 
                         || action.getState().equals(ActionState.MERGED)) {
@@ -121,11 +122,11 @@ public class WorkerBase {
                 itA = resultMap.keySet().iterator();
                 while (itA.hasNext()) {
                     ActionBase action = itA.next();
-                    Future<DeltaBase> asyncResult = resultMap.get(action);
+                    Future<ServiceDelta> asyncResult = resultMap.get(action);
                     if (asyncResult.isDone()) {
                         action.setState(ActionState.FINISHED);
                         try {
-                            DeltaBase resultDelta = asyncResult.get(); // exception may be thrown
+                            ServiceDelta resultDelta = asyncResult.get(); // exception may be thrown
                             action.setOutputDelta(resultDelta);
                             // if a run action return successfully
                             // collect resultDelta and merge to parent input annotatedDelta
@@ -169,21 +170,24 @@ public class WorkerBase {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-        //@TODO: raise exception if some annotation remains
-        this.resultModelDelta = mergedRoot.getOutputDelta();
+        //@TODO: convert serviceDelta into systemDelta and raise exception if some annotation remains
+        this.resultModelDelta = new SystemDelta();
+        this.resultModelDelta.setModelAddition(mergedRoot.getOutputDelta().getModelAddition());
+        this.resultModelDelta.setModelReduction(mergedRoot.getOutputDelta().getModelReduction());
+        this.resultModelDelta.setReferenceVersionGroup(referenceSystemModelVG);
     }
     
     protected void retrieveSystemModel() {
         try {
             Context ejbCxt = new InitialContext();
             SystemModelCoordinator systemModelCoordinator = (SystemModelCoordinator)ejbCxt.lookup("java:module/SystemModelCoordinator");
-            VersionGroup referenceVersionGroup = systemModelCoordinator.getLatestVersionGroupWithUnionModel();
-            if (referenceVersionGroup == null) {
+            referenceSystemModelVG = systemModelCoordinator.getLatestVersionGroupWithUnionModel();
+            if (referenceSystemModelVG == null) {
                 throw new EJBException(this.getClass().getName() + " got null referenceVersionGroup - systemModelCoordinator is not ready");
             }
-            referenceSystemModel = referenceVersionGroup.getCachedModelBase();
+            ModelBase referenceSystemModel = referenceSystemModelVG.getCachedModelBase();
             if (referenceSystemModel == null) {
-                throw new EJBException(this.getClass().getName() + " got null  referenceSystemModel from " + referenceVersionGroup);
+                throw new EJBException(this.getClass().getName() + " got null  referenceSystemModel from " + referenceSystemModelVG);
             }
         } catch (NamingException ex) {
             throw new EJBException(this.getClass().getName() + " failed to inject systemModelCoordinator");
@@ -194,7 +198,7 @@ public class WorkerBase {
         // get system base model from SystemModelCoordinator singleton
         retrieveSystemModel();
         // annoatedModel and rootActions should have been instantiated by caller
-        if (annoatedModel == null) {
+        if (annoatedModelDelta == null) {
             throw new EJBException("Workerflow cannot run with null annoatedModel");
         }
         if (rootActions.isEmpty()) {

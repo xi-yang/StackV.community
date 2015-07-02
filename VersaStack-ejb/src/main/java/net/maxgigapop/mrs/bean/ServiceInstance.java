@@ -8,6 +8,7 @@ package net.maxgigapop.mrs.bean;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.concurrent.Future;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -15,6 +16,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 import net.maxgigapop.mrs.bean.persist.PersistentEntity;
 
 /**
@@ -31,8 +33,11 @@ public class ServiceInstance extends PersistentEntity implements Serializable {
     
     private String referenceUUID;
 
+    @Transient 
+    Future<String> serviceStatus = null;
+    
     @OneToMany(mappedBy="serviceInstance", cascade = {CascadeType.ALL})
-    protected List<ServiceModel> serviceModels = null;    
+    protected List<ServiceDelta> serviceDeltas = null;    
     
     public Long getId() {
         return id;
@@ -50,12 +55,20 @@ public class ServiceInstance extends PersistentEntity implements Serializable {
         this.referenceUUID = referenceUUID;
     }
 
-    public List<ServiceModel> getServiceModels() {
-        return serviceModels;
+    public List<ServiceDelta> getServiceDeltas() {
+        return serviceDeltas;
     }
 
-    public void setServiceModels(List<ServiceModel> serviceModels) {
-        this.serviceModels = serviceModels;
+    public void setServiceDeltas(List<ServiceDelta> serviceDeltas) {
+        this.serviceDeltas = serviceDeltas;
+    }
+
+    public Future<String> getServiceStatus() {
+        return serviceStatus;
+    }
+
+    public void setServiceStatus(Future<String> serviceStatus) {
+        this.serviceStatus = serviceStatus;
     }
 
     @Override

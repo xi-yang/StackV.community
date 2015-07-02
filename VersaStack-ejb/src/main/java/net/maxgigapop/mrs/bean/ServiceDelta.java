@@ -10,6 +10,8 @@ import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
 
 /**
@@ -19,17 +21,51 @@ import javax.persistence.OneToOne;
 @Entity
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 public class ServiceDelta extends DeltaBase {
-    @OneToOne(mappedBy = "serviceDelta", cascade = {CascadeType.ALL})
-    protected ServiceModel serviceModel = null;
+    @ManyToOne
+    @JoinColumn(name = "serviceInstanceId")
+    protected ServiceInstance serviceInstance = null;
 
-    public ServiceModel getServiceModel() {
-        return serviceModel;
+    private String referenceUUID;
+
+    protected SystemDelta systemDelta = null;
+
+    public String getReferenceUUID() {
+        return referenceUUID;
     }
 
-    public void setServiceModel(ServiceModel serviceModel) {
-        this.serviceModel = serviceModel;
+    //@TODO Add status variable to track service delta processing
+    public void setReferenceUUID(String referenceUUID) {
+        this.referenceUUID = referenceUUID;
     }
 
+    public ServiceInstance getServiceInstance() {
+        return serviceInstance;
+    }
+
+    public void setServiceInstance(ServiceInstance serviceInstance) {
+        this.serviceInstance = serviceInstance;
+    }
+
+    public SystemDelta getSystemDelta() {
+        return systemDelta;
+    }
+
+    public void setSystemDelta(SystemDelta systemDelta) {
+        this.systemDelta = systemDelta;
+    }
+
+    public ServiceDelta clone() {
+        ServiceDelta cloned = new ServiceDelta();
+        if (this.modelAddition != null)
+            cloned.modelAddition = this.modelAddition.clone();
+        if (this.modelReduction != null)
+            cloned.modelReduction = this.modelReduction.clone();
+        //just copy reference
+        if (this.systemDelta != null)
+            cloned.systemDelta = this.systemDelta;
+        return cloned;
+    }
+    
     @Override
     public String toString() {
         return "net.maxgigapop.mrs.model.ServiceDelta[ id=" + id + " ]";

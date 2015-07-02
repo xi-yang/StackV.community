@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.ejb.EJBException;
-import net.maxgigapop.mrs.bean.DeltaBase;
+import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.common.RdfOwl;
@@ -61,9 +61,9 @@ public class SimpleCompiler extends CompilerBase {
                 if (addOntModel != null) {
                     DeltaModel addModel = new DeltaModel();
                     addModel.setOntModel(addParts.get(policy));
-                    DeltaBase inputDelta = action.getInputDelta();
+                    ServiceDelta inputDelta = action.getInputDelta();
                     if (inputDelta == null)
-                        inputDelta = new DeltaBase();
+                        inputDelta = new ServiceDelta();
                     inputDelta.setModelAddition(addModel);
                     action.setInputDelta(inputDelta);
                 }

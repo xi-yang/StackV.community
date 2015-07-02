@@ -8,7 +8,7 @@ package net.maxgigapop.mrs.service.compute;
 import java.util.concurrent.Future;
 import javax.ejb.Asynchronous;
 import javax.ejb.Local;
-import net.maxgigapop.mrs.bean.DeltaBase;
+import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.DriverSystemDelta;
 import net.maxgigapop.mrs.bean.ModelBase;
 
@@ -19,5 +19,5 @@ import net.maxgigapop.mrs.bean.ModelBase;
 @Local
 public interface IModelComputationElement {
     @Asynchronous
-    public Future<DeltaBase> process(ModelBase systemModel, DeltaBase annotatedDelta);
+    public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta);
 }
