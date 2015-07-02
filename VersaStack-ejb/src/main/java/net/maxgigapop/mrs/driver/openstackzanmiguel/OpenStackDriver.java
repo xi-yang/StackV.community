@@ -123,7 +123,7 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
             String password = driverInstance.getProperty("password");
             String tenant = driverInstance.getProperty("tenant");
             String url = driverInstance.getProperty("url");
-            String topologyUri = driverInstance.getProperty("topologyuri");
+            String topologyUri = driverInstance.getProperty("topologyUri");
             String NATServer = driverInstance.getProperty("NATServer");
 
             OntModel ontModel = OpenStackNeutronModelBuilder.createOntology(url,NATServer, topologyUri, username, password, tenant);
