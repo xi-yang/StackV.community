@@ -13,7 +13,7 @@ define([
         SERVICE_SIZE: 10,
         TOPOLOGY_SIZE: 15,
         TOPOLOGY_BUFFER: 30,
-        TOPOLOGY_ANCHOR_SIZE: 2,
+        TOPOLOGY_ANCHOR_SIZE: 8,
         TOPOLOGY_ANCHOR_STROKE: 2,
         ENLARGE_FACTOR: .2,
         HULL_COLORS: ["rgb(0,100,255)", "rgb(255,0,255)"],
@@ -37,6 +37,7 @@ define([
         settings.TOPOLOGY_SIZE /= outputApi.getZoom();
         settings.TOPOLOGY_BUFFER /= outputApi.getZoom();
         settings.EDGE_WIDTH /= outputApi.getZoom();
+        settings.TOPOLOGY_ANCHOR_SIZE /= outputApi.getZoom();
         settings.TOPOLOGY_ANCHOR_STROKE /= outputApi.getZoom();
 
         var svgContainer = outputApi.getSvgContainer();
@@ -203,6 +204,8 @@ define([
                 //A single point, and not get rendered.
                 //By forcing it to take distinct points, the stroke-width 
                 //Causes it to render at full size
+                //For some reason, using an svg transform (as we do to implement highlighting" 
+                //causes sub-unit diferences to be ignored
                 var leaf = leaves[0];
                 leaves.push({x: leaf.x + .01, y: leaf.y + .01});
             }
@@ -331,11 +334,22 @@ define([
             updateSvgChoordsEdge(e);
         }
 
+        var highlightedElem=null;
         /**
          * Note that n could also be a topology
          * @param {Node} n**/
         function onNodeClick(n) {
             d3.event.stopPropagation();//prevent the click from being handled by the background, which would hide the panel
+            if(highlightedElem){
+                highlightedElem.style("filter","");
+            }
+            if(n.svgNode){
+                highlightedElem=n.svgNode;
+                highlightedElem.style("filter","url(#highlight)");
+            }else{
+                //This shouldn't happen
+                console.log("Clicked on an element without an svgNode");
+            }
             outputApi.setDisplayName(n.getName());
             /**@type {DropDownTree} displayTree**/
             var displayTree = outputApi.getDisplayTree();

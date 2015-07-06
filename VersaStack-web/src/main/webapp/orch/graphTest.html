@@ -45,9 +45,10 @@
         <script type="text/javascript">
 
             var settings = {
-                ZOOM_FACTOR: .02,
-                ZOOM_MIN: .2, //As we zoom further out, there is increasing error in the correction pan
-                INIT_ZOOM: 4  //Staring zoomed in allows a larger effective zoomout given our ZOOM_MIN
+                ZOOM_FACTOR: .04,
+                ZOOM_MIN: .8,
+                INIT_ZOOM: 2  //The initial zoom factor effects the preciosion in which we can specify the highlighting effect
+                              //However, it also seems to effect the error in zooming
             };
             var model;
             var layout;
@@ -61,7 +62,7 @@
                     "local/versastack/topology/layout",
                     "local/versastack/topology/render",
                     "local/d3",
-                    "local/versastack/utils", 
+                    "local/versastack/utils",
                     "local/versastack/topology/DropDownTree"],
                         function (m, l, r, d3_, utils_, tree) {
                             model = m;
@@ -114,9 +115,9 @@
                     var ans = new DropDownTree(document.getElementById("treeMenu"));
                     return ans;
                 };
-                
-                this.setDisplayName = function(name){
-                    document.getElementById("displayName").innerText=name;
+
+                this.setDisplayName = function (name) {
+                    document.getElementById("displayName").innerText = name;
                 }
 
 
@@ -233,15 +234,30 @@
         </div>
         <div id="hoverdiv"></div>
         <svg id="viz">
-        <!--We nest a g in here because the svg tag itself cannot do transforms
-            we separate topologies, edges, and nodes to create an explicit z-order
-        -->
-        <g id="transform">
-        <g id="topology"/>
-        <g id="edge"/>
-        <g id="anchor"/>
-        <g id="node"/>
-        </g>
+            <defs>
+            <!--When we highlight topologies without specifiyng a width and length, the get clipped
+            The x,y offset are so we avoid clipping the top and left edges.
+            I simply added zeroes until this worked in all cases I tested (the extreme case being a vertical or horizontal topology-->
+                <filter id="highlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+                   <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
+                   <feMorphology operator="dilate" radius="1"/>
+                   <feColorMatrix result="a" type="matrix"
+                         values="0 0 0 0 .7
+                                 0 0 0 0 1
+                                 0 0 0 0 0
+                                 0 0 0 1 0" />
+                   <feBlend in="SourceGraphic" in2="a" mode="normal" />
+                </filter>
+            </defs>
+            <!--We nest a g in here because the svg tag itself cannot do transforms
+                we separate topologies, edges, and nodes to create an explicit z-order
+            -->
+            <g id="transform">
+                <g id="topology"/>
+                <g id="edge"/>
+                <g id="anchor"/>
+                <g id="node"/>
+            </g>
         </svg>
 
     </body>
