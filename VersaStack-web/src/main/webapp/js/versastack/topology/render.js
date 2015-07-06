@@ -314,6 +314,7 @@ define([
                         //In onNodeMouseLeave we make the hoverdiv stay visible in this case,
                         //However, we also want it to continue tracking us.
                         outputApi.setHoverLocation(e.clientX, e.clientY);
+                        drawHighlight();
                     })
                     .on("dragstart", function () {
                         lastMouse = d3.event.sourceEvent;
@@ -334,22 +335,15 @@ define([
             updateSvgChoordsEdge(e);
         }
 
-        var highlightedElem=null;
+
+        var highlightedNode=null;
         /**
          * Note that n could also be a topology
          * @param {Node} n**/
         function onNodeClick(n) {
             d3.event.stopPropagation();//prevent the click from being handled by the background, which would hide the panel
-            if(highlightedElem){
-                highlightedElem.style("filter","");
-            }
-            if(n.svgNode){
-                highlightedElem=n.svgNode;
-                highlightedElem.style("filter","url(#highlight)");
-            }else{
-                //This shouldn't happen
-                console.log("Clicked on an element without an svgNode");
-            }
+            highlightedNode=n;
+            drawHighlight();
             outputApi.setDisplayName(n.getName());
             /**@type {DropDownTree} displayTree**/
             var displayTree = outputApi.getDisplayTree();
@@ -359,6 +353,19 @@ define([
             displayTree.draw();
             selectedNode = n;
         }
+        
+        function drawHighlight(){
+            svgContainer.select("#selectedOverlay").selectAll("*").remove();
+            if(highlightedNode && highlightedNode.svgNode){
+                var toAppend=highlightedNode.svgNode.node().cloneNode();
+                d3.select(toAppend).style("opacity","1").attr("pointer-events","none");
+                svgContainer.select("#selectedOverlay").node().appendChild(toAppend);
+            }else if(highlightedNode){
+                //This shouldn't happen
+                console.log("Trying to highlight an element without an svgNode");
+            }
+        }
+        
         /**
          * Note that n could also be a topology
          * @param {Node} n**/
@@ -437,6 +444,7 @@ define([
                     .attr("height", size)
                     .attr("x", x - ds / 2)//make it appear to zoom into center of the icon
                     .attr("y", y - ds / 2);
+            drawHighlight();
         }
 
         /**@param {Node} n**/

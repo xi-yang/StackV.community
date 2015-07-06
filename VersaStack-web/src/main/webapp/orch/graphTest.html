@@ -237,8 +237,12 @@
             <defs>
             <!--When we highlight topologies without specifiyng a width and length, the get clipped
             The x,y offset are so we avoid clipping the top and left edges.
-            I simply added zeroes until this worked in all cases I tested (the extreme case being a vertical or horizontal topology-->
-                <filter id="highlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+            I simply added zeroes until this worked in all cases I tested (the extreme case being a vertical or horizontal topology
+            We could highlight the element entirly with this filter by using feBlend instead of feComposite,
+            However, then (in the case of topologies) the outline would be stuck with the same opacity as the entire element, which is not desireable
+            Instead, we will simply duplicate the selected element, and show its outline as an overlay
+            -->
+                <filter id="outline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
                    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
                    <feMorphology operator="dilate" radius="1"/>
                    <feColorMatrix result="a" type="matrix"
@@ -246,7 +250,7 @@
                                  0 0 0 0 1
                                  0 0 0 0 0
                                  0 0 0 1 0" />
-                   <feBlend in="SourceGraphic" in2="a" mode="normal" />
+                   <feComposite operator="out" in="a" in2="SourceGraphic"/>
                 </filter>
             </defs>
             <!--We nest a g in here because the svg tag itself cannot do transforms
@@ -257,6 +261,7 @@
                 <g id="edge"/>
                 <g id="anchor"/>
                 <g id="node"/>
+                <g id="selectedOverlay" style="filter: url(#outline);"/>
             </g>
         </svg>
 
