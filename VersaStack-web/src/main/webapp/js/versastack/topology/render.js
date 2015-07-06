@@ -269,8 +269,8 @@ define([
                 service.y = coords.y;
                 service.x = coords.x;
                 service.svgNode
-                        .attr("y", coords.y)
-                        .attr("x", coords.x)
+                        .attr("y", coords.y+service.dy)
+                        .attr("x", coords.x+service.dx)
                         .attr("transform", coords.transform);
                 coords.x += settings.SERVICE_SIZE;
             });
@@ -438,12 +438,14 @@ define([
             } else {
                 ds = 0;
             }
+            n.dx=-ds/2;
+            n.dy=-ds/2;
             n.size = size;
             svg
                     .attr("width", size)
                     .attr("height", size)
-                    .attr("x", x - ds / 2)//make it appear to zoom into center of the icon
-                    .attr("y", y - ds / 2);
+                    .attr("x", x + n.dx)//make it appear to zoom into center of the icon
+                    .attr("y", y + n.dy);
             drawHighlight();
         }
 
