@@ -37,10 +37,10 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
  * @author xyang
  */
 public class WorkerBase {
-    VersionGroup referenceSystemModelVG = null;
-    ServiceDelta annoatedModelDelta = null;
-    SystemDelta resultModelDelta = null;
-    List<ActionBase> rootActions = new ArrayList<>();
+    protected VersionGroup referenceSystemModelVG = null;
+    protected ServiceDelta annoatedModelDelta = null;
+    protected SystemDelta resultModelDelta = null;
+    protected List<ActionBase> rootActions = new ArrayList<>();
        
     public void setAnnoatedModel(ServiceDelta annoatedDelta) {
         this.annoatedModelDelta = annoatedDelta;
@@ -181,7 +181,8 @@ public class WorkerBase {
         try {
             Context ejbCxt = new InitialContext();
             SystemModelCoordinator systemModelCoordinator = (SystemModelCoordinator)ejbCxt.lookup("java:module/SystemModelCoordinator");
-            referenceSystemModelVG = systemModelCoordinator.getLatestVersionGroupWithUnionModel();
+            //referenceSystemModelVG = systemModelCoordinator.getLatestVersionGroupWithUnionModel();
+            referenceSystemModelVG = systemModelCoordinator.getSystemVersionGroup();
             if (referenceSystemModelVG == null) {
                 throw new EJBException(this.getClass().getName() + " got null referenceVersionGroup - systemModelCoordinator is not ready");
             }
@@ -191,7 +192,7 @@ public class WorkerBase {
             }
         } catch (NamingException ex) {
             throw new EJBException(this.getClass().getName() + " failed to inject systemModelCoordinator");
-        }        
+        }
     }
     
     public void run() {

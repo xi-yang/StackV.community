@@ -15,10 +15,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.ModelBase;
+import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.service.orchestrate.ActionBase;
 import net.maxgigapop.mrs.service.orchestrate.SimpleWorker;
@@ -30,18 +33,17 @@ import net.maxgigapop.www.rains.ontmodel.Spa;
  * @author xyang
  */
 public class SimpleCompiler extends CompilerBase {        
+    private static final Logger log = Logger.getLogger(SimpleCompiler.class.getName());
     
     @Override
-    public void compile(WorkerBase worker) {        
+    public void compile(WorkerBase worker) {
         OntModel spaOntModelReduction = this.spaDelta.getModelReduction() == null ? null : this.spaDelta.getModelReduction().getOntModel();
         OntModel spaOntModelAddition = this.spaDelta.getModelAddition() == null ? null : this.spaDelta.getModelAddition().getOntModel();
-        // assemble workflow parts for reduction
-        if (this.spaDelta.getModelReduction() != null) {
+        if (spaOntModelReduction != null && !ModelUtil.isEmptyModel(spaOntModelReduction)) {
             Map<Resource, OntModel> reduceParts = this.decomposeByPolicyActions(spaOntModelReduction);
         }
-        
         // assemble workflow parts for addition
-        if (this.spaDelta.getModelAddition() != null) {
+        if (spaOntModelAddition != null && !ModelUtil.isEmptyModel(spaOntModelAddition)) {
             Queue<Resource> policyQueue = new LinkedBlockingQueue<>();
             Map<Resource, OntModel> addParts = this.decomposeByPolicyActions(spaOntModelAddition);
             if (addParts == null)

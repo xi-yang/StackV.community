@@ -33,11 +33,11 @@ public class ServiceInstance extends PersistentEntity implements Serializable {
     
     private String referenceUUID;
 
-    @Transient 
-    Future<String> serviceStatus = null;
-    
     @OneToMany(mappedBy="serviceInstance", cascade = {CascadeType.ALL})
     protected List<ServiceDelta> serviceDeltas = null;    
+    
+    @Transient 
+    Future<String> serviceStatus = null;
     
     public Long getId() {
         return id;

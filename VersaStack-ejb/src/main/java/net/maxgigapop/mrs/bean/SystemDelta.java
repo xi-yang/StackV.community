@@ -31,6 +31,10 @@ public class SystemDelta extends DeltaBase {
     @OneToMany(mappedBy="systemDelta", cascade = {CascadeType.ALL})
     protected List<DriverSystemDelta> driverSystemDeltas = null;    
 
+    @OneToOne
+    @JoinColumn(name = "serviceDeltaId")
+    protected ServiceDelta serviceDelta = null;
+
     public List<DriverSystemDelta> getDriverSystemDeltas() {
         return driverSystemDeltas;
     }
@@ -45,6 +49,14 @@ public class SystemDelta extends DeltaBase {
 
     public void setReferenceVersionGroup(VersionGroup referenceVersionGroup) {
         this.referenceVersionGroup = referenceVersionGroup;
+    }
+
+    public ServiceDelta getServiceDelta() {
+        return serviceDelta;
+    }
+
+    public void setServiceDelta(ServiceDelta serviceDelta) {
+        this.serviceDelta = serviceDelta;
     }
 
     @Override

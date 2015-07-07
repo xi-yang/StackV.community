@@ -5,12 +5,15 @@
  */
 package net.maxgigapop.mrs.service.orchestrate;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.service.compile.CompilerBase;
 import net.maxgigapop.mrs.service.compile.CompilerFactory;
+import net.maxgigapop.mrs.service.compute.MCE_InterfaceVlanStitching;
 
 /**
  *
@@ -131,22 +134,22 @@ public class SimpleWorker extends WorkerBase {
             + "    spa:type     \"InterfaceVlanStitching:StitchingType\";\n"
             + "    spa:value    \"AWS_VPC\".\n"
             + "\n";
+    
+    private static final Logger log = Logger.getLogger(SimpleWorker.class.getName());
 
     @Override
     public void run() {
         retrieveSystemModel();
         try {
             CompilerBase simpleCompiler = CompilerFactory.createCompiler("net.maxgigapop.mrs.service.compile.SimpleCompiler");
-            ServiceDelta testSpaDelta = new ServiceDelta();
-            DeltaModel modelAdd = new DeltaModel();
-            modelAdd.setTtlModel(spaAddModel);
-            modelAdd.setOntModel(ModelUtil.unmarshalOntModel(spaAddModel));
-            testSpaDelta.setModelAddition(modelAdd);
-            simpleCompiler.setSpaDelta(testSpaDelta);
+            if (this.annoatedModelDelta == null) {
+                throw new EJBException(SimpleWorker.class.getName() + " encounters null annoatedModelDelta");
+            }
+            simpleCompiler.setSpaDelta(this.annoatedModelDelta);
             simpleCompiler.compile(this);
             this.runWorkflow();
         } catch (Exception ex) {
-            throw new EJBException(SimpleWorker.class.getName() + "caught exception", ex);
+            throw new EJBException(SimpleWorker.class.getName() + " caught exception", ex);
         }
     }
 }

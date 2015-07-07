@@ -5,6 +5,7 @@
  */
 package net.maxgigapop.mrs.service;
 
+import com.hp.hpl.jena.ontology.OntModel;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.UUID;
@@ -16,10 +17,15 @@ import javax.ejb.EJBException;
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
 import net.maxgigapop.mrs.bean.DeltaBase;
+import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ServiceInstance;
 import net.maxgigapop.mrs.bean.SystemDelta;
+import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
+import net.maxgigapop.mrs.bean.persist.PersistenceManager;
+import net.maxgigapop.mrs.bean.persist.ServiceDeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ServiceInstancePersistenceManager;
+import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.service.orchestrate.WorkerBase;
 
 /**
@@ -48,6 +54,14 @@ public class HandleServiceCall {
     }
 
     public SystemDelta compileDelta(String serviceInstanceUuid, String workerClassPath, ServiceDelta spaDelta) {
+        ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
+        if (serviceInstance == null) {
+            throw new EJBException(HandleServiceCall.class.getName()+".compileDelta cannot find serviceInstance with uuid=" + serviceInstanceUuid);
+        }
+        if (ServiceDeltaPersistenceManager.findByReferenceUUID(spaDelta.getReferenceUUID()) == null) {
+            throw new EJBException(HandleServiceCall.class.getName()+".compileDelta has already received a spaDelta with same uuid=" + spaDelta.getReferenceUUID());            
+        }
+        // run with chosen worker
         WorkerBase worker = null;
         try {
             worker = (WorkerBase)this.getClass().getClassLoader().loadClass(workerClassPath).newInstance();
@@ -55,24 +69,60 @@ public class HandleServiceCall {
             Logger.getLogger(HandleServiceCall.class.getName()).log(Level.SEVERE, null, ex);
             throw new EJBException(ex);
         } 
-        ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
-        if (serviceInstance.getServiceDeltas() == null) {
-            serviceInstance.setServiceDeltas(new ArrayList<ServiceDelta>());
-            serviceInstance.getServiceDeltas().add(spaDelta);
-        }
-        //@TODO: save spaDelta and serviceInstance
         worker.setAnnoatedModel(spaDelta);
         worker.run();
+        // save serviceInstance, spaDelta and systemDelta
         SystemDelta resultDelta = worker.getResultModelDelta();
+        resultDelta.setServiceDelta(spaDelta);
+        //DeltaPersistenceManager.save(resultDelta);
         spaDelta.setSystemDelta(resultDelta);
-        //@TODO: save spaDelta
+        if (serviceInstance.getServiceDeltas() == null) {
+            serviceInstance.setServiceDeltas(new ArrayList<ServiceDelta>());
+        }
+        serviceInstance.getServiceDeltas().add(spaDelta);
+        spaDelta.setServiceInstance(serviceInstance);
+        DeltaPersistenceManager.save(spaDelta);
+        serviceInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
+        ServiceInstancePersistenceManager.save(serviceInstance);
         return resultDelta;
+    }
+
+
+    public SystemDelta compileDelta(String serviceInstanceUuid, String workerClassPath, String uuid, String modelAdditionTtl, String modelReductionTtl) {
+        ServiceDelta spaDelta = new ServiceDelta();
+        spaDelta.setReferenceUUID(uuid);
+        try {
+            DeltaModel dmAddition = null;
+            if (modelAdditionTtl != null) {
+                OntModel modelAddition = ModelUtil.unmarshalOntModel(modelAdditionTtl);
+                dmAddition = new DeltaModel();
+                dmAddition.setCommitted(false);
+                dmAddition.setDelta(spaDelta);
+                dmAddition.setIsAddition(true);
+                dmAddition.setOntModel(modelAddition);
+            }
+
+            DeltaModel dmReduction = null;
+            if (modelReductionTtl != null) {
+                OntModel modelReduction = ModelUtil.unmarshalOntModel(modelReductionTtl);
+                dmReduction = new DeltaModel();
+                dmReduction.setCommitted(false);
+                dmReduction.setDelta(spaDelta);
+                dmReduction.setIsAddition(false);
+                dmReduction.setOntModel(modelReduction);
+            }
+            spaDelta.setModelAddition(dmAddition);
+            spaDelta.setModelReduction(dmReduction);      
+        } catch (Exception ex) {
+            throw new EJBException(ex);
+        }
+        return compileDelta(serviceInstanceUuid, workerClassPath, spaDelta);
     }
     
     //@TODO:
     //pulic Future<String> pushDelta
-    //? move serviceInstance.getServiceDeltas().add(spaDelta) here ? --> No
-    //? handling multiple deltas: split into propagate + commit = transactional propagate -> parallel commits
+    //? handling multiple deltas:  propagate + commit = transactional propagate -> parallel commits
+        //? scan the list of deltas to handle only those eligible for push
     //? a wrapper method to hide intermediate SystemDelta etc. from user + tracking status
-
+        //? add methods to manage status for the list of deltas
 }

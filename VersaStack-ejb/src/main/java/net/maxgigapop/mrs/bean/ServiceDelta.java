@@ -13,6 +13,7 @@ import javax.persistence.InheritanceType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
+import javax.persistence.Transient;
 
 /**
  *
@@ -27,6 +28,8 @@ public class ServiceDelta extends DeltaBase {
 
     private String referenceUUID;
 
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "systemDeltaId")
     protected SystemDelta systemDelta = null;
 
     public String getReferenceUUID() {

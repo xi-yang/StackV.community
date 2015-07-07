@@ -4,10 +4,6 @@
  * and open the template in the editor.
  */
 package net.maxgigapop.mrs.rest.api;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 import javax.ejb.EJB;
 import javax.ejb.EJBException;
 import javax.ws.rs.Consumes;
@@ -19,16 +15,19 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
-import net.maxgigapop.mrs.bean.DriverInstance;
-import net.maxgigapop.mrs.rest.api.model.ApiDriverInstance;
+import net.maxgigapop.mrs.bean.SystemDelta;
+import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.rest.api.model.ServiceApiDelta;
 import net.maxgigapop.mrs.service.HandleServiceCall;
-
+import java.util.logging.Logger;
 /**
  *
  * @author max
  */
 @Path("service")
 public class ServiceResource {
+    private static final Logger log = Logger.getLogger(ServiceResource.class.getName());
+
     @Context
     private UriInfo context;
 
@@ -39,20 +38,33 @@ public class ServiceResource {
     }
     
     @GET
-    @Path("/serviceinstance")
+    @Path("/instance")
     @Produces({"application/xml","application/json"})
     public String create(){
-        //return serviceCallHandler.createInstance().getReferenceUUID();
-        throw new UnsupportedOperationException();
+        return serviceCallHandler.createInstance().getReferenceUUID();
     }
     
     @DELETE
-    @Path("/serviceinstance/{uuid}")    
+    @Path("/instance/{uuid}")    
     public String terminate(@PathParam("uuid")String siUuid){
-        throw new UnsupportedOperationException();
+        try{
+            serviceCallHandler.terminateInstance(siUuid);
+            return "Successfully terminated";
+        }catch(EJBException e){
+            return(e.getMessage());
+        }
     } 
     
     //POST to push workflow (SPA)
-    
-    //GET to check status
+    @POST
+    @Consumes({"application/xml","application/json"})
+    @Path("/{siUUID}")
+    public String compile(@PathParam("siUUID") String svcInstanceUUID, ServiceApiDelta apiDelta) {
+        String status = "success";
+        String workerClassPath = apiDelta.getWorkerClassPath();
+        SystemDelta sysDelta = serviceCallHandler.compileDelta(svcInstanceUUID, workerClassPath, apiDelta.getUuid(), apiDelta.getModelAddition(), apiDelta.getModelReduction());
+        return status;
+    }
+
+    //@TODO get resultDelta (only available for admin users)
 }
