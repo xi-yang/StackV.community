@@ -224,7 +224,7 @@ body {
 .center {
     margin-left: 50%;
 }
-.form input#button-login, .form input#button-register {
+.form input#button-login, .form input.button-register {
     cursor: pointer;
     background: #E60000;
     width: 100%;
@@ -392,6 +392,11 @@ body {
     text-align: right;
 }
 
+#service-specific {
+    margin: 5% auto;
+    width: 75%;
+}
+
 #registration-table {
     margin-top:10%;
     font-size: 13px;
@@ -403,7 +408,7 @@ body {
     text-align: center;
     font-size: 14px;
 }
-#registration-result {
+.form-result {
     background: url(/VersaStack-web/img/noise-diagonal.png), linear-gradient(#ddd, #aaa);
     border-left: 1px solid #555;
     border-right: 1px solid #777;

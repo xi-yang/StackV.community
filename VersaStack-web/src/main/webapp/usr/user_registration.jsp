@@ -61,18 +61,18 @@
             <div id="tables">
                 <c:choose>                    
                     <c:when test="${param.ret == 'succ'}">
-                        <div id="registration-result">
+                        <div class="form-result">
                             Registration Successful<br>
                             <a href="/VersaStack-web/usr/user_registration.jsp">Return</a>
                         </div>
                     </c:when>
                     <c:when test="${param.ret == 'user'}">
-                        <div id="registration-result">
+                        <div class="form-result">
                             Error - Username Already Exists<br>
                             <a href="/VersaStack-web/usr/user_registration.jsp">Return</a>
                         </div>
                     </c:when><c:when test="${param.ret == 'fail'}">
-                        <div id="registration-result">
+                        <div class="form-result">
                             Error - Invalid State, Please Try Again Later<br>
                             <a href="/VersaStack-web/usr/user_registration.jsp">Return</a>
                         </div>
@@ -99,7 +99,7 @@
                                                     </c:forEach>
                                                 </select></td></tr>
                                         <tr><td><input placeholder='Email Address' name='email' type='email' size="40" /></td></tr>                   
-                                        <tr><td><input id="button-register" name="registration" type="submit" value="Register" /></td></tr>
+                                        <tr><td><input class="button-register" name="registration" type="submit" value="Register" /></td></tr>
                                     </tbody>
                                 </table>
                             </form>

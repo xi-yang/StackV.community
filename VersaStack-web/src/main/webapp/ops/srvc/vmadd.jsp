@@ -14,7 +14,7 @@
 <html >    
     <head>   
         <meta charset="UTF-8">
-        <title>Driver Service</title>
+        <title>VM Service</title>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
 
@@ -40,33 +40,26 @@
                         <c:if test="${not empty param.self}">
                             <button type="button" id="button-service-cancel">Cancel</button>
                         </c:if>
-                        <form action="/VersaStack-web/ops/srvc/driver.jsp" method="post">
+                        <form action="/VersaStack-web/ops/srvc/vmadd.jsp" method="post">
                             <input type="hidden" name="sub" value="true" />
                             <table class="management-table" id="service-form">                    
                                 <thead>
                                     <tr>
-                                        <th>Driver Details</th>
+                                        <th>VM Details</th>
                                         <th style="text-align: right"></th>                            
                                     </tr>
                                 </thead>
                                 <tbody>                    
                                     <tr>
-                                        <td>Driver Type</td>
+                                        <td>VM Type</td>
                                         <td>
-                                            <select name="driver_id" required>
-                                                <option></option>
-                                                <option value="stubdriver">Stub</option>
-                                                <option value="awsdriver">AWS</option>
-                                                <option value="versaNSDriver">VersaNS</option>
-                                                <option value="openStackDriver">OpenStack</option>                                                
-                                            </select>
+                                            
                                         </td>
                                     </tr>
                                     <tr>
                                         <td></td>
                                         <td>
                                             <input class="button-register" name="install" type="submit" value="Install" />
-                                            <input class="button-register" name="uninstall" type="submit" value="Uninstall" />
                                         </td>
                                     </tr>
                                 </tbody>
@@ -78,10 +71,7 @@
                 <c:when test="${param.sub == 'true'}">
                     <div id="service-process">
                         <c:if test="${not empty param.install}">
-                            <c:redirect url="/ops/srvc/driver.jsp?ret=${serv.driverInstall(param.driver_id)}" />
-                        </c:if>
-                        <c:if test="${not empty param.uninstall}">
-                            <c:redirect url="/ops/srvc/driver.jsp?ret=${serv.driverUninstall(param.driver_id)}" />
+                            <c:redirect url="/ops/srvc/vmadd.jsp?ret=${serv.vmInstall()}" />
                         </c:if>
                     </div>
                 </c:when>
@@ -103,7 +93,7 @@
                             </c:when>
                         </c:choose>                        
 
-                        <br><a href="/VersaStack-web/ops/srvc/driver.jsp?self=true">(Un)Install Another Driver.</a>                                
+                        <br><a href="/VersaStack-web/ops/srvc/vmadd.jsp?self=true">Add Another VM.</a>                                
                         <br><a href="/VersaStack-web/ops/catalog.jsp">Return to Services.</a>
                     </div>
                 </c:otherwise>

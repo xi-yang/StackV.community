@@ -4,7 +4,7 @@
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
 <jsp:setProperty name="user" property="*" />  
 <c:if test="${user.loggedIn == false}">
-    <c:redirect url="/VersaStack-web/index.jsp" />
+    <c:redirect url="/index.jsp" />
 </c:if>
 <!DOCTYPE html>
 <html >    
