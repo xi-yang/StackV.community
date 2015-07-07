@@ -7,12 +7,12 @@ define([], function () {
         this.source = null;
         this.target = null;
 
-        this.svgNode=null;
+        this.svgNode = null;
 
         this._isProper = function () {
             var ans = true;
-            var leftCursor=this.leftPort.ancestorNode;
-            var rightCursor=this.rightPort.ancestorNode;
+            var leftCursor = this.leftPort.ancestorNode;
+            var rightCursor = this.rightPort.ancestorNode;
             while (!leftCursor.getVisible()) {
                 leftCursor = leftCursor._parent;
             }
@@ -22,6 +22,13 @@ define([], function () {
             this.source = leftCursor;
             this.target = rightCursor;
             ans = ans && (this.source.uid < this.target.uid);
+
+            if (leftPort.isVisible) {
+                this.source = leftPort;
+            }
+            if (rightPort.isVisible) {
+                this.target = rightPort;
+            }
             return ans;
         };
     }
