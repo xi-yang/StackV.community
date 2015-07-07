@@ -139,7 +139,8 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
         for (Map filterCriterion: placementCriteria) {
             if (!filterCriterion.containsKey("data") || !filterCriterion.containsKey("type") || !filterCriterion.containsKey("value")) 
                 continue;
-            if (((String) filterCriterion.get("type")).equalsIgnoreCase(Nml.Topology.getURI())) {
+            if (((String) filterCriterion.get("type")).equalsIgnoreCase(Nml.Topology.getURI())
+                    || ((String) filterCriterion.get("type")).equalsIgnoreCase(Nml.Node.getURI())) {
                 OntModel hostModel = filterTopologyNode(systemModel, vm, (String) filterCriterion.get("value"));
                 if (hostModel == null)
                   throw new EJBException(String.format("%s::process cannot place %s based on polocy %s", this.getClass().getName(), vm, filterCriterion.get("policy")));
@@ -159,6 +160,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
 
     private OntModel filterTopologyNode(OntModel systemModel, Resource resVm, String topologyUri) {
         OntModel hostModel = null;
+        // host node or vpc
         String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
                 "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
                 "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
@@ -169,7 +171,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
                 + "?nodeorvpc a nml:Node . "
                 + "?nodeorvpc nml:hasService ?hvservice . "
                 + "?hvservice a mrs:HypervisorService . "
-                + String.format("FILTER (?topology = <%s>) ", topologyUri)
+                + String.format("FILTER (?nodeorvpc = <%s>)", topologyUri)
                 + "}";        
         Query query = QueryFactory.create(sparqlString);
         QueryExecution qexec = QueryExecutionFactory.create(query, systemModel);
@@ -179,8 +181,6 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             Resource resTopology = querySolution.get("topology").asResource();
             Resource resHostOrVpc = querySolution.get("nodeorvpc").asResource();
             Resource resHvService = querySolution.get("hvservice").asResource();
-            //$$ for now, return the first found node/topology
-            //$$ TODO: in future, matching capability critria and (randomize or return list of candidates)
             if (hostModel == null) {
                 hostModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
             }
@@ -193,7 +193,39 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             hostModel.add(resHvService, Mrs.providesVM, resVm);
             return hostModel;
         }
-        // if no host node found, try topology level hypervisor (vpc)
+        sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
+                "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
+                "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
+                "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
+                "SELECT ?topology ?nodeorvpc ?hvservice WHERE {"
+                + "?topology a nml:Topology ."
+                + "?topology nml:hasTopology ?nodeorvpc ."
+                + "?nodeorvpc a nml:Topology . "
+                + "?topology nml:hasService ?hvservice . "
+                + "?hvservice a mrs:HypervisorService . "
+                + String.format("FILTER (?nodeorvpc = <%s>) ", topologyUri)
+                + "}";        
+        query = QueryFactory.create(sparqlString);
+        qexec = QueryExecutionFactory.create(query, systemModel);
+        r = (ResultSet) qexec.execSelect();
+        if (r.hasNext()) {
+            QuerySolution querySolution = r.next();
+            Resource resTopology = querySolution.get("topology").asResource();
+            Resource resHostOrVpc = querySolution.get("nodeorvpc").asResource();
+            Resource resHvService = querySolution.get("hvservice").asResource();
+            if (hostModel == null) {
+                hostModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+            }
+            hostModel.add(resTopology, RdfOwl.type, Nml.Topology);
+            hostModel.add(resTopology, Nml.hasTopology, resHostOrVpc);
+            hostModel.add(resHostOrVpc, RdfOwl.type, Nml.Topology);
+            hostModel.add(resTopology, Nml.hasService, resHvService);
+            hostModel.add(resHvService, RdfOwl.type, Mrs.HypervisorService);
+            hostModel.add(resHostOrVpc, Nml.hasNode, resVm);
+            hostModel.add(resHvService, Mrs.providesVM, resVm);
+            return hostModel;
+        }
+        // if no host node or vpc found, try flat topology with hypervisor
         sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
                 "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
                 "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +

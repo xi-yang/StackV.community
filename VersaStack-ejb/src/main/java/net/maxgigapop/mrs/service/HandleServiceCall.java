@@ -58,7 +58,7 @@ public class HandleServiceCall {
         if (serviceInstance == null) {
             throw new EJBException(HandleServiceCall.class.getName()+".compileDelta cannot find serviceInstance with uuid=" + serviceInstanceUuid);
         }
-        if (ServiceDeltaPersistenceManager.findByReferenceUUID(spaDelta.getReferenceUUID()) == null) {
+        if (ServiceDeltaPersistenceManager.findByReferenceUUID(spaDelta.getReferenceUUID()) != null) {
             throw new EJBException(HandleServiceCall.class.getName()+".compileDelta has already received a spaDelta with same uuid=" + spaDelta.getReferenceUUID());            
         }
         // run with chosen worker
