@@ -22,6 +22,8 @@ public class serviceBeans {
 
     }
 
+    
+    
     /**
      * Installs driver into model.
      *
@@ -71,7 +73,16 @@ public class serviceBeans {
                     + "<entry><key>subsystemBaseUrl</key><value>http://localhost:8080/VersaNS-0.0.1-SNAPSHOT</value></entry>"
                     + "</properties></driverInstance>";
         } else if (driverID.equalsIgnoreCase("openStackDriver")) {
-
+            driver =  "<driverInstance><properties><entry><key>url</key>"
+                    + "<value>http://max-vlsr2.dragon.maxgigapop.net:35357/v2.0</value></entry>"
+                    + "<entry><key>NATServer</key><value></value></entry>"
+                    + "<entry><key>driverEjbPath</key><value>java:module/OpenStackDriver</value></entry>"
+                    + "<entry><key>username</key><value>admin</value></entry><entry>"
+                    + "<key>password</key><value>1234</value></entry><entry><key>topologyUri</key>"
+                    + "<value>urn:ogf:network:openstack.com:openstack-cloud</value></entry>"
+                    + "<entry><key>tenant</key><value>admin</value></entry></properties></driverInstance>";
+        } else if(driverID.equalsIgnoreCase("StackDriver")){
+            //for VersaStack
         } else //invalid driverID
         {
             return 1;
@@ -110,9 +121,11 @@ public class serviceBeans {
         } else if (driverID.equalsIgnoreCase("awsdriver")) {
             topoUri = "urn:ogf:network:aws.amazon.com:aws-cloud";
         } else if (driverID.equalsIgnoreCase("versaNSDriver")) {
-            topoUri = "";
+            topoUri = "urn:ogf:network:sdn.maxgigapop.net:network";
         } else if (driverID.equalsIgnoreCase("openStackDriver")) {
-            topoUri = "";
+            topoUri = "urn:ogf:network:openstack.com:openstack-cloud";
+        } else if(driverID.equalsIgnoreCase("StackDriver")){
+            //for VersaStack
         } else //invalid driverID
         {
             return 1;
