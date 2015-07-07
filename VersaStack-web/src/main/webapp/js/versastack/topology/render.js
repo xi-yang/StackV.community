@@ -4,8 +4,10 @@
 var selectedNode;
 var debugPoint = {x: 0, y: 0};
 define([
-    "local/d3", "local/versastack/utils"
-], function (d3, utils) {
+    "local/d3",
+    "local/versastack/utils",
+    "local/versastack/topology/DialogBox"
+], function (d3, utils, DialogBox) {
     var map_ = utils.map_;
 
     var settings = {
@@ -19,7 +21,18 @@ define([
         HULL_COLORS: ["rgb(0,100,255)", "rgb(255,0,255)"],
         HULL_OPACITY: .2,
         EDGE_COLOR: "rgb(0,0,0)",
-        EDGE_WIDTH: 2
+        EDGE_WIDTH: 2,
+        DIALOG_NECK_WIDTH: 5,
+        DIALOG_NECK_HEIGHT: 40,
+        DIALOG_MIN_WIDTH: 60,
+        DIALOG_MIN_HEIGHT: 40,
+        DIALOG_BEVEL: 10,
+        DIALOG_COLOR: "rgba(255,0,0,.5)",
+        DIALOG_PORT_COLOR: "rgb(0,0,0)",
+        DIALOG_PORT_EMPTY_COLOR: "rgb(128,128,50)",
+        DIALOG_PORT_HEIGHT: 4,
+        DIALOG_PORT_WIDTH: 8
+               
     };
 
     var redraw_;
@@ -39,8 +52,16 @@ define([
         settings.EDGE_WIDTH /= outputApi.getZoom();
         settings.TOPOLOGY_ANCHOR_SIZE /= outputApi.getZoom();
         settings.TOPOLOGY_ANCHOR_STROKE /= outputApi.getZoom();
+        settings.DIALOG_NECK_WIDTH /= outputApi.getZoom();
+        settings.DIALOG_NECK_HEIGHT /= outputApi.getZoom();
+        settings.DIALOG_MIN_WIDTH /= outputApi.getZoom();
+        settings.DIALOG_MIN_HEIGHT /= outputApi.getZoom();
+        settings.DIALOG_BEVEL /= outputApi.getZoom();
+        settings.DIALOG_PORT_HEIGHT /= outputApi.getZoom();
+        settings.DIALOG_PORT_WIDTH /= outputApi.getZoom();
 
         var svgContainer = outputApi.getSvgContainer();
+        var dialogBox=buildDialogBox();
 
         redraw();
 
@@ -278,6 +299,7 @@ define([
 
         /**@param {Edge} e**/
         function updateSvgChoordsEdge(e) {
+            e._isProper();
             var src = e.source.getCenterOfMass();
             var tgt = e.target.getCenterOfMass();
             e.svgNode.attr("x1", src.x)
@@ -289,9 +311,11 @@ define([
         var lastMouse;
         /**@param {Node} n**/
         var isDragging = false;
+        var didDrag=false;
         function makeDragBehaviour(n) {
             return d3.behavior.drag()
                     .on("drag", function () {
+                        didDrag=true;
                         //Using the dx,dy from d3 can lead to some artifacts when also using
                         //These seem to occur when moving between different transforms
                         var e = d3.event.sourceEvent;
@@ -299,7 +323,6 @@ define([
                         var dy = (e.clientY - lastMouse.clientY) / outputApi.getZoom();
                         lastMouse = e;
                         move(n, dx, dy);
-
                         //Fix the topolgies above us
                         var cursor = n._parent;
                         while (cursor) {
@@ -315,11 +338,17 @@ define([
                         //However, we also want it to continue tracking us.
                         outputApi.setHoverLocation(e.clientX, e.clientY);
                         drawHighlight();
+                        
+                        if(selectedNode){
+                            var choords=selectedNode.getCenterOfMass();
+                            dialogBox.setAnchor(choords.x,choords.y).render();
+                        }
                     })
                     .on("dragstart", function () {
                         lastMouse = d3.event.sourceEvent;
                         outputApi.disablePanning();
                         isDragging = true;
+                        didDrag=false;
                     })
                     .on("dragend", function () {
                         outputApi.enablePanning();
@@ -342,6 +371,9 @@ define([
          * @param {Node} n**/
         function onNodeClick(n) {
             d3.event.stopPropagation();//prevent the click from being handled by the background, which would hide the panel
+            if(didDrag){
+                return;
+            }
             highlightedNode=n;
             drawHighlight();
             outputApi.setDisplayName(n.getName());
@@ -351,6 +383,12 @@ define([
             
             n.populateTreeMenu(displayTree);
             displayTree.draw();
+            
+            var choords=n.getCenterOfMass();
+            dialogBox.setAnchor(choords.x,choords.y)
+                    .setPorts(n.ports)
+                    .render();
+            map_(edgeList,updateSvgChoordsEdge);
             selectedNode = n;
         }
         
@@ -457,6 +495,18 @@ define([
                 move(child, dx, dy);
             });
             updateSvgChoordsNode(n);
+        }
+    
+        function buildDialogBox(){
+            return new DialogBox()
+                    .setContainer(svgContainer)
+                    .setNeck(settings.DIALOG_NECK_HEIGHT,settings.DIALOG_NECK_WIDTH)
+                    .setDimensions(settings.DIALOG_MIN_WIDTH,settings.DIALOG_MIN_HEIGHT)
+                    .setBevel(settings.DIALOG_BEVEL)
+                    .setColor(settings.DIALOG_COLOR)
+                    .setPortColor(settings.DIALOG_PORT_COLOR)
+                    .setPortEmptyColor(settings.DIALOG_PORT_EMPTY_COLOR)
+                    .setPortDimensions(settings.DIALOG_PORT_WIDTH,settings.DIALOG_PORT_HEIGHT);
         }
     }
 

@@ -13,6 +13,14 @@ define([
         this.ancestorNode=null;
         this.alias=null;
         
+        this.isVisible=false;
+        this.x=0;
+        this.y=0;
+        
+        this.getCenterOfMass=function(){
+            return {x:this.x,y:this.y};
+        };
+        
         var children=backing[values.hasBidirectionalPort]
         if(children){
             map_(children,function(child){
@@ -75,6 +83,10 @@ define([
             map_(this.childrenPorts,function(child){
                 child.populateTreeMenu(root);
             });
+        };
+        
+        this.hasAlias=function(){
+            return this.alias!==null;
         };
     }
     
