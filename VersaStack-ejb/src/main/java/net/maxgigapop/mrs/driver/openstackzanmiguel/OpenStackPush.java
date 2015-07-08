@@ -200,13 +200,15 @@ public class OpenStackPush {
         String query;
 
         //1 check to see if any operations involves network creation/deletion
-        query = "SELECT ?network WHERE {?service mrs:providesNetwork  ?network ."
-                + "?network a nml:Topology}";
+        query = "SELECT ?network WHERE {?openstack mrs:hasTopology ?network ."
+                + "?network a nml:Topology "
+                + String.format("FILTER(?openstack = <%s>) }", topologyUri);
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode network = querySolution.get("network");
-            String networkName = network.asResource().toString().replace(topologyUri, "");
+            String networkName = network.asResource().toString();
+            
             Network net = client.getNetwork(networkName);
 
             //1.1 see if the operation desired is valid
