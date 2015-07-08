@@ -27,6 +27,10 @@ define(["local/versastack/topology/modelConstants"], function (values) {
             that.type = type;
         });
 
+        this.getCenterOfMass=function(){
+            return {x:this.x,y:this.y};
+        };
+
         this.getIconPath = function () {
             var prefix="/VersaStack-web/resources/";
             var types = this._backing[values.type];

@@ -5,7 +5,7 @@ define(["local/d3", "local/versastack/utils"],
 
 
 
-            function DialogBox() {
+            function DialogBox(outputApi, render) {
                 this.svgContainer = null;
                 this.anchorX = 0;
                 this.anchorY = 0;
@@ -16,14 +16,17 @@ define(["local/d3", "local/versastack/utils"],
                 this.bevel = 10;
                 this.svgNeck = null;
                 this.svgBubble = null;
-                this.color="";
-                this.ports=[];
-                this.portColor="";
-                this.portEmptyColor="";
-                this.portHeight=0;
-                this.portWidth=0;
-                
-                var that=this;
+                this.color = "";
+                this.ports = [];
+                this.portColors = [];
+                this.portEmptyColor = "";
+                this.portHeight = 0;
+                this.portWidth = 0;
+                this.portBufferVertical = 0;
+                this.portBufferHorizontal = 0;
+                this.elementSelectCallback = null;
+
+                var that = this;
                 this.setAnchor = function (x, y) {
                     this.anchorX = x;
                     this.anchorY = y;
@@ -47,33 +50,64 @@ define(["local/d3", "local/versastack/utils"],
                     this.svgContainer = container;
                     return this;
                 };
-                this.setColor=function(color){
-                    this.color=color;
+                this.setColor = function (color) {
+                    this.color = color;
                     return this;
                 };
-                this.setPorts=function(ports){
-                    map_(this.ports,function(port){
-                        port.isVisible=false;
-                    })
-                    this.ports=ports;
-                    map_(this.ports,function(port){
-                        port.isVisible=true;
-                    })
+                this.setPorts = function (ports) {
+                    //Return the old ports to being invisible
+                    var stack = [];
+                    map_(this.ports, function (port) {
+                        stack.push(port);
+                    });
+                    while (stack.length > 0) {
+                        var port = stack.pop();
+                        map_(port.childrenPorts, function (port) {
+                            stack.push(port);
+                        });
+                        port.isVisible = false;
+                    }
+                    ;
+
+                    this.ports = ports;
+
+                    //Mark the new ports as visible
+                    map_(this.ports, function (port) {
+                        stack.push(port);
+                    });
+                    while (stack.length > 0) {
+                        var port = stack.pop();
+                        map_(port.childrenPorts, function (port) {
+                            stack.push(port);
+                        });
+                        port.isVisible = true;
+                    }
+                    ;
+
                     return this;
                 };
-                this.setPortColor=function(color){
-                    this.portColor=color;
+                this.setPortColors = function (colors) {
+                    this.portColors = colors;
                     return this;
                 };
-                this.setPortEmptyColor=function(color){
-                    this.portEmptyColor=color;
+                this.setPortEmptyColor = function (color) {
+                    this.portEmptyColor = color;
                     return this;
                 };
-                this.setPortDimensions=function(width,height){
-                    this.portWidth=width;
-                    this.portHeight=height;
+                this.setPortDimensions = function (width, height) {
+                    this.portWidth = width;
+                    this.portHeight = height;
                     return this;
-                }
+                };
+                this.setPortBuffer = function (vert, horz) {
+                    this.portBufferVertical = vert;
+                    this.portBufferHorizontal = horz;
+                    return this;
+                };
+                this.setElementSelectCallback = function (callback) {
+                    this.elementSelectCallback = callback;
+                    return this;
+                };
 
                 this.render = function () {
                     var container = this.svgContainer.select("#dialogBox");
@@ -82,7 +116,7 @@ define(["local/d3", "local/versastack/utils"],
                     //draw the neck as a triangle
                     container.append("polygon")
                             .attr("points", constructNeckPoints())
-                            .style("fill",this.color);
+                            .style("fill", this.color);
 
                     container.append("rect")
                             .attr("x", this.anchorX - this.width / 2)
@@ -91,22 +125,72 @@ define(["local/d3", "local/versastack/utils"],
                             .attr("width", this.width)
                             .attr("rx", this.bevel)
                             .attr("ry", this.bevel)
-                            .style("fill",this.color);
-                    
+                            .style("fill", this.color);
+
                     //draw the ports
-                    var x=this.anchorX-this.width/2 + this.bevel/2;
-                    var y=this.anchorY-this.neckLength-this.height+this.bevel/2;
-                    map_(this.ports,function(port){
-                       port.x=x;
-                       port.y=y;
-                       container.append("rect")
-                               .attr("x",x)
-                               .attr("y",y-that.portHeight/2)
-                               .attr("height",that.portHeight)
-                               .attr("width",that.portWidth)
-                               .attr("fill",port.hasAlias()?that.portColor:that.portEmptyColor);
-                       y+=that.portHeight*2;
+                    var x = this.anchorX;
+                    var y = this.anchorY - this.neckLength - this.height + this.bevel / 2;
+
+                    var stack = [];
+                    map_(this.ports, function (port) {
+                        stack.push(port);
                     });
+                    while (stack.length > 0) {
+                        //We create a closure so that the "port" variable points to the correct object
+                        //when the mouse events are called
+                        (function () {
+                            var port = stack.pop();
+                            var width = that.portWidth + (port.getHeight() - 1) * that.portBufferHorizontal;
+                            var height = that.portHeight;
+                            if (port.hasChildren()) {
+                                map_(port.childrenPorts, function (child) {
+                                    stack.push(child);
+                                });
+                                height = that.portHeight * port.countLeaves();
+                                height += that.portBufferVertical * (port.countLeaves() + 1);
+                            }
+
+                            port.x = x - width / 2;
+                            port.y = y;
+                            var color;
+                            if (port.hasAlias() || port.getHeight() > 0) {
+                                color = that.portColors[port.getHeight() % that.portColors.length];
+                            } else {
+                                color = that.portEmptyColor;
+                            }
+                            if (port.hasChildren()) {
+                                port.svgNode = container.append("rect")
+                                        .style("fill", color);
+                            } else {
+                                port.svgNode = container.append("image")
+                                        .attr("xlink:href", port.getIconPath());
+                            }
+                            console.log(port.getName());
+                            port.svgNode
+                                    .attr("x", port.x)
+                                    .attr("y", y - that.portHeight / 2) //this correcting is so that incoming edges align properly
+                                    .attr("height", height)
+                                    .attr("width", width)
+                                    .on("mousemove", function () {
+                                        outputApi.setHoverText(port.getName());
+                                        outputApi.setHoverLocation(d3.event.x, d3.event.y);
+                                        outputApi.setHoverVisible(true);
+                                    })
+                                    .on("mouseleave", function () {
+                                        outputApi.setHoverVisible(false);
+                                    })
+                                    .on("click", function () {
+                                        that.elementSelectCallback(port);
+                                    });
+                            if (port.hasChildren()) {
+                                y += that.portBufferVertical;
+                            } else {
+                                y += that.portHeight;
+                                y += that.portBufferVertical;
+                            }
+                        })();
+                    }
+                    ;
                     return this;
                 };
 

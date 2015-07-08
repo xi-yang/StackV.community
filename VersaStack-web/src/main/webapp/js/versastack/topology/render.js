@@ -24,15 +24,16 @@ define([
         EDGE_WIDTH: 2,
         DIALOG_NECK_WIDTH: 5,
         DIALOG_NECK_HEIGHT: 40,
-        DIALOG_MIN_WIDTH: 60,
+        DIALOG_MIN_WIDTH: 30,
         DIALOG_MIN_HEIGHT: 40,
         DIALOG_BEVEL: 10,
         DIALOG_COLOR: "rgba(255,0,0,.5)",
-        DIALOG_PORT_COLOR: "rgb(0,0,0)",
-        DIALOG_PORT_EMPTY_COLOR: "rgb(128,128,50)",
+        DIALOG_PORT_EMPTY_COLOR: "rgb(128,128,0)",
+        DIALOG_PORT_COLORS: ["rgb(0,0,0)","rgb(128,128,128)"],
         DIALOG_PORT_HEIGHT: 4,
-        DIALOG_PORT_WIDTH: 8
-               
+        DIALOG_PORT_WIDTH: 5,
+        DIALOG_PORT_BUFFER_VERT: 2,
+        DIALOG_PORT_BUFFER_HORZ: 1
     };
 
     var redraw_;
@@ -59,6 +60,8 @@ define([
         settings.DIALOG_BEVEL /= outputApi.getZoom();
         settings.DIALOG_PORT_HEIGHT /= outputApi.getZoom();
         settings.DIALOG_PORT_WIDTH /= outputApi.getZoom();
+        settings.DIALOG_PORT_BUFFER_VERT /= outputApi.getZoom();
+        settings.DIALOG_PORT_BUFFER_HORZ /= outputApi.getZoom();
 
         var svgContainer = outputApi.getSvgContainer();
         var dialogBox=buildDialogBox();
@@ -341,6 +344,9 @@ define([
                         
                         if(selectedNode){
                             var choords=selectedNode.getCenterOfMass();
+                            if(selectedNode.ancestorNode){
+                                choords=selectedNode.ancestorNode.getCenterOfMass();
+                            }
                             dialogBox.setAnchor(choords.x,choords.y).render();
                         }
                     })
@@ -374,22 +380,14 @@ define([
             if(didDrag){
                 return;
             }
-            highlightedNode=n;
-            drawHighlight();
-            outputApi.setDisplayName(n.getName());
-            /**@type {DropDownTree} displayTree**/
-            var displayTree = outputApi.getDisplayTree();
-            displayTree.clear();
-            
-            n.populateTreeMenu(displayTree);
-            displayTree.draw();
-            
             var choords=n.getCenterOfMass();
-            dialogBox.setAnchor(choords.x,choords.y)
-                    .setPorts(n.ports)
-                    .render();
+            dialogBox.setAnchor(choords.x,choords.y);
+            if(n.ports){
+                dialogBox.setPorts(n.ports);
+            }
+            dialogBox.render();
             map_(edgeList,updateSvgChoordsEdge);
-            selectedNode = n;
+            selectElement(n);
         }
         
         function drawHighlight(){
@@ -403,6 +401,20 @@ define([
                 console.log("Trying to highlight an element without an svgNode");
             }
         }
+        
+        function selectElement(elem){
+            highlightedNode=elem;
+            drawHighlight();
+            outputApi.setDisplayName(elem.getName());
+            /**@type {DropDownTree} displayTree**/
+            var displayTree = outputApi.getDisplayTree();
+            displayTree.clear();
+            
+            elem.populateTreeMenu(displayTree);
+            displayTree.draw();
+            selectedNode = elem;
+            
+        };
         
         /**
          * Note that n could also be a topology
@@ -498,15 +510,17 @@ define([
         }
     
         function buildDialogBox(){
-            return new DialogBox()
+            return new DialogBox(outputApi, this)
                     .setContainer(svgContainer)
                     .setNeck(settings.DIALOG_NECK_HEIGHT,settings.DIALOG_NECK_WIDTH)
                     .setDimensions(settings.DIALOG_MIN_WIDTH,settings.DIALOG_MIN_HEIGHT)
                     .setBevel(settings.DIALOG_BEVEL)
                     .setColor(settings.DIALOG_COLOR)
-                    .setPortColor(settings.DIALOG_PORT_COLOR)
+                    .setPortColors(settings.DIALOG_PORT_COLORS)
                     .setPortEmptyColor(settings.DIALOG_PORT_EMPTY_COLOR)
-                    .setPortDimensions(settings.DIALOG_PORT_WIDTH,settings.DIALOG_PORT_HEIGHT);
+                    .setPortDimensions(settings.DIALOG_PORT_WIDTH,settings.DIALOG_PORT_HEIGHT)
+                    .setPortBuffer(settings.DIALOG_PORT_BUFFER_VERT,settings.DIALOG_PORT_BUFFER_HORZ)
+                    .setElementSelectCallback(selectElement);
         }
     }
 

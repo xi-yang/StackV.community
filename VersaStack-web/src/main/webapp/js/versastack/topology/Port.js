@@ -16,6 +16,7 @@ define([
         this.isVisible=false;
         this.x=0;
         this.y=0;
+        this.svgNode=null;
         
         this.getCenterOfMass=function(){
             return {x:this.x,y:this.y};
@@ -29,6 +30,28 @@ define([
                 that.childrenPorts.push(child);
             });
         }
+        
+        this.getHeight=function(){
+            var ans=0;
+            map_(this.childrenPorts,function(child){
+                ans=Math.max(ans,child.getHeight());
+            });
+            ans+=1;
+            return ans;
+        };
+        this.hasChildren=function(){
+            return this.childrenPorts.length>0;
+        };
+        this.countLeaves=function(){
+            if(!this.hasChildren()){
+                return 1;
+            }
+            var ans=0;
+            map_(this.childrenPorts,function(child){
+                ans+=child.countLeaves();
+            });
+            return ans;
+        };
         
         //return all the edges involving this port, or its decendents
         this.getEdges=function(){
@@ -87,6 +110,10 @@ define([
         
         this.hasAlias=function(){
             return this.alias!==null;
+        };
+        
+        this.getIconPath=function(){
+            return "/VersaStack-web/resources/bidirectional_port.png";
         };
     }
     
