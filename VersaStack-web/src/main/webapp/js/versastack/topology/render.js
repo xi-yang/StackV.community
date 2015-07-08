@@ -305,6 +305,23 @@ define([
             e._isProper();
             var src = e.source.getCenterOfMass();
             var tgt = e.target.getCenterOfMass();
+            
+            var isLeft=src.x<tgt.x;
+            if(isLeft){
+                if(e.source.edgeAnchorLeft){
+                    src=e.source.edgeAnchorLeft;
+                }
+                if(e.target.edgeAnchorRight){
+                    tgt=e.target.edgeAnchorRight;
+                }
+            }else{
+                if(e.source.edgeAnchorRight){
+                    src=e.source.edgeAnchorRight;
+                }
+                if(e.target.edgeAnchorLeft){
+                    tgt=e.target.edgeAnchorLeft;
+                }
+            }
             e.svgNode.attr("x1", src.x)
                     .attr("y1", src.y)
                     .attr("x2", tgt.x)

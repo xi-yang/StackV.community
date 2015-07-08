@@ -128,6 +128,8 @@ define(["local/d3", "local/versastack/utils"],
                             .style("fill", this.color);
 
                     //draw the ports
+                    container = this.svgContainer.select("#port");
+                    container.selectAll("*").remove();
                     var x = this.anchorX;
                     var y = this.anchorY - this.neckLength - this.height + this.bevel / 2;
 
@@ -182,6 +184,8 @@ define(["local/d3", "local/versastack/utils"],
                                     .on("click", function () {
                                         that.elementSelectCallback(port);
                                     });
+                            port.edgeAnchorLeft = {x: port.x, y: port.y};
+                            port.edgeAnchorRight = {x: port.x+width, y: port.y};
                             if (port.hasChildren()) {
                                 y += that.portBufferVertical;
                             } else {

@@ -17,6 +17,8 @@ define([
         this.x=0;
         this.y=0;
         this.svgNode=null;
+        this.edgeAnchorLeft={x:0,y:0};
+        this.edgeAnchorRight={x:0,y:0};
         
         this.getCenterOfMass=function(){
             return {x:this.x,y:this.y};
