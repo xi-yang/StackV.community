@@ -15,12 +15,14 @@
         <title>Service Catalog</title>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
+        <script src="/VersaStack-web/js/nexus.js"></script>
 
         <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
         <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/VersaStack-web/css/bootstrap.css">
         <link rel="stylesheet" href="/VersaStack-web/css/style.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/driver.css">
     </head>
 
     <sql:setDataSource var="front_conn" driver="com.mysql.jdbc.Driver"
@@ -43,7 +45,7 @@
                     <sql:param value="${user.getActiveUsergroup()}" />
                     <sql:param value="${user.getId()}" />
                 </sql:query>
-                
+
                 <table class="management-table" id="service-table">                    
                     <thead>
                         <tr>
@@ -93,26 +95,8 @@
                     if (${user.isAllowed(4)}) {
                         var element = document.getElementById("service4");
                         element.classList.remove("hide");
-                    }                    
-                });
-                $("#nav").load("/VersaStack-web/navbar.html");
-
-                $(".button-service-select").click(function (evt) {
-                    $ref = "srvc/" + this.id.toLowerCase() + ".jsp #service-specific";
-                    // console.log($ref);
-
-                    $("#service-table").toggleClass("hide");
-                    $("#button-service-cancel").toggleClass("hide");
-
-                    $("#service-specific").load($ref);
-                    evt.preventDefault();
-                });
-
-                $("#button-service-cancel").click(function (evt) {
-                    $("#service-specific").empty();
-                    $("#button-service-cancel").toggleClass("hide");
-                    $("#service-table").toggleClass("hide");
-                });
+                    }
+                });                
             });
 
         </script>        

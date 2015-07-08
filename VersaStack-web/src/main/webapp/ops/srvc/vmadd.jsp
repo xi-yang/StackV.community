@@ -17,6 +17,7 @@
         <title>VM Service</title>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
+        <script src="/VersaStack-web/js/nexus.js"></script>
 
         <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
         <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
@@ -38,7 +39,7 @@
                 <c:when test="${empty param.sub && empty param.ret}">
                     <div id="service-specific"> 
                         <c:if test="${not empty param.self}">
-                            <button type="button" id="button-service-cancel">Cancel</button>
+                            <button type="button" id="button-service-return">Cancel</button>
                         </c:if>
                         <form action="/VersaStack-web/ops/srvc/vmadd.jsp" method="post">
                             <input type="hidden" name="sub" value="true" />
@@ -53,7 +54,7 @@
                                     <tr>
                                         <td>VM Type</td>
                                         <td>
-                                            
+
                                         </td>
                                     </tr>
                                     <tr>
@@ -81,16 +82,7 @@
                         <c:choose>
                             <c:when test="${param.ret == '0'}">
                                 Success
-                            </c:when>
-                            <c:when test="${param.ret == '1'}">
-                                Invalid Driver ID
-                            </c:when>
-                            <c:when test="${param.ret == '2'}">
-                                Error (Un)Installing Driver
-                            </c:when>
-                            <c:when test="${param.ret == '3'}">
-                                Connection Error
-                            </c:when>
+                            </c:when>                            
                         </c:choose>                        
 
                         <br><a href="/VersaStack-web/ops/srvc/vmadd.jsp?self=true">Add Another VM.</a>                                
@@ -121,12 +113,6 @@
                     }
                 });
                 $("#nav").load("/VersaStack-web/navbar.html");
-
-                $("#button-service-cancel").click(function (evt) {
-                    window.location.href = "/VersaStack-web/ops/catalog.jsp";
-
-                    evt.preventDefault();
-                });
             });
         </script>        
     </body>

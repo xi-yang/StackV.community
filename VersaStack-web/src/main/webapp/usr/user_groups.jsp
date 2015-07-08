@@ -15,6 +15,7 @@
         <title>Usergroup Management</title>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
+        <script src="/VersaStack-web/js/nexus.js"></script>
 
         <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
         <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
@@ -134,7 +135,7 @@
                                     <option value="${usr.user_id}">${usr.username} (${usr.first_name} ${usr.last_name})</option>
                                 </c:forEach>
                             </select>
-                            <input type="submit" value="Add User to Current Group" />
+                            <input type="submit" value="Add User to Group" />
                         </form>                        
                     </c:if>
                 </div>
@@ -160,15 +161,6 @@
                         var element = document.getElementById("service4");
                         element.classList.remove("hide");
                     }
-                });
-                $("#nav").load("/VersaStack-web/navbar.html");
-            
-                $(".button-group-select").click(function (evt) {
-                    $ref = "user_groups.jsp?id=" + this.id;
-                    $ref = $ref.replace('select', '') + " #group-specific";
-                    // console.log($ref);
-                    $("#group-specific").load($ref);
-                    evt.preventDefault();
                 });
             });
         </script>        
