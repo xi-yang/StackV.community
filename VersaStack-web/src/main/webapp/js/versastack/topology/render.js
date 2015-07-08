@@ -376,6 +376,7 @@ define([
                     .on("dragend", function () {
                         outputApi.enablePanning();
                         isDragging = false;
+                        map_(edgeList, updateSvgChoordsEdge);
                     });
         }
 
