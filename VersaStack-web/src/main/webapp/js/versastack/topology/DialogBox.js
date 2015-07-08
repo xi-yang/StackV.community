@@ -25,6 +25,7 @@ define(["local/d3", "local/versastack/utils"],
                 this.portBufferVertical = 0;
                 this.portBufferHorizontal = 0;
                 this.elementSelectCallback = null;
+                this.redrawCallback = null;
 
                 var that = this;
                 this.setAnchor = function (x, y) {
@@ -108,6 +109,10 @@ define(["local/d3", "local/versastack/utils"],
                     this.elementSelectCallback = callback;
                     return this;
                 };
+                this.setRedrawCallback = function(callback){
+                    this.redrawCallback=callback;
+                    return this;
+                };
 
                 this.render = function () {
                     var container = this.svgContainer.select("#dialogBox");
@@ -142,21 +147,21 @@ define(["local/d3", "local/versastack/utils"],
                         //when the mouse events are called
                         (function () {
                             var port = stack.pop();
-                            var width = that.portWidth + (port.getHeight() - 1) * that.portBufferHorizontal;
+                            var width = that.portWidth + (port.getVisibleHeight() - 1) * that.portBufferHorizontal;
                             var height = that.portHeight;
                             if (port.hasChildren()) {
                                 map_(port.childrenPorts, function (child) {
                                     stack.push(child);
                                 });
-                                height = that.portHeight * port.countLeaves();
-                                height += that.portBufferVertical * (port.countLeaves() + 1);
+                                height = that.portHeight * port.countVisibleLeaves();
+                                height += that.portBufferVertical * (port.countVisibleLeaves() + 1);
                             }
 
-                            port.x = x - width / 2;
+                            port.x = x
                             port.y = y;
                             var color;
-                            if (port.hasAlias() || port.getHeight() > 0) {
-                                color = that.portColors[port.getHeight() % that.portColors.length];
+                            if (port.hasAlias() || port.hasChildren()) {
+                                color = that.portColors[port.getVisibleHeight() % that.portColors.length];
                             } else {
                                 color = that.portEmptyColor;
                             }
@@ -167,9 +172,8 @@ define(["local/d3", "local/versastack/utils"],
                                 port.svgNode = container.append("image")
                                         .attr("xlink:href", port.getIconPath());
                             }
-                            console.log(port.getName());
                             port.svgNode
-                                    .attr("x", port.x)
+                                    .attr("x", port.x - width / 2)
                                     .attr("y", y - that.portHeight / 2) //this correcting is so that incoming edges align properly
                                     .attr("height", height)
                                     .attr("width", width)
@@ -183,6 +187,11 @@ define(["local/d3", "local/versastack/utils"],
                                     })
                                     .on("click", function () {
                                         that.elementSelectCallback(port);
+                                    })
+                                    .on("dblclick", function(){
+                                        port.setFolded(!port.getFolded());
+                                        that.render();
+                                        that.redrawCallback();
                                     });
                             port.edgeAnchorLeft = {x: port.x, y: port.y};
                             port.edgeAnchorRight = {x: port.x+width, y: port.y};

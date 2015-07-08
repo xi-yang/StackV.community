@@ -19,12 +19,13 @@ define([
         this.svgNode=null;
         this.edgeAnchorLeft={x:0,y:0};
         this.edgeAnchorRight={x:0,y:0};
+        this.folded=false;
         
         this.getCenterOfMass=function(){
             return {x:this.x,y:this.y};
         };
         
-        var children=backing[values.hasBidirectionalPort]
+        var children=backing[values.hasBidirectionalPort];
         if(children){
             map_(children,function(child){
                 child=map[child.value];
@@ -33,24 +34,43 @@ define([
             });
         }
         
-        this.getHeight=function(){
+        this.setFolded=function(b){
+            this.folded=b;
+        };
+        this.getVisible=function(){
+            var ans=this.isVisible;
+            var cursor=this.parentPort;
+            while(cursor){
+                ans&=!cursor.folded;
+                cursor=cursor.parentPort;
+            }
+            return ans;
+        };
+        
+        this.getFolded=function(){
+            return this.folded;
+        };
+        
+        this.getVisibleHeight=function(){
             var ans=0;
-            map_(this.childrenPorts,function(child){
-                ans=Math.max(ans,child.getHeight());
-            });
+            if(!this.folded){
+                map_(this.childrenPorts,function(child){
+                    ans=Math.max(ans,child.getVisibleHeight());
+                });
+            }
             ans+=1;
             return ans;
         };
         this.hasChildren=function(){
-            return this.childrenPorts.length>0;
+            return this.childrenPorts.length>0 && !this.folded;
         };
-        this.countLeaves=function(){
-            if(!this.hasChildren()){
+        this.countVisibleLeaves=function(){
+            if(!this.hasChildren()||this.folded){
                 return 1;
             }
             var ans=0;
             map_(this.childrenPorts,function(child){
-                ans+=child.countLeaves();
+                ans+=child.countVisibleLeaves();
             });
             return ans;
         };
