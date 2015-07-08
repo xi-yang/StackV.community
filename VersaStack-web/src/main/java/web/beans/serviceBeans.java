@@ -146,6 +146,13 @@ public class serviceBeans {
         return 0;
     }
 
+    //@@TODO Fill out Javadoc
+    public int vmInstall() {
+        return -1;
+    }
+    
+    
+    
     // Utility Functions
     
     /**

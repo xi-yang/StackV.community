@@ -14,7 +14,7 @@ define([
         //their children
         map_(nodes,/**@param {Node} n**/function(n){
             map_(n.children,function(child){
-                edges.push(new Edge(n,child));
+                edges.push({source:n,target:child});
             });
         });
         
@@ -25,8 +25,8 @@ define([
                 .linkStrength(10)
                 .friction(0.9)
                 .linkDistance(10)
-                .charge(-500)
-                .gravity(1)
+                .charge(-1000)
+                .gravity(.5)
                 .theta(0.8)
                 .alpha(0.1)
                 .start();

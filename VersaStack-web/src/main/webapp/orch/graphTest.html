@@ -45,23 +45,26 @@
         <script type="text/javascript">
 
             var settings = {
-                ZOOM_FACTOR: .02,
-                ZOOM_MIN: .2, //As we zoom further out, there is increasing error in the correction pan
-                INIT_ZOOM: 4  //Staring zoomed in allows a larger effective zoomout given our ZOOM_MIN
+                ZOOM_FACTOR: .04,
+                ZOOM_MIN: .8,
+                INIT_ZOOM: 2  //The initial zoom factor effects the preciosion in which we can specify the highlighting effect
+                              //However, it also seems to effect the error in zooming
             };
             var model;
             var layout;
             var render;
             var d3;
             var utils;
+            var DropDownTree;
 
             function onload() {
                 require(["local/versastack/topology/model",
                     "local/versastack/topology/layout",
                     "local/versastack/topology/render",
                     "local/d3",
-                    "local/versastack/utils"],
-                        function (m, l, r, d3_, utils_) {
+                    "local/versastack/utils",
+                    "local/versastack/topology/DropDownTree"],
+                        function (m, l, r, d3_, utils_, tree) {
                             model = m;
                             model.init(drawGraph);
                             layout = l;
@@ -69,6 +72,7 @@
                             d3 = d3_;
                             utils = utils_;
                             map_ = utils.map_;
+                            DropDownTree = tree;
                         });
             }
             function drawGraph() {
@@ -84,7 +88,6 @@
 
                 render.doRender(new outputApi(), model);
 //                animStart(30);
-
             }
 
             //animStart and animStop are primarily intended as debug functions
@@ -107,21 +110,16 @@
                 this.getSvgContainer = function () {
                     return d3.select("#viz");
                 };
-                this.panelClear = function () {
-                    this.setActiveName("");
-                    this.setServices([]);
+
+                this.getDisplayTree = function () {
+                    var ans = new DropDownTree(document.getElementById("treeMenu"));
+                    return ans;
                 };
-                this.setActiveName = function (str) {
-                    document.getElementById("displayPanelName").innerText = "Name: " + str;
-                };
-                this.setServices = function (arr) {
-                    var container = document.getElementById("displayServices");
-                    utils.deleteAllChildNodes(container);
-                    map_(arr, function (str) {
-                        container.appendChild(document.createTextNode("Service: " + str));
-                        container.appendChild(document.createElement('br'));
-                    });
-                };
+
+                this.setDisplayName = function (name) {
+                    document.getElementById("displayName").innerText = name;
+                }
+
 
                 var zoomFactor = settings.INIT_ZOOM;
                 var offsetX = 0, offsetY = 0;
@@ -231,23 +229,41 @@
         <div id="nav">
         </div>
         <div id="displayPanel">
-            <div id="displayPanel-contents">
-                <div id="displayPanelName"></div>
-                <br/>
-                <div id="displayServices"></div>
-            </div>
+            <div id="displayName"></div>
+            <div id="treeMenu"></div>
         </div>
         <div id="hoverdiv"></div>
         <svg id="viz">
-        <!--We nest a g in here because the svg tag itself cannot do transforms
-            we separate topologies, edges, and nodes to create an explicit z-order
-        -->
-        <g id="transform">
-        <g id="topology"/>
-        <g id="edge"/>
-        <g id="anchor"/>
-        <g id="node"/>
-        </g>
+            <defs>
+            <!--When we highlight topologies without specifiyng a width and length, the get clipped
+            The x,y offset are so we avoid clipping the top and left edges.
+            I simply added zeroes until this worked in all cases I tested (the extreme case being a vertical or horizontal topology
+            We could highlight the element entirly with this filter by using feBlend instead of feComposite,
+            However, then (in the case of topologies) the outline would be stuck with the same opacity as the entire element, which is not desireable
+            Instead, we will simply duplicate the selected element, and show its outline as an overlay
+            -->
+                <filter id="outline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+                   <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
+                   <feMorphology operator="dilate" radius="1"/>
+                   <feColorMatrix result="a" type="matrix"
+                         values="0 0 0 0 .7
+                                 0 0 0 0 1
+                                 0 0 0 0 0
+                                 0 0 0 1 0" />
+                   <feComposite operator="out" in="a" in2="SourceGraphic"/>
+                </filter>
+            </defs>
+            <!--We nest a g in here because the svg tag itself cannot do transforms
+                we separate topologies, edges, and nodes to create an explicit z-order
+            -->
+            <g id="transform">
+                <g id="topology"/>
+                <g id="edge"/>
+                <g id="anchor"/>
+                <g id="node"/>
+                <g id="selectedOverlay" style="filter: url(#outline);"/>
+                <g id="dialogBox"/>
+            </g>
         </svg>
 
     </body>
