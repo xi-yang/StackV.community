@@ -92,7 +92,7 @@ public class HandleSystemCall {
         }
         VersionGroup vg = new VersionGroup();
         vg.setRefUuid(refUuid);
-       for (String topoUri: topoURIs) {
+        for (String topoUri: topoURIs) {
             DriverInstance di = ditMap.get(topoUri);
             if (di == null) {
                 throw new EJBException(String.format("createHeadVersionGroup canont find driverInstance with topologyURI=%s", topoUri));

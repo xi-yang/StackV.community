@@ -135,22 +135,6 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
     
     private OntModel stitchWithAwsVpc(OntModel systemModel, OntModel spaModel, Resource netIf, Resource endSite, List<Resource> vlanPorts) {
         OntModel stitchModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-        //?? find BiPort that AWS (top level topology) has that is parent to one of the vlanPorts
-        /*
-        String sparql = "SELECT ?dcPort WHERE {"
-                + "{?awsTopo nml:hasBidirectionalPort ?dcPort ."
-                + String.format("?awsTopo nml:hasTopology <%s>.", endSite.getURI())
-                + "?awsTopo a nml:Topology."
-                + String.format("<%s> a nml:Topology.", endSite.getURI())
-                + "?dcPort a nml:BidirectionalPort."
-                + String.format("?dcPort nml:hasBidirectionalPort <%s>.", netIf.getURI())
-                + "} UNION {"
-                + String.format("{<%s> nml:hasBidirectionalPort ?dcPort .", endSite.getURI())
-                + String.format("<%s> a nml:Topology.", endSite.getURI())
-                + "?dcPort a nml:BidirectionalPort."
-                + String.format("?dcPort nml:hasBidirectionalPort <%s>.", netIf.getURI())
-                + "} }";
-        */
         Model unionSysModel = spaModel.union(systemModel);
         try {
             log.log(Level.FINE, "\n>>>MCE_InterfaceVlanStitching--unionSysModel=\n" + ModelUtil.marshalModel(unionSysModel));
@@ -160,14 +144,14 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
         // select a VPC based on endSite
         List<QuerySolution> solutions = new ArrayList<>();
         for (Resource resVlanPort: vlanPorts) {
-            String sparql = "SELECT ?vpc WHERE {"
-                    + "?aws nml:hasBidirectionalPort ?dcPort ."
+            String sparql = "SELECT ?aws ?dcVx WHERE {"
+                    + "?aws nml:hasBidirectionalPort?dcPort ."
                     + "?aws nml:hasTopology ?vpc."
                     + "?aws a nml:Topology."
                     + "?vpc a nml:Topology."
                     + "?dcPort a nml:BidirectionalPort."
-                    + String.format("?dcPort nml:hasBidirectionalPort <%s>.", resVlanPort.getURI())
-                    + String.format("FILTER (?aws = <%s> || ?vpc = <%s>)", endSite.getURI(), endSite.getURI())
+                    + "?dcPort nml:hasBidirectionalPort ?dcVx."
+                    + String.format("FILTER ((?aws = <%s> || ?vpc = <%s>) && ?dcVx = <%s>)", endSite.getURI(), endSite.getURI(),  resVlanPort.getURI())
                     + "}";
             ResultSet r = ModelUtil.sparqlQuery(unionSysModel, sparql);
             while (r.hasNext()) {
@@ -177,7 +161,7 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
         if (solutions.isEmpty())
             return null;
         Resource resAws = solutions.get(0).getResource("aws");
-        Resource resVpc = solutions.get(0).getResource("vpc");
+        Resource resDcVx = solutions.get(0).getResource("dcVx");
         // create VGW and attach to VPC (endSite), and peer (isAlias) it with the vlanPort
         Resource VPNGW_TAG = RdfOwl.createResource(stitchModel, resAws + ":vpngwTag", Mrs.Tag);
         stitchModel.add(stitchModel.createStatement(VPNGW_TAG, Mrs.type, "gateway"));
@@ -188,10 +172,10 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
         String vpnGatewayId = "vgw+" + UUID.randomUUID();
         Resource resVgw = RdfOwl.createResource(stitchModel, resAws + ":" + vpnGatewayId, Nml.BidirectionalPort);
         stitchModel.add(stitchModel.createStatement(resVgw, Mrs.hasTag, VPNGW_TAG));
-        stitchModel.add(stitchModel.createStatement(netIf, Mrs.hasTag, VIRTUAL_INTERFACE_TAG));
+        stitchModel.add(stitchModel.createStatement(resDcVx, Mrs.hasTag, VIRTUAL_INTERFACE_TAG));
         stitchModel.add(stitchModel.createStatement(resAws, Nml.hasBidirectionalPort, resVgw));
-        stitchModel.add(stitchModel.createStatement(resVgw, Nml.isAlias, netIf));
-        stitchModel.add(stitchModel.createStatement(netIf, Nml.isAlias, resVgw));
+        stitchModel.add(stitchModel.createStatement(resVgw, Nml.isAlias, resDcVx));
+        stitchModel.add(stitchModel.createStatement(resDcVx, Nml.isAlias, resVgw));
         return stitchModel; 
     }
     
