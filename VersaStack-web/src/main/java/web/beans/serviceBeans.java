@@ -63,9 +63,9 @@ public class serviceBeans {
             driver = "<driverInstance><properties><entry><key>topologyUri</key>"
                     + "<value>urn:ogf:network:aws.amazon.com:aws-cloud</value></entry>"
                     + "<entry><key>driverEjbPath</key><value>java:module/AwsDriver</value></entry>"
-                    + "<entry><key>aws_access_key_id</key><value>AKIAJQMR4G7PCMWZRIHA</value></entry>"
-                    + "<entry><key>aws_secret_access_key</key><value>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</value></entry>"
-                    + "<entry><key>region</key><value>us-east-1</value></entry></properties></driverInstance>";
+                    + "<entry><key>aws_access_key_id</key><value>" + par1 + "</value></entry>"
+                    + "<entry><key>aws_secret_access_key</key><value>" + par2 + "</value></entry>"
+                    + "<entry><key>region</key><value>" + par3 + "</value></entry></properties></driverInstance>";
         } else if (driverID.equalsIgnoreCase("versaNSDriver")) {
             driver = "<driverInstance><properties><entry><key>topologyUri</key>"
                     + "<value>urn:ogf:network:sdn.maxgigapop.net:network</value></entry>"
@@ -77,8 +77,8 @@ public class serviceBeans {
                     + "<value>http://max-vlsr2.dragon.maxgigapop.net:35357/v2.0</value></entry>"
                     + "<entry><key>NATServer</key><value></value></entry>"
                     + "<entry><key>driverEjbPath</key><value>java:module/OpenStackDriver</value></entry>"
-                    + "<entry><key>username</key><value>admin</value></entry><entry>"
-                    + "<key>password</key><value>1234</value></entry><entry><key>topologyUri</key>"
+                    + "<entry><key>username</key><value>" + par1 + "</value></entry><entry>"
+                    + "<key>password</key><value>" + par2 + "</value></entry><entry><key>topologyUri</key>"
                     + "<value>urn:ogf:network:openstack.com:openstack-cloud</value></entry>"
                     + "<entry><key>tenant</key><value>admin</value></entry></properties></driverInstance>";
         } else if(driverID.equalsIgnoreCase("StackDriver")){

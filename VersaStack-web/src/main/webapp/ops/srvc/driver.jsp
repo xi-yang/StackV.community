@@ -79,11 +79,11 @@
                                         </c:if>
                                         <c:if test="${param.driver_id == 'awsdriver'}">
                                             <tr>
-                                                <td>Amazon Username</td>
+                                                <td>Amazon Access ID</td>
                                                 <td><input type="text" name="par1" required></td>
                                             </tr>   
                                             <tr>
-                                                <td>Amazon Password</td>
+                                                <td>Amazon Secret Key</td>
                                                 <td><input type="password" name="par2" required></td>
                                             </tr>   
                                             <tr>
