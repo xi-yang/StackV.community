@@ -6,8 +6,8 @@ var debugPoint = {x: 0, y: 0};
 define([
     "local/d3",
     "local/versastack/utils",
-    "local/versastack/topology/DialogBox"
-], function (d3, utils, DialogBox) {
+    "local/versastack/topology/PortDisplayPopup"
+], function (d3, utils, PortDisplayPopup) {
     var map_ = utils.map_;
 
     var settings = {
@@ -65,7 +65,7 @@ define([
         settings.DIALOG_PORT_BUFFER_HORZ /= outputApi.getZoom();
 
         var svgContainer = outputApi.getSvgContainer();
-        var dialogBox = buildDialogBox();
+        var portDisplayPopup = buildPortDisplayPopup();
 
         redraw();
 
@@ -364,7 +364,7 @@ define([
                             if (selectedNode.ancestorNode) {
                                 choords = selectedNode.ancestorNode.getCenterOfMass();
                             }
-                            dialogBox.setAnchor(choords.x, choords.y).render();
+                            portDisplayPopup.setAnchor(choords.x, choords.y).render();
                         }
                     })
                     .on("dragstart", function () {
@@ -399,13 +399,13 @@ define([
                 return;
             }
             var choords = n.getCenterOfMass();
-            dialogBox.setAnchor(choords.x, choords.y);
+            portDisplayPopup.setAnchor(choords.x, choords.y);
             if (n.ports) {
-                dialogBox.setPorts(n.ports);
+                portDisplayPopup.setPorts(n.ports);
             } else {
-                dialogBox.setPorts([]);
+                portDisplayPopup.setPorts([]);
             }
-            dialogBox.render();
+            portDisplayPopup.render();
             map_(edgeList, updateSvgChoordsEdge);
             selectElement(n);
         }
@@ -530,8 +530,8 @@ define([
             updateSvgChoordsNode(n);
         }
 
-        function buildDialogBox() {
-            return new DialogBox(outputApi, API)
+        function buildPortDisplayPopup() {
+            return new PortDisplayPopup(outputApi, API)
                     .setContainer(svgContainer)
                     .setNeck(settings.DIALOG_NECK_HEIGHT, settings.DIALOG_NECK_WIDTH)
                     .setDimensions(settings.DIALOG_MIN_WIDTH, settings.DIALOG_MIN_HEIGHT)

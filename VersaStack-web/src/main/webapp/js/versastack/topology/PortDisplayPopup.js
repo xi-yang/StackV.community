@@ -5,7 +5,7 @@ define(["local/d3", "local/versastack/utils"],
 
 
 
-            function DialogBox(outputApi, renderAPI) {
+            function PortDisplayPopup(outputApi, renderAPI) {
                 this.svgContainer = null;
                 this.anchorX = 0;
                 this.anchorY = 0;
@@ -264,5 +264,5 @@ define(["local/d3", "local/versastack/utils"],
             }
 
 
-            return DialogBox;
+            return PortDisplayPopup;
         });
