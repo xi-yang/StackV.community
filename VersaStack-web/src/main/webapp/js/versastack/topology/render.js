@@ -22,18 +22,18 @@ define([
         HULL_OPACITY: .2,
         EDGE_COLOR: "rgb(0,0,0)",
         EDGE_WIDTH: 2,
-        DIALOG_NECK_WIDTH: 5,
+        DIALOG_NECK_WIDTH: 3,
         DIALOG_NECK_HEIGHT: 40,
-        DIALOG_MIN_WIDTH: 30,
-        DIALOG_MIN_HEIGHT: 40,
-        DIALOG_BEVEL: 10,
+        DIALOG_MIN_WIDTH: 15,
+        DIALOG_MIN_HEIGHT: 10,
+        DIALOG_BEVEL: 5,
         DIALOG_COLOR: "rgba(255,0,0,.5)",
         DIALOG_PORT_EMPTY_COLOR: "rgb(128,128,0)",
         DIALOG_PORT_COLORS: ["rgb(0,0,0)", "rgb(128,128,128)"],
         DIALOG_PORT_HEIGHT: 6,
         DIALOG_PORT_WIDTH: 8,
         DIALOG_PORT_BUFFER_VERT: 2,
-        DIALOG_PORT_BUFFER_HORZ: 1
+        DIALOG_PORT_BUFFER_HORZ: 3
     };
 
     var redraw_;
