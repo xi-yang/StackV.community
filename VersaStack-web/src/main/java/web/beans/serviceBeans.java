@@ -24,7 +24,7 @@ public class serviceBeans {
 
     
     
-    /**
+    /** TODO: UPDATE FOR NEW PARAMETERS<br />
      * Installs driver into model.
      *
      * @param driverID driver identifier;<br /> either 'stubdriver',
@@ -35,7 +35,7 @@ public class serviceBeans {
      * 2 - plugin error.<br />
      * 3 - connection error.<br />
      */
-    public int driverInstall(String driverID) {
+    public int driverInstall(String driverID, String par1, String par2, String par3) {
         String driver = "";
         if (driverID.equalsIgnoreCase("stubdriver")) {
             driver = "<driverInstance><properties><entry><key>topologyUri</key>"
@@ -103,7 +103,7 @@ public class serviceBeans {
         return 0;
     }
 
-    /**
+    /** TODO: UPDATE FOR NEW PARAMETERS<br />
      * Uninstalls driver from model.
      *
      * @param driverID driver identifier;<br /> either 'stubdriver',
@@ -114,7 +114,7 @@ public class serviceBeans {
      * 2 - unplug error.<br />
      * 3 - connection error.<br />
      */
-    public int driverUninstall(String driverID) {
+    public int driverUninstall(String driverID, String par1, String par2, String par3) {
         String topoUri = "";
         if (driverID.equalsIgnoreCase("stubdriver")) {
             topoUri = "urn:ogf:network:rains.maxgigapop.net:2013:topology";

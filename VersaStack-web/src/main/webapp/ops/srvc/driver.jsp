@@ -79,20 +79,36 @@
                                         </c:if>
                                         <c:if test="${param.driver_id == 'awsdriver'}">
                                             <tr>
-                                                <td>AWS</td>
-                                                <td>Driver</td>
+                                                <td>Amazon Username</td>
+                                                <td><input type="text" name="par1" required></td>
+                                            </tr>   
+                                            <tr>
+                                                <td>Amazon Password</td>
+                                                <td><input type="password" name="par2" required></td>
+                                            </tr>   
+                                            <tr>
+                                                <td>Region</td>
+                                                <td><input type="text" name="par3" required></td>
                                             </tr>                                            
                                         </c:if>
                                         <c:if test="${param.driver_id == 'versaNSDriver'}">
                                             <tr>
-                                                <td>VersaStack</td>
-                                                <td>Driver</td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>   
+                                            <tr>
+                                                <td></td>
+                                                <td></td>
                                             </tr>                                            
                                         </c:if>
                                         <c:if test="${param.driver_id == 'openStackDriver'}">
                                             <tr>
-                                                <td>OpenStack</td>
-                                                <td>Driver</td>
+                                                <td>OpenStack Username</td>
+                                                <td><input type="text" name="par1" required></td>
+                                            </tr>   
+                                            <tr>
+                                                <td>OpenStack Password</td>
+                                                <td><input type="password" name="par2" required></td>
                                             </tr>                                            
                                         </c:if>
 
@@ -114,10 +130,18 @@
                     <c:when test="${param.sub == 'true'}">
                         <div id="service-process">
                             <c:if test="${not empty param.install}">
-                                <c:redirect url="/ops/srvc/driver.jsp?ret=${serv.driverInstall(param.driver_id)}" />
+                                <c:redirect url="/ops/srvc/driver.jsp?ret=${serv.driverInstall(
+                                                                            param.driver_id,
+                                                                            param.par1,
+                                                                            param.par2,
+                                                                            param.par3)}" />
                             </c:if>
                             <c:if test="${not empty param.uninstall}">
-                                <c:redirect url="/ops/srvc/driver.jsp?ret=${serv.driverUninstall(param.driver_id)}" />
+                                <c:redirect url="/ops/srvc/driver.jsp?ret=${serv.driverInstall(
+                                                                            param.driver_id,
+                                                                            param.par1,
+                                                                            param.par2,
+                                                                            param.par3)}" />
                             </c:if>
                         </div>
                     </c:when>
