@@ -207,8 +207,8 @@ public class OpenStackPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode network = querySolution.get("network");
-            String networkName = network.asResource().toString();
-            
+            String NetworkName = network.asResource().toString();
+            String networkName = getresourcename(NetworkName, "+","");
             Network net = client.getNetwork(networkName);
 
             //1.1 see if the operation desired is valid
@@ -1044,6 +1044,26 @@ public class OpenStackPush {
             r = qexec.execSelect();
         }
         return r;
+    }
+    private static String getresourcename(String resourceName, String character1, String character2){
+        if(resourceName.contains(character1)){
+            if(!character2.isEmpty() || character2 != null  ){
+                int last1 = resourceName.lastIndexOf(character1);
+                int last2 = resourceName.lastIndexOf(character2);
+                String name = resourceName.substring(last1, last2).replace(character1, "");
+               
+                return name;
+            }
+            else{
+                int last1 = resourceName.lastIndexOf(character1);
+                String name = resourceName.substring(last1);
+                String Name = name.replace(character1, "");
+                return Name;
+            }
+        }
+        else{
+            return resourceName;
+        }
     }
 
 }
