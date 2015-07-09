@@ -5,7 +5,7 @@ define(["local/d3", "local/versastack/utils"],
 
 
 
-            function DialogBox(outputApi, render) {
+            function DialogBox(outputApi, renderAPI) {
                 this.svgContainer = null;
                 this.anchorX = 0;
                 this.anchorY = 0;
@@ -24,8 +24,7 @@ define(["local/d3", "local/versastack/utils"],
                 this.portWidth = 0;
                 this.portBufferVertical = 0;
                 this.portBufferHorizontal = 0;
-                this.elementSelectCallback = null;
-                this.redrawCallback = null;
+                this.enlargeFactor = 0;
 
                 var that = this;
                 this.setAnchor = function (x, y) {
@@ -105,13 +104,35 @@ define(["local/d3", "local/versastack/utils"],
                     this.portBufferHorizontal = horz;
                     return this;
                 };
-                this.setElementSelectCallback = function (callback) {
-                    this.elementSelectCallback = callback;
+                this.setEnlargeFactor = function (x) {
+                    this.enlargeFactor = x;
                     return this;
                 };
-                this.setRedrawCallback = function(callback){
-                    this.redrawCallback=callback;
-                    return this;
+
+
+
+                this._setPortEnlarge = function (port, enlarge) {
+                    if(port.hasChildren()){
+                        return;
+                    }
+                    var width = that.portWidth;
+                    var height = that.portWidth;
+                    var dWidth, dHeight;
+                    if (enlarge) {
+                        dWidth = width * that.enlargeFactor;
+                        width += dWidth;
+                        dHeight = height * that.enlargeFactor;
+                        height += dHeight;
+                    } else {
+                        dWidth = 0;
+                        dHeight = 0;
+                    }
+                    port.svgNode
+                            .attr("width", width)
+                            .attr("height", height)
+                            .attr("x", port.x - width / 2)//make it appear to zoom into center of the icon
+                            .attr("y", port.y - height / 2);
+                    renderAPI.drawHighlight();
                 };
 
                 this.render = function () {
@@ -181,20 +202,22 @@ define(["local/d3", "local/versastack/utils"],
                                         outputApi.setHoverText(port.getName());
                                         outputApi.setHoverLocation(d3.event.x, d3.event.y);
                                         outputApi.setHoverVisible(true);
+                                        that._setPortEnlarge(port, true);
                                     })
                                     .on("mouseleave", function () {
                                         outputApi.setHoverVisible(false);
+                                        that._setPortEnlarge(port, false);
                                     })
                                     .on("click", function () {
-                                        that.elementSelectCallback(port);
+                                        renderAPI.selectElement(port);
                                     })
-                                    .on("dblclick", function(){
+                                    .on("dblclick", function () {
                                         port.setFolded(!port.getFolded());
                                         that.render();
-                                        that.redrawCallback();
-                                    });
+                                        renderAPI.redraw();
+                                    })
                             port.edgeAnchorLeft = {x: port.x, y: port.y};
-                            port.edgeAnchorRight = {x: port.x+width, y: port.y};
+                            port.edgeAnchorRight = {x: port.x + width, y: port.y};
                             if (port.hasChildren()) {
                                 y += that.portBufferVertical;
                             } else {

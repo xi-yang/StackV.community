@@ -35,7 +35,9 @@ define([
         }
         
         this.setFolded=function(b){
-            this.folded=b;
+            if(this.childrenPorts.length>0){
+                this.folded=b;
+            }
         };
         this.getVisible=function(){
             var ans=this.isVisible;
@@ -135,6 +137,9 @@ define([
         };
         
         this.getIconPath=function(){
+            if(this.folded){
+                return "/VersaStack-web/resources/bidirectional_port_expandable.png"
+            }
             return "/VersaStack-web/resources/bidirectional_port.png";
         };
     }
