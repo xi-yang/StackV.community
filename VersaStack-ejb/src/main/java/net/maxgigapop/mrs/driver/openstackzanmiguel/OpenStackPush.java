@@ -509,8 +509,8 @@ public class OpenStackPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode port = querySolution.get("port");
-            String portName = port.asResource().toString().replace(topologyUri, "");
-
+            String portname = port.asResource().toString();
+            String portName = getresourcename(portname, "+", "");
             Port p = client.getPort(portName);
 
             //2.1 make sure that the desired operation is valid
@@ -588,7 +588,8 @@ public class OpenStackPush {
             QuerySolution q = r.next();
             RDFNode port = q.get("port");
             RDFNode server = q.get("node");
-            String serverName = server.asResource().toString().replace(topologyUri, "");
+            String servername = server.asResource().toString();
+            String serverName = getresourcename(servername , "+", "");
 
             //1.1 get the server name, if no server is found, it means the port is not being attached to a server
             //so we will just skip this iteration
@@ -600,7 +601,8 @@ public class OpenStackPush {
             if (r1.hasNext()) {
                 s = client.getServer(serverName);
                 r1.next();
-                String portName = port.asResource().toString().replace(topologyUri, "");
+                String portname = port.asResource().toString();
+                String portName = getresourcename(servername , "+", "");
 
                 //1.2 check that the port has a tag
                 query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:hasTag ?tag}";
@@ -667,7 +669,8 @@ public class OpenStackPush {
         while (r.hasNext()) {
             QuerySolution q = r.next();
             RDFNode vm = q.get("server");
-            String serverName = vm.asResource().toString().replace(topologyUri, "");
+            String servername = vm.asResource().toString();
+            String serverName = getresourcename(servername , "+", "");
             Server server = client.getServer(serverName);
 
             //1.1 check if the desired operation is a valid operation
