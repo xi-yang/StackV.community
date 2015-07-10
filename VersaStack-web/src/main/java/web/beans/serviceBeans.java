@@ -24,11 +24,15 @@ public class serviceBeans {
 
     
     
-    /** TODO: UPDATE FOR NEW PARAMETERS<br />
+    /** 
      * Installs driver into model.
      *
      * @param driverID driver identifier;<br /> either 'stubdriver',
-     * 'awsdriver', 'versaNSDriver', 'openStackDriver'
+     * 'awsdriver', 'versaNSDriver', 'openStackDriver'<br />
+     * @param topoName user defined name for the topology;
+     * @param accountID the access id to the specified driver;
+     * @param accountPW the access password to the specified driver;
+     * @param awsRegion the geographic area for amazon web service;
      * @return error code:<br />
      * 0 - success.<br />
      * 1 - invalid driverID.<br />
