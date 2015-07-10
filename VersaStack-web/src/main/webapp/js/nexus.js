@@ -37,10 +37,23 @@ function aclSelect(sel) {
     $("#acl-tables").load($ref);
 }
 
+function installSelect(sel) {
+    if (sel.value !== null) {
+        $ref = "/VersaStack-web/ops/srvc/driver.jsp?form_install=" + sel.value + " #service-menu";
+        $ref2 = "/VersaStack-web/ops/srvc/driver.jsp?form_install=" + sel.value + " #service-fields";
+    }
+    else {
+        $ref = "/VersaStack-web/ops/srvc/driver.jsp #service-menu";
+        $ref2 = "/VersaStack-web/ops/srvc/driver.jsp #service-fields";   
+    }
+    $("#service-top").load($ref);
+    $("#service-bottom").load($ref2);
+}
+
 function driverSelect(sel) {
     if (sel.value !== null) {
-        $ref = "/VersaStack-web/ops/srvc/driver.jsp?driver_id=" + sel.value + " #service-bottom";
+        $ref = "/VersaStack-web/ops/srvc/driver.jsp?driver_id=" + sel.value + " #service-fields";
     }
-    else $ref = "/VersaStack-web/ops/srvc/driver.jsp #service-bottom";
+    else $ref = "/VersaStack-web/ops/srvc/driver.jsp #service-fields";
     $("#service-bottom").load($ref);
 }

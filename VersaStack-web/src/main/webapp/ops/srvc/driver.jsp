@@ -27,6 +27,11 @@
         <link rel="stylesheet" href="/VersaStack-web/css/driver.css">
     </head>
 
+    <!-- Temp Connection -->
+    <sql:setDataSource var="rains_conn" driver="com.mysql.jdbc.Driver"
+                       url="jdbc:mysql://localhost:8889/rainsdb"
+                       user="root"  password="root"/>
+
     <body>
         <!-- NAV BAR -->
         <div id="nav">
@@ -40,90 +45,151 @@
                 <c:when test="${empty param.sub && empty param.ret}">
                     <div id="service-specific">
                         <div id="service-top">
-                            <c:if test="${not empty param.self}">
-                                <button type="button" id="button-service-return">Cancel</button>
-                            </c:if>
-                            <table class="management-table">
-                                <thead>
-                                    <tr>
-                                        <th>Driver Type</th>
-                                        <th>
-                                            <select form="driver-form" name="driver_id" onchange="driverSelect(this)">                                                
-                                                <option value="none"></option>
-                                                <option value="stubdriver">Stub</option>
-                                                <option value="awsdriver">AWS</option>
-                                                <option value="versaNSDriver">VersaStack</option>
-                                                <option value="openStackDriver">OpenStack</option>
-                                            </select>
-                                        </th>
-                                    </tr>
-                                </thead>
-                            </table>
-                        </div>
-                        <div id="service-bottom">                             
-                            <form id="driver-form" action="/VersaStack-web/ops/srvc/driver.jsp" method="post">
-                                <input type="hidden" name="sub" value="true" />
-                                <table class="management-table" id="service-form">                    
+                            <div id="service-menu">
+                                <c:if test="${not empty param.self}">
+                                    <button type="button" id="button-service-return">Cancel</button>
+                                </c:if>
+                                <table class="management-table">
                                     <thead>
                                         <tr>
-                                            <th>Driver Details</th>
-                                            <th style="text-align: right"></th>                            
+                                            <th>Driver Type</th>
+                                            <th>
+                                                <select form="driver-form" name="form_install" onchange="installSelect(this)">
+                                                    <option>Install</option>                                                
+                                                    <c:choose>
+                                                        <c:when test="${param.form_install == 'uninstall'}">
+                                                            <option value="uninstall" selected>Uninstall</option>
+                                                        </c:when>
+                                                        <c:otherwise>
+                                                            <option value="uninstall">Uninstall</option>
+                                                        </c:otherwise>
+                                                    </c:choose>
+                                                </select>
+                                                <c:if test="${param.form_install != 'uninstall'}">
+                                                    <select form="driver-form" name="driver_id" onchange="driverSelect(this)">                                                
+                                                        <option value="none"></option>
+                                                        <option value="stubdriver">Stub</option>
+                                                        <option value="awsdriver">AWS</option>
+                                                        <option value="versaNSDriver">VersaStack</option>
+                                                        <option value="openStackDriver">OpenStack</option>
+                                                    </select>
+                                                </c:if>
+                                            </th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        <c:if test="${param.driver_id == 'stubdriver'}">
-                                            <tr>
-                                                <td>Stub</td>
-                                                <td>Driver</td>
-                                            </tr>
-                                        </c:if>
-                                        <c:if test="${param.driver_id == 'awsdriver'}">
-                                            <tr>
-                                                <td>Amazon Access ID</td>
-                                                <td><input type="text" name="par1" required></td>
-                                            </tr>   
-                                            <tr>
-                                                <td>Amazon Secret Key</td>
-                                                <td><input type="password" name="par2" required></td>
-                                            </tr>   
-                                            <tr>
-                                                <td>Region</td>
-                                                <td><input type="text" name="par3" required></td>
-                                            </tr>                                            
-                                        </c:if>
-                                        <c:if test="${param.driver_id == 'versaNSDriver'}">
-                                            <tr>
-                                                <td></td>
-                                                <td></td>
-                                            </tr>   
-                                            <tr>
-                                                <td></td>
-                                                <td></td>
-                                            </tr>                                            
-                                        </c:if>
-                                        <c:if test="${param.driver_id == 'openStackDriver'}">
-                                            <tr>
-                                                <td>OpenStack Username</td>
-                                                <td><input type="text" name="par1" required></td>
-                                            </tr>   
-                                            <tr>
-                                                <td>OpenStack Password</td>
-                                                <td><input type="password" name="par2" required></td>
-                                            </tr>                                            
-                                        </c:if>
-
-                                        <c:if test="${param.driver_id != 'none'}">
-                                            <tr>
-                                                <td></td>
-                                                <td>
-                                                    <input class="button-register" name="install" type="submit" value="Install" />
-                                                    <input class="button-register" name="uninstall" type="submit" value="Uninstall" />
-                                                </td>
-                                            </tr>
-                                        </c:if>    
-                                    </tbody>
                                 </table>
-                            </form>
+                            </div>
+                        </div>
+                        <div id="service-bottom">
+                            <div id="service-fields">
+                                <form id="driver-form" action="/VersaStack-web/ops/srvc/driver.jsp" method="post">
+                                    <input type="hidden" name="sub" value="true" />
+                                    <table class="management-table" id="service-form">                    
+                                        <thead>
+                                            <tr>
+                                                <th>Driver Details</th>
+                                                <th style="text-align: right"></th>                            
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Install Form -->
+                                            <c:if test="${param.form_install != 'uninstall'}">
+                                                <c:if test="${param.driver_id == 'stubdriver'}">
+                                                    <tr>
+                                                        <td>Stub</td>
+                                                        <td>Driver</td>
+                                                    </tr>
+                                                </c:if>
+                                                <c:if test="${param.driver_id == 'awsdriver'}">
+                                                    <tr>
+                                                        <td>Name</td>
+                                                        <td><input type="text" name="par1" required></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Amazon Access ID</td>
+                                                        <td><input type="text" name="par2" required></td>
+                                                    </tr>   
+                                                    <tr>
+                                                        <td>Amazon Secret Key</td>
+                                                        <td><input type="password" name="par3" required></td>
+                                                    </tr>   
+                                                    <tr>
+                                                        <td>Region</td>
+                                                        <td>
+                                                            <select name="par4" required>
+                                                                <option></option>
+                                                                <option value="ap-northeast-1">Asia Pacific (Tokyo)</option>
+                                                                <option value="ap-southeast-1">Asia Pacific (Singapore)</option>
+                                                                <option value="ap-southeast-2">Asia Pacific (Sydney)</option>
+                                                                <option value="eu-central-1">Europe (Frankfurt)</option>
+                                                                <option value="eu-west-1">Europe (Ireland)</option>
+                                                                <option value="sa-east-1">South America (Sao Paulo)</option>
+                                                                <option value="us-east-1">US East (N. Virginia)</option>
+                                                                <option value="us-west-1">US West (N. California)</option>
+                                                                <option value="us-west-2">US West (Oregon)</option>
+                                                            </select>
+                                                        </td>
+                                                    </tr>                                            
+                                                </c:if>
+                                                <c:if test="${param.driver_id == 'versaNSDriver'}">
+                                                    <tr>
+                                                        <td></td>
+                                                        <td></td>
+                                                    </tr>   
+                                                    <tr>
+                                                        <td></td>
+                                                        <td></td>
+                                                    </tr>                                            
+                                                </c:if>
+                                                <c:if test="${param.driver_id == 'openStackDriver'}">
+                                                    <tr>
+                                                        <td>Name</td>
+                                                        <td><input type="text" name="par1" required></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>OpenStack Username</td>
+                                                        <td><input type="text" name="par2" required></td>
+                                                    </tr>   
+                                                    <tr>
+                                                        <td>OpenStack Password</td>
+                                                        <td><input type="password" name="par3" required></td>
+                                                    </tr>                                            
+                                                </c:if>
+
+                                                <c:if test="${param.driver_id != 'none'}">
+                                                    <tr>
+                                                        <td></td>
+                                                        <td>
+                                                            <input class="button-register" name="install" type="submit" value="Install" />
+
+                                                        </td>
+                                                    </tr>
+                                                </c:if> 
+                                            </c:if>
+                                            <!-- Uninstall Form -->
+                                            <c:if test="${param.form_install == 'uninstall'}">
+                                                <tr>
+                                                    <sql:query dataSource="${rains_conn}" sql="SELECT driverEjbPath, topologyUri FROM driver_instance" var="driverlist" />
+                                                    <td>Select Driver</td>
+                                                    <td>                                                        
+                                                        <select>
+                                                            <c:forEach var="driver" items="${driverlist.rows}">
+                                                                <option value="${driver.topologyUri}">${driver.driverEjbPath} - ${driver.topologyUri}</option>
+                                                            </c:forEach>
+                                                        </select>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td></td>
+                                                    <td>
+                                                        <input class="button-register" name="uninstall" type="submit" value="Uninstall" />
+                                                    </td>
+                                                </tr>
+                                            </c:if>
+                                        </tbody>
+                                    </table>
+                                </form>
+                            </div>
                         </div>
                     </c:when>
 
@@ -134,14 +200,16 @@
                                                                             param.driver_id,
                                                                             param.par1,
                                                                             param.par2,
-                                                                            param.par3)}" />
+                                                                            param.par3,
+                                                                            param.par4)}" />
                             </c:if>
                             <c:if test="${not empty param.uninstall}">
                                 <c:redirect url="/ops/srvc/driver.jsp?ret=${serv.driverInstall(
                                                                             param.driver_id,
                                                                             param.par1,
                                                                             param.par2,
-                                                                            param.par3)}" />
+                                                                            param.par3,
+                                                                            param.par4)}" />
                             </c:if>
                         </div>
                     </c:when>
