@@ -5,7 +5,7 @@ define(["local/d3", "local/versastack/utils"],
 
 
 
-            function PortDisplayPopup(outputApi, renderAPI) {
+            function PortDisplayPopup(outputApi, renderApi) {
                 this.svgContainer = null;
                 this.anchorX = 0;
                 this.anchorY = 0;
@@ -14,7 +14,7 @@ define(["local/d3", "local/versastack/utils"],
                 this.minWidth = 0;
                 this.minHeight = 0;
                 this.bevel = 10;
-                this.svgNeck = null;
+                this.svgLine = null;
                 this.svgBubble = null;
                 this.color = "";
                 this.ports = [];
@@ -25,6 +25,8 @@ define(["local/d3", "local/versastack/utils"],
                 this.portBufferVertical = 0;
                 this.portBufferHorizontal = 0;
                 this.enlargeFactor = 0;
+                this.opacity=1;
+                this.hostNode = null;
 
                 var that = this;
                 this.setAnchor = function (x, y) {
@@ -52,6 +54,10 @@ define(["local/d3", "local/versastack/utils"],
                 };
                 this.setColor = function (color) {
                     this.color = color;
+                    return this;
+                };
+                this.setOpacity=function(opacity){
+                    this.opacity=opacity;
                     return this;
                 };
                 this.setPorts = function (ports) {
@@ -108,11 +114,19 @@ define(["local/d3", "local/versastack/utils"],
                     this.enlargeFactor = x;
                     return this;
                 };
-
-
+                this.setHostNode = function (n) {
+                    this.hostNode = n;
+                    return this;
+                };
+                this.move=function(dx,dy){
+                    this.anchorX+=dx;
+                    this.anchorY+=dy;
+                    return this;
+                };
+               
 
                 this._setPortEnlarge = function (port, enlarge) {
-                    if(port.hasChildren()){
+                    if (port.hasChildren()) {
                         return;
                     }
                     var width = that.portWidth;
@@ -131,47 +145,47 @@ define(["local/d3", "local/versastack/utils"],
                             .attr("width", width)
                             .attr("height", height)
                             .attr("x", port.x - width / 2)//make it appear to zoom into center of the icon
-                            .attr("y", port.y - height/2);
-                    renderAPI.drawHighlight();
+                            .attr("y", port.y - height / 2);
+                    renderApi.drawHighlight();
                 };
 
                 this.render = function () {
                     var container = this.svgContainer.select("#dialogBox");
                     container.selectAll("*").remove();
 
-                    this.height=this.minHeight;
+                    this.height = this.minHeight;
 
 
                     //draw the ports
                     var portContainer = this.svgContainer.select("#port");
                     portContainer.selectAll("*").remove();
                     var x = this.anchorX;
-                    var y = this.anchorY - this.neckLength - this.bevel / 2 - this.portHeight/2;
-                    var portTotalHeight=0;
+                    var y = this.anchorY - this.bevel;
+                    var portTotalHeight = 0;
 
                     var stack = [];
                     map_(this.ports, function (port) {
                         stack.push(port);
                     });
-                    var maxWidth=0;
+                    var maxWidth = 0;
                     while (stack.length > 0) {
                         //We create a closure so that the "port" variable points to the correct object
                         //when the mouse events are called
                         (function () {
                             var port = stack.pop();
                             var width = that.portWidth + (port.getVisibleHeight() - 1) * that.portBufferHorizontal;
-                            maxWidth=Math.max(width,maxWidth);
+                            maxWidth = Math.max(width, maxWidth);
                             var height = that.portHeight;
-                            var dy=0;
+                            var dy = 0;
                             if (port.hasChildren()) {
                                 map_(port.childrenPorts, function (child) {
                                     stack.push(child);
                                 });
                                 height = that.portHeight * port.countVisibleLeaves();
                                 height += that.portBufferVertical * (port.countVisibleLeaves() + 1);
-                                dy=height-that.portHeight/2;
-                            }else{
-                                dy=height/2;
+                                dy = height - that.portHeight / 2;
+                            } else {
+                                dy = height / 2;
                             }
 
                             port.x = x;
@@ -205,62 +219,91 @@ define(["local/d3", "local/versastack/utils"],
                                         that._setPortEnlarge(port, false);
                                     })
                                     .on("click", function () {
-                                        renderAPI.selectElement(port);
+                                        renderApi.selectElement(port);
                                     })
                                     .on("dblclick", function () {
                                         port.setFolded(!port.getFolded());
                                         that.render();
-                                        renderAPI.redraw();
+                                        renderApi.redraw();
                                     })
+                                    .call(dragBehaviour);
                             port.edgeAnchorLeft = {x: port.x, y: port.y};
                             port.edgeAnchorRight = {x: port.x + width, y: port.y};
                             if (port.hasChildren()) {
                                 y -= that.portBufferVertical;
-                                portTotalHeight +=that.portBufferVertical;
+                                portTotalHeight += that.portBufferVertical;
                             } else {
                                 y -= that.portHeight;
                                 y -= that.portBufferVertical;
-                                portTotalHeight +=that.portHeight + that.portBufferVertical;
+                                portTotalHeight += that.portHeight + that.portBufferVertical;
                             }
                         })();
-                    };
-                    
-                    var height=this.minHeight;
-                    if(portTotalHeight>height+this.portBufferVertical*2){
-                        height=portTotalHeight+this.portBufferVertical*2;
                     }
-                    var width=this.minWidth;
-                    if(maxWidth > width + 2*this.portBufferHorizontal){
-                        width = maxWidth + 2*this.portBufferHorizontal;
+                    ;
+
+                    var height = this.minHeight;
+                    if (portTotalHeight > height + this.portBufferVertical * 2) {
+                        height = portTotalHeight + this.portBufferVertical * 2;
                     }
-                    
+                    var width = this.minWidth;
+                    if (maxWidth > width + 2 * this.portBufferHorizontal) {
+                        width = maxWidth + 2 * this.portBufferHorizontal;
+                    }
+
                     //Draw the box itself.
                     //We do this after the ports because are size is dependent on how many ports we draw
                     //The HTML template handles the layering inspite our out of order rendering.
-                    
-                    //draw the neck as a triangle
-                    container.append("polygon")
-                            .attr("points", constructNeckPoints())
-                            .style("fill", this.color);
 
-                    container.append("rect")
+                    var boxContainer=container.append("g")
+                            .style("opacity",this.opacity);
+
+                    boxContainer.append("rect")
                             .attr("x", this.anchorX - width / 2)
-                            .attr("y", this.anchorY - this.neckLength - height - this.bevel/2)
-                            .attr("height", height + this.bevel/2)
+                            .attr("y", this.anchorY - height - this.bevel / 2)
+                            .attr("height", height + this.bevel / 2)
                             .attr("width", width)
                             .attr("rx", this.bevel)
                             .attr("ry", this.bevel)
-                            .style("fill", this.color);
-                    
+                            .style("fill", this.color)
+                            .call(dragBehaviour);
+
+                    //connect the box to the node;
+                    var dst = this.hostNode.getCenterOfMass();
+                    this.svgLine = boxContainer.append("line")
+                            .style("stroke", this.color)
+                            .style("stroke-width", this.neckWidth)
+                            .attr("x1", this.anchorX)
+                            .attr("y1", this.anchorY-height/2)
+                            .attr("stroke-linecap","round")
+                            .attr("x2", dst.x)
+                            .attr("y2", dst.y);
+
                     return this;
                 };
-
-
-                function constructNeckPoints() {
-                    return   that.anchorX + "," + that.anchorY + " "
-                            + (that.anchorX - that.neckWidth / 2) + "," + (that.anchorY - that.neckLength) + " "
-                            + (that.anchorX + that.neckWidth / 2) + "," + (that.anchorY - that.neckLength);
-                }
+                
+                var lastMouse;
+                var dragBehaviour = d3.behavior.drag()
+                                    .on("drag", function () {
+                                        var e = d3.event.sourceEvent;
+                                        var dx = (e.clientX - lastMouse.clientX) / outputApi.getZoom();
+                                        var dy = (e.clientY - lastMouse.clientY) / outputApi.getZoom();
+                                        lastMouse = e;
+                                        
+                                        that.anchorX+=dx;
+                                        that.anchorY+=dy;
+                                        
+                                        outputApi.setHoverLocation(e.clientX, e.clientY);
+                                        renderApi.drawHighlight();
+                                        renderApi.layoutEdges();
+                                        that.render();
+                                    })
+                                    .on("dragstart", function () {
+                                        lastMouse = d3.event.sourceEvent;
+                                        outputApi.disablePanning();
+                                    })
+                                    .on("dragend", function () {
+                                        outputApi.enablePanning();
+                                    });
             }
 
 

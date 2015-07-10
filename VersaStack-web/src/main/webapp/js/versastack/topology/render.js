@@ -27,7 +27,8 @@ define([
         DIALOG_MIN_WIDTH: 15,
         DIALOG_MIN_HEIGHT: 10,
         DIALOG_BEVEL: 5,
-        DIALOG_COLOR: "rgba(255,0,0,.5)",
+        DIALOG_COLOR: "rgb(255,0,0)",
+        DIALOG_OPACITY: "0.5",
         DIALOG_PORT_EMPTY_COLOR: "rgb(128,128,0)",
         DIALOG_PORT_COLORS: ["rgb(0,0,0)", "rgb(128,128,128)"],
         DIALOG_PORT_HEIGHT: 6,
@@ -359,12 +360,15 @@ define([
                         outputApi.setHoverLocation(e.clientX, e.clientY);
                         drawHighlight();
 
-                        if (selectedNode) {
+                        if (n===selectedNode) {
                             var choords = selectedNode.getCenterOfMass();
                             if (selectedNode.ancestorNode) {
                                 choords = selectedNode.ancestorNode.getCenterOfMass();
                             }
-                            portDisplayPopup.setAnchor(choords.x, choords.y).render();
+                            portDisplayPopup.move(dx,dy);
+                        }
+                        if(selectedNode){
+                            portDisplayPopup.render();
                         }
                     })
                     .on("dragstart", function () {
@@ -399,7 +403,9 @@ define([
                 return;
             }
             var choords = n.getCenterOfMass();
-            portDisplayPopup.setAnchor(choords.x, choords.y);
+            portDisplayPopup
+                    .setAnchor(choords.x, choords.y-settings.DIALOG_NECK_HEIGHT)
+                    .setHostNode(n);
             if (n.ports) {
                 portDisplayPopup.setPorts(n.ports);
             } else {
@@ -541,13 +547,15 @@ define([
                     .setPortEmptyColor(settings.DIALOG_PORT_EMPTY_COLOR)
                     .setPortDimensions(settings.DIALOG_PORT_WIDTH, settings.DIALOG_PORT_HEIGHT)
                     .setPortBuffer(settings.DIALOG_PORT_BUFFER_VERT, settings.DIALOG_PORT_BUFFER_HORZ)
-                    .setEnlargeFactor(settings.ENLARGE_FACTOR);
+                    .setEnlargeFactor(settings.ENLARGE_FACTOR)
+                    .setOpacity(settings.DIALOG_OPACITY);
         }
 
         API["redraw"] = redraw;
         API["doRender"] = doRender;
         API["drawHighlight"] = drawHighlight;
         API["selectElement"] = selectElement;
+        API["layoutEdges"] = function(){map_(edgeList, updateSvgChoordsEdge);};
     }
 
 
