@@ -737,7 +737,8 @@ public class OpenStackPush {
                 {
                     QuerySolution q2 = r2.next();
                     RDFNode port = q2.get("port");
-                    String name = port.asResource().toString().replace(topologyUri, "");
+                    String Name = port.asResource().toString();
+                    String name = getresourcename(Name , "+","");
                     portNames.add(name);
                 }
 
@@ -765,10 +766,12 @@ public class OpenStackPush {
                 r4 = executeQuery(query, modelRef, modelDelta);
                 boolean hasRootVolume = false;
                 String volumeName = "";
+                String volumename = "";
                 while (r4.hasNext()) {
                     QuerySolution q4 = r4.next();
                     RDFNode volume = q4.get("volume");
-                    volumeName = volume.asResource().toString().replace(topologyUri, "");
+                    volumename = volume.asResource().toString();
+                    volumeName = getresourcename(volumename, "+", "");
                     String deviceName = q4.get("deviceName").asLiteral().toString();
                     if (deviceName.equals("/dev/")) {
                         hasRootVolume = true;
@@ -819,7 +822,8 @@ public class OpenStackPush {
         while (r1.hasNext()) {
             QuerySolution querySolution1 = r1.next();
             RDFNode server = querySolution1.get("node");
-            String serverName = server.asResource().toString().replace(topologyUri, "");
+            String servername = server.asResource().toString();
+            String serverName =  getresourcename(servername ,"+", "");
             RDFNode volume = querySolution1.get("volume");
             String volumeName = volume.asResource().toString().replace(topologyUri, "");
 
