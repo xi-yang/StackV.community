@@ -15,21 +15,13 @@
         <title>ACL Management</title>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
+        <script src="/VersaStack-web/js/nexus.js"></script>
 
         <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
         <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/VersaStack-web/css/bootstrap.css">
         <link rel="stylesheet" href="/VersaStack-web/css/style.css">     
-
-        <script>
-            function aclSelect(sel) {
-                
-                $ref = "privileges.jsp?id=" + sel.value + " #acl-tables";
-                $("#acl-tables").load($ref);
-            }
-            ;
-        </script>
     </head>
 
     <sql:setDataSource var="front_conn" driver="com.mysql.jdbc.Driver"
@@ -229,8 +221,6 @@
                         element.classList.remove("hide");
                     }
                 });
-                $("#nav").load("/VersaStack-web/navbar.html");
-
             });
         </script>        
     </body>
