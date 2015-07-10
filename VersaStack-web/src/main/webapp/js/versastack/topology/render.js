@@ -6,8 +6,9 @@ var debugPoint = {x: 0, y: 0};
 define([
     "local/d3",
     "local/versastack/utils",
-    "local/versastack/topology/DialogBox"
-], function (d3, utils, DialogBox) {
+    "local/versastack/topology/DialogBox",
+    "local/versastack/topology/switchServicePopup"
+], function (d3, utils, DialogBox,SwitchPopup) {
     var map_ = utils.map_;
 
     var settings = {
@@ -24,7 +25,7 @@ define([
         EDGE_WIDTH: 2,
         DIALOG_NECK_WIDTH: 5,
         DIALOG_NECK_HEIGHT: 40,
-        DIALOG_MIN_WIDTH: 60,
+        DIALOG_MIN_WIDTH: 30,
         DIALOG_MIN_HEIGHT: 40,
         DIALOG_BEVEL: 10,
         DIALOG_COLOR: "rgba(255,0,0,.5)",
@@ -34,6 +35,33 @@ define([
         DIALOG_PORT_WIDTH: 8
                
     };
+    
+    
+    var switchSettings = {
+        NODE_SIZE: 30,
+        SERVICE_SIZE: 10,
+        TOPOLOGY_SIZE: 15,
+        TOPOLOGY_BUFFER: 30,
+        TOPOLOGY_ANCHOR_SIZE: 8,
+        TOPOLOGY_ANCHOR_STROKE: 2,
+        ENLARGE_FACTOR: .2,
+        HULL_COLORS: ["rgb(0,100,255)", "rgb(255,0,255)"],
+        HULL_OPACITY: .2,
+        EDGE_COLOR: "rgb(0,0,0)",
+        EDGE_WIDTH: 2,
+        DIALOG_NECK_WIDTH: 5,
+        DIALOG_NECK_HEIGHT: 40,
+        DIALOG_MIN_WIDTH: 130,
+        DIALOG_MIN_HEIGHT: 110,
+        DIALOG_BEVEL: 10,
+        DIALOG_COLOR: "rgba(255,0,0,.5)",
+        DIALOG_PORT_COLOR: "rgb(0,0,0)",
+        DIALOG_PORT_EMPTY_COLOR: "rgb(128,128,50)",
+        DIALOG_PORT_HEIGHT: 4,
+        DIALOG_PORT_WIDTH: 8
+               
+    };
+
 
     var redraw_;
 
@@ -59,9 +87,27 @@ define([
         settings.DIALOG_BEVEL /= outputApi.getZoom();
         settings.DIALOG_PORT_HEIGHT /= outputApi.getZoom();
         settings.DIALOG_PORT_WIDTH /= outputApi.getZoom();
+        
+        
+        //switch setting
+        switchSettings.NODE_SIZE /= outputApi.getZoom();
+        switchSettings.SERVICE_SIZE /= outputApi.getZoom();
+        switchSettings.TOPOLOGY_SIZE /= outputApi.getZoom();
+        switchSettings.TOPOLOGY_BUFFER /= outputApi.getZoom();
+        switchSettings.EDGE_WIDTH /= outputApi.getZoom();
+        switchSettings.TOPOLOGY_ANCHOR_SIZE /= outputApi.getZoom();
+        switchSettings.TOPOLOGY_ANCHOR_STROKE /= outputApi.getZoom();
+        switchSettings.DIALOG_NECK_WIDTH /= outputApi.getZoom();
+        switchSettings.DIALOG_NECK_HEIGHT /= outputApi.getZoom();
+        switchSettings.DIALOG_MIN_WIDTH /= outputApi.getZoom();
+        switchSettings.DIALOG_MIN_HEIGHT /= outputApi.getZoom();
+        switchSettings.DIALOG_BEVEL /= outputApi.getZoom();
+        switchSettings.DIALOG_PORT_HEIGHT /= outputApi.getZoom();
+        switchSettings.DIALOG_PORT_WIDTH /= outputApi.getZoom();
 
         var svgContainer = outputApi.getSvgContainer();
         var dialogBox=buildDialogBox();
+        var switchPopup = buildSwitchPopup();
 
         redraw();
 
@@ -149,7 +195,7 @@ define([
                         //contrast, the mousMove event is for the popup, and
                         //we may want to display different info when we
                         //hover over a service
-                        .on("click", onNodeClick.bind(undefined, service))
+                        .on("click", onServiceClick.bind(undefined, service))
                         .on("dblclick", onNodeDblClick.bind(undefined, n))
                         .on("mousemove", onNodeMouseMove.bind(undefined, service))
                         .on("mouseleave", onNodeMouseLeave.bind(undefined, service))
@@ -389,7 +435,32 @@ define([
                     .setPorts(n.ports)
                     .render();
             map_(edgeList,updateSvgChoordsEdge);
+            
+            
             selectedNode = n;
+        }
+        
+        function onServiceClick(n){
+            selectedNode=n;
+            d3.event.stopPropagation();
+            if(didDrag){
+                return;
+            }
+            highlightedNode = n;
+            drawHighlight();
+            outputApi.setDisplayName(n.getName());
+            
+            var displayTree = outputApi.getDisplayTree();
+            displayTree.clear();
+            
+            n.populateTreeMenu(displayTree);
+            displayTree.draw();
+            
+//            var switchChoords = n.getCenterOfMass();   
+//            switchPopup.setAnchor(switchChoords.x,switchChoords.y)
+//                    .setService(n)
+//                    .render();
+        
         }
         
         function drawHighlight(){
@@ -507,6 +578,18 @@ define([
                     .setPortColor(settings.DIALOG_PORT_COLOR)
                     .setPortEmptyColor(settings.DIALOG_PORT_EMPTY_COLOR)
                     .setPortDimensions(settings.DIALOG_PORT_WIDTH,settings.DIALOG_PORT_HEIGHT);
+        }
+        
+        
+        function buildSwitchPopup(){
+            return new SwitchPopup(outputApi)
+                    .setContainer(svgContainer)                   
+                    .setDimensions(switchSettings.DIALOG_MIN_WIDTH,switchSettings.DIALOG_MIN_HEIGHT)
+                    .setBevel(switchSettings.DIALOG_BEVEL)
+                    .setColor(switchSettings.DIALOG_COLOR)
+                    .setPortColor(switchSettings.DIALOG_PORT_COLOR)
+                    .setPortEmptyColor(switchSettings.DIALOG_PORT_EMPTY_COLOR)
+                    .setPortDimensions(switchSettings.DIALOG_PORT_WIDTH,switchSettings.DIALOG_PORT_HEIGHT);
         }
     }
 
