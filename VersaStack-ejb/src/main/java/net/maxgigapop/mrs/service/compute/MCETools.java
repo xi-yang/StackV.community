@@ -400,7 +400,7 @@ public class MCETools {
                 if (nextSwSvc != null)
                     nextHop = nextSwSvc;
             }
-            // handle a special case where port exits a switch Node or Topology and goes back to SwitchingService under this Node or Topology
+            // handle a special case where port exits a switch Node or Topology and goes back to SwitchingService under the same Node or Topology
             if (prevHop == nextHop)
                 return null;
             if (ModelUtil.isResourceOfType(model, currentHop, Nml.BidirectionalPort)) {
@@ -464,7 +464,7 @@ public class MCETools {
     }
     
  
-    //add hashMap (port, availableVlanRange + translation + ingressForSwService, egressForSwService) as param
+    //add hashMap (port, availableVlanRange + translation + ingressForSwService, egressForSwService) as params for currentHop
     private static void handleL2PathHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, HashMap portParamMap, Resource lastPort) 
             throws TagSet.NoneVlanExeption, TagSet.EmptyTagSetExeption {
         if (prevHop != null && ModelUtil.isResourceOfType(model, prevHop, Nml.BidirectionalPort)) {
@@ -482,13 +482,13 @@ public class MCETools {
             throw new TagSet.NoneVlanExeption();
         // interception with input availableVlanRange 
         Boolean vlanTranslation = true;
-        Resource egressSwithingService = null; 
+        Resource egressSwitchingService = null; 
         if (prevHop != null && !vlanRange.isEmpty()) {
             // check vlan translation
             String sparql = String.format("SELECT ?swapping WHERE {<%s> a nml:SwitchingService. <%s> nml:labelSwapping ?swapping.}", prevHop, prevHop);
             ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
             if (rs.hasNext())
-                egressSwithingService = prevHop;
+                egressSwitchingService = prevHop;
             if (!rs.hasNext() || !rs.next().getLiteral("swapping").getBoolean()) {
                 // non-translation
                 vlanTranslation = false;
@@ -504,10 +504,10 @@ public class MCETools {
         if (vlanRange.isEmpty())
             throw new TagSet.EmptyTagSetExeption();
         paramMap.put("vlanRange", vlanRange);
-        if (egressSwithingService != null) {
-            paramMap.put("egressSwithingService", egressSwithingService);
+        if (egressSwitchingService != null) {
+            paramMap.put("egressSwitchingService", egressSwitchingService);
             if (lastParamMap != null)
-                lastParamMap.put("ingressSwithingService", egressSwithingService);
+                lastParamMap.put("ingressSwitchingService", egressSwitchingService);
         }
         paramMap.put("vlanTranslation", vlanTranslation);
         portParamMap.put(currentHop, paramMap);
@@ -564,8 +564,10 @@ public class MCETools {
         }
         
         // get egressSubnet for egressSwitchingService and add port the this existing subnet
-        if (paramMap.containsKey("egressSwitchingSubnet")) {
-            Resource egressSwitchingSubnet = (Resource) paramMap.get("egressSwitchingService");
+        if (paramMap.containsKey("egressSwitchingService")) {
+            Resource egressSwitchingService = (Resource) paramMap.get("egressSwitchingService");
+            String vlanSubnetUrn = egressSwitchingService.toString() + ":vlan+" + suggestedVlan;
+            Resource egressSwitchingSubnet = RdfOwl.createResource(vlanSubnetModel, vlanSubnetUrn, Mrs.SwitchingSubnet);
             vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.hasBidirectionalPort, resVlanPort));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.belongsTo, egressSwitchingSubnet));
         }
