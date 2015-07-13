@@ -24,23 +24,27 @@ public class serviceBeans {
 
     
     
-    /** TODO: UPDATE FOR NEW PARAMETERS<br />
+    /** 
      * Installs driver into model.
      *
      * @param driverID driver identifier;<br /> either 'stubdriver',
-     * 'awsdriver', 'versaNSDriver', 'openStackDriver'
+     * 'awsdriver', 'versaNSDriver', 'openStackDriver'<br />
+     * @param topoName user defined name for the topology;
+     * @param accountID the access id to the specified driver;
+     * @param accountPW the access password to the specified driver;
+     * @param awsRegion the geographic area for amazon web service;
      * @return error code:<br />
      * 0 - success.<br />
      * 1 - invalid driverID.<br />
      * 2 - plugin error.<br />
      * 3 - connection error.<br />
      */
-    public int driverInstall(String driverID, String par1, String par2, String par3, String par4) {
+    public int driverInstall(String driverID, String topoName, String accountID, String accountPW, String awsRegion) {
         String driver = "";
         if (driverID.equalsIgnoreCase("stubdriver")) {
             driver = "<driverInstance><properties><entry><key>topologyUri</key>"
-                    + "<value>urn:ogf:network:rains.maxgigapop.net:2013:topology</value>"
-                    + "</entry><entry><key>driverEjbPath</key>"
+                    + "<value>urn:ogf:network:rains.maxgigapop.net:2013:topology"
+                    + topoName + "</value></entry><entry><key>driverEjbPath</key>"
                     + "<value>java:module/StubSystemDriver</value></entry>"
                     + "<entry><key>stubModelTtl</key>"
                     + "<value>@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.\n"
@@ -61,14 +65,14 @@ public class serviceBeans {
 
         } else if (driverID.equalsIgnoreCase("awsdriver")) {
             driver = "<driverInstance><properties><entry><key>topologyUri</key>"
-                    + "<value>urn:ogf:network:aws.amazon.com:aws-cloud</value></entry>"
+                    + "<value>urn:ogf:network:aws.amazon.com:aws-cloud" + topoName + "</value></entry>"
                     + "<entry><key>driverEjbPath</key><value>java:module/AwsDriver</value></entry>"
-                    + "<entry><key>aws_access_key_id</key><value>" + par2 + "</value></entry>"
-                    + "<entry><key>aws_secret_access_key</key><value>" + par3 + "</value></entry>"
-                    + "<entry><key>region</key><value>" + par4 + "</value></entry></properties></driverInstance>";
+                    + "<entry><key>aws_access_key_id</key><value>" + accountID + "</value></entry>"
+                    + "<entry><key>aws_secret_access_key</key><value>" + accountPW + "</value></entry>"
+                    + "<entry><key>region</key><value>" + awsRegion + "</value></entry></properties></driverInstance>";
         } else if (driverID.equalsIgnoreCase("versaNSDriver")) {
             driver = "<driverInstance><properties><entry><key>topologyUri</key>"
-                    + "<value>urn:ogf:network:sdn.maxgigapop.net:network</value></entry>"
+                    + "<value>urn:ogf:network:sdn.maxgigapop.net:network" + topoName + "</value></entry>"
                     + "<entry><key>driverEjbPath</key><value>java:module/GenericRESTDriver</value></entry>"
                     + "<entry><key>subsystemBaseUrl</key><value>http://localhost:8080/VersaNS-0.0.1-SNAPSHOT</value></entry>"
                     + "</properties></driverInstance>";
@@ -77,9 +81,9 @@ public class serviceBeans {
                     + "<value>http://max-vlsr2.dragon.maxgigapop.net:35357/v2.0</value></entry>"
                     + "<entry><key>NATServer</key><value></value></entry>"
                     + "<entry><key>driverEjbPath</key><value>java:module/OpenStackDriver</value></entry>"
-                    + "<entry><key>username</key><value>" + par1 + "</value></entry><entry>"
-                    + "<key>password</key><value>" + par2 + "</value></entry><entry><key>topologyUri</key>"
-                    + "<value>urn:ogf:network:openstack.com:openstack-cloud</value></entry>"
+                    + "<entry><key>username</key><value>" + accountID + "</value></entry><entry>"
+                    + "<key>password</key><value>" + accountPW + "</value></entry><entry><key>topologyUri</key>"
+                    + "<value>urn:ogf:network:openstack.com:openstack-cloud" + topoName + "</value></entry>"
                     + "<entry><key>tenant</key><value>admin</value></entry></properties></driverInstance>";
         } else if(driverID.equalsIgnoreCase("StackDriver")){
             //for VersaStack
