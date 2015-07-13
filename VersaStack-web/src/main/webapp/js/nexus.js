@@ -1,3 +1,5 @@
+// Service JavaScript Library
+
 $(function () {
     $("#nav").load("/VersaStack-web/navbar.html");
 
@@ -56,4 +58,27 @@ function driverSelect(sel) {
     }
     else $ref = "/VersaStack-web/ops/srvc/driver.jsp #service-fields";
     $("#service-bottom").load($ref);
+}
+
+var fieldCounter = 0;
+var fieldLimit = 5;
+function addDriverField() {
+     if (fieldCounter === fieldLimit)  {
+          alert("You have reached the limit of additional properties");
+     }
+     else {
+          var driverTable = document.getElementById("service-form");
+          var tableHeight = driverTable.rows.length;
+          
+          var row = driverTable.insertRow(tableHeight - 1);
+          var cell1 = row.insertCell(0);
+          var cell2 = row.insertCell(1);
+          fieldCounter++;
+          cell1.innerHTML = '<input type="text" name="apropname' 
+                    + (fieldCounter) + '" placeholder="Additional Property Name" size="30" />';
+          
+          cell2.innerHTML = '<input type="text" name="apropval' 
+                    + (fieldCounter) + '" placeholder="Additional Property Value" size="30" />';
+          
+     }
 }

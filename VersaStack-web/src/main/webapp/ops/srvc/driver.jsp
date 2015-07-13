@@ -42,7 +42,7 @@
         <!-- MAIN PANEL -->
         <div id="main-pane">
             <c:choose>                
-                <c:when test="${empty param.sub && empty param.ret}">
+                <c:when test="${empty param.ret}">
                     <div id="service-specific">
                         <div id="service-top">
                             <div id="service-menu">
@@ -82,9 +82,9 @@
                         </div>
                         <div id="service-bottom">
                             <div id="service-fields">
-                                <form id="driver-form" action="/VersaStack-web/ops/srvc/driver.jsp" method="post">
-                                    <input type="hidden" name="sub" value="true" />
-                                    <table class="management-table" id="service-form">                    
+                                <form id="driver-form" action="/VersaStack-web/DriverServlet" method="post">
+                                    <input type="hidden" name="driverID" value="${param.driver_id}"/>
+                                    <table class="management-table" id="service-form">                                        
                                         <thead>
                                             <tr>
                                                 <th>Driver Details</th>
@@ -96,27 +96,31 @@
                                             <c:if test="${param.form_install != 'uninstall'}">
                                                 <c:if test="${param.driver_id == 'stubdriver'}">
                                                     <tr>
-                                                        <td>Stub</td>
-                                                        <td>Driver</td>
+                                                        <td>Topology URI</td>
+                                                        <td><input type="text" name="topoUri" required></td>
                                                     </tr>
+                                                    <tr>
+                                                        <td>TTL</td>
+                                                        <td><input type="checkbox" name="ttl" value="true"></td>
+                                                    </tr> 
                                                 </c:if>
                                                 <c:if test="${param.driver_id == 'awsdriver'}">
                                                     <tr>
-                                                        <td>Name</td>
-                                                        <td><input type="text" name="par1" required></td>
+                                                        <td>Topology URI</td>
+                                                        <td><input type="text" name="topoUri" required></td>
                                                     </tr>
                                                     <tr>
                                                         <td>Amazon Access ID</td>
-                                                        <td><input type="text" name="par2" required></td>
+                                                        <td><input type="text" name="accountID" required></td>
                                                     </tr>   
                                                     <tr>
                                                         <td>Amazon Secret Key</td>
-                                                        <td><input type="password" name="par3" required></td>
+                                                        <td><input type="password" name="accountPW" required></td>
                                                     </tr>   
                                                     <tr>
                                                         <td>Region</td>
                                                         <td>
-                                                            <select name="par4" required>
+                                                            <select name="awsRegion" required>
                                                                 <option></option>
                                                                 <option value="ap-northeast-1">Asia Pacific (Tokyo)</option>
                                                                 <option value="ap-southeast-1">Asia Pacific (Singapore)</option>
@@ -143,25 +147,26 @@
                                                 </c:if>
                                                 <c:if test="${param.driver_id == 'openStackDriver'}">
                                                     <tr>
-                                                        <td>Name</td>
-                                                        <td><input type="text" name="par1" required></td>
+                                                        <td>Topology URI</td>
+                                                        <td><input type="text" name="topoUri" required></td>
                                                     </tr>
                                                     <tr>
                                                         <td>OpenStack Username</td>
-                                                        <td><input type="text" name="par2" required></td>
+                                                        <td><input type="text" name="accountID" required></td>
                                                     </tr>   
                                                     <tr>
                                                         <td>OpenStack Password</td>
-                                                        <td><input type="password" name="par3" required></td>
+                                                        <td><input type="password" name="accountPW" required></td>
                                                     </tr>                                            
                                                 </c:if>
 
-                                                <c:if test="${param.driver_id != 'none'}">
+                                                <c:if test="${not empty param.driver_id}">                                                                                                        
                                                     <tr>
                                                         <td></td>
                                                         <td>
                                                             <input class="button-register" name="install" type="submit" value="Install" />
-
+                                                            <input class="button-register" type="button" 
+                                                                   value="Add Additional Properties" onClick="addDriverField()">
                                                         </td>
                                                     </tr>
                                                 </c:if> 
@@ -172,7 +177,7 @@
                                                     <sql:query dataSource="${rains_conn}" sql="SELECT driverEjbPath, topologyUri FROM driver_instance" var="driverlist" />
                                                     <td>Select Driver</td>
                                                     <td>                                                        
-                                                        <select>
+                                                        <select name="topoUri">
                                                             <c:forEach var="driver" items="${driverlist.rows}">
                                                                 <option value="${driver.topologyUri}">${driver.driverEjbPath} - ${driver.topologyUri}</option>
                                                             </c:forEach>
@@ -190,27 +195,6 @@
                                     </table>
                                 </form>
                             </div>
-                        </div>
-                    </c:when>
-
-                    <c:when test="${param.sub == 'true'}">
-                        <div id="service-process">
-                            <c:if test="${not empty param.install}">
-                                <c:redirect url="/ops/srvc/driver.jsp?ret=${serv.driverInstall(
-                                                                            param.driver_id,
-                                                                            param.par1,
-                                                                            param.par2,
-                                                                            param.par3,
-                                                                            param.par4)}" />
-                            </c:if>
-                            <c:if test="${not empty param.uninstall}">
-                                <c:redirect url="/ops/srvc/driver.jsp?ret=${serv.driverInstall(
-                                                                            param.driver_id,
-                                                                            param.par1,
-                                                                            param.par2,
-                                                                            param.par3,
-                                                                            param.par4)}" />
-                            </c:if>
                         </div>
                     </c:when>
 
