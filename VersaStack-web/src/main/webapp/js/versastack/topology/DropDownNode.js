@@ -20,6 +20,8 @@ define([
             var ans="";
             if(that.children.length!==0){
                 ans+=isExpanded?"▼":"▶";
+            }else{
+                ans+=" ";
             }
             ans+=that.name;
             return ans;
