@@ -15,6 +15,7 @@ define(["local/d3", "local/versastack/utils"],
                 this.svgLine = null;
                 this.svgBubble = null;
                 this.color = "";
+                /**@type Array.Port**/
                 this.ports = [];
                 this.portColors = [];
                 this.portEmptyColor = "";

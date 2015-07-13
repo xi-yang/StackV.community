@@ -8,8 +8,11 @@ define([
     function Port(backing,map){
         var that=this;
         this._backing=backing;
+        /**@type Array.Port**/
         this.childrenPorts=[];
+        /**@type Port**/
         this.parentPort = null;
+        /**@type Node**/
         this.ancestorNode=null;
         this.alias=null;
         

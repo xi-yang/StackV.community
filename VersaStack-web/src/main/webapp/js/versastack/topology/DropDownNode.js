@@ -4,6 +4,7 @@ define([
     ], function (utils) {
         var map_=utils.map_;
     function DropDownNode(name) {
+        /**@type Array.DropDownNode**/
         this.children =[];
         this.name=name;
         var that=this;
