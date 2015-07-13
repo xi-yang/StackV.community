@@ -7,10 +7,8 @@ define(["local/d3", "local/versastack/utils"],
 
             function PortDisplayPopup(outputApi, renderApi) {
                 this.svgContainer = null;
-                this.anchorX = 0;
-                this.anchorY = 0;
-                this.neckLength = 0;
-                this.neckWidth = 0;
+                this.dx = 0;
+                this.dx = 0;
                 this.minWidth = 0;
                 this.minHeight = 0;
                 this.bevel = 10;
@@ -25,18 +23,13 @@ define(["local/d3", "local/versastack/utils"],
                 this.portBufferVertical = 0;
                 this.portBufferHorizontal = 0;
                 this.enlargeFactor = 0;
-                this.opacity=1;
+                this.opacity = 1;
                 this.hostNode = null;
 
                 var that = this;
-                this.setAnchor = function (x, y) {
-                    this.anchorX = x;
-                    this.anchorY = y;
-                    return this;
-                };
-                this.setNeck = function (length, width) {
-                    this.neckLength = length;
-                    this.neckWidth = width;
+                this.setOffset = function (x, y) {
+                    this.dx = x;
+                    this.dy = y;
                     return this;
                 };
                 this.setDimensions = function (width, height) {
@@ -56,8 +49,8 @@ define(["local/d3", "local/versastack/utils"],
                     this.color = color;
                     return this;
                 };
-                this.setOpacity=function(opacity){
-                    this.opacity=opacity;
+                this.setOpacity = function (opacity) {
+                    this.opacity = opacity;
                     return this;
                 };
                 this.setPorts = function (ports) {
@@ -118,12 +111,12 @@ define(["local/d3", "local/versastack/utils"],
                     this.hostNode = n;
                     return this;
                 };
-                this.move=function(dx,dy){
-                    this.anchorX+=dx;
-                    this.anchorY+=dy;
+                this.move = function (dx, dy) {
+                    this.dx += dx;
+                    this.dy += dy;
                     return this;
                 };
-               
+
 
                 this._setPortEnlarge = function (port, enlarge) {
                     if (port.hasChildren()) {
@@ -159,8 +152,11 @@ define(["local/d3", "local/versastack/utils"],
                     //draw the ports
                     var portContainer = this.svgContainer.select("#port");
                     portContainer.selectAll("*").remove();
-                    var x = this.anchorX;
-                    var y = this.anchorY - this.bevel;
+
+                    var anchor = this.hostNode.getCenterOfMass();
+
+                    var x = anchor.x + this.dx;
+                    var y = anchor.y + this.dy - this.bevel;
                     var portTotalHeight = 0;
 
                     var stack = [];
@@ -254,12 +250,12 @@ define(["local/d3", "local/versastack/utils"],
                     //We do this after the ports because are size is dependent on how many ports we draw
                     //The HTML template handles the layering inspite our out of order rendering.
 
-                    var boxContainer=container.append("g")
-                            .style("opacity",this.opacity);
+                    var boxContainer = container.append("g")
+                            .style("opacity", this.opacity);
 
                     boxContainer.append("rect")
-                            .attr("x", this.anchorX - width / 2)
-                            .attr("y", this.anchorY - height - this.bevel / 2)
+                            .attr("x", anchor.x + this.dx - width / 2)
+                            .attr("y", anchor.y + this.dy - height - this.bevel / 2)
                             .attr("height", height + this.bevel / 2)
                             .attr("width", width)
                             .attr("rx", this.bevel)
@@ -272,38 +268,38 @@ define(["local/d3", "local/versastack/utils"],
                     this.svgLine = boxContainer.append("line")
                             .style("stroke", this.color)
                             .style("stroke-width", this.neckWidth)
-                            .attr("x1", this.anchorX)
-                            .attr("y1", this.anchorY-height/2)
-                            .attr("stroke-linecap","round")
+                            .attr("x1", anchor.x + this.dx)
+                            .attr("y1", anchor.y + this.dy - height / 2)
+                            .attr("stroke-linecap", "round")
                             .attr("x2", dst.x)
                             .attr("y2", dst.y);
 
                     return this;
                 };
-                
+
                 var lastMouse;
                 var dragBehaviour = d3.behavior.drag()
-                                    .on("drag", function () {
-                                        var e = d3.event.sourceEvent;
-                                        var dx = (e.clientX - lastMouse.clientX) / outputApi.getZoom();
-                                        var dy = (e.clientY - lastMouse.clientY) / outputApi.getZoom();
-                                        lastMouse = e;
-                                        
-                                        that.anchorX+=dx;
-                                        that.anchorY+=dy;
-                                        
-                                        outputApi.setHoverLocation(e.clientX, e.clientY);
-                                        renderApi.drawHighlight();
-                                        renderApi.layoutEdges();
-                                        that.render();
-                                    })
-                                    .on("dragstart", function () {
-                                        lastMouse = d3.event.sourceEvent;
-                                        outputApi.disablePanning();
-                                    })
-                                    .on("dragend", function () {
-                                        outputApi.enablePanning();
-                                    });
+                        .on("drag", function () {
+                            var e = d3.event.sourceEvent;
+                            var dx = (e.clientX - lastMouse.clientX) / outputApi.getZoom();
+                            var dy = (e.clientY - lastMouse.clientY) / outputApi.getZoom();
+                            lastMouse = e;
+
+                            that.dx += dx;
+                            that.dy += dy;
+
+                            outputApi.setHoverLocation(e.clientX, e.clientY);
+                            renderApi.drawHighlight();
+                            renderApi.layoutEdges();
+                            that.render();
+                        })
+                        .on("dragstart", function () {
+                            lastMouse = d3.event.sourceEvent;
+                            outputApi.disablePanning();
+                        })
+                        .on("dragend", function () {
+                            outputApi.enablePanning();
+                        });
             }
 
 
