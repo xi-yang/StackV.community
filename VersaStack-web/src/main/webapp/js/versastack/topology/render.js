@@ -6,9 +6,10 @@ var debugPoint = {x: 0, y: 0};
 define([
     "local/d3",
     "local/versastack/utils",
-    "local/versastack/topology/DialogBox",
+    "local/versastack/topology/PortDisplayPopup",
     "local/versastack/topology/switchServicePopup"
-], function (d3, utils, DialogBox,SwitchPopup) {
+], function (d3, utils, PortDisplayPopup,SwitchPopup) {
+
     var map_ = utils.map_;
 
     var settings = {
@@ -23,17 +24,19 @@ define([
         HULL_OPACITY: .2,
         EDGE_COLOR: "rgb(0,0,0)",
         EDGE_WIDTH: 2,
-        DIALOG_NECK_WIDTH: 5,
+        DIALOG_NECK_WIDTH: 3,
         DIALOG_NECK_HEIGHT: 40,
-        DIALOG_MIN_WIDTH: 30,
-        DIALOG_MIN_HEIGHT: 40,
-        DIALOG_BEVEL: 10,
-        DIALOG_COLOR: "rgba(255,0,0,.5)",
-        DIALOG_PORT_COLOR: "rgb(0,0,0)",
-        DIALOG_PORT_EMPTY_COLOR: "rgb(128,128,50)",
-        DIALOG_PORT_HEIGHT: 4,
-        DIALOG_PORT_WIDTH: 8
-               
+        DIALOG_MIN_WIDTH: 15,
+        DIALOG_MIN_HEIGHT: 10,
+        DIALOG_BEVEL: 5,
+        DIALOG_COLOR: "rgb(255,0,0)",
+        DIALOG_OPACITY: "0.5",
+        DIALOG_PORT_EMPTY_COLOR: "rgb(128,128,0)",
+        DIALOG_PORT_COLORS: ["rgb(0,0,0)", "rgb(128,128,128)"],
+        DIALOG_PORT_HEIGHT: 6,
+        DIALOG_PORT_WIDTH: 8,
+        DIALOG_PORT_BUFFER_VERT: 2,
+        DIALOG_PORT_BUFFER_HORZ: 3
     };
     
     
@@ -64,6 +67,7 @@ define([
 
 
     var redraw_;
+    var API = {};
 
     /**@param {outputApi} outputApi
      * @param {Model} model
@@ -105,9 +109,9 @@ define([
         switchSettings.DIALOG_PORT_HEIGHT /= outputApi.getZoom();
         switchSettings.DIALOG_PORT_WIDTH /= outputApi.getZoom();
 
-        var svgContainer = outputApi.getSvgContainer();
-        var dialogBox=buildDialogBox();
         var switchPopup = buildSwitchPopup();
+        var svgContainer = outputApi.getSvgContainer();
+        var portDisplayPopup = buildPortDisplayPopup();
 
         redraw();
 
@@ -126,7 +130,6 @@ define([
             map_(edgeList, drawEdge);
             map_(nodeList, drawNode);
         }
-        redraw_ = redraw;
         /**@param {Node} n**/
         function drawNode(n) {
             if (n.isLeaf()) {
@@ -336,8 +339,8 @@ define([
                 service.y = coords.y;
                 service.x = coords.x;
                 service.svgNode
-                        .attr("y", coords.y+service.dy)
-                        .attr("x", coords.x+service.dx)
+                        .attr("y", coords.y + service.dy)
+                        .attr("x", coords.x + service.dx)
                         .attr("transform", coords.transform);
                 coords.x += settings.SERVICE_SIZE;
             });
@@ -348,6 +351,23 @@ define([
             e._isProper();
             var src = e.source.getCenterOfMass();
             var tgt = e.target.getCenterOfMass();
+
+//            var isLeft=src.x<tgt.x;
+//            if(isLeft){
+//                if(e.source.edgeAnchorLeft){
+//                    src=e.source.edgeAnchorLeft;
+//                }
+//                if(e.target.edgeAnchorRight){
+//                    tgt=e.target.edgeAnchorRight;
+//                }
+//            }else{
+//                if(e.source.edgeAnchorRight){
+//                    src=e.source.edgeAnchorRight;
+//                }
+//                if(e.target.edgeAnchorLeft){
+//                    tgt=e.target.edgeAnchorLeft;
+//                }
+//            }
             e.svgNode.attr("x1", src.x)
                     .attr("y1", src.y)
                     .attr("x2", tgt.x)
@@ -357,11 +377,11 @@ define([
         var lastMouse;
         /**@param {Node} n**/
         var isDragging = false;
-        var didDrag=false;
+        var didDrag = false;
         function makeDragBehaviour(n) {
             return d3.behavior.drag()
                     .on("drag", function () {
-                        didDrag=true;
+                        didDrag = true;
                         //Using the dx,dy from d3 can lead to some artifacts when also using
                         //These seem to occur when moving between different transforms
                         var e = d3.event.sourceEvent;
@@ -384,21 +404,28 @@ define([
                         //However, we also want it to continue tracking us.
                         outputApi.setHoverLocation(e.clientX, e.clientY);
                         drawHighlight();
-                        
+
+                        if (n===selectedNode) {
+                            var choords = selectedNode.getCenterOfMass();
+                            if (selectedNode.ancestorNode) {
+                                choords = selectedNode.ancestorNode.getCenterOfMass();
+                            }
+                            portDisplayPopup.move(dx,dy);
+                        }
                         if(selectedNode){
-                            var choords=selectedNode.getCenterOfMass();
-                            dialogBox.setAnchor(choords.x,choords.y).render();
+                            portDisplayPopup.render();
                         }
                     })
                     .on("dragstart", function () {
                         lastMouse = d3.event.sourceEvent;
                         outputApi.disablePanning();
                         isDragging = true;
-                        didDrag=false;
+                        didDrag = false;
                     })
                     .on("dragend", function () {
                         outputApi.enablePanning();
                         isDragging = false;
+                        map_(edgeList, updateSvgChoordsEdge);
                     });
         }
 
@@ -411,13 +438,13 @@ define([
         }
 
 
-        var highlightedNode=null;
+        var highlightedNode = null;
         /**
          * Note that n could also be a topology
          * @param {Node} n**/
         function onNodeClick(n) {
             d3.event.stopPropagation();//prevent the click from being handled by the background, which would hide the panel
-            if(didDrag){
+            if (didDrag) {
                 return;
             }
             highlightedNode=n;
@@ -430,12 +457,18 @@ define([
             n.populateTreeMenu(displayTree);
             displayTree.draw();
             
-            var choords=n.getCenterOfMass();
-            dialogBox.setAnchor(choords.x,choords.y)
-                    .setPorts(n.ports)
-                    .render();
-            map_(edgeList,updateSvgChoordsEdge);
-            
+            var choords = n.getCenterOfMass();
+            portDisplayPopup
+                    .setAnchor(choords.x, choords.y-settings.DIALOG_NECK_HEIGHT)
+                    .setHostNode(n);
+            if (n.ports) {
+                portDisplayPopup.setPorts(n.ports);
+            } else {
+                portDisplayPopup.setPorts([]);
+            }
+            portDisplayPopup.render();
+            map_(edgeList, updateSvgChoordsEdge);
+            selectElement(n);
             
             selectedNode = n;
         }
@@ -465,16 +498,31 @@ define([
         
         function drawHighlight(){
             svgContainer.select("#selectedOverlay").selectAll("*").remove();
-            if(highlightedNode && highlightedNode.svgNode){
-                var toAppend=highlightedNode.svgNode.node().cloneNode();
-                d3.select(toAppend).style("opacity","1").attr("pointer-events","none");
+            if (highlightedNode && highlightedNode.svgNode) {
+                var toAppend = highlightedNode.svgNode.node().cloneNode();
+                d3.select(toAppend).style("opacity", "1").attr("pointer-events", "none");
                 svgContainer.select("#selectedOverlay").node().appendChild(toAppend);
-            }else if(highlightedNode){
+            } else if (highlightedNode) {
                 //This shouldn't happen
                 console.log("Trying to highlight an element without an svgNode");
             }
         }
-        
+
+        function selectElement(elem) {
+            highlightedNode = elem;
+            drawHighlight();
+            outputApi.setDisplayName(elem.getName());
+            /**@type {DropDownTree} displayTree**/
+            var displayTree = outputApi.getDisplayTree();
+            displayTree.clear();
+
+            elem.populateTreeMenu(displayTree);
+            displayTree.draw();
+            selectedNode = elem;
+
+        }
+        ;
+
         /**
          * Note that n could also be a topology
          * @param {Node} n**/
@@ -547,8 +595,8 @@ define([
             } else {
                 ds = 0;
             }
-            n.dx=-ds/2;
-            n.dy=-ds/2;
+            n.dx = -ds / 2;
+            n.dy = -ds / 2;
             n.size = size;
             svg
                     .attr("width", size)
@@ -567,19 +615,21 @@ define([
             });
             updateSvgChoordsNode(n);
         }
-    
-        function buildDialogBox(){
-            return new DialogBox()
+
+        function buildPortDisplayPopup() {
+            return new PortDisplayPopup(outputApi, API)
                     .setContainer(svgContainer)
-                    .setNeck(settings.DIALOG_NECK_HEIGHT,settings.DIALOG_NECK_WIDTH)
-                    .setDimensions(settings.DIALOG_MIN_WIDTH,settings.DIALOG_MIN_HEIGHT)
+                    .setNeck(settings.DIALOG_NECK_HEIGHT, settings.DIALOG_NECK_WIDTH)
+                    .setDimensions(settings.DIALOG_MIN_WIDTH, settings.DIALOG_MIN_HEIGHT)
                     .setBevel(settings.DIALOG_BEVEL)
                     .setColor(settings.DIALOG_COLOR)
-                    .setPortColor(settings.DIALOG_PORT_COLOR)
+                    .setPortColors(settings.DIALOG_PORT_COLORS)
                     .setPortEmptyColor(settings.DIALOG_PORT_EMPTY_COLOR)
-                    .setPortDimensions(settings.DIALOG_PORT_WIDTH,settings.DIALOG_PORT_HEIGHT);
+                    .setPortDimensions(settings.DIALOG_PORT_WIDTH, settings.DIALOG_PORT_HEIGHT)
+                    .setPortBuffer(settings.DIALOG_PORT_BUFFER_VERT, settings.DIALOG_PORT_BUFFER_HORZ)
+                    .setEnlargeFactor(settings.ENLARGE_FACTOR)
+                    .setOpacity(settings.DIALOG_OPACITY);
         }
-        
         
         function buildSwitchPopup(){
             return new SwitchPopup(outputApi)
@@ -591,6 +641,12 @@ define([
                     .setPortEmptyColor(switchSettings.DIALOG_PORT_EMPTY_COLOR)
                     .setPortDimensions(switchSettings.DIALOG_PORT_WIDTH,switchSettings.DIALOG_PORT_HEIGHT);
         }
+
+        API["redraw"] = redraw;
+        API["doRender"] = doRender;
+        API["drawHighlight"] = drawHighlight;
+        API["selectElement"] = selectElement;
+        API["layoutEdges"] = function(){map_(edgeList, updateSvgChoordsEdge);};
     }
 
 
