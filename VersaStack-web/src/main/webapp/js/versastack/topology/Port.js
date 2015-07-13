@@ -16,6 +16,7 @@ define([
         this.isVisible=false;
         this.x=0;
         this.y=0;
+        this.enlarged=false;
         this.svgNode=null;
         this.edgeAnchorLeft={x:0,y:0};
         this.edgeAnchorRight={x:0,y:0};

@@ -122,6 +122,7 @@ define(["local/d3", "local/versastack/utils"],
                     if (port.hasChildren()) {
                         return;
                     }
+                    port.enlarged=enlarge;
                     var width = that.portWidth;
                     var height = that.portHeight;
                     var dWidth, dHeight;
@@ -223,6 +224,7 @@ define(["local/d3", "local/versastack/utils"],
                                         renderApi.redraw();
                                     })
                                     .call(dragBehaviour);
+                            that._setPortEnlarge(port,port.enlarged);
                             port.edgeAnchorLeft = {x: port.x, y: port.y};
                             port.edgeAnchorRight = {x: port.x + width, y: port.y};
                             if (port.hasChildren()) {
