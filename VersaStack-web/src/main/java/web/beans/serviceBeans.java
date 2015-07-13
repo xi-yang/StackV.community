@@ -24,19 +24,12 @@ public class serviceBeans {
     }
 
     
-    
-    /** 
-     * Installs driver into model.
-     *
-     * @param driverID driver identifier;<br /> either 'stubdriver',
-     * 'awsdriver', 'versaNSDriver', 'openStackDriver'<br />
-     * @param topoName user defined name for the topology;
-     * @param accountID the access id to the specified driver;
-     * @param accountPW the access password to the specified driver;
-     * @param awsRegion the geographic area for amazon web service;
+    /**
+     * Installs driver with the user defined properties via the system API 
+     * @param paraMap a key-value pair contains all the properties defined by user.
+     * It should contains at least the driver ID and the topology uri. 
      * @return error code:<br />
      * 0 - success.<br />
-     * 1 - invalid driverID.<br />
      * 2 - plugin error.<br />
      * 3 - connection error.<br />
      */
@@ -100,14 +93,11 @@ public class serviceBeans {
         return 0;
     }
 
-    /** TODO: UPDATE FOR NEW PARAMETERS<br />
-     * Uninstalls driver from model.
-     *
-     * @param driverID driver identifier;<br /> either 'stubdriver',
-     * 'awsdriver', 'versaNSDriver', 'openStackDriver'
+    /**
+     * Uninstalls driver via the sysmtem API
+     * @param topoUri an unique string represents each driver topology
      * @return error code:<br />
      * 0 - success.<br />
-     * 1 - invalid driverID.<br />
      * 2 - unplug error.<br />
      * 3 - connection error.<br />
      */
