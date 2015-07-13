@@ -94,7 +94,7 @@ public class serviceBeans {
     }
 
     /**
-     * Uninstalls driver via the sysmtem API
+     * Uninstalls driver via the system API
      * @param topoUri an unique string represents each driver topology
      * @return error code:<br />
      * 0 - success.<br />

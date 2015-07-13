@@ -58,6 +58,8 @@ function driverSelect(sel) {
     }
     else $ref = "/VersaStack-web/ops/srvc/driver.jsp #service-fields";
     $("#service-bottom").load($ref);
+    
+    fieldCounter = 0;
 }
 
 var fieldCounter = 0;

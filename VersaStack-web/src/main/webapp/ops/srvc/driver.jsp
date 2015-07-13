@@ -97,30 +97,30 @@
                                                 <c:if test="${param.driver_id == 'stubdriver'}">
                                                     <tr>
                                                         <td>Topology URI</td>
-                                                        <td><input type="text" name="topoUri" required></td>
+                                                        <td><input type="text" name="topologyUri" size="30" required></td>
                                                     </tr>
                                                     <tr>
                                                         <td>TTL</td>
-                                                        <td><input type="checkbox" name="ttl" value="true"></td>
+                                                        <td><input type="text" name="ttlmodel" size="30"></td>
                                                     </tr> 
                                                 </c:if>
                                                 <c:if test="${param.driver_id == 'awsdriver'}">
                                                     <tr>
                                                         <td>Topology URI</td>
-                                                        <td><input type="text" name="topoUri" required></td>
+                                                        <td><input type="text" name="topologyUri" size="30" required></td>
                                                     </tr>
                                                     <tr>
                                                         <td>Amazon Access ID</td>
-                                                        <td><input type="text" name="accountID" required></td>
+                                                        <td><input type="text" name="aws_access_key_id" required></td>
                                                     </tr>   
                                                     <tr>
                                                         <td>Amazon Secret Key</td>
-                                                        <td><input type="password" name="accountPW" required></td>
+                                                        <td><input type="password" name="aws_secret_access_key" required></td>
                                                     </tr>   
                                                     <tr>
                                                         <td>Region</td>
                                                         <td>
-                                                            <select name="awsRegion" required>
+                                                            <select name="region" required>
                                                                 <option></option>
                                                                 <option value="ap-northeast-1">Asia Pacific (Tokyo)</option>
                                                                 <option value="ap-southeast-1">Asia Pacific (Singapore)</option>
@@ -148,16 +148,20 @@
                                                 <c:if test="${param.driver_id == 'openStackDriver'}">
                                                     <tr>
                                                         <td>Topology URI</td>
-                                                        <td><input type="text" name="topoUri" required></td>
+                                                        <td><input type="text" name="topologyUri" size="30" required></td>
                                                     </tr>
                                                     <tr>
                                                         <td>OpenStack Username</td>
-                                                        <td><input type="text" name="accountID" required></td>
+                                                        <td><input type="text" name="username" required></td>
                                                     </tr>   
                                                     <tr>
                                                         <td>OpenStack Password</td>
-                                                        <td><input type="password" name="accountPW" required></td>
-                                                    </tr>                                            
+                                                        <td><input type="password" name="password" required></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>NAT Server</td>
+                                                        <td><input type="checkbox" name="NATServer" value="true"></td>
+                                                    </tr>
                                                 </c:if>
 
                                                 <c:if test="${not empty param.driver_id}">                                                                                                        
@@ -177,7 +181,7 @@
                                                     <sql:query dataSource="${rains_conn}" sql="SELECT driverEjbPath, topologyUri FROM driver_instance" var="driverlist" />
                                                     <td>Select Driver</td>
                                                     <td>                                                        
-                                                        <select name="topoUri">
+                                                        <select name="topologyUri">
                                                             <c:forEach var="driver" items="${driverlist.rows}">
                                                                 <option value="${driver.topologyUri}">${driver.driverEjbPath} - ${driver.topologyUri}</option>
                                                             </c:forEach>

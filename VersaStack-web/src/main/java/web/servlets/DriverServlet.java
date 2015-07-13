@@ -49,17 +49,19 @@ public class DriverServlet extends HttpServlet {
                 paramMap.remove("apropval" + i);
             }
         }
+        
+        paramMap.remove("driver_id");
+        paramMap.remove("form_install");
+        paramMap.remove("install");
 
-        HttpSession session = request.getSession(true);
-        // Get the bean from the session
-        serviceBeans servBean = (serviceBeans) session.getAttribute("serv");
+        serviceBeans servBean = new serviceBeans();
 
         int retCode = 3;
         // Call appropriate driver control method
-        if (paramMap.get("install") != null) {
-            //retCode = servBean.driverInstall(paramMap);
-        } else if (paramMap.get("uninstall") != null) {
-            //retCode = servBean.driverUninstall(request.getParameter("topoUri"));
+        if (paramMap.containsKey("install")) {
+            retCode = servBean.driverInstall(paramMap);
+        } else if (paramMap.containsKey("uninstall")) {
+            retCode = servBean.driverUninstall(request.getParameter("topologyUri"));
         }
 
         response.sendRedirect("/VersaStack-web/ops/srvc/driver.jsp?ret=" + retCode);
@@ -72,7 +74,9 @@ public class DriverServlet extends HttpServlet {
      */
     @Override
     public String getServletInfo() {
-        return "Short description";
+        return "Collects parameters from Driver forms and collates into HashMap, "
+                + "before passing the new map into the serviceBean for model modification. "
+                + "Upon completion, servlet redirects to service page with error code.";
     }
 
 }
