@@ -14,7 +14,7 @@ define([
             return ans;
         };
         
-        var isExpanded=true;
+        var isExpanded=false;
         
         function _getText(){
             var ans="";
@@ -46,6 +46,7 @@ define([
            
            map_(this.children, function(child){
                var toAdd=child.getHTML();
+               toAdd.style.display=isExpanded?"inherit":"none";
                childNodes.push(toAdd);
                content.appendChild(toAdd);
            });
