@@ -33,7 +33,7 @@ define(["local/d3", "local/versastack/utils"],
                 this.setService = function(service){
                     this.service=service;
                     return this;
-                }
+                };
              
                 
                 this.setDimensions = function (width, height) {
@@ -79,8 +79,6 @@ define(["local/d3", "local/versastack/utils"],
 
 
                 var lastMouse;
-                /**@param {Node} n**/
-
                 function makeDragBehaviour() {
                     return d3.behavior.drag()
                             .on("drag", function () {
