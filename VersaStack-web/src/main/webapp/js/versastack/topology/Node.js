@@ -183,7 +183,13 @@ define(["local/versastack/topology/modelConstants",
                             port.populateTreeMenu(portsNode);
                         });
                     }
-                    
+                    if(this.children.length>0){
+                        var childrenNode=tree.addChild("SubNodes");
+                        map_(this.children,function(child){
+                            var childNode=childrenNode.addChild(child.getName());
+                            child.populateTreeMenu(childNode);
+                        });
+                    }
                 };
             }
 
