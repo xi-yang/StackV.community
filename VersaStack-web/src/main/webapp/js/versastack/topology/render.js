@@ -405,13 +405,6 @@ define([
                         outputApi.setHoverLocation(e.clientX, e.clientY);
                         drawHighlight();
 
-                        if (n===selectedNode) {
-                            var choords = selectedNode.getCenterOfMass();
-                            if (selectedNode.ancestorNode) {
-                                choords = selectedNode.ancestorNode.getCenterOfMass();
-                            }
-                            portDisplayPopup.move(dx,dy);
-                        }
                         if(selectedNode){
                             portDisplayPopup.render();
                         }
@@ -459,7 +452,7 @@ define([
             
             var choords = n.getCenterOfMass();
             portDisplayPopup
-                    .setAnchor(choords.x, choords.y-settings.DIALOG_NECK_HEIGHT)
+                    .setOffset(0, -settings.DIALOG_NECK_HEIGHT)
                     .setHostNode(n);
             if (n.ports) {
                 portDisplayPopup.setPorts(n.ports);
@@ -619,7 +612,6 @@ define([
         function buildPortDisplayPopup() {
             return new PortDisplayPopup(outputApi, API)
                     .setContainer(svgContainer)
-                    .setNeck(settings.DIALOG_NECK_HEIGHT, settings.DIALOG_NECK_WIDTH)
                     .setDimensions(settings.DIALOG_MIN_WIDTH, settings.DIALOG_MIN_HEIGHT)
                     .setBevel(settings.DIALOG_BEVEL)
                     .setColor(settings.DIALOG_COLOR)
