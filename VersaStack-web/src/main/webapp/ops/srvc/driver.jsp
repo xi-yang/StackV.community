@@ -160,7 +160,7 @@
                                                     </tr>
                                                     <tr>
                                                         <td>NAT Server</td>
-                                                        <td><input type="checkbox" name="NATServer" value="true"></td>
+                                                        <td><input type="checkbox" name="NATServer" value="yes"></td>
                                                     </tr>
                                                 </c:if>
 
