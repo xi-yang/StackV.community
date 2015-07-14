@@ -9,7 +9,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 public class DriverServlet extends HttpServlet {
 
@@ -52,13 +51,13 @@ public class DriverServlet extends HttpServlet {
         
         paramMap.remove("driver_id");
         paramMap.remove("form_install");
-        paramMap.remove("install");
 
         serviceBeans servBean = new serviceBeans();
 
-        int retCode = 3;
+        int retCode = -1;
         // Call appropriate driver control method
         if (paramMap.containsKey("install")) {
+            paramMap.remove("install");
             retCode = servBean.driverInstall(paramMap);
         } else if (paramMap.containsKey("uninstall")) {
             retCode = servBean.driverUninstall(request.getParameter("topologyUri"));
