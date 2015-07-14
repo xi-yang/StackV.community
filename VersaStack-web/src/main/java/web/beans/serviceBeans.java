@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -23,70 +24,59 @@ public class serviceBeans {
     }
 
     
-    
     /**
-     * Installs driver into model.
-     *
-     * @param driverID driver identifier;<br /> either 'stubdriver',
-     * 'awsdriver', 'versaNSDriver', 'openStackDriver'
+     * Installs driver with the user defined properties via the system API 
+     * @param paraMap a key-value pair contains all the properties defined by user.
+     * It should contains at least the driver ID and the topology uri. 
      * @return error code:<br />
      * 0 - success.<br />
-     * 1 - invalid driverID.<br />
      * 2 - plugin error.<br />
      * 3 - connection error.<br />
      */
-    public int driverInstall(String driverID) {
-        String driver = "";
-        if (driverID.equalsIgnoreCase("stubdriver")) {
-            driver = "<driverInstance><properties><entry><key>topologyUri</key>"
-                    + "<value>urn:ogf:network:rains.maxgigapop.net:2013:topology</value>"
-                    + "</entry><entry><key>driverEjbPath</key>"
-                    + "<value>java:module/StubSystemDriver</value></entry>"
-                    + "<entry><key>stubModelTtl</key>"
-                    + "<value>@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.\n"
-                    + "@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.\n"
-                    + "@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.\n"
-                    + "@prefix owl: <http://www.w3.org/2002/07/owl#>.\n"
-                    + "@prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>.\n"
-                    + "@prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>.\n"
-                    + "<http://www.maxgigapop.net/mrs/2013/topology#> a owl:Ontology;\n"
-                    + "    rdfs:label \"NML-MRS Description of the MAX Research Infrastructure\".\n"
-                    + "<urn:ogf:network:rains.maxgigapop.net:2013:topology>\n"
-                    + "    a   nml:Topology,\n"
-                    + "        owl:NamedIndividual;\n"
-                    + "    nml:hasNode\n"
-                    + "        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1>,\n"
-                    + "        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-4>."
-                    + "</value></entry></properties></driverInstance>";
-
-        } else if (driverID.equalsIgnoreCase("awsdriver")) {
-            driver = "<driverInstance><properties><entry><key>topologyUri</key>"
-                    + "<value>urn:ogf:network:aws.amazon.com:aws-cloud</value></entry>"
-                    + "<entry><key>driverEjbPath</key><value>java:module/AwsDriver</value></entry>"
-                    + "<entry><key>aws_access_key_id</key><value>AKIAJQMR4G7PCMWZRIHA</value></entry>"
-                    + "<entry><key>aws_secret_access_key</key><value>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</value></entry>"
-                    + "<entry><key>region</key><value>us-east-1</value></entry></properties></driverInstance>";
-        } else if (driverID.equalsIgnoreCase("versaNSDriver")) {
-            driver = "<driverInstance><properties><entry><key>topologyUri</key>"
-                    + "<value>urn:ogf:network:sdn.maxgigapop.net:network</value></entry>"
-                    + "<entry><key>driverEjbPath</key><value>java:module/GenericRESTDriver</value></entry>"
-                    + "<entry><key>subsystemBaseUrl</key><value>http://localhost:8080/VersaNS-0.0.1-SNAPSHOT</value></entry>"
-                    + "</properties></driverInstance>";
-        } else if (driverID.equalsIgnoreCase("openStackDriver")) {
-            driver =  "<driverInstance><properties><entry><key>url</key>"
-                    + "<value>http://max-vlsr2.dragon.maxgigapop.net:35357/v2.0</value></entry>"
-                    + "<entry><key>NATServer</key><value></value></entry>"
-                    + "<entry><key>driverEjbPath</key><value>java:module/OpenStackDriver</value></entry>"
-                    + "<entry><key>username</key><value>admin</value></entry><entry>"
-                    + "<key>password</key><value>1234</value></entry><entry><key>topologyUri</key>"
-                    + "<value>urn:ogf:network:openstack.com:openstack-cloud</value></entry>"
-                    + "<entry><key>tenant</key><value>admin</value></entry></properties></driverInstance>";
-        } else if(driverID.equalsIgnoreCase("StackDriver")){
-            //for VersaStack
-        } else //invalid driverID
-        {
-            return 1;
+    public int driverInstall(Map<String, String> paraMap) {
+        String driver = "<driverInstance><properties>";
+        for(Map.Entry<String, String> entry : paraMap.entrySet()){
+            //if the key indicates what kind of driver it is, put the corresponding ejb path
+            if(entry.getKey().equalsIgnoreCase("driverID")){
+                driver += "<entry><key>driverEjbPath</key>";
+                switch(entry.getValue()){
+                    case "stubdriver":
+                        driver += "<value>java:module/StubSystemDriver</value></entry>";
+                        break;
+                    case "awsdriver":
+                        driver += "<value>java:module/AwsDriver</value></entry>";
+                        break;
+                    case "versaNSDriver":
+                        driver += "<value>java:module/StubSystemDriver</value></entry>";
+                        break;                    
+                    case "openStackDriver":
+                        driver += "<value>java:module/GenericRESTDriver</value></entry>";
+                        break;
+                    case "StackDriver":
+                        // to be filled
+                        break;
+                    default:
+                        break;
+                }
+            }
+            
+            //if it is ttl model, modify the format so that the system can recognize the brackets
+            else if(entry.getKey().equalsIgnoreCase("ttlmodel")){
+                String ttlModel = entry.getValue().replaceAll("<", "&lt;");
+                ttlModel = ttlModel.replaceAll(">", "&gt;");
+                driver += "<entry><key>stubModelTtl</key><value>" + ttlModel +"</value></entry>";
+                
+            }
+            
+            //simply put the key value pair into the string
+            else{
+                driver += "<entry><key>" + entry.getKey() + "</key><value>" 
+                        + entry.getValue() + "</value></entry>";
+            }
         }
+        driver += "</properties></driverInstance>";
+                
+        //push to the system api and get response
         try {
             URL url = new URL(String.format("%s/driver", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -104,33 +94,14 @@ public class serviceBeans {
     }
 
     /**
-     * Uninstalls driver from model.
-     *
-     * @param driverID driver identifier;<br /> either 'stubdriver',
-     * 'awsdriver', 'versaNSDriver', 'openStackDriver'
+     * Uninstalls driver via the system API
+     * @param topoUri an unique string represents each driver topology
      * @return error code:<br />
      * 0 - success.<br />
-     * 1 - invalid driverID.<br />
      * 2 - unplug error.<br />
      * 3 - connection error.<br />
      */
-    public int driverUninstall(String driverID) {
-        String topoUri = "";
-        if (driverID.equalsIgnoreCase("stubdriver")) {
-            topoUri = "urn:ogf:network:rains.maxgigapop.net:2013:topology";
-        } else if (driverID.equalsIgnoreCase("awsdriver")) {
-            topoUri = "urn:ogf:network:aws.amazon.com:aws-cloud";
-        } else if (driverID.equalsIgnoreCase("versaNSDriver")) {
-            topoUri = "urn:ogf:network:sdn.maxgigapop.net:network";
-        } else if (driverID.equalsIgnoreCase("openStackDriver")) {
-            topoUri = "urn:ogf:network:openstack.com:openstack-cloud";
-        } else if(driverID.equalsIgnoreCase("StackDriver")){
-            //for VersaStack
-        } else //invalid driverID
-        {
-            return 1;
-        }
-
+    public int driverUninstall(String topoUri) {
         try {
             URL url = new URL(String.format("%s/driver/%s", host, topoUri));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
