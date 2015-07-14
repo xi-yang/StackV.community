@@ -398,8 +398,6 @@ define([
                             cursor = cursor._parent;
                         }
 
-                        //fix all edges
-                        map_(edgeList, updateSvgChoordsEdge);
 
                         //As we drag, the cursor may enter and leave the bounding box of n
                         //In onNodeMouseLeave we make the hoverdiv stay visible in this case,
@@ -410,6 +408,8 @@ define([
                         if (selectedNode) {
                             portDisplayPopup.render();
                         }
+                        //fix all edges
+                        map_(edgeList, updateSvgChoordsEdge);
                     })
                     .on("dragstart", function () {
                         lastMouse = d3.event.sourceEvent;
@@ -420,7 +420,6 @@ define([
                     .on("dragend", function () {
                         outputApi.enablePanning();
                         isDragging = false;
-                        map_(edgeList, updateSvgChoordsEdge);
                     });
         }
 
