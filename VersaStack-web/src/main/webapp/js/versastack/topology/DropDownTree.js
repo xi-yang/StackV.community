@@ -5,6 +5,7 @@ define([
     ], function (utils,DropDownNode) {
     function DropDownTree(containerDiv) {
         var map_=utils.map_;
+        /**@type Array.DropDownNode**/
         this.rootNodes = [];
         this.containerDiv=containerDiv;
         
@@ -14,7 +15,7 @@ define([
             utils.deleteAllChildNodes(this.containerDiv);
         };
         
-        this.draw = function(containerDiv){
+        this.draw = function(){
             utils.deleteAllChildNodes(this.containerDiv);
             map_(this.rootNodes,/**@param {DropDownNode} node**/function(node){
                 var toAppend=node.getHTML();

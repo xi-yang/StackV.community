@@ -1,3 +1,5 @@
+// Service JavaScript Library
+
 $(function () {
     $("#nav").load("/VersaStack-web/navbar.html");
 
@@ -37,10 +39,48 @@ function aclSelect(sel) {
     $("#acl-tables").load($ref);
 }
 
+function installSelect(sel) {
+    if (sel.value !== null) {
+        $ref = "/VersaStack-web/ops/srvc/driver.jsp?form_install=" + sel.value + " #service-menu";
+        $ref2 = "/VersaStack-web/ops/srvc/driver.jsp?form_install=" + sel.value + " #service-fields";
+    }
+    else {
+        $ref = "/VersaStack-web/ops/srvc/driver.jsp #service-menu";
+        $ref2 = "/VersaStack-web/ops/srvc/driver.jsp #service-fields";   
+    }
+    $("#service-top").load($ref);
+    $("#service-bottom").load($ref2);
+}
+
 function driverSelect(sel) {
     if (sel.value !== null) {
-        $ref = "/VersaStack-web/ops/srvc/driver.jsp?driver_id=" + sel.value + " #service-bottom";
+        $ref = "/VersaStack-web/ops/srvc/driver.jsp?driver_id=" + sel.value + " #service-fields";
     }
-    else $ref = "/VersaStack-web/ops/srvc/driver.jsp #service-bottom";
+    else $ref = "/VersaStack-web/ops/srvc/driver.jsp #service-fields";
     $("#service-bottom").load($ref);
+    
+    fieldCounter = 0;
+}
+
+var fieldCounter = 0;
+var fieldLimit = 5;
+function addDriverField() {
+     if (fieldCounter === fieldLimit)  {
+          alert("You have reached the limit of additional properties");
+     }
+     else {
+          var driverTable = document.getElementById("service-form");
+          var tableHeight = driverTable.rows.length;
+          
+          var row = driverTable.insertRow(tableHeight - 1);
+          var cell1 = row.insertCell(0);
+          var cell2 = row.insertCell(1);
+          fieldCounter++;
+          cell1.innerHTML = '<input type="text" name="apropname' 
+                    + (fieldCounter) + '" placeholder="Additional Property Name" size="30" />';
+          
+          cell2.innerHTML = '<input type="text" name="apropval' 
+                    + (fieldCounter) + '" placeholder="Additional Property Value" size="30" />';
+          
+     }
 }

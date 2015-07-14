@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -99,7 +100,7 @@ public class serviceBeans {
     }
 
     /**
-     * Uninstalls driver via the sysmtem API
+     * Uninstalls driver via the system API
      * @param topoUri an unique string represents each driver topology
      * @return error code:<br />
      * 0 - success.<br />
@@ -122,11 +123,17 @@ public class serviceBeans {
         return 0;
     }
 
-    //@@TODO Fill out Javadoc
-    public int vmInstall() {
-        return -1;
+    // Given a Topology, return list of VM's that can be added under it.
+    //TODO Fill skeleton and JavaDoc as appropriate
+    public ArrayList<String> VMSearchByTopology(String topoUri) {
+        return null;
     }
     
+    // Given a VM type, return list of topologies that can support it.
+    //TODO Fill skeleton and JavaDoc as appropriate
+    public ArrayList<String> VMSearchByType(String VMString) {
+        return null;
+    }
     
     
     // Utility Functions
