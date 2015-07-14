@@ -143,6 +143,9 @@ define(["local/d3", "local/versastack/utils"],
                 };
 
                 this.render = function () {
+                    if(!this.hostNode){
+                        return;
+                    }
                     var container = this.svgContainer.select("#dialogBox");
                     container.selectAll("*").remove();
 

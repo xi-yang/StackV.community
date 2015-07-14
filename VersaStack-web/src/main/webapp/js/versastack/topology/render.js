@@ -56,8 +56,12 @@ define([
         DIALOG_NECK_HEIGHT: 40,
         DIALOG_MIN_WIDTH: 130,
         DIALOG_MIN_HEIGHT: 110,
+        SWITCH_MIN_WIDTH: 20,
+        SWITCH_MIN_HEIGHT: 8,
         DIALOG_BEVEL: 10,
         DIALOG_COLOR: "rgba(255,0,0,.5)",
+        DIALOG_TAB_COLOR: "rgb(31,178,223)",
+        DIALOG_BUFFER: 2,
         DIALOG_PORT_COLOR: "rgb(0,0,0)",
         DIALOG_PORT_EMPTY_COLOR: "rgb(128,128,50)",
         DIALOG_PORT_HEIGHT: 4,
@@ -93,6 +97,7 @@ define([
         settings.DIALOG_PORT_WIDTH /= outputApi.getZoom();
         
         
+        
         //switch setting
         switchSettings.NODE_SIZE /= outputApi.getZoom();
         switchSettings.SERVICE_SIZE /= outputApi.getZoom();
@@ -104,15 +109,18 @@ define([
         switchSettings.DIALOG_NECK_WIDTH /= outputApi.getZoom();
         switchSettings.DIALOG_NECK_HEIGHT /= outputApi.getZoom();
         switchSettings.DIALOG_MIN_WIDTH /= outputApi.getZoom();
+        switchSettings.SWITCH_MIN_WIDTH /= outputApi.getZoom();
+        switchSettings.SWITCH_MIN_HEIGHT /= outputApi.getZoom();
         switchSettings.DIALOG_MIN_HEIGHT /= outputApi.getZoom();
         switchSettings.DIALOG_BEVEL /= outputApi.getZoom();
         switchSettings.DIALOG_PORT_HEIGHT /= outputApi.getZoom();
         switchSettings.DIALOG_PORT_WIDTH /= outputApi.getZoom();
+        switchSettings.DIALOG_BUFFER /= outputApi.getZoom();
 
-        var switchPopup = buildSwitchPopup();
+
         var svgContainer = outputApi.getSvgContainer();
         var portDisplayPopup = buildPortDisplayPopup();
-
+        var switchPopup = buildSwitchPopup();
         redraw();
 
         var nodeList, edgeList;
@@ -407,6 +415,7 @@ define([
 
                         if(selectedNode){
                             portDisplayPopup.render();
+                            switchPopup.render();
                         }
                     })
                     .on("dragstart", function () {
@@ -482,10 +491,10 @@ define([
             n.populateTreeMenu(displayTree);
             displayTree.draw();
             
-//            var switchChoords = n.getCenterOfMass();   
-//            switchPopup.setAnchor(switchChoords.x,switchChoords.y)
-//                    .setService(n)
-//                    .render();
+          var switchChoords = n.getCenterOfMass();   
+           switchPopup.setOffset(0,0)
+                    .setHostNode(n)
+                    .render();
         
         }
         
@@ -627,11 +636,14 @@ define([
             return new SwitchPopup(outputApi)
                     .setContainer(svgContainer)                   
                     .setDimensions(switchSettings.DIALOG_MIN_WIDTH,switchSettings.DIALOG_MIN_HEIGHT)
+                    .setTabDimensions(switchSettings.SWITCH_MIN_WIDTH, switchSettings.SWITCH_MIN_HEIGHT)
                     .setBevel(switchSettings.DIALOG_BEVEL)
                     .setColor(switchSettings.DIALOG_COLOR)
+                    .setTabColor(switchSettings.DIALOG_TAB_COLOR)
                     .setPortColor(switchSettings.DIALOG_PORT_COLOR)
                     .setPortEmptyColor(switchSettings.DIALOG_PORT_EMPTY_COLOR)
-                    .setPortDimensions(switchSettings.DIALOG_PORT_WIDTH,switchSettings.DIALOG_PORT_HEIGHT);
+                    .setPortDimensions(switchSettings.DIALOG_PORT_WIDTH,switchSettings.DIALOG_PORT_HEIGHT)
+                    .setBuffer(switchSettings.DIALOG_BUFFER);
         }
 
         API["redraw"] = redraw;

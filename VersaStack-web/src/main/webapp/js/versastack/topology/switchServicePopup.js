@@ -5,40 +5,54 @@ define(["local/d3", "local/versastack/utils"],
 
 
 
-            function SwitchPopup(outputApi) {
+            function SwitchPopup(outputApi, renderApi) {
                 this.svgContainer = null;
-                this.anchorX = 0;
-                this.anchorY = 0;
-                this.service = null;
+                this.dx = 0;
+                this.dy = 0;
                 this.neckLength = 0;
                 this.neckWidth = 0;
                 this.width = 0;
                 this.height = 0;
+                this.buffer = 0;
                 this.bevel = 10;
                 this.svgNeck = null;
                 this.svgBubble = null;
                 this.color = "";
+                this.tabColor = "";
+                this.tabWidth = 0;
+                this.tabHeight = 0;
                 this.ports = [];
                 this.portColor = "";
                 this.portEmptyColor = "";
                 this.portHeight = 0;
                 this.portWidth = 0;
+                /**@type Service**/
+                this.hostNode = null;
 
                 var that = this;
-                this.setAnchor = function (x, y) {
-                    this.anchorX = x;
-                    this.anchorY = y;
+                this.setOffset = function (x, y) {
+                    this.dx = x;
+                    this.dy = y;
                     return this;
                 };
-                this.setService = function(service){
-                    this.service=service;
+                this.setHostNode = function(hostNode){
+                    this.hostNode=hostNode;
                     return this;
                 }
-             
+                
+                this.setBuffer = function(buffer){
+                    this.buffer=buffer;
+                    return this;
+                }
                 
                 this.setDimensions = function (width, height) {
                     this.width = width;
                     this.height = height;
+                    return this;
+                };
+                this.setTabDimensions = function (tabWidth, tabHeight) {
+                    this.tabWidth = tabWidth;
+                    this.tabHeight = tabHeight;
                     return this;
                 };
                 this.setBevel = function (r) {
@@ -51,6 +65,11 @@ define(["local/d3", "local/versastack/utils"],
                 };
                 this.setColor = function (color) {
                     this.color = color;
+                    return this;
+                };
+                
+                this.setTabColor = function (tabColor) {
+                    this.tabColor = tabColor;
                     return this;
                 };
                 this.setPorts = function (ports) {
@@ -76,6 +95,10 @@ define(["local/d3", "local/versastack/utils"],
                     this.portHeight = height;
                     return this;
                 };
+                this.setHostNode = function (n) {
+                    this.hostNode = n;
+                    return this;
+                };
 
 
                 var lastMouse;
@@ -90,8 +113,8 @@ define(["local/d3", "local/versastack/utils"],
                                 var dx = (e.clientX - lastMouse.clientX) / outputApi.getZoom();
                                 var dy = (e.clientY - lastMouse.clientY) / outputApi.getZoom();
                                 lastMouse = e;
-                                that.anchorX+=dx;
-                                that.anchorY+=dy;
+                                that.dx+=dx;
+                                that.dy+=dy;
                                 that.render();
                                 
                             })
@@ -108,27 +131,57 @@ define(["local/d3", "local/versastack/utils"],
                 }
 
                 this.render = function () {
+                    if(!this.hostNode){
+                        return;
+                    }
                     var container = this.svgContainer.select("#switchPopup");
                     container.selectAll("*").remove();
-
-                    var serviceChoords = this.service.getCenterOfMass();
-                    container.append("line")
-                            .attr("x1", this.anchorX)
-                            .attr("y1", this.anchorY)
-                            .attr("x2", serviceChoords.x)
-                            .attr("y2", serviceChoords.y)
-                            .style("stroke", this.color);
-                    
-
-                    container.append("rect")
-                            .attr("x", this.anchorX - this.width / 2)
-                            .attr("y", this.anchorY)
+                    var anchor = this.hostNode.getCenterOfMass();
+                    //draw switch popup
+                     container.append("rect")
+                            .attr("x", anchor.x - this.width / 2 + this.dx)
+                            .attr("y", anchor.y + this.dy)
                             .attr("height", this.height)
                             .attr("width", this.width)
                             .attr("rx", this.bevel)
                             .attr("ry", this.bevel)
                             .style("fill", this.color)
                             .call(makeDragBehaviour());
+                    
+                    //draw subnet tab
+                     var subnetContainer = this.svgContainer.select("#tab");
+                    subnetContainer.selectAll("*").remove();
+
+                    
+
+                    var x = anchor.x - this.width / 2 +this.dx +this.bevel;
+                    var y = anchor.y + this.dy;
+                    
+                    map_(this.hostNode.subnets, function(subnet){
+                        
+                        
+                        container.append("rect")
+                                .attr("x", x)
+                                .attr("y", y)
+                                .attr("height", that.tabHeight)
+                                .attr("width", that.tabWidth)
+                                .style("fill", that.tabColor) 
+                        x += that.tabWidth +that.buffer;
+                        
+                       
+                    });
+
+                               
+                    var serviceChoords = this.hostNode.getCenterOfMass();
+                    container.append("line")
+                            .attr("x1", anchor.x + this.dx)
+                            .attr("y1", anchor.y + this.dy)
+                            .attr("x2", serviceChoords.x)
+                            .attr("y2", serviceChoords.y)
+                            .style("stroke", this.color);
+                    
+
+                   
 
 
                 };
