@@ -1,7 +1,14 @@
 "use strict";
 define([], function () {
+    /**
+     * 
+     * @param {Port} leftPort
+     * @param {Port} rightPort
+     */
     function Edge(leftPort, rightPort) {
+        /**@type Port**/
         this.leftPort = leftPort;
+        /**@type Port**/
         this.rightPort = rightPort;
 
         this.source = null;

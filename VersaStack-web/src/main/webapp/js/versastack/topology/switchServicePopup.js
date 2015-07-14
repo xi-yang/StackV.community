@@ -43,7 +43,8 @@ define(["local/d3", "local/versastack/utils"],
                 this.setBuffer = function(buffer){
                     this.buffer=buffer;
                     return this;
-                }
+  
+                };
                 
                 this.setDimensions = function (width, height) {
                     this.width = width;
@@ -102,8 +103,6 @@ define(["local/d3", "local/versastack/utils"],
 
 
                 var lastMouse;
-                /**@param {Node} n**/
-
                 function makeDragBehaviour() {
                     return d3.behavior.drag()
                             .on("drag", function () {

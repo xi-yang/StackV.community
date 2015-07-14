@@ -8,7 +8,7 @@ define([
     "local/versastack/utils",
     "local/versastack/topology/PortDisplayPopup",
     "local/versastack/topology/switchServicePopup"
-], function (d3, utils, PortDisplayPopup,SwitchPopup) {
+], function (d3, utils, PortDisplayPopup, SwitchPopup) {
 
     var map_ = utils.map_;
 
@@ -38,8 +38,8 @@ define([
         DIALOG_PORT_BUFFER_VERT: 2,
         DIALOG_PORT_BUFFER_HORZ: 3
     };
-    
-    
+
+
     var switchSettings = {
         NODE_SIZE: 30,
         SERVICE_SIZE: 10,
@@ -66,7 +66,7 @@ define([
         DIALOG_PORT_EMPTY_COLOR: "rgb(128,128,50)",
         DIALOG_PORT_HEIGHT: 4,
         DIALOG_PORT_WIDTH: 8
-               
+
     };
 
 
@@ -95,9 +95,11 @@ define([
         settings.DIALOG_BEVEL /= outputApi.getZoom();
         settings.DIALOG_PORT_HEIGHT /= outputApi.getZoom();
         settings.DIALOG_PORT_WIDTH /= outputApi.getZoom();
-        
-        
-        
+ 
+        settings.DIALOG_PORT_BUFFER_VERT /= outputApi.getZoom();
+        settings.DIALOG_PORT_BUFFER_HORZ /= outputApi.getZoom();
+
+
         //switch setting
         switchSettings.NODE_SIZE /= outputApi.getZoom();
         switchSettings.SERVICE_SIZE /= outputApi.getZoom();
@@ -404,8 +406,6 @@ define([
                             cursor = cursor._parent;
                         }
 
-                        //fix all edges
-                        map_(edgeList, updateSvgChoordsEdge);
 
                         //As we drag, the cursor may enter and leave the bounding box of n
                         //In onNodeMouseLeave we make the hoverdiv stay visible in this case,
@@ -413,10 +413,12 @@ define([
                         outputApi.setHoverLocation(e.clientX, e.clientY);
                         drawHighlight();
 
-                        if(selectedNode){
+                        if (selectedNode) {
                             portDisplayPopup.render();
                             switchPopup.render();
                         }
+                        //fix all edges
+                        map_(edgeList, updateSvgChoordsEdge);
                     })
                     .on("dragstart", function () {
                         lastMouse = d3.event.sourceEvent;
@@ -427,7 +429,6 @@ define([
                     .on("dragend", function () {
                         outputApi.enablePanning();
                         isDragging = false;
-                        map_(edgeList, updateSvgChoordsEdge);
                     });
         }
 
@@ -449,16 +450,16 @@ define([
             if (didDrag) {
                 return;
             }
-            highlightedNode=n;
+            highlightedNode = n;
             drawHighlight();
             outputApi.setDisplayName(n.getName());
             /**@type {DropDownTree} displayTree**/
             var displayTree = outputApi.getDisplayTree();
             displayTree.clear();
-            
+
             n.populateTreeMenu(displayTree);
             displayTree.draw();
-            
+
             var choords = n.getCenterOfMass();
             portDisplayPopup
                     .setOffset(0, -settings.DIALOG_NECK_HEIGHT)
@@ -471,25 +472,26 @@ define([
             portDisplayPopup.render();
             map_(edgeList, updateSvgChoordsEdge);
             selectElement(n);
-            
+
             selectedNode = n;
         }
-        
-        function onServiceClick(n){
-            selectedNode=n;
+
+        function onServiceClick(n) {
+            selectedNode = n;
             d3.event.stopPropagation();
-            if(didDrag){
+            if (didDrag) {
                 return;
             }
             highlightedNode = n;
             drawHighlight();
             outputApi.setDisplayName(n.getName());
-            
+
             var displayTree = outputApi.getDisplayTree();
             displayTree.clear();
-            
+
             n.populateTreeMenu(displayTree);
             displayTree.draw();
+
             
           var switchChoords = n.getCenterOfMass();   
            switchPopup.setOffset(0,0)
@@ -497,8 +499,8 @@ define([
                     .render();
         
         }
-        
-        function drawHighlight(){
+
+        function drawHighlight() {
             svgContainer.select("#selectedOverlay").selectAll("*").remove();
             if (highlightedNode && highlightedNode.svgNode) {
                 var toAppend = highlightedNode.svgNode.node().cloneNode();
@@ -631,26 +633,29 @@ define([
                     .setEnlargeFactor(settings.ENLARGE_FACTOR)
                     .setOpacity(settings.DIALOG_OPACITY);
         }
-        
-        function buildSwitchPopup(){
+
+        function buildSwitchPopup() {
             return new SwitchPopup(outputApi)
+
                     .setContainer(svgContainer)                   
                     .setDimensions(switchSettings.DIALOG_MIN_WIDTH,switchSettings.DIALOG_MIN_HEIGHT)
-                    .setTabDimensions(switchSettings.SWITCH_MIN_WIDTH, switchSettings.SWITCH_MIN_HEIGHT)
-                    .setBevel(switchSettings.DIALOG_BEVEL)
+                    .setTabDimensions(switchSettings.SWITCH_MIN_WIDTH, switchSettings.SWITCH_MIN_HEIGHT)   .setBevel(switchSettings.DIALOG_BEVEL)
                     .setColor(switchSettings.DIALOG_COLOR)
                     .setTabColor(switchSettings.DIALOG_TAB_COLOR)
                     .setPortColor(switchSettings.DIALOG_PORT_COLOR)
                     .setPortEmptyColor(switchSettings.DIALOG_PORT_EMPTY_COLOR)
                     .setPortDimensions(switchSettings.DIALOG_PORT_WIDTH,switchSettings.DIALOG_PORT_HEIGHT)
                     .setBuffer(switchSettings.DIALOG_BUFFER);
+
         }
 
         API["redraw"] = redraw;
         API["doRender"] = doRender;
         API["drawHighlight"] = drawHighlight;
         API["selectElement"] = selectElement;
-        API["layoutEdges"] = function(){map_(edgeList, updateSvgChoordsEdge);};
+        API["layoutEdges"] = function () {
+            map_(edgeList, updateSvgChoordsEdge);
+        };
     }
 
 

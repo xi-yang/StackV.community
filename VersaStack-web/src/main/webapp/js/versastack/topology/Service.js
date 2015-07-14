@@ -13,6 +13,7 @@ function (utils,values) {
         this.dy=0;
         this.dx=0;
         this.size=0;
+        /**@type Array.subnet**/
         this.subnets=[];
 
         this.getTypeBrief = function () {

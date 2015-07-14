@@ -119,6 +119,7 @@ define([
             //  Create aliases between our Port objects
             //  Associate a port with its children
             for (var key in portMap) {
+                /**@type Port**/
                 var port = portMap[key];
                 var port_ = port._backing;
                 var aliasKey = port_[values.isAlias];

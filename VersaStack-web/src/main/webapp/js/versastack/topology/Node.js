@@ -1,8 +1,6 @@
 "use strict";
-define(["local/versastack/topology/modelConstants",
-    "local/versastack/topology/Service",
-    "local/versastack/topology/Edge"],
-        function (values, Service, Edge) {
+define(["local/versastack/topology/modelConstants"],
+        function (values) {
             /**
              * There are two graphs we want to consider. The first is the tree representing the node/subnode relationships
              * The second is the model graph, representing the connections as understood by the model
@@ -20,22 +18,27 @@ define(["local/versastack/topology/modelConstants",
             var i = 0;
             function Node(backing, map) {
                 this._backing = backing; //the node/topology from the model
+                /**@type Array.Node**/
                 this.children = [];
                 this.isRoot = true;
                 this.uid = i++;
                 this.isFolded = false;
                 this.isVisible = true;
+                /**@type Array.Node**/
                 this._parent = null;
                 this.svgNode=null;
                 this.svgNodeAnchor=null;//For topologies
                 this.svgNodeServices=null;
+                /**@type Array.Service**/
                 this.services = [];
+                /**@type Array.Port**/
                 this.ports=[];
                 this.x=0;
                 this.y=0;
                 this.dx=0;
                 this.dy=0;
                 this.size=0;
+                /**@type Node**/
                 var that = this;
                 this.fold = function () {
                     this.isFolded = true;
@@ -183,7 +186,13 @@ define(["local/versastack/topology/modelConstants",
                             port.populateTreeMenu(portsNode);
                         });
                     }
-                    
+                    if(this.children.length>0){
+                        var childrenNode=tree.addChild("SubNodes");
+                        map_(this.children,function(child){
+                            var childNode=childrenNode.addChild(child.getName());
+                            child.populateTreeMenu(childNode);
+                        });
+                    }
                 };
             }
 

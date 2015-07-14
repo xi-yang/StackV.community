@@ -8,14 +8,18 @@ define([
     function Port(backing,map){
         var that=this;
         this._backing=backing;
+        /**@type Array.Port**/
         this.childrenPorts=[];
+        /**@type Port**/
         this.parentPort = null;
+        /**@type Node**/
         this.ancestorNode=null;
         this.alias=null;
         
         this.isVisible=false;
         this.x=0;
         this.y=0;
+        this.enlarged=false;
         this.svgNode=null;
         this.edgeAnchorLeft={x:0,y:0};
         this.edgeAnchorRight={x:0,y:0};

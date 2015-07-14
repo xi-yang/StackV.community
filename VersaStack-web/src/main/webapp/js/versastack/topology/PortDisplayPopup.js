@@ -15,6 +15,7 @@ define(["local/d3", "local/versastack/utils"],
                 this.svgLine = null;
                 this.svgBubble = null;
                 this.color = "";
+                /**@type Array.Port**/
                 this.ports = [];
                 this.portColors = [];
                 this.portEmptyColor = "";
@@ -122,6 +123,7 @@ define(["local/d3", "local/versastack/utils"],
                     if (port.hasChildren()) {
                         return;
                     }
+                    port.enlarged=enlarge;
                     var width = that.portWidth;
                     var height = that.portHeight;
                     var dWidth, dHeight;
@@ -226,6 +228,7 @@ define(["local/d3", "local/versastack/utils"],
                                         renderApi.redraw();
                                     })
                                     .call(dragBehaviour);
+                            that._setPortEnlarge(port,port.enlarged);
                             port.edgeAnchorLeft = {x: port.x, y: port.y};
                             port.edgeAnchorRight = {x: port.x + width, y: port.y};
                             if (port.hasChildren()) {
@@ -291,10 +294,10 @@ define(["local/d3", "local/versastack/utils"],
                             that.dx += dx;
                             that.dy += dy;
 
+                            that.render();
                             outputApi.setHoverLocation(e.clientX, e.clientY);
                             renderApi.drawHighlight();
                             renderApi.layoutEdges();
-                            that.render();
                         })
                         .on("dragstart", function () {
                             lastMouse = d3.event.sourceEvent;

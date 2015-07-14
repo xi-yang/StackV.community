@@ -11,7 +11,7 @@
     float:right;
     background: rgba(255,190,190,1);
     /*The 40px is to accound for the navbar*/
-    height: calc(100% - 40px);
+    min-height: calc(100% - 40px);
     top: 40px;
     width: 30%;
     position: absolute;
