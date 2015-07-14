@@ -1,7 +1,14 @@
 "use strict";
 define([], function () {
+    /**
+     * 
+     * @param {Port} leftPort
+     * @param {Port} rightPort
+     */
     function Edge(leftPort, rightPort) {
+        /**@type Port**/
         this.leftPort = leftPort;
+        /**@type Port**/
         this.rightPort = rightPort;
 
         this.source = null;
@@ -23,10 +30,10 @@ define([], function () {
             this.target = rightCursor;
             ans = ans && (this.source.uid < this.target.uid);
 
-            if (leftPort.isVisible) {
+            if (leftPort.getVisible()) {
                 this.source = leftPort;
             }
-            if (rightPort.isVisible) {
+            if (rightPort.getVisible()) {
                 this.target = rightPort;
             }
             return ans;

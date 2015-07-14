@@ -41,6 +41,17 @@ define([],function(){
         virtualSwitchingService: "http://schemas.ogf.org/mrs/2013/12/topology#VirtualSwitchService",
         switchingService: "http://schemas.ogf.org/nml/2013/03/base#SwitchingService",
         topopolgySwitchingService: "http://schemas.ogf.org/mrs/2013/12/topology#SwitchingService",
-        virtualCloudService: "http://schemas.ogf.org/mrs/2013/12/topology#VirtualCloudService"
+        virtualCloudService: "http://schemas.ogf.org/mrs/2013/12/topology#VirtualCloudService",
+        
+        providesSubnet: "http://schemas.ogf.org/mrs/2013/12/topology#providesSubnet",
+        encoding:"http://schemas.ogf.org/nml/2013/03/base#encoding",
+        labelSwapping:"http://schemas.ogf.org/nml/2013/03/base#labelSwapping",
+        providesVolume:"http://schemas.ogf.org/mrs/2013/12/topology#providesVolume",
+        providesRoutingTable:"http://schemas.ogf.org/mrs/2013/12/topology#providesRoutingTable",
+        providesRoute:"http://schemas.ogf.org/mrs/2013/12/topology#providesRoute",
+        providesVM:"http://schemas.ogf.org/mrs/2013/12/topology#providesVM",
+        providesVPC:"http://schemas.ogf.org/mrs/2013/12/topology#providesVPC",
+        providesBucket:"http://schemas.ogf.org/mrs/2013/12/topology#providesBucket"
+        
     };
 });

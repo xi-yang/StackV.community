@@ -1,8 +1,11 @@
 "use strict";
-define(["local/versastack/topology/modelConstants"], function (values) {
-    function Service(backing,owningNode) {
+define([
+    "local/versastack/utils",
+    "local/versastack/topology/modelConstants"], 
+function (utils,values) {
+    var map_=utils.map_;
+    function Service(backing,map) {
         this._backing = backing;
-        this.owningNode=owningNode;
         this.type = "";
         this.svgNode=null;
         this.x=0;
@@ -10,10 +13,13 @@ define(["local/versastack/topology/modelConstants"], function (values) {
         this.dy=0;
         this.dx=0;
         this.size=0;
+        /**@type Array.subnet**/
+        this.subnets=[];
 
         this.getTypeBrief = function () {
             return this.type.split("#")[1];
         };
+        
         //Initialization
         //get the type
         var types = this._backing[values.type];
@@ -26,6 +32,10 @@ define(["local/versastack/topology/modelConstants"], function (values) {
             }
             that.type = type;
         });
+
+        this.getCenterOfMass=function(){
+            return {x:this.x,y:this.y};
+        };
 
         this.getIconPath = function () {
             var prefix="/VersaStack-web/resources/";
@@ -45,6 +55,11 @@ define(["local/versastack/topology/modelConstants"], function (values) {
         this.getName = function(){
             return this.type;
         };
+        
+          this.getCenterOfMass=function(){
+            return {x:this.x,y:this.y};
+        };
+        
         
         var iconMap = {};{
             //The curly brackets are for cold folding purposes
@@ -68,7 +83,10 @@ define(["local/versastack/topology/modelConstants"], function (values) {
         };
         
         this.populateTreeMenu=function(tree){
-            tree.addChild(this.getTypeBrief());
+            var container=tree.addChild(this.getTypeBrief());
+            map_(this.subnets,function(subnet){
+                subnet.populateTreeMenu(container);
+            });
         };
     }
     return Service;
