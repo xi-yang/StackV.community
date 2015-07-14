@@ -6,8 +6,10 @@ var debugPoint = {x: 0, y: 0};
 define([
     "local/d3",
     "local/versastack/utils",
-    "local/versastack/topology/DialogBox"
-], function (d3, utils, DialogBox) {
+    "local/versastack/topology/PortDisplayPopup",
+    "local/versastack/topology/switchServicePopup"
+], function (d3, utils, PortDisplayPopup, SwitchPopup) {
+
     var map_ = utils.map_;
 
     var settings = {
@@ -22,20 +24,54 @@ define([
         HULL_OPACITY: .2,
         EDGE_COLOR: "rgb(0,0,0)",
         EDGE_WIDTH: 2,
+        DIALOG_NECK_WIDTH: 3,
+        DIALOG_NECK_HEIGHT: 40,
+        DIALOG_MIN_WIDTH: 15,
+        DIALOG_MIN_HEIGHT: 10,
+        DIALOG_BEVEL: 5,
+        DIALOG_COLOR: "rgb(255,0,0)",
+        DIALOG_OPACITY: "0.5",
+        DIALOG_PORT_EMPTY_COLOR: "rgb(128,128,0)",
+        DIALOG_PORT_COLORS: ["rgb(0,0,0)", "rgb(128,128,128)"],
+        DIALOG_PORT_HEIGHT: 6,
+        DIALOG_PORT_WIDTH: 8,
+        DIALOG_PORT_BUFFER_VERT: 2,
+        DIALOG_PORT_BUFFER_HORZ: 3
+    };
+
+
+    var switchSettings = {
+        NODE_SIZE: 30,
+        SERVICE_SIZE: 10,
+        TOPOLOGY_SIZE: 15,
+        TOPOLOGY_BUFFER: 30,
+        TOPOLOGY_ANCHOR_SIZE: 8,
+        TOPOLOGY_ANCHOR_STROKE: 2,
+        ENLARGE_FACTOR: .2,
+        HULL_COLORS: ["rgb(0,100,255)", "rgb(255,0,255)"],
+        HULL_OPACITY: .2,
+        EDGE_COLOR: "rgb(0,0,0)",
+        EDGE_WIDTH: 2,
         DIALOG_NECK_WIDTH: 5,
         DIALOG_NECK_HEIGHT: 40,
-        DIALOG_MIN_WIDTH: 60,
-        DIALOG_MIN_HEIGHT: 40,
+        DIALOG_MIN_WIDTH: 130,
+        DIALOG_MIN_HEIGHT: 110,
+        SWITCH_MIN_WIDTH: 20,
+        SWITCH_MIN_HEIGHT: 8,
         DIALOG_BEVEL: 10,
         DIALOG_COLOR: "rgba(255,0,0,.5)",
+        DIALOG_TAB_COLOR: "rgb(31,178,223)",
+        DIALOG_BUFFER: 2,
         DIALOG_PORT_COLOR: "rgb(0,0,0)",
         DIALOG_PORT_EMPTY_COLOR: "rgb(128,128,50)",
         DIALOG_PORT_HEIGHT: 4,
         DIALOG_PORT_WIDTH: 8
-               
+
     };
 
+
     var redraw_;
+    var API = {};
 
     /**@param {outputApi} outputApi
      * @param {Model} model
@@ -59,10 +95,34 @@ define([
         settings.DIALOG_BEVEL /= outputApi.getZoom();
         settings.DIALOG_PORT_HEIGHT /= outputApi.getZoom();
         settings.DIALOG_PORT_WIDTH /= outputApi.getZoom();
+ 
+        settings.DIALOG_PORT_BUFFER_VERT /= outputApi.getZoom();
+        settings.DIALOG_PORT_BUFFER_HORZ /= outputApi.getZoom();
+
+
+        //switch setting
+        switchSettings.NODE_SIZE /= outputApi.getZoom();
+        switchSettings.SERVICE_SIZE /= outputApi.getZoom();
+        switchSettings.TOPOLOGY_SIZE /= outputApi.getZoom();
+        switchSettings.TOPOLOGY_BUFFER /= outputApi.getZoom();
+        switchSettings.EDGE_WIDTH /= outputApi.getZoom();
+        switchSettings.TOPOLOGY_ANCHOR_SIZE /= outputApi.getZoom();
+        switchSettings.TOPOLOGY_ANCHOR_STROKE /= outputApi.getZoom();
+        switchSettings.DIALOG_NECK_WIDTH /= outputApi.getZoom();
+        switchSettings.DIALOG_NECK_HEIGHT /= outputApi.getZoom();
+        switchSettings.DIALOG_MIN_WIDTH /= outputApi.getZoom();
+        switchSettings.SWITCH_MIN_WIDTH /= outputApi.getZoom();
+        switchSettings.SWITCH_MIN_HEIGHT /= outputApi.getZoom();
+        switchSettings.DIALOG_MIN_HEIGHT /= outputApi.getZoom();
+        switchSettings.DIALOG_BEVEL /= outputApi.getZoom();
+        switchSettings.DIALOG_PORT_HEIGHT /= outputApi.getZoom();
+        switchSettings.DIALOG_PORT_WIDTH /= outputApi.getZoom();
+        switchSettings.DIALOG_BUFFER /= outputApi.getZoom();
+
 
         var svgContainer = outputApi.getSvgContainer();
-        var dialogBox=buildDialogBox();
-
+        var portDisplayPopup = buildPortDisplayPopup();
+        var switchPopup = buildSwitchPopup();
         redraw();
 
         var nodeList, edgeList;
@@ -80,7 +140,6 @@ define([
             map_(edgeList, drawEdge);
             map_(nodeList, drawNode);
         }
-        redraw_ = redraw;
         /**@param {Node} n**/
         function drawNode(n) {
             if (n.isLeaf()) {
@@ -149,7 +208,7 @@ define([
                         //contrast, the mousMove event is for the popup, and
                         //we may want to display different info when we
                         //hover over a service
-                        .on("click", onNodeClick.bind(undefined, service))
+                        .on("click", onServiceClick.bind(undefined, service))
                         .on("dblclick", onNodeDblClick.bind(undefined, n))
                         .on("mousemove", onNodeMouseMove.bind(undefined, service))
                         .on("mouseleave", onNodeMouseLeave.bind(undefined, service))
@@ -290,8 +349,8 @@ define([
                 service.y = coords.y;
                 service.x = coords.x;
                 service.svgNode
-                        .attr("y", coords.y+service.dy)
-                        .attr("x", coords.x+service.dx)
+                        .attr("y", coords.y + service.dy)
+                        .attr("x", coords.x + service.dx)
                         .attr("transform", coords.transform);
                 coords.x += settings.SERVICE_SIZE;
             });
@@ -302,6 +361,23 @@ define([
             e._isProper();
             var src = e.source.getCenterOfMass();
             var tgt = e.target.getCenterOfMass();
+
+//            var isLeft=src.x<tgt.x;
+//            if(isLeft){
+//                if(e.source.edgeAnchorLeft){
+//                    src=e.source.edgeAnchorLeft;
+//                }
+//                if(e.target.edgeAnchorRight){
+//                    tgt=e.target.edgeAnchorRight;
+//                }
+//            }else{
+//                if(e.source.edgeAnchorRight){
+//                    src=e.source.edgeAnchorRight;
+//                }
+//                if(e.target.edgeAnchorLeft){
+//                    tgt=e.target.edgeAnchorLeft;
+//                }
+//            }
             e.svgNode.attr("x1", src.x)
                     .attr("y1", src.y)
                     .attr("x2", tgt.x)
@@ -311,11 +387,11 @@ define([
         var lastMouse;
         /**@param {Node} n**/
         var isDragging = false;
-        var didDrag=false;
+        var didDrag = false;
         function makeDragBehaviour(n) {
             return d3.behavior.drag()
                     .on("drag", function () {
-                        didDrag=true;
+                        didDrag = true;
                         //Using the dx,dy from d3 can lead to some artifacts when also using
                         //These seem to occur when moving between different transforms
                         var e = d3.event.sourceEvent;
@@ -330,25 +406,25 @@ define([
                             cursor = cursor._parent;
                         }
 
-                        //fix all edges
-                        map_(edgeList, updateSvgChoordsEdge);
 
                         //As we drag, the cursor may enter and leave the bounding box of n
                         //In onNodeMouseLeave we make the hoverdiv stay visible in this case,
                         //However, we also want it to continue tracking us.
                         outputApi.setHoverLocation(e.clientX, e.clientY);
                         drawHighlight();
-                        
-                        if(selectedNode){
-                            var choords=selectedNode.getCenterOfMass();
-                            dialogBox.setAnchor(choords.x,choords.y).render();
+
+                        if (selectedNode) {
+                            portDisplayPopup.render();
+                            switchPopup.render();
                         }
+                        //fix all edges
+                        map_(edgeList, updateSvgChoordsEdge);
                     })
                     .on("dragstart", function () {
                         lastMouse = d3.event.sourceEvent;
                         outputApi.disablePanning();
                         isDragging = true;
-                        didDrag=false;
+                        didDrag = false;
                     })
                     .on("dragend", function () {
                         outputApi.enablePanning();
@@ -365,45 +441,92 @@ define([
         }
 
 
-        var highlightedNode=null;
+        var highlightedNode = null;
         /**
          * Note that n could also be a topology
          * @param {Node} n**/
         function onNodeClick(n) {
             d3.event.stopPropagation();//prevent the click from being handled by the background, which would hide the panel
-            if(didDrag){
+            if (didDrag) {
                 return;
             }
-            highlightedNode=n;
+            highlightedNode = n;
             drawHighlight();
             outputApi.setDisplayName(n.getName());
             /**@type {DropDownTree} displayTree**/
             var displayTree = outputApi.getDisplayTree();
             displayTree.clear();
-            
+
             n.populateTreeMenu(displayTree);
             displayTree.draw();
-            
-            var choords=n.getCenterOfMass();
-            dialogBox.setAnchor(choords.x,choords.y)
-                    .setPorts(n.ports)
-                    .render();
-            map_(edgeList,updateSvgChoordsEdge);
+
+            var choords = n.getCenterOfMass();
+            portDisplayPopup
+                    .setOffset(0, -settings.DIALOG_NECK_HEIGHT)
+                    .setHostNode(n);
+            if (n.ports) {
+                portDisplayPopup.setPorts(n.ports);
+            } else {
+                portDisplayPopup.setPorts([]);
+            }
+            portDisplayPopup.render();
+            map_(edgeList, updateSvgChoordsEdge);
+            selectElement(n);
+
             selectedNode = n;
         }
+
+        function onServiceClick(n) {
+            selectedNode = n;
+            d3.event.stopPropagation();
+            if (didDrag) {
+                return;
+            }
+            highlightedNode = n;
+            drawHighlight();
+            outputApi.setDisplayName(n.getName());
+
+            var displayTree = outputApi.getDisplayTree();
+            displayTree.clear();
+
+            n.populateTreeMenu(displayTree);
+            displayTree.draw();
+
+            
+          var switchChoords = n.getCenterOfMass();   
+           switchPopup.setOffset(0,0)
+                    .setHostNode(n)
+                    .render();
         
-        function drawHighlight(){
+        }
+
+        function drawHighlight() {
             svgContainer.select("#selectedOverlay").selectAll("*").remove();
-            if(highlightedNode && highlightedNode.svgNode){
-                var toAppend=highlightedNode.svgNode.node().cloneNode();
-                d3.select(toAppend).style("opacity","1").attr("pointer-events","none");
+            if (highlightedNode && highlightedNode.svgNode) {
+                var toAppend = highlightedNode.svgNode.node().cloneNode();
+                d3.select(toAppend).style("opacity", "1").attr("pointer-events", "none");
                 svgContainer.select("#selectedOverlay").node().appendChild(toAppend);
-            }else if(highlightedNode){
+            } else if (highlightedNode) {
                 //This shouldn't happen
                 console.log("Trying to highlight an element without an svgNode");
             }
         }
-        
+
+        function selectElement(elem) {
+            highlightedNode = elem;
+            drawHighlight();
+            outputApi.setDisplayName(elem.getName());
+            /**@type {DropDownTree} displayTree**/
+            var displayTree = outputApi.getDisplayTree();
+            displayTree.clear();
+
+            elem.populateTreeMenu(displayTree);
+            displayTree.draw();
+            selectedNode = elem;
+
+        }
+        ;
+
         /**
          * Note that n could also be a topology
          * @param {Node} n**/
@@ -476,8 +599,8 @@ define([
             } else {
                 ds = 0;
             }
-            n.dx=-ds/2;
-            n.dy=-ds/2;
+            n.dx = -ds / 2;
+            n.dy = -ds / 2;
             n.size = size;
             svg
                     .attr("width", size)
@@ -496,18 +619,43 @@ define([
             });
             updateSvgChoordsNode(n);
         }
-    
-        function buildDialogBox(){
-            return new DialogBox()
+
+        function buildPortDisplayPopup() {
+            return new PortDisplayPopup(outputApi, API)
                     .setContainer(svgContainer)
-                    .setNeck(settings.DIALOG_NECK_HEIGHT,settings.DIALOG_NECK_WIDTH)
-                    .setDimensions(settings.DIALOG_MIN_WIDTH,settings.DIALOG_MIN_HEIGHT)
+                    .setDimensions(settings.DIALOG_MIN_WIDTH, settings.DIALOG_MIN_HEIGHT)
                     .setBevel(settings.DIALOG_BEVEL)
                     .setColor(settings.DIALOG_COLOR)
-                    .setPortColor(settings.DIALOG_PORT_COLOR)
+                    .setPortColors(settings.DIALOG_PORT_COLORS)
                     .setPortEmptyColor(settings.DIALOG_PORT_EMPTY_COLOR)
-                    .setPortDimensions(settings.DIALOG_PORT_WIDTH,settings.DIALOG_PORT_HEIGHT);
+                    .setPortDimensions(settings.DIALOG_PORT_WIDTH, settings.DIALOG_PORT_HEIGHT)
+                    .setPortBuffer(settings.DIALOG_PORT_BUFFER_VERT, settings.DIALOG_PORT_BUFFER_HORZ)
+                    .setEnlargeFactor(settings.ENLARGE_FACTOR)
+                    .setOpacity(settings.DIALOG_OPACITY);
         }
+
+        function buildSwitchPopup() {
+            return new SwitchPopup(outputApi)
+
+                    .setContainer(svgContainer)                   
+                    .setDimensions(switchSettings.DIALOG_MIN_WIDTH,switchSettings.DIALOG_MIN_HEIGHT)
+                    .setTabDimensions(switchSettings.SWITCH_MIN_WIDTH, switchSettings.SWITCH_MIN_HEIGHT)   .setBevel(switchSettings.DIALOG_BEVEL)
+                    .setColor(switchSettings.DIALOG_COLOR)
+                    .setTabColor(switchSettings.DIALOG_TAB_COLOR)
+                    .setPortColor(switchSettings.DIALOG_PORT_COLOR)
+                    .setPortEmptyColor(switchSettings.DIALOG_PORT_EMPTY_COLOR)
+                    .setPortDimensions(switchSettings.DIALOG_PORT_WIDTH,switchSettings.DIALOG_PORT_HEIGHT)
+                    .setBuffer(switchSettings.DIALOG_BUFFER);
+
+        }
+
+        API["redraw"] = redraw;
+        API["doRender"] = doRender;
+        API["drawHighlight"] = drawHighlight;
+        API["selectElement"] = selectElement;
+        API["layoutEdges"] = function () {
+            map_(edgeList, updateSvgChoordsEdge);
+        };
     }
 
 

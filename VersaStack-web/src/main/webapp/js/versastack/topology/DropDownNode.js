@@ -4,6 +4,7 @@ define([
     ], function (utils) {
         var map_=utils.map_;
     function DropDownNode(name) {
+        /**@type Array.DropDownNode**/
         this.children =[];
         this.name=name;
         var that=this;
@@ -14,12 +15,14 @@ define([
             return ans;
         };
         
-        var isExpanded=true;
+        var isExpanded=false;
         
         function _getText(){
             var ans="";
             if(that.children.length!==0){
                 ans+=isExpanded?"▼":"▶";
+            }else{
+                ans+="&nbsp;&nbsp;&nbsp;"; //space literal
             }
             ans+=that.name;
             return ans;
@@ -31,7 +34,7 @@ define([
            var content =document.createElement("div");
            content.className="treeMenu";
            var text =document.createElement("div");
-           text.innerText=_getText();
+           text.innerHTML=_getText();
            var childNodes=[];
            text.onclick = function(){
                isExpanded = !isExpanded;
@@ -40,12 +43,13 @@ define([
                map_(childNodes,function(child){
                    child.style.display=disp;
                });
-               text.innerText=_getText();
+               text.innerHTML=_getText();
            };
            content.appendChild(text);
            
            map_(this.children, function(child){
                var toAdd=child.getHTML();
+               toAdd.style.display=isExpanded?"inherit":"none";
                childNodes.push(toAdd);
                content.appendChild(toAdd);
            });

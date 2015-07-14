@@ -22,8 +22,9 @@ define([
     "local/versastack/topology/Node",
     "local/versastack/topology/Port",
     "local/versastack/topology/Service",
-    "local/versastack/topology/modelConstants"
-], function (utils, Node, Port, Service, values) {
+    "local/versastack/topology/modelConstants",
+    "local/versastack/topology/Subnet"
+], function (utils, Node, Port, Service, values, Subnet) {
     var map_ = utils.map_;
     var rootNodes = [];
 
@@ -55,6 +56,8 @@ define([
              */
             var nodeMap = {};
             var portMap = {};
+            var serviceMap = {};
+            var subnetMap = {};
             var nodeList = [];
             for (var key in map) {
                 var val = map[key];
@@ -73,30 +76,36 @@ define([
                             var toAdd = new Port(val, map);
                             portMap[key] = toAdd;
                             break;
-                        case values.namedIndividual://All elements have this
                         case values.switchingService:
                         case values.topopolgySwitchingService:
                         case values.hypervisorService:
+                        case values.routingService:
+                        case values.virtualCloudService:
+                        case values.blockStorageService:
+                        case values.objectStorageService:
+                        case values.virtualSwitchingService:
+                        case values.hypervisorBypassInterfaceService:
+                        case values.storageService:
+                        case values.IOPerformanceMeasurementService:
+                            var toAdd = new Service(val, map);
+                            serviceMap[key] = toAdd;
+                            break;
+
+                        case values.switchingSubnet:
+                            var toAdd = new Subnet(val, map);
+                            subnetMap[key] = toAdd;
+                            break;
+                        case values.namedIndividual://All elements have this
                         case values.labelGroup:
                         case values.label:
                         case values.networkAdress:
                         case values.bucket:
-                        case values.routingService:
-                        case values.switchingSubnet:
                         case values.tag:
                         case values.route:
                         case values.volume:
-                        case values.virtualCloudService:
-                        case values.blockStorageService:
                         case values.routingTable:
-                        case values.switchingService:
-                        case values.objectStorageService:
-                        case values.virtualSwitchingService:
                         case values.ontology:
-                        case values.hypervisorBypassInterfaceService:
                         case values.POSIX_IOBenchmark:
-                        case values.storageService:
-                        case values.IOPerformanceMeasurementService:
                         case values.address:
                             break;
                         default:
@@ -110,6 +119,7 @@ define([
             //  Create aliases between our Port objects
             //  Associate a port with its children
             for (var key in portMap) {
+                /**@type Port**/
                 var port = portMap[key];
                 var port_ = port._backing;
                 var aliasKey = port_[values.isAlias];
@@ -128,6 +138,73 @@ define([
                 }
             }
 
+            for (var key in serviceMap) {
+                var service = serviceMap[key];
+                var service_ = service._backing;
+
+                for (var key in service_) {
+                    switch (key) {
+                        case "name":
+                        case values.type:
+                        case values.providesBucket:
+
+                        case values.providesRoutingTable:
+                        case values.providesRoute:
+                        case values.VirtualCloudService:
+
+                        case values.encoding:
+                        case values.labelSwapping:
+                        case values.providesVolume:
+                        case values.providesRoutingTable:
+                        case values.providesRoute:
+                        case values.providesVM:
+                        case values.providesVPC:
+                        case values.providesBucket:
+                            break;
+                        case values.providesSubnet:
+                            var subnet = service_[key];
+                            map_(subnet, function (subnetKey) {
+                                subnetKey = subnetKey.value;
+
+                                var subnet = subnetMap[subnetKey];
+                                service.subnets.push(subnet);
+                            });
+                            break;
+
+
+                        case values.hasBidirectionalPort:
+
+                        default:
+                            console.log("Unknown service attribute: " + key);
+
+                    }
+                }
+
+            }
+
+            for (var key in subnetMap) {
+                var subnet = subnetMap[key];
+                var subnet_ = subnet._backing;
+
+                for (var key in subnet_) {
+                    switch (key) {
+
+                        //Associate ports and subnet with their parent node
+                        case values.hasBidirectionalPort:
+                            var ports = subnet_[key];
+                            map_(ports, function (portKey) {
+                                portKey = portKey.value;
+                                var port = portMap[portKey];
+                                subnet.ports.push(port);
+                            });
+                            break;
+                        default:
+                            console.log("Unknown service attribute: " + key);
+
+                    }
+                }
+
+            }
             //Associate ports and subnodes with their parent node
             //Create services
             map_(nodeList, /**@param {Node} node**/function (node) {
@@ -150,22 +227,22 @@ define([
                                 var subNode = nodeMap[subNodeKey.value];
                                 subNode.isRoot = false;
                                 node.children.push(subNode);
-                                subNode._parent=node;
+                                subNode._parent = node;
                             });
                             break;
                         case values.hasService:
                             var services = node_[values.hasService];
                             map_(services, function (service) {
-                                service = map[service.value];
+                                service = serviceMap[service.value];
                                 if (!service) {
                                     //service is undefined
                                     console.log("No service: " + service.value);
-                                    return;
+
+                                } else {
+                                    node.services.push(service);
                                 }
-                                var toAdd = new Service(service, node);
-                                node.services.push(toAdd);
                             });
-                            break
+                            break;
                         case "name":
                         case "isRoot": //This is a key that we added to determine which elements are root in the node/topology tree
                         case "processed":  //This is key that we added to assist in detecting when we fail to handle a case
@@ -182,7 +259,7 @@ define([
                     }
                 }
             });
-            
+
 
             map_(nodeList, /**@param {Node} node**/ function (node) {
                 if (node.isRoot) {
