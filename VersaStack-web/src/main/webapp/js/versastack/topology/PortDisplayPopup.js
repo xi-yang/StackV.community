@@ -291,10 +291,10 @@ define(["local/d3", "local/versastack/utils"],
                             that.dx += dx;
                             that.dy += dy;
 
+                            that.render();
                             outputApi.setHoverLocation(e.clientX, e.clientY);
                             renderApi.drawHighlight();
                             renderApi.layoutEdges();
-                            that.render();
                         })
                         .on("dragstart", function () {
                             lastMouse = d3.event.sourceEvent;
