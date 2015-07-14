@@ -68,6 +68,11 @@ public class serviceBeans {
                 
             }
             
+            //if it indicates it's a natserver in openstack, add this entry
+            else if(entry.getKey().equalsIgnoreCase("NATServer") && entry.getValue().equalsIgnoreCase("yes")){
+                driver += "<entry><key>NATServer</key><value></value></entry>";
+            }
+            
             //simply put the key value pair into the string
             else{
                 driver += "<entry><key>" + entry.getKey() + "</key><value>" 
