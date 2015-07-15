@@ -9,24 +9,32 @@ import com.hp.hpl.jena.ontology.OntModel;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
+import javax.ejb.Asynchronous;
+import javax.ejb.EJB;
 import javax.ejb.EJBException;
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
+import javax.ejb.TransactionAttribute;
+import javax.ejb.TransactionAttributeType;
 import net.maxgigapop.mrs.bean.DeltaBase;
 import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ServiceInstance;
 import net.maxgigapop.mrs.bean.SystemDelta;
+import net.maxgigapop.mrs.bean.SystemInstance;
 import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.PersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ServiceDeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ServiceInstancePersistenceManager;
+import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.service.orchestrate.WorkerBase;
+import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
  *
@@ -34,7 +42,10 @@ import net.maxgigapop.mrs.service.orchestrate.WorkerBase;
  */
 @Stateless
 @LocalBean
-public class HandleServiceCall {  
+public class HandleServiceCall {
+    @EJB
+    HandleSystemCall systemCallHandler;
+    
     public ServiceInstance createInstance() {
         ServiceInstance serviceInstance = new ServiceInstance();
         serviceInstance.setReferenceUUID(UUID.randomUUID().toString());
@@ -88,7 +99,7 @@ public class HandleServiceCall {
     }
 
 
-    public SystemDelta compileDelta(String serviceInstanceUuid, String workerClassPath, String uuid, String modelAdditionTtl, String modelReductionTtl) {
+    public SystemDelta compileAddDelta(String serviceInstanceUuid, String workerClassPath, String uuid, String modelAdditionTtl, String modelReductionTtl) {
         ServiceDelta spaDelta = new ServiceDelta();
         spaDelta.setReferenceUUID(uuid);
         try {
@@ -119,10 +130,59 @@ public class HandleServiceCall {
         return compileDelta(serviceInstanceUuid, workerClassPath, spaDelta);
     }
     
-    //@TODO:
-    //pulic Future<String> pushDelta
-    //? handling multiple deltas:  propagate + commit = transactional propagate -> parallel commits
-        //? scan the list of deltas to handle only those eligible for push
-    //? a wrapper method to hide intermediate SystemDelta etc. from user + tracking status
-        //? add methods to manage status for the list of deltas
+    // handling multiple deltas:  propagate + commit + query = transactional propagate + parallel commits
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
+    public String pushSyncDeltas (String serviceInstanceUuid) {
+        ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
+        if (serviceInstance == null) {
+            throw new EJBException(HandleServiceCall.class.getName()+".propogateDeltas cannot find serviceInstance with uuid=" + serviceInstanceUuid);
+        }
+        boolean allReady = true;
+        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
+        while (itSD.hasNext()) {
+            ServiceDelta serviceDelta = itSD.next();
+            if (serviceDelta.getSystemDelta() == null)
+                continue;
+            else if (serviceDelta.getStatus().equals("INIT")) {
+                allReady = false;
+                SystemInstance systemInstance = systemCallHandler.createInstance();
+                serviceInstance.setStatus("FAILED");
+                systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta());
+                serviceDelta.setStatus("PROPOGATED");
+                serviceInstance.setStatus("PROCESSING");
+                DeltaPersistenceManager.save(serviceDelta);
+            } else if (serviceDelta.getStatus().equals("PROPOGATED")) {
+                allReady = false;
+                SystemInstance systemInstance = SystemInstancePersistenceManager.findBySystemDelta(serviceDelta.getSystemDelta());
+                systemCallHandler.commitDelta(systemInstance);
+                serviceDelta.setStatus("COMMITTED");
+                serviceInstance.setStatus("PROCESSING");
+                DeltaPersistenceManager.save(serviceDelta);
+            } else if (serviceDelta.getStatus().equals("COMMITTED")) {
+                SystemInstance systemInstance = SystemInstancePersistenceManager.findBySystemDelta(serviceDelta.getSystemDelta());
+                // get cached systemInstance
+                systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(systemInstance.getReferenceUUID());
+                Future<String> asyncStatus = systemInstance.getCommitStatus();
+                serviceDelta.setStatus("FAILED");
+                serviceInstance.setStatus("FAILED");
+                if (asyncStatus.isDone()) {
+                    try {
+                        String commitStatus = asyncStatus.get();
+                    } catch (InterruptedException ex) {
+                        throw new EJBException(ex);
+                    } catch (ExecutionException ex) {
+                        throw new EJBException(ex);
+                    }
+                }
+                serviceDelta.setStatus("READY");
+                serviceInstance.setStatus("PROCESSING");
+                DeltaPersistenceManager.save(serviceDelta);
+            }
+        }
+        if (allReady == true) {
+            serviceInstance.setStatus("READY");
+        }
+        ServiceInstancePersistenceManager.save(serviceInstance);     
+        return serviceInstance.getStatus();
+    }
 }

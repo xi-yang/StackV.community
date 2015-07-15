@@ -36,8 +36,7 @@ public class ServiceInstance extends PersistentEntity implements Serializable {
     @OneToMany(mappedBy="serviceInstance", cascade = {CascadeType.ALL})
     protected List<ServiceDelta> serviceDeltas = null;    
     
-    @Transient 
-    Future<String> serviceStatus = null;
+    String status = "INIT";
     
     public Long getId() {
         return id;
@@ -63,12 +62,12 @@ public class ServiceInstance extends PersistentEntity implements Serializable {
         this.serviceDeltas = serviceDeltas;
     }
 
-    public Future<String> getServiceStatus() {
-        return serviceStatus;
+    public String getStatus() {
+        return status;
     }
 
-    public void setServiceStatus(Future<String> serviceStatus) {
-        this.serviceStatus = serviceStatus;
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     @Override

@@ -32,6 +32,8 @@ public class ServiceDelta extends DeltaBase {
     @JoinColumn(name = "systemDeltaId")
     protected SystemDelta systemDelta = null;
 
+    private String status;
+    
     public String getReferenceUUID() {
         return referenceUUID;
     }
@@ -55,6 +57,14 @@ public class ServiceDelta extends DeltaBase {
 
     public void setSystemDelta(SystemDelta systemDelta) {
         this.systemDelta = systemDelta;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public ServiceDelta clone() {
