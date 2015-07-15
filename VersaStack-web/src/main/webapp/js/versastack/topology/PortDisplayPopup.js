@@ -199,8 +199,9 @@ define(["local/d3", "local/versastack/utils"],
                                     })
                                     .on("dblclick", function () {
                                         port.setFolded(!port.getFolded());
-                                        that.render();
-                                        renderApi.redraw();
+                                        renderApi.redrawPopups();
+                                        renderApi.drawHighlight();
+                                        renderApi.layoutEdges();
                                     })
                                     .call(dragBehaviour);
                             that._setPortEnlarge(port, port.enlarged);

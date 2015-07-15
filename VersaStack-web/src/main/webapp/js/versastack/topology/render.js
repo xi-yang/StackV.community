@@ -36,7 +36,9 @@ define([
         DIALOG_PORT_HEIGHT: 6,
         DIALOG_PORT_WIDTH: 8,
         DIALOG_PORT_BUFFER_VERT: 2,
-        DIALOG_PORT_BUFFER_HORZ: 3
+        DIALOG_PORT_BUFFER_HORZ: 3,
+        DIALOG_OFFSET_X: 0,
+        DIALOG_OFFSET_Y: -20
     };
 
 
@@ -98,7 +100,8 @@ define([
  
         settings.DIALOG_PORT_BUFFER_VERT /= outputApi.getZoom();
         settings.DIALOG_PORT_BUFFER_HORZ /= outputApi.getZoom();
-
+        settings.DIALOG_OFFSET_X /= outputApi.getZoom();
+        settings.DIALOG_OFFSET_Y /= outputApi.getZoom();
 
         //switch setting
         switchSettings.NODE_SIZE /= outputApi.getZoom();
@@ -368,26 +371,9 @@ define([
 
         /**@param {Edge} e**/
         function updateSvgChoordsEdge(e) {
-            e._isProper();
-            var src = e.source.getCenterOfMass();
-            var tgt = e.target.getCenterOfMass();
-
-//            var isLeft=src.x<tgt.x;
-//            if(isLeft){
-//                if(e.source.edgeAnchorLeft){
-//                    src=e.source.edgeAnchorLeft;
-//                }
-//                if(e.target.edgeAnchorRight){
-//                    tgt=e.target.edgeAnchorRight;
-//                }
-//            }else{
-//                if(e.source.edgeAnchorRight){
-//                    src=e.source.edgeAnchorRight;
-//                }
-//                if(e.target.edgeAnchorLeft){
-//                    tgt=e.target.edgeAnchorLeft;
-//                }
-//            }
+            //getCenterOfMass will walk up the chain until it finds a visible element
+            var src = e.leftPort.getCenterOfMass();
+            var tgt = e.rightPort.getCenterOfMass();
             e.svgNode.attr("x1", src.x)
                     .attr("y1", src.y)
                     .attr("x2", tgt.x)
@@ -626,6 +612,7 @@ define([
         function buildPortDisplayPopup(n) {
             return new PortDisplayPopup(outputApi, API)
                     .setHostNode(n)
+                    .setOffset(settings.DIALOG_OFFSET_X,settings.DIALOG_OFFSET_Y)
                     .setContainer(svgContainer)
                     .setDimensions(settings.DIALOG_MIN_WIDTH, settings.DIALOG_MIN_HEIGHT)
                     .setBevel(settings.DIALOG_BEVEL)

@@ -26,7 +26,13 @@ define([
         this.folded = false;
 
         this.getCenterOfMass = function () {
-            return {x: this.x, y: this.y};
+            if(this.getVisible()){
+                return {x: this.x, y: this.y};
+            }
+            if(this.parentPort){
+                return this.parentPort.getCenterOfMass();
+            }
+            return this.ancestorNode.getCenterOfMass();
         };
 
         var children = backing[values.hasBidirectionalPort];

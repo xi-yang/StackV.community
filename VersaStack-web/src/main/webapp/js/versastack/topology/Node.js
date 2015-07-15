@@ -132,6 +132,9 @@ define(["local/versastack/topology/modelConstants"],
                     return prefix + ans;
                 };
                 this.getCenterOfMass = function () {
+                    if(!this.isVisible){
+                        return this._parent.getCenterOfMass();
+                    }
                     var ans = {x: 0, y: 0};
                     var leaves = this.getLeaves();
                     var num = leaves.length;
