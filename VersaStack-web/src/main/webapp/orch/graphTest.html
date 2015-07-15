@@ -202,6 +202,7 @@
                 //as a work around, we provide a way to enable/disable panning
                 var panningEnabled = true;
                 var isPanning = false;
+                var moved=false;
                 this.enablePanning = function () {
                     panningEnabled = true;
                 };
@@ -209,15 +210,20 @@
                     panningEnabled = false;
                 };
                 svg.addEventListener("mousedown", function (e) {
+                    moved=false;
                     isPanning = true;
                 });
                 svg.addEventListener("mousemove", function (e) {
                     if (isPanning && panningEnabled) {
+                        moved=true;
                         that.scroll(e.movementX, e.movementY);
                     }
                 });
                 svg.addEventListener("mouseup", function (e) {
                     isPanning = false;
+                    if(moved){
+                        e.preventDefault();
+                    }
                 });
 
             }

@@ -97,7 +97,7 @@ define([
         settings.DIALOG_BEVEL /= outputApi.getZoom();
         settings.DIALOG_PORT_HEIGHT /= outputApi.getZoom();
         settings.DIALOG_PORT_WIDTH /= outputApi.getZoom();
- 
+
         settings.DIALOG_PORT_BUFFER_VERT /= outputApi.getZoom();
         settings.DIALOG_PORT_BUFFER_HORZ /= outputApi.getZoom();
         settings.DIALOG_OFFSET_X /= outputApi.getZoom();
@@ -124,6 +124,14 @@ define([
 
 
         var svgContainer = outputApi.getSvgContainer();
+        svgContainer.on("click", function () {
+            //Clear the selected element.
+            //We check the event path so this only happens if we did not actually click on something
+            var clickedElem = d3.event.path[0];
+            if (clickedElem.id === "viz") {
+                selectElement(null);
+            }
+        });
         var switchPopup = buildSwitchPopup();
         redraw();
 
@@ -146,7 +154,7 @@ define([
         /**@param {Node} n**/
         function drawNode(n) {
             if (n.isLeaf()) {
-                n.portPopup=buildPortDisplayPopup(n);
+                n.portPopup = buildPortDisplayPopup(n);
                 n.svgNode = svgContainer.select("#node").append("image")
                         .attr("xlink:href", n.getIconPath())
                         .on("click", onNodeClick.bind(undefined, n))
@@ -162,7 +170,7 @@ define([
         /**@param {Node} n**/
         function drawTopology(n) {
             if (!n.isLeaf()) {
-                n.portPopup=buildPortDisplayPopup(n);
+                n.portPopup = buildPortDisplayPopup(n);
                 //render the convex hull surounding the decendents of n
                 var path = getTopolgyPath(n);
                 var color = settings.HULL_COLORS[n.getDepth() % settings.HULL_COLORS.length];
@@ -223,11 +231,11 @@ define([
             updateSvgChoordsService(n);
         }
 
-        function drawPopups(){
+        function drawPopups() {
             svgContainer.select("#dialogBox").selectAll("*").remove();
             svgContainer.select("#port").selectAll("*").remove();
-            map_(nodeList,function(n){
-               n.portPopup.render(); 
+            map_(nodeList, function (n) {
+                n.portPopup.render();
             });
         }
 
@@ -458,7 +466,7 @@ define([
 
             n.portPopup.toggleVisible();
             drawPopups();
-            
+
             map_(edgeList, updateSvgChoordsEdge);
             selectElement(n);
 
@@ -481,12 +489,12 @@ define([
             n.populateTreeMenu(displayTree);
             displayTree.draw();
 
-            
-          var switchChoords = n.getCenterOfMass();   
-           switchPopup.setOffset(0,0)
+
+            var switchChoords = n.getCenterOfMass();
+            switchPopup.setOffset(0, 0)
                     .setHostNode(n)
                     .render();
-        
+
         }
 
         function drawHighlight() {
@@ -502,15 +510,21 @@ define([
         }
 
         function selectElement(elem) {
+            if (!elem) {
+                //deselect element
+                outputApi.setDisplayName("");
+                outputApi.getDisplayTree().clear();
+            } else {
+                outputApi.setDisplayName(elem.getName());
+                /**@type {DropDownTree} displayTree**/
+                var displayTree = outputApi.getDisplayTree();
+                displayTree.clear();
+
+                elem.populateTreeMenu(displayTree);
+                displayTree.draw();
+            }
             highlightedNode = elem;
             drawHighlight();
-            outputApi.setDisplayName(elem.getName());
-            /**@type {DropDownTree} displayTree**/
-            var displayTree = outputApi.getDisplayTree();
-            displayTree.clear();
-
-            elem.populateTreeMenu(displayTree);
-            displayTree.draw();
             selectedNode = elem;
 
         }
@@ -612,7 +626,7 @@ define([
         function buildPortDisplayPopup(n) {
             return new PortDisplayPopup(outputApi, API)
                     .setHostNode(n)
-                    .setOffset(settings.DIALOG_OFFSET_X,settings.DIALOG_OFFSET_Y)
+                    .setOffset(settings.DIALOG_OFFSET_X, settings.DIALOG_OFFSET_Y)
                     .setContainer(svgContainer)
                     .setDimensions(settings.DIALOG_MIN_WIDTH, settings.DIALOG_MIN_HEIGHT)
                     .setBevel(settings.DIALOG_BEVEL)
@@ -628,14 +642,14 @@ define([
         function buildSwitchPopup() {
             return new SwitchPopup(outputApi)
 
-                    .setContainer(svgContainer)                   
-                    .setDimensions(switchSettings.DIALOG_MIN_WIDTH,switchSettings.DIALOG_MIN_HEIGHT)
-                    .setTabDimensions(switchSettings.SWITCH_MIN_WIDTH, switchSettings.SWITCH_MIN_HEIGHT)   .setBevel(switchSettings.DIALOG_BEVEL)
+                    .setContainer(svgContainer)
+                    .setDimensions(switchSettings.DIALOG_MIN_WIDTH, switchSettings.DIALOG_MIN_HEIGHT)
+                    .setTabDimensions(switchSettings.SWITCH_MIN_WIDTH, switchSettings.SWITCH_MIN_HEIGHT).setBevel(switchSettings.DIALOG_BEVEL)
                     .setColor(switchSettings.DIALOG_COLOR)
                     .setTabColor(switchSettings.DIALOG_TAB_COLOR)
                     .setPortColor(switchSettings.DIALOG_PORT_COLOR)
                     .setPortEmptyColor(switchSettings.DIALOG_PORT_EMPTY_COLOR)
-                    .setPortDimensions(switchSettings.DIALOG_PORT_WIDTH,switchSettings.DIALOG_PORT_HEIGHT)
+                    .setPortDimensions(switchSettings.DIALOG_PORT_WIDTH, switchSettings.DIALOG_PORT_HEIGHT)
                     .setBuffer(switchSettings.DIALOG_BUFFER);
 
         }
