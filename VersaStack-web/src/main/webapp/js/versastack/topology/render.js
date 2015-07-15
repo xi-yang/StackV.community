@@ -154,7 +154,7 @@ define([
         /**@param {Node} n**/
         function drawNode(n) {
             if (n.isLeaf()) {
-                if(!n.portPopup){
+                if (!n.portPopup) {
                     n.portPopup = buildPortDisplayPopup(n);
                 }
                 n.svgNode = svgContainer.select("#node").append("image")
@@ -172,7 +172,7 @@ define([
         /**@param {Node} n**/
         function drawTopology(n) {
             if (!n.isLeaf()) {
-                if(!n.portPopup){
+                if (!n.portPopup) {
                     n.portPopup = buildPortDisplayPopup(n);
                 }
                 //render the convex hull surounding the decendents of n
@@ -501,12 +501,23 @@ define([
 
         }
 
+        var previousHighlight = null;
         function drawHighlight() {
-            svgContainer.select("#selectedOverlay").selectAll("*").remove();
+            if (previousHighlight) {
+                previousHighlight.remove();
+                previousHighlight = null;
+            }
             if (highlightedNode && highlightedNode.svgNode) {
                 var toAppend = highlightedNode.svgNode.node().cloneNode();
-                d3.select(toAppend).style("opacity", "1").attr("pointer-events", "none");
-                svgContainer.select("#selectedOverlay").node().appendChild(toAppend);
+                previousHighlight = d3.select(toAppend)
+                        .style("filter", "url(#outline)")
+                        .style("opacity", "1")
+                        .attr("pointer-events", "none");
+                var parentNode = highlightedNode.svgNode.node().parentNode;
+                if (parentNode) {
+                    //If we are coming out of a fold, the parentNode might no longer exist
+                    parentNode.appendChild(toAppend);
+                }
             } else if (highlightedNode) {
                 //This shouldn't happen
                 console.log("Trying to highlight an element without an svgNode");
