@@ -3,12 +3,10 @@ define(["local/d3", "local/versastack/utils"],
         function (d3, utils) {
             var map_ = utils.map_;
 
-
-
             function PortDisplayPopup(outputApi, renderApi) {
                 this.svgContainer = null;
                 this.dx = 0;
-                this.dx = 0;
+                this.dy = 0;
                 this.minWidth = 0;
                 this.minHeight = 0;
                 this.bevel = 10;
@@ -16,7 +14,6 @@ define(["local/d3", "local/versastack/utils"],
                 this.svgBubble = null;
                 this.color = "";
                 /**@type Array.Port**/
-                this.ports = [];
                 this.portColors = [];
                 this.portEmptyColor = "";
                 this.portHeight = 0;
@@ -25,7 +22,9 @@ define(["local/d3", "local/versastack/utils"],
                 this.portBufferHorizontal = 0;
                 this.enlargeFactor = 0;
                 this.opacity = 1;
+                /**@type Node**/
                 this.hostNode = null;
+                this.visible = false;
 
                 var that = this;
                 this.setOffset = function (x, y) {
@@ -52,38 +51,6 @@ define(["local/d3", "local/versastack/utils"],
                 };
                 this.setOpacity = function (opacity) {
                     this.opacity = opacity;
-                    return this;
-                };
-                this.setPorts = function (ports) {
-                    //Return the old ports to being invisible
-                    var stack = [];
-                    map_(this.ports, function (port) {
-                        stack.push(port);
-                    });
-                    while (stack.length > 0) {
-                        var port = stack.pop();
-                        map_(port.childrenPorts, function (port) {
-                            stack.push(port);
-                        });
-                        port.isVisible = false;
-                    }
-                    ;
-
-                    this.ports = ports;
-
-                    //Mark the new ports as visible
-                    map_(this.ports, function (port) {
-                        stack.push(port);
-                    });
-                    while (stack.length > 0) {
-                        var port = stack.pop();
-                        map_(port.childrenPorts, function (port) {
-                            stack.push(port);
-                        });
-                        port.isVisible = true;
-                    }
-                    ;
-
                     return this;
                 };
                 this.setPortColors = function (colors) {
@@ -118,12 +85,22 @@ define(["local/d3", "local/versastack/utils"],
                     return this;
                 };
 
+                this.toggleVisible = function () {
+                    this.setVisible(!this.visible);
+                };
+                this.setVisible = function (vis) {
+                    this.visible = vis;
+                    map_(this.hostNode.ports, function (port) {
+                        port.setVisible(vis);
+                    });
+                };
+
 
                 this._setPortEnlarge = function (port, enlarge) {
                     if (port.hasChildren()) {
                         return;
                     }
-                    port.enlarged=enlarge;
+                    port.enlarged = enlarge;
                     var width = that.portWidth;
                     var height = that.portHeight;
                     var dWidth, dHeight;
@@ -145,18 +122,16 @@ define(["local/d3", "local/versastack/utils"],
                 };
 
                 this.render = function () {
-                    if(!this.hostNode){
+                    if (!this.visible) {
                         return;
                     }
                     var container = this.svgContainer.select("#dialogBox");
-                    container.selectAll("*").remove();
 
                     this.height = this.minHeight;
 
 
                     //draw the ports
                     var portContainer = this.svgContainer.select("#port");
-                    portContainer.selectAll("*").remove();
 
                     var anchor = this.hostNode.getCenterOfMass();
 
@@ -165,7 +140,7 @@ define(["local/d3", "local/versastack/utils"],
                     var portTotalHeight = 0;
 
                     var stack = [];
-                    map_(this.ports, function (port) {
+                    map_(this.hostNode.ports, function (port) {
                         stack.push(port);
                     });
                     var maxWidth = 0;
@@ -228,7 +203,7 @@ define(["local/d3", "local/versastack/utils"],
                                         renderApi.redraw();
                                     })
                                     .call(dragBehaviour);
-                            that._setPortEnlarge(port,port.enlarged);
+                            that._setPortEnlarge(port, port.enlarged);
                             port.edgeAnchorLeft = {x: port.x, y: port.y};
                             port.edgeAnchorRight = {x: port.x + width, y: port.y};
                             if (port.hasChildren()) {
@@ -294,8 +269,8 @@ define(["local/d3", "local/versastack/utils"],
                             that.dx += dx;
                             that.dy += dy;
 
-                            that.render();
                             outputApi.setHoverLocation(e.clientX, e.clientY);
+                            renderApi.redrawPopups();
                             renderApi.drawHighlight();
                             renderApi.layoutEdges();
                         })

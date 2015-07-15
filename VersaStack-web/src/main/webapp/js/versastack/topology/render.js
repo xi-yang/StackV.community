@@ -121,7 +121,6 @@ define([
 
 
         var svgContainer = outputApi.getSvgContainer();
-        var portDisplayPopup = buildPortDisplayPopup();
         var switchPopup = buildSwitchPopup();
         redraw();
 
@@ -139,10 +138,12 @@ define([
             map_(nodeList, drawTopology);
             map_(edgeList, drawEdge);
             map_(nodeList, drawNode);
+            drawPopups();
         }
         /**@param {Node} n**/
         function drawNode(n) {
             if (n.isLeaf()) {
+                n.portPopup=buildPortDisplayPopup(n);
                 n.svgNode = svgContainer.select("#node").append("image")
                         .attr("xlink:href", n.getIconPath())
                         .on("click", onNodeClick.bind(undefined, n))
@@ -158,6 +159,7 @@ define([
         /**@param {Node} n**/
         function drawTopology(n) {
             if (!n.isLeaf()) {
+                n.portPopup=buildPortDisplayPopup(n);
                 //render the convex hull surounding the decendents of n
                 var path = getTopolgyPath(n);
                 var color = settings.HULL_COLORS[n.getDepth() % settings.HULL_COLORS.length];
@@ -218,9 +220,17 @@ define([
             updateSvgChoordsService(n);
         }
 
+        function drawPopups(){
+            svgContainer.select("#dialogBox").selectAll("*").remove();
+            svgContainer.select("#port").selectAll("*").remove();
+            map_(nodeList,function(n){
+               n.portPopup.render(); 
+            });
+        }
+
         /**@param {Node} n**/
         function computeServiceCoords(n) {
-            var ans = {x: null, y: null, transform: ""}
+            var ans = {x: null, y: null, transform: ""};
             if (n.isLeaf()) {
                 ans.x = n.x - settings.NODE_SIZE / 2;
                 ans.y = n.y + settings.NODE_SIZE / 2;
@@ -414,9 +424,9 @@ define([
                         drawHighlight();
 
                         if (selectedNode) {
-                            portDisplayPopup.render();
                             switchPopup.render();
                         }
+                        drawPopups();
                         //fix all edges
                         map_(edgeList, updateSvgChoordsEdge);
                     })
@@ -460,16 +470,9 @@ define([
             n.populateTreeMenu(displayTree);
             displayTree.draw();
 
-            var choords = n.getCenterOfMass();
-            portDisplayPopup
-                    .setOffset(0, -settings.DIALOG_NECK_HEIGHT)
-                    .setHostNode(n);
-            if (n.ports) {
-                portDisplayPopup.setPorts(n.ports);
-            } else {
-                portDisplayPopup.setPorts([]);
-            }
-            portDisplayPopup.render();
+            n.portPopup.toggleVisible();
+            drawPopups();
+            
             map_(edgeList, updateSvgChoordsEdge);
             selectElement(n);
 
@@ -620,8 +623,9 @@ define([
             updateSvgChoordsNode(n);
         }
 
-        function buildPortDisplayPopup() {
+        function buildPortDisplayPopup(n) {
             return new PortDisplayPopup(outputApi, API)
+                    .setHostNode(n)
                     .setContainer(svgContainer)
                     .setDimensions(settings.DIALOG_MIN_WIDTH, settings.DIALOG_MIN_HEIGHT)
                     .setBevel(settings.DIALOG_BEVEL)
@@ -650,6 +654,7 @@ define([
         }
 
         API["redraw"] = redraw;
+        API["redrawPopups"] = drawPopups;
         API["doRender"] = doRender;
         API["drawHighlight"] = drawHighlight;
         API["selectElement"] = selectElement;

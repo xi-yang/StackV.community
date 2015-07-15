@@ -26,18 +26,20 @@ define(["local/versastack/topology/modelConstants"],
                 this.isVisible = true;
                 /**@type Array.Node**/
                 this._parent = null;
-                this.svgNode=null;
-                this.svgNodeAnchor=null;//For topologies
-                this.svgNodeServices=null;
+                this.svgNode = null;
+                this.svgNodeAnchor = null;//For topologies
+                this.svgNodeServices = null;
                 /**@type Array.Service**/
                 this.services = [];
                 /**@type Array.Port**/
-                this.ports=[];
-                this.x=0;
-                this.y=0;
-                this.dx=0;
-                this.dy=0;
-                this.size=0;
+                this.ports = [];
+                /**@type PortDisplayPopup**/
+                this.portPopup = null;
+                this.x = 0;
+                this.y = 0;
+                this.dx = 0;
+                this.dy = 0;
+                this.size = 0;
                 /**@type Node**/
                 var that = this;
                 this.fold = function () {
@@ -70,11 +72,11 @@ define(["local/versastack/topology/modelConstants"],
                 };
                 this._getEdges = function () {
                     var ans = [];
-                    map_(this.ports,/**@param {Port} port**/ function (port) {
-                        ans=ans.concat(port.getEdges());
+                    map_(this.ports, /**@param {Port} port**/ function (port) {
+                        ans = ans.concat(port.getEdges());
                     });
-                    map_(this.children,function(child){
-                        ans=ans.concat(child._getEdges()); 
+                    map_(this.children, function (child) {
+                        ans = ans.concat(child._getEdges());
                     });
                     return ans;
                 };
@@ -143,8 +145,8 @@ define(["local/versastack/topology/modelConstants"],
                     }
                     return ans;
                 };
-                this.getVisible = function(){
-                    if(this.isRoot && this.isVisible){
+                this.getVisible = function () {
+                    if (this.isRoot && this.isVisible) {
                         return true;
                     }
                     return this.isVisible && this._parent.getVisible();
@@ -169,35 +171,36 @@ define(["local/versastack/topology/modelConstants"],
                     ans += 1;
                     return ans;
                 };
-                this.getType=function(){
-                    return this.isLeaf()?"Node":"Topology";
+                this.getType = function () {
+                    return this.isLeaf() ? "Node" : "Topology";
                 };
-            
-                this.populateTreeMenu=function(tree){
-                    if(this.services.length>0){
-                        var serviceNode=tree.addChild("Services");
-                        map_(this.services,function(service){
+
+                this.populateTreeMenu = function (tree) {
+                    if (this.services.length > 0) {
+                        var serviceNode = tree.addChild("Services");
+                        map_(this.services, function (service) {
                             service.populateTreeMenu(serviceNode);
                         })
                     }
-                    if(this.ports.length>0){
-                        var portsNode=tree.addChild("Ports");
-                        map_(this.ports,function(port){
+                    if (this.ports.length > 0) {
+                        var portsNode = tree.addChild("Ports");
+                        map_(this.ports, function (port) {
                             port.populateTreeMenu(portsNode);
                         });
                     }
-                    if(this.children.length>0){
-                        var childrenNode=tree.addChild("SubNodes");
-                        map_(this.children,function(child){
-                            var childNode=childrenNode.addChild(child.getName());
+                    if (this.children.length > 0) {
+                        var childrenNode = tree.addChild("SubNodes");
+                        map_(this.children, function (child) {
+                            var childNode = childrenNode.addChild(child.getName());
                             child.populateTreeMenu(childNode);
                         });
                     }
                 };
             }
 
-            var iconMap = {}; {
-            //The curly brackets are for cold folding purposes
+            var iconMap = {};
+            {
+                //The curly brackets are for cold folding purposes
                 iconMap["default"] = "default.png";
                 iconMap[values.node] = "node.png";
                 iconMap[values.topology] = "topology.png";
