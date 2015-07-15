@@ -14,7 +14,7 @@
 <html >    
     <head>   
         <meta charset="UTF-8">
-        <title>VM Service</title>
+        <title>Driver Service</title>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>
@@ -24,7 +24,12 @@
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/VersaStack-web/css/bootstrap.css">
         <link rel="stylesheet" href="/VersaStack-web/css/style.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/driver.css">
     </head>
+
+    <sql:setDataSource var="rains_conn" driver="com.mysql.jdbc.Driver"
+                       url="jdbc:mysql://localhost:8889/rainsdb"
+                       user="root"  password="root"/>
 
     <body>
         <!-- NAV BAR -->
@@ -36,61 +41,55 @@
         <!-- MAIN PANEL -->
         <div id="main-pane">
             <c:choose>                
-                <c:when test="${empty param.sub && empty param.ret}">
-                    <div id="service-specific"> 
-                        <c:if test="${not empty param.self}">
-                            <button type="button" id="button-service-return">Cancel</button>
-                        </c:if>
-                        <form action="/VersaStack-web/ops/srvc/vmadd.jsp" method="post">
-                            <input type="hidden" name="sub" value="true" />
-                            <table class="management-table" id="service-form">                    
-                                <thead>
-                                    <tr>
-                                        <th>VM Details</th>
-                                        <th style="text-align: right"></th>                            
-                                    </tr>
-                                </thead>
-                                <tbody>                    
-                                    <tr>
-                                        <td>VM Type</td>
-                                        <td>
+                <c:when test="${empty param.ret}">
+                    <div id="service-specific">
+                        <div id="service-top">
+                            <div id="service-menu">
+                                <c:if test="${not empty param.self}">
+                                    <button type="button" id="button-service-return">Cancel</button>
+                                </c:if>                                
+                            </div>
+                        </div>
+                        <div id="service-bottom">
+                            <div id="service-fields">
+                                <form id="vm-form" action="/VersaStack-web/VMServlet" method="post">                                    
+                                    <table class="management-table" id="service-form">                                        
+                                        <thead>
+                                            <tr>
+                                                <th>VM Details</th>
+                                                <th style="text-align: right"></th>                            
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <th></th>
+                                                <th></th>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </form>
+                            </div>
+                        </div>
+                    </c:when>
 
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td></td>
-                                        <td>
-                                            <input class="button-register" name="install" type="submit" value="Install" />
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </form>
-                    </div>
-                </c:when>
+                    <c:otherwise>
+                        <div class="form-result" id="service-result">
+                            <c:choose>
+                                <c:when test="${param.ret == '0'}">
+                                    Success
+                                </c:when>
+                                <c:when test="${param.ret == '1'}">
+                                    Failure
+                                </c:when>                                
+                            </c:choose>                        
 
-                <c:when test="${param.sub == 'true'}">
-                    <div id="service-process">
-                        <c:if test="${not empty param.install}">
-                            <c:redirect url="/ops/srvc/vmadd.jsp?ret=${serv.vmInstall()}" />
-                        </c:if>
-                    </div>
-                </c:when>
-
-                <c:otherwise>
-                    <div class="form-result" id="service-result">
-                        <c:choose>
-                            <c:when test="${param.ret == '0'}">
-                                Success
-                            </c:when>                            
-                        </c:choose>                        
-
-                        <br><a href="/VersaStack-web/ops/srvc/vmadd.jsp?self=true">Add Another VM.</a>                                
-                        <br><a href="/VersaStack-web/ops/catalog.jsp">Return to Services.</a>
-                    </div>
-                </c:otherwise>
-            </c:choose>
-        </div>        
+                            <br><a href="/VersaStack-web/ops/srvc/vmadd.jsp?self=true">(Un)Install Another Driver.</a>                                
+                            <br><a href="/VersaStack-web/ops/catalog.jsp">Return to Services.</a>
+                        </div>
+                    </c:otherwise>
+                </c:choose>
+            </div>       
+        </div>
         <!-- JS -->
         <script>
             $(function () {
@@ -112,7 +111,6 @@
                         element.classList.remove("hide");
                     }
                 });
-                $("#nav").load("/VersaStack-web/navbar.html");
             });
         </script>        
     </body>

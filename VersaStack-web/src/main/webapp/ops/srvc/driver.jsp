@@ -27,7 +27,6 @@
         <link rel="stylesheet" href="/VersaStack-web/css/driver.css">
     </head>
 
-    <!-- Temp Connection -->
     <sql:setDataSource var="rains_conn" driver="com.mysql.jdbc.Driver"
                        url="jdbc:mysql://localhost:8889/rainsdb"
                        user="root"  password="root"/>
@@ -55,17 +54,17 @@
                                             <th>Driver Type</th>
                                             <th>
                                                 <select form="driver-form" name="form_install" onchange="installSelect(this)">
-                                                    <option>Install</option>                                                
+                                                    <option value="uninstall">Uninstall</option>                                                
                                                     <c:choose>
-                                                        <c:when test="${param.form_install == 'uninstall'}">
-                                                            <option value="uninstall" selected>Uninstall</option>
+                                                        <c:when test="${param.form_install == 'install'}">
+                                                            <option value="install" selected>Install</option>
                                                         </c:when>
                                                         <c:otherwise>
-                                                            <option value="uninstall">Uninstall</option>
+                                                            <option value="install">Install</option>
                                                         </c:otherwise>
                                                     </c:choose>
                                                 </select>
-                                                <c:if test="${param.form_install != 'uninstall'}">
+                                                <c:if test="${param.form_install == 'install'}">
                                                     <select form="driver-form" name="driver_id" onchange="driverSelect(this)">                                                
                                                         <option value="none"></option>
                                                         <option value="stubdriver">Stub</option>
@@ -93,7 +92,7 @@
                                         </thead>
                                         <tbody>
                                             <!-- Install Form -->
-                                            <c:if test="${param.form_install != 'uninstall'}">
+                                            <c:if test="${param.form_install == 'install'}">
                                                 <c:if test="${param.driver_id == 'stubdriver'}">
                                                     <tr>
                                                         <td>Topology URI</td>
@@ -170,18 +169,18 @@
                                                         <td>
                                                             <input class="button-register" name="install" type="submit" value="Install" />
                                                             <input class="button-register" type="button" 
-                                                                   value="Add Additional Properties" onClick="addDriverField()">
+                                                                   value="Add Additional Properties" onClick="addPropField()">
                                                         </td>
                                                     </tr>
                                                 </c:if> 
                                             </c:if>
                                             <!-- Uninstall Form -->
-                                            <c:if test="${param.form_install == 'uninstall'}">
+                                            <c:if test="${param.form_install != 'install'}">
                                                 <tr>
                                                     <sql:query dataSource="${rains_conn}" sql="SELECT driverEjbPath, topologyUri FROM driver_instance" var="driverlist" />
                                                     <td>Select Driver</td>
                                                     <td>                                                        
-                                                        <select name="topologyUri">
+                                                        <select name="topologyUri" size="10">
                                                             <c:forEach var="driver" items="${driverlist.rows}">
                                                                 <option value="${driver.topologyUri}">${driver.driverEjbPath} - ${driver.topologyUri}</option>
                                                             </c:forEach>

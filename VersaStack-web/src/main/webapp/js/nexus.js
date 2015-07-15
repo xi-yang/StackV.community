@@ -54,9 +54,9 @@ function installSelect(sel) {
 
 function driverSelect(sel) {
     if (sel.value !== null) {
-        $ref = "/VersaStack-web/ops/srvc/driver.jsp?driver_id=" + sel.value + " #service-fields";
+        $ref = "/VersaStack-web/ops/srvc/driver.jsp?form_install=install&driver_id=" + sel.value + " #service-fields";
     }
-    else $ref = "/VersaStack-web/ops/srvc/driver.jsp #service-fields";
+    else $ref = "/VersaStack-web/ops/srvc/driver.jsp?form_install=install #service-fields";
     $("#service-bottom").load($ref);
     
     fieldCounter = 0;
@@ -64,15 +64,15 @@ function driverSelect(sel) {
 
 var fieldCounter = 0;
 var fieldLimit = 5;
-function addDriverField() {
+function addPropField() {
      if (fieldCounter === fieldLimit)  {
           alert("You have reached the limit of additional properties");
      }
      else {
-          var driverTable = document.getElementById("service-form");
-          var tableHeight = driverTable.rows.length;
+          var table = document.getElementById("service-form");
+          var tableHeight = table.rows.length;
           
-          var row = driverTable.insertRow(tableHeight - 1);
+          var row = table.insertRow(tableHeight - 1);
           var cell1 = row.insertCell(0);
           var cell2 = row.insertCell(1);
           fieldCounter++;
