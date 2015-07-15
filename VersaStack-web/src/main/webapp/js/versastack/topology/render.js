@@ -154,7 +154,9 @@ define([
         /**@param {Node} n**/
         function drawNode(n) {
             if (n.isLeaf()) {
-                n.portPopup = buildPortDisplayPopup(n);
+                if(!n.portPopup){
+                    n.portPopup = buildPortDisplayPopup(n);
+                }
                 n.svgNode = svgContainer.select("#node").append("image")
                         .attr("xlink:href", n.getIconPath())
                         .on("click", onNodeClick.bind(undefined, n))
@@ -170,7 +172,9 @@ define([
         /**@param {Node} n**/
         function drawTopology(n) {
             if (!n.isLeaf()) {
-                n.portPopup = buildPortDisplayPopup(n);
+                if(!n.portPopup){
+                    n.portPopup = buildPortDisplayPopup(n);
+                }
                 //render the convex hull surounding the decendents of n
                 var path = getTopolgyPath(n);
                 var color = settings.HULL_COLORS[n.getDepth() % settings.HULL_COLORS.length];

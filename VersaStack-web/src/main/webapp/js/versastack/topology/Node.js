@@ -45,6 +45,9 @@ define(["local/versastack/topology/modelConstants"],
                 this.fold = function () {
                     this.isFolded = true;
                     this._updateVisible(this.isVisible); //this will update our children appropriatly
+                    if(this.portPopup){
+                        this.portPopup.setVisible(false);
+                    }
                 };
                 this.unfold = function () {
                     this.isFolded = false;
