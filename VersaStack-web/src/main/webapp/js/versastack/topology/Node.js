@@ -69,6 +69,11 @@ define(["local/versastack/topology/modelConstants"],
                     map_(this.children, function (child) {
                         child._updateVisible(showChildren);
                     });
+                    if(!vis){
+                        map_(this.ports,function(port){
+                           port.setVisible(false); 
+                        });
+                    }
                 };
                 this._getEdges = function () {
                     var ans = [];
