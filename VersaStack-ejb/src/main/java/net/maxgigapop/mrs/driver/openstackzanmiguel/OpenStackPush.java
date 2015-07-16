@@ -541,14 +541,16 @@ public class OpenStackPush {
                     throw new Exception(String.format("Delta model does not specify network interface subnet of port: %s", port));
                 }
                 String subnetName = "";
+                String subnetname = "";
                 while (r1.hasNext()) {
                     querySolution1 = r1.next();
                     RDFNode subnet = querySolution1.get("subnet");
-                    query = "SELECT ?subnet WHERE {<" + subnet.asResource() + ">  a  mrs:SwitchingSubnet}";
+                    query = "SELECT ?subnet WHERE {?subnet <" + subnet.asResource() + ">  a  mrs:SwitchingSubnet}";
                     ResultSet r3 = executeQuery(query, modelRef, modelDelta);
                     if (r3.hasNext()) //search in the model to see if subnet existed before
                     {
-                        subnetName = subnet.asResource().toString().replace(topologyUri, "");
+                        subnetname = subnet.asResource().toString();
+                        subnetName = getresourcename(subnetname , "+", "");
                     } else {
                         throw new Exception(String.format("Subnet  for port %s"
                                 + "is not found in any model", port.asResource()));
