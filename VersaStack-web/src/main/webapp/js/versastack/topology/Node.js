@@ -162,6 +162,12 @@ define(["local/versastack/topology/modelConstants"],
                     }
                     return this.isVisible && this._parent.getVisible();
                 };
+                this.getFirstVisibleParent=function(){
+                    if(this.isVisible){
+                        return this;
+                    }
+                    return this._parent.getFirstVisibleParent();
+                };
                 //Return the depth of this node in the topology tree
                 //This is used to determine what color to use when drawing topologies
                 this.getDepth = function () {

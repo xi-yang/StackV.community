@@ -261,16 +261,23 @@
             </defs>
             <!--We nest a g in here because the svg tag itself cannot do transforms
                 we separate topologies, edges, and nodes to create an explicit z-order
+            
+                The layering involving edges is not well ordered. For example, we
+                    edges being drawn to a popup to appear infront of the popup, 
+                    and the popup appears infront of nodes. However, we want edges
+                    to appear behind nodes. To work around this, we render edges 
+                    in multiple layers and use a clip path
             -->
             <g id="transform">
                 <g id="topology"/>
-                <g id="edge"/>
+                <g id="edge1"/>
                 <g id="anchor"/>
                 <g id="node"/>
                 <g id="dialogBox"/>
-
                 <g id="switchPopup"/>
-
+                <g id="parentPort"/>
+                <clipPath id="edge2Clip"/>
+                <g id="edge2" clip-path="url(#edge2Clip)"/>
                 <g id="port"/>
 
             </g>

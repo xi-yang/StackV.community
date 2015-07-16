@@ -30,9 +30,9 @@ define([
         DIALOG_MIN_HEIGHT: 10,
         DIALOG_BEVEL: 5,
         DIALOG_COLOR: "rgb(255,0,0)",
-        DIALOG_OPACITY: "0.5",
+        DIALOG_OPACITY: "0.7",
         DIALOG_PORT_EMPTY_COLOR: "rgb(128,128,0)",
-        DIALOG_PORT_COLORS: ["rgb(0,0,0)", "rgb(128,128,128)"],
+        DIALOG_PORT_COLORS: ["rgb(64,64,64)", "rgb(128,128,128)"],
         DIALOG_PORT_HEIGHT: 6,
         DIALOG_PORT_WIDTH: 8,
         DIALOG_PORT_BUFFER_VERT: 2,
@@ -138,9 +138,11 @@ define([
         var nodeList, edgeList;
         function redraw() {
             svgContainer.select("#topology").selectAll("*").remove();//Clear the previous drawing
-            svgContainer.select("#edge").selectAll("*").remove();//Clear the previous drawing
+            svgContainer.select("#edge1").selectAll("*").remove();//Clear the previous drawing
+            svgContainer.select("#edge2").selectAll("*").remove();//Clear the previous drawing
             svgContainer.select("#node").selectAll("*").remove();//Clear the previous drawing
             svgContainer.select("#anchor").selectAll("*").remove();//Clear the previous drawing
+            svgContainer.select("#parentPort").selectAll("*").remove();
             nodeList = model.listNodes();
             edgeList = model.listEdges();
 
@@ -238,6 +240,8 @@ define([
         function drawPopups() {
             svgContainer.select("#dialogBox").selectAll("*").remove();
             svgContainer.select("#port").selectAll("*").remove();
+            svgContainer.select("#parentPort").selectAll("*").remove();
+            svgContainer.select("#edge2Clip").selectAll("*").remove();
             map_(nodeList, function (n) {
                 n.portPopup.render();
             });
@@ -386,10 +390,13 @@ define([
             //getCenterOfMass will walk up the chain until it finds a visible element
             var src = e.leftPort.getCenterOfMass();
             var tgt = e.rightPort.getCenterOfMass();
-            e.svgNode.attr("x1", src.x)
+            map_(e.svgNodes,function(svgNode){
+                svgNode.attr("x1", src.x)
                     .attr("y1", src.y)
                     .attr("x2", tgt.x)
                     .attr("y2", tgt.y);
+                
+            });
         }
 
         var lastMouse;
@@ -442,9 +449,12 @@ define([
 
         /**@param {Edge} e**/
         function drawEdge(e) {
-            e.svgNode = svgContainer.select("#edge").append("line")
-                    .style("stroke", settings.EDGE_COLOR)
-                    .style("stroke-width", settings.EDGE_WIDTH);
+            e.svgNodes=[];
+            for(var i=1; i<=2; i++){
+                e.svgNodes.push(svgContainer.select("#edge"+i).append("line")
+                        .style("stroke", settings.EDGE_COLOR)
+                        .style("stroke-width", settings.EDGE_WIDTH));
+            }
             updateSvgChoordsEdge(e);
         }
 

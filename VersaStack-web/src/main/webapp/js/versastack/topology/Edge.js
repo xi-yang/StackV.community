@@ -14,7 +14,8 @@ define([], function () {
         this.source = null;
         this.target = null;
 
-        this.svgNode = null;
+        //We render the edges in multiple layers, so there are multiple svgNodes
+        this.svgNodes = [];
 
         this._isProper = function () {
             var ans = true;
@@ -38,6 +39,8 @@ define([], function () {
             }
             return ans;
         };
+        
+        
     }
     return Edge;
 });

@@ -21,8 +21,6 @@ define([
         this.y = 0;
         this.enlarged = false;
         this.svgNode = null;
-        this.edgeAnchorLeft = {x: 0, y: 0};
-        this.edgeAnchorRight = {x: 0, y: 0};
         this.folded = false;
 
         this.getCenterOfMass = function () {
@@ -34,6 +32,16 @@ define([
             }
             return this.ancestorNode.getCenterOfMass();
         };
+        
+        this.getFirstVisibleParent=function(){
+            if(this.getVisible()){
+                return this;
+            }
+            if(this.parentPort){
+                return this.parentPort.getFirstVisibleParent();
+            }
+            return this.ancestorNode.getFirstVisibleParent();
+        }
 
         var children = backing[values.hasBidirectionalPort];
         if (children) {
