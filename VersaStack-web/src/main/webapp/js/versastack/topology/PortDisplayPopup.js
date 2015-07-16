@@ -12,7 +12,6 @@ define(["local/d3", "local/versastack/utils"],
                 this.bevel = 10;
                 this.svgLine = null;
                 this.svgBubble = null;
-                this.svgEdgeClip=null;
                 this.color = "";
                 /**@type Array.Port**/
                 this.portColors = [];
@@ -26,8 +25,6 @@ define(["local/d3", "local/versastack/utils"],
                 /**@type Node**/
                 this.hostNode = null;
                 this.visible = false;
-
-                this.width=0;
 
                 var that = this;
                 this.setOffset = function (x, y) {
@@ -231,7 +228,6 @@ define(["local/d3", "local/versastack/utils"],
                     if (maxWidth > width + 2 * this.portBufferHorizontal) {
                         width = maxWidth + 2 * this.portBufferHorizontal;
                     }
-                    this.width=width;
 
                     //Draw the box itself.
                     //We do this after the ports because are size is dependent on how many ports we draw
@@ -253,25 +249,6 @@ define(["local/d3", "local/versastack/utils"],
                     //connect the box to the node;
                     var dst = this.hostNode.getCenterOfMass();
                     this.svgLine = boxContainer.append("line")
-                            .style("stroke", this.color)
-                            .style("stroke-width", this.neckWidth)
-                            .attr("x1", anchor.x + this.dx)
-                            .attr("y1", anchor.y + this.dy - height / 2)
-                            .attr("stroke-linecap", "round")
-                            .attr("x2", dst.x)
-                            .attr("y2", dst.y);
-
-                    //Fill in the clip-path so that the popup layer edges render
-                    //The dimaensions of this rect should be the same as the box itself
-                    var edgeClipContainer=this.svgContainer.select("#edge2Clip");
-                    edgeClipContainer.append("rect")
-                            .attr("x", anchor.x + this.dx - width / 2)
-                            .attr("y", anchor.y + this.dy - height - this.bevel / 2)
-                            .attr("height", height + this.bevel / 2)
-                            .attr("width", width)
-                            .attr("rx", this.bevel)
-                            .attr("ry", this.bevel);
-                    edgeClipContainer.append("line")
                             .style("stroke", this.color)
                             .style("stroke-width", this.neckWidth)
                             .attr("x1", anchor.x + this.dx)

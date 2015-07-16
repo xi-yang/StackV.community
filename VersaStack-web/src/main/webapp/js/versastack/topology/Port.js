@@ -166,6 +166,9 @@ define([
             }
             return "/VersaStack-web/resources/bidirectional_port.png";
         };
+        this.getType=function(){
+            return "Port"
+        }
     }
 
     return Port;
