@@ -29,7 +29,7 @@ public class ServiceDelta extends DeltaBase {
     private String referenceUUID;
 
     @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "systemDeltaId")
+    @JoinColumn(name = "systemDeltaIdForService")
     protected SystemDelta systemDelta = null;
 
     private String status = "INIT";

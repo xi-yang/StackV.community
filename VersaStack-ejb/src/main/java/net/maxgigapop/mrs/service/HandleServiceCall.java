@@ -150,16 +150,18 @@ public class HandleServiceCall {
                 systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta());
                 serviceDelta.setStatus("PROPOGATED");
                 serviceInstance.setStatus("PROCESSING");
-                DeltaPersistenceManager.save(serviceDelta);
+                DeltaPersistenceManager.merge(serviceDelta);
             } else if (serviceDelta.getStatus().equals("PROPOGATED")) {
                 allReady = false;
                 SystemInstance systemInstance = SystemInstancePersistenceManager.findBySystemDelta(serviceDelta.getSystemDelta());
                 systemCallHandler.commitDelta(systemInstance);
                 serviceDelta.setStatus("COMMITTED");
                 serviceInstance.setStatus("PROCESSING");
-                DeltaPersistenceManager.save(serviceDelta);
+                DeltaPersistenceManager.merge(serviceDelta);
             } else if (serviceDelta.getStatus().equals("COMMITTED")) {
                 SystemInstance systemInstance = SystemInstancePersistenceManager.findBySystemDelta(serviceDelta.getSystemDelta());
+                if (systemInstance == null)
+                    throw new EJBException("Cannot find systemInstance based on " + serviceDelta.getSystemDelta());
                 // get cached systemInstance
                 systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(systemInstance.getReferenceUUID());
                 Future<String> asyncStatus = systemInstance.getCommitStatus();
@@ -176,13 +178,13 @@ public class HandleServiceCall {
                 }
                 serviceDelta.setStatus("READY");
                 serviceInstance.setStatus("PROCESSING");
-                DeltaPersistenceManager.save(serviceDelta);
+                DeltaPersistenceManager.merge(serviceDelta);
             }
         }
         if (allReady == true) {
             serviceInstance.setStatus("READY");
         }
-        ServiceInstancePersistenceManager.save(serviceInstance);     
+        ServiceInstancePersistenceManager.merge(serviceInstance);     
         return serviceInstance.getStatus();
     }
 }

@@ -32,7 +32,7 @@ public class SystemDelta extends DeltaBase {
     protected List<DriverSystemDelta> driverSystemDeltas = null;    
 
     @OneToOne
-    @JoinColumn(name = "serviceDeltaId")
+    @JoinColumn(name = "serviceDeltaIdForSystem")
     protected ServiceDelta serviceDelta = null;
 
     public List<DriverSystemDelta> getDriverSystemDeltas() {
