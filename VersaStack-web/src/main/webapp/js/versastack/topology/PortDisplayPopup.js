@@ -125,48 +125,25 @@ define(["local/d3", "local/versastack/utils"],
                     if (!this.visible) {
                         return;
                     }
-                    var container = this.svgContainer.select("#dialogBox");
-
-                    this.height = this.minHeight;
-
-
+                    this.setVisible(true);
                     //draw the ports
                     var portContainer = this.svgContainer.select("#port");
                     var parentPortContainer = this.svgContainer.select("#parentPort");
-
-                    var anchor = this.hostNode.getCenterOfMass();
-
-                    var x = anchor.x + this.dx;
-                    var y = anchor.y + this.dy - this.bevel;
-                    var portTotalHeight = 0;
+                    var container = this.svgContainer.select("#dialogBox");
 
                     var stack = [];
                     map_(this.hostNode.ports, function (port) {
                         stack.push(port);
                     });
-                    var maxWidth = 0;
                     while (stack.length > 0) {
                         //We create a closure so that the "port" variable points to the correct object
                         //when the mouse events are called
                         (function () {
                             var port = stack.pop();
-                            var width = that.portWidth + (port.getVisibleHeight() - 1) * that.portBufferHorizontal;
-                            maxWidth = Math.max(width, maxWidth);
-                            var height = that.portHeight;
-                            var dy = 0;
-                            if (port.hasChildren()) {
-                                map_(port.childrenPorts, function (child) {
-                                    stack.push(child);
-                                });
-                                height = that.portHeight * port.countVisibleLeaves();
-                                height += that.portBufferVertical * (port.countVisibleLeaves() + 1);
-                                dy = height - that.portHeight / 2;
-                            } else {
-                                dy = height / 2;
-                            }
+                            map_(port.childrenPorts, function (child) {
+                                stack.push(child);
+                            });
 
-                            port.x = x;
-                            port.y = y;
                             var color;
                             if (port.hasAlias() || port.hasChildren()) {
                                 color = that.portColors[port.getVisibleHeight() % that.portColors.length];
@@ -181,10 +158,6 @@ define(["local/d3", "local/versastack/utils"],
                                         .attr("xlink:href", port.getIconPath());
                             }
                             port.svgNode
-                                    .attr("x", port.x - width / 2)
-                                    .attr("y", y - dy) //this correcting is so that incoming edges align properly
-                                    .attr("height", height)
-                                    .attr("width", width)
                                     .on("mousemove", function () {
                                         outputApi.setHoverText(port.getName());
                                         outputApi.setHoverLocation(d3.event.x, d3.event.y);
@@ -205,21 +178,82 @@ define(["local/d3", "local/versastack/utils"],
                                         renderApi.layoutEdges();
                                     })
                                     .call(dragBehaviour);
-                            that._setPortEnlarge(port, port.enlarged);
-                            port.edgeAnchorLeft = {x: port.x, y: port.y};
-                            port.edgeAnchorRight = {x: port.x + width, y: port.y};
-                            if (port.hasChildren()) {
-                                y -= that.portBufferVertical;
-                                portTotalHeight += that.portBufferVertical;
-                            } else {
-                                y -= that.portHeight;
-                                y -= that.portBufferVertical;
-                                portTotalHeight += that.portHeight + that.portBufferVertical;
-                            }
                         })();
                     }
-                    ;
+                    //Draw the box itself.
+                    //We do this after the ports because are size is dependent on how many ports we draw
+                    //The HTML template handles the layering inspite our out of order rendering.
 
+                    //We embed the popup in a group to apply the opacity. 
+                    //Without doing this (and applying the opacity directly on 
+                    //the elements) there would be an artifact when the elements
+                    //overlap.
+                    var boxContainer = container.append("g")
+                            .style("opacity", this.opacity);
+
+                    this.svgBubble=boxContainer.append("rect")
+                            .attr("rx", this.bevel)
+                            .attr("ry", this.bevel)
+                            .style("fill", this.color)
+                            .call(dragBehaviour);
+
+                    //connect the box to the node;
+                    this.svgLine = boxContainer.append("line")
+                            .style("stroke", this.color)
+                            .style("stroke-width", this.neckWidth)
+                            .attr("stroke-linecap", "round")
+                    this.updateSvgChoords();
+                    return this;
+                };
+
+                this.updateSvgChoords = function () {
+                    if (!this.visible) {
+                        return;
+                    }
+                    var anchor = this.hostNode.getCenterOfMass();
+                    var x = anchor.x + this.dx;
+                    var y = anchor.y + this.dy - this.bevel;
+                    var portTotalHeight = 0;
+
+                    var stack = [];
+                    map_(this.hostNode.ports, function (port) {
+                        stack.push(port);
+                    });
+                    var maxWidth = 0;
+                    while (stack.length > 0) {
+                        var port = stack.pop();
+                        var width = that.portWidth + (port.getVisibleHeight() - 1) * that.portBufferHorizontal;
+                        maxWidth = Math.max(width, maxWidth);
+                        var height = that.portHeight;
+                        var dy = 0;
+                        if (port.hasChildren()) {
+                            map_(port.childrenPorts, function (child) {
+                                stack.push(child);
+                            });
+                            height = that.portHeight * port.countVisibleLeaves();
+                            height += that.portBufferVertical * (port.countVisibleLeaves() + 1);
+                            dy = height - that.portHeight / 2;
+                        } else {
+                            dy = height / 2;
+                        }
+
+                        port.x = x;
+                        port.y = y;
+                        port.svgNode
+                                .attr("x", port.x - width / 2)
+                                .attr("y", y - dy) //this correcting is so that incoming edges align properly
+                                .attr("height", height)
+                                .attr("width", width)
+                        that._setPortEnlarge(port, port.enlarged);
+                        if (port.hasChildren()) {
+                            y -= that.portBufferVertical;
+                            portTotalHeight += that.portBufferVertical;
+                        } else {
+                            y -= that.portHeight;
+                            y -= that.portBufferVertical;
+                            portTotalHeight += that.portHeight + that.portBufferVertical;
+                        }
+                    }
                     var height = this.minHeight;
                     if (portTotalHeight > height + this.portBufferVertical * 2) {
                         height = portTotalHeight + this.portBufferVertical * 2;
@@ -228,35 +262,19 @@ define(["local/d3", "local/versastack/utils"],
                     if (maxWidth > width + 2 * this.portBufferHorizontal) {
                         width = maxWidth + 2 * this.portBufferHorizontal;
                     }
-
-                    //Draw the box itself.
-                    //We do this after the ports because are size is dependent on how many ports we draw
-                    //The HTML template handles the layering inspite our out of order rendering.
-
-                    var boxContainer = container.append("g")
-                            .style("opacity", this.opacity);
-
-                    boxContainer.append("rect")
+                    this.svgBubble
                             .attr("x", anchor.x + this.dx - width / 2)
                             .attr("y", anchor.y + this.dy - height - this.bevel / 2)
                             .attr("height", height + this.bevel / 2)
                             .attr("width", width)
-                            .attr("rx", this.bevel)
-                            .attr("ry", this.bevel)
-                            .style("fill", this.color)
-                            .call(dragBehaviour);
 
                     //connect the box to the node;
                     var dst = this.hostNode.getCenterOfMass();
-                    this.svgLine = boxContainer.append("line")
-                            .style("stroke", this.color)
-                            .style("stroke-width", this.neckWidth)
+                    this.svgLine
                             .attr("x1", anchor.x + this.dx)
                             .attr("y1", anchor.y + this.dy - height / 2)
-                            .attr("stroke-linecap", "round")
                             .attr("x2", dst.x)
                             .attr("y2", dst.y);
-
                     return this;
                 };
 
@@ -272,7 +290,7 @@ define(["local/d3", "local/versastack/utils"],
                             that.dy += dy;
 
                             outputApi.setHoverLocation(e.clientX, e.clientY);
-                            renderApi.redrawPopups();
+                            that.updateSvgChoords();
                             renderApi.drawHighlight();
                             renderApi.layoutEdges();
                         })

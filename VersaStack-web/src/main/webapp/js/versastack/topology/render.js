@@ -139,9 +139,9 @@ define([
             //Recall that topologies are also considered nodes
             //We render them seperatly to enfore a z-ordering
             map_(nodeList, drawTopology);
-            map_(edgeList, drawEdge);
             map_(nodeList, drawNode);
             drawPopups();
+            map_(edgeList, drawEdge);
         }
         /**@param {Node} n**/
         function drawNode(n) {
@@ -230,7 +230,6 @@ define([
             svgContainer.select("#dialogBox").selectAll("*").remove();
             svgContainer.select("#port").selectAll("*").remove();
             svgContainer.select("#parentPort").selectAll("*").remove();
-            svgContainer.select("#edge2").selectAll("*").remove();
             map_(nodeList, function (n) {
                 n.portPopup.render();
             });
@@ -357,6 +356,7 @@ define([
                 svgAchor.attr("y", choords.y - settings.TOPOLOGY_ANCHOR_SIZE / 2);
             }
             updateSvgChoordsService(n);
+            n.portPopup.updateSvgChoords();
         }
 
         function updateSvgChoordsService(n) {
@@ -380,39 +380,45 @@ define([
             var tgt = e.rightPort.getFirstVisibleParent();
             var srcChoords = src.getCenterOfMass();
             var tgtChoords = tgt.getCenterOfMass();
+            var srcLead = e.svgLeadLeft;
+            var tgtLead = e.svgLeadRight;
+
             //Without loss of generality, let src be on the left
             if (srcChoords.x > tgtChoords.x) {
                 var tmp = src;
                 src = tgt;
                 tgt = tmp;
+
                 tmp = srcChoords;
                 srcChoords = tgtChoords;
                 tgtChoords = tmp;
+
+                tmp = srcLead;
+                srcLead = tgtLead;
+                tgtLead = tmp;
             }
 
+            //if we are drawing to a port, we want a a horizontal line coming out of the port, before switching to the actual edge
             if (src.getType() === "Port") {
                 srcChoords.x += settings.DIALOG_PORT_LEAD;
-                svgContainer.select("#edge2").append("line")
-                        .style("stroke", settings.EDGE_COLOR)
-                        .style("stroke-width", settings.EDGE_WIDTH)
+                srcLead.style("visibility", "visible")
                         .attr("x1", srcChoords.x)
                         .attr("y1", srcChoords.y)
                         .attr("x2", srcChoords.x - settings.DIALOG_PORT_LEAD)
-                        .attr("y2", srcChoords.y)
-                        .attr("stroke-linecap", "round");
+                        .attr("y2", srcChoords.y);
+            }else{
+                srcLead.style("visibility","hidden");
             }
             if (tgt.getType() === "Port") {
                 tgtChoords.x -= settings.DIALOG_PORT_LEAD;
-                svgContainer.select("#edge2").append("line")
-                        .style("stroke", settings.EDGE_COLOR)
-                        .style("stroke-width", settings.EDGE_WIDTH)
+                tgtLead.style("visibility","visible")
                         .attr("x1", tgtChoords.x)
                         .attr("y1", tgtChoords.y)
                         .attr("x2", tgtChoords.x + settings.DIALOG_PORT_LEAD)
-                        .attr("y2", tgtChoords.y)
-                        .attr("stroke-linecap", "round");
+                        .attr("y2", tgtChoords.y);
+            }else{
+                tgtLead.style("visibility","hidden");
             }
-            //if we are drawing to a port, we want a a horizontal line coming out of the port, before switching to the actual edge
 
             e.svgNode.attr("x1", srcChoords.x)
                     .attr("y1", srcChoords.y)
@@ -451,7 +457,6 @@ define([
                         if (selectedNode) {
                             switchPopup.render();
                         }
-                        drawPopups();
                         //fix all edges
                         map_(edgeList, updateSvgChoordsEdge);
                     })
@@ -472,6 +477,16 @@ define([
             e.svgNode = svgContainer.select("#edge1").append("line")
                     .style("stroke", settings.EDGE_COLOR)
                     .style("stroke-width", settings.EDGE_WIDTH);
+            e.svgLeadLeft = svgContainer.select("#edge2").append("line")
+                    .style("stroke", settings.EDGE_COLOR)
+                    .style("stroke-width", settings.EDGE_WIDTH)
+                    .style("visibility", "hidden")
+                    .attr("stroke-linecap", "round");
+            e.svgLeadRight = svgContainer.select("#edge2").append("line")
+                    .style("stroke", settings.EDGE_COLOR)
+                    .style("stroke-width", settings.EDGE_WIDTH)
+                    .style("visibility", "hidden")
+                    .attr("stroke-linecap", "round");
             updateSvgChoordsEdge(e);
         }
 
