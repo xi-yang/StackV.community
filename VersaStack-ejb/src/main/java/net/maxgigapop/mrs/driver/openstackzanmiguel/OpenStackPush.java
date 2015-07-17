@@ -200,13 +200,15 @@ public class OpenStackPush {
         String query;
 
         //1 check to see if any operations involves network creation/deletion
-        query = "SELECT ?network WHERE {?service mrs:providesNetwork  ?network ."
-                + "?network a nml:Topology}";
+        query = "SELECT ?network WHERE {?openstack mrs:hasTopology ?network ."
+                + "?network a nml:Topology "
+                + String.format("FILTER(?openstack = <%s>) }", topologyUri);
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode network = querySolution.get("network");
-            String networkName = network.asResource().toString().replace(topologyUri, "");
+            String NetworkName = network.asResource().toString();
+            String networkName = getresourcename(NetworkName, "+","");
             Network net = client.getNetwork(networkName);
 
             //1.1 see if the operation desired is valid
@@ -507,8 +509,8 @@ public class OpenStackPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode port = querySolution.get("port");
-            String portName = port.asResource().toString().replace(topologyUri, "");
-
+            String portname = port.asResource().toString();
+            String portName = getresourcename(portname, "+", "");
             Port p = client.getPort(portName);
 
             //2.1 make sure that the desired operation is valid
@@ -539,14 +541,16 @@ public class OpenStackPush {
                     throw new Exception(String.format("Delta model does not specify network interface subnet of port: %s", port));
                 }
                 String subnetName = "";
+                String subnetname = "";
                 while (r1.hasNext()) {
                     querySolution1 = r1.next();
                     RDFNode subnet = querySolution1.get("subnet");
-                    query = "SELECT ?subnet WHERE {<" + subnet.asResource() + ">  a  mrs:SwitchingSubnet}";
+                    query = "SELECT ?subnet WHERE {?subnet <" + subnet.asResource() + ">  a  mrs:SwitchingSubnet}";
                     ResultSet r3 = executeQuery(query, modelRef, modelDelta);
                     if (r3.hasNext()) //search in the model to see if subnet existed before
                     {
-                        subnetName = subnet.asResource().toString().replace(topologyUri, "");
+                        subnetname = subnet.asResource().toString();
+                        subnetName = getresourcename(subnetname , "+", "");
                     } else {
                         throw new Exception(String.format("Subnet  for port %s"
                                 + "is not found in any model", port.asResource()));
@@ -586,7 +590,8 @@ public class OpenStackPush {
             QuerySolution q = r.next();
             RDFNode port = q.get("port");
             RDFNode server = q.get("node");
-            String serverName = server.asResource().toString().replace(topologyUri, "");
+            String servername = server.asResource().toString();
+            String serverName = getresourcename(servername , "+", "");
 
             //1.1 get the server name, if no server is found, it means the port is not being attached to a server
             //so we will just skip this iteration
@@ -598,7 +603,8 @@ public class OpenStackPush {
             if (r1.hasNext()) {
                 s = client.getServer(serverName);
                 r1.next();
-                String portName = port.asResource().toString().replace(topologyUri, "");
+                String portname = port.asResource().toString();
+                String portName = getresourcename(servername , "+", "");
 
                 //1.2 check that the port has a tag
                 query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:hasTag ?tag}";
@@ -665,7 +671,8 @@ public class OpenStackPush {
         while (r.hasNext()) {
             QuerySolution q = r.next();
             RDFNode vm = q.get("server");
-            String serverName = vm.asResource().toString().replace(topologyUri, "");
+            String servername = vm.asResource().toString();
+            String serverName = getresourcename(servername , "+", "");
             Server server = client.getServer(serverName);
 
             //1.1 check if the desired operation is a valid operation
@@ -732,7 +739,8 @@ public class OpenStackPush {
                 {
                     QuerySolution q2 = r2.next();
                     RDFNode port = q2.get("port");
-                    String name = port.asResource().toString().replace(topologyUri, "");
+                    String Name = port.asResource().toString();
+                    String name = getresourcename(Name , "+","");
                     portNames.add(name);
                 }
 
@@ -760,10 +768,12 @@ public class OpenStackPush {
                 r4 = executeQuery(query, modelRef, modelDelta);
                 boolean hasRootVolume = false;
                 String volumeName = "";
+                String volumename = "";
                 while (r4.hasNext()) {
                     QuerySolution q4 = r4.next();
                     RDFNode volume = q4.get("volume");
-                    volumeName = volume.asResource().toString().replace(topologyUri, "");
+                    volumename = volume.asResource().toString();
+                    volumeName = getresourcename(volumename, "+", "");
                     String deviceName = q4.get("deviceName").asLiteral().toString();
                     if (deviceName.equals("/dev/")) {
                         hasRootVolume = true;
@@ -814,7 +824,8 @@ public class OpenStackPush {
         while (r1.hasNext()) {
             QuerySolution querySolution1 = r1.next();
             RDFNode server = querySolution1.get("node");
-            String serverName = server.asResource().toString().replace(topologyUri, "");
+            String servername = server.asResource().toString();
+            String serverName =  getresourcename(servername ,"+", "");
             RDFNode volume = querySolution1.get("volume");
             String volumeName = volume.asResource().toString().replace(topologyUri, "");
 
@@ -1042,6 +1053,26 @@ public class OpenStackPush {
             r = qexec.execSelect();
         }
         return r;
+    }
+    private static String getresourcename(String resourceName, String character1, String character2){
+        if(resourceName.contains(character1)){
+            if(!character2.isEmpty() || character2 != null  ){
+                int last1 = resourceName.lastIndexOf(character1);
+                int last2 = resourceName.lastIndexOf(character2);
+                String name = resourceName.substring(last1, last2).replace(character1, "");
+               
+                return name;
+            }
+            else{
+                int last1 = resourceName.lastIndexOf(character1);
+                String name = resourceName.substring(last1);
+                String Name = name.replace(character1, "");
+                return Name;
+            }
+        }
+        else{
+            return resourceName;
+        }
     }
 
 }
