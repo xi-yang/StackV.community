@@ -70,7 +70,7 @@ public class SystemModelCoordinator {
                 this.systemVersionGroup.createUnionModel();
             }
         } else {
-            VersionGroup newVersionGroup = newVersionGroup = systemCallHandler.updateHeadVersionGroup(systemVersionGroup.getRefUuid());
+            VersionGroup newVersionGroup = systemCallHandler.updateHeadVersionGroup(systemVersionGroup.getRefUuid());
             if (newVersionGroup != null && !newVersionGroup.equals(systemVersionGroup)) {
                 this.systemVersionGroup = newVersionGroup;
                 this.systemVersionGroup.createUnionModel();

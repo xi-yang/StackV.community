@@ -32,7 +32,7 @@ public class ServiceDelta extends DeltaBase {
     @JoinColumn(name = "systemDeltaId")
     protected SystemDelta systemDelta = null;
 
-    private String status;
+    private String status = "INIT";
     
     public String getReferenceUUID() {
         return referenceUUID;

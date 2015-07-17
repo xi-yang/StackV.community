@@ -14,6 +14,10 @@ import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.*;
+import com.hp.hpl.jena.update.Update;
+import com.hp.hpl.jena.update.UpdateAction;
+import com.hp.hpl.jena.update.UpdateFactory;
+import com.hp.hpl.jena.update.UpdateRequest;
 import java.io.ByteArrayInputStream;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -129,6 +133,17 @@ public class ModelUtil {
         QueryExecution qexec = QueryExecutionFactory.create(query, model);
         ResultSet rs = (ResultSet) qexec.execSelect();
         return rs;
+    }
+    
+    static public void sparqlExec(Model model, String sparqlStringWithoutPrefix) {
+        String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
+                "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
+                "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
+                "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
+                "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" +
+                sparqlStringWithoutPrefix;        
+        UpdateRequest update = UpdateFactory.create(sparqlString);
+        UpdateAction.execute(update, model);
     }
     
     public static boolean evaluateStatement(Model model, Statement stmt, String sparql) {

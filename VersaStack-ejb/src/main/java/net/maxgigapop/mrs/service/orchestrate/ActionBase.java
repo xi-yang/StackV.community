@@ -11,6 +11,7 @@ import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Property;
+import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.rdf.model.StmtIterator;
@@ -357,6 +358,19 @@ public class ActionBase {
             if (!listStmts.isEmpty())
                 listStmtsToRemove.addAll(listStmts);
         }
+        // remove statements of resource of spa#Abstraction type
+        sparql = "SELECT ?abstraction WHERE {"
+                + String.format("?abstraction a <%s>. ", Spa.Abstraction)
+                + "}";
+        rs = ModelUtil.sparqlQuery(spaModel, sparql);
+        while (rs.hasNext()) {
+            QuerySolution solution = rs.next();
+            Resource resAbstraction = solution.getResource("abstraction");
+            StmtIterator iterAS = spaModel.listStatements(resAbstraction, null, (RDFNode)null);
+            while (iterAS.hasNext())
+                listStmtsToRemove.add(iterAS.next());
+        }
+        // sanity check
         spaModel.remove(listStmtsToRemove);
         sparql = "SELECT ?policyX WHERE {"
                 + "?policyX ?p ?o. "

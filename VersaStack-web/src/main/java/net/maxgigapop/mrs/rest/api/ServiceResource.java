@@ -73,7 +73,7 @@ public class ServiceResource {
     //PUT to push and sync deltas
     @PUT
     @Path("/{siUUID}")
-    public String push(@PathParam("refUUID")String svcInstanceUUID) {
+    public String push(@PathParam("siUUID")String svcInstanceUUID) {
         return serviceCallHandler.pushSyncDeltas(svcInstanceUUID);
     }
 }

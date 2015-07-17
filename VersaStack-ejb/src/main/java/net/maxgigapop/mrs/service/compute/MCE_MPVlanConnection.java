@@ -15,6 +15,7 @@ import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
+import com.hp.hpl.jena.rdf.model.StmtIterator;
 import com.hp.hpl.jena.util.iterator.Filter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -101,7 +102,10 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             
             //4. remove policy and all related SPA statements receursively under link from spaModel
             //   and also remove all statements that say dependOn this 'policy'
-            this.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), resLink);   
+            this.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), resLink);
+            
+            //5. mark the Link as an Abstraction
+            outputDelta.getModelAddition().getOntModel().add(outputDelta.getModelAddition().getOntModel().createStatement(resLink, RdfOwl.type, Spa.Abstraction));
         }
         try {
             log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--DeltaAddModel Output=\n" + ModelUtil.marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()));
@@ -117,7 +121,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
         // filter out irrelevant statements (based on property type, label type, has switchingService etc.)
         OntModel transformedModel = MCETools.transformL2NetworkModel(systemModel);
         try {
-            log.log(Level.INFO, "\n>>>MCE_MPVlanConnection--SystemModel=\n" + ModelUtil.marshalModel(transformedModel));
+            log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--SystemModel=\n" + ModelUtil.marshalModel(transformedModel));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -142,7 +146,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
         Filter<Statement> connFilters = new PredicatesFilter(filterProperties);
         List<MCETools.Path> KSP = MCETools.computeKShortestPaths(transformedModel, nodeA, nodeZ, MCETools.KSP_K_DEFAULT, connFilters);
         if (KSP == null || KSP.isEmpty()) {
-            throw new EJBException(String.format("%s::process doPathFinding cannot find feasible path for <%s>", resLink));
+            throw new EJBException(String.format("%s::process doPathFinding cannot find feasible path for <%s>", MCE_MPVlanConnection.class.getName(), resLink));
         }
         // Verify TE constraints (switching label and ?adaptation?), 
         Iterator<MCETools.Path> itP = KSP.iterator();

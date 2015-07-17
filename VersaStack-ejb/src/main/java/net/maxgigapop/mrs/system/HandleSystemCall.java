@@ -190,12 +190,18 @@ public class HandleSystemCall {
             // We must persist target model VG after both propagated and committed.
             DeltaBase D12 = headSystemModel.diffFromModel(referenceOntModel);
             //          verify D12.getModelAddition().getOntModel().intersection(sysDelta.getModelReduction().getOntModel()) == empty
+            if (sysDelta.getModelReduction() != null && sysDelta.getModelReduction().getOntModel() != null) {
+                com.hp.hpl.jena.rdf.model.Model reductionConflict = D12.getModelAddition().getOntModel().intersection(sysDelta.getModelReduction().getOntModel());
+                if (!ModelUtil.isEmptyModel(reductionConflict)) {
+                    throw new EJBException(String.format("%s %s.modelReduction based on %s conflicts with current head %s", systemInstance, sysDelta, referenceVG, headVG));
+                }
+            }
             //          verify D12.getModelReduction().getOntModel().intersection(sysDelta.getModelAddiction().getOntModel()) == empty
-            com.hp.hpl.jena.rdf.model.Model reductionConflict = D12.getModelAddition().getOntModel().intersection(sysDelta.getModelReduction().getOntModel());
-            com.hp.hpl.jena.rdf.model.Model additionConflict = D12.getModelReduction().getOntModel().intersection(sysDelta.getModelAddition().getOntModel());
-            //          if either verification fails throw EJBException("version conflict");
-            if (!ModelUtil.isEmptyModel(reductionConflict) || !ModelUtil.isEmptyModel(additionConflict)) {
-                throw new EJBException(String.format("%s %s based on %s conflicts with current head %s", systemInstance, sysDelta, referenceVG, headVG));
+            if (sysDelta.getModelAddition() != null && sysDelta.getModelAddition().getOntModel() != null) {
+                com.hp.hpl.jena.rdf.model.Model additionConflict = D12.getModelReduction().getOntModel().intersection(sysDelta.getModelAddition().getOntModel());
+                if (!ModelUtil.isEmptyModel(additionConflict)) {
+                    throw new EJBException(String.format("%s %s.modelAddition based on %s conflicts with current head %s", systemInstance, sysDelta, referenceVG, headVG));
+                }
             }
             // Note: no need to update current VG to head as the targetDSD will be based the current VG and driverSystem will verify contention on its own.
         }
