@@ -1,5 +1,8 @@
 package web.beans;
 
+import com.hp.hpl.jena.ontology.OntModel;
+import com.hp.hpl.jena.ontology.OntModelSpec;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -10,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import net.maxgigapop.mrs.common.ModelUtil;
 
 public class serviceBeans {
 
@@ -92,8 +96,7 @@ public class serviceBeans {
                 return 2;
             }
         } catch (Exception e) {
-            //connection error
-            return 3;
+            return 3;//connection error
         }
 
         return 0;
@@ -117,12 +120,97 @@ public class serviceBeans {
                 return 2;
             }
         } catch (Exception e) {
-            //connection error
-            return 3;
+            return 3;//connection error
         }
         return 0;
     }
 
+    /**
+     * 
+     * @param parameters An array of the required parameters:<br />
+     * [0] - Version Group UUID<br />
+     * [1] - topology URI<br />
+     * [2] - OS Type<br />
+     * [3] - Instance Type(AWS)/Flavor(OPS)<br />
+     * [4] - Name of the VMs<br />
+     * [5] - Number of the VM want to created<br />
+     * [6] - VPC Id<br />
+     * [7] - Number of network interfaces want to attached to the VM<br />
+     * [8] - Number of volume want to create in the VM<br />
+     * @return
+     * 0 - success.<br />
+     * 1 - Requesting System Instance UUID error.<br />
+     * 2 - unplug error.<br />
+     * 3 - connection error.<br />
+     * 4 - model building error<br />
+     */
+    public int vmInstall(String[] parameters){
+        String siUuid ;        
+        try {
+            URL url = new URL(String.format("%s/model/systeminstance", host));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            siUuid = this.executeHttpMethod(url, connection, "GET", null);
+            if(siUuid.length()!=36)
+                return 1;//not returning System Instance UUID. error occurs
+        } catch (Exception e) {
+            return 3;//connection error
+        }
+
+        String delta = "<delta>\n<id>1</id>\n" +
+                       "<creationTime>2015-03-11T13:07:23.116-04:00</creationTime>\n" +
+                       "<referenceVersion>"+ parameters[0] + "</referenceVersion>\n" +
+                       "<modelReduction></modelReduction>\n\n" +
+                       "<modelAddition>\n" +
+                       "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n" +
+                       "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n" +
+                       "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n" +
+                       "@prefix rdf:   &lt;http://schemas.ogf.org/nml/2013/03/base##&gt; .\n" +
+                       "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n" +
+                       "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .";
+        
+        
+        OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        
+        //transform the model into turtle format
+        String ttlModel;
+        try {
+            ttlModel = ModelUtil.marshalOntModel(model);
+        } catch (Exception ex) {
+            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+            return 4;//model building error
+        }
+        //replace the brackets so that the api won't misinterprete
+        ttlModel = ttlModel.replaceAll("<", "&lt;");
+        ttlModel = ttlModel.replaceAll(">", "&gt;");
+        delta += ttlModel + "\n</modelAddition>\n</delta>";
+        
+        //push to the system api and get response
+        try {
+            //propagate the delta
+            URL url = new URL(String.format("%s/delta/%s/propagate", host,siUuid));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            String result = this.executeHttpMethod(url, connection, "POST", delta);
+            if (!result.equalsIgnoreCase("propagate successfully")) //plugin error
+            {
+                return 2;
+            }
+            //commit the delta
+            url = new URL(String.format("%s/delta/%s/commit", host,siUuid));
+            connection = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, connection, "PUT", "");
+            if (!result.equalsIgnoreCase("commit successfully")) //plugin error
+            {
+                return 2;
+            }
+            
+        } catch (Exception e) {
+            return 3;//connection error
+        }
+        
+        
+        return 0;
+    }
+    
     // Given a Topology, return list of VM's that can be added under it.
     //TODO Fill skeleton and JavaDoc as appropriate
     public ArrayList<String> VMSearchByTopology(String topoUri) {
