@@ -130,13 +130,17 @@ public class serviceBeans {
      * @param parameters An array of the required parameters:<br />
      * [0] - Version Group UUID<br />
      * [1] - topology URI<br />
-     * [2] - OS Type<br />
-     * [3] - Instance Type(AWS)/Flavor(OPS)<br />
-     * [4] - Name of the VMs<br />
+     * [2] - VPC Id<br />
+     * [3] - OS Type<br />
+     * [4] - Instance Type(AWS)/Flavor(OPS)<br />
      * [5] - Number of the VM want to created<br />
-     * [6] - VPC Id<br />
-     * [7] - Number of network interfaces want to attached to the VM<br />
-     * [8] - Number of volume want to create in the VM<br />
+     * [6] - all subnet tags need to be attached to the VM. Separated by "\r\n".<br />
+     * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;eg:
+     * urn:ogf:network:aws.amazon.com:aws-cloud:subnet-2cd6ad16\r\n
+     * urn:ogf:network:aws.amazon.com:aws-cloud:subnet-2cd6ad16<br />
+     * [7] - all volumes need to be created in the VM<br />
+     * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;eg:
+     * 8,standard,/dev/xvda,snapshot\r\n8,standard,/dev/xvda,snapshot
      * @return
      * 0 - success.<br />
      * 1 - Requesting System Instance UUID error.<br />
