@@ -3,9 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package net.maxgigapop.mrs.driver.aws;
+package net.maxgigapop.mrs.driver.onosystem;
 
-import net.maxgigapop.mrs.driver.aws.AwsAuthenticateService;
+import net.maxgigapop.mrs.driver.onosystem.OnosAuthenticateService;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.directconnect.AmazonDirectConnectClient;
@@ -17,15 +17,15 @@ import java.util.List;
  *
  * @author muzcategui
  */
-public class AwsDCGet {
+public class OnosDCGet {
 
     private AmazonDirectConnectClient client = null;
     private List<VirtualGateway> virtualGateways = null;
     private List<VirtualInterface> virtualInterfaces = null;
     private List<Connection> connections = null;
 
-    public AwsDCGet(String access_key_id, String secret_access_key, Regions region) {
-        AwsAuthenticateService authenticate = new AwsAuthenticateService(access_key_id, secret_access_key);
+    public OnosDCGet(String access_key_id, String secret_access_key, Regions region) {
+        OnosAuthenticateService authenticate = new OnosAuthenticateService(access_key_id, secret_access_key);
         this.client = authenticate.AwsAuthenticateDCService(Region.getRegion(region));
 
         //get all the privateGateways gateways under the account

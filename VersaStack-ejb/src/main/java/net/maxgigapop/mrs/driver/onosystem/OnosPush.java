@@ -3,11 +3,11 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package net.maxgigapop.mrs.driver.aws;
+package net.maxgigapop.mrs.driver.onosystem;
 
-import net.maxgigapop.mrs.driver.aws.AwsDCGet;
-import net.maxgigapop.mrs.driver.aws.AwsEC2Get;
-import net.maxgigapop.mrs.driver.aws.AwsPush;
+import net.maxgigapop.mrs.driver.onosystem.OnosDCGet;
+import net.maxgigapop.mrs.driver.onosystem.OnosGet;
+import net.maxgigapop.mrs.driver.onosystem.OnosPush;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.directconnect.AmazonDirectConnectClient;
@@ -46,21 +46,21 @@ import net.maxgigapop.mrs.common.ModelUtil;
 //TODO associate and disassociate address methods do not do anything. Reason is
 //elastic IPs are not linked in any way to the root topology, find a way to do this
 //in the model to make the two methods work.
-public class AwsPush {
+public class OnosPush {
 
     private AmazonEC2Client ec2 = null;
     private AmazonDirectConnectClient dc = null;
-    private AwsEC2Get ec2Client = null;
-    private AwsDCGet dcClient = null;
+    private OnosGet ec2Client = null;
+    private OnosDCGet dcClient = null;
     private String topologyUri = null;
     private Regions region = null;
-    static final Logger logger = Logger.getLogger(AwsPush.class.getName());
+    static final Logger logger = Logger.getLogger(OnosPush.class.getName());
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 
-    public AwsPush(String access_key_id, String secret_access_key, Regions region, String topologyUri) {
+    public OnosPush(String topologyURI,String driverEjbPath,String subsystemBaseUrl) {
         //have all the information regarding the topology
-        ec2Client = new AwsEC2Get(access_key_id, secret_access_key, region);
-        dcClient = new AwsDCGet(access_key_id, secret_access_key, region);
+        //ec2Client = new OnosGet(access_key_id, secret_access_key, region);
+        //dcClient = new OnosDCGet(access_key_id, secret_access_key, region);
         ec2 = ec2Client.getClient();
         dc = dcClient.getClient();
         this.region = region;

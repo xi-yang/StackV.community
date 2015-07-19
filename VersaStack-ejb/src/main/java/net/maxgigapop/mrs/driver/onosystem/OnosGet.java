@@ -3,9 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package net.maxgigapop.mrs.driver.aws;
+package net.maxgigapop.mrs.driver.onosystem;
 
-import net.maxgigapop.mrs.driver.aws.AwsAuthenticateService;
+import net.maxgigapop.mrs.driver.onosystem.OnosAuthenticateService;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
@@ -18,9 +18,8 @@ import java.util.List;
  *
  * @author muzcategui
  */
-public class AwsEC2Get {
+public class OnosGet {
 
-    private AmazonEC2Client client = null;
     private List<Vpc> vpcs = null;
     private List<Instance> instances = null;
     private List<Subnet> subnets = null;
@@ -34,14 +33,7 @@ public class AwsEC2Get {
     private List<InternetGateway> internetGateways = null;
     private List<VpnGateway> virtualPrivateGateways = null;
 
-    public AwsEC2Get(String access_key_id, String secret_access_key, Regions region) {
-        AwsAuthenticateService authenticate = new AwsAuthenticateService(access_key_id, secret_access_key);
-        this.client = authenticate.AwsAuthenticateEC2Service(Region.getRegion(region));
-
-        //get all the vpcs of the account
-        DescribeVpcsResult VpcsResult = this.client.describeVpcs();
-        this.vpcs = VpcsResult.getVpcs();
-
+    public OnosGet() {
         //get all the instances of the account
         DescribeInstancesResult instancesResult = this.client.describeInstances();
         List<Reservation> reservation = instancesResult.getReservations();

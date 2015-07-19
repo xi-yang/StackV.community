@@ -3,9 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package net.maxgigapop.mrs.driver.aws;
+package net.maxgigapop.mrs.driver.onosystem;
 
-import net.maxgigapop.mrs.driver.aws.AwsAuthenticateService;
+import net.maxgigapop.mrs.driver.onosystem.OnosAuthenticateService;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -17,14 +17,14 @@ import java.util.List;
  *
  * @author muzcategui
  */
-public class AwsS3Get 
+public class OnosS3Get 
 {
     private AmazonS3Client client= null;
     private List<Bucket> buckets=null;
     
-    public AwsS3Get(String access_key_id, String secret_access_key,Regions region)
+    public OnosS3Get(String access_key_id, String secret_access_key,Regions region)
     {
-        AwsAuthenticateService authenticate=new AwsAuthenticateService(access_key_id,secret_access_key);
+        OnosAuthenticateService authenticate=new OnosAuthenticateService(access_key_id,secret_access_key);
         this.client = authenticate.AwsAuthenticateS3Service(Region.getRegion(region));
         
          buckets=this.client.listBuckets();
