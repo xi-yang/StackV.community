@@ -17,6 +17,7 @@ define(["local/d3", "local/versastack/utils"],
                 this.bevel = 10;
                 this.svgNeck = null;
                 this.svgBubble = null;
+                this.opacity = .7;
                 this.color = "";
                 this.tabColor = "";
                 this.tabWidth = 0;
@@ -28,6 +29,8 @@ define(["local/d3", "local/versastack/utils"],
                 this.portWidth = 0;
                 /**@type Service**/
                 this.hostNode = null;
+                
+            
 
                 var that = this;
                 this.setOffset = function (x, y) {
@@ -35,17 +38,21 @@ define(["local/d3", "local/versastack/utils"],
                     this.dy = y;
                     return this;
                 };
-                this.setHostNode = function(hostNode){
-                    this.hostNode=hostNode;
+                this.setHostNode = function (hostNode) {
+                    this.hostNode = hostNode;
                     return this;
                 }
-                
-                this.setBuffer = function(buffer){
-                    this.buffer=buffer;
+                this.setOpacity = function (opacity) {
+                    this.opacity = opacity;
                     return this;
-  
                 };
-                
+
+                this.setBuffer = function (buffer) {
+                    this.buffer = buffer;
+                    return this;
+
+                };
+
                 this.setDimensions = function (width, height) {
                     this.width = width;
                     this.height = height;
@@ -68,7 +75,7 @@ define(["local/d3", "local/versastack/utils"],
                     this.color = color;
                     return this;
                 };
-                
+
                 this.setTabColor = function (tabColor) {
                     this.tabColor = tabColor;
                     return this;
@@ -112,10 +119,10 @@ define(["local/d3", "local/versastack/utils"],
                                 var dx = (e.clientX - lastMouse.clientX) / outputApi.getZoom();
                                 var dy = (e.clientY - lastMouse.clientY) / outputApi.getZoom();
                                 lastMouse = e;
-                                that.dx+=dx;
-                                that.dy+=dy;
+                                that.dx += dx;
+                                that.dy += dy;
                                 that.render();
-                                
+
                             })
                             .on("dragstart", function () {
                                 lastMouse = d3.event.sourceEvent;
@@ -129,15 +136,24 @@ define(["local/d3", "local/versastack/utils"],
 
                 }
 
+                var previousHighlights = [];
+                var clickSubnet = null;
                 this.render = function () {
-                    if(!this.hostNode){
+                    if (!this.hostNode) {
                         return;
                     }
                     var container = this.svgContainer.select("#switchPopup");
                     container.selectAll("*").remove();
+                    map_(previousHighlights, function (removeHighlights) {
+                        removeHighlights.svgNodeSubnetHighlight.remove();
+                        removeHighlights.svgNodeSubnetHighlight = null;
+                    });
                     var anchor = this.hostNode.getCenterOfMass();
+
+                    var boxContainer = container.append("g")
+                            .style("opacity", this.opacity);
                     //draw switch popup
-                     container.append("rect")
+                    boxContainer.append("rect")//changes
                             .attr("x", anchor.x - this.width / 2 + this.dx)
                             .attr("y", anchor.y + this.dy)
                             .attr("height", this.height)
@@ -146,49 +162,80 @@ define(["local/d3", "local/versastack/utils"],
                             .attr("ry", this.bevel)
                             .style("fill", this.color)
                             .call(makeDragBehaviour());
-                    
-                    //draw subnet tab
-                     var subnetContainer = this.svgContainer.select("#tab");
-                    subnetContainer.selectAll("*").remove();
 
-                    
-
-                    var x = anchor.x - this.width / 2 +this.dx +this.bevel;
-                    var y = anchor.y + this.dy;
-                    
-                    map_(this.hostNode.subnets, function(subnet){
-                        
-                        
-                        container.append("rect")
-                                .attr("x", x)
-                                .attr("y", y)
-                                .attr("height", that.tabHeight)
-                                .attr("width", that.tabWidth)
-                                .style("fill", that.tabColor) 
-                        x += that.tabWidth +that.buffer;
-                        
-                       
-                    });
-
-                               
                     var serviceChoords = this.hostNode.getCenterOfMass();
-                    container.append("line")
+                    boxContainer.append("line")//changes
                             .attr("x1", anchor.x + this.dx)
                             .attr("y1", anchor.y + this.dy)
                             .attr("x2", serviceChoords.x)
                             .attr("y2", serviceChoords.y)
                             .style("stroke", this.color);
-                    
 
-                   
-
-
-                };
+                    //draw subnet tab
+                    var subnetContainer = this.svgContainer.select("#tab");
+                    subnetContainer.selectAll("*").remove();
 
 
-                
-            }
 
+                    var x = anchor.x - this.width / 2 + this.dx + this.bevel;
+                    var y = anchor.y + this.dy;
 
-            return SwitchPopup;
-        });
+                    map_(this.hostNode.subnets, /**@param {Subnet} subnet**/function (subnet) {
+
+                        subnet.svgNode = container.append("rect")
+                                .attr("x", x)
+                                .attr("y", y)
+                                .attr("height", that.tabHeight)
+                                .attr("width", that.tabWidth)
+                                .style("fill", that.tabColor)
+                                .on("mousemove", function () {
+                                    outputApi.setHoverText(subnet.getName());
+                                    outputApi.setHoverLocation(d3.event.x, d3.event.y);
+                                    outputApi.setHoverVisible(true);
+                                })
+                                .on("mouseleave", function () {
+                                    outputApi.setHoverVisible(false);
+                                })
+                            
+                                .on("click", function () {
+                                    clickSubnet = subnet;
+                                    map_(previousHighlights, function (trackHighlight) {
+                                        if (trackHighlight.svgNodeSubnetHighlight) {
+                                            trackHighlight.svgNodeSubnetHighlight.remove();
+                                            trackHighlight.svgNodeSubnetHighlight = null;
+                                        }
+                                    });
+                                    previousHighlights = [];
+                                    map_(subnet.ports, function (port) {
+                                        var toHighlight = port.getFirstVisibleParent();
+                                        if (toHighlight.svgNode) {
+                                            var toAppend = toHighlight.svgNode.node().cloneNode();
+                                            previousHighlights.push(toHighlight);
+                                            toHighlight.svgNodeSubnetHighlight = d3.select(toAppend)
+                                                    .style("filter", "url(#subnetHighlight)")
+                                                    .style("opacity", "1")
+                                                    .attr("pointer-events", "none");
+                                            ;
+                                            var parentNode = toHighlight.svgNode.node().parentNode;
+                                            if (parentNode) {
+                                                parentNode.appendChild(toAppend);
+                                            } else {
+                                                console.log("Trying to highlight an element without a parent")
+                                            }
+                                        } else {
+                                            console.log("trying to highlight an element without an svgNode")
+                                        }
+                                    });
+
+                                
+                                });
+                                        x += that.tabWidth + that.buffer;
+                            }
+                            );
+                            if (clickSubnet) {
+                                clickSubnet.svgNode.on("click")();
+                            }
+                        };
+                    }
+                    return SwitchPopup;
+                });

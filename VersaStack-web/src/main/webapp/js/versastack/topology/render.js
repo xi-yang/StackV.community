@@ -59,7 +59,7 @@ define([
         SWITCH_MIN_WIDTH: 20,
         SWITCH_MIN_HEIGHT: 8,
         DIALOG_BEVEL: 10,
-        DIALOG_COLOR: "rgba(255,0,0,.5)",
+        DIALOG_COLOR: "rgb(255,0,0)",
         DIALOG_TAB_COLOR: "rgb(31,178,223)",
         DIALOG_BUFFER: 2,
         DIALOG_PORT_COLOR: "rgb(0,0,0)",
@@ -233,6 +233,7 @@ define([
             map_(nodeList, function (n) {
                 n.portPopup.render();
             });
+            switchPopup.render();
         }
 
         /**@param {Node} n**/
@@ -338,8 +339,10 @@ define([
         /**@param {Node} n**/
         function updateSvgChoordsNode(n) {
             var svg = n.svgNode;
+            var svgSubnet = n.svgNodeSubnetHighlight;
             if (!svg) {
                 console.log("No svg element in node");
+                return;
             }
             if (n.isLeaf()) {
                 svg.attr("x", n.x - n.size / 2);
@@ -348,7 +351,15 @@ define([
                 var path = getTopolgyPath(n);
                 svg.attr("d", topologyPathToString(path));
             }
-
+            if (svgSubnet) {
+                if (n.isLeaf()) {
+                    svgSubnet.attr("x", n.x - n.size / 2);
+                    svgSubnet.attr("y", n.y - n.size / 2);
+                } else {
+                    var path = getTopolgyPath(n);
+                    svgSubnet.attr("d", topologyPathToString(path));
+                }
+            }
             var svgAchor = n.svgNodeAnchor;
             if (svgAchor) {
                 var choords = n.getCenterOfMass();
@@ -406,18 +417,18 @@ define([
                         .attr("y1", srcChoords.y)
                         .attr("x2", srcChoords.x - settings.DIALOG_PORT_LEAD)
                         .attr("y2", srcChoords.y);
-            }else{
-                srcLead.style("visibility","hidden");
+            } else {
+                srcLead.style("visibility", "hidden");
             }
             if (tgt.getType() === "Port") {
                 tgtChoords.x -= settings.DIALOG_PORT_LEAD;
-                tgtLead.style("visibility","visible")
+                tgtLead.style("visibility", "visible")
                         .attr("x1", tgtChoords.x)
                         .attr("y1", tgtChoords.y)
                         .attr("x2", tgtChoords.x + settings.DIALOG_PORT_LEAD)
                         .attr("y2", tgtChoords.y);
-            }else{
-                tgtLead.style("visibility","hidden");
+            } else {
+                tgtLead.style("visibility", "hidden");
             }
 
             e.svgNode.attr("x1", srcChoords.x)
@@ -454,9 +465,7 @@ define([
                         //However, we also want it to continue tracking us.
                         outputApi.setHoverLocation(e.clientX, e.clientY);
                         drawHighlight();
-                        if (selectedNode) {
-                            switchPopup.render();
-                        }
+                        switchPopup.render();
                         //fix all edges
                         map_(edgeList, updateSvgChoordsEdge);
                     })
@@ -496,7 +505,10 @@ define([
          * Note that n could also be a topology
          * @param {Node} n**/
         function onNodeClick(n) {
-            d3.event.stopPropagation(); //prevent the click from being handled by the background, which would hide the panel
+            if (d3.event) {
+                //In the case of artificial clicks, d3.event may be null
+                d3.event.stopPropagation(); //prevent the click from being handled by the background, which would hide the panel
+            }
             if (didDrag) {
                 return;
             }
@@ -529,9 +541,11 @@ define([
             n.populateTreeMenu(displayTree);
             displayTree.draw();
             var switchChoords = n.getCenterOfMass();
-            switchPopup.setOffset(0, 0)
-                    .setHostNode(n)
-                    .render();
+            if (n.getTypeBrief() === "SwitchingService") {
+                switchPopup.setOffset(0, 0)
+                        .setHostNode(n)
+                        .render();
+            }
         }
 
         var previousHighlight = null;
@@ -655,6 +669,14 @@ define([
                     .attr("height", size)
                     .attr("x", x + n.dx)//make it appear to zoom into center of the icon
                     .attr("y", y + n.dy);
+
+            if (n.svgNodeSubnetHighlight) {
+                n.svgNodeSubnetHighlight
+                        .attr("width", size)
+                        .attr("height", size)
+                        .attr("x", x + n.dx)
+                        .attr("y", y + n.dy);
+            }
             drawHighlight();
         }
 
