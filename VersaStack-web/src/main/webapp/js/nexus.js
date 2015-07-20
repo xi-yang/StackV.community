@@ -62,6 +62,26 @@ function driverSelect(sel) {
     fieldCounter = 0;
 }
 
+function topoSelect(sel) {
+    if (sel.value !== null) {
+           if (sel.value.indexOf("aws") > -1) {
+               $ref = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=aws #service-fields";
+           }
+           else if (sel.value.indexOf("openstack") > -1) {
+               $ref = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=os #service-fields";
+           }
+           else if (sel.value.indexOf("versa") > -1) {
+               $ref = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=vs #service-fields";
+           }
+           else {
+               $ref = "/VersaStack-web/ops/srvc/vmadd.jsp #service-fields";
+           }
+    }
+    else $ref = "/VersaStack-web/ops/srvc/vmadd.jsp #service-fields";
+    
+    $("#service-bottom").load($ref);
+}
+
 var fieldCounter = 0;
 var fieldLimit = 5;
 function addPropField() {

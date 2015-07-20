@@ -26,6 +26,8 @@ public class VMServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        serviceBeans servBean = new serviceBeans();
+        
         // Bi-directional search function
         if (request.getParameter("search") != null) {
             
@@ -45,6 +47,7 @@ public class VMServlet extends HttpServlet {
                 }
             }
 
+            /*
             // Connect dynamically generated elements
             for (int i = 1; i <= 5; i++) {
                 if (paramMap.containsKey("apropname" + i)) {
@@ -54,10 +57,10 @@ public class VMServlet extends HttpServlet {
                     paramMap.remove("apropval" + i);
                 }
             }
-
-            serviceBeans servBean = new serviceBeans();
+            */           
 
             int retCode = -1;
+            //retCode = servBean.vmInstall(paramMap);
 
             response.sendRedirect("/VersaStack-web/ops/srvc/vmadd.jsp?ret=" + retCode);
         }
