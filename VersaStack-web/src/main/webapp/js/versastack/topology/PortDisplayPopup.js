@@ -96,15 +96,14 @@ define(["local/d3", "local/versastack/utils"],
                 };
 
 
-                this._setPortEnlarge = function (port, enlarge) {
+                this.updateSvgChoordsPort = function (port) {
                     if (port.hasChildren()) {
                         return;
                     }
-                    port.enlarged = enlarge;
                     var width = that.portWidth;
                     var height = that.portHeight;
                     var dWidth, dHeight;
-                    if (enlarge) {
+                    if (port.enlarged) {
                         dWidth = width * that.enlargeFactor;
                         width += dWidth;
                         dHeight = height * that.enlargeFactor;
@@ -118,6 +117,13 @@ define(["local/d3", "local/versastack/utils"],
                             .attr("height", height)
                             .attr("x", port.x - width / 2)//make it appear to zoom into center of the icon
                             .attr("y", port.y - height / 2);
+                    if (port.svgNodeSubnetHighlight) {
+                        port.svgNodeSubnetHighlight
+                                .attr("width", width)
+                                .attr("height", height)
+                                .attr("x", port.x - width / 2)
+                                .attr("y", port.y - height / 2);
+                    }
                     renderApi.drawHighlight();
                 };
 
@@ -162,11 +168,13 @@ define(["local/d3", "local/versastack/utils"],
                                         outputApi.setHoverText(port.getName());
                                         outputApi.setHoverLocation(d3.event.x, d3.event.y);
                                         outputApi.setHoverVisible(true);
-                                        that._setPortEnlarge(port, true);
+                                        port.enlarged = true;
+                                        that.updateSvgChoordsPort(port);
                                     })
                                     .on("mouseleave", function () {
                                         outputApi.setHoverVisible(false);
-                                        that._setPortEnlarge(port, false);
+                                        port.enlarged = false;
+                                        that.updateSvgChoordsPort(port);
                                     })
                                     .on("click", function () {
                                         renderApi.selectElement(port);
@@ -191,7 +199,7 @@ define(["local/d3", "local/versastack/utils"],
                     var boxContainer = container.append("g")
                             .style("opacity", this.opacity);
 
-                    this.svgBubble=boxContainer.append("rect")
+                    this.svgBubble = boxContainer.append("rect")
                             .attr("rx", this.bevel)
                             .attr("ry", this.bevel)
                             .style("fill", this.color)
@@ -239,12 +247,7 @@ define(["local/d3", "local/versastack/utils"],
 
                         port.x = x;
                         port.y = y;
-                        port.svgNode
-                                .attr("x", port.x - width / 2)
-                                .attr("y", y - dy) //this correcting is so that incoming edges align properly
-                                .attr("height", height)
-                                .attr("width", width)
-                        that._setPortEnlarge(port, port.enlarged);
+                        that.updateSvgChoordsPort(port);
                         if (port.hasChildren()) {
                             y -= that.portBufferVertical;
                             portTotalHeight += that.portBufferVertical;

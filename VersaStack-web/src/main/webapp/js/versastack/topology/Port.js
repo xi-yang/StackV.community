@@ -21,6 +21,7 @@ define([
         this.y = 0;
         this.enlarged = false;
         this.svgNode = null;
+        this.svgNodeSubnetHighlight = null; // For subnet tab
         this.folded = false;
 
         this.getCenterOfMass = function () {

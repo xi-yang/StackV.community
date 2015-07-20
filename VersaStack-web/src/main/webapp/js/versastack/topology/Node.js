@@ -29,12 +29,13 @@ define(["local/versastack/topology/modelConstants"],
                 this.svgNode = null;
                 this.svgNodeAnchor = null;//For topologies
                 this.svgNodeServices = null;
+                this.svgNodeSubnetHighlight = null; // for subnet tab
                 /**@type Array.Service**/
                 this.services = [];
                 /**@type Array.Port**/
                 this.ports = [];
                 /**@type PortDisplayPopup**/
-                this.portPopup = null;
+                this.portPopup = null; 
                 this.x = 0;
                 this.y = 0;
                 this.dx = 0;
