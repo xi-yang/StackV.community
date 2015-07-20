@@ -581,10 +581,6 @@ define([
         function onNodeDblClick(n) {
             //We will never send a mouseleave event as the node is being removed
             outputApi.setHoverVisible(false);
-            ;
-            //The coordinates provided seem not to line up with where the mouse is,
-            //So we use the center of mass to stay consistent
-            var e = d3.event;
             var chords = n.getCenterOfMass();
             n.toggleFold();
             if (n.isFolded) {
