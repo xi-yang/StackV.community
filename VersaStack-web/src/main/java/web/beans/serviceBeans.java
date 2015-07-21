@@ -228,11 +228,11 @@ public class serviceBeans {
                     + "        mrs:target_device  \"" + parameters[2] + "\" ;\n"
                     + "        mrs:value          \"" + parameters[1] + "\" .\n\n";
             allBolUri += volUri + ",";
-        }
-        
+        }        
         model += "&lt;" + topoUri + ":ebsservice-" + region + "&gt;\n"
                 + "        mrs:providesVolume  " + allBolUri.substring(0, (allBolUri.length()-1)) + ".\n\n";
 
+        //building all the network interfaces
         String allSubnets = "";
         int i = 10;
         String  ip = "10.0.0.";
@@ -249,10 +249,8 @@ public class serviceBeans {
             i++;
             allSubnets += portUri + ","; 
         }
-        /*
-        network interfaces to be determined
-        */
         
+        //building the node
         model += nodeTag +"\n        a                         nml:Node , owl:NamedIndividual ;\n"
                 + "        mrs:providedByService     &lt;" + topoUri + ":ec2service-" + region + "&gt;;\n"
                 + "        mrs:hasVolume             " 
