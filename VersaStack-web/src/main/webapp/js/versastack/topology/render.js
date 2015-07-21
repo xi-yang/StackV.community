@@ -54,14 +54,20 @@ define([
         EDGE_WIDTH: 2,
         DIALOG_NECK_WIDTH: 5,
         DIALOG_NECK_HEIGHT: 40,
-        DIALOG_MIN_WIDTH: 130,
-        DIALOG_MIN_HEIGHT: 110,
+        DIALOG_MIN_WIDTH: 10,
+        DIALOG_MIN_HEIGHT: 10,
         SWITCH_MIN_WIDTH: 20,
         SWITCH_MIN_HEIGHT: 8,
         DIALOG_BEVEL: 10,
         DIALOG_COLOR: "rgb(255,0,0)",
+        //This should be consistent with the subnet highlight color defined in graphText.html
+        //Note that this value was found empircally from the browser, not by computing from the values in graphTest.html
+        //  which gave a somewhat different result
+        DIALOG_TAB_COLOR_SELECTED: "rgb(1, 231, 148)", 
         DIALOG_TAB_COLOR: "rgb(31,178,223)",
+        DIALOG_TAB_TEXT_SIZE: 12,
         DIALOG_BUFFER: 2,
+        DIALOG_INNER_BUFFER: 2,
         DIALOG_PORT_COLOR: "rgb(0,0,0)",
         DIALOG_PORT_EMPTY_COLOR: "rgb(128,128,50)",
         DIALOG_PORT_HEIGHT: 4,
@@ -115,6 +121,9 @@ define([
         switchSettings.DIALOG_PORT_HEIGHT /= outputApi.getZoom();
         switchSettings.DIALOG_PORT_WIDTH /= outputApi.getZoom();
         switchSettings.DIALOG_BUFFER /= outputApi.getZoom();
+        switchSettings.DIALOG_INNER_BUFFER /= outputApi.getZoom();
+        switchSettings.DIALOG_TAB_TEXT_SIZE /= outputApi.getZoom();
+        
         var svgContainer = outputApi.getSvgContainer();
         svgContainer.on("click", function () {
             //Clear the selected element.
@@ -553,7 +562,7 @@ define([
             displayTree.draw();
             if (n.getTypeBrief() === "SwitchingService") {
                 switchPopup.clear()
-                        .setOffset(0, 0)
+                        .setOffset(settings.DIALOG_OFFSET_X, -settings.DIALOG_OFFSET_Y)
                         .setHostNode(n)
                         .render();
             }
@@ -718,13 +727,17 @@ define([
 
                     .setContainer(svgContainer)
                     .setDimensions(switchSettings.DIALOG_MIN_WIDTH, switchSettings.DIALOG_MIN_HEIGHT)
-                    .setTabDimensions(switchSettings.SWITCH_MIN_WIDTH, switchSettings.SWITCH_MIN_HEIGHT).setBevel(switchSettings.DIALOG_BEVEL)
+                    .setTabDimensions(switchSettings.SWITCH_MIN_WIDTH, switchSettings.SWITCH_MIN_HEIGHT)
+                    .setBevel(switchSettings.DIALOG_BEVEL)
                     .setColor(switchSettings.DIALOG_COLOR)
                     .setTabColor(switchSettings.DIALOG_TAB_COLOR)
+                    .setTabColorSelected(switchSettings.DIALOG_TAB_COLOR_SELECTED)
                     .setPortColor(switchSettings.DIALOG_PORT_COLOR)
                     .setPortEmptyColor(switchSettings.DIALOG_PORT_EMPTY_COLOR)
                     .setPortDimensions(switchSettings.DIALOG_PORT_WIDTH, switchSettings.DIALOG_PORT_HEIGHT)
-                    .setBuffer(switchSettings.DIALOG_BUFFER);
+                    .setBuffer(switchSettings.DIALOG_BUFFER)
+                    .setInnerBuffer(switchSettings.DIALOG_INNER_BUFFER)
+                    .setTextSize(switchSettings.DIALOG_TAB_TEXT_SIZE);
         }
 
         API["redraw"] = redraw;
