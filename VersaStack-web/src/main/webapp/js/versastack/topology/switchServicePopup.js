@@ -174,7 +174,7 @@ define(["local/d3", "local/versastack/utils"],
                     var serviceChoords = this.hostNode.getCenterOfMass();
                     boxContainer.append("line")//changes
                             .attr("x1", anchor.x + this.dx)
-                            .attr("y1", anchor.y + this.dy)
+                            .attr("y1", anchor.y + this.dy + this.height/2)
                             .attr("x2", serviceChoords.x)
                             .attr("y2", serviceChoords.y)
                             .style("stroke", this.color);
