@@ -238,10 +238,13 @@ define([
 
         /**@param {Node} n**/
         function computeServiceCoords(n) {
-            var ans = {x: null, y: null, transform: ""};
+            var ans = {x: null, y: null, dx: null, dy: null, rotation: null};
             if (n.isLeaf()) {
                 ans.x = n.x - settings.NODE_SIZE / 2;
                 ans.y = n.y + settings.NODE_SIZE / 2;
+                ans.dx=settings.SERVICE_SIZE;
+                ans.dy=0;
+                ans.rotation=0;
             } else {
                 var path = getTopolgyPath(n);
                 if (n.getLeaves().length > 1) {
@@ -269,7 +272,7 @@ define([
 
                     var p = {x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2};
                     //compute the desired distance between the services, and the line p1p2 
-                    var normalOffset = settings.TOPOLOGY_SIZE / 2 + settings.TOPOLOGY_BUFFER / 2 * (n.getHeight()) + settings.SERVICE_SIZE;
+                    var normalOffset = settings.TOPOLOGY_SIZE / 2 + settings.TOPOLOGY_BUFFER / 2 * (n.getHeight()) + settings.SERVICE_SIZE/2;
                     //convert the above offset into the xy plane, and apply it to p
                     var theta = Math.atan2(p1.y - p2.y, p1.x - p2.x);
                     if (theta < -Math.PI / 2) {
@@ -280,12 +283,18 @@ define([
                     }
                     p.x += normalOffset * Math.sin(theta);
                     p.y -= normalOffset * Math.cos(theta);
-                    ans.x = p.x - settings.SERVICE_SIZE * n.services.length / 2;
-                    ans.y = p.y;
-                    ans.transform = "rotate(" + theta * 180 / Math.PI + " " + p.x + " " + (ans.y + settings.SERVICE_SIZE / 2) + ")";
+                    //p is now the center point of where we want to draw the services
+                    ans.dx = settings.SERVICE_SIZE * Math.cos(theta);
+                    ans.dy = settings.SERVICE_SIZE * Math.sin(theta);
+                    ans.x = p.x - ans.dx * n.services.length / 2;
+                    ans.y = p.y - ans.dy * n.services.length / 2;
+                    ans.rotation = theta * 180 / Math.PI;
                 } else {
                     ans.x = path[0].x - settings.SERVICE_SIZE * n.services.length / 2;
                     ans.y = path[0].y - settings.TOPOLOGY_SIZE / 2 - settings.TOPOLOGY_BUFFER / 2 * (n.getHeight()) - settings.SERVICE_SIZE;
+                    ans.dx=settings.SERVICE_SIZE;
+                    ans.dy=0;
+                    ans.rotation=0;
                 }
             }
             return ans;
@@ -371,16 +380,18 @@ define([
         }
 
         function updateSvgChoordsService(n) {
-            var svgServiceContainer = n.svgNodeServices;
             var coords = computeServiceCoords(n);
             map_(n.services, function (service) {
                 service.y = coords.y;
                 service.x = coords.x;
+                var midY=coords.y + service.dy;
+                var midX=coords.x + service.dx;
                 service.svgNode
-                        .attr("y", coords.y + service.dy)
-                        .attr("x", coords.x + service.dx)
-                        .attr("transform", coords.transform);
-                coords.x += settings.SERVICE_SIZE;
+                        .attr("y", coords.y + service.dy - settings.SERVICE_SIZE/2)
+                        .attr("x", coords.x + service.dx - settings.SERVICE_SIZE/2)
+                        .attr("transform", "rotate("+coords.rotation+" "+midX+" "+midY+")");
+                coords.x += coords.dx;
+                coords.y+=coords.dy;
             });
         }
 
@@ -645,8 +656,8 @@ define([
                 case "Service":
                     var size = settings.SERVICE_SIZE;
                     svg = n.svgNode;
-                    x = n.x;
-                    y = n.y;
+                    x = n.x - settings.SERVICE_SIZE/2;
+                    y = n.y - settings.SERVICE_SIZE/2;
                     break;
                 default:
                     console.log("Unknown Type: " + n.getType());
