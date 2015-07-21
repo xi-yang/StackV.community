@@ -3,8 +3,6 @@ define(["local/d3", "local/versastack/utils"],
         function (d3, utils) {
             var map_ = utils.map_;
 
-
-
             function SwitchPopup(outputApi, renderApi) {
                 this.svgContainer = null;
                 this.dx = 0;
@@ -29,8 +27,6 @@ define(["local/d3", "local/versastack/utils"],
                 this.portWidth = 0;
                 /**@type Service**/
                 this.hostNode = null;
-                
-            
 
                 var that = this;
                 this.setOffset = function (x, y) {
@@ -108,7 +104,6 @@ define(["local/d3", "local/versastack/utils"],
                     return this;
                 };
 
-
                 var lastMouse;
                 function makeDragBehaviour() {
                     return d3.behavior.drag()
@@ -138,16 +133,29 @@ define(["local/d3", "local/versastack/utils"],
 
                 var previousHighlights = [];
                 var clickSubnet = null;
+                function eraseHighlights() {
+                    map_(previousHighlights, function (removeHighlights) {
+                        if (removeHighlights.svgNodeSubnetHighlight) {
+                            removeHighlights.svgNodeSubnetHighlight.remove();
+                            removeHighlights.svgNodeSubnetHighlight = null;
+                        }
+                    });
+                    previousHighlights=[];
+                }
+                this.clear = function () {
+                    this.hostNode = null;
+                    eraseHighlights();
+                    clickSubnet=null;
+                    this.hostNode=null;
+                    return this;
+                };
                 this.render = function () {
                     if (!this.hostNode) {
                         return;
                     }
                     var container = this.svgContainer.select("#switchPopup");
                     container.selectAll("*").remove();
-                    map_(previousHighlights, function (removeHighlights) {
-                        removeHighlights.svgNodeSubnetHighlight.remove();
-                        removeHighlights.svgNodeSubnetHighlight = null;
-                    });
+                    eraseHighlights();
                     var anchor = this.hostNode.getCenterOfMass();
 
                     var boxContainer = container.append("g")
@@ -196,16 +204,10 @@ define(["local/d3", "local/versastack/utils"],
                                 .on("mouseleave", function () {
                                     outputApi.setHoverVisible(false);
                                 })
-                            
+
                                 .on("click", function () {
                                     clickSubnet = subnet;
-                                    map_(previousHighlights, function (trackHighlight) {
-                                        if (trackHighlight.svgNodeSubnetHighlight) {
-                                            trackHighlight.svgNodeSubnetHighlight.remove();
-                                            trackHighlight.svgNodeSubnetHighlight = null;
-                                        }
-                                    });
-                                    previousHighlights = [];
+                                    eraseHighlights();
                                     map_(subnet.ports, function (port) {
                                         var toHighlight = port.getFirstVisibleParent();
                                         if (toHighlight.svgNode) {
@@ -227,15 +229,15 @@ define(["local/d3", "local/versastack/utils"],
                                         }
                                     });
 
-                                
+
                                 });
-                                        x += that.tabWidth + that.buffer;
-                            }
-                            );
-                            if (clickSubnet) {
-                                clickSubnet.svgNode.on("click")();
-                            }
-                        };
+                        x += that.tabWidth + that.buffer;
                     }
-                    return SwitchPopup;
-                });
+                    );
+                    if (clickSubnet) {
+                        clickSubnet.svgNode.on("click")();
+                    }
+                };
+            }
+            return SwitchPopup;
+        });

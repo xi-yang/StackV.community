@@ -540,9 +540,9 @@ define([
             displayTree.clear();
             n.populateTreeMenu(displayTree);
             displayTree.draw();
-            var switchChoords = n.getCenterOfMass();
             if (n.getTypeBrief() === "SwitchingService") {
-                switchPopup.setOffset(0, 0)
+                switchPopup.clear()
+                        .setOffset(0, 0)
                         .setHostNode(n)
                         .render();
             }
