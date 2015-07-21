@@ -8,6 +8,14 @@
         <servlet-name>DriverServlet</servlet-name>
         <url-pattern>/DriverServlet</url-pattern>
     </servlet-mapping>
+    <servlet>
+        <servlet-name>VMServlet</servlet-name>
+        <servlet-class>web.servlets.VMServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>VMServlet</servlet-name>
+        <url-pattern>/VMServlet</url-pattern>
+    </servlet-mapping>
     <session-config>
         <session-timeout>
             30
