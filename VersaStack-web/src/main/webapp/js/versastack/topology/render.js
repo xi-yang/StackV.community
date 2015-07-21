@@ -240,8 +240,8 @@ define([
         function computeServiceCoords(n) {
             var ans = {x: null, y: null, dx: null, dy: null, rotation: null};
             if (n.isLeaf()) {
-                ans.x = n.x - settings.NODE_SIZE / 2;
-                ans.y = n.y + settings.NODE_SIZE / 2;
+                ans.x = n.x - settings.NODE_SIZE / 2 + settings.SERVICE_SIZE/2;
+                ans.y = n.y + settings.NODE_SIZE / 2 + settings.SERVICE_SIZE/2;
                 ans.dx=settings.SERVICE_SIZE;
                 ans.dy=0;
                 ans.rotation=0;
@@ -290,8 +290,8 @@ define([
                     ans.y = p.y - ans.dy * n.services.length / 2;
                     ans.rotation = theta * 180 / Math.PI;
                 } else {
-                    ans.x = path[0].x - settings.SERVICE_SIZE * n.services.length / 2;
-                    ans.y = path[0].y - settings.TOPOLOGY_SIZE / 2 - settings.TOPOLOGY_BUFFER / 2 * (n.getHeight()) - settings.SERVICE_SIZE;
+                    ans.x = path[0].x - settings.SERVICE_SIZE * n.services.length / 2 + settings.SERVICE_SIZE/2;
+                    ans.y = path[0].y - settings.TOPOLOGY_SIZE / 2 - settings.TOPOLOGY_BUFFER / 2 * (n.getHeight()) - settings.SERVICE_SIZE/2;
                     ans.dx=settings.SERVICE_SIZE;
                     ans.dy=0;
                     ans.rotation=0;
