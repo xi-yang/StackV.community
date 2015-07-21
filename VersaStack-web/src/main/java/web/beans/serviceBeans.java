@@ -152,8 +152,8 @@ public class serviceBeans {
     public int vmInstall(Map<String, String> paraMap){
         String vgUuid = null;
         String topoUri = null;
-        String region = null;
-        String vpcId = null;
+        String vpcServiceUri = null;
+        String vpcUri = null;
         String osType = null;
         String instanceType = null;
         String name = null;
@@ -166,9 +166,9 @@ public class serviceBeans {
             else if(entry.getKey().equalsIgnoreCase("tologyUri"))
                 topoUri = entry.getValue();
             else if(entry.getKey().equalsIgnoreCase("region"))
-                region = entry.getValue();
+                vpcServiceUri = entry.getValue();
             else if(entry.getKey().equalsIgnoreCase("vpcId"))
-                vpcId = entry.getValue();
+                vpcUri = entry.getValue();
             else if(entry.getKey().equalsIgnoreCase("ostype"))
                 osType = entry.getValue();
             else if(entry.getKey().equalsIgnoreCase("instancetype"))
@@ -206,23 +206,28 @@ public class serviceBeans {
                        "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .";
         
         String nodeTag = "&lt;" + topoUri + ":i-" + RandomStringUtils.random(8, true, true) + "&gt;";
+        String model = "&lt;" + vpcUri + "&gt;\n"
+                    + "        nml:hasNode               " + nodeTag + ".\n\n";
+
+        String region = vpcServiceUri.split(":vpcservice-")[1];
+        model += "&lt;" + topoUri + ":ec2service-" + region + "&gt;\n"
+                + "        mrs:providesVM  " + nodeTag + ".\n\n";
         
-//        OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-//        
-//        //transform the model into turtle format
-//        String ttlModel;
-//        try {
-//            ttlModel = ModelUtil.marshalOntModel(model);
-//        } catch (Exception ex) {
-//            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
-//            return 4;//model building error
-//        }
-//        //replace the brackets so that the api won't misinterprete
-//        ttlModel = ttlModel.replaceAll("<", "&lt;");
-//        ttlModel = ttlModel.replaceAll(">", "&gt;");
+        String allBolUri = "";
+        for(String vol : volumes){
+            String volUri = "&lt;" + topoUri + ":vol-" + 
+                    RandomStringUtils.random(8, false, true) + "&gt;";
+            String[] parameters = vol.split(",");
+            model += volUri +"\n        a                  mrs:Volume , owl:NamedIndividual ;\n"
+                    + "        mrs:disk_gb        \"" + parameters[0] + "\" ;\n" 
+                    + "        mrs:target_device  \"" + parameters[2] + "\" ;\n"
+                    + "        mrs:value          \"" + parameters[1] + "\" .\n\n";
+            allBolUri += volUri + ",";
+        }
         
-        String model = "&lt;" + vpcId + "&gt;\n"
-                    + "        nml:hasNode               " + nodeTag + ".";
+        model += "&lt;" + topoUri + ":ebsservice-" + region + "&gt;\n"
+                + "        mrs:providesVolume  " + allBolUri.substring(0, (allBolUri.length()-1)) + ".";
+        
         
         delta += model + "\n</modelAddition>\n</delta>";
         
