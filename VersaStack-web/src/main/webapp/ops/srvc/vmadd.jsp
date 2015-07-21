@@ -91,24 +91,41 @@
                                                     <td><input type="text" name="instanceType" required></td>
                                                 </tr>
                                                 <tr>
-                                                    <td>Name of the VMs</td>
-                                                    <td><input type="text" name="vmNames" required></td>
+                                                    <td>Region</td>
+                                                    <td>
+                                                        <select name="region" required>
+                                                            <option></option>
+                                                            <option value="ap-northeast-1">Asia Pacific (Tokyo)</option>
+                                                            <option value="ap-southeast-1">Asia Pacific (Singapore)</option>
+                                                            <option value="ap-southeast-2">Asia Pacific (Sydney)</option>
+                                                            <option value="eu-central-1">Europe (Frankfurt)</option>
+                                                            <option value="eu-west-1">Europe (Ireland)</option>
+                                                            <option value="sa-east-1">South America (Sao Paulo)</option>
+                                                            <option value="us-east-1">US East (N. Virginia)</option>
+                                                            <option value="us-west-1">US West (N. California)</option>
+                                                            <option value="us-west-2">US West (Oregon)</option>
+                                                        </select>
+                                                    </td>
+                                                </tr> 
+                                                <tr>
+                                                    <td>Name of the VM(s)</td>
+                                                    <td><input type="text" name="vmName" required></td>
                                                 </tr>
                                                 <tr>
                                                     <td>Number of VMs</td>
-                                                    <td><input type="number" name="vmNumber" required></td>
+                                                    <td><input type="number" name="vmQuantity" required></td>
                                                 </tr>
                                                 <tr>
                                                     <td>VPC ID</td>
                                                     <td><input type="text" name="vpcID" required></td>
                                                 </tr>                                            
                                                 <tr>
-                                                    <td>Number of network interfaces attached to the VM</td>
-                                                    <td><input type="number" name="networkNumber" required></td>
+                                                    <td>VM Subnets</td>
+                                                    <td><textarea rows="3" cols="50" name="subnets"></textarea></td>
                                                 </tr>
                                                 <tr>
                                                     <td>Number of volume created</td>
-                                                    <td><input type="text" name="volumeNumber" required></td>
+                                                    <td><textarea rows="3" cols="50" name="volumes"></textarea></td>
                                                 </tr>                                            
                                                 <tr>
                                                     <td></td>

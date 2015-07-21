@@ -59,8 +59,8 @@ public class VMServlet extends HttpServlet {
             }
             */           
 
-            int retCode = -1;
-            //retCode = servBean.vmInstall(paramMap);
+            paramMap.remove("install");
+            int retCode = servBean.vmInstall(paramMap);
 
             response.sendRedirect("/VersaStack-web/ops/srvc/vmadd.jsp?ret=" + retCode);
         }
