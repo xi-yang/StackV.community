@@ -160,6 +160,7 @@ public class serviceBeans {
         String[] subnets = null;
         String[] volumes = null;
         int quantity;
+        //Map the parsing parameters into each variable
         for(Map.Entry<String, String> entry : paraMap.entrySet()){
             if(entry.getKey().equalsIgnoreCase("versiongroup"))
                 vgUuid = entry.getValue();
@@ -182,6 +183,8 @@ public class serviceBeans {
             else if(entry.getKey().equalsIgnoreCase("volumes"))
                 volumes = entry.getValue().split("\r\n");            
         }
+        
+        //create a system instance and get an UUID for this system instance from the API
         String siUuid ;
         try {
             URL url = new URL(String.format("%s/model/systeminstance", host));
@@ -192,7 +195,8 @@ public class serviceBeans {
         } catch (Exception e) {
             return 3;//connection error
         }
-
+        
+        //building ttl model
         String delta = "<delta>\n<id>1</id>\n" +
                        "<creationTime>2015-03-11T13:07:23.116-04:00</creationTime>\n" +
                        "<referenceVersion>"+ vgUuid + "</referenceVersion>\n" +
@@ -203,20 +207,21 @@ public class serviceBeans {
                        "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n" +
                        "@prefix rdf:   &lt;http://schemas.ogf.org/nml/2013/03/base##&gt; .\n" +
                        "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n" +
-                       "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .";
+                       "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n\n";
         
         String nodeTag = "&lt;" + topoUri + ":i-" + RandomStringUtils.random(8, true, true) + "&gt;";
         String model = "&lt;" + vpcUri + "&gt;\n"
                     + "        nml:hasNode               " + nodeTag + ".\n\n";
-
+        //get the region name from VPC service URI
         String region = vpcServiceUri.split(":vpcservice-")[1];
         model += "&lt;" + topoUri + ":ec2service-" + region + "&gt;\n"
                 + "        mrs:providesVM  " + nodeTag + ".\n\n";
         
+        //building all the volumes 
         String allBolUri = "";
         for(String vol : volumes){
             String volUri = "&lt;" + topoUri + ":vol-" + 
-                    RandomStringUtils.random(8, false, true) + "&gt;";
+                    RandomStringUtils.random(6, false, true) + "&gt;";
             String[] parameters = vol.split(",");
             model += volUri +"\n        a                  mrs:Volume , owl:NamedIndividual ;\n"
                     + "        mrs:disk_gb        \"" + parameters[0] + "\" ;\n" 
@@ -226,10 +231,36 @@ public class serviceBeans {
         }
         
         model += "&lt;" + topoUri + ":ebsservice-" + region + "&gt;\n"
-                + "        mrs:providesVolume  " + allBolUri.substring(0, (allBolUri.length()-1)) + ".";
+                + "        mrs:providesVolume  " + allBolUri.substring(0, (allBolUri.length()-1)) + ".\n\n";
+
+        String allSubnets = "";
+        int i = 10;
+        String  ip = "10.0.0.";
+        for(String net : subnets){
+            String portUri = "&lt;" + topoUri + ":eni-" + RandomStringUtils.random(6, false, true) + "&gt;";
+            model += net + "\n        nml:hasBidirectionalPort " + portUri + ".\n\n"
+                    + portUri + "\n        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n"
+                    + "        mrs:hasTag            &lt;" + topoUri + ":portTag&gt;;\n"
+                    + "        mrs:hasNetworkAddress  &lt;" + topoUri + ip + i + "&gt;.\n\n"
+                    + "&lt;" + topoUri + ip + i + "&gt;\n"
+                    + "        a          mrs:NetworkAddress , owl:NamedIndividual ;\n" 
+                    + "        mrs:type   \"ipv4:private\" ;\n        mrs:value  \""
+                    + ip + i + "\" .\n\n";
+            i++;
+            allSubnets += portUri + ","; 
+        }
+        /*
+        network interfaces to be determined
+        */
         
+        model += nodeTag +"\n        a                         nml:Node , owl:NamedIndividual ;\n"
+                + "        mrs:providedByService     &lt;" + topoUri + ":ec2service-" + region + "&gt;;\n"
+                + "        mrs:hasVolume             " 
+                + allBolUri.substring(0, (allBolUri.length()-1)) + ";\n"
+                + "        nml:hasBidirectionalPort  "
+                + allSubnets.substring(0, (allSubnets.length()-1)) + ".\n\n";
         
-        delta += model + "\n</modelAddition>\n</delta>";
+        delta += model + "</modelAddition>\n</delta>";
         
         //push to the system api and get response
         try {
