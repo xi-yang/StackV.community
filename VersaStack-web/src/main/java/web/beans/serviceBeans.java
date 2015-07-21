@@ -1,5 +1,8 @@
 package web.beans;
 
+import com.hp.hpl.jena.ontology.OntModel;
+import com.hp.hpl.jena.ontology.OntModelSpec;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -10,6 +13,8 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import net.maxgigapop.mrs.common.ModelUtil;
+import org.apache.commons.lang.RandomStringUtils;
 
 public class serviceBeans {
 
@@ -92,8 +97,7 @@ public class serviceBeans {
                 return 2;
             }
         } catch (Exception e) {
-            //connection error
-            return 3;
+            return 3;//connection error
         }
 
         return 0;
@@ -117,12 +121,143 @@ public class serviceBeans {
                 return 2;
             }
         } catch (Exception e) {
-            //connection error
-            return 3;
+            return 3;//connection error
         }
         return 0;
     }
 
+    /**
+     * 
+     * @param parameters An array of the required parameters:<br />
+     * [0] - Version Group UUID<br />
+     * [1] - topology URI<br />
+     * [2] - VPC Id<br />
+     * [3] - OS Type<br />
+     * [4] - Instance Type(AWS)/Flavor(OPS)<br />
+     * [5] - Number of the VM want to created<br />
+     * [6] - all subnet tags need to be attached to the VM. Separated by "\r\n".<br />
+     * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;eg:
+     * urn:ogf:network:aws.amazon.com:aws-cloud:subnet-2cd6ad16\r\n
+     * urn:ogf:network:aws.amazon.com:aws-cloud:subnet-2cd6ad16<br />
+     * [7] - all volumes need to be created in the VM<br />
+     * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;eg:
+     * 8,standard,/dev/xvda,snapshot\r\n8,standard,/dev/sdb,snapshot
+     * @return
+     * 0 - success.<br />
+     * 1 - Requesting System Instance UUID error.<br />
+     * 2 - unplug error.<br />
+     * 3 - connection error.<br />
+     * 4 - model building error<br />
+     */
+    public int vmInstall(Map<String, String> paraMap){
+        String vgUuid = null;
+        String topoUri = null;
+        String vpcServiceUri = null;
+        String vpcUri = null;
+        String osType = null;
+        String instanceType = null;
+        String name = null;
+        String[] subnets = null;
+        String[] volumes = null;
+        int quantity;
+        for(Map.Entry<String, String> entry : paraMap.entrySet()){
+            if(entry.getKey().equalsIgnoreCase("versiongroup"))
+                vgUuid = entry.getValue();
+            else if(entry.getKey().equalsIgnoreCase("tologyUri"))
+                topoUri = entry.getValue();
+            else if(entry.getKey().equalsIgnoreCase("region"))
+                vpcServiceUri = entry.getValue();
+            else if(entry.getKey().equalsIgnoreCase("vpcId"))
+                vpcUri = entry.getValue();
+            else if(entry.getKey().equalsIgnoreCase("ostype"))
+                osType = entry.getValue();
+            else if(entry.getKey().equalsIgnoreCase("instancetype"))
+                instanceType = entry.getValue();
+            else if(entry.getKey().equalsIgnoreCase("quantity"))
+                quantity = Integer.valueOf(entry.getValue());
+            else if(entry.getKey().equalsIgnoreCase("name"))
+                name = entry.getValue();
+            else if(entry.getKey().equalsIgnoreCase("subnets"))
+                subnets = entry.getValue().split("\r\n");
+            else if(entry.getKey().equalsIgnoreCase("volumes"))
+                volumes = entry.getValue().split("\r\n");            
+        }
+        String siUuid ;
+        try {
+            URL url = new URL(String.format("%s/model/systeminstance", host));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            siUuid = this.executeHttpMethod(url, connection, "GET", null);
+            if(siUuid.length()!=36)
+                return 1;//not returning System Instance UUID. error occurs
+        } catch (Exception e) {
+            return 3;//connection error
+        }
+
+        String delta = "<delta>\n<id>1</id>\n" +
+                       "<creationTime>2015-03-11T13:07:23.116-04:00</creationTime>\n" +
+                       "<referenceVersion>"+ vgUuid + "</referenceVersion>\n" +
+                       "<modelReduction></modelReduction>\n\n" +
+                       "<modelAddition>\n" +
+                       "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n" +
+                       "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n" +
+                       "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n" +
+                       "@prefix rdf:   &lt;http://schemas.ogf.org/nml/2013/03/base##&gt; .\n" +
+                       "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n" +
+                       "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .";
+        
+        String nodeTag = "&lt;" + topoUri + ":i-" + RandomStringUtils.random(8, true, true) + "&gt;";
+        String model = "&lt;" + vpcUri + "&gt;\n"
+                    + "        nml:hasNode               " + nodeTag + ".\n\n";
+
+        String region = vpcServiceUri.split(":vpcservice-")[1];
+        model += "&lt;" + topoUri + ":ec2service-" + region + "&gt;\n"
+                + "        mrs:providesVM  " + nodeTag + ".\n\n";
+        
+        String allBolUri = "";
+        for(String vol : volumes){
+            String volUri = "&lt;" + topoUri + ":vol-" + 
+                    RandomStringUtils.random(8, false, true) + "&gt;";
+            String[] parameters = vol.split(",");
+            model += volUri +"\n        a                  mrs:Volume , owl:NamedIndividual ;\n"
+                    + "        mrs:disk_gb        \"" + parameters[0] + "\" ;\n" 
+                    + "        mrs:target_device  \"" + parameters[2] + "\" ;\n"
+                    + "        mrs:value          \"" + parameters[1] + "\" .\n\n";
+            allBolUri += volUri + ",";
+        }
+        
+        model += "&lt;" + topoUri + ":ebsservice-" + region + "&gt;\n"
+                + "        mrs:providesVolume  " + allBolUri.substring(0, (allBolUri.length()-1)) + ".";
+        
+        
+        delta += model + "\n</modelAddition>\n</delta>";
+        
+        //push to the system api and get response
+        try {
+            //propagate the delta
+            URL url = new URL(String.format("%s/delta/%s/propagate", host,siUuid));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            String result = this.executeHttpMethod(url, connection, "POST", delta);
+            if (!result.equalsIgnoreCase("propagate successfully")) //plugin error
+            {
+                return 2;
+            }
+            //commit the delta
+            url = new URL(String.format("%s/delta/%s/commit", host,siUuid));
+            connection = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, connection, "PUT", "");
+            if (!result.equalsIgnoreCase("commit successfully")) //plugin error
+            {
+                return 2;
+            }
+            
+        } catch (Exception e) {
+            return 3;//connection error
+        }
+        
+        
+        return 0;
+    }
+    
     // Given a Topology, return list of VM's that can be added under it.
     //TODO Fill skeleton and JavaDoc as appropriate
     public ArrayList<String> VMSearchByTopology(String topoUri) {
