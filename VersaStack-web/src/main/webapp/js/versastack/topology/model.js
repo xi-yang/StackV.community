@@ -160,6 +160,7 @@ define([
                         case values.providesVM:
                         case values.providesVPC:
                         case values.providesBucket:
+                        case values.hasBidirectionalPort:
                             break;
                         case values.providesSubnet:
                             var subnet = service_[key];
@@ -170,10 +171,6 @@ define([
                                 service.subnets.push(subnet);
                             });
                             break;
-
-
-                        case values.hasBidirectionalPort:
-
                         default:
                             console.log("Unknown service attribute: " + key);
 
@@ -188,7 +185,12 @@ define([
 
                 for (var key in subnet_) {
                     switch (key) {
-
+                        case "name":
+                        case values.type:
+                        case values.hasNetworkAddress:
+                        case values.encoding:
+                        case values.labelSwapping:
+                            break;
                         //Associate ports and subnet with their parent node
                         case values.hasBidirectionalPort:
                             var ports = subnet_[key];
@@ -199,7 +201,7 @@ define([
                             });
                             break;
                         default:
-                            console.log("Unknown service attribute: " + key);
+                            console.log("Unknown subnet attribute: " + key);
 
                     }
                 }

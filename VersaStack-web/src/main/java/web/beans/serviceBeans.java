@@ -162,21 +162,21 @@ public class serviceBeans {
         int quantity;
         //Map the parsing parameters into each variable
         for(Map.Entry<String, String> entry : paraMap.entrySet()){
-            if(entry.getKey().equalsIgnoreCase("versiongroup"))
+            if(entry.getKey().equalsIgnoreCase("versionGroup"))
                 vgUuid = entry.getValue();
-            else if(entry.getKey().equalsIgnoreCase("tologyUri"))
+            else if(entry.getKey().equalsIgnoreCase("topologyUri"))
                 topoUri = entry.getValue();
             else if(entry.getKey().equalsIgnoreCase("region"))
                 vpcServiceUri = entry.getValue();
-            else if(entry.getKey().equalsIgnoreCase("vpcId"))
+            else if(entry.getKey().equalsIgnoreCase("vpcID"))
                 vpcUri = entry.getValue();
-            else if(entry.getKey().equalsIgnoreCase("ostype"))
+            else if(entry.getKey().equalsIgnoreCase("osType"))
                 osType = entry.getValue();
-            else if(entry.getKey().equalsIgnoreCase("instancetype"))
+            else if(entry.getKey().equalsIgnoreCase("instanceType"))
                 instanceType = entry.getValue();
-            else if(entry.getKey().equalsIgnoreCase("quantity"))
+            else if(entry.getKey().equalsIgnoreCase("vmQuantity"))
                 quantity = Integer.valueOf(entry.getValue());
-            else if(entry.getKey().equalsIgnoreCase("name"))
+            else if(entry.getKey().equalsIgnoreCase("vmName"))
                 name = entry.getValue();
             else if(entry.getKey().equalsIgnoreCase("subnets"))
                 subnets = entry.getValue().split("\r\n");

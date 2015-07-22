@@ -11,7 +11,6 @@ define([
 ], function (d3, utils, PortDisplayPopup, SwitchPopup) {
 
     var map_ = utils.map_;
-
     var settings = {
         NODE_SIZE: 30,
         SERVICE_SIZE: 10,
@@ -30,16 +29,17 @@ define([
         DIALOG_MIN_HEIGHT: 10,
         DIALOG_BEVEL: 5,
         DIALOG_COLOR: "rgb(255,0,0)",
-        DIALOG_OPACITY: "0.5",
+        DIALOG_OPACITY: "0.7",
         DIALOG_PORT_EMPTY_COLOR: "rgb(128,128,0)",
-        DIALOG_PORT_COLORS: ["rgb(0,0,0)", "rgb(128,128,128)"],
+        DIALOG_PORT_COLORS: ["rgb(64,64,64)", "rgb(128,128,128)"],
         DIALOG_PORT_HEIGHT: 6,
         DIALOG_PORT_WIDTH: 8,
+        DIALOG_PORT_LEAD: 8,
         DIALOG_PORT_BUFFER_VERT: 2,
-        DIALOG_PORT_BUFFER_HORZ: 3
+        DIALOG_PORT_BUFFER_HORZ: 3,
+        DIALOG_OFFSET_X: 0,
+        DIALOG_OFFSET_Y: -20
     };
-
-
     var switchSettings = {
         NODE_SIZE: 30,
         SERVICE_SIZE: 10,
@@ -59,7 +59,7 @@ define([
         SWITCH_MIN_WIDTH: 20,
         SWITCH_MIN_HEIGHT: 8,
         DIALOG_BEVEL: 10,
-        DIALOG_COLOR: "rgba(255,0,0,.5)",
+        DIALOG_COLOR: "rgb(255,0,0)",
         DIALOG_TAB_COLOR: "rgb(31,178,223)",
         DIALOG_BUFFER: 2,
         DIALOG_PORT_COLOR: "rgb(0,0,0)",
@@ -68,11 +68,8 @@ define([
         DIALOG_PORT_WIDTH: 8
 
     };
-
-
     var redraw_;
     var API = {};
-
     /**@param {outputApi} outputApi
      * @param {Model} model
      **/
@@ -95,11 +92,11 @@ define([
         settings.DIALOG_BEVEL /= outputApi.getZoom();
         settings.DIALOG_PORT_HEIGHT /= outputApi.getZoom();
         settings.DIALOG_PORT_WIDTH /= outputApi.getZoom();
- 
+        settings.DIALOG_PORT_LEAD /= outputApi.getZoom();
         settings.DIALOG_PORT_BUFFER_VERT /= outputApi.getZoom();
         settings.DIALOG_PORT_BUFFER_HORZ /= outputApi.getZoom();
-
-
+        settings.DIALOG_OFFSET_X /= outputApi.getZoom();
+        settings.DIALOG_OFFSET_Y /= outputApi.getZoom();
         //switch setting
         switchSettings.NODE_SIZE /= outputApi.getZoom();
         switchSettings.SERVICE_SIZE /= outputApi.getZoom();
@@ -118,31 +115,40 @@ define([
         switchSettings.DIALOG_PORT_HEIGHT /= outputApi.getZoom();
         switchSettings.DIALOG_PORT_WIDTH /= outputApi.getZoom();
         switchSettings.DIALOG_BUFFER /= outputApi.getZoom();
-
-
         var svgContainer = outputApi.getSvgContainer();
-        var portDisplayPopup = buildPortDisplayPopup();
+        svgContainer.on("click", function () {
+            //Clear the selected element.
+            //We check the event path so this only happens if we did not actually click on something
+            var clickedElem = d3.event.path[0];
+            if (clickedElem.id === "viz") {
+                selectElement(null);
+            }
+        });
         var switchPopup = buildSwitchPopup();
         redraw();
-
         var nodeList, edgeList;
         function redraw() {
-            svgContainer.select("#topology").selectAll("*").remove();//Clear the previous drawing
-            svgContainer.select("#edge").selectAll("*").remove();//Clear the previous drawing
-            svgContainer.select("#node").selectAll("*").remove();//Clear the previous drawing
-            svgContainer.select("#anchor").selectAll("*").remove();//Clear the previous drawing
+            svgContainer.select("#topology").selectAll("*").remove(); //Clear the previous drawing
+            svgContainer.select("#edge1").selectAll("*").remove(); //Clear the previous drawing
+            svgContainer.select("#edge2").selectAll("*").remove(); //Clear the previous drawing
+            svgContainer.select("#node").selectAll("*").remove(); //Clear the previous drawing
+            svgContainer.select("#anchor").selectAll("*").remove(); //Clear the previous drawing
+            svgContainer.select("#parentPort").selectAll("*").remove();
             nodeList = model.listNodes();
             edgeList = model.listEdges();
-
             //Recall that topologies are also considered nodes
             //We render them seperatly to enfore a z-ordering
             map_(nodeList, drawTopology);
-            map_(edgeList, drawEdge);
             map_(nodeList, drawNode);
+            drawPopups();
+            map_(edgeList, drawEdge);
         }
         /**@param {Node} n**/
         function drawNode(n) {
             if (n.isLeaf()) {
+                if (!n.portPopup) {
+                    n.portPopup = buildPortDisplayPopup(n);
+                }
                 n.svgNode = svgContainer.select("#node").append("image")
                         .attr("xlink:href", n.getIconPath())
                         .on("click", onNodeClick.bind(undefined, n))
@@ -158,6 +164,9 @@ define([
         /**@param {Node} n**/
         function drawTopology(n) {
             if (!n.isLeaf()) {
+                if (!n.portPopup) {
+                    n.portPopup = buildPortDisplayPopup(n);
+                }
                 //render the convex hull surounding the decendents of n
                 var path = getTopolgyPath(n);
                 var color = settings.HULL_COLORS[n.getDepth() % settings.HULL_COLORS.length];
@@ -185,7 +194,6 @@ define([
                 setElementSize(n, false);
                 drawServices(n);
                 updateSvgChoordsNode(n);
-
 //                //Debug, show the coordinate of the topology node itself
 //                svgContainer.select("#topology").append("circle")
 //                        .attr("cx", n.x)
@@ -218,12 +226,25 @@ define([
             updateSvgChoordsService(n);
         }
 
+        function drawPopups() {
+            svgContainer.select("#dialogBox").selectAll("*").remove();
+            svgContainer.select("#port").selectAll("*").remove();
+            svgContainer.select("#parentPort").selectAll("*").remove();
+            map_(nodeList, function (n) {
+                n.portPopup.render();
+            });
+            switchPopup.render();
+        }
+
         /**@param {Node} n**/
         function computeServiceCoords(n) {
-            var ans = {x: null, y: null, transform: ""}
+            var ans = {x: null, y: null, dx: null, dy: null, rotation: null};
             if (n.isLeaf()) {
-                ans.x = n.x - settings.NODE_SIZE / 2;
-                ans.y = n.y + settings.NODE_SIZE / 2;
+                ans.x = n.x - settings.NODE_SIZE / 2 + settings.SERVICE_SIZE/2;
+                ans.y = n.y + settings.NODE_SIZE / 2 + settings.SERVICE_SIZE/2;
+                ans.dx=settings.SERVICE_SIZE;
+                ans.dy=0;
+                ans.rotation=0;
             } else {
                 var path = getTopolgyPath(n);
                 if (n.getLeaves().length > 1) {
@@ -251,7 +272,7 @@ define([
 
                     var p = {x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2};
                     //compute the desired distance between the services, and the line p1p2 
-                    var normalOffset = settings.TOPOLOGY_SIZE / 2 + settings.TOPOLOGY_BUFFER / 2 * (n.getHeight()) + settings.SERVICE_SIZE;
+                    var normalOffset = settings.TOPOLOGY_SIZE / 2 + settings.TOPOLOGY_BUFFER / 2 * (n.getHeight()) + settings.SERVICE_SIZE/2;
                     //convert the above offset into the xy plane, and apply it to p
                     var theta = Math.atan2(p1.y - p2.y, p1.x - p2.x);
                     if (theta < -Math.PI / 2) {
@@ -262,13 +283,18 @@ define([
                     }
                     p.x += normalOffset * Math.sin(theta);
                     p.y -= normalOffset * Math.cos(theta);
-
-                    ans.x = p.x - settings.SERVICE_SIZE * n.services.length / 2;
-                    ans.y = p.y;
-                    ans.transform = "rotate(" + theta * 180 / Math.PI + " " + p.x + " " + (ans.y + settings.SERVICE_SIZE / 2) + ")";
+                    //p is now the center point of where we want to draw the services
+                    ans.dx = settings.SERVICE_SIZE * Math.cos(theta);
+                    ans.dy = settings.SERVICE_SIZE * Math.sin(theta);
+                    ans.x = p.x - ans.dx * n.services.length / 2;
+                    ans.y = p.y - ans.dy * n.services.length / 2;
+                    ans.rotation = theta * 180 / Math.PI;
                 } else {
-                    ans.x = path[0].x - settings.SERVICE_SIZE * n.services.length / 2;
-                    ans.y = path[0].y - settings.TOPOLOGY_SIZE / 2 - settings.TOPOLOGY_BUFFER / 2 * (n.getHeight()) - settings.SERVICE_SIZE;
+                    ans.x = path[0].x - settings.SERVICE_SIZE * n.services.length / 2 + settings.SERVICE_SIZE/2;
+                    ans.y = path[0].y - settings.TOPOLOGY_SIZE / 2 - settings.TOPOLOGY_BUFFER / 2 * (n.getHeight()) - settings.SERVICE_SIZE/2;
+                    ans.dx=settings.SERVICE_SIZE;
+                    ans.dy=0;
+                    ans.rotation=0;
                 }
             }
             return ans;
@@ -322,8 +348,10 @@ define([
         /**@param {Node} n**/
         function updateSvgChoordsNode(n) {
             var svg = n.svgNode;
+            var svgSubnet = n.svgNodeSubnetHighlight;
             if (!svg) {
                 console.log("No svg element in node");
+                return;
             }
             if (n.isLeaf()) {
                 svg.attr("x", n.x - n.size / 2);
@@ -332,7 +360,15 @@ define([
                 var path = getTopolgyPath(n);
                 svg.attr("d", topologyPathToString(path));
             }
-
+            if (svgSubnet) {
+                if (n.isLeaf()) {
+                    svgSubnet.attr("x", n.x - n.size / 2);
+                    svgSubnet.attr("y", n.y - n.size / 2);
+                } else {
+                    var path = getTopolgyPath(n);
+                    svgSubnet.attr("d", topologyPathToString(path));
+                }
+            }
             var svgAchor = n.svgNodeAnchor;
             if (svgAchor) {
                 var choords = n.getCenterOfMass();
@@ -340,48 +376,76 @@ define([
                 svgAchor.attr("y", choords.y - settings.TOPOLOGY_ANCHOR_SIZE / 2);
             }
             updateSvgChoordsService(n);
+            n.portPopup.updateSvgChoords();
         }
 
         function updateSvgChoordsService(n) {
-            var svgServiceContainer = n.svgNodeServices;
             var coords = computeServiceCoords(n);
             map_(n.services, function (service) {
                 service.y = coords.y;
                 service.x = coords.x;
+                var midY=coords.y + service.dy;
+                var midX=coords.x + service.dx;
                 service.svgNode
-                        .attr("y", coords.y + service.dy)
-                        .attr("x", coords.x + service.dx)
-                        .attr("transform", coords.transform);
-                coords.x += settings.SERVICE_SIZE;
+                        .attr("y", coords.y + service.dy - settings.SERVICE_SIZE/2)
+                        .attr("x", coords.x + service.dx - settings.SERVICE_SIZE/2)
+                        .attr("transform", "rotate("+coords.rotation+" "+midX+" "+midY+")");
+                coords.x += coords.dx;
+                coords.y+=coords.dy;
             });
         }
 
         /**@param {Edge} e**/
         function updateSvgChoordsEdge(e) {
-            e._isProper();
-            var src = e.source.getCenterOfMass();
-            var tgt = e.target.getCenterOfMass();
+            //getCenterOfMass will walk up the chain until it finds a visible element
+            var src = e.leftPort.getFirstVisibleParent();
+            var tgt = e.rightPort.getFirstVisibleParent();
+            var srcChoords = src.getCenterOfMass();
+            var tgtChoords = tgt.getCenterOfMass();
+            var srcLead = e.svgLeadLeft;
+            var tgtLead = e.svgLeadRight;
 
-//            var isLeft=src.x<tgt.x;
-//            if(isLeft){
-//                if(e.source.edgeAnchorLeft){
-//                    src=e.source.edgeAnchorLeft;
-//                }
-//                if(e.target.edgeAnchorRight){
-//                    tgt=e.target.edgeAnchorRight;
-//                }
-//            }else{
-//                if(e.source.edgeAnchorRight){
-//                    src=e.source.edgeAnchorRight;
-//                }
-//                if(e.target.edgeAnchorLeft){
-//                    tgt=e.target.edgeAnchorLeft;
-//                }
-//            }
-            e.svgNode.attr("x1", src.x)
-                    .attr("y1", src.y)
-                    .attr("x2", tgt.x)
-                    .attr("y2", tgt.y);
+            //Without loss of generality, let src be on the left
+            if (srcChoords.x > tgtChoords.x) {
+                var tmp = src;
+                src = tgt;
+                tgt = tmp;
+
+                tmp = srcChoords;
+                srcChoords = tgtChoords;
+                tgtChoords = tmp;
+
+                tmp = srcLead;
+                srcLead = tgtLead;
+                tgtLead = tmp;
+            }
+
+            //if we are drawing to a port, we want a a horizontal line coming out of the port, before switching to the actual edge
+            if (src.getType() === "Port") {
+                srcChoords.x += settings.DIALOG_PORT_LEAD;
+                srcLead.style("visibility", "visible")
+                        .attr("x1", srcChoords.x)
+                        .attr("y1", srcChoords.y)
+                        .attr("x2", srcChoords.x - settings.DIALOG_PORT_LEAD)
+                        .attr("y2", srcChoords.y);
+            } else {
+                srcLead.style("visibility", "hidden");
+            }
+            if (tgt.getType() === "Port") {
+                tgtChoords.x -= settings.DIALOG_PORT_LEAD;
+                tgtLead.style("visibility", "visible")
+                        .attr("x1", tgtChoords.x)
+                        .attr("y1", tgtChoords.y)
+                        .attr("x2", tgtChoords.x + settings.DIALOG_PORT_LEAD)
+                        .attr("y2", tgtChoords.y);
+            } else {
+                tgtLead.style("visibility", "hidden");
+            }
+
+            e.svgNode.attr("x1", srcChoords.x)
+                    .attr("y1", srcChoords.y)
+                    .attr("x2", tgtChoords.x)
+                    .attr("y2", tgtChoords.y);
         }
 
         var lastMouse;
@@ -412,11 +476,7 @@ define([
                         //However, we also want it to continue tracking us.
                         outputApi.setHoverLocation(e.clientX, e.clientY);
                         drawHighlight();
-
-                        if (selectedNode) {
-                            portDisplayPopup.render();
-                            switchPopup.render();
-                        }
+                        switchPopup.render();
                         //fix all edges
                         map_(edgeList, updateSvgChoordsEdge);
                     })
@@ -434,9 +494,19 @@ define([
 
         /**@param {Edge} e**/
         function drawEdge(e) {
-            e.svgNode = svgContainer.select("#edge").append("line")
+            e.svgNode = svgContainer.select("#edge1").append("line")
                     .style("stroke", settings.EDGE_COLOR)
                     .style("stroke-width", settings.EDGE_WIDTH);
+            e.svgLeadLeft = svgContainer.select("#edge2").append("line")
+                    .style("stroke", settings.EDGE_COLOR)
+                    .style("stroke-width", settings.EDGE_WIDTH)
+                    .style("visibility", "hidden")
+                    .attr("stroke-linecap", "round");
+            e.svgLeadRight = svgContainer.select("#edge2").append("line")
+                    .style("stroke", settings.EDGE_COLOR)
+                    .style("stroke-width", settings.EDGE_WIDTH)
+                    .style("visibility", "hidden")
+                    .attr("stroke-linecap", "round");
             updateSvgChoordsEdge(e);
         }
 
@@ -446,7 +516,10 @@ define([
          * Note that n could also be a topology
          * @param {Node} n**/
         function onNodeClick(n) {
-            d3.event.stopPropagation();//prevent the click from being handled by the background, which would hide the panel
+            if (d3.event) {
+                //In the case of artificial clicks, d3.event may be null
+                d3.event.stopPropagation(); //prevent the click from being handled by the background, which would hide the panel
+            }
             if (didDrag) {
                 return;
             }
@@ -456,23 +529,12 @@ define([
             /**@type {DropDownTree} displayTree**/
             var displayTree = outputApi.getDisplayTree();
             displayTree.clear();
-
             n.populateTreeMenu(displayTree);
             displayTree.draw();
-
-            var choords = n.getCenterOfMass();
-            portDisplayPopup
-                    .setOffset(0, -settings.DIALOG_NECK_HEIGHT)
-                    .setHostNode(n);
-            if (n.ports) {
-                portDisplayPopup.setPorts(n.ports);
-            } else {
-                portDisplayPopup.setPorts([]);
-            }
-            portDisplayPopup.render();
+            n.portPopup.toggleVisible();
+            drawPopups();
             map_(edgeList, updateSvgChoordsEdge);
             selectElement(n);
-
             selectedNode = n;
         }
 
@@ -485,27 +547,35 @@ define([
             highlightedNode = n;
             drawHighlight();
             outputApi.setDisplayName(n.getName());
-
             var displayTree = outputApi.getDisplayTree();
             displayTree.clear();
-
             n.populateTreeMenu(displayTree);
             displayTree.draw();
-
-            
-          var switchChoords = n.getCenterOfMass();   
-           switchPopup.setOffset(0,0)
-                    .setHostNode(n)
-                    .render();
-        
+            if (n.getTypeBrief() === "SwitchingService") {
+                switchPopup.clear()
+                        .setOffset(0, 0)
+                        .setHostNode(n)
+                        .render();
+            }
         }
 
+        var previousHighlight = null;
         function drawHighlight() {
-            svgContainer.select("#selectedOverlay").selectAll("*").remove();
+            if (previousHighlight) {
+                previousHighlight.remove();
+                previousHighlight = null;
+            }
             if (highlightedNode && highlightedNode.svgNode) {
                 var toAppend = highlightedNode.svgNode.node().cloneNode();
-                d3.select(toAppend).style("opacity", "1").attr("pointer-events", "none");
-                svgContainer.select("#selectedOverlay").node().appendChild(toAppend);
+                previousHighlight = d3.select(toAppend)
+                        .style("filter", "url(#outline)")
+                        .style("opacity", "1")
+                        .attr("pointer-events", "none");
+                var parentNode = highlightedNode.svgNode.node().parentNode;
+                if (parentNode) {
+                    //If we are coming out of a fold, the parentNode might no longer exist
+                    parentNode.appendChild(toAppend);
+                }
             } else if (highlightedNode) {
                 //This shouldn't happen
                 console.log("Trying to highlight an element without an svgNode");
@@ -513,30 +583,29 @@ define([
         }
 
         function selectElement(elem) {
+            if (!elem) {
+                //deselect element
+                outputApi.setDisplayName("");
+                outputApi.getDisplayTree().clear();
+            } else {
+                outputApi.setDisplayName(elem.getName());
+                /**@type {DropDownTree} displayTree**/
+                var displayTree = outputApi.getDisplayTree();
+                displayTree.clear();
+                elem.populateTreeMenu(displayTree);
+                displayTree.draw();
+            }
             highlightedNode = elem;
             drawHighlight();
-            outputApi.setDisplayName(elem.getName());
-            /**@type {DropDownTree} displayTree**/
-            var displayTree = outputApi.getDisplayTree();
-            displayTree.clear();
-
-            elem.populateTreeMenu(displayTree);
-            displayTree.draw();
             selectedNode = elem;
-
         }
         ;
-
         /**
          * Note that n could also be a topology
          * @param {Node} n**/
         function onNodeDblClick(n) {
             //We will never send a mouseleave event as the node is being removed
             outputApi.setHoverVisible(false);
-            ;
-            //The coordinates provided seem not to line up with where the mouse is,
-            //So we use the center of mass to stay consistent
-            var e = d3.event;
             var chords = n.getCenterOfMass();
             n.toggleFold();
             if (n.isFolded) {
@@ -582,13 +651,13 @@ define([
                     var choords = n.getCenterOfMass();
                     x = choords.x - settings.TOPOLOGY_ANCHOR_SIZE / 2;
                     y = choords.y - settings.TOPOLOGY_ANCHOR_SIZE / 2;
-                    enlarge = false;//Enlarging the topology does not look good
+                    enlarge = false; //Enlarging the topology does not look good
                     break;
                 case "Service":
                     var size = settings.SERVICE_SIZE;
                     svg = n.svgNode;
-                    x = n.x;
-                    y = n.y;
+                    x = n.x - settings.SERVICE_SIZE/2;
+                    y = n.y - settings.SERVICE_SIZE/2;
                     break;
                 default:
                     console.log("Unknown Type: " + n.getType());
@@ -607,6 +676,14 @@ define([
                     .attr("height", size)
                     .attr("x", x + n.dx)//make it appear to zoom into center of the icon
                     .attr("y", y + n.dy);
+
+            if (n.svgNodeSubnetHighlight) {
+                n.svgNodeSubnetHighlight
+                        .attr("width", size)
+                        .attr("height", size)
+                        .attr("x", x + n.dx)
+                        .attr("y", y + n.dy);
+            }
             drawHighlight();
         }
 
@@ -620,8 +697,10 @@ define([
             updateSvgChoordsNode(n);
         }
 
-        function buildPortDisplayPopup() {
+        function buildPortDisplayPopup(n) {
             return new PortDisplayPopup(outputApi, API)
+                    .setHostNode(n)
+                    .setOffset(settings.DIALOG_OFFSET_X, settings.DIALOG_OFFSET_Y)
                     .setContainer(svgContainer)
                     .setDimensions(settings.DIALOG_MIN_WIDTH, settings.DIALOG_MIN_HEIGHT)
                     .setBevel(settings.DIALOG_BEVEL)
@@ -637,19 +716,19 @@ define([
         function buildSwitchPopup() {
             return new SwitchPopup(outputApi)
 
-                    .setContainer(svgContainer)                   
-                    .setDimensions(switchSettings.DIALOG_MIN_WIDTH,switchSettings.DIALOG_MIN_HEIGHT)
-                    .setTabDimensions(switchSettings.SWITCH_MIN_WIDTH, switchSettings.SWITCH_MIN_HEIGHT)   .setBevel(switchSettings.DIALOG_BEVEL)
+                    .setContainer(svgContainer)
+                    .setDimensions(switchSettings.DIALOG_MIN_WIDTH, switchSettings.DIALOG_MIN_HEIGHT)
+                    .setTabDimensions(switchSettings.SWITCH_MIN_WIDTH, switchSettings.SWITCH_MIN_HEIGHT).setBevel(switchSettings.DIALOG_BEVEL)
                     .setColor(switchSettings.DIALOG_COLOR)
                     .setTabColor(switchSettings.DIALOG_TAB_COLOR)
                     .setPortColor(switchSettings.DIALOG_PORT_COLOR)
                     .setPortEmptyColor(switchSettings.DIALOG_PORT_EMPTY_COLOR)
-                    .setPortDimensions(switchSettings.DIALOG_PORT_WIDTH,switchSettings.DIALOG_PORT_HEIGHT)
+                    .setPortDimensions(switchSettings.DIALOG_PORT_WIDTH, switchSettings.DIALOG_PORT_HEIGHT)
                     .setBuffer(switchSettings.DIALOG_BUFFER);
-
         }
 
         API["redraw"] = redraw;
+        API["redrawPopups"] = drawPopups;
         API["doRender"] = doRender;
         API["drawHighlight"] = drawHighlight;
         API["selectElement"] = selectElement;
