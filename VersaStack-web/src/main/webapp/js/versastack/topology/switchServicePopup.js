@@ -180,8 +180,6 @@ define(["local/d3", "local/versastack/utils"],
 
                     var serviceChoords = this.hostNode.getCenterOfMass();
                     this.svgNeck = boxContainer.append("line")
-                            .attr("x1", anchor.x + this.dx)
-                            .attr("y1", anchor.y + this.dy + this.height / 2)
                             .attr("x2", serviceChoords.x)
                             .attr("y2", serviceChoords.y)
                             .style("stroke", this.color);
@@ -286,11 +284,18 @@ define(["local/d3", "local/versastack/utils"],
                         y += that.textSize + that.innerBuffer * 2 + that.buffer;
                         height += that.textSize + that.innerBuffer * 2 + that.buffer;
                     });
+                    var bubbleX=anchor.x - tabWidth / 2 + this.dx;
+                    var bubbleY=anchor.y + this.dy;
+                    var bubbleWidth=width + that.buffer * 2 + that.bevel / Math.sqrt(2);
+                    var bubbleHeight=height + that.bevel + that.buffer;
                     this.svgBubble
-                            .attr("x", anchor.x - tabWidth / 2 + this.dx)
-                            .attr("y", anchor.y + this.dy)
-                            .attr("height", height + that.bevel + that.buffer)
-                            .attr("width", width + that.buffer * 2 + that.bevel / Math.sqrt(2));
+                            .attr("x", bubbleX)
+                            .attr("y", bubbleY)
+                            .attr("height", bubbleHeight)
+                            .attr("width", bubbleWidth);
+                    this.svgNeck
+                            .attr("x1", bubbleX+bubbleWidth/2)
+                            .attr("y1", bubbleY+bubbleHeight/2)
 
                     if (clickSubnet) {
                         clickSubnet.svgNode.on("click")();
