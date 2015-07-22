@@ -561,6 +561,7 @@ define([
             n.populateTreeMenu(displayTree);
             displayTree.draw();
             if (n.getTypeBrief() === "SwitchingService") {
+                
                 switchPopup.clear()
                         .setOffset(settings.DIALOG_OFFSET_X, -settings.DIALOG_OFFSET_Y)
                         .setHostNode(n)

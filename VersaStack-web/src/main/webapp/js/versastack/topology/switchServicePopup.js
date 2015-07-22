@@ -210,6 +210,12 @@ define(["local/d3", "local/versastack/utils"],
                             }
                             clickSubnet = subnet;
                             clickSubnet.svgNode.style("fill", that.tabColorSelected);
+
+                            outputApi.setDisplayName(clickSubnet.getName());
+                            var displayTree = outputApi.getDisplayTree();
+                            displayTree.clear();
+                            subnet.populateTreeMenu(displayTree);
+
                             eraseHighlights();
                             map_(subnet.ports, function (port) {
                                 var toHighlight = port.getFirstVisibleParent();
@@ -284,18 +290,18 @@ define(["local/d3", "local/versastack/utils"],
                         y += that.textSize + that.innerBuffer * 2 + that.buffer;
                         height += that.textSize + that.innerBuffer * 2 + that.buffer;
                     });
-                    var bubbleX=anchor.x - tabWidth / 2 + this.dx;
-                    var bubbleY=anchor.y + this.dy;
-                    var bubbleWidth=width + that.buffer * 2 + that.bevel / Math.sqrt(2);
-                    var bubbleHeight=height + that.bevel + that.buffer;
+                    var bubbleX = anchor.x - tabWidth / 2 + this.dx;
+                    var bubbleY = anchor.y + this.dy;
+                    var bubbleWidth = width + that.buffer * 2 + that.bevel / Math.sqrt(2);
+                    var bubbleHeight = height + that.bevel + that.buffer;
                     this.svgBubble
                             .attr("x", bubbleX)
                             .attr("y", bubbleY)
                             .attr("height", bubbleHeight)
                             .attr("width", bubbleWidth);
                     this.svgNeck
-                            .attr("x1", bubbleX+bubbleWidth/2)
-                            .attr("y1", bubbleY+bubbleHeight/2)
+                            .attr("x1", bubbleX + bubbleWidth / 2)
+                            .attr("y1", bubbleY + bubbleHeight / 2)
 
                     if (clickSubnet) {
                         clickSubnet.svgNode.on("click")();
