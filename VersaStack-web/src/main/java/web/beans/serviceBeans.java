@@ -127,27 +127,19 @@ public class serviceBeans {
     }
 
     /**
-     * 
-     * @param parameters An array of the required parameters:<br />
-     * [0] - Version Group UUID<br />
-     * [1] - topology URI<br />
-     * [2] - VPC Id<br />
-     * [3] - OS Type<br />
-     * [4] - Instance Type(AWS)/Flavor(OPS)<br />
-     * [5] - Number of the VM want to created<br />
-     * [6] - all subnet tags need to be attached to the VM. Separated by "\r\n".<br />
-     * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;eg:
-     * urn:ogf:network:aws.amazon.com:aws-cloud:subnet-2cd6ad16\r\n
-     * urn:ogf:network:aws.amazon.com:aws-cloud:subnet-2cd6ad16<br />
-     * [7] - all volumes need to be created in the VM<br />
-     * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;eg:
-     * 8,standard,/dev/xvda,snapshot\r\n8,standard,/dev/sdb,snapshot
+     * Create a virtual machine. Compose the ttl model according to the parsing
+     * parameters. Put the ttl model and the VersionGroup UUID in the parsing 
+     * parameter into the modelAddition part and referenceVersion respectively 
+     * in the delta. Request an UUID for system instance and use the UUID to 
+     * propagate and commit the delta via the system API.
+     * @param paraMap a key-value pair contains all the required information, 
+     * either selected by the user or assigned by the system, to build the request
+     * virtual machine.
      * @return
      * 0 - success.<br />
      * 1 - Requesting System Instance UUID error.<br />
      * 2 - unplug error.<br />
      * 3 - connection error.<br />
-     * 4 - model building error<br />
      */
     public int vmInstall(Map<String, String> paraMap){
         String vgUuid = null;
