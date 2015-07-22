@@ -218,7 +218,7 @@ define(["local/d3", "local/versastack/utils"],
                     this.svgLine = boxContainer.append("line")
                             .style("stroke", this.color)
                             .style("stroke-width", this.neckWidth)
-                            .attr("stroke-linecap", "round")
+                            .attr("stroke-linecap", "round");
                     this.updateSvgChoords();
                     return this;
                 };

@@ -182,7 +182,8 @@ define(["local/d3", "local/versastack/utils"],
                     this.svgNeck = boxContainer.append("line")
                             .attr("x2", serviceChoords.x)
                             .attr("y2", serviceChoords.y)
-                            .style("stroke", this.color);
+                            .style("stroke", this.color)
+                            .attr("stroke-linecap", "round");
 
                     var tabWidth = 0;
                     var innerHeight = 0;
