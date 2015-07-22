@@ -48,7 +48,7 @@ public class OnosDriver implements IHandleDriverSystemCall {
     Logger logger = Logger.getLogger(OnosDriver.class.getName());
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
-    @Override
+    //@Override
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
 
         aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId());
@@ -82,7 +82,7 @@ public class OnosDriver implements IHandleDriverSystemCall {
 
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
     @Asynchronous
-    @Override
+    //@Override
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
 
         DriverInstance driverInstance = aDelta.getDriverInstance();
@@ -102,7 +102,7 @@ public class OnosDriver implements IHandleDriverSystemCall {
         String requests = driverInstance.getProperty(requestId);
 
         OnosPush push = new OnosPush(topologyURI,driverEjbPath,subsystemBaseUrl);
-        push.pushCommit(requests);
+        //push.pushCommit(requests);
 
         driverInstance.getProperties().remove(requestId);
         DriverInstancePersistenceManager.merge(driverInstance);
@@ -131,7 +131,7 @@ public class OnosDriver implements IHandleDriverSystemCall {
         //Regions region = Regions.fromName(r);
 
             //OntModel ontModel = OnosModelBuilder.createOntology(access_key_id, secret_access_key, region, topologyURI);
-            OntModel ontModel = OnosModelBuilder.createOntology(topologyURI);
+            OntModel ontModel = OnosModelBuilder.createOntology(topologyURI,subsystemBaseUrl);
             if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();
                 dm.setCommitted(true);

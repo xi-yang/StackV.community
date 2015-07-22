@@ -92,7 +92,7 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
 
     @Override
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
-    public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
+    /*public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
         //driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
         aDelta = (DriverSystemDelta)DeltaPersistenceManager.findById(aDelta.getId()); // refresh
         String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
@@ -175,7 +175,7 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
         return new AsyncResult<>("SUCCESS");
     }
     
-    @Override
+    @Override*/
     @Asynchronous
     @SuppressWarnings("empty-statement")
     public Future<String> pullModel(Long driverInstanceId) {
@@ -189,9 +189,13 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
         //    String r = driverInstance.getProperty("region");
             //Searches for topologyURI in Driver Instance
             String topologyURI = driverInstance.getProperty("topologyUri");
+            //Searches for subsystemBaseUrl in Driver Instance
+            String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
         //    Regions region = Regions.fromName(r);
             //Creates an Ontology Model for ONOS Server
-            OntModel ontModel = OnosModelBuilder.createOntology(topologyURI);
+            OntModel ontModel = OnosModelBuilder.createOntology(topologyURI,subsystemBaseUrl);
+            
+            
             
         if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();
@@ -309,50 +313,4 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
 
         return new AsyncResult<>("SUCCESS");
     }
-    
-    private String executeHttpMethod(URL url, HttpURLConnection conn, String method, String body) throws IOException {
-        conn.setRequestMethod(method);
-        conn.setRequestProperty("Content-type", "application/json");
-        conn.setRequestProperty("Accept", "application/json");
-        if (body != null && !body.isEmpty()) {
-            conn.setDoOutput(true);
-            try (DataOutputStream wr = new DataOutputStream(conn.getOutputStream())) {
-                wr.writeBytes(body);
-                wr.flush();
-            }
-        }
-        logger.log(Level.INFO, "Sending {0} request to URL : {1}", new Object[]{method, url});
-        int responseCode = conn.getResponseCode();
-        logger.log(Level.INFO, "Response Code : {0}", responseCode);
-
-        StringBuilder responseStr;
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-            String inputLine;
-            responseStr = new StringBuilder();
-            while ((inputLine = in.readLine()) != null) {
-                responseStr.append(inputLine);
-            }
-        }
-        return responseStr.toString();
-    }
-
-    private String readFile(String fileName) 
-        throws IOException {
-        
-        BufferedReader br = new BufferedReader(new FileReader(fileName));
-    try {
-        StringBuilder sb = new StringBuilder();
-        String line = br.readLine();
-
-        while (line != null) {
-            sb.append(line);
-            sb.append("\n");
-            line = br.readLine();
-        }
-        return sb.toString();
-    } finally {
-        br.close();
-    }
-    }
-
 }

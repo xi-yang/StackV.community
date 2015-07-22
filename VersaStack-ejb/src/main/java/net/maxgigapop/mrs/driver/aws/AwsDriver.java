@@ -47,7 +47,7 @@ public class AwsDriver implements IHandleDriverSystemCall {
 
     Logger logger = Logger.getLogger(AwsDriver.class.getName());
 
-    @TransactionAttribute(TransactionAttributeType.REQUIRED)
+    /*@TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
 
@@ -103,7 +103,7 @@ public class AwsDriver implements IHandleDriverSystemCall {
 
         Logger.getLogger(AwsDriver.class.getName()).log(Level.INFO, "AWS driver delta models succesfully commited");
         return new AsyncResult<String>("SUCCESS");
-    }
+    }*/
 
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
     @Asynchronous

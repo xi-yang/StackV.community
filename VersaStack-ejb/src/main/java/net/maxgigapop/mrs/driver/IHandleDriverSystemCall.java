@@ -26,13 +26,13 @@ import net.maxgigapop.mrs.bean.VersionItem;
 public interface IHandleDriverSystemCall {
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
-    public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta);
+    //public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta);
 
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
     @Asynchronous
-    public Future<String> commitDelta(DriverSystemDelta aDelta);
+    //public Future<String> commitDelta(DriverSystemDelta aDelta);
 
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
-    @Asynchronous
+    //@Asynchronous
     public Future<String> pullModel(Long driverInstanceId);    
 }

@@ -22,7 +22,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import net.maxgigapop.mrs.common.*;
-
+import net.maxgigapop.mrs.driver.onosystem.OnosServer;
+import org.json.simple.parser.ParseException;
 //TODO add the public ip address that an instance might have that is not an
 //elastic ip
 
@@ -38,7 +39,7 @@ do not do a routeFrom statement for every route.*/
 public class OnosModelBuilder {
 
     //public static OntModel createOntology(String access_key_id, String secret_access_key, Regions region, String topologyURI) throws IOException {
-    public static OntModel createOntology(String topologyURI) throws IOException {
+    public static OntModel createOntology(String topologyURI, String subsystemBaseUrl) throws IOException, ParseException {
 
         //create model object
         OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
@@ -96,14 +97,20 @@ public class OnosModelBuilder {
         Resource objectStorageService = Mrs.ObjectStorageService;
         Resource routingTable = Mrs.RoutingTable;
         
-        //Just for testing - creates a switch resource
-        Resource resNode = RdfOwl.createResource(model,topologyURI+":switch1",node);
-        
+        OnosServer onos = new OnosServer();
+        String device[][] = onos.getOnosDevices(subsystemBaseUrl);
+        int qtyDevices=onos.qtyDevices;
+        System.out.println(qtyDevices);
+        for(int i=0;i<qtyDevices;i++){
+            Resource resNode = RdfOwl.createResource(model,topologyURI+":"+device[1][i]+device[0][i],node);
+            System.out.println(resNode.toString());
+            
+        }
         // Just for testing - creates port resource
-        Resource resPort = RdfOwl.createResource(model,resNode.getURI().toString()+":port1",biPort);
+        //Resource resPort = RdfOwl.createResource(model,resNode.getURI().toString()+":port1",biPort);
 
         //Just for testing - associates port resource to switch resource
-        model.add(model.createStatement(resNode, hasBidirectionalPort, resPort));
+        //model.add(model.createStatement(resNode, hasBidirectionalPort, resPort));
 
 /*
  

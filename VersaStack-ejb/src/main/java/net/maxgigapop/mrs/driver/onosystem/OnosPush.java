@@ -6,7 +6,7 @@
 package net.maxgigapop.mrs.driver.onosystem;
 
 import net.maxgigapop.mrs.driver.onosystem.OnosDCGet;
-import net.maxgigapop.mrs.driver.onosystem.OnosGet;
+import net.maxgigapop.mrs.driver.onosystem.OnosServer;
 import net.maxgigapop.mrs.driver.onosystem.OnosPush;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.regions.Regions;
@@ -50,7 +50,7 @@ public class OnosPush {
 
     private AmazonEC2Client ec2 = null;
     private AmazonDirectConnectClient dc = null;
-    private OnosGet ec2Client = null;
+    private OnosServer ec2Client = null;
     private OnosDCGet dcClient = null;
     private String topologyUri = null;
     private Regions region = null;
@@ -59,9 +59,9 @@ public class OnosPush {
 
     public OnosPush(String topologyURI,String driverEjbPath,String subsystemBaseUrl) {
         //have all the information regarding the topology
-        //ec2Client = new OnosGet(access_key_id, secret_access_key, region);
+        //ec2Client = new OnosServer(access_key_id, secret_access_key, region);
         //dcClient = new OnosDCGet(access_key_id, secret_access_key, region);
-        ec2 = ec2Client.getClient();
+//        ec2 = ec2Client.getClient();
         dc = dcClient.getClient();
         this.region = region;
 
@@ -82,88 +82,88 @@ public class OnosPush {
         OntModel modelReduct = ModelUtil.unmarshalOntModel(modelReductTtl);
 
         //deatch volumes that need to be detached
-        requests += detachVolumeRequests(modelRef, modelReduct);
+    //    requests += detachVolumeRequests(modelRef, modelReduct);
 
         //Delete a volume if a volume needs to be created
-        requests += deleteVolumesRequests(modelRef, modelReduct);
+    //    requests += deleteVolumesRequests(modelRef, modelReduct);
 
         //delete all the instances that need to be created
-        requests += deleteInstancesRequests(modelRef, modelReduct);
+    //    requests += deleteInstancesRequests(modelRef, modelReduct);
 
         //detach a network interface from an existing instance
-        requests += detachPortRequest(modelRef, modelReduct);
+    //    requests += detachPortRequest(modelRef, modelReduct);
 
         //disassociate an address from a network interface
         //requests += disassociateAddressRequest(modelRef, modelReduct);
 
         //Delete the network interfaces that need to be deleted
-        requests += deletePortsRequests(modelRef, modelReduct);
+    //    requests += deletePortsRequests(modelRef, modelReduct);
 
         //Delete routes that need to be deleted
-        requests += deleteRouteRequests(modelRef, modelReduct);
+    //    requests += deleteRouteRequests(modelRef, modelReduct);
 
         //delete a virtual interface from a gateway
-        requests += deleteVirtualInterfaceRequests(modelRef, modelReduct);
+     //   requests += deleteVirtualInterfaceRequests(modelRef, modelReduct);
 
         //detach vpn gateway to VPC
-        requests += detachVPNGatewayRequests(modelRef, modelReduct);
+     //   requests += detachVPNGatewayRequests(modelRef, modelReduct);
 
         //delete gateways that need to be deleated
-        requests += deleteGatewayRequests(modelRef, modelReduct);
+    //    requests += deleteGatewayRequests(modelRef, modelReduct);
 
         //disassociate route tabes from subnets
-        requests += disassociateTableRequests(modelRef, modelReduct);
+     //   requests += disassociateTableRequests(modelRef, modelReduct);
 
         //delete a route table 
-        requests += deleteRouteTableRequests(modelRef, modelReduct);
+    //    requests += deleteRouteTableRequests(modelRef, modelReduct);
 
         //delete subnets that need to deleted
-        requests += deleteSubnetsRequests(modelRef, modelReduct);
+     //   requests += deleteSubnetsRequests(modelRef, modelReduct);
 
         //delete the Vpcs that need to be deleted
-        requests += deleteVpcsRequests(modelRef, modelReduct);
+     //   requests += deleteVpcsRequests(modelRef, modelReduct);
 
         //create all the vpcs that need to be created
-        requests += createVpcsRequests(modelRef, modelAdd);
+     //   requests += createVpcsRequests(modelRef, modelAdd);
 
         //create all the subnets that need to be created
-        requests += createSubnetsRequests(modelRef, modelAdd);
+    //    requests += createSubnetsRequests(modelRef, modelAdd);
 
         //create all the routeTables that need to be created
-        requests += createRouteTableRequests(modelRef, modelAdd);
+    //    requests += createRouteTableRequests(modelRef, modelAdd);
 
         //create the associations of route tables
-        requests += associateTableRequest(modelRef, modelAdd);
+     //   requests += associateTableRequest(modelRef, modelAdd);
 
         //create gateways request 
-        requests += createGatewayRequests(modelRef, modelAdd);
+    //    requests += createGatewayRequests(modelRef, modelAdd);
 
         //attach vpn gateway to VPC
-        requests += attachVPNGatewayRequests(modelRef, modelAdd);
+    //    requests += attachVPNGatewayRequests(modelRef, modelAdd);
 
         //acccept/reject a virtual interface for direct connect
-        requests += acceptRejectVirtualInterfaceRequests(modelRef, modelAdd);
+     //   requests += acceptRejectVirtualInterfaceRequests(modelRef, modelAdd);
 
         //create the new routes requests
-        requests += createRouteRequests(modelRef, modelAdd);
+     //   requests += createRouteRequests(modelRef, modelAdd);
 
         //create a volume if a volume needs to be created
-        requests += createVolumesRequests(modelRef, modelAdd);
+    //    requests += createVolumesRequests(modelRef, modelAdd);
 
         //create network interface if it needs to be created
-        requests += createPortsRequests(modelRef, modelAdd);
+     //   requests += createPortsRequests(modelRef, modelAdd);
 
         //Associate an address with a  interface
         //requests += associateAddressRequest(modelRef, modelAdd);
 
         //attach ports to existing instances
-        requests += attachPortRequest(modelRef, modelAdd);
+     //   requests += attachPortRequest(modelRef, modelAdd);
 
         //create all the nodes that need to be created 
-        requests += createInstancesRequests(modelRef, modelAdd);
+     //   requests += createInstancesRequests(modelRef, modelAdd);
 
         //attach volumes that need to be atatched to existing instances
-        requests += attachVolumeRequests(modelRef, modelAdd);
+     //   requests += attachVolumeRequests(modelRef, modelAdd);
         return requests;
     }
 
@@ -172,7 +172,7 @@ public class OnosPush {
      * Function to do execute all the requests provided by the propagate method
      * **********************************************************************
      */
-    public void pushCommit(String r) {
+    /*public void pushCommit(String r) {
         String[] requests = r.split("[\\n]");
 
         for (String request : requests) {
@@ -592,7 +592,7 @@ public class OnosPush {
                 ec2Client.volumeAttachmentCheck(getVolumeId(parameters[2]));
             }
         }
-    }
+    }*/
 
     /**
      * ****************************************************************
@@ -626,7 +626,7 @@ public class OnosPush {
      * Detach a volume to an existing instance AWS
      * ****************************************************************
      */
-    private String detachVolumeRequests(OntModel model, OntModel modelReduct) {
+    /*private String detachVolumeRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
 
         //check fornew association between intsnce and volume
@@ -670,14 +670,14 @@ public class OnosPush {
             }
         }
         return requests;
-    }
+    }*/
 
     /**
      * ****************************************************************
      * Function to disassociate an address from a network interface
      * ****************************************************************
      */
-    private String disassociateAddressRequest(OntModel model, OntModel modelReduct) {
+    /*private String disassociateAddressRequest(OntModel model, OntModel modelReduct) {
         //to get the public ip address of the network interface if any
         String requests = "";
         String query = "SELECT  ?port ?address WHERE {?port  mrs:hasNetworkAddress ?address}";
@@ -704,14 +704,14 @@ public class OnosPush {
             }
         }
         return requests;
-    }
+    }*/
 
     /**
      * ****************************************************************
      * Function to delete a network interface
      * ****************************************************************
      */
-    private String deletePortsRequests(OntModel model, OntModel modelReduct) {
+    /*private String deletePortsRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
         String query;
 
@@ -798,7 +798,7 @@ public class OnosPush {
      * function to delete an instance from a model
      * ****************************************************************
      */
-    private String deleteInstancesRequests(OntModel model, OntModel modelReduct) {
+    /*private String deleteInstancesRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
         String query = "SELECT ?node WHERE {?node a nml:Node}";
         ResultSet r = executeQuery(query, emptyModel, modelReduct);
@@ -879,7 +879,7 @@ public class OnosPush {
      * Function to detach a network interface to an existing instance
      * ****************************************************************
      */
-    private String detachPortRequest(OntModel model, OntModel modelReduct) {
+    /*private String detachPortRequest(OntModel model, OntModel modelReduct) {
         String requests = "";
         String query = "";
 
@@ -941,7 +941,7 @@ public class OnosPush {
      * Function to delete volumes from a model
      * ****************************************************************
      */
-    private String deleteVolumesRequests(OntModel model, OntModel modelReduct) {
+    /*private String deleteVolumesRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
         String query;
 
@@ -1003,7 +1003,7 @@ public class OnosPush {
      * Function to create a volumes from a model
      * ****************************************************************
      */
-    private String deleteRouteRequests(OntModel model, OntModel modelRedutc) {
+    /*private String deleteRouteRequests(OntModel model, OntModel modelRedutc) {
         String requests = "";
         String tempRequest = "";
         String query = "";
@@ -1150,7 +1150,7 @@ public class OnosPush {
      * Function to disassociate Route table with a subnet
      * ****************************************************************
      */
-    private String disassociateTableRequests(OntModel model, OntModel modelReduct) {
+    /*private String disassociateTableRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
         String tempRequests = "";
         String query;
@@ -1247,7 +1247,7 @@ public class OnosPush {
      * Function to delete gateway (Internet and VPN)
      * ****************************************************************
      */
-    private String deleteGatewayRequests(OntModel model, OntModel modelReduct) {
+    /*private String deleteGatewayRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
         String query;
 
@@ -1323,7 +1323,7 @@ public class OnosPush {
      * Function to detach a VPN gateway to a VPC from a model
      * ****************************************************************
      */
-    private String detachVPNGatewayRequests(OntModel model, OntModel modelReduct) {
+    /*private String detachVPNGatewayRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
         String query = "";
 
@@ -1372,7 +1372,7 @@ public class OnosPush {
      * Function to delete the route table
      * ****************************************************************
      */
-    private String deleteRouteTableRequests(OntModel model, OntModel modelReduct) {
+    /*private String deleteRouteTableRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
         String query = "";
 
@@ -1456,7 +1456,7 @@ public class OnosPush {
      * Function to create a Vpc from a model
      * /*****************************************************************
      */
-    private String deleteVpcsRequests(OntModel model, OntModel modelReduct) {
+    /*private String deleteVpcsRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
         String query;
 
@@ -1558,7 +1558,7 @@ public class OnosPush {
      * Function to create a subnets from a model
      * ****************************************************************
      */
-    private String deleteSubnetsRequests(OntModel model, OntModel modelReduct) {
+    /*private String deleteSubnetsRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
         String query;
 
@@ -1616,7 +1616,7 @@ public class OnosPush {
      * Function to create a Vpc from a model
      * /*****************************************************************
      */
-    private String createVpcsRequests(OntModel model, OntModel modelAdd) {
+    /*private String createVpcsRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
         String query;
 
@@ -1716,7 +1716,7 @@ public class OnosPush {
      * Function to create a subnets from a model
      * ****************************************************************
      */
-    private String createSubnetsRequests(OntModel model, OntModel modelAdd) {
+    /*private String createSubnetsRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
         String query;
 
@@ -1775,7 +1775,7 @@ public class OnosPush {
      * Function to createRoutetable
      * ****************************************************************
      */
-    private String createRouteTableRequests(OntModel model, OntModel modelAdd) {
+    /*private String createRouteTableRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
         String query = "";
 
@@ -1862,7 +1862,7 @@ public class OnosPush {
      * Function to associate Route table with a subnet
      * ****************************************************************
      */
-    private String associateTableRequest(OntModel model, OntModel modelAdd) {
+    /*private String associateTableRequest(OntModel model, OntModel modelAdd) {
         String requests = "";
         String tempRequests = "";
         String query;
@@ -1933,7 +1933,7 @@ public class OnosPush {
      * Function to create an internet gateway and attach it to a vpc
      * ****************************************************************
      */
-    private String createGatewayRequests(OntModel model, OntModel modelAdd) {
+    /*private String createGatewayRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
         String query;
 
@@ -2010,7 +2010,7 @@ public class OnosPush {
      * Function to attach a VPN gateway to a VPC from a model
      * ****************************************************************
      */
-    private String attachVPNGatewayRequests(OntModel model, OntModel modelAdd) {
+    /*private String attachVPNGatewayRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
         String query = "";
 
@@ -2059,7 +2059,7 @@ public class OnosPush {
      * Function to create a routes from a model
      * ****************************************************************
      */
-    private String createRouteRequests(OntModel model, OntModel modelAdd) {
+    /*private String createRouteRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
         String tempRequest = "";
         String query = "";
@@ -2206,7 +2206,7 @@ public class OnosPush {
      * Function to create a volumes from a model
      * ****************************************************************
      */
-    private String createVolumesRequests(OntModel model, OntModel modelAdd) {
+    /*private String createVolumesRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
         String query;
 
@@ -2276,7 +2276,7 @@ public class OnosPush {
      * Function to create network interfaces from a model
      * ****************************************************************
      */
-    private String createPortsRequests(OntModel model, OntModel modelAdd) {
+    /*private String createPortsRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
         String query;
 
@@ -2354,7 +2354,7 @@ public class OnosPush {
      * Function to associate an address with a network interface
      * ****************************************************************
      */
-    private String associateAddressRequest(OntModel model, OntModel modelAdd) {
+    /*private String associateAddressRequest(OntModel model, OntModel modelAdd) {
         //to get the public ip address of the network interface if any
         String requests = "";
         String query = "SELECT  ?port ?address WHERE {?port  mrs:hasNetworkAddress ?address}";
@@ -2388,7 +2388,7 @@ public class OnosPush {
      * Function to attach a network interface to an existing instance
      * ****************************************************************
      */
-    private String attachPortRequest(OntModel model, OntModel modelAdd) {
+    /*private String attachPortRequest(OntModel model, OntModel modelAdd) {
         String requests = "";
         String query = "";
 
@@ -2448,7 +2448,7 @@ public class OnosPush {
      * Function to create Instances
      * ****************************************************************
      */
-    private String createInstancesRequests(OntModel model, OntModel modelAdd) {
+    /*private String createInstancesRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
         String query;
 
@@ -2560,7 +2560,7 @@ public class OnosPush {
      * Attach a volume to an existing instance AWS
      * ****************************************************************
      */
-    private String attachVolumeRequests(OntModel model, OntModel modelAdd) {
+    /*private String attachVolumeRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
 
         //check fornew association between intsnce and volume
@@ -2628,7 +2628,7 @@ public class OnosPush {
      * Accept/reject a virtualInterface connection for direct connect
      * ****************************************************************
      */
-    public String acceptRejectVirtualInterfaceRequests(OntModel model, OntModel modelAdd) {
+    /*public String acceptRejectVirtualInterfaceRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
 
         //check for aliasing of an interface
@@ -2707,7 +2707,7 @@ public class OnosPush {
      * shut down and delete an available virtual interface
      * ****************************************************************
      */
-    public String deleteVirtualInterfaceRequests(OntModel model, OntModel modelReduct) {
+    /*public String deleteVirtualInterfaceRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
 
         //check for aliasing of an interface
@@ -2791,7 +2791,7 @@ public class OnosPush {
      * actually exists
      * ****************************************************************
      */
-    private String getResourceId(String tag) {
+    /*private String getResourceId(String tag) {
         Filter filter = new Filter();
         filter.withName("value")
                 .withValues(tag);
@@ -2811,7 +2811,7 @@ public class OnosPush {
      * //function to get the Id from and instance tag
      * ****************************************************************
      */
-    private String getInstanceId(String tag) {
+    /*private String getInstanceId(String tag) {
         Filter filter = new Filter();
         filter.withName("value")
                 .withValues(tag);
@@ -2836,7 +2836,7 @@ public class OnosPush {
      * //function to get the Id from and volume tag
      * ****************************************************************
      */
-    private String getVolumeId(String tag) {
+    /*private String getVolumeId(String tag) {
         Filter filter = new Filter();
         filter.withName("value")
                 .withValues(tag);
@@ -2860,7 +2860,7 @@ public class OnosPush {
      * //function to get the Id from a volume tag
      * ****************************************************************
      */
-    private String getTableId(String tag) {
+    /*private String getTableId(String tag) {
         Filter filter = new Filter();
         filter.withName("value")
                 .withValues(tag);
@@ -2884,7 +2884,7 @@ public class OnosPush {
      * function to get the Id from a volume tag
      * ****************************************************************
      */
-    private String getVpcId(String tag) {
+    /*private String getVpcId(String tag) {
         Filter filter = new Filter();
         filter.withName("value")
                 .withValues(tag);
@@ -2908,7 +2908,7 @@ public class OnosPush {
      * function to get the Id from a vpnGateway tag
      * ****************************************************************
      */
-    private String getVpnGatewayId(String tag) {
+    /*private String getVpnGatewayId(String tag) {
         Filter filter = new Filter();
         filter.withName("value")
                 .withValues(tag);
@@ -2932,7 +2932,7 @@ public class OnosPush {
      * function to tag a resource
      * ****************************************************************
      */
-    private void tagResource(String id, String tag) {
+    /*private void tagResource(String id, String tag) {
         CreateTagsRequest tagRequest = new CreateTagsRequest();
         tagRequest.withTags(new Tag("id", tag));
         tagRequest.withResources(id);
@@ -2944,5 +2944,5 @@ public class OnosPush {
             }
         }
     }
-
+*/
 }
