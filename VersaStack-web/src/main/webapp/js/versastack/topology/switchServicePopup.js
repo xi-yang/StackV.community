@@ -216,6 +216,7 @@ define(["local/d3", "local/versastack/utils"],
                             var displayTree = outputApi.getDisplayTree();
                             displayTree.clear();
                             subnet.populateTreeMenu(displayTree);
+                            displayTree.draw();
 
                             eraseHighlights();
                             map_(subnet.ports, function (port) {
