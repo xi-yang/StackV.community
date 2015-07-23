@@ -28,6 +28,7 @@ import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ModelUtil;
@@ -71,13 +72,20 @@ public class AwsPush {
      * function to propagate all the requests
      * ************************************************
      */
-    public String pushPropagate(String modelRefTtl, String modelAddTtl, String modelReductTtl) throws EJBException, Exception {
+    public String pushPropagate(String modelRefTtl, String modelAddTtl, String modelReductTtl)  {
         String requests = "";
 
-        OntModel modelRef = ModelUtil.unmarshalOntModel(modelRefTtl);
-        OntModel modelAdd = ModelUtil.unmarshalOntModel(modelAddTtl);
-        OntModel modelReduct = ModelUtil.unmarshalOntModel(modelReductTtl);
-
+        OntModel modelRef;
+        OntModel modelAdd;
+        OntModel modelReduct;
+        try {
+            modelRef = ModelUtil.unmarshalOntModel(modelRefTtl);
+            modelAdd = ModelUtil.unmarshalOntModel(modelAddTtl);
+            modelReduct = ModelUtil.unmarshalOntModel(modelReductTtl);
+        } catch (Exception ex) {
+            throw new EJBException(ex);
+        }
+        
         //deatch volumes that need to be detached
         requests += detachVolumeRequests(modelRef, modelReduct);
 
