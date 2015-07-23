@@ -3,12 +3,10 @@ define(["local/d3", "local/versastack/utils"],
         function (d3, utils) {
             var map_ = utils.map_;
 
-
-
             function PortDisplayPopup(outputApi, renderApi) {
                 this.svgContainer = null;
                 this.dx = 0;
-                this.dx = 0;
+                this.dy = 0;
                 this.minWidth = 0;
                 this.minHeight = 0;
                 this.bevel = 10;
@@ -16,7 +14,6 @@ define(["local/d3", "local/versastack/utils"],
                 this.svgBubble = null;
                 this.color = "";
                 /**@type Array.Port**/
-                this.ports = [];
                 this.portColors = [];
                 this.portEmptyColor = "";
                 this.portHeight = 0;
@@ -25,7 +22,9 @@ define(["local/d3", "local/versastack/utils"],
                 this.portBufferHorizontal = 0;
                 this.enlargeFactor = 0;
                 this.opacity = 1;
+                /**@type Node**/
                 this.hostNode = null;
+                this.visible = false;
 
                 var that = this;
                 this.setOffset = function (x, y) {
@@ -52,38 +51,6 @@ define(["local/d3", "local/versastack/utils"],
                 };
                 this.setOpacity = function (opacity) {
                     this.opacity = opacity;
-                    return this;
-                };
-                this.setPorts = function (ports) {
-                    //Return the old ports to being invisible
-                    var stack = [];
-                    map_(this.ports, function (port) {
-                        stack.push(port);
-                    });
-                    while (stack.length > 0) {
-                        var port = stack.pop();
-                        map_(port.childrenPorts, function (port) {
-                            stack.push(port);
-                        });
-                        port.isVisible = false;
-                    }
-                    ;
-
-                    this.ports = ports;
-
-                    //Mark the new ports as visible
-                    map_(this.ports, function (port) {
-                        stack.push(port);
-                    });
-                    while (stack.length > 0) {
-                        var port = stack.pop();
-                        map_(port.childrenPorts, function (port) {
-                            stack.push(port);
-                        });
-                        port.isVisible = true;
-                    }
-                    ;
-
                     return this;
                 };
                 this.setPortColors = function (colors) {
@@ -118,16 +85,25 @@ define(["local/d3", "local/versastack/utils"],
                     return this;
                 };
 
+                this.toggleVisible = function () {
+                    this.setVisible(!this.visible);
+                };
+                this.setVisible = function (vis) {
+                    this.visible = vis;
+                    map_(this.hostNode.ports, function (port) {
+                        port.setVisible(vis);
+                    });
+                };
 
-                this._setPortEnlarge = function (port, enlarge) {
+
+                this.updateSvgChoordsPort = function (port) {
                     if (port.hasChildren()) {
                         return;
                     }
-                    port.enlarged=enlarge;
                     var width = that.portWidth;
                     var height = that.portHeight;
                     var dWidth, dHeight;
-                    if (enlarge) {
+                    if (port.enlarged) {
                         dWidth = width * that.enlargeFactor;
                         width += dWidth;
                         dHeight = height * that.enlargeFactor;
@@ -141,56 +117,39 @@ define(["local/d3", "local/versastack/utils"],
                             .attr("height", height)
                             .attr("x", port.x - width / 2)//make it appear to zoom into center of the icon
                             .attr("y", port.y - height / 2);
+                    if (port.svgNodeSubnetHighlight) {
+                        port.svgNodeSubnetHighlight
+                                .attr("width", width)
+                                .attr("height", height)
+                                .attr("x", port.x - width / 2)
+                                .attr("y", port.y - height / 2);
+                    }
                     renderApi.drawHighlight();
                 };
 
                 this.render = function () {
-                    if(!this.hostNode){
+                    if (!this.visible) {
                         return;
                     }
-                    var container = this.svgContainer.select("#dialogBox");
-                    container.selectAll("*").remove();
-
-                    this.height = this.minHeight;
-
-
+                    this.setVisible(true);
                     //draw the ports
                     var portContainer = this.svgContainer.select("#port");
-                    portContainer.selectAll("*").remove();
-
-                    var anchor = this.hostNode.getCenterOfMass();
-
-                    var x = anchor.x + this.dx;
-                    var y = anchor.y + this.dy - this.bevel;
-                    var portTotalHeight = 0;
+                    var parentPortContainer = this.svgContainer.select("#parentPort");
+                    var container = this.svgContainer.select("#dialogBox");
 
                     var stack = [];
-                    map_(this.ports, function (port) {
+                    map_(this.hostNode.ports, function (port) {
                         stack.push(port);
                     });
-                    var maxWidth = 0;
                     while (stack.length > 0) {
                         //We create a closure so that the "port" variable points to the correct object
                         //when the mouse events are called
                         (function () {
                             var port = stack.pop();
-                            var width = that.portWidth + (port.getVisibleHeight() - 1) * that.portBufferHorizontal;
-                            maxWidth = Math.max(width, maxWidth);
-                            var height = that.portHeight;
-                            var dy = 0;
-                            if (port.hasChildren()) {
-                                map_(port.childrenPorts, function (child) {
-                                    stack.push(child);
-                                });
-                                height = that.portHeight * port.countVisibleLeaves();
-                                height += that.portBufferVertical * (port.countVisibleLeaves() + 1);
-                                dy = height - that.portHeight / 2;
-                            } else {
-                                dy = height / 2;
-                            }
+                            map_(port.childrenPorts, function (child) {
+                                stack.push(child);
+                            });
 
-                            port.x = x;
-                            port.y = y;
                             var color;
                             if (port.hasAlias() || port.hasChildren()) {
                                 color = that.portColors[port.getVisibleHeight() % that.portColors.length];
@@ -198,51 +157,106 @@ define(["local/d3", "local/versastack/utils"],
                                 color = that.portEmptyColor;
                             }
                             if (port.hasChildren()) {
-                                port.svgNode = portContainer.append("rect")
+                                port.svgNode = parentPortContainer.append("rect")
                                         .style("fill", color);
                             } else {
                                 port.svgNode = portContainer.append("image")
                                         .attr("xlink:href", port.getIconPath());
                             }
                             port.svgNode
-                                    .attr("x", port.x - width / 2)
-                                    .attr("y", y - dy) //this correcting is so that incoming edges align properly
-                                    .attr("height", height)
-                                    .attr("width", width)
                                     .on("mousemove", function () {
                                         outputApi.setHoverText(port.getName());
                                         outputApi.setHoverLocation(d3.event.x, d3.event.y);
                                         outputApi.setHoverVisible(true);
-                                        that._setPortEnlarge(port, true);
+                                        port.enlarged = true;
+                                        that.updateSvgChoordsPort(port);
                                     })
                                     .on("mouseleave", function () {
                                         outputApi.setHoverVisible(false);
-                                        that._setPortEnlarge(port, false);
+                                        port.enlarged = false;
+                                        that.updateSvgChoordsPort(port);
                                     })
                                     .on("click", function () {
                                         renderApi.selectElement(port);
                                     })
                                     .on("dblclick", function () {
                                         port.setFolded(!port.getFolded());
-                                        that.render();
-                                        renderApi.redraw();
+                                        renderApi.redrawPopups();
+                                        renderApi.drawHighlight();
+                                        renderApi.layoutEdges();
                                     })
                                     .call(dragBehaviour);
-                            that._setPortEnlarge(port,port.enlarged);
-                            port.edgeAnchorLeft = {x: port.x, y: port.y};
-                            port.edgeAnchorRight = {x: port.x + width, y: port.y};
-                            if (port.hasChildren()) {
-                                y -= that.portBufferVertical;
-                                portTotalHeight += that.portBufferVertical;
-                            } else {
-                                y -= that.portHeight;
-                                y -= that.portBufferVertical;
-                                portTotalHeight += that.portHeight + that.portBufferVertical;
-                            }
                         })();
                     }
-                    ;
+                    //Draw the box itself.
+                    //We do this after the ports because are size is dependent on how many ports we draw
+                    //The HTML template handles the layering inspite our out of order rendering.
 
+                    //We embed the popup in a group to apply the opacity. 
+                    //Without doing this (and applying the opacity directly on 
+                    //the elements) there would be an artifact when the elements
+                    //overlap.
+                    var boxContainer = container.append("g")
+                            .style("opacity", this.opacity);
+
+                    this.svgBubble = boxContainer.append("rect")
+                            .attr("rx", this.bevel)
+                            .attr("ry", this.bevel)
+                            .style("fill", this.color)
+                            .call(dragBehaviour);
+
+                    //connect the box to the node;
+                    this.svgLine = boxContainer.append("line")
+                            .style("stroke", this.color)
+                            .style("stroke-width", this.neckWidth)
+                            .attr("stroke-linecap", "round")
+                    this.updateSvgChoords();
+                    return this;
+                };
+
+                this.updateSvgChoords = function () {
+                    if (!this.visible) {
+                        return;
+                    }
+                    var anchor = this.hostNode.getCenterOfMass();
+                    var x = anchor.x + this.dx;
+                    var y = anchor.y + this.dy - this.bevel;
+                    var portTotalHeight = 0;
+
+                    var stack = [];
+                    map_(this.hostNode.ports, function (port) {
+                        stack.push(port);
+                    });
+                    var maxWidth = 0;
+                    while (stack.length > 0) {
+                        var port = stack.pop();
+                        var width = that.portWidth + (port.getVisibleHeight() - 1) * that.portBufferHorizontal;
+                        maxWidth = Math.max(width, maxWidth);
+                        var height = that.portHeight;
+                        var dy = 0;
+                        if (port.hasChildren()) {
+                            map_(port.childrenPorts, function (child) {
+                                stack.push(child);
+                            });
+                            height = that.portHeight * port.countVisibleLeaves();
+                            height += that.portBufferVertical * (port.countVisibleLeaves() + 1);
+                            dy = height - that.portHeight / 2;
+                        } else {
+                            dy = height / 2;
+                        }
+
+                        port.x = x;
+                        port.y = y;
+                        that.updateSvgChoordsPort(port);
+                        if (port.hasChildren()) {
+                            y -= that.portBufferVertical;
+                            portTotalHeight += that.portBufferVertical;
+                        } else {
+                            y -= that.portHeight;
+                            y -= that.portBufferVertical;
+                            portTotalHeight += that.portHeight + that.portBufferVertical;
+                        }
+                    }
                     var height = this.minHeight;
                     if (portTotalHeight > height + this.portBufferVertical * 2) {
                         height = portTotalHeight + this.portBufferVertical * 2;
@@ -251,35 +265,19 @@ define(["local/d3", "local/versastack/utils"],
                     if (maxWidth > width + 2 * this.portBufferHorizontal) {
                         width = maxWidth + 2 * this.portBufferHorizontal;
                     }
-
-                    //Draw the box itself.
-                    //We do this after the ports because are size is dependent on how many ports we draw
-                    //The HTML template handles the layering inspite our out of order rendering.
-
-                    var boxContainer = container.append("g")
-                            .style("opacity", this.opacity);
-
-                    boxContainer.append("rect")
+                    this.svgBubble
                             .attr("x", anchor.x + this.dx - width / 2)
                             .attr("y", anchor.y + this.dy - height - this.bevel / 2)
                             .attr("height", height + this.bevel / 2)
                             .attr("width", width)
-                            .attr("rx", this.bevel)
-                            .attr("ry", this.bevel)
-                            .style("fill", this.color)
-                            .call(dragBehaviour);
 
                     //connect the box to the node;
                     var dst = this.hostNode.getCenterOfMass();
-                    this.svgLine = boxContainer.append("line")
-                            .style("stroke", this.color)
-                            .style("stroke-width", this.neckWidth)
+                    this.svgLine
                             .attr("x1", anchor.x + this.dx)
                             .attr("y1", anchor.y + this.dy - height / 2)
-                            .attr("stroke-linecap", "round")
                             .attr("x2", dst.x)
                             .attr("y2", dst.y);
-
                     return this;
                 };
 
@@ -294,8 +292,8 @@ define(["local/d3", "local/versastack/utils"],
                             that.dx += dx;
                             that.dy += dy;
 
-                            that.render();
                             outputApi.setHoverLocation(e.clientX, e.clientY);
+                            that.updateSvgChoords();
                             renderApi.drawHighlight();
                             renderApi.layoutEdges();
                         })

@@ -26,23 +26,29 @@ define(["local/versastack/topology/modelConstants"],
                 this.isVisible = true;
                 /**@type Array.Node**/
                 this._parent = null;
-                this.svgNode=null;
-                this.svgNodeAnchor=null;//For topologies
-                this.svgNodeServices=null;
+                this.svgNode = null;
+                this.svgNodeAnchor = null;//For topologies
+                this.svgNodeServices = null;
+                this.svgNodeSubnetHighlight = null; // for subnet tab
                 /**@type Array.Service**/
                 this.services = [];
                 /**@type Array.Port**/
-                this.ports=[];
-                this.x=0;
-                this.y=0;
-                this.dx=0;
-                this.dy=0;
-                this.size=0;
+                this.ports = [];
+                /**@type PortDisplayPopup**/
+                this.portPopup = null; 
+                this.x = 0;
+                this.y = 0;
+                this.dx = 0;
+                this.dy = 0;
+                this.size = 0;
                 /**@type Node**/
                 var that = this;
                 this.fold = function () {
                     this.isFolded = true;
                     this._updateVisible(this.isVisible); //this will update our children appropriatly
+                    if(this.portPopup){
+                        this.portPopup.setVisible(false);
+                    }
                 };
                 this.unfold = function () {
                     this.isFolded = false;
@@ -67,14 +73,19 @@ define(["local/versastack/topology/modelConstants"],
                     map_(this.children, function (child) {
                         child._updateVisible(showChildren);
                     });
+                    if(!vis){
+                        map_(this.ports,function(port){
+                           port.setVisible(false); 
+                        });
+                    }
                 };
                 this._getEdges = function () {
                     var ans = [];
-                    map_(this.ports,/**@param {Port} port**/ function (port) {
-                        ans=ans.concat(port.getEdges());
+                    map_(this.ports, /**@param {Port} port**/ function (port) {
+                        ans = ans.concat(port.getEdges());
                     });
-                    map_(this.children,function(child){
-                        ans=ans.concat(child._getEdges()); 
+                    map_(this.children, function (child) {
+                        ans = ans.concat(child._getEdges());
                     });
                     return ans;
                 };
@@ -130,6 +141,9 @@ define(["local/versastack/topology/modelConstants"],
                     return prefix + ans;
                 };
                 this.getCenterOfMass = function () {
+                    if(!this.isVisible){
+                        return this._parent.getCenterOfMass();
+                    }
                     var ans = {x: 0, y: 0};
                     var leaves = this.getLeaves();
                     var num = leaves.length;
@@ -143,11 +157,17 @@ define(["local/versastack/topology/modelConstants"],
                     }
                     return ans;
                 };
-                this.getVisible = function(){
-                    if(this.isRoot && this.isVisible){
+                this.getVisible = function () {
+                    if (this.isRoot && this.isVisible) {
                         return true;
                     }
                     return this.isVisible && this._parent.getVisible();
+                };
+                this.getFirstVisibleParent=function(){
+                    if(this.isVisible){
+                        return this;
+                    }
+                    return this._parent.getFirstVisibleParent();
                 };
                 //Return the depth of this node in the topology tree
                 //This is used to determine what color to use when drawing topologies
@@ -169,35 +189,36 @@ define(["local/versastack/topology/modelConstants"],
                     ans += 1;
                     return ans;
                 };
-                this.getType=function(){
-                    return this.isLeaf()?"Node":"Topology";
+                this.getType = function () {
+                    return this.isLeaf() ? "Node" : "Topology";
                 };
-            
-                this.populateTreeMenu=function(tree){
-                    if(this.services.length>0){
-                        var serviceNode=tree.addChild("Services");
-                        map_(this.services,function(service){
+
+                this.populateTreeMenu = function (tree) {
+                    if (this.services.length > 0) {
+                        var serviceNode = tree.addChild("Services");
+                        map_(this.services, function (service) {
                             service.populateTreeMenu(serviceNode);
                         })
                     }
-                    if(this.ports.length>0){
-                        var portsNode=tree.addChild("Ports");
-                        map_(this.ports,function(port){
+                    if (this.ports.length > 0) {
+                        var portsNode = tree.addChild("Ports");
+                        map_(this.ports, function (port) {
                             port.populateTreeMenu(portsNode);
                         });
                     }
-                    if(this.children.length>0){
-                        var childrenNode=tree.addChild("SubNodes");
-                        map_(this.children,function(child){
-                            var childNode=childrenNode.addChild(child.getName());
+                    if (this.children.length > 0) {
+                        var childrenNode = tree.addChild("SubNodes");
+                        map_(this.children, function (child) {
+                            var childNode = childrenNode.addChild(child.getName());
                             child.populateTreeMenu(childNode);
                         });
                     }
                 };
             }
 
-            var iconMap = {}; {
-            //The curly brackets are for cold folding purposes
+            var iconMap = {};
+            {
+                //The curly brackets are for cold folding purposes
                 iconMap["default"] = "default.png";
                 iconMap[values.node] = "node.png";
                 iconMap[values.topology] = "topology.png";

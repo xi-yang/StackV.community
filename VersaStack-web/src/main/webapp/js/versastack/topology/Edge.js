@@ -15,6 +15,8 @@ define([], function () {
         this.target = null;
 
         this.svgNode = null;
+        this.svgLeadLeft = null;
+        this.svgLeadRight = null;
 
         this._isProper = function () {
             var ans = true;
@@ -38,6 +40,8 @@ define([], function () {
             }
             return ans;
         };
+        
+        
     }
     return Edge;
 });
