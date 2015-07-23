@@ -1,8 +1,5 @@
 package web.beans;
 
-import com.hp.hpl.jena.ontology.OntModel;
-import com.hp.hpl.jena.ontology.OntModelSpec;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -11,10 +8,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import net.maxgigapop.mrs.common.ModelUtil;
-import org.apache.commons.lang.RandomStringUtils;
 
 public class serviceBeans {
 
@@ -201,7 +197,7 @@ public class serviceBeans {
                        "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n" +
                        "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n\n";
         
-        String nodeTag = "&lt;" + topoUri + ":i-" + RandomStringUtils.random(8, true, true) + "&gt;";
+        String nodeTag = "&lt;" + topoUri + ":i-" + UUID.randomUUID().toString() + "&gt;";
         String model = "&lt;" + vpcUri + "&gt;\n"
                     + "        nml:hasNode               " + nodeTag + ".\n\n";
         //get the region name from VPC service URI
@@ -212,8 +208,7 @@ public class serviceBeans {
         //building all the volumes 
         String allBolUri = "";
         for(String vol : volumes){
-            String volUri = "&lt;" + topoUri + ":vol-" + 
-                    RandomStringUtils.random(6, false, true) + "&gt;";
+            String volUri = "&lt;" + topoUri + ":vol-" + UUID.randomUUID().toString() + "&gt;";
             String[] parameters = vol.split(",");
             model += volUri +"\n        a                  mrs:Volume , owl:NamedIndividual ;\n"
                     + "        mrs:disk_gb        \"" + parameters[0] + "\" ;\n" 
@@ -226,19 +221,11 @@ public class serviceBeans {
 
         //building all the network interfaces
         String allSubnets = "";
-        int i = 10;
-        String  ip = "10.0.0.";
         for(String net : subnets){
-            String portUri = "&lt;" + topoUri + ":eni-" + RandomStringUtils.random(6, false, true) + "&gt;";
+            String portUri = "&lt;" + topoUri + ":eni-" + UUID.randomUUID().toString() + "&gt;";
             model += net + "\n        nml:hasBidirectionalPort " + portUri + ".\n\n"
                     + portUri + "\n        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n"
-                    + "        mrs:hasTag            &lt;" + topoUri + ":portTag&gt;;\n"
-                    + "        mrs:hasNetworkAddress  &lt;" + topoUri + ip + i + "&gt;.\n\n"
-                    + "&lt;" + topoUri + ip + i + "&gt;\n"
-                    + "        a          mrs:NetworkAddress , owl:NamedIndividual ;\n" 
-                    + "        mrs:type   \"ipv4:private\" ;\n        mrs:value  \""
-                    + ip + i + "\" .\n\n";
-            i++;
+                    + "        mrs:hasTag            &lt;" + topoUri + ":portTag&gt;.\n\n";
             allSubnets += portUri + ","; 
         }
         
