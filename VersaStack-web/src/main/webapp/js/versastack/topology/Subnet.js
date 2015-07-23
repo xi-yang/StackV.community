@@ -3,12 +3,12 @@ define(["local/versastack/topology/modelConstants"], function (values) {
     function Subnet(backing, map) {
         this.svgNode = null;
         this._backing = backing;
-
+        
         /**@type Array.Port**/
         this.ports = [];
         this.getName = function () {
             return this._backing.name;
-        }
+        }        
         this.populateTreeMenu = function (tree) {
             var container = tree.addChild(backing.name);
 

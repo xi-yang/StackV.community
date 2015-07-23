@@ -242,9 +242,9 @@ define([
             if (n.isLeaf()) {
                 ans.x = n.x - settings.NODE_SIZE / 2;
                 ans.y = n.y + settings.NODE_SIZE / 2;
-                ans.dx=settings.SERVICE_SIZE;
-                ans.dy=0;
-                ans.rotation=0;
+                ans.dx = settings.SERVICE_SIZE;
+                ans.dy = 0;
+                ans.rotation = 0;
             } else {
                 var path = getTopolgyPath(n);
                 if (n.getLeaves().length > 1) {
@@ -272,7 +272,7 @@ define([
 
                     var p = {x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2};
                     //compute the desired distance between the services, and the line p1p2 
-                    var normalOffset = settings.TOPOLOGY_SIZE / 2 + settings.TOPOLOGY_BUFFER / 2 * (n.getHeight()) + settings.SERVICE_SIZE/2;
+                    var normalOffset = settings.TOPOLOGY_SIZE / 2 + settings.TOPOLOGY_BUFFER / 2 * (n.getHeight()) + settings.SERVICE_SIZE / 2;
                     //convert the above offset into the xy plane, and apply it to p
                     var theta = Math.atan2(p1.y - p2.y, p1.x - p2.x);
                     if (theta < -Math.PI / 2) {
@@ -292,9 +292,9 @@ define([
                 } else {
                     ans.x = path[0].x - settings.SERVICE_SIZE * n.services.length / 2;
                     ans.y = path[0].y - settings.TOPOLOGY_SIZE / 2 - settings.TOPOLOGY_BUFFER / 2 * (n.getHeight()) - settings.SERVICE_SIZE;
-                    ans.dx=settings.SERVICE_SIZE;
-                    ans.dy=0;
-                    ans.rotation=0;
+                    ans.dx = settings.SERVICE_SIZE;
+                    ans.dy = 0;
+                    ans.rotation = 0;
                 }
             }
             return ans;
@@ -384,14 +384,14 @@ define([
             map_(n.services, function (service) {
                 service.y = coords.y;
                 service.x = coords.x;
-                var midY=coords.y + service.dy;
-                var midX=coords.x + service.dx;
+                var midY = coords.y + service.dy;
+                var midX = coords.x + service.dx;
                 service.svgNode
-                        .attr("y", coords.y + service.dy - settings.SERVICE_SIZE/2)
-                        .attr("x", coords.x + service.dx - settings.SERVICE_SIZE/2)
-                        .attr("transform", "rotate("+coords.rotation+" "+midX+" "+midY+")");
+                        .attr("y", coords.y + service.dy - settings.SERVICE_SIZE / 2)
+                        .attr("x", coords.x + service.dx - settings.SERVICE_SIZE / 2)
+                        .attr("transform", "rotate(" + coords.rotation + " " + midX + " " + midY + ")");
                 coords.x += coords.dx;
-                coords.y+=coords.dy;
+                coords.y += coords.dy;
             });
         }
 
@@ -552,10 +552,14 @@ define([
             n.populateTreeMenu(displayTree);
             displayTree.draw();
             if (n.getTypeBrief() === "SwitchingService") {
-                switchPopup.clear()
-                        .setOffset(0, 0)
-                        .setHostNode(n)
-                        .render();
+                if (switchPopup.hostNode === n) {
+                    switchPopup.clear();
+                } else {
+                    switchPopup.clear()
+                            .setOffset(0, 0)
+                            .setHostNode(n)
+                            .render();
+                }
             }
         }
 
@@ -656,8 +660,8 @@ define([
                 case "Service":
                     var size = settings.SERVICE_SIZE;
                     svg = n.svgNode;
-                    x = n.x - settings.SERVICE_SIZE/2;
-                    y = n.y - settings.SERVICE_SIZE/2;
+                    x = n.x - settings.SERVICE_SIZE / 2;
+                    y = n.y - settings.SERVICE_SIZE / 2;
                     break;
                 default:
                     console.log("Unknown Type: " + n.getType());

@@ -147,8 +147,12 @@ define(["local/d3", "local/versastack/utils"],
                     eraseHighlights();
                     clickSubnet=null;
                     this.hostNode=null;
+                    var container = this.svgContainer.select("#switchPopup");
+                    eraseHighlights();
+                    container.selectAll("*").remove();
                     return this;
                 };
+                
                 this.render = function () {
                     if (!this.hostNode) {
                         return;
@@ -172,7 +176,7 @@ define(["local/d3", "local/versastack/utils"],
                             .call(makeDragBehaviour());
 
                     var serviceChoords = this.hostNode.getCenterOfMass();
-                    boxContainer.append("line")//changes
+                    boxContainer.append("line")
                             .attr("x1", anchor.x + this.dx)
                             .attr("y1", anchor.y + this.dy + this.height/2)
                             .attr("x2", serviceChoords.x)
@@ -189,7 +193,7 @@ define(["local/d3", "local/versastack/utils"],
                     var y = anchor.y + this.dy;
 
                     map_(this.hostNode.subnets, /**@param {Subnet} subnet**/function (subnet) {
-
+                       
                         subnet.svgNode = container.append("rect")
                                 .attr("x", x)
                                 .attr("y", y)
