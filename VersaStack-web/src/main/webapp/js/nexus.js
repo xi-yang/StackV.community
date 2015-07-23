@@ -65,7 +65,7 @@ function driverSelect(sel) {
 function topoSelect(sel) {
     if (sel.value !== null) {
            if (sel.value.indexOf("aws") > -1) {
-               $ref = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=aws #service-fields";
+               $ref = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=aws&topo=" + sel.value + " #service-fields";
            }
            else if (sel.value.indexOf("openstack") > -1) {
                $ref = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=os #service-fields";
