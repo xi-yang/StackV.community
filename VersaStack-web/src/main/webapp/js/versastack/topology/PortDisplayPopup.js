@@ -97,11 +97,18 @@ define(["local/d3", "local/versastack/utils"],
 
 
                 this.updateSvgChoordsPort = function (port) {
+                    var width, height, x, y;
                     if (port.hasChildren()) {
-                        return;
+                        width = that.portWidth + (port.getVisibleHeight() - 1) * that.portBufferHorizontal;
+                        height = (that.portHeight + that.portBufferVertical) * port.countVisibleLeaves() + that.portBufferVertical * 2;
+                        x = port.x - width / 2;
+                        y = port.y + that.portBufferVertical * 2 - height;
+                    } else {
+                        width = that.portWidth;
+                        height = that.portHeight;
+                        x = port.x - width / 2;
+                        y = port.y - height / 2;
                     }
-                    var width = that.portWidth;
-                    var height = that.portHeight;
                     var dWidth, dHeight;
                     if (port.enlarged) {
                         dWidth = width * that.enlargeFactor;
@@ -115,14 +122,14 @@ define(["local/d3", "local/versastack/utils"],
                     port.svgNode
                             .attr("width", width)
                             .attr("height", height)
-                            .attr("x", port.x - width / 2)//make it appear to zoom into center of the icon
-                            .attr("y", port.y - height / 2);
+                            .attr("x", x)//make it appear to zoom into center of the icon
+                            .attr("y", y);
                     if (port.svgNodeSubnetHighlight) {
                         port.svgNodeSubnetHighlight
                                 .attr("width", width)
                                 .attr("height", height)
-                                .attr("x", port.x - width / 2)
-                                .attr("y", port.y - height / 2);
+                                .attr("x", x)
+                                .attr("y", y);
                     }
                     renderApi.drawHighlight();
                 };
@@ -168,7 +175,9 @@ define(["local/d3", "local/versastack/utils"],
                                         outputApi.setHoverText(port.getName());
                                         outputApi.setHoverLocation(d3.event.x, d3.event.y);
                                         outputApi.setHoverVisible(true);
-                                        port.enlarged = true;
+                                        if (!port.hasChildren()) {
+                                            port.enlarged = true;
+                                        }
                                         that.updateSvgChoordsPort(port);
                                     })
                                     .on("mouseleave", function () {
@@ -209,7 +218,7 @@ define(["local/d3", "local/versastack/utils"],
                     this.svgLine = boxContainer.append("line")
                             .style("stroke", this.color)
                             .style("stroke-width", this.neckWidth)
-                            .attr("stroke-linecap", "round")
+                            .attr("stroke-linecap", "round");
                     this.updateSvgChoords();
                     return this;
                 };
