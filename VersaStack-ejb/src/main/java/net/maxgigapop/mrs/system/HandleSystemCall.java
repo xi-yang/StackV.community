@@ -164,7 +164,7 @@ public class HandleSystemCall {
                 && !systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
             throw new EJBException(String.format("Trying to propagateDelta for %s that has delta already progagated.", systemInstance));
         }
-        if (sysDelta.getId() != 0) {
+        if (sysDelta.getId() != null && sysDelta.getId() != 0) {
             sysDelta = (SystemDelta) DeltaPersistenceManager.findById(sysDelta.getId());
         }
         // Note 1: an initial VG (#1) must exist 
