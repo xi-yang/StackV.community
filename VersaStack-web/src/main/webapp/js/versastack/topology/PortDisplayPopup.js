@@ -122,14 +122,14 @@ define(["local/d3", "local/versastack/utils"],
                     port.svgNode
                             .attr("width", width)
                             .attr("height", height)
-                            .attr("x", x)//make it appear to zoom into center of the icon
-                            .attr("y", y);
+                            .attr("x", x - dWidth / 2)//make it appear to zoom into center of the icon
+                            .attr("y", y - dHeight / 2);
                     if (port.svgNodeSubnetHighlight) {
                         port.svgNodeSubnetHighlight
                                 .attr("width", width)
                                 .attr("height", height)
-                                .attr("x", x)
-                                .attr("y", y);
+                                .attr("x", x - dWidth / 2)
+                                .attr("y", y - dHeight / 2);
                     }
                     renderApi.drawHighlight();
                 };
