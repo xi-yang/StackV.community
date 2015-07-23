@@ -258,8 +258,6 @@
                                  0 0 0 1 0" />
                    <feComposite operator="out" in="a" in2="SourceGraphic"/>
                 </filter>
-    
-    
                 <filter id="subnetHighlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
                    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
                    <feMorphology operator="dilate" radius="1"/>
@@ -269,6 +267,9 @@
                                  0 0 0 0 .3
                                  0 0 0 1 0" />
                    <feComposite operator="out" in="a" in2="SourceGraphic"/>
+                </filter>
+                <filter id="ghost"width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+                    <feColorMatrix type="saturate" values=".2"/>
                 </filter>
             </defs>
             <!--We nest a g in here because the svg tag itself cannot do transforms
