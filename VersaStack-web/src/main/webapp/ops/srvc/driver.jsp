@@ -114,7 +114,7 @@
                                                     </tr>   
                                                     <tr>
                                                         <td>Amazon Secret Key</td>
-                                                        <td><input type="password" name="aws_secret_access_key" required></td>
+                                                        <td><input type="text" name="aws_secret_access_key" required></td>
                                                     </tr>   
                                                     <tr>
                                                         <td>Region</td>

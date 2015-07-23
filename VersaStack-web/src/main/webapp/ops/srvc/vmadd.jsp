@@ -79,46 +79,47 @@
                                             </thead>
                                             <tbody>
                                                 <tr>
-                                                    <td>Version Group</td>
-                                                    <td><input type="text" name="versionGroup" required></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>OS Type</td>
-                                                    <td><input type="text" name="osType" required></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Instance Type/Flavor</td>
-                                                    <td><input type="text" name="instanceType" required></td>
-                                                </tr>
-                                                <tr>
+                                                    <sql:query dataSource="${rains_conn}" sql="SELECT value FROM driver_instance_property P, driver_instance I 
+                                                               WHERE property = 'region' AND I.id = P.driverInstanceId AND I.topologyUri = ?" var="regionlist">
+                                                        <sql:param value="${param.topo}" />
+                                                    </sql:query>
+
                                                     <td>Region</td>
                                                     <td>
-                                                        <select name="region" required>
-                                                            <option></option>
-                                                            <option value="ap-northeast-1">Asia Pacific (Tokyo)</option>
-                                                            <option value="ap-southeast-1">Asia Pacific (Singapore)</option>
-                                                            <option value="ap-southeast-2">Asia Pacific (Sydney)</option>
-                                                            <option value="eu-central-1">Europe (Frankfurt)</option>
-                                                            <option value="eu-west-1">Europe (Ireland)</option>
-                                                            <option value="sa-east-1">South America (Sao Paulo)</option>
-                                                            <option value="us-east-1">US East (N. Virginia)</option>
-                                                            <option value="us-west-1">US West (N. California)</option>
-                                                            <option value="us-west-2">US West (Oregon)</option>
-                                                        </select>
+                                                        <c:forEach var="reg" items="${regionlist.rows}">
+                                                            <input type="text" name="region" value="${reg.value}" readonly />
+                                                        </c:forEach>
                                                     </td>
                                                 </tr> 
                                                 <tr>
-                                                    <td>Name of the VM(s)</td>
-                                                    <td><input type="text" name="vmName" required></td>
+                                                    <td>VPC ID</td>
+                                                    <td><input type="text" name="vpcID" required></td>
+                                                </tr>  
+                                                <tr>
+                                                    <td>OS Type</td>
+                                                    <td>
+                                                        <select name="ostype" required>
+                                                            <option></option>
+                                                            <option value="windows">Windows 7</option>
+                                                            <option value="ubuntu">Ubuntu</option>
+                                                        </select>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Instance Type</td>
+                                                    <td>
+                                                        <select name="instanceType" required>
+                                                            <option></option>
+                                                            <option>cpu:1, ram:512 MB</option>
+                                                            <option>cpu:2, ram:1 GB</option>
+                                                            <option>cpu:4, ram:4 GB</option>
+                                                        </select>
+                                                    </td>
                                                 </tr>
                                                 <tr>
                                                     <td>Number of VMs</td>
                                                     <td><input type="number" name="vmQuantity" required></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>VPC ID</td>
-                                                    <td><input type="text" name="vpcID" required></td>
-                                                </tr>                                            
+                                                </tr>   
                                                 <tr>
                                                     <td>VM Subnets</td>
                                                     <td><textarea rows="3" cols="50" name="subnets"></textarea></td>
