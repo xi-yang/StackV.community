@@ -69,7 +69,7 @@
                         <div id="service-bottom">
                             <div id="service-fields">
                                 <form id="vm-form" action="/VersaStack-web/VMServlet" method="post">
-                                    <table class="management-table" id="service-form"> 
+                                    <table class="management-table" id="service-form" style="margin-bottom: 0px;"> 
                                         <c:if test="${param.vm_type == 'aws'}">
                                             <thead>
                                                 <tr>
@@ -79,17 +79,19 @@
                                             </thead>
                                             <tbody>
                                                 <tr>
-                                                    <sql:query dataSource="${rains_conn}" sql="SELECT value FROM driver_instance_property P, driver_instance I 
-                                                               WHERE property = 'region' AND I.id = P.driverInstanceId AND I.topologyUri = ?" var="regionlist">
-                                                        <sql:param value="${param.topo}" />
-                                                    </sql:query>
+                                                    <c:if test="${not empty param.topo}">
+                                                        <sql:query dataSource="${rains_conn}" sql="SELECT value FROM driver_instance_property P, driver_instance I 
+                                                                   WHERE property = 'region' AND I.id = P.driverInstanceId AND I.topologyUri = ?" var="regionlist">
+                                                            <sql:param value="${param.topo}" />
+                                                        </sql:query>
 
-                                                    <td>Region</td>
-                                                    <td>
-                                                        <c:forEach var="reg" items="${regionlist.rows}">
-                                                            <input type="text" name="region" value="${reg.value}" readonly />
-                                                        </c:forEach>
-                                                    </td>
+                                                        <td>Region</td>
+                                                        <td>
+                                                            <c:forEach var="reg" items="${regionlist.rows}">
+                                                                <input type="text" name="region" value="${reg.value}" readonly />
+                                                            </c:forEach>
+                                                        </td>
+                                                    </c:if>
                                                 </tr> 
                                                 <tr>
                                                     <td>VPC ID</td>
@@ -119,21 +121,66 @@
                                                 <tr>
                                                     <td>Number of VMs</td>
                                                     <td><input type="number" name="vmQuantity" required></td>
-                                                </tr>   
+                                                </tr>
                                                 <tr>
-                                                    <td>VM Subnets</td>
+                                                    <td>VM Subnets<br>(Newline delimited)</td>
                                                     <td><textarea rows="3" cols="50" name="subnets"></textarea></td>
                                                 </tr>
                                                 <tr>
-                                                    <td>Number of volume created</td>
-                                                    <td><textarea rows="3" cols="50" name="volumes"></textarea></td>
-                                                </tr>                                            
+                                                    <td>Volumes</td>
+                                                    <td>
+                                                        <table id="volume-table">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Name</th>
+                                                                    <th>Device Path</th>
+                                                                    <th>Snapshot</th>
+                                                                    <th>Size</th>
+                                                                    <th>Type</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>                                                                
+                                                                <tr>
+                                                                    <td>Root</td>
+                                                                    <td>
+                                                                        <select name="-path" required>
+                                                                            <option></option>
+                                                                            <option value="/dev/xvda">/dev/xvda</option>
+                                                                            <option value="/dev/sdb">/dev/sdb</option>
+                                                                            <option value="/dev/sdc">/dev/sdc</option>
+                                                                        </select>
+                                                                    </td>
+                                                                    <td>
+                                                                        <select name="-snapshot" required>
+                                                                            <option></option>
+                                                                            <option value="snapshot1">snapshot1</option>
+                                                                            <option value="snapshot1">snapshot2</option>
+                                                                            <option value="snapshot1">snapshot3</option>
+                                                                        </select>
+                                                                    </td>
+                                                                    <td>
+                                                                        <input type="number" name="-size" style="width: 4em; text-align: center;"/>
+                                                                    </td>
+                                                                    <td>
+                                                                        <select name="-type" required>
+                                                                            <option></option>
+                                                                            <option value="standard">Standard</option>
+                                                                            <option value="io1">io1</option>
+                                                                            <option value="gp2">gp2</option>
+                                                                        </select>                                                        
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </td>
+                                                </tr>
+
                                                 <tr>
                                                     <td></td>
                                                     <td>
                                                         <input class="button-register" name="install" type="submit" value="Install" />
-                                                        <!-- <input class="button-register" type="button" 
-                                                               value="Add Additional Properties" onClick="addPropField()"> -->
+                                                        <input class="button-register" type="button" 
+                                                               value="Add Volume" onClick="addVolume()">
                                                     </td>
                                                 </tr> 
                                             </tbody>

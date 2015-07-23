@@ -17,6 +17,8 @@ $(function () {
         $("#service-specific").empty();
         $("#button-service-cancel").toggleClass("hide");
         $("#service-table").toggleClass("hide");
+        
+        clearCounters();
     });
 
     $("#button-service-return").click(function (evt) {
@@ -103,4 +105,35 @@ function addPropField() {
                     + (fieldCounter) + '" placeholder="Additional Property Value" size="30" />';
           
      }
+}
+
+var volumeCounter = 0;
+var volumeLimit = 10;
+function addVolume() {
+     if (volumeCounter === volumeLimit)  {
+          alert("You have reached the limit of volumes.");
+     }
+     else {
+          var table = document.getElementById("volume-table");
+          var tableHeight = table.rows.length;
+          
+          var row = table.insertRow(tableHeight);
+          var cell1 = row.insertCell(0);
+          var cell2 = row.insertCell(1);
+          var cell3 = row.insertCell(2);
+          var cell4 = row.insertCell(3);
+          var cell5 = row.insertCell(4);
+          volumeCounter++;
+          cell1.innerHTML = 'Volume ' + volumeCounter;          
+          cell2.innerHTML = '<select name="' + volumeCounter + '-path" required><option></option><option value="/dev/xvda">/dev/xvda</option><option value="/dev/sdb">/dev/sdb</option><option value="/dev/sdc">/dev/sdc</option></select>';
+          cell3.innerHTML = '<select name="' + volumeCounter + '-snapshot" required><option></option><option value="snapshot1">snapshot1</option><option value="snapshot1">snapshot2</option><option value="snapshot1">snapshot3</option></select>';
+          cell4.innerHTML = '<input type="number" name="' + volumeCounter + '-size" style="width: 4em; text-align: center;"/>';
+          cell5.innerHTML = '<select name="' + volumeCounter + '-type" required><option></option><option value="standard">Standard</option><option value="io1">io1</option><option value="gp2">gp2</option></select>';
+          
+     }
+}
+
+function clearCounters() {
+    volumeCounter = 0;
+    fieldCounter = 0;
 }
