@@ -144,11 +144,15 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
         // select a VPC based on endSite
         List<QuerySolution> solutions = new ArrayList<>();
         for (Resource resVlanPort: vlanPorts) {
-            String sparql = "SELECT ?aws ?dcVx WHERE {"
+            String sparql = "SELECT ?aws ?subnet ?dcVx WHERE {"
                     + "?aws nml:hasBidirectionalPort?dcPort ."
                     + "?aws nml:hasTopology ?vpc."
                     + "?aws a nml:Topology."
                     + "?vpc a nml:Topology."
+                    + "?vpc nml:hasService ?swsvc."
+                    + "?swsvc a mrs:SwitchingService." //@TODO: change into nml:SwitchingService
+                    + "?swsvc mrs:providesSubnet ?subnet."
+                    + "?subnet a mrs:SwitchingSubnet."
                     + "?dcPort a nml:BidirectionalPort."
                     + "?dcPort nml:hasBidirectionalPort ?dcVx."
                     + String.format("FILTER ((?aws = <%s> || ?vpc = <%s>) && ?dcVx = <%s>)", endSite.getURI(), endSite.getURI(),  resVlanPort.getURI())
@@ -161,6 +165,7 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
         if (solutions.isEmpty())
             return null;
         Resource resAws = solutions.get(0).getResource("aws");
+        Resource resSubnet = solutions.get(0).getResource("subnet");
         Resource resDcVx = solutions.get(0).getResource("dcVx");
         // create VGW and attach to VPC (endSite), and peer (isAlias) it with the vlanPort
         Resource VPNGW_TAG = RdfOwl.createResource(stitchModel, resAws + ":vpngwTag", Mrs.Tag);
@@ -176,6 +181,8 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
         stitchModel.add(stitchModel.createStatement(resAws, Nml.hasBidirectionalPort, resVgw));
         stitchModel.add(stitchModel.createStatement(resVgw, Nml.isAlias, resDcVx));
         stitchModel.add(stitchModel.createStatement(resDcVx, Nml.isAlias, resVgw));
+        // include port in a subnet
+        stitchModel.add(stitchModel.createStatement(resSubnet, Nml.hasBidirectionalPort, netIf));
         return stitchModel; 
     }
     
