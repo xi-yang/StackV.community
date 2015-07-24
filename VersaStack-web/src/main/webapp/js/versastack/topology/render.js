@@ -396,8 +396,8 @@ define([
             map_(n.services, function (service) {
                 service.y = coords.y;
                 service.x = coords.x;
-                var midY = coords.y + service.dy;
-                var midX = coords.x + service.dx;
+                var midY = coords.y + service.dy - settings.SERVICE_SIZE / 2 + service.size/2;
+                var midX = coords.x + service.dx - settings.SERVICE_SIZE / 2 + service.size/2;
                 service.svgNode
                         .attr("y", coords.y + service.dy - settings.SERVICE_SIZE / 2)
                         .attr("x", coords.x + service.dx - settings.SERVICE_SIZE / 2)
@@ -535,6 +535,12 @@ define([
             if (didDrag) {
                 return;
             }
+            //debug
+            if (d3.event && d3.event.altKey) {
+                n.isGhost = !n.isGhost;
+                n.svgNode.style("filter", n.isGhost ? "url(#ghost)" : "none");
+                return;
+            }
             highlightedNode = n;
             drawHighlight();
             outputApi.setDisplayName(n.getName());
@@ -554,6 +560,12 @@ define([
             selectedNode = n;
             d3.event.stopPropagation();
             if (didDrag) {
+                return;
+            }
+            //debug
+            if (d3.event && d3.event.altKey) {
+                n.isGhost = !n.isGhost;
+                n.svgNode.style("filter", n.isGhost ? "url(#ghost)" : "none");
                 return;
             }
             highlightedNode = n;
@@ -694,7 +706,6 @@ define([
                     .attr("height", size)
                     .attr("x", x + n.dx)//make it appear to zoom into center of the icon
                     .attr("y", y + n.dy);
-
             if (n.svgNodeSubnetHighlight) {
                 n.svgNodeSubnetHighlight
                         .attr("width", size)
