@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package net.maxgigapop.mrs.driver.openstackzanmiguel;
+package net.maxgigapop.mrs.driver.openstack;
 
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ec2.model.Instance;
@@ -167,13 +167,14 @@ public class OpenStackNeutronModelBuilder {
 
                 Resource HYPERVISOR = RdfOwl.createResource(model, topologyURI + ":" + "hypersor-name+" + hypervisorname, hypervisorService);
                 Resource VM = RdfOwl.createResource(model, topologyURI + ":" + "server-name+" + openstackget.getServereName(server), node);
-
+            
+                
                 model.add(model.createStatement(OpenstackTopology, hasNode, HOST));
 
                 model.add(model.createStatement(HOST, hasService, HYPERVISOR));
                 model.add(model.createStatement(HYPERVISOR, providesVM, VM));
                 model.add(model.createStatement(HOST, hasNode, VM));
-
+                
                 for (Port port : openstackget.getServerPorts(server)) {
                     Resource Port = model.getResource(topologyURI + ":" + "port+" + openstackget.getResourceName(port));  //use function
 

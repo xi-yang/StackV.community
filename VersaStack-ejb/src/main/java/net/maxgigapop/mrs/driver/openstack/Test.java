@@ -3,12 +3,12 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package net.maxgigapop.mrs.driver.openstackzanmiguel;
+package net.maxgigapop.mrs.driver.openstack;
 
 import java.io.IOException;
 import org.openstack4j.model.network.NetworkType;
 
-import static net.maxgigapop.mrs.driver.openstackzanmiguel.OpenStackNeutronModelBuilder.createOntology;
+import static net.maxgigapop.mrs.driver.openstack.OpenStackNeutronModelBuilder.createOntology;
 
 /**
  *
