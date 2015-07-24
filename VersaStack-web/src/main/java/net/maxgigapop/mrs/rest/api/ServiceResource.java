@@ -72,8 +72,16 @@ public class ServiceResource {
 
     //PUT to push and sync deltas
     @PUT
-    @Path("/{siUUID}")
-    public String push(@PathParam("siUUID")String svcInstanceUUID) {
-        return serviceCallHandler.pushSyncDeltas(svcInstanceUUID);
+    @Path("/{siUUID}/{action}")
+    public String push(@PathParam("siUUID")String svcInstanceUUID, @PathParam("action")String action) {
+        if (action.equalsIgnoreCase("propagate")) {
+            return serviceCallHandler.propagateDeltas(svcInstanceUUID);
+        } else if (action.equalsIgnoreCase("commit")) {
+            return serviceCallHandler.commitDeltas(svcInstanceUUID);
+        } else if (action.equalsIgnoreCase("status")) {
+            return serviceCallHandler.checkStatus(svcInstanceUUID);
+        } else {
+            throw new EJBException("Unrecognized action=" + action);
+        }
     }
 }
