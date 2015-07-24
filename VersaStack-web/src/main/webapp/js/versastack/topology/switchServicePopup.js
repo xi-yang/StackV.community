@@ -204,21 +204,23 @@ define(["local/d3", "local/versastack/utils"],
                             eraseHighlights();
                             map_(subnet.ports, function (port) {
                                 var toHighlight = port.getFirstVisibleParent();
-                                if (toHighlight.svgNode) {
+                                //It is possible that multiple ports of the subnet will resolve to the same node
+                                //when deciding what we should highlight. To avoid issues in removing highlights,
+                                //we make sure to not highlight the same element multiple times.
+                                if (toHighlight.svgNode && !toHighlight.svgNodeSubnetHighlight) {
                                     var toAppend = toHighlight.svgNode.node().cloneNode();
                                     previousHighlights.push(toHighlight);
                                     toHighlight.svgNodeSubnetHighlight = d3.select(toAppend)
                                             .style("filter", "url(#subnetHighlight)")
                                             .style("opacity", "1")
                                             .attr("pointer-events", "none");
-                                    ;
                                     var parentNode = toHighlight.svgNode.node().parentNode;
                                     if (parentNode) {
                                         parentNode.appendChild(toAppend);
                                     } else {
                                         console.log("Trying to highlight an element without a parent")
                                     }
-                                } else {
+                                } else if (!toHighlight.svgNode){
                                     console.log("trying to highlight an element without an svgNode")
                                 }
                             });
