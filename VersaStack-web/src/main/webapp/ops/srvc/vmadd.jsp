@@ -28,7 +28,7 @@
     </head>
 
     <sql:setDataSource var="rains_conn" driver="com.mysql.jdbc.Driver"
-                       url="jdbc:mysql://localhost:8889/rainsdb"
+                       url="jdbc:mysql://localhost:3306/rainsdb"
                        user="root"  password="root"/>
 
     <body>
