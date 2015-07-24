@@ -26,7 +26,7 @@
     </head>
 
     <sql:setDataSource var="front_conn" driver="com.mysql.jdbc.Driver"
-                       url="jdbc:mysql://localhost:8889/Frontend"
+                       url="jdbc:mysql://localhost:3306/Frontend"
                        user="front_view"  password="frontuser"/>
 
     <body>        
