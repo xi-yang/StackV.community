@@ -14,16 +14,22 @@
 <html >    
     <head>   
         <meta charset="UTF-8">
-        <title>VM Service</title>
+        <title>Virtual Machine Service</title>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
+        <script src="/VersaStack-web/js/nexus.js"></script>
 
         <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
         <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/VersaStack-web/css/bootstrap.css">
         <link rel="stylesheet" href="/VersaStack-web/css/style.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/driver.css">
     </head>
+
+    <sql:setDataSource var="rains_conn" driver="com.mysql.jdbc.Driver"
+                       url="jdbc:mysql://localhost:3306/rainsdb"
+                       user="root"  password="root"/>
 
     <body>
         <!-- NAV BAR -->
@@ -35,70 +41,183 @@
         <!-- MAIN PANEL -->
         <div id="main-pane">
             <c:choose>                
-                <c:when test="${empty param.sub && empty param.ret}">
-                    <div id="service-specific"> 
-                        <c:if test="${not empty param.self}">
-                            <button type="button" id="button-service-cancel">Cancel</button>
-                        </c:if>
-                        <form action="/VersaStack-web/ops/srvc/vmadd.jsp" method="post">
-                            <input type="hidden" name="sub" value="true" />
-                            <table class="management-table" id="service-form">                    
-                                <thead>
-                                    <tr>
-                                        <th>VM Details</th>
-                                        <th style="text-align: right"></th>                            
-                                    </tr>
-                                </thead>
-                                <tbody>                    
-                                    <tr>
-                                        <td>VM Type</td>
-                                        <td>
-                                            
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td></td>
-                                        <td>
-                                            <input class="button-register" name="install" type="submit" value="Install" />
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </form>
-                    </div>
-                </c:when>
+                <c:when test="${empty param.ret}">
+                    <div id="service-specific">
+                        <div id="service-top">
+                            <div id="service-menu">
+                                <c:if test="${not empty param.self}">
+                                    <button type="button" id="button-service-return">Cancel</button>
+                                </c:if>
+                                <table class="management-table">
+                                    <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance" var="driverlist" />
+                                    <thead>
+                                        <tr>
+                                            <th>Select Topology</th>
+                                            <th>
+                                                <select form="vm-form" name="topologyUri" onchange="topoSelect(this)">                                                                                                  
+                                                    <option></option>
+                                                    <c:forEach var="driver" items="${driverlist.rows}">
+                                                        <option value="${driver.topologyUri}">${driver.topologyUri}</option>
+                                                    </c:forEach>
+                                                </select>                                                
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                </table>
+                            </div>
+                        </div>
+                        <div id="service-bottom">
+                            <div id="service-fields">
+                                <form id="vm-form" action="/VersaStack-web/VMServlet" method="post">
+                                    <table class="management-table" id="service-form" style="margin-bottom: 0px;"> 
+                                        <c:if test="${param.vm_type == 'aws'}">
+                                            <thead>
+                                                <tr>
+                                                    <th>AWS Details</th>
+                                                    <th style="text-align: right"></th>                            
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <c:if test="${not empty param.topo}">
+                                                        <sql:query dataSource="${rains_conn}" sql="SELECT value FROM driver_instance_property P, driver_instance I 
+                                                                   WHERE property = 'region' AND I.id = P.driverInstanceId AND I.topologyUri = ?" var="regionlist">
+                                                            <sql:param value="${param.topo}" />
+                                                        </sql:query>
 
-                <c:when test="${param.sub == 'true'}">
-                    <div id="service-process">
-                        <c:if test="${not empty param.install}">
-                            <c:redirect url="/ops/srvc/vmadd.jsp?ret=${serv.vmInstall()}" />
-                        </c:if>
-                    </div>
-                </c:when>
+                                                        <td>Region</td>
+                                                        <td>
+                                                            <c:forEach var="reg" items="${regionlist.rows}">
+                                                                <input type="text" name="region" value="${reg.value}" readonly />
+                                                            </c:forEach>
+                                                        </td>
+                                                    </c:if>
+                                                </tr> 
+                                                <tr>
+                                                    <td>VPC ID</td>
+                                                    <td><input type="text" name="vpcID" required></td>
+                                                </tr>  
+                                                <tr>
+                                                    <td>OS Type</td>
+                                                    <td>
+                                                        <select name="ostype" required>
+                                                            <option></option>
+                                                            <option value="windows">Windows 7</option>
+                                                            <option value="ubuntu">Ubuntu</option>
+                                                        </select>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Instance Type</td>
+                                                    <td>
+                                                        <select name="instanceType" required>
+                                                            <option></option>
+                                                            <option>cpu:1, ram:512 MB</option>
+                                                            <option>cpu:2, ram:1 GB</option>
+                                                            <option>cpu:4, ram:4 GB</option>
+                                                        </select>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Number of VMs</td>
+                                                    <td><input type="number" name="vmQuantity" required></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>VM Subnets<br>(Newline delimited)</td>
+                                                    <td><textarea rows="3" cols="50" name="subnets"></textarea></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Volumes</td>
+                                                    <td>
+                                                        <table id="volume-table">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Name</th>
+                                                                    <th>Device Path</th>
+                                                                    <th>Snapshot</th>
+                                                                    <th>Size</th>
+                                                                    <th>Type</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>                                                                
+                                                                <tr>
+                                                                    <td>Root</td>
+                                                                    <td>
+                                                                        <select name="-path" required>
+                                                                            <option></option>
+                                                                            <option value="/dev/xvda">/dev/xvda</option>
+                                                                            <option value="/dev/sdb">/dev/sdb</option>
+                                                                            <option value="/dev/sdc">/dev/sdc</option>
+                                                                        </select>
+                                                                    </td>
+                                                                    <td>
+                                                                        <select name="-snapshot" required>
+                                                                            <option></option>
+                                                                            <option value="snapshot1">snapshot1</option>
+                                                                            <option value="snapshot1">snapshot2</option>
+                                                                            <option value="snapshot1">snapshot3</option>
+                                                                        </select>
+                                                                    </td>
+                                                                    <td>
+                                                                        <input type="number" name="-size" style="width: 4em; text-align: center;"/>
+                                                                    </td>
+                                                                    <td>
+                                                                        <select name="-type" required>
+                                                                            <option></option>
+                                                                            <option value="standard">Standard</option>
+                                                                            <option value="io1">io1</option>
+                                                                            <option value="gp2">gp2</option>
+                                                                        </select>                                                        
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </td>
+                                                </tr>
 
-                <c:otherwise>
-                    <div class="form-result" id="service-result">
-                        <c:choose>
-                            <c:when test="${param.ret == '0'}">
-                                Success
-                            </c:when>
-                            <c:when test="${param.ret == '1'}">
-                                Invalid Driver ID
-                            </c:when>
-                            <c:when test="${param.ret == '2'}">
-                                Error (Un)Installing Driver
-                            </c:when>
-                            <c:when test="${param.ret == '3'}">
-                                Connection Error
-                            </c:when>
-                        </c:choose>                        
+                                                <tr>
+                                                    <td></td>
+                                                    <td>
+                                                        <input class="button-register" name="install" type="submit" value="Install" />
+                                                        <input class="button-register" type="button" 
+                                                               value="Add Volume" onClick="addVolume()">
+                                                    </td>
+                                                </tr> 
+                                            </tbody>
+                                        </c:if>
+                                    </table>
+                                </form>
+                            </div>
+                        </div>
+                    </c:when>
 
-                        <br><a href="/VersaStack-web/ops/srvc/vmadd.jsp?self=true">Add Another VM.</a>                                
-                        <br><a href="/VersaStack-web/ops/catalog.jsp">Return to Services.</a>
-                    </div>
-                </c:otherwise>
-            </c:choose>
-        </div>        
+                    <c:otherwise>
+                        <div class="form-result" id="service-result">
+                            <c:choose>
+                                <c:when test="${param.ret == '0'}">
+                                    Installation Success!
+                                </c:when>
+                                <c:when test="${param.ret == '1'}">
+                                    Error Requesting System Instance UUID.
+                                </c:when>    
+                                <c:when test="${param.ret == '2'}">
+                                    Failure while Unplugging.
+                                </c:when>    
+                                <c:when test="${param.ret == '3'}">
+                                    Connection Error.
+                                </c:when>    
+                                <c:when test="${param.ret == '4'}">
+                                    Error Building Model.
+                                </c:when>                                        
+                            </c:choose>                        
+
+                            <br><a href="/VersaStack-web/ops/srvc/vmadd.jsp?self=true">(Un)Install Another Driver.</a>                                
+                            <br><a href="/VersaStack-web/ops/catalog.jsp">Return to Services.</a>
+                        </div>
+                    </c:otherwise>
+                </c:choose>
+            </div>       
+        </div>
         <!-- JS -->
         <script>
             $(function () {
@@ -119,13 +238,6 @@
                         var element = document.getElementById("service4");
                         element.classList.remove("hide");
                     }
-                });
-                $("#nav").load("/VersaStack-web/navbar.html");
-
-                $("#button-service-cancel").click(function (evt) {
-                    window.location.href = "/VersaStack-web/ops/catalog.jsp";
-
-                    evt.preventDefault();
                 });
             });
         </script>        

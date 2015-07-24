@@ -4,6 +4,7 @@
         <meta charset="utf-8">
         <title>Orchestration</title>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
+        <script src="/VersaStack-web/js/nexus.js"></script>
 
         <link rel="stylesheet" type="text/css" href="/VersaStack-web/css/graphTest.css">
         <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
@@ -48,7 +49,7 @@
                 ZOOM_FACTOR: .04,
                 ZOOM_MIN: .8,
                 INIT_ZOOM: 2  //The initial zoom factor effects the preciosion in which we can specify the highlighting effect
-                              //However, it also seems to effect the error in zooming
+                        //However, it also seems to effect the error in zooming
             };
             var model;
             var layout;
@@ -58,6 +59,25 @@
             var DropDownTree;
 
             function onload() {
+                $("#awsButton").click(function (evt) {
+                    $("#actionForm").load("/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=aws #service-fields");
+                    
+                    $("#awsButton").toggleClass("hide");
+                    $("#cancelButton").toggleClass("hide");
+                    
+                    evt.preventDefault();
+                });
+                
+                $("#cancelButton").click(function (evt) {
+                    $("#actionForm").empty();
+                    
+                    $("#awsButton").toggleClass("hide");
+                    $("#cancelButton").toggleClass("hide");
+                    
+                    evt.preventDefault();
+                });
+                
+                
                 require(["local/versastack/topology/model",
                     "local/versastack/topology/layout",
                     "local/versastack/topology/render",
@@ -74,6 +94,8 @@
                             map_ = utils.map_;
                             DropDownTree = tree;
                         });
+                        
+                        
             }
             function drawGraph() {
                 var nodeList = model.listNodes();
@@ -202,7 +224,7 @@
                 //as a work around, we provide a way to enable/disable panning
                 var panningEnabled = true;
                 var isPanning = false;
-                var moved=false;
+                var moved = false;
                 this.enablePanning = function () {
                     panningEnabled = true;
                 };
@@ -210,18 +232,18 @@
                     panningEnabled = false;
                 };
                 svg.addEventListener("mousedown", function (e) {
-                    moved=false;
+                    moved = false;
                     isPanning = true;
                 });
                 svg.addEventListener("mousemove", function (e) {
                     if (isPanning && panningEnabled) {
-                        moved=true;
+                        moved = true;
                         that.scroll(e.movementX, e.movementY);
                     }
                 });
                 svg.addEventListener("mouseup", function (e) {
                     isPanning = false;
-                    if(moved){
+                    if (moved) {
                         e.preventDefault();
                     }
                 });
@@ -237,6 +259,11 @@
         <div id="displayPanel">
             <div id="displayName"></div>
             <div id="treeMenu"></div>
+            <div id="actionMenu">
+                <button id="awsButton">Install AWS</button>
+                <button id="cancelButton" class="hide">Minimize</button>
+                <div id="actionForm"></div>
+            </div>
         </div>
         <div id="hoverdiv"></div>
         <svg id="viz">
@@ -286,9 +313,9 @@
                 <g id="edge2" />
                 <g id="port"/>
 
-            </g>
-        </svg>
+    </g>
+    </svg>
 
-    </body>
+</body>
 
 </html>
