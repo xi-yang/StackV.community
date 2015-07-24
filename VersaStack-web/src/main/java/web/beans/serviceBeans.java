@@ -193,49 +193,49 @@ public class serviceBeans {
                        "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n" +
                        "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n" +
                        "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n" +
-                       "@prefix rdf:   &lt;http://schemas.ogf.org/nml/2013/03/base##&gt; .\n" +
+                       "@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .\n" +
                        "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n" +
                        "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n\n";
         
         String nodeTag = "&lt;" + topoUri + ":i-" + UUID.randomUUID().toString() + "&gt;";
         String model = "&lt;" + vpcUri + "&gt;\n"
-                    + "        nml:hasNode               " + nodeTag + ".\n\n";
+                    + "        nml:hasNode        " + nodeTag + ".\n\n";
         //get the region name from VPC service URI
         String region = vpcServiceUri.split(":vpcservice-")[1];
         model += "&lt;" + topoUri + ":ec2service-" + region + "&gt;\n"
-                + "        mrs:providesVM  " + nodeTag + ".\n\n";
+                + "        mrs:providesVM  " + nodeTag + ".\n\n";
         
         //building all the volumes 
-        String allBolUri = "";
+        String allVolUri = "";
         for(String vol : volumes){
             String volUri = "&lt;" + topoUri + ":vol-" + UUID.randomUUID().toString() + "&gt;";
             String[] parameters = vol.split(",");
-            model += volUri +"\n        a                  mrs:Volume , owl:NamedIndividual ;\n"
-                    + "        mrs:disk_gb        \"" + parameters[0] + "\" ;\n" 
-                    + "        mrs:target_device  \"" + parameters[2] + "\" ;\n"
-                    + "        mrs:value          \"" + parameters[1] + "\" .\n\n";
-            allBolUri += volUri + ",";
+            model += volUri +"\n        a                  mrs:Volume , owl:NamedIndividual ;\n"
+                    + "        mrs:disk_gb        \"" + parameters[0] + "\" ;\n" 
+                    + "        mrs:target_device  \"" + parameters[2] + "\" ;\n"
+                    + "        mrs:value          \"" + parameters[1] + "\" .\n\n";
+            allVolUri += volUri + " , ";
         }        
         model += "&lt;" + topoUri + ":ebsservice-" + region + "&gt;\n"
-                + "        mrs:providesVolume  " + allBolUri.substring(0, (allBolUri.length()-1)) + ".\n\n";
+                + "        mrs:providesVolume  " + allVolUri.substring(0, (allVolUri.length()-2)) + ".\n\n";
 
         //building all the network interfaces
         String allSubnets = "";
         for(String net : subnets){
             String portUri = "&lt;" + topoUri + ":eni-" + UUID.randomUUID().toString() + "&gt;";
-            model += net + "\n        nml:hasBidirectionalPort " + portUri + ".\n\n"
-                    + portUri + "\n        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n"
-                    + "        mrs:hasTag            &lt;" + topoUri + ":portTag&gt;.\n\n";
-            allSubnets += portUri + ","; 
+            model += "&lt;" + net + "&gt;\n        nml:hasBidirectionalPort " + portUri + ".\n\n"
+                    + portUri + "\n        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n"
+                    + "        mrs:hasTag            &lt;" + topoUri + ":portTag&gt; .\n\n";
+            allSubnets += portUri + " , "; 
         }
         
         //building the node
-        model += nodeTag +"\n        a                         nml:Node , owl:NamedIndividual ;\n"
-                + "        mrs:providedByService     &lt;" + topoUri + ":ec2service-" + region + "&gt;;\n"
-                + "        mrs:hasVolume             " 
-                + allBolUri.substring(0, (allBolUri.length()-1)) + ";\n"
-                + "        nml:hasBidirectionalPort  "
-                + allSubnets.substring(0, (allSubnets.length()-1)) + ".\n\n";
+        model += nodeTag +"\n        a                         nml:Node , owl:NamedIndividual ;\n"
+                + "        mrs:providedByService     &lt;" + topoUri + ":ec2service-" + region + "&gt; ;\n"
+                + "        mrs:hasVolume             " 
+                + allVolUri.substring(0, (allVolUri.length()-2)) + ";\n"
+                + "        nml:hasBidirectionalPort  "
+                + allSubnets.substring(0, (allSubnets.length()-2)) + ".\n\n";
         
         delta += model + "</modelAddition>\n</delta>";
         
