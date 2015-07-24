@@ -392,6 +392,11 @@ body {
     text-align: right;
 }
 
+#service-menu {
+    margin: 1% auto;
+    width: 65%;
+}
+
 #service-specific {
     margin: 5% auto;
     width: 75%;
@@ -518,7 +523,7 @@ body {
     
 }
 
-#button-service-cancel {
+#button-service-cancel, #button-service-return {
     color: #B60000;    
     margin-left: 75%;
     postition: relative;

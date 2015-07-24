@@ -99,14 +99,7 @@
                         var element = document.getElementById("service4");
                         element.classList.remove("hide");
                     }
-                });
-                $("#nav").load("/VersaStack-web/navbar.html");
-                
-                $("#button-service-cancel").click(function (evt) {
-                    $("#service-specific").load("/VersaStack-web/ops/catalog.jsp");
-                    
-                    evt.preventDefault();
-                });
+                }); 
             });
         </script>        
     </body>
