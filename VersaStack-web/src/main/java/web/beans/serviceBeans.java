@@ -1,8 +1,5 @@
 package web.beans;
 
-import com.hp.hpl.jena.ontology.OntModel;
-import com.hp.hpl.jena.ontology.OntModelSpec;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -11,10 +8,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import net.maxgigapop.mrs.common.ModelUtil;
-import org.apache.commons.lang.RandomStringUtils;
 
 public class serviceBeans {
 
@@ -127,27 +123,19 @@ public class serviceBeans {
     }
 
     /**
-     * 
-     * @param parameters An array of the required parameters:<br />
-     * [0] - Version Group UUID<br />
-     * [1] - topology URI<br />
-     * [2] - VPC Id<br />
-     * [3] - OS Type<br />
-     * [4] - Instance Type(AWS)/Flavor(OPS)<br />
-     * [5] - Number of the VM want to created<br />
-     * [6] - all subnet tags need to be attached to the VM. Separated by "\r\n".<br />
-     * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;eg:
-     * urn:ogf:network:aws.amazon.com:aws-cloud:subnet-2cd6ad16\r\n
-     * urn:ogf:network:aws.amazon.com:aws-cloud:subnet-2cd6ad16<br />
-     * [7] - all volumes need to be created in the VM<br />
-     * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;eg:
-     * 8,standard,/dev/xvda,snapshot\r\n8,standard,/dev/sdb,snapshot
+     * Create a virtual machine. Compose the ttl model according to the parsing
+     * parameters. Put the ttl model and the VersionGroup UUID in the parsing 
+     * parameter into the modelAddition part and referenceVersion respectively 
+     * in the delta. Request an UUID for system instance and use the UUID to 
+     * propagate and commit the delta via the system API.
+     * @param paraMap a key-value pair contains all the required information, 
+     * either selected by the user or assigned by the system, to build the request
+     * virtual machine.
      * @return
      * 0 - success.<br />
      * 1 - Requesting System Instance UUID error.<br />
      * 2 - unplug error.<br />
      * 3 - connection error.<br />
-     * 4 - model building error<br />
      */
     public int vmInstall(Map<String, String> paraMap){
         String vgUuid = null;
@@ -160,6 +148,7 @@ public class serviceBeans {
         String[] subnets = null;
         String[] volumes = null;
         int quantity;
+        //Map the parsing parameters into each variable
         for(Map.Entry<String, String> entry : paraMap.entrySet()){
             if(entry.getKey().equalsIgnoreCase("versionGroup"))
                 vgUuid = entry.getValue();
@@ -182,6 +171,8 @@ public class serviceBeans {
             else if(entry.getKey().equalsIgnoreCase("volumes"))
                 volumes = entry.getValue().split("\r\n");            
         }
+        
+        //create a system instance and get an UUID for this system instance from the API
         String siUuid ;
         try {
             URL url = new URL(String.format("%s/model/systeminstance", host));
@@ -192,7 +183,8 @@ public class serviceBeans {
         } catch (Exception e) {
             return 3;//connection error
         }
-
+        
+        //building ttl model
         String delta = "<delta>\n<id>1</id>\n" +
                        "<creationTime>2015-03-11T13:07:23.116-04:00</creationTime>\n" +
                        "<referenceVersion>"+ vgUuid + "</referenceVersion>\n" +
@@ -201,35 +193,51 @@ public class serviceBeans {
                        "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n" +
                        "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n" +
                        "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n" +
-                       "@prefix rdf:   &lt;http://schemas.ogf.org/nml/2013/03/base##&gt; .\n" +
+                       "@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .\n" +
                        "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n" +
-                       "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .";
+                       "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n\n";
         
-        String nodeTag = "&lt;" + topoUri + ":i-" + RandomStringUtils.random(8, true, true) + "&gt;";
+        String nodeTag = "&lt;" + topoUri + ":i-" + UUID.randomUUID().toString() + "&gt;";
         String model = "&lt;" + vpcUri + "&gt;\n"
-                    + "        nml:hasNode               " + nodeTag + ".\n\n";
-
+                    + "        nml:hasNode        " + nodeTag + ".\n\n";
+        //get the region name from VPC service URI
         String region = vpcServiceUri.split(":vpcservice-")[1];
         model += "&lt;" + topoUri + ":ec2service-" + region + "&gt;\n"
-                + "        mrs:providesVM  " + nodeTag + ".\n\n";
+                + "        mrs:providesVM  " + nodeTag + ".\n\n";
         
-        String allBolUri = "";
+        //building all the volumes 
+        String allVolUri = "";
         for(String vol : volumes){
-            String volUri = "&lt;" + topoUri + ":vol-" + 
-                    RandomStringUtils.random(8, false, true) + "&gt;";
+            String volUri = "&lt;" + topoUri + ":vol-" + UUID.randomUUID().toString() + "&gt;";
             String[] parameters = vol.split(",");
-            model += volUri +"\n        a                  mrs:Volume , owl:NamedIndividual ;\n"
-                    + "        mrs:disk_gb        \"" + parameters[0] + "\" ;\n" 
-                    + "        mrs:target_device  \"" + parameters[2] + "\" ;\n"
-                    + "        mrs:value          \"" + parameters[1] + "\" .\n\n";
-            allBolUri += volUri + ",";
+            model += volUri +"\n        a                  mrs:Volume , owl:NamedIndividual ;\n"
+                    + "        mrs:disk_gb        \"" + parameters[0] + "\" ;\n" 
+                    + "        mrs:target_device  \"" + parameters[2] + "\" ;\n"
+                    + "        mrs:value          \"" + parameters[1] + "\" .\n\n";
+            allVolUri += volUri + " , ";
+        }        
+        model += "&lt;" + topoUri + ":ebsservice-" + region + "&gt;\n"
+                + "        mrs:providesVolume  " + allVolUri.substring(0, (allVolUri.length()-2)) + ".\n\n";
+
+        //building all the network interfaces
+        String allSubnets = "";
+        for(String net : subnets){
+            String portUri = "&lt;" + topoUri + ":eni-" + UUID.randomUUID().toString() + "&gt;";
+            model += "&lt;" + net + "&gt;\n        nml:hasBidirectionalPort " + portUri + ".\n\n"
+                    + portUri + "\n        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n"
+                    + "        mrs:hasTag            &lt;" + topoUri + ":portTag&gt; .\n\n";
+            allSubnets += portUri + " , "; 
         }
         
-        model += "&lt;" + topoUri + ":ebsservice-" + region + "&gt;\n"
-                + "        mrs:providesVolume  " + allBolUri.substring(0, (allBolUri.length()-1)) + ".";
+        //building the node
+        model += nodeTag +"\n        a                         nml:Node , owl:NamedIndividual ;\n"
+                + "        mrs:providedByService     &lt;" + topoUri + ":ec2service-" + region + "&gt; ;\n"
+                + "        mrs:hasVolume             " 
+                + allVolUri.substring(0, (allVolUri.length()-2)) + ";\n"
+                + "        nml:hasBidirectionalPort  "
+                + allSubnets.substring(0, (allSubnets.length()-2)) + ".\n\n";
         
-        
-        delta += model + "\n</modelAddition>\n</delta>";
+        delta += model + "</modelAddition>\n</delta>";
         
         //push to the system api and get response
         try {
