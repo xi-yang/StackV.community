@@ -64,7 +64,7 @@ public class HandleServiceCall {
         ServiceInstancePersistenceManager.delete(serviceInstance);
     }
 
-    public SystemDelta compileDelta(String serviceInstanceUuid, String workerClassPath, ServiceDelta spaDelta) {
+    public SystemDelta compileAddDelta(String serviceInstanceUuid, String workerClassPath, ServiceDelta spaDelta) {
         ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
         if (serviceInstance == null) {
             throw new EJBException(HandleServiceCall.class.getName()+".compileDelta cannot find serviceInstance with uuid=" + serviceInstanceUuid);
@@ -128,7 +128,7 @@ public class HandleServiceCall {
         } catch (Exception ex) {
             throw new EJBException(ex);
         }
-        return compileDelta(serviceInstanceUuid, workerClassPath, spaDelta);
+        return compileAddDelta(serviceInstanceUuid, workerClassPath, spaDelta);
     }
     
     // handling multiple deltas:  propagate + commit + query = transactional propagate + parallel commits
@@ -142,7 +142,7 @@ public class HandleServiceCall {
             throw new EJBException(HandleServiceCall.class.getName()+".propogateDeltas needs  status='INIT' by " + serviceInstance + ", the actual status=" + serviceInstance.getStatus());
         }
         Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
-        if (itSD.hasNext()) {
+        if (itSD.hasNext()) { // assume failed before proven success
             serviceInstance.setStatus("FAILED"); 
         }
         while (itSD.hasNext()) {
@@ -174,7 +174,7 @@ public class HandleServiceCall {
             throw new EJBException(HandleServiceCall.class.getName()+".commitDeltas needs  status='PROPOGATED' by " + serviceInstance + ", the actual status=" + serviceInstance.getStatus());
         }
         Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
-        if (itSD.hasNext()) {
+        if (itSD.hasNext()) { // assume failed before proven success
             serviceInstance.setStatus("FAILED"); 
         }
         while (itSD.hasNext()) {
@@ -183,7 +183,10 @@ public class HandleServiceCall {
                 continue;
             if (serviceDelta.getStatus().equals("PROPOGATED")) {
                 SystemInstance systemInstance = SystemInstancePersistenceManager.findBySystemDelta(serviceDelta.getSystemDelta());
-                systemCallHandler.commitDelta(systemInstance);
+                systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(systemInstance.getReferenceUUID());
+                Future<String> asynResult = systemCallHandler.commitDelta(systemInstance);
+                systemInstance.setCommitStatus(asynResult);
+                systemInstance.setCommitFlag(true);
                 serviceDelta.setStatus("COMMITTED");
                 DeltaPersistenceManager.merge(serviceDelta);
             } else {
@@ -222,6 +225,9 @@ public class HandleServiceCall {
             }
             // get cached systemInstance
             systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(systemInstance.getReferenceUUID());
+            if (!systemInstance.getCommitFlag()) {
+                throw new EJBException(HandleServiceCall.class.getName() + ".checkStatus encounters un-commited systemInstance based on " + serviceDelta.getSystemDelta());
+            }
             Future<String> asyncStatus = systemInstance.getCommitStatus();
             serviceDelta.setStatus("FAILED");
             if (asyncStatus.isDone()) {
@@ -234,7 +240,7 @@ public class HandleServiceCall {
                     serviceDelta.setStatus("FAILED");
                 }
             } else {
-                serviceDelta.setStatus("PROCESSING");
+                serviceDelta.setStatus("COMMITTED");
             }
             DeltaPersistenceManager.merge(serviceDelta);
         }
@@ -247,7 +253,7 @@ public class HandleServiceCall {
             if (serviceDelta.getStatus().equals("FAILED")) {
                 failed = true;
                 break;
-            } else if (serviceDelta.getStatus().equals("PROCESSING"))  {
+            } else if (serviceDelta.getStatus().equals("COMMITTED"))  {
                 ready = false;
             }
         }
@@ -256,7 +262,7 @@ public class HandleServiceCall {
         } else if (ready) {
             serviceInstance.setStatus("READY");
         } else {
-            serviceInstance.setStatus("PROCESSING");
+            serviceInstance.setStatus("COMMITTED");
         }
         ServiceInstancePersistenceManager.merge(serviceInstance);
         return serviceInstance.getStatus();

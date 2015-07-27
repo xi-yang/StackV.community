@@ -78,7 +78,16 @@ public class ServiceResource {
             return serviceCallHandler.propagateDeltas(svcInstanceUUID);
         } else if (action.equalsIgnoreCase("commit")) {
             return serviceCallHandler.commitDeltas(svcInstanceUUID);
-        } else if (action.equalsIgnoreCase("status")) {
+        } else {
+            throw new EJBException("Unrecognized action=" + action);
+        }
+    }
+
+    //PUT to push and sync deltas
+    @GET
+    @Path("/{siUUID}/{action}")
+    public String check(@PathParam("siUUID")String svcInstanceUUID, @PathParam("action")String action) {
+        if (action.equalsIgnoreCase("status")) {
             return serviceCallHandler.checkStatus(svcInstanceUUID);
         } else {
             throw new EJBException("Unrecognized action=" + action);
