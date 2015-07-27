@@ -191,6 +191,7 @@ define(["local/d3", "local/versastack/utils"],
                             outputApi.setHoverVisible(false);
                         };
                         var onClick = function () {
+                            outputApi.formSelect(subnet);
                             if (clickSubnet) {
                                 clickSubnet.svgNode.style("fill", that.tabColor);
                             }
