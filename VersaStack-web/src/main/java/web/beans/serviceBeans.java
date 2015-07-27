@@ -8,6 +8,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -134,13 +135,14 @@ public class serviceBeans {
      * @return
      * 0 - success.<br />
      * 1 - Requesting System Instance UUID error.<br />
-     * 2 - unplug error.<br />
+     * 2 - plugin error.<br />
      * 3 - connection error.<br />
+     * 4 - parsing parameter error<br />
      */
     public int vmInstall(Map<String, String> paraMap){
         String vgUuid = null;
         String topoUri = null;
-        String vpcServiceUri = null;
+        String region = null;
         String vpcUri = null;
         String osType = null;
         String instanceType = null;
@@ -155,7 +157,7 @@ public class serviceBeans {
             else if(entry.getKey().equalsIgnoreCase("topologyUri"))
                 topoUri = entry.getValue();
             else if(entry.getKey().equalsIgnoreCase("region"))
-                vpcServiceUri = entry.getValue();
+                region = entry.getValue();
             else if(entry.getKey().equalsIgnoreCase("vpcID"))
                 vpcUri = entry.getValue();
             else if(entry.getKey().equalsIgnoreCase("osType"))
@@ -199,11 +201,9 @@ public class serviceBeans {
         
         String nodeTag = "&lt;" + topoUri + ":i-" + UUID.randomUUID().toString() + "&gt;";
         String model = "&lt;" + vpcUri + "&gt;\n"
-                    + "        nml:hasNode        " + nodeTag + ".\n\n";
-        //get the region name from VPC service URI
-        String region = vpcServiceUri.split(":vpcservice-")[1];
-        model += "&lt;" + topoUri + ":ec2service-" + region + "&gt;\n"
-                + "        mrs:providesVM  " + nodeTag + ".\n\n";
+                    + "        nml:hasNode        " + nodeTag + ".\n\n"
+                    +"&lt;" + topoUri + ":ec2service-" + region + "&gt;\n"
+                    + "        mrs:providesVM  " + nodeTag + ".\n\n";
         
         //building all the volumes 
         String allVolUri = "";
@@ -222,10 +222,23 @@ public class serviceBeans {
         //building all the network interfaces
         String allSubnets = "";
         for(String net : subnets){
+            //temporary code for assign IP
+            String[] parameter = net.split(",");
+            String assignedIp = parameter[1].substring(0, parameter[1].length()-1);
+            Random rand = new Random();
+            int i = rand.nextInt(251) + 4;
+            
+            //codes for assigning IP should be cleaned after AWS driver code being fixed
             String portUri = "&lt;" + topoUri + ":eni-" + UUID.randomUUID().toString() + "&gt;";
-            model += "&lt;" + net + "&gt;\n        nml:hasBidirectionalPort " + portUri + ".\n\n"
+            model += "&lt;" + parameter[0] + "&gt;\n        nml:hasBidirectionalPort " + portUri + " .\n\n"
                     + portUri + "\n        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n"
-                    + "        mrs:hasTag            &lt;" + topoUri + ":portTag&gt; .\n\n";
+                    + "        mrs:hasTag            &lt;" + topoUri + ":portTag&gt; ;\n"
+                    + "        mrs:hasNetworkAddress  &lt;"+ topoUri + ":" + assignedIp + i +"&gt; .\n\n"
+                    + "&lt;"+ topoUri + ":" + assignedIp + i +"&gt;\n        "
+                    + "a      mrs:NetworkAddress , owl:NamedIndividual ;\n"
+                    + "        mrs:type  \"ipv4:private\" ;\n"
+                    + "        mrs:value \""+ assignedIp + i +"\" .\n\n";
+            
             allSubnets += portUri + " , "; 
         }
         
