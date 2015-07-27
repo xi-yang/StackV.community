@@ -45,22 +45,10 @@ public class VMServlet extends HttpServlet {
                 if (paramValue.length() != 0) {
                     paramMap.put(paramName, paramValue);
                 }
-            }
-
-            /*
-            // Connect dynamically generated elements
-            for (int i = 1; i <= 5; i++) {
-                if (paramMap.containsKey("apropname" + i)) {
-                    paramMap.put(paramMap.get("apropname" + i), paramMap.get("apropval" + i));
-
-                    paramMap.remove("apropname" + i);
-                    paramMap.remove("apropval" + i);
-                }
-            }
-            */           
+            }                      
 
             paramMap.remove("install");
-            int retCode = servBean.vmInstall(paramMap);
+            int retCode = 4;//servBean.vmInstall(paramMap);
 
             response.sendRedirect("/VersaStack-web/ops/srvc/vmadd.jsp?ret=" + retCode);
         }
