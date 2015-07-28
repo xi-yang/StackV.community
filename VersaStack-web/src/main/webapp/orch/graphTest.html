@@ -51,6 +51,7 @@
                 INIT_ZOOM: 2  //The initial zoom factor effects the preciosion in which we can specify the highlighting effect
                         //However, it also seems to effect the error in zooming
             };
+            var ModelConstructor;
             var model;
             var layout;
             var render;
@@ -66,7 +67,8 @@
                     "local/versastack/utils",
                     "local/versastack/topology/DropDownTree"],
                         function (m, l, r, d3_, utils_, tree) {
-                            model = m;
+                            ModelConstructor = m;
+                            model=new ModelConstructor();
                             model.init(drawGraph);
                             layout = l;
                             render = r;
