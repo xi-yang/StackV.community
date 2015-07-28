@@ -204,7 +204,7 @@ define(["local/d3", "local/versastack/utils"],
                             eraseHighlights();
                             map_(subnet.ports, function (port) {
                                 var toHighlight = port.getFirstVisibleParent();
-                                if (toHighlight.svgNode) {
+                                if (toHighlight.svgNode && !toHighlight.svgNodeSubnetHighlight) {
                                     var toAppend = toHighlight.svgNode.node().cloneNode();
                                     previousHighlights.push(toHighlight);
                                     toHighlight.svgNodeSubnetHighlight = d3.select(toAppend)
