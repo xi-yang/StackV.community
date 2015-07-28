@@ -108,6 +108,8 @@ define(["local/d3", "local/versastack/utils"],
                     this.textSize = textSize;
                     return this;
                 };
+
+                var isDragging = false;
                 var lastMouse;
                 function makeDragBehaviour() {
                     return d3.behavior.drag()
@@ -121,6 +123,7 @@ define(["local/d3", "local/versastack/utils"],
                                 that.dx += dx;
                                 that.dy += dy;
                                 that.render();
+                                isDragging = true;
                             })
                             .on("dragstart", function () {
                                 lastMouse = d3.event.sourceEvent;
@@ -128,6 +131,7 @@ define(["local/d3", "local/versastack/utils"],
                             })
                             .on("dragend", function () {
                                 outputApi.enablePanning();
+                                isDragging = false;
                             });
                 }
 
@@ -221,12 +225,16 @@ define(["local/d3", "local/versastack/utils"],
                     map_(this.hostNode.subnets, /**@param {Subnet} subnet**/function (subnet) {
 
                         var onMouseMove = function () {
-                            outputApi.setHoverText(subnet.getName());
-                            outputApi.setHoverLocation(d3.event.x, d3.event.y);
-                            outputApi.setHoverVisible(true);
+                            if (!isDragging) {
+                                outputApi.setHoverText(subnet.getName());
+                                outputApi.setHoverLocation(d3.event.x, d3.event.y);
+                                outputApi.setHoverVisible(true);
+                            }
                         };
                         var OnMouseLeave = function () {
-                            outputApi.setHoverVisible(false);
+                            if (!isDragging) {
+                                outputApi.setHoverVisible(false);
+                            }
                         };
                         var onClick = function () {
                             outputApi.formSelect(subnet);
