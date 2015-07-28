@@ -93,16 +93,16 @@ function topoSelect(sel) {
 function instanceSelect(sel) {
     if (sel.value !== null) {
         if (sel.value === "instance1") {
-            document.getElementsByName("root-path")[0].value = "Test1";
-            document.getElementsByName("root-snapshot")[0].value = "Snapshot1";
+            document.getElementsByName("root-path")[0].value = "/dev/xvda";
+            document.getElementsByName("root-snapshot")[0].value = "snapshot";
         }
         else if (sel.value === "instance2") {
-            document.getElementsByName("root-path")[0].value = "Test2";
-            document.getElementsByName("root-snapshot")[0].value = "Snapshot2";
+            document.getElementsByName("root-path")[0].value = "/dev/sdb";
+            document.getElementsByName("root-snapshot")[0].value = "snapshot";
         }
         else if (sel.value === "instance3") {
-            document.getElementsByName("root-path")[0].value = "Test3";
-            document.getElementsByName("root-snapshot")[0].value = "Snapshot3";
+            document.getElementsByName("root-path")[0].value = "/dev/sdc";
+            document.getElementsByName("root-snapshot")[0].value = "snapshot";
         }
     }
 }
@@ -157,7 +157,7 @@ function addVolume() {
                 + '</select>';
         cell3.innerHTML = '<select name="' + volumeCounter + '-snapshot" required>'
                 + '<option></option>'
-                + '<option value="snapshot1">snapshot1</option>'
+                + '<option value="snapshot1">snapshot</option>'
                 + '<option value="snapshot1">snapshot2</option>'
                 + '<option value="snapshot1">snapshot3</option>'
                 + '</select>';

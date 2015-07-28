@@ -6,8 +6,14 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -20,7 +26,9 @@ public class serviceBeans {
     String login_db_pass = "loginuser";
     String front_db_user = "front_view";
     String front_db_pass = "frontuser";
-    String host = "http://localhost:8080/VersaStack-web/restapi/";
+    String rains_db_user = "root";
+    String rains_db_pass = "root";
+    String host = "http://localhost:8080/VersaStack-web/restapi";
 
     public serviceBeans() {
 
@@ -174,36 +182,66 @@ public class serviceBeans {
                 volumes = entry.getValue().split("\r\n");            
         }
         
+        try {
+            URL url = new URL(String.format("%s/model/", host));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            this.executeHttpMethod(url, connection, "GET", null);           
+        } catch (Exception e) {
+            return 3;//connection error
+        }
+
+        Connection rains_conn;
+        // Database Connection
+        try {
+
+            Class.forName("com.mysql.jdbc.Driver").newInstance();
+            Properties rains_connectionProps = new Properties();
+            rains_connectionProps.put("user", rains_db_user);
+            rains_connectionProps.put("password", rains_db_pass);
+
+            rains_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/rainsdb",
+                    rains_connectionProps);
+
+            PreparedStatement prep = rains_conn.prepareStatement("SELECT * FROM version_group ORDER BY id DESC LIMIT 1");
+            ResultSet rs1 = prep.executeQuery();
+            while (rs1.next()) {
+                vgUuid = rs1.getString("refUuid");
+            }
+        } catch (SQLException | InstantiationException | IllegalAccessException | ClassNotFoundException ex) {
+            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
         //create a system instance and get an UUID for this system instance from the API
-        String siUuid ;
+        String siUuid;
         try {
             URL url = new URL(String.format("%s/model/systeminstance", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             siUuid = this.executeHttpMethod(url, connection, "GET", null);
-            if(siUuid.length()!=36)
+            if (siUuid.length() != 36) {
                 return 1;//not returning System Instance UUID. error occurs
+            }
         } catch (Exception e) {
             return 3;//connection error
         }
-        
+
         //building ttl model
-        String delta = "<delta>\n<id>1</id>\n" +
-                       "<creationTime>2015-03-11T13:07:23.116-04:00</creationTime>\n" +
-                       "<referenceVersion>"+ vgUuid + "</referenceVersion>\n" +
-                       "<modelReduction></modelReduction>\n\n" +
-                       "<modelAddition>\n" +
-                       "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n" +
-                       "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n" +
-                       "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n" +
-                       "@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .\n" +
-                       "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n" +
-                       "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n\n";
-        
+        String delta = "<delta>\n<id>1</id>\n"
+                + "<creationTime>2015-03-11T13:07:23.116-04:00</creationTime>\n"
+                + "<referenceVersion>" + vgUuid + "</referenceVersion>\n"
+                + "<modelReduction></modelReduction>\n\n"
+                + "<modelAddition>\n"
+                + "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
+                + "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n"
+                + "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n"
+                + "@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .\n"
+                + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
+                + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n\n";
+
         String nodeTag = "&lt;" + topoUri + ":i-" + UUID.randomUUID().toString() + "&gt;";
         String model = "&lt;" + vpcUri + "&gt;\n"
-                    + "        nml:hasNode        " + nodeTag + ".\n\n"
-                    +"&lt;" + topoUri + ":ec2service-" + region + "&gt;\n"
-                    + "        mrs:providesVM  " + nodeTag + ".\n\n";
+                + "        nml:hasNode        " + nodeTag + ".\n\n"
+                + "&lt;" + topoUri + ":ec2service-" + region + "&gt;\n"
+                + "        mrs:providesVM  " + nodeTag + ".\n\n";
         
         //building all the volumes 
         String allVolUri = "";
@@ -255,7 +293,7 @@ public class serviceBeans {
         //push to the system api and get response
         try {
             //propagate the delta
-            URL url = new URL(String.format("%s/delta/%s/propagate", host,siUuid));
+            URL url = new URL(String.format("%s/delta/%s/propagate", host, siUuid));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             String result = this.executeHttpMethod(url, connection, "POST", delta);
             if (!result.equalsIgnoreCase("propagate successfully")) //plugin error

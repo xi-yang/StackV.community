@@ -191,17 +191,17 @@
                                     Error Requesting System Instance UUID.
                                 </c:when>    
                                 <c:when test="${param.ret == '2'}">
-                                    Failure while Unplugging.
+                                    Plugin Failure.
                                 </c:when>    
                                 <c:when test="${param.ret == '3'}">
                                     Connection Error.
                                 </c:when>    
                                 <c:when test="${param.ret == '4'}">
-                                    Error Building Model.
+                                    Error Parsing Parameters.
                                 </c:when>                                        
                             </c:choose>                        
 
-                            <br><a href="/VersaStack-web/ops/srvc/vmadd.jsp?self=true">(Un)Install Another Driver.</a>                                
+                            <br><a href="/VersaStack-web/ops/srvc/vmadd.jsp?self=true">Install Another VM.</a>                                
                             <br><a href="/VersaStack-web/ops/catalog.jsp">Return to Services.</a>
                         </div>
                     </c:otherwise>
