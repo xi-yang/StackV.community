@@ -108,6 +108,8 @@ define(["local/d3", "local/versastack/utils"],
                     this.textSize = textSize;
                     return this;
                 };
+
+                var isDragging = false;
                 var lastMouse;
                 function makeDragBehaviour() {
                     return d3.behavior.drag()
@@ -121,6 +123,7 @@ define(["local/d3", "local/versastack/utils"],
                                 that.dx += dx;
                                 that.dy += dy;
                                 that.render();
+                                isDragging = true;
                             })
                             .on("dragstart", function () {
                                 lastMouse = d3.event.sourceEvent;
@@ -128,6 +131,7 @@ define(["local/d3", "local/versastack/utils"],
                             })
                             .on("dragend", function () {
                                 outputApi.enablePanning();
+                                isDragging = false;
                             });
                 }
 
@@ -152,6 +156,44 @@ define(["local/d3", "local/versastack/utils"],
                     container.selectAll("*").remove();
                     return this;
                 };
+
+                this.selectSubnet = function (subnet) {
+                    if (clickSubnet) {
+                        clickSubnet.svgNode.style("fill", that.tabColor);
+                    }
+                    clickSubnet = subnet;
+                    clickSubnet.svgNode.style("fill", that.tabColorSelected);
+                    outputApi.setDisplayName(clickSubnet.getName());
+                    var displayTree = outputApi.getDisplayTree();
+                    displayTree.clear();
+                    subnet.populateTreeMenu(displayTree);
+                    displayTree.draw();
+                    eraseHighlights();
+                    map_(subnet.ports, function (port) {
+                        var toHighlight = port.getFirstVisibleParent();
+                        //It is possible that multiple ports of the subnet will resolve to the same node
+                        //when deciding what we should highlight. To avoid issues in removing highlights,
+                        //we make sure to not highlight the same element multiple times.
+                        if (toHighlight.svgNode && !toHighlight.svgNodeSubnetHighlight) {
+                            var toAppend = toHighlight.svgNode.node().cloneNode();
+                            previousHighlights.push(toHighlight);
+                            toHighlight.svgNodeSubnetHighlight = d3.select(toAppend)
+                                    .style("filter", "url(#subnetHighlight)")
+                                    .style("opacity", "1")
+                                    .attr("pointer-events", "none");
+                            var parentNode = toHighlight.svgNode.node().parentNode;
+                            if (parentNode) {
+                                parentNode.appendChild(toAppend);
+                            } else {
+                                console.log("Trying to highlight an element without a parent")
+                            }
+                        } else if (!toHighlight.svgNode) {
+                            console.log("trying to highlight an element without an svgNode")
+                        }
+                    });
+                }
+
+
                 this.render = function () {
                     if (!this.hostNode) {
                         return;
@@ -183,46 +225,21 @@ define(["local/d3", "local/versastack/utils"],
                     map_(this.hostNode.subnets, /**@param {Subnet} subnet**/function (subnet) {
 
                         var onMouseMove = function () {
-                            outputApi.setHoverText(subnet.getName());
-                            outputApi.setHoverLocation(d3.event.x, d3.event.y);
-                            outputApi.setHoverVisible(true);
+                            if (!isDragging) {
+                                outputApi.setHoverText(subnet.getName());
+                                outputApi.setHoverLocation(d3.event.x, d3.event.y);
+                                outputApi.setHoverVisible(true);
+                            }
                         };
                         var OnMouseLeave = function () {
-                            outputApi.setHoverVisible(false);
+                            if (!isDragging) {
+                                outputApi.setHoverVisible(false);
+                            }
                         };
                         var onClick = function () {
-                            if (clickSubnet) {
-                                clickSubnet.svgNode.style("fill", that.tabColor);
-                            }
-                            clickSubnet = subnet;
-                            clickSubnet.svgNode.style("fill", that.tabColorSelected);
-                            outputApi.setDisplayName(clickSubnet.getName());
-                            var displayTree = outputApi.getDisplayTree();
-                            displayTree.clear();
-                            subnet.populateTreeMenu(displayTree);
-                            displayTree.draw();
-                            eraseHighlights();
-                            map_(subnet.ports, function (port) {
-                                var toHighlight = port.getFirstVisibleParent();
-                                if (toHighlight.svgNode) {
-                                    var toAppend = toHighlight.svgNode.node().cloneNode();
-                                    previousHighlights.push(toHighlight);
-                                    toHighlight.svgNodeSubnetHighlight = d3.select(toAppend)
-                                            .style("filter", "url(#subnetHighlight)")
-                                            .style("opacity", "1")
-                                            .attr("pointer-events", "none");
-                                    ;
-                                    var parentNode = toHighlight.svgNode.node().parentNode;
-                                    if (parentNode) {
-                                        parentNode.appendChild(toAppend);
-                                    } else {
-                                        console.log("Trying to highlight an element without a parent")
-                                    }
-                                } else {
-                                    console.log("trying to highlight an element without an svgNode")
-                                }
-                            });
-                        }
+                            outputApi.formSelect(subnet);
+                            that.selectSubnet(subnet);
+                        };
 
 
                         subnet.svgNode = container.append("rect")
@@ -283,7 +300,7 @@ define(["local/d3", "local/versastack/utils"],
                             .attr("y1", bubbleY + bubbleHeight / 2)
 
                     if (clickSubnet) {
-                        clickSubnet.svgNode.on("click")();
+                        this.selectSubnet(clickSubnet);
                     }
                 };
             }
