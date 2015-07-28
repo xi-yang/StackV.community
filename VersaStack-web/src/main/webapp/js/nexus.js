@@ -172,7 +172,6 @@ function addVolume() {
     }
 }
 
-
 // Utility Functions
 
 function clearCounters() {

@@ -45,7 +45,18 @@ public class VMServlet extends HttpServlet {
                 if (paramValue.length() != 0) {
                     paramMap.put(paramName, paramValue);
                 }
-            }                      
+            }
+
+            // Format volumes
+            for (int i = 1; i <= 10; i++) {
+                // Include root
+                String volString = "";                              
+                
+                if (paramMap.containsKey(i + "-path")) {
+                    
+                }
+                paramMap.put("volumes", volString);
+            }
 
             paramMap.remove("install");
             int retCode = 4;//servBean.vmInstall(paramMap);
