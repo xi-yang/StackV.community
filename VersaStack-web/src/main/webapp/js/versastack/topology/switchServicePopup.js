@@ -227,9 +227,9 @@ define(["local/d3", "local/versastack/utils"],
                         var onMouseMove = function () {
                             if (!isDragging) {
                                 outputApi.setHoverText(subnet.getName());
-                                outputApi.setHoverLocation(d3.event.x, d3.event.y);
                                 outputApi.setHoverVisible(true);
                             }
+                            outputApi.setHoverLocation(d3.event.x, d3.event.y);
                         };
                         var OnMouseLeave = function () {
                             if (!isDragging) {
