@@ -2,8 +2,8 @@
 -- version 4.4.1.1
 -- http://www.phpmyadmin.net
 --
--- Host: localhost:8889
--- Generation Time: Jun 29, 2015 at 07:17 PM
+-- Host: localhost:3306
+-- Generation Time: Jul 23, 2015 at 09:23 PM
 -- Server version: 5.5.42
 -- PHP Version: 5.6.7
 
@@ -22,11 +22,10 @@ USE `frontend`;
 -- Table structure for table `acl`
 --
 
-DROP TABLE IF EXISTS `acl`;
 CREATE TABLE `acl` (
   `acl_id` int(11) NOT NULL,
   `service_id` int(11) NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Dumping data for table `acl`
@@ -39,7 +38,8 @@ INSERT INTO `acl` (`acl_id`, `service_id`) VALUES
 (4, 4),
 (5, 5),
 (6, 6),
-(7, 7);
+(7, 7),
+(8, 8);
 
 -- --------------------------------------------------------
 
@@ -47,7 +47,6 @@ INSERT INTO `acl` (`acl_id`, `service_id`) VALUES
 -- Table structure for table `acl_entry_group`
 --
 
-DROP TABLE IF EXISTS `acl_entry_group`;
 CREATE TABLE `acl_entry_group` (
   `acl_id` int(11) NOT NULL,
   `usergroup_id` int(11) NOT NULL
@@ -65,6 +64,7 @@ INSERT INTO `acl_entry_group` (`acl_id`, `usergroup_id`) VALUES
 (5, 1),
 (6, 1),
 (7, 1),
+(8, 1),
 (2, 2),
 (3, 2);
 
@@ -74,7 +74,6 @@ INSERT INTO `acl_entry_group` (`acl_id`, `usergroup_id`) VALUES
 -- Table structure for table `acl_entry_user`
 --
 
-DROP TABLE IF EXISTS `acl_entry_user`;
 CREATE TABLE `acl_entry_user` (
   `acl_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL
@@ -94,25 +93,26 @@ INSERT INTO `acl_entry_user` (`acl_id`, `user_id`) VALUES
 -- Table structure for table `service`
 --
 
-DROP TABLE IF EXISTS `service`;
 CREATE TABLE `service` (
   `service_id` int(11) NOT NULL,
   `name` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
+  `filename` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
   `description` varchar(140) COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Dumping data for table `service`
 --
 
-INSERT INTO `service` (`service_id`, `name`, `description`) VALUES
-(1, 'User Management', 'Administrative Management Functions.'),
-(2, 'Provisioning', 'System and Topology Overviews.'),
-(3, 'Orchestration', 'Manipulation of the System Model.'),
-(4, 'Monitoring', 'System Monitoring and Logging'),
-(5, 'Example', 'Test.'),
-(6, 'Property Addition', ''),
-(7, 'Plug-in Driver', '');
+INSERT INTO `service` (`service_id`, `name`, `filename`, `description`) VALUES
+(1, 'User Management', 'usermgt', 'Administrative Management Functions.'),
+(2, 'Provisioning', 'provision', 'System and Topology Overviews.'),
+(3, 'Orchestration', 'orchest', 'Manipulation of the System Model.'),
+(4, 'Monitoring', 'monitor', 'System Monitoring and Logging.'),
+(5, 'Example', 'example', 'Test.'),
+(6, 'Property Addition', 'propmod', ''),
+(7, 'Driver Management', 'driver', 'Installation and Uninstallation of Driver Instances.'),
+(8, 'Virtual Machine Addition', 'vmadd', 'Instantiation and Setup of Virtual Machine Topology.');
 
 -- --------------------------------------------------------
 
@@ -120,7 +120,6 @@ INSERT INTO `service` (`service_id`, `name`, `description`) VALUES
 -- Table structure for table `user_belongs`
 --
 
-DROP TABLE IF EXISTS `user_belongs`;
 CREATE TABLE `user_belongs` (
   `user_id` int(11) NOT NULL,
   `usergroup_id` int(11) NOT NULL
@@ -145,7 +144,6 @@ INSERT INTO `user_belongs` (`user_id`, `usergroup_id`) VALUES
 -- Table structure for table `user_info`
 --
 
-DROP TABLE IF EXISTS `user_info`;
 CREATE TABLE `user_info` (
   `user_id` int(11) NOT NULL,
   `username` varchar(20) COLLATE utf8_unicode_ci NOT NULL,
@@ -173,7 +171,6 @@ INSERT INTO `user_info` (`user_id`, `username`, `email`, `active_usergroup`, `fi
 -- Table structure for table `usergroup`
 --
 
-DROP TABLE IF EXISTS `usergroup`;
 CREATE TABLE `usergroup` (
   `usergroup_id` int(11) NOT NULL,
   `title` varchar(25) COLLATE utf8_unicode_ci NOT NULL
@@ -249,12 +246,12 @@ ALTER TABLE `usergroup`
 -- AUTO_INCREMENT for table `acl`
 --
 ALTER TABLE `acl`
-  MODIFY `acl_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=8;
+  MODIFY `acl_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=9;
 --
 -- AUTO_INCREMENT for table `service`
 --
 ALTER TABLE `service`
-  MODIFY `service_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=8;
+  MODIFY `service_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=9;
 --
 -- AUTO_INCREMENT for table `user_info`
 --
@@ -313,7 +310,6 @@ USE `login`;
 -- Table structure for table `cred`
 --
 
-DROP TABLE IF EXISTS `cred`;
 CREATE TABLE `cred` (
   `username` varchar(25) COLLATE utf8_unicode_ci NOT NULL,
   `password_hash` varchar(100) COLLATE utf8_unicode_ci NOT NULL,

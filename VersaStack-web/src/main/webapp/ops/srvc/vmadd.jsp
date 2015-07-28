@@ -28,7 +28,7 @@
     </head>
 
     <sql:setDataSource var="rains_conn" driver="com.mysql.jdbc.Driver"
-                       url="jdbc:mysql://localhost:8889/rainsdb"
+                       url="jdbc:mysql://localhost:3306/rainsdb"
                        user="root"  password="root"/>
 
     <body>
@@ -69,7 +69,7 @@
                         <div id="service-bottom">
                             <div id="service-fields">
                                 <form id="vm-form" action="/VersaStack-web/VMServlet" method="post">
-                                    <table class="management-table" id="service-form"> 
+                                    <table class="management-table" id="service-form" style="margin-bottom: 0px;"> 
                                         <c:if test="${param.vm_type == 'aws'}">
                                             <thead>
                                                 <tr>
@@ -79,17 +79,19 @@
                                             </thead>
                                             <tbody>
                                                 <tr>
-                                                    <sql:query dataSource="${rains_conn}" sql="SELECT value FROM driver_instance_property P, driver_instance I 
-                                                               WHERE property = 'region' AND I.id = P.driverInstanceId AND I.topologyUri = ?" var="regionlist">
-                                                        <sql:param value="${param.topo}" />
-                                                    </sql:query>
+                                                    <c:if test="${not empty param.topo}">
+                                                        <sql:query dataSource="${rains_conn}" sql="SELECT value FROM driver_instance_property P, driver_instance I 
+                                                                   WHERE property = 'region' AND I.id = P.driverInstanceId AND I.topologyUri = ?" var="regionlist">
+                                                            <sql:param value="${param.topo}" />
+                                                        </sql:query>
 
-                                                    <td>Region</td>
-                                                    <td>
-                                                        <c:forEach var="reg" items="${regionlist.rows}">
-                                                            <input type="text" name="region" value="${reg.value}" readonly />
-                                                        </c:forEach>
-                                                    </td>
+                                                        <td>Region</td>
+                                                        <td>
+                                                            <c:forEach var="reg" items="${regionlist.rows}">
+                                                                <input type="text" name="region" value="${reg.value}" readonly />
+                                                            </c:forEach>
+                                                        </td>
+                                                    </c:if>
                                                 </tr> 
                                                 <tr>
                                                     <td>VPC ID</td>
@@ -108,32 +110,67 @@
                                                 <tr>
                                                     <td>Instance Type</td>
                                                     <td>
-                                                        <select name="instanceType" required>
+                                                        <select name="instanceType" required onchange="instanceSelect(this)">
                                                             <option></option>
-                                                            <option>cpu:1, ram:512 MB</option>
-                                                            <option>cpu:2, ram:1 GB</option>
-                                                            <option>cpu:4, ram:4 GB</option>
+                                                            <option value="instance1">cpu:1, ram:512 MB</option>
+                                                            <option value="instance2">cpu:2, ram:1 GB</option>
+                                                            <option value="instance3">cpu:4, ram:4 GB</option>
                                                         </select>
                                                     </td>
                                                 </tr>
                                                 <tr>
                                                     <td>Number of VMs</td>
                                                     <td><input type="number" name="vmQuantity" required></td>
-                                                </tr>   
+                                                </tr>
                                                 <tr>
-                                                    <td>VM Subnets</td>
+                                                    <td>VM Subnets<br>(Newline delimited)</td>
                                                     <td><textarea rows="3" cols="50" name="subnets"></textarea></td>
                                                 </tr>
                                                 <tr>
-                                                    <td>Number of volume created</td>
-                                                    <td><textarea rows="3" cols="50" name="volumes"></textarea></td>
-                                                </tr>                                            
+                                                    <td>Volumes</td>
+                                                    <td>
+                                                        <table id="volume-table">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Name</th>
+                                                                    <th>Device Path</th>
+                                                                    <th>Snapshot</th>
+                                                                    <th>Size</th>
+                                                                    <th>Type</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>                                                                
+                                                                <tr>
+                                                                    <td>Root</td>
+                                                                    <td>
+                                                                        <input type="text" name="root-path" style="width: 8em;" readonly required/>
+                                                                    </td>
+                                                                    <td>
+                                                                        <input type="text" name="root-snapshot" style="width: 8em;" readonly required/>
+                                                                    </td>
+                                                                    <td>
+                                                                        <input type="number" name="root-size" style="width: 4em; text-align: center;" required/>
+                                                                    </td>
+                                                                    <td>
+                                                                        <select name="root-type" required>
+                                                                            <option></option>
+                                                                            <option value="standard">Standard</option>
+                                                                            <option value="io1">io1</option>
+                                                                            <option value="gp2">gp2</option>
+                                                                        </select>                                                        
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </td>
+                                                </tr>
+
                                                 <tr>
                                                     <td></td>
                                                     <td>
                                                         <input class="button-register" name="install" type="submit" value="Install" />
-                                                        <!-- <input class="button-register" type="button" 
-                                                               value="Add Additional Properties" onClick="addPropField()"> -->
+                                                        <input class="button-register" type="button" 
+                                                               value="Add Volume" onClick="addVolume()">
                                                     </td>
                                                 </tr> 
                                             </tbody>
@@ -154,17 +191,17 @@
                                     Error Requesting System Instance UUID.
                                 </c:when>    
                                 <c:when test="${param.ret == '2'}">
-                                    Failure while Unplugging.
+                                    Plugin Failure.
                                 </c:when>    
                                 <c:when test="${param.ret == '3'}">
                                     Connection Error.
                                 </c:when>    
                                 <c:when test="${param.ret == '4'}">
-                                    Error Building Model.
+                                    Error Parsing Parameters.
                                 </c:when>                                        
                             </c:choose>                        
 
-                            <br><a href="/VersaStack-web/ops/srvc/vmadd.jsp?self=true">(Un)Install Another Driver.</a>                                
+                            <br><a href="/VersaStack-web/ops/srvc/vmadd.jsp?self=true">Install Another VM.</a>                                
                             <br><a href="/VersaStack-web/ops/catalog.jsp">Return to Services.</a>
                         </div>
                     </c:otherwise>
