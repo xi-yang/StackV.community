@@ -53,7 +53,7 @@ function (utils,values) {
         };
         
         this.getName = function(){
-            return this.type;
+            return this._backing.name;
         };
         
           this.getCenterOfMass=function(){

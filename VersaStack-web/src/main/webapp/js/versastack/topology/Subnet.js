@@ -2,12 +2,21 @@
 define(["local/versastack/topology/modelConstants"], function (values) {
     function Subnet(backing, map) {
         this.svgNode = null;
+        this.svgNodeText = null;
+        this.svgNodeCover = null; //To prevent the cursor from changing when we mouse over the text, we draw an invisible rectangle over it
         this._backing = backing;
-
+        
         /**@type Array.Port**/
         this.ports = [];
         this.getName = function () {
             return this._backing.name;
+
+        };
+        this.getNameBrief = function(){
+            return this.getName().split(":").slice(-1).pop();
+        };
+        this.getType=function(){
+            return "Subnet";
         }
         this.populateTreeMenu = function (tree) {
             var container = tree.addChild(backing.name);

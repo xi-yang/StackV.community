@@ -83,7 +83,7 @@ public class userBeans {
             Properties log_connectionProps = new Properties();
             log_connectionProps.put("user", login_db_user);
             log_connectionProps.put("password", login_db_pass);
-            log_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Login",
+            log_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/login",
                     log_connectionProps);
 
             // Grab User Salt
