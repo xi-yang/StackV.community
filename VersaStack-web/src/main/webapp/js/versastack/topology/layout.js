@@ -9,7 +9,11 @@ define([
     var map_=utils.map_;
     var force;
     
-    function doLayout(nodes, edges, width, height) {
+    //If we are simply updating the model, we want to lock pre-existing elements in place,
+    //While posisitoning new elements.
+    function doLayout(model, posistionLock, width, height) {
+        var nodes=model.listNodes();
+        var edges=model.listEdges();
         //To encourage topologies to clump, we add edges between topolgies and 
         //their children
         map_(nodes,/**@param {Node} n**/function(n){
@@ -28,8 +32,19 @@ define([
                 .charge(-1000)
                 .gravity(.5)
                 .theta(0.8)
-                .alpha(0.1)
-                .start();
+                .alpha(0.1);
+        if(posistionLock){
+            force.on("tick",function(){
+               map_(nodes,function(node){
+                   var pos=posistionLock[node.getName()];
+                   if(pos){
+                       node.x=pos.x;
+                       node.y=pos.y;
+                   }
+               }) 
+            });
+        }
+        force.start();
         for(var i=0; i<100; i++){
             force.tick();
         }

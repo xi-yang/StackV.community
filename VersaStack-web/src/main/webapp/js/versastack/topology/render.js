@@ -76,64 +76,77 @@ define([
     };
     var redraw_;
     var API = {};
+    var firstRun = true;
+    var isDragging = false;
+    var didDrag = false;
+    var highlightedNode = null;
+    var previousHighlight = null;
+    var lastMouse;
+    var switchPopup=null;
     /**@param {outputApi} outputApi
      * @param {Model} model
      **/
     function doRender(outputApi, model) {
-        //outputApi may start zoomed in, as a workaround for the limit of how 
-        //far out we can zoom. in order to prevent changes in this parameter 
-        //affecting the meaning of our size related parameters, we scale them 
-        //appropriatly
-        settings.NODE_SIZE /= outputApi.getZoom();
-        settings.SERVICE_SIZE /= outputApi.getZoom();
-        settings.TOPOLOGY_SIZE /= outputApi.getZoom();
-        settings.TOPOLOGY_BUFFER /= outputApi.getZoom();
-        settings.EDGE_WIDTH /= outputApi.getZoom();
-        settings.TOPOLOGY_ANCHOR_SIZE /= outputApi.getZoom();
-        settings.TOPOLOGY_ANCHOR_STROKE /= outputApi.getZoom();
-        settings.DIALOG_NECK_WIDTH /= outputApi.getZoom();
-        settings.DIALOG_NECK_HEIGHT /= outputApi.getZoom();
-        settings.DIALOG_MIN_WIDTH /= outputApi.getZoom();
-        settings.DIALOG_MIN_HEIGHT /= outputApi.getZoom();
-        settings.DIALOG_BEVEL /= outputApi.getZoom();
-        settings.DIALOG_PORT_HEIGHT /= outputApi.getZoom();
-        settings.DIALOG_PORT_WIDTH /= outputApi.getZoom();
-        settings.DIALOG_PORT_LEAD /= outputApi.getZoom();
-        settings.DIALOG_PORT_BUFFER_VERT /= outputApi.getZoom();
-        settings.DIALOG_PORT_BUFFER_HORZ /= outputApi.getZoom();
-        settings.DIALOG_OFFSET_X /= outputApi.getZoom();
-        settings.DIALOG_OFFSET_Y /= outputApi.getZoom();
-        //switch setting
-        switchSettings.NODE_SIZE /= outputApi.getZoom();
-        switchSettings.SERVICE_SIZE /= outputApi.getZoom();
-        switchSettings.TOPOLOGY_SIZE /= outputApi.getZoom();
-        switchSettings.TOPOLOGY_BUFFER /= outputApi.getZoom();
-        switchSettings.EDGE_WIDTH /= outputApi.getZoom();
-        switchSettings.TOPOLOGY_ANCHOR_SIZE /= outputApi.getZoom();
-        switchSettings.TOPOLOGY_ANCHOR_STROKE /= outputApi.getZoom();
-        switchSettings.DIALOG_NECK_WIDTH /= outputApi.getZoom();
-        switchSettings.DIALOG_NECK_HEIGHT /= outputApi.getZoom();
-        switchSettings.DIALOG_MIN_WIDTH /= outputApi.getZoom();
-        switchSettings.SWITCH_MIN_WIDTH /= outputApi.getZoom();
-        switchSettings.SWITCH_MIN_HEIGHT /= outputApi.getZoom();
-        switchSettings.DIALOG_MIN_HEIGHT /= outputApi.getZoom();
-        switchSettings.DIALOG_BEVEL /= outputApi.getZoom();
-        switchSettings.DIALOG_PORT_HEIGHT /= outputApi.getZoom();
-        switchSettings.DIALOG_PORT_WIDTH /= outputApi.getZoom();
-        switchSettings.DIALOG_BUFFER /= outputApi.getZoom();
-        switchSettings.DIALOG_INNER_BUFFER /= outputApi.getZoom();
-        switchSettings.DIALOG_TAB_TEXT_SIZE /= outputApi.getZoom();
 
         var svgContainer = outputApi.getSvgContainer();
-        svgContainer.on("click", function () {
-            //Clear the selected element.
-            //We check the event path so this only happens if we did not actually click on something
-            var clickedElem = d3.event.path[0];
-            if (clickedElem.id === "viz") {
-                selectElement(null);
-            }
-        });
-        var switchPopup = buildSwitchPopup();
+        if (firstRun) {
+            firstRun = false;
+            //outputApi may start zoomed in, as a workaround for the limit of how 
+            //far out we can zoom. in order to prevent changes in this parameter 
+            //affecting the meaning of our size related parameters, we scale them 
+            //appropriatly
+            settings.NODE_SIZE /= outputApi.getZoom();
+            settings.SERVICE_SIZE /= outputApi.getZoom();
+            settings.TOPOLOGY_SIZE /= outputApi.getZoom();
+            settings.TOPOLOGY_BUFFER /= outputApi.getZoom();
+            settings.EDGE_WIDTH /= outputApi.getZoom();
+            settings.TOPOLOGY_ANCHOR_SIZE /= outputApi.getZoom();
+            settings.TOPOLOGY_ANCHOR_STROKE /= outputApi.getZoom();
+            settings.DIALOG_NECK_WIDTH /= outputApi.getZoom();
+            settings.DIALOG_NECK_HEIGHT /= outputApi.getZoom();
+            settings.DIALOG_MIN_WIDTH /= outputApi.getZoom();
+            settings.DIALOG_MIN_HEIGHT /= outputApi.getZoom();
+            settings.DIALOG_BEVEL /= outputApi.getZoom();
+            settings.DIALOG_PORT_HEIGHT /= outputApi.getZoom();
+            settings.DIALOG_PORT_WIDTH /= outputApi.getZoom();
+            settings.DIALOG_PORT_LEAD /= outputApi.getZoom();
+            settings.DIALOG_PORT_BUFFER_VERT /= outputApi.getZoom();
+            settings.DIALOG_PORT_BUFFER_HORZ /= outputApi.getZoom();
+            settings.DIALOG_OFFSET_X /= outputApi.getZoom();
+            settings.DIALOG_OFFSET_Y /= outputApi.getZoom();
+            //switch setting
+            switchSettings.NODE_SIZE /= outputApi.getZoom();
+            switchSettings.SERVICE_SIZE /= outputApi.getZoom();
+            switchSettings.TOPOLOGY_SIZE /= outputApi.getZoom();
+            switchSettings.TOPOLOGY_BUFFER /= outputApi.getZoom();
+            switchSettings.EDGE_WIDTH /= outputApi.getZoom();
+            switchSettings.TOPOLOGY_ANCHOR_SIZE /= outputApi.getZoom();
+            switchSettings.TOPOLOGY_ANCHOR_STROKE /= outputApi.getZoom();
+            switchSettings.DIALOG_NECK_WIDTH /= outputApi.getZoom();
+            switchSettings.DIALOG_NECK_HEIGHT /= outputApi.getZoom();
+            switchSettings.DIALOG_MIN_WIDTH /= outputApi.getZoom();
+            switchSettings.SWITCH_MIN_WIDTH /= outputApi.getZoom();
+            switchSettings.SWITCH_MIN_HEIGHT /= outputApi.getZoom();
+            switchSettings.DIALOG_MIN_HEIGHT /= outputApi.getZoom();
+            switchSettings.DIALOG_BEVEL /= outputApi.getZoom();
+            switchSettings.DIALOG_PORT_HEIGHT /= outputApi.getZoom();
+            switchSettings.DIALOG_PORT_WIDTH /= outputApi.getZoom();
+            switchSettings.DIALOG_BUFFER /= outputApi.getZoom();
+            switchSettings.DIALOG_INNER_BUFFER /= outputApi.getZoom();
+            switchSettings.DIALOG_TAB_TEXT_SIZE /= outputApi.getZoom();
+
+            svgContainer.on("click", function () {
+                //Clear the selected element.
+                //We check the event path so this only happens if we did not actually click on something
+                var clickedElem = d3.event.path[0];
+                if (clickedElem.id === "viz") {
+                    selectElement(null);
+                }
+            });
+        }
+        if (!switchPopup) {
+            switchPopup = buildSwitchPopup();
+        }
         redraw();
         var nodeList, edgeList;
         function redraw() {
@@ -143,6 +156,7 @@ define([
             svgContainer.select("#node").selectAll("*").remove(); //Clear the previous drawing
             svgContainer.select("#anchor").selectAll("*").remove(); //Clear the previous drawing
             svgContainer.select("#parentPort").selectAll("*").remove();
+            svgContainer.select("#switchPopup").selectAll("*").remove();
             nodeList = model.listNodes();
             edgeList = model.listEdges();
             //Recall that topologies are also considered nodes
@@ -396,8 +410,8 @@ define([
             map_(n.services, function (service) {
                 service.y = coords.y;
                 service.x = coords.x;
-                var midY = coords.y + service.dy - settings.SERVICE_SIZE / 2 + service.size/2;
-                var midX = coords.x + service.dx - settings.SERVICE_SIZE / 2 + service.size/2;
+                var midY = coords.y + service.dy - settings.SERVICE_SIZE / 2 + service.size / 2;
+                var midX = coords.x + service.dx - settings.SERVICE_SIZE / 2 + service.size / 2;
                 service.svgNode
                         .attr("y", coords.y + service.dy - settings.SERVICE_SIZE / 2)
                         .attr("x", coords.x + service.dx - settings.SERVICE_SIZE / 2)
@@ -460,10 +474,9 @@ define([
                     .attr("y2", tgtChoords.y);
         }
 
-        var lastMouse;
-        /**@param {Node} n**/
-        var isDragging = false;
-        var didDrag = false;
+
+
+
         function makeDragBehaviour(n) {
             return d3.behavior.drag()
                     .on("drag", function () {
@@ -523,7 +536,6 @@ define([
         }
 
 
-        var highlightedNode = null;
         /**
          * Note that n could also be a topology
          * @param {Node} n**/
@@ -589,7 +601,6 @@ define([
             }
         }
 
-        var previousHighlight = null;
         function drawHighlight() {
             if (previousHighlight) {
                 previousHighlight.remove();

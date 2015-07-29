@@ -26,12 +26,13 @@ define([
     "local/versastack/topology/Subnet"
 ], function (utils, Node, Port, Service, values, Subnet) {
 
-    function Model() {
+    function Model(oldModel) {
         var map_ = utils.map_;
         var rootNodes = [];
 
         //Associates a name with the corresponding backing
         var map = {};
+        var that = this;
         /**
          * Initialize the model. This asyncronasly loads and parsed the model from the backend.
          * @returns {undefined}
@@ -56,11 +57,10 @@ define([
                  *  we do this by creating backlinks, so that a nested port will have
                  *  a link to its parent.
                  */
-                var nodeMap = {};
-                var portMap = {};
-                var serviceMap = {};
-                var subnetMap = {};
-                var nodeList = [];
+                that.nodeMap = {};
+                that.portMap = {};
+                that.serviceMap = {};
+                that.subnetMap = {};
                 for (var key in map) {
                     var val = map[key];
                     val.name = key;
@@ -70,13 +70,24 @@ define([
                         switch (type) {
                             case values.topology:
                             case values.node:
-                                var toAdd = new Node(val, map);
-                                nodeMap[key] = toAdd;
-                                nodeList.push(toAdd);
+                                var toAdd;
+                                if (oldModel && oldModel.nodeMap[key]) {
+                                    toAdd = oldModel.nodeMap[key];
+                                    toAdd.reload(val,map);
+                                } else {
+                                    toAdd = new Node(val, map);
+                                }
+                                that.nodeMap[key] = toAdd;
                                 break;
                             case values.bidirectionalPort:
-                                var toAdd = new Port(val, map);
-                                portMap[key] = toAdd;
+                                var toAdd;
+                                if (oldModel && oldModel.portMap[key]) {
+                                    toAdd = oldModel.portMap[key];
+                                    toAdd.reload(val,map);
+                                } else {
+                                    toAdd = new Port(val, map);
+                                }
+                                that.portMap[key] = toAdd;
                                 break;
                             case values.switchingService:
                             case values.topopolgySwitchingService:
@@ -89,13 +100,25 @@ define([
                             case values.hypervisorBypassInterfaceService:
                             case values.storageService:
                             case values.IOPerformanceMeasurementService:
-                                var toAdd = new Service(val, map);
-                                serviceMap[key] = toAdd;
+                                var toAdd;
+                                if (oldModel && oldModel.serviceMap[key]) {
+                                    toAdd = oldModel.serviceMap[key];
+                                    toAdd.reload(val,map);
+                                } else {
+                                    toAdd = new Service(val, map);
+                                }
+                                that.serviceMap[key] = toAdd;
                                 break;
 
                             case values.switchingSubnet:
-                                var toAdd = new Subnet(val, map);
-                                subnetMap[key] = toAdd;
+                                var toAdd;
+                                if (oldModel && oldModel.subnetMap[key]) {
+                                    toAdd = oldModel.subnetMap[key];
+                                    toAdd.reload(val,map);
+                                } else {
+                                    toAdd = new Subnet(val, map);
+                                }
+                                that.subnetMap[key] = toAdd;
                                 break;
                             case values.namedIndividual://All elements have this
                             case values.labelGroup:
@@ -120,28 +143,31 @@ define([
                 //Complete the ports
                 //  Create aliases between our Port objects
                 //  Associate a port with its children
-                for (var key in portMap) {
+                for (var key in that.portMap) {
                     /**@type Port**/
-                    var port = portMap[key];
+                    var port = that.portMap[key];
                     var port_ = port._backing;
                     var aliasKey = port_[values.isAlias];
                     if (aliasKey) {
-                        var aliasPort = portMap[aliasKey[0].value];
+                        var aliasPort = that.portMap[aliasKey[0].value];
                         port.alias = aliasPort;
                         aliasPort.alias = port;
+                    }else{
+                        port.alias=null;
                     }
+                    port.childrenPorts=[];
                     var childrenKeys = port_[values.hasBidirectionalPort];
                     if (childrenKeys) {
                         map_(childrenKeys, function (childKey) {
-                            var child = portMap[childKey.value];
+                            var child = that.portMap[childKey.value];
                             port.childrenPorts.push(child);
                             child.parentPort = port;
                         });
                     }
                 }
 
-                for (var key in serviceMap) {
-                    var service = serviceMap[key];
+                for (var key in that.serviceMap) {
+                    var service = that.serviceMap[key];
                     var service_ = service._backing;
 
                     for (var key in service_) {
@@ -169,7 +195,7 @@ define([
                                 map_(subnet, function (subnetKey) {
                                     subnetKey = subnetKey.value;
 
-                                    var subnet = subnetMap[subnetKey];
+                                    var subnet = that.subnetMap[subnetKey];
                                     service.subnets.push(subnet);
                                 });
                                 break;
@@ -181,8 +207,8 @@ define([
 
                 }
 
-                for (var key in subnetMap) {
-                    var subnet = subnetMap[key];
+                for (var key in that.subnetMap) {
+                    var subnet = that.subnetMap[key];
                     var subnet_ = subnet._backing;
 
                     for (var key in subnet_) {
@@ -198,7 +224,7 @@ define([
                                 var ports = subnet_[key];
                                 map_(ports, function (portKey) {
                                     portKey = portKey.value;
-                                    var port = portMap[portKey];
+                                    var port = that.portMap[portKey];
                                     subnet.ports.push(port);
                                 });
                                 break;
@@ -211,7 +237,9 @@ define([
                 }
                 //Associate ports and subnodes with their parent node
                 //Create services
-                map_(nodeList, /**@param {Node} node**/function (node) {
+                for (var key in that.nodeMap) {
+                    /**@type Node**/
+                    var node = that.nodeMap[key]
                     var node_ = node._backing;
                     for (var key in node_) {
                         switch (key) {
@@ -219,7 +247,7 @@ define([
                                 var ports = node_[key];
                                 map_(ports, function (portKey) {
                                     portKey = portKey.value;
-                                    var port = portMap[portKey];
+                                    var port = that.portMap[portKey];
                                     node.ports.push(port);
                                     port.setNode(node);
                                 });
@@ -228,7 +256,7 @@ define([
                             case values.hasTopology:
                                 var subNodes = node_[key];
                                 map_(subNodes, function (subNodeKey) {
-                                    var subNode = nodeMap[subNodeKey.value];
+                                    var subNode = that.nodeMap[subNodeKey.value];
                                     subNode.isRoot = false;
                                     node.children.push(subNode);
                                     subNode._parent = node;
@@ -237,7 +265,7 @@ define([
                             case values.hasService:
                                 var services = node_[values.hasService];
                                 map_(services, function (service) {
-                                    service = serviceMap[service.value];
+                                    service = that.serviceMap[service.value];
                                     if (!service) {
                                         //service is undefined
                                         console.log("No service: " + service.value);
@@ -262,14 +290,15 @@ define([
                                 console.log("Unknown key: " + key);
                         }
                     }
-                });
+                }
 
-
-                map_(nodeList, /**@param {Node} node**/ function (node) {
+                for (var key in that.nodeMap) {
+                    var node = that.nodeMap[key];
                     if (node.isRoot) {
                         rootNodes.push(node);
                     }
-                });
+
+                }
                 callback();
             };
             request.send();
@@ -281,7 +310,7 @@ define([
                 ans = ans.concat(node._getNodes());
             });
             return ans;
-        }
+        };
 
         this.listEdges = function () {
             var ans = [];
@@ -296,7 +325,7 @@ define([
         }
 
         /**Begin debug functions**/
-        this.listNodesPretty=function() {
+        this.listNodesPretty = function () {
             var nodes = listNodes();
             var ans = "";
             map_(nodes, /**@param {Node} n**/function (n) {
@@ -304,7 +333,7 @@ define([
             });
             return ans;
         }
-        this.listEdgesPretty=function() {
+        this.listEdgesPretty = function () {
             var edges = listEdges();
             var ans = "";
             map_(edges, /**@param {Edge} e**/function (e) {
@@ -319,14 +348,14 @@ define([
          * If a node is not currently visible, they will have no effect
          */
 
-        this.fold=function(i) {
+        this.fold = function (i) {
             map_(listNodes(), /**@param {Node} n**/function (n) {
                 if (n.uid === i) {
                     n.fold();
                 }
             });
         }
-        this.unfold=function(i) {
+        this.unfold = function (i) {
             map_(listNodes(), /**@param {Node} n**/function (n) {
                 if (n.uid === i) {
                     n.unfold();
@@ -334,7 +363,7 @@ define([
             });
         }
 
-        this.printTree=function() {
+        this.printTree = function () {
             var ans = "\n";
             map_(rootNodes, /**@param {Node} n**/function (n) {
                 map_(printTree_(n), /**@param {String} line**/function (line) {
