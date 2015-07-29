@@ -6,6 +6,7 @@
 
 package net.maxgigapop.mrs.driver;
 
+import java.io.IOException;
 import static java.lang.Thread.sleep;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +27,8 @@ import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.PersistenceManager;
 import net.maxgigapop.mrs.system.HandleSystemCall;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 /**
  *
@@ -45,7 +48,8 @@ public class TestServiceStarter {
             PersistenceManager.initialize(entityManager);
         }
         ModelBase model1 = new ModelBase();
-        model1.setTtlModel("@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.\n"
+        model1.setTtlModel(
+                  "@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.\n"
                 + "@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.\n"
                 + "@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.\n"
                 + "@prefix owl: <http://www.w3.org/2002/07/owl#>.\n"
@@ -59,6 +63,11 @@ public class TestServiceStarter {
                 + "    nml:hasNode\n"
                 + "        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-1>,\n"
                 + "        <urn:ogf:network:rains.maxgigapop.net:2013:clpk-msx-4>.");
+        try {
+            model1.setTtlModel(new String(Files.readAllBytes(Paths.get("/Users/max/NetBeansProjects/VersaStack/VersaStack-web/src/main/webapp/data/ttl/max-aws.ttl"))));
+        } catch (IOException ex) {
+            Logger.getLogger(TestServiceStarter.class.getName()).log(Level.SEVERE, null, ex);
+        }
         /*
          ModelPersistenceManager.save(model1);
          ModelBase model2 = ModelPersistenceManager.find(ModelBase.class, model1.getId());
@@ -138,7 +147,7 @@ public class TestServiceStarter {
 
     @PostConstruct
     public void runTests() {
-        //this.testStubDriver();
+        this.testStubDriver();
         //this.testVersaNSDriver();
         //this.testOpenstackDriver();
     }
