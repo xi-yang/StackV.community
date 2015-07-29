@@ -1,0 +1,61 @@
+#hoverdiv{
+    position: fixed;
+    visibility: hidden;
+    background-color: rgba(255,255,255,.85);
+    color: #404040;
+    border: 1px solid #999;
+    padding: 7px;
+}
+
+#displayPanel{
+    float:right;
+    background: rgba(255,190,190,1);
+    /*The 40px is to accound for the navbar*/
+    min-height: calc(100% - 40px);
+    top: 40px;
+    width: 30%;
+    position: absolute;
+    right:0;
+}
+
+#displayPanel-contents {
+    padding:5px;
+    padding-top: 57px;
+}
+
+/* CSS3 Calc for Navbar adjustment */
+#viz{
+    width: 100%;
+    height: calc(100% - 40px);
+}
+
+body{
+    width:100%;
+    height: 100%;
+    margin-top:0px;
+}
+
+.treeMenu{
+    margin-left:15px;
+    text-align: left;
+}
+
+#actionMenu {    
+    bottom: 0px;
+    position: absolute;
+    right: 0px;
+    margin-bottom: 0px;
+}
+
+#awsButton, #cancelButton {
+    float:right;
+}
+
+#displayName{
+    text-align: center;
+    visibility: visible;
+    padding: 7px;
+    width: content-box;
+    font-size: 180%;
+    
+}
