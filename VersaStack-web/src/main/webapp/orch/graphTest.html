@@ -59,25 +59,6 @@
             var DropDownTree;
 
             function onload() {
-                $("#awsButton").click(function (evt) {
-                    $("#actionForm").load("/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=aws #service-fields");
-                    
-                    $("#awsButton").toggleClass("hide");
-                    $("#cancelButton").toggleClass("hide");
-                    
-                    evt.preventDefault();
-                });
-                
-                $("#cancelButton").click(function (evt) {
-                    $("#actionForm").empty();
-                    
-                    $("#awsButton").toggleClass("hide");
-                    $("#cancelButton").toggleClass("hide");
-                    
-                    evt.preventDefault();
-                });
-                
-                
                 require(["local/versastack/topology/model",
                     "local/versastack/topology/layout",
                     "local/versastack/topology/render",
@@ -94,8 +75,9 @@
                             map_ = utils.map_;
                             DropDownTree = tree;
                         });
-                        
-                        
+                buttonInit();
+
+
             }
             function drawGraph() {
                 var nodeList = model.listNodes();
@@ -110,6 +92,25 @@
 
                 render.doRender(new outputApi(), model);
 //                animStart(30);
+            }
+
+            function buttonInit() {
+                $("#awsButton").click(function (evt) {
+                    $("#actionForm").load("/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=aws #service-fields");
+
+                    $("#awsButton").toggleClass("hide");
+                    $("#cancelButton").toggleClass("hide");
+
+                    evt.preventDefault();
+                });
+                $("#cancelButton").click(function (evt) {
+                    $("#actionForm").empty();
+
+                    $("#awsButton").toggleClass("hide");
+                    $("#cancelButton").toggleClass("hide");
+
+                    evt.preventDefault();
+                });
             }
 
             //animStart and animStop are primarily intended as debug functions
@@ -133,9 +134,9 @@
                     return d3.select("#viz");
                 };
 
+                var displayTree = new DropDownTree(document.getElementById("treeMenu"));
                 this.getDisplayTree = function () {
-                    var ans = new DropDownTree(document.getElementById("treeMenu"));
-                    return ans;
+                    return displayTree;
                 };
 
                 this.setDisplayName = function (name) {
@@ -218,6 +219,50 @@
                     return false;
                 }, false);
 
+                //Interface to (de)select elements for interaction with the form
+                //If the provided element is currently being used in the form, remove it from the form,
+                //Otherwise use it to help poupulate the form.
+                //The precises meaning of this depends on the element and form type
+                this.formSelect = function (n) {
+                    if (!n.getType) {
+                        console.log("Trying to form select object without getType function");
+                        return;
+                    }
+                    switch (n.getType()) {
+                        case "Subnet":
+                            var forms = document.getElementsByName("subnets");
+                            if (forms.length === 0) {
+                                break;
+                            }
+                            if (forms.length > 1) {
+                                console.log("More than 1 subnets forms");
+                                break;
+                            }
+                            var form = forms[0];
+                            var subnetStrs = [];
+                            var toToggle = n.getNameBrief();
+                            var add = true;
+                            //If the form is already empty, we would add an extranous empty line
+                            if (form.value.trim() !== "") {
+                                map_(form.value.split('\n'), function (subnetStr) {
+                                    if (subnetStr.trim() === toToggle) {
+                                        add = false;
+                                    } else {
+                                        subnetStrs.push(subnetStr);
+                                    }
+                                    ;
+                                });
+                            }
+                            if (add) {
+                                subnetStrs.push(toToggle);
+                            }
+                            form.value = subnetStrs.join('\n');
+                            break;
+                        default:
+                            console.log("Unhandled type in formSelect: " + n.getType());
+                    }
+                };
+
                 //Panning
                 //d3 does not seem to provide a way for us to avoid capturing mouse events that are handled by nodes
                 //This means that our panning code will be called even when the user is only trying to move a node
@@ -285,8 +330,6 @@
                        0 0 0 1 0" />
         <feComposite operator="out" in="a" in2="SourceGraphic"/>
     </filter>
-
-
     <filter id="subnetHighlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
         <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
         <feMorphology operator="dilate" radius="1"/>
@@ -296,6 +339,9 @@
                        0 0 0 0 .3
                        0 0 0 1 0" />
         <feComposite operator="out" in="a" in2="SourceGraphic"/>
+    </filter>
+    <filter id="ghost" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+        <feColorMatrix type="saturate" values=".2"/>
     </filter>
     </defs>
     <!--We nest a g in here because the svg tag itself cannot do transforms

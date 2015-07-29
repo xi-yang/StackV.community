@@ -304,7 +304,7 @@ public class serviceBeans {
             url = new URL(String.format("%s/delta/%s/commit", host,siUuid));
             connection = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, connection, "PUT", "");
-            if (!result.equalsIgnoreCase("commit successfully")) //plugin error
+            if (!result.equalsIgnoreCase("PROCESSING")) //plugin error
             {
                 return 2;
             }
