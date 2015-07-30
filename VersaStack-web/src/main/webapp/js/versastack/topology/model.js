@@ -53,7 +53,7 @@ define([
                 map = JSON.parse(data.ttlModel);
 
                 if (INJECT) {
-                    var newNode = {type: 'uri', value: 'FOO:1'}
+                    var newNode = {type: 'uri', value: 'FOO:1'};
                     map["urn:ogf:network:sdn.maxgigapop.net:network"][values.hasNode].push(newNode);
                     map[newNode.value] = {};
                     map[newNode.value][values.type] = [{type: 'uri', value: values.namedIndividual}, {type: 'uri', value: values.node}];
@@ -332,7 +332,7 @@ define([
                 });
             });
             return ans;
-        }
+        };
 
         /**Begin debug functions**/
         this.listNodesPretty = function () {
@@ -342,7 +342,7 @@ define([
                 ans += n.uid + ",";
             });
             return ans;
-        }
+        };
         this.listEdgesPretty = function () {
             var edges = listEdges();
             var ans = "";
@@ -350,7 +350,7 @@ define([
                 ans += "(" + e.left.uid + "," + e.right.uid + "), ";
             });
             return ans;
-        }
+        };
         this.getRootNodes = function () {
             return rootNodes;
         };
@@ -364,14 +364,14 @@ define([
                     n.fold();
                 }
             });
-        }
+        };
         this.unfold = function (i) {
             map_(listNodes(), /**@param {Node} n**/function (n) {
                 if (n.uid === i) {
                     n.unfold();
                 }
             });
-        }
+        };
 
         this.printTree = function () {
             var ans = "\n";
@@ -382,7 +382,7 @@ define([
                 });
             });
             return ans;
-        }
+        };
 
         /**
          * 

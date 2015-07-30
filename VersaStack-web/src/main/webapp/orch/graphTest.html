@@ -58,7 +58,7 @@
             var d3;
             var utils;
             var DropDownTree;
-            
+
             var outputApi;
 
             function onload() {
@@ -78,8 +78,8 @@
                             utils = utils_;
                             map_ = utils.map_;
                             DropDownTree = tree;
-                            
-                            outputApi=new outputApi_();
+
+                            outputApi = new outputApi_();
                         });
                 buttonInit();
 
@@ -98,8 +98,8 @@
 //                animStart(30);
             }
             function reload() {
-                var lockNodes=model.listNodes();
-                var posistionLocks={};
+                var lockNodes = model.listNodes();
+                var posistionLocks = {};
                 model = new ModelConstructor(model);
                 model.init(function () {
                     var width = document.documentElement.clientWidth / outputApi.getZoom();
@@ -163,7 +163,7 @@
 
                 this.setDisplayName = function (name) {
                     document.getElementById("displayName").innerText = name;
-                }
+                };
 
 
                 var zoomFactor = settings.INIT_ZOOM;
@@ -230,7 +230,7 @@
                 };
                 this.setHoverVisible = function (vis) {
                     document.getElementById("hoverdiv").style.visibility = vis ? "visible" : "hidden";
-                }
+                };
 
                 var svg = document.getElementById("viz");
                 svg.addEventListener("mousewheel", function (e) {

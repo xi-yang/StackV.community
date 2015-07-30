@@ -82,7 +82,7 @@ define([
     var highlightedNode = null;
     var previousHighlight = null;
     var lastMouse;
-    var switchPopup=null;
+    var switchPopup = null;
     /**@param {outputApi} outputApi
      * @param {Model} model
      **/
@@ -166,7 +166,7 @@ define([
             drawPopups();
             map_(edgeList, drawEdge);
         }
-        redraw_=redraw;
+        redraw_ = redraw;
         /**@param {Node} n**/
         function drawNode(n) {
             if (n.isLeaf()) {
