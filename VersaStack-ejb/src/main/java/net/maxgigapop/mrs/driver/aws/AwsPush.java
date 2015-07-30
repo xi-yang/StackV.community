@@ -506,10 +506,13 @@ public class AwsPush {
 
             } else if (request.contains("CreateNetworkInterfaceRequest")) {
                 String[] parameters = request.split("\\s+");
-
                 CreateNetworkInterfaceRequest portRequest = new CreateNetworkInterfaceRequest();
-                portRequest.withPrivateIpAddress(parameters[1])
-                        .withSubnetId(getResourceId(parameters[2]));
+                if (parameters[1].equalsIgnoreCase("any")) {
+                    portRequest.withPrivateIpAddress(parameters[1])
+                            .withSubnetId(getResourceId(parameters[2]));
+                } else {
+                    portRequest.withSubnetId(getResourceId(parameters[2]));
+                }
                 CreateNetworkInterfaceResult portResult = ec2.createNetworkInterface(portRequest);
 
                 NetworkInterface port = portResult.getNetworkInterface();
@@ -756,18 +759,6 @@ public class AwsPush {
                     throw new EJBException(String.format("The port %s to be deleted"
                             + " has attachments, delete dependant resource first", port));
                 }
-                //to get the private ip of the network interface
-                query = "SELECT ?address ?value WHERE {<" + port.asResource() + ">  mrs:hasNetworkAddress  ?address ."
-                        + "?address mrs:type \"ipv4:private\" ."
-                        + "?address mrs:value ?value}";
-                r1 = executeQuery(query, model, modelReduct);
-                if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model Reduction does not specify privat ip address of port: %s", port));
-                }
-                QuerySolution querySolution1 = r1.next();
-                RDFNode value = querySolution1.get("value");
-                String privateAddress = value.asLiteral().toString();
-
                 //find the subnet that has the port previously found
                 query = "SELECT ?subnet WHERE {?subnet  nml:hasBidirectionalPort <" + port.asResource() + ">}";
                 r1 = executeQuery(query, model, modelReduct);
@@ -776,7 +767,7 @@ public class AwsPush {
                 }
                 String subnetId = null;
                 while (r1.hasNext()) {
-                    querySolution1 = r1.next();
+                    QuerySolution querySolution1 = r1.next();
                     RDFNode subnet = querySolution1.get("subnet");
                     query = "SELECT ?subnet WHERE {<" + subnet.asResource() + ">  a  mrs:SwitchingSubnet}";
                     ResultSet r3 = executeQuery(query, model, modelReduct);
@@ -2317,12 +2308,12 @@ public class AwsPush {
                         + "?address mrs:type \"ipv4:private\" ."
                         + "?address mrs:value ?value }";
                 ResultSet r1 = executeQuery(query, model, modelAdd);
-                if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model addition does not specify privat ip address of port: %s", port));
+                String privateAddress = "any"; // "any" means unspecified and AWS EC2 will pick an IP from subnet
+                if (r1.hasNext()) {
+                    QuerySolution querySolution1 = r1.next();
+                    RDFNode value = querySolution1.get("value");
+                    privateAddress = value.asLiteral().toString();
                 }
-                QuerySolution querySolution1 = r1.next();
-                RDFNode value = querySolution1.get("value");
-                String privateAddress = value.asLiteral().toString();
 
                 //find the subnet that has the port previously found
                 query = "SELECT ?subnet WHERE {?subnet  nml:hasBidirectionalPort <" + port.asResource() + ">}";
@@ -2332,7 +2323,7 @@ public class AwsPush {
                 }
                 String subnetId = null;
                 while (r1.hasNext()) {
-                    querySolution1 = r1.next();
+                    QuerySolution querySolution1 = r1.next();
                     RDFNode subnet = querySolution1.get("subnet");
                     query = "SELECT ?subnet WHERE {<" + subnet.asResource() + ">  a  mrs:SwitchingSubnet}";
                     ResultSet r3 = executeQuery(query, model, modelAdd);
