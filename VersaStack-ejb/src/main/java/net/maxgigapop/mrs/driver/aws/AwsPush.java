@@ -508,10 +508,10 @@ public class AwsPush {
                 String[] parameters = request.split("\\s+");
                 CreateNetworkInterfaceRequest portRequest = new CreateNetworkInterfaceRequest();
                 if (parameters[1].equalsIgnoreCase("any")) {
+                    portRequest.withSubnetId(getResourceId(parameters[2]));
+                } else {
                     portRequest.withPrivateIpAddress(parameters[1])
                             .withSubnetId(getResourceId(parameters[2]));
-                } else {
-                    portRequest.withSubnetId(getResourceId(parameters[2]));
                 }
                 CreateNetworkInterfaceResult portResult = ec2.createNetworkInterface(portRequest);
 
