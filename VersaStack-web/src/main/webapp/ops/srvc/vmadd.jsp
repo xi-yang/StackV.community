@@ -203,6 +203,7 @@
 
                             <br><a href="/VersaStack-web/ops/srvc/vmadd.jsp?self=true">Install Another VM.</a>                                
                             <br><a href="/VersaStack-web/ops/catalog.jsp">Return to Services.</a>
+                            <br><a href="/VersaStack-web/orch/graphTest.html">Return to Graphic Orchestration.</a>
                         </div>
                     </c:otherwise>
                 </c:choose>
