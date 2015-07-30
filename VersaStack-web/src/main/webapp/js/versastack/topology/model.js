@@ -17,6 +17,9 @@
  *   in the output of listEdges.
  */
 "use strict";
+
+//debug code to modify the model before parsing=
+var INJECT = false;
 define([
     "local/versastack/utils",
     "local/versastack/topology/Node",
@@ -48,6 +51,13 @@ define([
                 var data = request.responseText;
                 data = JSON.parse(data);
                 map = JSON.parse(data.ttlModel);
+
+                if (INJECT) {
+                    var newNode = {type: 'uri', value: 'FOO:1'}
+                    map["urn:ogf:network:sdn.maxgigapop.net:network"][values.hasNode].push(newNode);
+                    map[newNode.value] = {};
+                    map[newNode.value][values.type] = [{type: 'uri', value: values.namedIndividual}, {type: 'uri', value: values.node}];
+                }
 //            map=data;
 
                 /*
@@ -73,7 +83,7 @@ define([
                                 var toAdd;
                                 if (oldModel && oldModel.nodeMap[key]) {
                                     toAdd = oldModel.nodeMap[key];
-                                    toAdd.reload(val,map);
+                                    toAdd.reload(val, map);
                                 } else {
                                     toAdd = new Node(val, map);
                                 }
@@ -83,7 +93,7 @@ define([
                                 var toAdd;
                                 if (oldModel && oldModel.portMap[key]) {
                                     toAdd = oldModel.portMap[key];
-                                    toAdd.reload(val,map);
+                                    toAdd.reload(val, map);
                                 } else {
                                     toAdd = new Port(val, map);
                                 }
@@ -103,7 +113,7 @@ define([
                                 var toAdd;
                                 if (oldModel && oldModel.serviceMap[key]) {
                                     toAdd = oldModel.serviceMap[key];
-                                    toAdd.reload(val,map);
+                                    toAdd.reload(val, map);
                                 } else {
                                     toAdd = new Service(val, map);
                                 }
@@ -114,7 +124,7 @@ define([
                                 var toAdd;
                                 if (oldModel && oldModel.subnetMap[key]) {
                                     toAdd = oldModel.subnetMap[key];
-                                    toAdd.reload(val,map);
+                                    toAdd.reload(val, map);
                                 } else {
                                     toAdd = new Subnet(val, map);
                                 }
@@ -152,10 +162,10 @@ define([
                         var aliasPort = that.portMap[aliasKey[0].value];
                         port.alias = aliasPort;
                         aliasPort.alias = port;
-                    }else{
-                        port.alias=null;
+                    } else {
+                        port.alias = null;
                     }
-                    port.childrenPorts=[];
+                    port.childrenPorts = [];
                     var childrenKeys = port_[values.hasBidirectionalPort];
                     if (childrenKeys) {
                         map_(childrenKeys, function (childKey) {

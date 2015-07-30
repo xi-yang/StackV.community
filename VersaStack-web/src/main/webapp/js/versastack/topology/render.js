@@ -166,6 +166,7 @@ define([
             drawPopups();
             map_(edgeList, drawEdge);
         }
+        redraw_=redraw;
         /**@param {Node} n**/
         function drawNode(n) {
             if (n.isLeaf()) {

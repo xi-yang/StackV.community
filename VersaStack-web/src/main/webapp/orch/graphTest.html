@@ -98,20 +98,16 @@
 //                animStart(30);
             }
             function reload() {
-                var oldModel = model;
+                var lockNodes=model.listNodes();
                 var posistionLocks={};
-                for(var key in oldModel.nodeMap){
-                    var node=oldModel.nodeMap[key];
-                    posistionLocks[key]={x:node.x,y:node.y};
-                }
-                model = new ModelConstructor(oldModel);
+                model = new ModelConstructor(model);
                 model.init(function () {
                     var width = document.documentElement.clientWidth / outputApi.getZoom();
                     var height = document.documentElement.clientHeight / outputApi.getZoom();
                     //TODO, figure out why we need to call this twice
                     //If we do not, the layout does to converge as nicely, even if we double the number of iterations
-                    layout.doLayout(model, posistionLocks, width, height);
-                    layout.doLayout(model, posistionLocks, width, height);
+                    layout.doLayout(model, lockNodes, width, height);
+                    layout.doLayout(model, lockNodes, width, height);
 
 
                     render.doRender(outputApi, model);
