@@ -1,20 +1,23 @@
 package web.beans;
 
-import com.hp.hpl.jena.ontology.OntModel;
-import com.hp.hpl.jena.ontology.OntModelSpec;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Properties;
+import java.util.Random;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import net.maxgigapop.mrs.common.ModelUtil;
-import org.apache.commons.lang.RandomStringUtils;
 
 public class serviceBeans {
 
@@ -23,7 +26,9 @@ public class serviceBeans {
     String login_db_pass = "loginuser";
     String front_db_user = "front_view";
     String front_db_pass = "frontuser";
-    String host = "http://localhost:8080/VersaStack-web/restapi/";
+    String rains_db_user = "root";
+    String rains_db_pass = "root";
+    String host = "http://localhost:8080/VersaStack-web/restapi";
 
     public serviceBeans() {
 
@@ -127,32 +132,25 @@ public class serviceBeans {
     }
 
     /**
-     * 
-     * @param parameters An array of the required parameters:<br />
-     * [0] - Version Group UUID<br />
-     * [1] - topology URI<br />
-     * [2] - VPC Id<br />
-     * [3] - OS Type<br />
-     * [4] - Instance Type(AWS)/Flavor(OPS)<br />
-     * [5] - Number of the VM want to created<br />
-     * [6] - all subnet tags need to be attached to the VM. Separated by "\r\n".<br />
-     * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;eg:
-     * urn:ogf:network:aws.amazon.com:aws-cloud:subnet-2cd6ad16\r\n
-     * urn:ogf:network:aws.amazon.com:aws-cloud:subnet-2cd6ad16<br />
-     * [7] - all volumes need to be created in the VM<br />
-     * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;eg:
-     * 8,standard,/dev/xvda,snapshot\r\n8,standard,/dev/sdb,snapshot
+     * Create a virtual machine. Compose the ttl model according to the parsing
+     * parameters. Put the ttl model and the VersionGroup UUID in the parsing 
+     * parameter into the modelAddition part and referenceVersion respectively 
+     * in the delta. Request an UUID for system instance and use the UUID to 
+     * propagate and commit the delta via the system API.
+     * @param paraMap a key-value pair contains all the required information, 
+     * either selected by the user or assigned by the system, to build the request
+     * virtual machine.
      * @return
      * 0 - success.<br />
      * 1 - Requesting System Instance UUID error.<br />
-     * 2 - unplug error.<br />
+     * 2 - plugin error.<br />
      * 3 - connection error.<br />
-     * 4 - model building error<br />
+     * 4 - parsing parameter error<br />
      */
     public int vmInstall(Map<String, String> paraMap){
         String vgUuid = null;
         String topoUri = null;
-        String vpcServiceUri = null;
+        String region = null;
         String vpcUri = null;
         String osType = null;
         String instanceType = null;
@@ -160,13 +158,14 @@ public class serviceBeans {
         String[] subnets = null;
         String[] volumes = null;
         int quantity;
+        //Map the parsing parameters into each variable
         for(Map.Entry<String, String> entry : paraMap.entrySet()){
             if(entry.getKey().equalsIgnoreCase("versionGroup"))
                 vgUuid = entry.getValue();
             else if(entry.getKey().equalsIgnoreCase("topologyUri"))
                 topoUri = entry.getValue();
             else if(entry.getKey().equalsIgnoreCase("region"))
-                vpcServiceUri = entry.getValue();
+                region = entry.getValue();
             else if(entry.getKey().equalsIgnoreCase("vpcID"))
                 vpcUri = entry.getValue();
             else if(entry.getKey().equalsIgnoreCase("osType"))
@@ -182,59 +181,119 @@ public class serviceBeans {
             else if(entry.getKey().equalsIgnoreCase("volumes"))
                 volumes = entry.getValue().split("\r\n");            
         }
-        String siUuid ;
+        
         try {
-            URL url = new URL(String.format("%s/model/systeminstance", host));
+            URL url = new URL(String.format("%s/model/", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            siUuid = this.executeHttpMethod(url, connection, "GET", null);
-            if(siUuid.length()!=36)
-                return 1;//not returning System Instance UUID. error occurs
+            this.executeHttpMethod(url, connection, "GET", null);           
         } catch (Exception e) {
             return 3;//connection error
         }
 
-        String delta = "<delta>\n<id>1</id>\n" +
-                       "<creationTime>2015-03-11T13:07:23.116-04:00</creationTime>\n" +
-                       "<referenceVersion>"+ vgUuid + "</referenceVersion>\n" +
-                       "<modelReduction></modelReduction>\n\n" +
-                       "<modelAddition>\n" +
-                       "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n" +
-                       "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n" +
-                       "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n" +
-                       "@prefix rdf:   &lt;http://schemas.ogf.org/nml/2013/03/base##&gt; .\n" +
-                       "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n" +
-                       "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .";
-        
-        String nodeTag = "&lt;" + topoUri + ":i-" + RandomStringUtils.random(8, true, true) + "&gt;";
-        String model = "&lt;" + vpcUri + "&gt;\n"
-                    + "        nml:hasNode               " + nodeTag + ".\n\n";
+        Connection rains_conn;
+        // Database Connection
+        try {
 
-        String region = vpcServiceUri.split(":vpcservice-")[1];
-        model += "&lt;" + topoUri + ":ec2service-" + region + "&gt;\n"
-                + "        mrs:providesVM  " + nodeTag + ".\n\n";
+            Class.forName("com.mysql.jdbc.Driver").newInstance();
+            Properties rains_connectionProps = new Properties();
+            rains_connectionProps.put("user", rains_db_user);
+            rains_connectionProps.put("password", rains_db_pass);
+
+            rains_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/rainsdb",
+                    rains_connectionProps);
+
+            PreparedStatement prep = rains_conn.prepareStatement("SELECT * FROM version_group ORDER BY id DESC LIMIT 1");
+            ResultSet rs1 = prep.executeQuery();
+            while (rs1.next()) {
+                vgUuid = rs1.getString("refUuid");
+            }
+        } catch (SQLException | InstantiationException | IllegalAccessException | ClassNotFoundException ex) {
+            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        //create a system instance and get an UUID for this system instance from the API
+        String siUuid;
+        try {
+            URL url = new URL(String.format("%s/model/systeminstance", host));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            siUuid = this.executeHttpMethod(url, connection, "GET", null);
+            if (siUuid.length() != 36) {
+                return 1;//not returning System Instance UUID. error occurs
+            }
+        } catch (Exception e) {
+            return 3;//connection error
+        }
+
+        //building ttl model
+        String delta = "<delta>\n<id>1</id>\n"
+                + "<creationTime>2015-03-11T13:07:23.116-04:00</creationTime>\n"
+                + "<referenceVersion>" + vgUuid + "</referenceVersion>\n"
+                + "<modelReduction></modelReduction>\n\n"
+                + "<modelAddition>\n"
+                + "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
+                + "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n"
+                + "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n"
+                + "@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .\n"
+                + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
+                + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n\n";
+
+        String nodeTag = "&lt;" + topoUri + ":i-" + UUID.randomUUID().toString() + "&gt;";
+        String model = "&lt;" + vpcUri + "&gt;\n"
+                + "        nml:hasNode        " + nodeTag + ".\n\n"
+                + "&lt;" + topoUri + ":ec2service-" + region + "&gt;\n"
+                + "        mrs:providesVM  " + nodeTag + ".\n\n";
         
-        String allBolUri = "";
+        //building all the volumes 
+        String allVolUri = "";
         for(String vol : volumes){
-            String volUri = "&lt;" + topoUri + ":vol-" + 
-                    RandomStringUtils.random(8, false, true) + "&gt;";
+            String volUri = "&lt;" + topoUri + ":vol-" + UUID.randomUUID().toString() + "&gt;";
             String[] parameters = vol.split(",");
-            model += volUri +"\n        a                  mrs:Volume , owl:NamedIndividual ;\n"
-                    + "        mrs:disk_gb        \"" + parameters[0] + "\" ;\n" 
-                    + "        mrs:target_device  \"" + parameters[2] + "\" ;\n"
-                    + "        mrs:value          \"" + parameters[1] + "\" .\n\n";
-            allBolUri += volUri + ",";
+            model += volUri +"\n        a                  mrs:Volume , owl:NamedIndividual ;\n"
+                    + "        mrs:disk_gb        \"" + parameters[0] + "\" ;\n" 
+                    + "        mrs:target_device  \"" + parameters[2] + "\" ;\n"
+                    + "        mrs:value          \"" + parameters[1] + "\" .\n\n";
+            allVolUri += volUri + " , ";
+        }        
+        model += "&lt;" + topoUri + ":ebsservice-" + region + "&gt;\n"
+                + "        mrs:providesVolume  " + allVolUri.substring(0, (allVolUri.length()-2)) + ".\n\n";
+
+        //building all the network interfaces
+        String allSubnets = "";
+        for(String net : subnets){
+            //temporary code for assign IP
+            String[] parameter = net.split(",");
+            String assignedIp = parameter[1].substring(0, parameter[1].length()-1);
+            Random rand = new Random();
+            int i = rand.nextInt(251) + 4;
+            
+            //codes for assigning IP should be cleaned after AWS driver code being fixed
+            String portUri = "&lt;" + topoUri + ":eni-" + UUID.randomUUID().toString() + "&gt;";
+            model += "&lt;" + parameter[0] + "&gt;\n        nml:hasBidirectionalPort " + portUri + " .\n\n"
+                    + portUri + "\n        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n"
+                    + "        mrs:hasTag            &lt;" + topoUri + ":portTag&gt; ;\n"
+                    + "        mrs:hasNetworkAddress  &lt;"+ topoUri + ":" + assignedIp + i +"&gt; .\n\n"
+                    + "&lt;"+ topoUri + ":" + assignedIp + i +"&gt;\n        "
+                    + "a      mrs:NetworkAddress , owl:NamedIndividual ;\n"
+                    + "        mrs:type  \"ipv4:private\" ;\n"
+                    + "        mrs:value \""+ assignedIp + i +"\" .\n\n";
+            
+            allSubnets += portUri + " , "; 
         }
         
-        model += "&lt;" + topoUri + ":ebsservice-" + region + "&gt;\n"
-                + "        mrs:providesVolume  " + allBolUri.substring(0, (allBolUri.length()-1)) + ".";
+        //building the node
+        model += nodeTag +"\n        a                         nml:Node , owl:NamedIndividual ;\n"
+                + "        mrs:providedByService     &lt;" + topoUri + ":ec2service-" + region + "&gt; ;\n"
+                + "        mrs:hasVolume             " 
+                + allVolUri.substring(0, (allVolUri.length()-2)) + ";\n"
+                + "        nml:hasBidirectionalPort  "
+                + allSubnets.substring(0, (allSubnets.length()-2)) + ".\n\n";
         
-        
-        delta += model + "\n</modelAddition>\n</delta>";
+        delta += model + "</modelAddition>\n</delta>";
         
         //push to the system api and get response
         try {
             //propagate the delta
-            URL url = new URL(String.format("%s/delta/%s/propagate", host,siUuid));
+            URL url = new URL(String.format("%s/delta/%s/propagate", host, siUuid));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             String result = this.executeHttpMethod(url, connection, "POST", delta);
             if (!result.equalsIgnoreCase("propagate successfully")) //plugin error
@@ -245,7 +304,7 @@ public class serviceBeans {
             url = new URL(String.format("%s/delta/%s/commit", host,siUuid));
             connection = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, connection, "PUT", "");
-            if (!result.equalsIgnoreCase("commit successfully")) //plugin error
+            if (!result.equalsIgnoreCase("PROCESSING")) //plugin error
             {
                 return 2;
             }

@@ -110,11 +110,11 @@
                                                 <tr>
                                                     <td>Instance Type</td>
                                                     <td>
-                                                        <select name="instanceType" required>
+                                                        <select name="instanceType" required onchange="instanceSelect(this)">
                                                             <option></option>
-                                                            <option>cpu:1, ram:512 MB</option>
-                                                            <option>cpu:2, ram:1 GB</option>
-                                                            <option>cpu:4, ram:4 GB</option>
+                                                            <option value="instance1">cpu:1, ram:512 MB</option>
+                                                            <option value="instance2">cpu:2, ram:1 GB</option>
+                                                            <option value="instance3">cpu:4, ram:4 GB</option>
                                                         </select>
                                                     </td>
                                                 </tr>
@@ -143,26 +143,16 @@
                                                                 <tr>
                                                                     <td>Root</td>
                                                                     <td>
-                                                                        <select name="-path" required>
-                                                                            <option></option>
-                                                                            <option value="/dev/xvda">/dev/xvda</option>
-                                                                            <option value="/dev/sdb">/dev/sdb</option>
-                                                                            <option value="/dev/sdc">/dev/sdc</option>
-                                                                        </select>
+                                                                        <input type="text" name="root-path" style="width: 8em;" readonly required/>
                                                                     </td>
                                                                     <td>
-                                                                        <select name="-snapshot" required>
-                                                                            <option></option>
-                                                                            <option value="snapshot1">snapshot1</option>
-                                                                            <option value="snapshot1">snapshot2</option>
-                                                                            <option value="snapshot1">snapshot3</option>
-                                                                        </select>
+                                                                        <input type="text" name="root-snapshot" style="width: 8em;" readonly required/>
                                                                     </td>
                                                                     <td>
-                                                                        <input type="number" name="-size" style="width: 4em; text-align: center;"/>
+                                                                        <input type="number" name="root-size" style="width: 4em; text-align: center;" required/>
                                                                     </td>
                                                                     <td>
-                                                                        <select name="-type" required>
+                                                                        <select name="root-type" required>
                                                                             <option></option>
                                                                             <option value="standard">Standard</option>
                                                                             <option value="io1">io1</option>
@@ -201,17 +191,17 @@
                                     Error Requesting System Instance UUID.
                                 </c:when>    
                                 <c:when test="${param.ret == '2'}">
-                                    Failure while Unplugging.
+                                    Plugin Failure.
                                 </c:when>    
                                 <c:when test="${param.ret == '3'}">
                                     Connection Error.
                                 </c:when>    
                                 <c:when test="${param.ret == '4'}">
-                                    Error Building Model.
+                                    Error Parsing Parameters.
                                 </c:when>                                        
                             </c:choose>                        
 
-                            <br><a href="/VersaStack-web/ops/srvc/vmadd.jsp?self=true">(Un)Install Another Driver.</a>                                
+                            <br><a href="/VersaStack-web/ops/srvc/vmadd.jsp?self=true">Install Another VM.</a>                                
                             <br><a href="/VersaStack-web/ops/catalog.jsp">Return to Services.</a>
                         </div>
                     </c:otherwise>
