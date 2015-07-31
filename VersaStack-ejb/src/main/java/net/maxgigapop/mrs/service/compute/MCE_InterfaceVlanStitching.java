@@ -183,6 +183,12 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
         stitchModel.add(stitchModel.createStatement(resDcVx, Nml.isAlias, resVgw));
         // include port in a subnet
         stitchModel.add(stitchModel.createStatement(resSubnet, Nml.hasBidirectionalPort, netIf));
+        // add portTag
+        Resource PORT_TAG = RdfOwl.createResource(stitchModel, resAws + ":portTag", Mrs.Tag);
+        stitchModel.add(stitchModel.createStatement(PORT_TAG, Mrs.type, "interface"));
+        stitchModel.add(stitchModel.createStatement(PORT_TAG, Mrs.value, "network"));
+        stitchModel.add(stitchModel.createStatement(netIf, Mrs.hasTag, PORT_TAG));
+
         return stitchModel; 
     }
     
