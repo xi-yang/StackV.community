@@ -554,15 +554,17 @@ public class AwsPush {
                 runInstance.withMinCount(1);
 
                 //integrate the root device
-                EbsBlockDevice device = new EbsBlockDevice();
-                device.withVolumeType(parameters[4]);
-                device.withVolumeSize(Integer.parseInt(parameters[5]));
-                BlockDeviceMapping mapping = new BlockDeviceMapping();
-                mapping.withDeviceName(parameters[6]);
-                mapping.withEbs(device);
-                String volumeTag = parameters[7];
-                runInstance.withBlockDeviceMappings(mapping);
-
+                if (!parameters[4].equalsIgnoreCase("any")) {
+                    EbsBlockDevice device = new EbsBlockDevice();
+                    device.withVolumeType(parameters[4]);
+                    device.withVolumeSize(Integer.parseInt(parameters[5]));
+                    BlockDeviceMapping mapping = new BlockDeviceMapping();
+                    mapping.withDeviceName(parameters[6]);
+                    mapping.withEbs(device);
+                    String volumeTag = parameters[7];
+                    runInstance.withBlockDeviceMappings(mapping);
+                }
+                
                 List<InstanceNetworkInterfaceSpecification> portSpecification = new ArrayList();
                 for (int i = 9; i < parameters.length; i++) {
                     InstanceNetworkInterfaceSpecification s = new InstanceNetworkInterfaceSpecification();
@@ -581,13 +583,15 @@ public class AwsPush {
                 ec2Client.instanceStatusCheck(instance.getInstanceId(), "running");
                 tagResource(instance.getInstanceId(), parameters[3]);
 
-                DescribeVolumesResult volumesResult = ec2.describeVolumes();
-                List<Volume> volumes = volumesResult.getVolumes();
-                volumes.removeAll(ec2Client.getVolumes());
-                String volumeId = volumes.get((0)).getVolumeId();
-                tagResource(volumeId, volumeTag);
-                ec2Client.getVolumes().add(volumes.get(0));
-
+                if (!parameters[4].equalsIgnoreCase("any")) {
+                    String volumeTag = parameters[7];
+                    DescribeVolumesResult volumesResult = ec2.describeVolumes();
+                    List<Volume> volumes = volumesResult.getVolumes();
+                    volumes.removeAll(ec2Client.getVolumes());
+                    String volumeId = volumes.get((0)).getVolumeId();
+                    tagResource(volumeId, volumeTag);
+                    ec2Client.getVolumes().add(volumes.get(0));
+                }
             } else if (request.contains("AttachVolumeRequest")) {
                 String[] parameters = request.split("\\s+");
 
@@ -801,7 +805,7 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode node = querySolution.get("node");
-
+            /* Xi: no need to check volume 
             query = "SELECT ?service ?volume ?port WHERE {<" + node.asResource() + "> mrs:providedByService ?service ."
                     + "<" + node.asResource() + "> mrs:hasVolume ?volume ."
                     + "<" + node.asResource() + "> nml:hasBidirectionalPort ?port}";
@@ -843,9 +847,9 @@ public class AwsPush {
                 throw new EJBException(String.format("model reduction does not specify root volume"
                         + " attached to instance: %s", node));
             }
-
+            */
             query = "SELECT ?vpc WHERE {?vpc nml:hasNode <" + node.asResource() + ">}";
-            r1 = executeQuery(query, model, modelReduct);
+            ResultSet r1 = executeQuery(query, model, modelReduct);
             if (!r1.hasNext()) {
                 throw new EJBException(String.format("model reduction does not specify vpc of node to be deleted: %s", node));
             }
@@ -2499,9 +2503,11 @@ public class AwsPush {
                 //find the EBS volumes that the instance uses
                 query = "SELECT ?volume WHERE {<" + node.asResource() + ">  mrs:hasVolume  ?volume}";
                 ResultSet r4 = executeQuery(query, model, modelAdd);
+                /*
                 if (!r4.hasNext()) {
                     throw new EJBException(String.format("model addition does not specify the volume of the new node: %s", node));
                 }
+                */
                 List<String> volumesId = new ArrayList();
                 while (r4.hasNext())//there could be multiple volumes attached to the instance
                 {
@@ -2535,9 +2541,8 @@ public class AwsPush {
                     }
                 }
                 if (hasRootVolume == false) {
-                    throw new EJBException(String.format("model addition does not specify root volume for node: %s", node));
+                    requests += "any any any any ";
                 }
-
                 int index = 0;
                 //put the networ interfaces 
                 requests += "NetworkInterfaceSpecification ";
