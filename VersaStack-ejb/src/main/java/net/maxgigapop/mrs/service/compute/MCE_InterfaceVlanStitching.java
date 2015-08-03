@@ -144,7 +144,7 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
         // select a VPC based on endSite
         List<QuerySolution> solutions = new ArrayList<>();
         for (Resource resVlanPort: vlanPorts) {
-            String sparql = "SELECT ?aws ?subnet ?dcVx WHERE {"
+            String sparql = "SELECT ?aws ?vpc ?subnet ?dcVx WHERE {"
                     + "?aws nml:hasBidirectionalPort?dcPort ."
                     + "?aws nml:hasTopology ?vpc."
                     + "?aws a nml:Topology."
@@ -165,6 +165,7 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
         if (solutions.isEmpty())
             return null;
         Resource resAws = solutions.get(0).getResource("aws");
+        Resource resVpc = solutions.get(0).getResource("vpc");
         Resource resSubnet = solutions.get(0).getResource("subnet");
         Resource resDcVx = solutions.get(0).getResource("dcVx");
         // create VGW and attach to VPC (endSite), and peer (isAlias) it with the vlanPort
@@ -178,7 +179,7 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
         Resource resVgw = RdfOwl.createResource(stitchModel, resAws + ":" + vpnGatewayId, Nml.BidirectionalPort);
         stitchModel.add(stitchModel.createStatement(resVgw, Mrs.hasTag, VPNGW_TAG));
         stitchModel.add(stitchModel.createStatement(resDcVx, Mrs.hasTag, VIRTUAL_INTERFACE_TAG));
-        stitchModel.add(stitchModel.createStatement(resAws, Nml.hasBidirectionalPort, resVgw));
+        stitchModel.add(stitchModel.createStatement(resVpc, Nml.hasBidirectionalPort, resVgw));
         stitchModel.add(stitchModel.createStatement(resVgw, Nml.isAlias, resDcVx));
         stitchModel.add(stitchModel.createStatement(resDcVx, Nml.isAlias, resVgw));
         // include port in a subnet
