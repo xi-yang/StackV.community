@@ -139,11 +139,16 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
         }
   
         try {
-        //    String r = driverInstance.getProperty("region");
             //Searches for topologyURI in Driver Instance
             String topologyURI = driverInstance.getProperty("topologyUri");
             //Searches for subsystemBaseUrl in Driver Instance
             String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
+            
+        if (subsystemBaseUrl == null) {
+            throw new EJBException(String.format("%s has no property key=subsystemBaseUrl", driverInstance));
+        }
+
+            
         //    Regions region = Regions.fromName(r);
             //Creates an Ontology Model for ONOS Server
             OntModel ontModel = OnosModelBuilder.createOntology(topologyURI,subsystemBaseUrl);
@@ -163,18 +168,13 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
                 VersionItemPersistenceManager.save(vi);
                 driverInstance.setHeadVersionItem(vi);
             } 
+        
         } catch (IOException e) {
             throw new EJBException(String.format("pullModel on %s raised exception[%s]", driverInstance, e.getMessage()));
         } catch (Exception ex) {
             Logger.getLogger(OnosRESTDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
         }
         
-        String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
-        if (subsystemBaseUrl == null) {
-            throw new EJBException(String.format("%s has no property key=subsystemBaseUrl", driverInstance));
-        }
-
-
         return new AsyncResult<>("SUCCESS");
     }
 }

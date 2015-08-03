@@ -206,7 +206,69 @@ public class OnosServer {
         }
          return(devicePorts);
     }   
-    
+
+        //pull Hosts Data
+    public String[][] getOnosHosts(String subsystemBaseUrl) throws MalformedURLException, IOException, ParseException {
+        qtyHosts=0;
+        URL urlHosts = new URL(subsystemBaseUrl+"/hosts");
+        HttpURLConnection connHosts = (HttpURLConnection) urlHosts.openConnection();
+        String responseStrHosts = this.executeHttpMethod(urlHosts, connHosts, "GET", null);
+        responseStrHosts=responseStrHosts.replaceAll("(\\[|\\]|\\{|\\}|,)","$1\n");
+        responseStrHosts=responseStrHosts.replaceAll("\"\\}", "\"\n\\}");
+        responseStrHosts=responseStrHosts.replaceAll("\"\\]", "\"\n\\]");
+        responseStrHosts=responseStrHosts.replaceAll("\\]\n,","\\],");
+        responseStrHosts=responseStrHosts.replaceAll("\\}\n,","\\},");
+        responseStrHosts=responseStrHosts.replaceAll("\\},\\{","\\},\n\\{");
+        int realSize=responseStrHosts.split("\n").length;
+        String hostsArray[]=new String[realSize];
+        hostsArray=responseStrHosts.split("\n");
+        for(int i=0;i<realSize;i++){
+            if(hostsArray[i].matches("(.*)\"id\":(.*)")){
+            qtyHosts++; 
+         
+            }
+        }
+        String hosts[][]=new String[6][qtyHosts];
+        
+        int j=0;
+        for(int i=0;i<realSize;i++){
+            
+            if(hostsArray[i].matches("(.*)\"id\":(.*)")){
+                
+                hosts[0][j]=hostsArray[i].split("\"id\":\"")[1];
+                hosts[0][j]=hosts[0][j].split("\"")[0];
+            }
+            else if(hostsArray[i].matches("(.*)\"mac\":(.*)")){
+                
+                hosts[1][j]=hostsArray[i].split("\"mac\":\"")[1];
+                hosts[1][j]=hosts[1][j].split("\"")[0];
+            }
+            else if(hostsArray[i].matches("(.*)\"vlan\":(.*)")){
+                
+                hosts[2][j]=hostsArray[i].split("\"vlan\":\"")[1];
+                hosts[2][j]=hosts[2][j].split("\"")[0];
+            }
+            else if(hostsArray[i].matches("(.*)\"ipAddress\":(.*)")){
+                
+                hosts[3][j]=hostsArray[i+1].split("\"")[1];
+                hosts[3][j]=hosts[3][j].split("\"")[0];
+            }   
+            else if(hostsArray[i].matches("(.*)\"elementId\":(.*)")){
+                
+                hosts[4][j]=hostsArray[i].split("\"elementId\":\"")[1];
+                hosts[4][j]=hosts[4][j].split("\"")[0];
+            }
+            else if(hostsArray[i].matches("(.*)\"port\":(.*)")){
+                
+                hosts[5][j]=hostsArray[i].split("\"port\":\"")[1];
+                hosts[5][j]=hosts[5][j].split("\"")[0];
+                j++;
+            }
+            
+        }
+         return(hosts);
+    }   
+
     //send GET to HTTP server and retrieve response
     public String executeHttpMethod(URL url, HttpURLConnection conn, String method, String body) throws IOException {
         conn.setRequestMethod(method);
