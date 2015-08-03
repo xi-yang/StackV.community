@@ -38,11 +38,15 @@ public class Mrs {
     
     public static final Property hasBucket = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#hasBucket" );
     
+    public static final Property hasFileSystem = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#hasFileSystem" );
+    
     public static final Property hasNetworkAddress = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#hasNetworkAddress" );
     
     public static final Property hasRoute = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#hasRoute" );
     
     public static final Property hasTag = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#hasTag" );
+    
+    public static final Property hasTransfer =  m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#hasTransfer" );
     
     public static final Property hasVolume = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#hasVolume" );
     
@@ -101,7 +105,13 @@ public class Mrs {
     public static final Resource BlockStorageService = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#BlockStorageService" );
     
     public static final Resource Bucket = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#Bucket" );
+
+    public static final Resource DataTransfer = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#DataTransfer" );
     
+    public static final Resource DataTransferService = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#DataTransferService" );
+    
+    public static final Resource DataTransferClusterService = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#DataTransferClusterService" );
+     
     public static final Resource ClusterNetworkService = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#ClusterNetworkService" );
     
     public static final Resource GenericCapabilityService = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#GenericCapabilityService" );

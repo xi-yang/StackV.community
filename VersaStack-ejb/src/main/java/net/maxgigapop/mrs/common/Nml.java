@@ -113,6 +113,8 @@ public class Nml {
     
     public static final Resource DeadaptationService = m_model.createResource( "http://schemas.ogf.org/nml/2013/03/base#DeadaptationService" );
     
+    public static final Resource FileSystem = m_model.createResource( "http://schemas.ogf.org/nml/2013/03/base#FileSystem" );   
+    
     public static final Resource Group = m_model.createResource( "http://schemas.ogf.org/nml/2013/03/base#Group" );
     
     public static final Resource Label = m_model.createResource( "http://schemas.ogf.org/nml/2013/03/base#Label" );
@@ -130,7 +132,6 @@ public class Nml {
     public static final Resource Location = m_model.createResource( "http://schemas.ogf.org/nml/2013/03/base#Location" );
     
     public static final Resource NetworkObject = m_model.createResource( "http://schemas.ogf.org/nml/2013/03/base#NetworkObject" );
-    
     
     public static final Resource Node = m_model.createResource( "http://schemas.ogf.org/nml/2013/03/base#Node" );
     
