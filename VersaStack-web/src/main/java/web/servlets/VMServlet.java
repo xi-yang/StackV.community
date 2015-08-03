@@ -84,7 +84,10 @@ public class VMServlet extends HttpServlet {
             paramMap.put("volumes", volString);
 
             paramMap.remove("install");
-            int retCode = servBean.vmInstall(paramMap);
+            int retCode = -1;
+            for (int i = 0; i < Integer.parseInt(paramMap.get("vmQuantity")); i++) {
+                retCode = servBean.vmInstall(paramMap);
+            }
 
             response.sendRedirect("/VersaStack-web/ops/srvc/vmadd.jsp?ret=" + retCode);
         }
