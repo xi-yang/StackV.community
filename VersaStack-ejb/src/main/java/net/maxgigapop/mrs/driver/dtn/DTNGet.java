@@ -35,11 +35,11 @@ public class DTNGet {
         this.fileSystems = new ArrayList<>();
 
         
-        //todo: communication with script on dtns
+        //todo:authentication and communication with script on dtns
         //Parse xml file
         Node tmpNode; Element tmpEle;
         try {
-            File inputFile = new File("/home/xin/Dropbox/RAINS/DTN_Driver/dtn-"+address+".xml");
+            File inputFile = new File("/home/xin/Dropbox/RAINS/DTN_Driver/conf_files/dtn-"+address+".xml");
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
             Document doc = dBuilder.parse(inputFile);

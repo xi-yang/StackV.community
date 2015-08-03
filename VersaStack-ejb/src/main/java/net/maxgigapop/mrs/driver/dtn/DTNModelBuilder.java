@@ -123,7 +123,7 @@ public class DTNModelBuilder {
                         if (!conf.getFileSystems().isEmpty()) {
                             for (FileSystem f : conf.getFileSystems()){
                                 if(!f.isParallel()){
-                                    String fs_id = f.getMountPoint();
+                                    String fs_id = f.getDeviceName();
                                     Resource LOCALFS = RdfOwl.createResource(model, dtn_node.getURI()+":localfilesystem-"+fs_id, fileSystem);
                                     model.add(model.createStatement(dtn_node, hasFileSystem, LOCALFS));
                                     model.addLiteral(LOCALFS, fs_type, ResourceFactory.createTypedLiteral(f.getType(),XSDDatatype.XSDstring));
@@ -161,6 +161,7 @@ public class DTNModelBuilder {
                         Resource TRANSFERSERVICE = RdfOwl.createResource(model, dtn_node.getURI()+":datatransferservice-"+conf.getTransferServiceType(), dataTransferService);
                         model.add(model.createStatement(dtn_node, hasService, TRANSFERSERVICE));
                         model.addLiteral(TRANSFERSERVICE, service_conf, ResourceFactory.createTypedLiteral(conf.getTransferConf(),XSDDatatype.XSDstring));
+                        //todo: pull dynamic information
 //                        Resource TRANSFERS = RdfOwl.createResource(model, dtn_node.getURI()+":datatransfer", dataTransfer);
                         if (endpoint.length() > 0){
                             model.add(model.createStatement(TRANSFERSERVICE, hasService, CLUSTERSERVICE));

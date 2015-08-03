@@ -31,6 +31,8 @@ public class DTNPush {
     static final Logger logger = Logger.getLogger(DTNPush.class.getName());
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 
+    
+    //todo: push dynamic infomation 
     public DTNPush(String user_account, String access_key, String address, String topologyUri) {
         //have all the information regarding the topology
         //do an adjustment to the topologyUri
