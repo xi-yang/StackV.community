@@ -1352,8 +1352,9 @@ public class AwsPush {
         ResultSet r = executeQuery(query, emptyModel, modelReduct);
         // a new port has been added to delta
         while (r.hasNext()) {
-             QuerySolution q = r.next();
-             RDFNode vpc = q.get("vpc");
+            QuerySolution q = r.next();
+            RDFNode vpc = q.get("vpc");
+            RDFNode gateway = q.get("port");
             // check if the new port is an VGW gateway for an VPC 
             query = "SELECT ?vpc ?port ?tag WHERE {?vpc nml:hasBidirectionalPort ?port . "
                     + "?vpc nml:hasService ?service . "
@@ -1361,13 +1362,10 @@ public class AwsPush {
                     + "?port mrs:hasTag ?tag ."
                     + "?tag mrs:type \"gateway\" . "
                     + "?tag mrs:value  \"vpn\" "
-                    + String.format("FILTER(?vpc = <%s>) ", vpc) 
+                    + String.format("FILTER(?vpc = <%s> && ?port = <%s>) ", vpc, gateway)
                     + "}";
             ResultSet r1 = executeQueryUnion(query, model, modelReduct);
-            while (r1.hasNext()) {
-                QuerySolution q1 = r.next();
-                RDFNode gateway = q1.get("port");
-
+            if (r1.hasNext()) {
                 String gatewayIdTag = gateway.asResource().toString().replace(topologyUri, "");
                 String vpcIdTag = vpc.asResource().toString().replace(topologyUri, "");
                 requests += String.format("detachVpnGatewayRequest %s %s \n", gatewayIdTag, vpcIdTag);
@@ -2025,8 +2023,9 @@ public class AwsPush {
         ResultSet r = executeQuery(query, emptyModel, modelAdd);
         // a new port has been added to delta
         while (r.hasNext()) {
-             QuerySolution q = r.next();
-             RDFNode vpc = q.get("vpc");
+            QuerySolution q = r.next();
+            RDFNode vpc = q.get("vpc");
+            RDFNode gateway = q.get("port");
             // check if the new port is an VGW gateway for an VPC 
             query = "SELECT ?vpc ?port ?tag WHERE {?vpc nml:hasBidirectionalPort ?port . "
                     + "?vpc nml:hasService ?service . "
@@ -2034,17 +2033,14 @@ public class AwsPush {
                     + "?port mrs:hasTag ?tag ."
                     + "?tag mrs:type \"gateway\" . "
                     + "?tag mrs:value  \"vpn\" "
-                    + String.format("FILTER(?vpc = <%s>) ", vpc) 
+                    + String.format("FILTER(?vpc = <%s> && ?port = <%s>) ", vpc, gateway)
                     + "}";
             ResultSet r1 = executeQueryUnion(query, model, modelAdd);
-            while (r1.hasNext()) {
-                QuerySolution q1 = r.next();
-                RDFNode gateway = q1.get("port");
-
+            if (r1.hasNext()) {
                 String gatewayIdTag = gateway.asResource().toString().replace(topologyUri, "");
                 String vpcIdTag = vpc.asResource().toString().replace(topologyUri, "");
                 requests += String.format("AttachVpnGatewayRequest %s %s \n", gatewayIdTag, vpcIdTag);
-            }        
+            }
         }
 
         return requests;
