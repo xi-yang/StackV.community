@@ -547,15 +547,28 @@ public class OpenStackNeutronModelBuilder {
 
                             FLOATADD = RdfOwl.createResource(model, topologyURI +":subnet+" + openstackget.getResourceName(sub) + ":floatingip+" + f.getFloatingIpAddress(), networkAddress);
                             model.add(model.createStatement(Subnet, hasNetworkAddress, FLOATADD));
-
+                            model.add(model.createStatement(FLOATADD, type, "floating-ip"));
+                            model.add(model.createStatement(FLOATADD, value, f.getFloatingIpAddress()));
                         } else if (ips.getIpAddress().equals(f.getFixedIpAddress())) {
+                            
                             String s = ips.getSubnetId();
                             Subnet sub = openstackget.getSubnet(s);
                             Resource Subnet = model.getResource(topologyURI + ":network+"+ openstackget.getResourceName(openstackget.getNetwork(sub.getNetworkId()))+ ":subnet+" + openstackget.getResourceName(sub));
+                            
 
                             FIXEDADD = RdfOwl.createResource(model, topologyURI + ":subnet+" + openstackget.getResourceName(sub) + ":fixedip+" + f.getFixedIpAddress(), networkAddress);
+                            
+                            for(Server servers : openstackget.getServers()){
+                                Port pt = openstackget.getPort(f.getPortId());
+                                if(servers.getId().equals(pt.getDeviceId())){
+                                Resource VM = RdfOwl.createResource(model, topologyURI + ":" + "server-name+" + openstackget.getServereName(servers), node);
+                                model.add(model.createStatement(VM, hasNetworkAddress, FIXEDADD));
+                                }
+                            }
                             model.add(model.createStatement(Subnet, hasNetworkAddress, FIXEDADD));
-
+                            
+                            model.add(model.createStatement(FIXEDADD, type, "fixed-ip"));
+                            model.add(model.createStatement(FIXEDADD, value, f.getFixedIpAddress()));
                         }
 
                     }
@@ -580,7 +593,7 @@ public class OpenStackNeutronModelBuilder {
             throw new Exception(String.format("failure to marshall ontology model, due to %s", e.getMessage()));
         }
         String ttl = out.toString();
-        //System.out.println(ttl);
+        System.out.println(ttl);
         return model;
 
     }
