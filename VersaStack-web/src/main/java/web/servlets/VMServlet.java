@@ -39,11 +39,18 @@ public class VMServlet extends HttpServlet {
             // Collate named elements
             while (paramNames.hasMoreElements()) {
                 String paramName = (String) paramNames.nextElement();
-                String[] paramValues = request.getParameterValues(paramName);
-                String paramValue = paramValues[0];
-                if (paramValue.length() != 0) {
+                String[] paramValues = request.getParameterValues(paramName);                
+                if (paramValues.length == 1) {
+                    String paramValue = paramValues[0];
                     paramMap.put(paramName, paramValue);
-                }
+                } else if (paramValues.length > 1) {
+                    String fullValue = "";
+                    for (String paramValue : paramValues) {
+                        fullValue += paramValue + "\r\n";
+                    }
+                    fullValue = fullValue.substring(0, fullValue.length() - 4);
+                    paramMap.put(paramName, fullValue);
+                }                
             }
 
             /*
@@ -84,7 +91,10 @@ public class VMServlet extends HttpServlet {
             paramMap.put("volumes", volString);
 
             paramMap.remove("install");
-            int retCode = servBean.vmInstall(paramMap);
+            int retCode = -1;
+            for (int i = 0; i < Integer.parseInt(paramMap.get("vmQuantity")); i++) {
+                retCode = servBean.vmInstall(paramMap);
+            }
 
             response.sendRedirect("/VersaStack-web/ops/srvc/vmadd.jsp?ret=" + retCode);
         }
