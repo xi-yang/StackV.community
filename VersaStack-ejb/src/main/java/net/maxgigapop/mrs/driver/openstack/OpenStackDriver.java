@@ -99,7 +99,11 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         } catch (IOException ex) {
             Logger.getLogger(OpenStackDriver.class.getName()).log(Level.SEVERE, null, ex);
         }
-        push.pushCommit(r);
+        try {
+            push.pushCommit(r, url, NATServer, username, password, tenant, topologyURI);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(OpenStackDriver.class.getName()).log(Level.SEVERE, null, ex);
+        }
 
         driverInstance.getProperties().remove(requestId);
         DriverInstancePersistenceManager.merge(driverInstance);
