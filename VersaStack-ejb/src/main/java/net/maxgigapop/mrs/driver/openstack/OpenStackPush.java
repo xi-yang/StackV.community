@@ -78,15 +78,17 @@ public class OpenStackPush {
         client = new OpenStackGet(url, NATServer, username, password, tenantName);
         openstackget = new OpenStackGet(url, NATServer, username, password, tenantName);
         osClient = client.getClient();
-        
+
         //do an adjustment to the topologyUri
         this.topologyUri = topologyUri + ":";
     }
+
     private void OpenStackPushupdate(String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
         client1 = new OpenStackGet(url, NATServer, username, password, tenantName);
         openstackget = new OpenStackGet(url, NATServer, username, password, tenantName);
         osClient1 = client1.getClient();
     }
+
     /**
      * ***********************************************
      * Method to get the requests provided in the model addition and model
@@ -258,16 +260,14 @@ public class OpenStackPush {
                 Subnet net = client.getSubnet(o.get("routeto subnetname").toString());
 
                 port.toBuilder().fixedIp(o.get("nexthop ip").toString(), net.getId())
-                       // .deviceId(routerid)
+                        // .deviceId(routerid)
                         .networkId(net.getNetworkId())
-                        .adminState(true)
-                        ;
+                        .adminState(true);
 
                 //osClient.networking().port().create(port);
                 OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
                 String portid = port.getId();
                 rsi.attachInterface(routerid, AttachInterfaceType.PORT, "fb8826b7-434c-4eaf-a747-4b752219a343");
-              
 
             } else if (o.get("request").toString().equals("CreateNetworkInterfaceRequest")) {
                 Port port = new NeutronPort();
@@ -1208,6 +1208,104 @@ public class OpenStackPush {
 
             }
 
+        }
+
+        return requests;
+    }
+
+    private List<JSONObject> isAliasRequest(OntModel modelRef, OntModel modelDelta, boolean creation) throws Exception {
+        List<JSONObject> requests = new ArrayList();
+        String query = "";
+        query = "SELECT ?fixip ?floatingip WHERE{?fixedip nml:isAlias ?floatingip}";
+        ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
+        //find the fixip and floatingip
+        while (r1.hasNext()) {
+            QuerySolution q = r1.next();
+            RDFNode fixip = q.get("fixip");
+            RDFNode floatingip = q.get("floatingip");
+            //find the subnet
+
+            query = "SELECT ?subnet WHERE{?subnet mrs:hasNetworkAddress <" + fixip.asResource() + ">}";
+            r1 = executeQuery(query, emptyModel, modelDelta);
+            while (!r1.hasNext()) {
+                throw new Exception(String.format("routeTo %s  is "
+                        + "malformed", fixip));
+
+            }
+            QuerySolution q1 = r1.next();
+
+            RDFNode subNetfix = q1.get("subnet");
+            String subnetNamefix = subNetfix.toString();
+            String subnetnamefix = getresourcename(subnetNamefix, "+", "");
+
+            //query subnet for the floating ip
+            query = "SELECT ?subnet WHERE{?subnet mrs:hasNetworkAddress <" + floatingip.asResource() + ">}";
+            r1 = executeQuery(query, emptyModel, modelDelta);
+            while (!r1.hasNext()) {
+                throw new Exception(String.format("routeTo %s  is "
+                        + "malformed", fixip));
+
+            }
+            QuerySolution q2 = r1.next();
+
+            RDFNode subNetfloat = q2.get("subnet");
+            String subnetNamefloat = subNetfloat.toString();
+            String subnetnamefloat = getresourcename(subnetNamefloat, "+", "");
+
+            //query for the server
+            query = "SELECT ?server WHERE{?subnet mrs:hasNetworkAddress <" + fixip.asResource() + ">}";
+            r1 = executeQuery(query, emptyModel, modelDelta);
+            while (!r1.hasNext()) {
+                throw new Exception(String.format("routeTo %s  is "
+                        + "malformed", fixip));
+
+            }
+            QuerySolution q3 = r1.next();
+            RDFNode serVer = q3.get("server");
+            String serverName = serVer.toString();
+            String servername = getresourcename(serverName, "+", "");
+
+            query = "SELECT ?type ?value WHERE {<" + fixip.asResource() + "> a mrs:NetworkAddress ."
+                    + "<" + fixip.asResource() + "> mrs:type ?type ."
+                    + "<" + fixip.asResource() + "> mrs:value ?value}";
+
+            r1 = executeQuery(query, emptyModel, modelDelta);
+            while (!r1.hasNext()) {
+                throw new Exception(String.format("fixip  %s  is "
+                        + "malformed", fixip));
+
+            }
+            QuerySolution q4 = r1.next();
+            RDFNode valUe = q4.get("value");
+            String fixvalue = valUe.toString();
+
+            query = "SELECT ?type ?value WHERE {<" + floatingip.asResource() + "> a mrs:NetworkAddress ."
+                    + "<" + floatingip.asResource() + "> mrs:type ?type ."
+                    + "<" + floatingip.asResource() + "> mrs:value ?value}";
+
+            r1 = executeQuery(query, emptyModel, modelDelta);
+            while (!r1.hasNext()) {
+                throw new Exception(String.format("floatingip  %s  is "
+                        + "malformed", floatingip));
+
+            }
+                QuerySolution q5 = r1.next();
+                RDFNode floatvalUe = q5.get("value");
+                String floatvalue = floatvalUe.toString();
+            
+            
+           
+            JSONObject o = new JSONObject();
+            if (creation == true) {
+                o.put("request", "CreateisAliaseRequest");
+            } else {
+                o.put("request", "DeleteisAliaseRequest");
+            }
+            o.put("subnet name fixip", subnetnamefix);
+            o.put("subnet name floatip", subnetnamefloat);
+            o.put("server name fixip", servername);
+            o.put("fixed ip", fixvalue);
+            o.put("float ip", floatvalue);
         }
 
         return requests;
