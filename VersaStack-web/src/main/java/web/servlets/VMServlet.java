@@ -63,6 +63,10 @@ public class VMServlet extends HttpServlet {
              vmMap.put("volumes", "8,standard,/dev/xvda,snapshot\r\n8,standard,/dev/sdb,snapshot");
              */
             
+            if (!paramMap.get("graphTopo").equalsIgnoreCase("none")) {
+                paramMap.put("topologyUri", paramMap.get("graphTopo"));
+            }
+            
             // Format volumes
             String volString = "";
 
