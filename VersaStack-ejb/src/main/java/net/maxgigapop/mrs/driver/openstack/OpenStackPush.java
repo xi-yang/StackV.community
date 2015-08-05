@@ -182,7 +182,7 @@ public class OpenStackPush {
                 osClient.networking().subnet().delete(net.getId());
             } else if (o.get("request").toString().equals("RunInstanceRequest")) {
                 ServerCreateBuilder builder = Builders.server()
-                        .name(o.get("name").toString())
+                        .name(o.get("server name").toString())
                         .image("c9cc8be0-82de-490d-a5b4-a094a66e9b11")
                         .flavor("42");
 
