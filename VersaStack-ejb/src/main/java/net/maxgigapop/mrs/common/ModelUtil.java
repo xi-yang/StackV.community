@@ -14,6 +14,7 @@ import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.*;
+import com.hp.hpl.jena.sparql.function.library.e;
 import java.io.ByteArrayInputStream;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -24,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
+import javax.xml.bind.annotation.XmlElement;
 
 /**
  *
@@ -188,11 +190,14 @@ public class ModelUtil {
     private static OntModel getTopology(RDFNode node) {
         OntModel subModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         Set<RDFNode> visited = new HashSet<RDFNode>();
-        rdfDFS(node, visited, subModel);
+        List<String> includeMatches = new ArrayList<String>();
+        List<String> excludeMatches = new ArrayList<String>();
+        excludeMatches.add("#isAlias");
+        rdfDFS(node, visited, subModel, includeMatches, excludeMatches);
         return subModel;
     }
     
-    private static void rdfDFS( RDFNode node, Set<RDFNode> visited, OntModel ontModel) {
+    private static void rdfDFS(RDFNode node, Set<RDFNode> visited, Model subModel, List<String> propMatchIncludes, List<String> propMatchExcludes) {
         if ( visited.contains( node )) {
             return;
         }
@@ -202,14 +207,69 @@ public class ModelUtil {
                 StmtIterator stmts = node.asResource().listProperties();
                 while ( stmts.hasNext() ) {
                     Statement stmt = stmts.next();
-                    ontModel.add(stmt);
-                    if (!stmt.getPredicate().toString().contains("#isAlias")) {
-                    	rdfDFS( stmt.getObject(), visited, ontModel);
+                    subModel.add(stmt);
+                    boolean included = false;
+                    for (String matchStr: propMatchIncludes) {
+                        if (stmt.getPredicate().toString().contains(matchStr)) {
+                            rdfDFS(stmt.getObject(), visited, subModel, propMatchIncludes, propMatchExcludes);
+                            included = true;
+                            break;
+                        }
                     }
+                    if (included)
+                        continue;
+                    boolean excluded = false;
+                    for (String matchStr: propMatchExcludes) {
+                        if (stmt.getPredicate().toString().contains(matchStr)) {
+                            excluded = true;
+                            break;
+                        }
+                    }
+                    if (excluded)
+                        continue;
+                    rdfDFS(stmt.getObject(), visited, subModel, propMatchIncludes, propMatchExcludes);
                 }
             }
         }
     }
+    
+    
+    private static void rdfDFSReverse(Model refModel, RDFNode node, Set<RDFNode> visited, Model subModel, List<String> propMatchIncludes, List<String> propMatchExcludes) {
+        if ( visited.contains( node )) {
+            return;
+        }
+        else {
+            visited.add( node );
+            if ( node.isResource() ) {
+                StmtIterator stmts = refModel.listStatements(null, null, node);
+                while ( stmts.hasNext() ) {
+                    Statement stmt = stmts.next();
+                    subModel.add(stmt);
+                    boolean included = false;
+                    for (String matchStr: propMatchIncludes) {
+                        if (stmt.getPredicate().toString().contains(matchStr)) {
+                            rdfDFSReverse(refModel, stmt.getObject(), visited, subModel, propMatchIncludes, propMatchExcludes);
+                            included = true;
+                            break;
+                        }
+                    }
+                    if (included)
+                        continue;
+                    boolean excluded = false;
+                    for (String matchStr: propMatchExcludes) {
+                        if (stmt.getPredicate().toString().contains(matchStr)) {
+                            excluded = true;
+                            break;
+                        }
+                    }
+                    if (excluded)
+                        continue;
+                    rdfDFSReverse(refModel, stmt.getObject(), visited, subModel, propMatchIncludes, propMatchExcludes);
+                }
+            }
+        }
+    }
+    
     
     public static void listRecursiveDownTree(RDFNode node, Set<RDFNode> visited, List<String> filterList, List<Statement> listStmts) {
         if ( visited.contains( node )) {
@@ -246,5 +306,88 @@ public class ModelUtil {
         filterList.add(matchStr);
         listRecursiveDownTree(node, visited, filterList, listStmts);
     }
+    
+    static public class ModelViewFilter {
+        long seqNum = 0;
+        String sparql = null;
+        boolean inclusive = true;
+        boolean subtreeRecursive = false;
+        boolean suptreeRecursive = false;
 
+        public long getSeqNum() {
+            return seqNum;
+        }
+
+        public void setSeqNum(long seqNum) {
+            this.seqNum = seqNum;
+        }
+
+        public String getSparql() {
+            return sparql;
+        }
+
+        public void setSparql(String sparql) {
+            this.sparql = sparql;
+        }
+
+        public boolean isInclusive() {
+            return inclusive;
+        }
+
+        public void setInclusive(boolean inclusive) {
+            this.inclusive = inclusive;
+        }
+
+        public boolean isSubtreeRecursive() {
+            return subtreeRecursive;
+        }
+
+        public void setSubtreeRecursive(boolean subtreeRecursive) {
+            this.subtreeRecursive = subtreeRecursive;
+        }
+
+        public boolean isSuptreeRecursive() {
+            return suptreeRecursive;
+        }
+
+        public void setSuptreeRecursive(boolean suptreeRecursive) {
+            this.suptreeRecursive = suptreeRecursive;
+        }
+    }
+    
+    public static OntModel queryViewFilter(OntModel model, ModelViewFilter mvf) throws Exception {
+        if (mvf.getSparql() == null || mvf.getSparql().isEmpty() || (!mvf.getSparql().contains("CONSTUCT") && !mvf.getSparql().contains("construct"))) {
+            throw new Exception(String.format("ModelViewFilter(#%d) has empty or none-construct SPARQL", mvf.getSeqNum()));
+        }
+        Query query = QueryFactory.create(mvf.getSparql());
+        QueryExecution qexec = QueryExecutionFactory.create(query, model);
+        Model modelConstructed = qexec.execConstruct();
+        ResIterator resIter = modelConstructed.listResourcesWithProperty(Nml.hasService);
+        while (resIter.hasNext()) {
+            Resource node = resIter.next();
+            Set<RDFNode> visited = new HashSet<RDFNode>();
+            List<String> includeMatches = new ArrayList<String>();
+            List<String> excludeMatches = new ArrayList<String>();
+            includeMatches.add("#has");
+            includeMatches.add("#provide");
+            includeMatches.add("#type");
+            includeMatches.add("#value");
+            if (mvf.isSubtreeRecursive()) {
+                Model subModel = ModelFactory.createDefaultModel();
+                rdfDFS(node, visited, subModel, includeMatches, excludeMatches);
+                modelConstructed.add(subModel);
+            }
+            if (mvf.isSuptreeRecursive()) {
+                Model subModel = ModelFactory.createDefaultModel();
+                rdfDFSReverse(model, node, visited, subModel, includeMatches, excludeMatches);
+                modelConstructed.add(subModel);
+            }
+        }
+        OntModel ontModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        if (mvf.isInclusive())
+            ontModel.add(modelConstructed);
+        else 
+            ontModel.remove(modelConstructed);
+        return ontModel;
+    }
 }
