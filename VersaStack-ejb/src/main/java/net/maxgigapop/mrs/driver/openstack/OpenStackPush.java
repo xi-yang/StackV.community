@@ -357,6 +357,7 @@ public class OpenStackPush {
                     o.put("request", "DeleteNetworkRequests");
                 }
                 o.put("name", networkName);
+                requests.add(o);
             }
         }
         return requests;
