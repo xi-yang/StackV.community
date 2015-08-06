@@ -593,8 +593,12 @@ public class OpenStackNeutronModelBuilder {
             throw new Exception(String.format("failure to marshall ontology model, due to %s", e.getMessage()));
         }
         String ttl = out.toString();
+<<<<<<< Updated upstream
         System.out.println(ttl);
         */
+
+        //System.out.println(ttl);
+
         return model;
 
     }
