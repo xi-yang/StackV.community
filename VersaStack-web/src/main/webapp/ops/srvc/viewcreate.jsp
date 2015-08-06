@@ -53,9 +53,16 @@
                                         <tr>
                                             <th>Mode</th>
                                             <th>
-                                                <select name="mode" onchange="">
+                                                <select name="mode" onchange="viewmodeSelect(this)">
                                                     <option value="manage">Manage</option>                                                
-                                                    <option value="create">Create</option>
+                                                    <c:choose>
+                                                        <c:when test="${param.mode == 'create'}">
+                                                            <option value="create" selected>Create</option>
+                                                        </c:when>
+                                                        <c:otherwise>
+                                                            <option value="create">Create</option>
+                                                        </c:otherwise>
+                                                    </c:choose>
                                                 </select>                                                
                                             </th>
                                         </tr>
@@ -66,11 +73,13 @@
                         <div id="service-bottom">
                             <div id="service-fields">
                                 <form id="view-form" action="" method="post">
-                                    <c:if test="${param.mode == 'manage'}">
-                                        
+                                    <!-- Management Form -->
+                                    <c:if test="${param.mode != 'create'}">
+                                        Manage
                                     </c:if>
+                                    <!-- Creation Form -->
                                     <c:if test="${param.mode == 'create'}">
-                                        
+                                        Create
                                     </c:if>
                                 </form>
                             </div>
