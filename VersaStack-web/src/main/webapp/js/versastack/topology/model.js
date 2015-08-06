@@ -87,6 +87,7 @@ define([
                                 } else {
                                     toAdd = new Node(val, map);
                                 }
+                                toAdd.isTopology=type===values.topology;
                                 that.nodeMap[key] = toAdd;
                                 break;
                             case values.bidirectionalPort:
