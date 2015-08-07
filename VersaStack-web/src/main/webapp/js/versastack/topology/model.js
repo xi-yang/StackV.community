@@ -32,6 +32,7 @@ define([
     function Model(oldModel) {
         var map_ = utils.map_;
         var rootNodes = [];
+        var versionID;
 
         //Associates a name with the corresponding backing
         var map = {};
@@ -50,6 +51,7 @@ define([
             request.onload = function () {
                 var data = request.responseText;
                 data = JSON.parse(data);
+                versionID=data.version;
                 map = JSON.parse(data.ttlModel);
 
                 if (INJECT) {
@@ -314,6 +316,10 @@ define([
             };
             request.send();
         };
+
+        this.getVersion = function(){
+            return versionID;  
+        }
 
         this.listNodes = function () {
             var ans = [];
