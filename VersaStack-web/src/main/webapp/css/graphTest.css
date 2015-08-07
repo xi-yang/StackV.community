@@ -40,6 +40,17 @@ body{
     text-align: left;
 }
 
+#actionMenu {    
+    bottom: 0px;
+    position: absolute;
+    right: 0px;
+    margin-bottom: 0px;
+}
+
+#awsButton, #cancelButton {
+    float:right;
+}
+
 #displayName{
     text-align: center;
     visibility: visible;

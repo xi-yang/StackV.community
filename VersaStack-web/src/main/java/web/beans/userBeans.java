@@ -83,7 +83,7 @@ public class userBeans {
             Properties log_connectionProps = new Properties();
             log_connectionProps.put("user", login_db_user);
             log_connectionProps.put("password", login_db_pass);
-            log_conn = DriverManager.getConnection("jdbc:mysql://localhost:8889/Login",
+            log_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/login",
                     log_connectionProps);
 
             // Grab User Salt
@@ -111,7 +111,7 @@ public class userBeans {
                     Properties front_connectionProps = new Properties();
                     front_connectionProps.put("user", front_db_user);
                     front_connectionProps.put("password", front_db_pass);
-                    front_conn = DriverManager.getConnection("jdbc:mysql://localhost:8889/Frontend",
+                    front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
                             front_connectionProps);
 
                     username = user;
@@ -217,7 +217,7 @@ public class userBeans {
             Properties log_connectionProps = new Properties();
             log_connectionProps.put("user", reg_db_user);
             log_connectionProps.put("password", reg_db_pass);
-            log_conn = DriverManager.getConnection("jdbc:mysql://localhost:8889/Login",
+            log_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Login",
                     log_connectionProps);
 
             //Check for duplicate username
@@ -255,7 +255,7 @@ public class userBeans {
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:8889/Frontend",
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
                     front_connectionProps);
 
             prep = front_conn.prepareStatement("INSERT INTO Frontend.user_info "
@@ -315,7 +315,7 @@ public class userBeans {
                 Properties log_connectionProps = new Properties();
                 log_connectionProps.put("user", reg_db_user);
                 log_connectionProps.put("password", reg_db_pass);
-                log_conn = DriverManager.getConnection("jdbc:mysql://localhost:8889/Login",
+                log_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Login",
                         log_connectionProps);
 
                 SecureRandom random = new SecureRandom();
@@ -344,7 +344,7 @@ public class userBeans {
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:8889/Frontend",
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
                     front_connectionProps);
 
             if (!first_name.isEmpty()) {
@@ -424,7 +424,7 @@ public class userBeans {
         Properties front_connectionProps = new Properties();
         front_connectionProps.put("user", front_db_user);
         front_connectionProps.put("password", front_db_pass);
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:8889/Frontend",
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
                 front_connectionProps);
 
         service_list = new ArrayList<>();

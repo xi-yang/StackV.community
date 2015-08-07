@@ -47,6 +47,7 @@ define([
             map = JSON.parse(data.ttlModel);
 //            map=data;
 
+          
             /*
              * We begin by extracting all nodes/topologies
              *   nodeMap is used to associate a name with its corresponding Node
@@ -191,7 +192,7 @@ define([
                         case values.encoding:
                         case values.labelSwapping:
                             break;
-                        //Associate ports and subnet with their parent node
+                            //Associate ports and subnet with their parent node
                         case values.hasBidirectionalPort:
                             var ports = subnet_[key];
                             map_(ports, function (portKey) {
@@ -263,6 +264,8 @@ define([
             });
 
 
+
+
             map_(nodeList, /**@param {Node} node**/ function (node) {
                 if (node.isRoot) {
                     rootNodes.push(node);
@@ -292,6 +295,8 @@ define([
         });
         return ans;
     }
+
+
 
     /**Begin debug functions**/
     function listNodesPretty() {
