@@ -124,7 +124,7 @@ public class OpenStackPush {
      */
     public void pushCommit(List<JSONObject> requests, String url, String NATServer, String username, String password, String tenantName, String topologyUri) throws InterruptedException {
         for (JSONObject o : requests) {
-            
+
             if (o.get("request").toString().equals("CreatePortRequest")) {
                 Port port = new NeutronPort();
                 Subnet net = client.getSubnet(o.get("subnet name").toString());
@@ -247,21 +247,67 @@ public class OpenStackPush {
                 String routerid = "";
                 String netid = "";
                 RouterServiceImpl rsi = new RouterServiceImpl();
-                routerName = o.get("router name").toString();
-                if (!client.getRouters().contains(client.getRouter(o.get("router name").toString()))) {
+                //routerName = o.get("router name").toString();
+                int k = 0;
+                while (true) {
+                    String key_router = "router" + Integer.toString(k);
+                    if (o.containsKey(key_router)) {
+                        if (!client.getRouters().contains(client.getRouter(o.get(key_router).toString()))) {
 
-                    Router router = osClient.networking().router().create((Builders.router()
-                            .name(routerName)
-                            .adminStateUp(true)
-                            .build()));
+                            Router router = osClient.networking().router().create((Builders.router()
+                                    .name(o.get(key_router).toString())
+                                    .adminStateUp(true)
+                                    .build()));
 
-                }
-             
-                for (Router router : client.getRouters()) {
-                    if (router.getName().equals(routerName)) {
-                        routerid = router.getId();
+                        }
+                        for (Router router : client.getRouters()) {
+                            if (router.getName().equals(o.get(key_router).toString())) {
+                                routerid = router.getId();
+                            }
+                        }
+
+                        OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
+                        int i = 0;
+
+                        while (true) {
+                            String key_sub = "subnet" + Integer.toString(i);
+                            String key_ip = "nexthop" + Integer.toString(i);
+                            if (o.containsKey(key_sub)) {
+                                if (o.containsKey(key_ip)) {
+                                    for (Subnet s : client1.getSubnets()) {
+                                        if (openstackget.getResourceName(s).equals(o.get(key_sub).toString())) {
+                                            Port port = new NeutronPort();
+                                            netid = s.getNetworkId();
+                                            String subnetid = s.getId();
+                                            port.toBuilder().networkId(netid)
+                                                    .fixedIp(o.get(key_ip).toString(), subnetid)
+                                                    .name("test_use" + i)
+                                                    .adminState(true);
+                                            osClient1.networking().port().create(port);
+                                            i++;
+                                        }
+                                    }
+
+                                }
+                            } else {
+                                break;
+                            }
+                        }
+
+                        OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
+                        //here need to be modified
+                        for (int j = 0; j < i; j++) {
+                            Port port1 = client1.getPort("test_use" + j);
+                            String portid = port1.getId();
+                            rsi.attachInterface(routerid, AttachInterfaceType.PORT, portid);
+                        }
+
+                    } else {
+                        break;
                     }
                 }
+
+
                 /*
                  int index = 0;
                  String portid = "";
@@ -280,9 +326,10 @@ public class OpenStackPush {
                  break;
                  }
                  */
+                /*
                 OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
                 int i = 0;
-                
+
                 while (true) {
                     String key_sub = "subnet" + Integer.toString(i);
                     String key_ip = "nexthop" + Integer.toString(i);
@@ -293,12 +340,12 @@ public class OpenStackPush {
                                     Port port = new NeutronPort();
                                     netid = s.getNetworkId();
                                     String subnetid = s.getId();
-                                port.toBuilder().networkId(netid)
-                                        .fixedIp(o.get(key_ip).toString(), subnetid)
-                                        .name("test_use" + i)
-                                        .adminState(true);
-                                osClient1.networking().port().create(port);
-                                i++;
+                                    port.toBuilder().networkId(netid)
+                                            .fixedIp(o.get(key_ip).toString(), subnetid)
+                                            .name("test_use" + i)
+                                            .adminState(true);
+                                    osClient1.networking().port().create(port);
+                                    i++;
                                 }
                             }
 
@@ -309,12 +356,13 @@ public class OpenStackPush {
                 }
 
                 OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
-                List<? extends Port> port2 = client1.getPorts();//here need to be modified
+                //here need to be modified
                 for (int j = 0; j < i; j++) {
                     Port port1 = client1.getPort("test_use" + j);
                     String portid = port1.getId();
                     rsi.attachInterface(routerid, AttachInterfaceType.PORT, portid);
                 }
+                */
 
             } else if (o.get("request").toString().equals("CreateNetworkInterfaceRequest")) {
                 Port port = new NeutronPort();
@@ -1098,6 +1146,7 @@ public class OpenStackPush {
         String routername = "";
         List<String> nextHopV = new ArrayList<String>();
         List<String> routetoName = new ArrayList<String>();
+        List<String> Router = new ArrayList<String>();
         JSONObject o = new JSONObject();
         //1 find out if any new routes are being add to the model
         query = "SELECT ?route ?nextHop ?routeTo WHERE {?route a mrs:Route ."
@@ -1118,11 +1167,13 @@ public class OpenStackPush {
                 throw new Exception(String.format("route %s is not provided"
                         + "by any service", routeResource));
             }
+
             QuerySolution q1 = r1.next();
 
             RDFNode routingtable = q1.get("routingtable");
             String routingtablename = routingtable.toString();
             routername = getroutername(topologyUri, routingtablename);
+            Router.add(routername);
 
             query = "SELECT ?service WHERE {?service mrs:providesRoutingTable <" + routingtable.asResource() + ">}";
             ResultSet r2 = executeQuery(query, emptyModel, modelDelta);
@@ -1263,7 +1314,6 @@ public class OpenStackPush {
 
             }
 
-            o.put("router name", routername);
             int index = 0;
             for (String subnet : routetoName) {
                 String key = "subnet" + Integer.toString(index);
@@ -1276,10 +1326,16 @@ public class OpenStackPush {
                 o.put(key, nexthop);
                 index1++;
             }
+            int index2 = 0;
+            for (String router : Router) {
+                String key = "router" + Integer.toString(index2);
+                o.put(key, router);
+                index2++;
+            }
 
         }
         requests.add(o);
-        if(o.size() == 0){
+        if (o.size() == 0) {
             requests.remove(o);
         }
         return requests;
@@ -1429,9 +1485,9 @@ public class OpenStackPush {
 
     private String getroutername(String topologyUri, String resourcename) {
         String topologyuri = topologyUri + "router+";
-        resourcename.replace(topologyuri, "");
-        int index = resourcename.indexOf(":");
-        return resourcename.substring(0, index);
+        String resource = resourcename.replace(topologyuri, "");
+        int index = resource.indexOf(":");
+        return resource.substring(0, index);
     }
 
 }
