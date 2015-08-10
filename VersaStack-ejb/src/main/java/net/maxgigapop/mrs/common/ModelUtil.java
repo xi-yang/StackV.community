@@ -254,6 +254,11 @@ public class ModelUtil {
                 while ( stmts.hasNext() ) {
                     Statement stmt = stmts.next();
                     subModel.add(stmt);
+                    // optional: add type statements
+                    StmtIterator stmts2 = refModel.listStatements(stmt.getSubject(), RdfOwl.type, (RDFNode)null);
+                    while (stmts2.hasNext()) {
+                        subModel.add(stmts2.next());
+                    }
                     boolean included = false;
                     for (String matchStr: propMatchIncludes) {
                         if (stmt.getPredicate().toString().contains(matchStr)) {
