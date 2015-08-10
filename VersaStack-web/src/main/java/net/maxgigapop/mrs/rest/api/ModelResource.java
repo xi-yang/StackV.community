@@ -141,7 +141,8 @@ public class ModelResource {
     
     @POST
     @Consumes({"application/xml","application/json"})
-    @Path("/{refUUID}")
+    @Produces("application/xml")
+    @Path("/view/{refUUID}")
     public ApiModelBase queryView(@PathParam("refUUID")String refUUID, ApiModelViewRequest viewRequest) throws Exception{
         OntModel ontModel = systemCallHandler.queryModelView(refUUID, viewRequest.getFilters());
         if (ontModel == null) {
@@ -152,6 +153,24 @@ public class ModelResource {
         java.util.Date now = new java.util.Date();
         apiModelBase.setCreationTime(new java.sql.Date(now.getTime()));
         apiModelBase.setTtlModel(ModelUtil.marshalOntModel(ontModel));
+        return apiModelBase;
+    }
+
+    
+    @POST
+    @Consumes({"application/xml","application/json"})
+    @Produces({"application/json"})
+    @Path("/view/{refUUID}")
+    public ApiModelBase queryViewJson(@PathParam("refUUID")String refUUID, ApiModelViewRequest viewRequest) throws Exception{
+        OntModel ontModel = systemCallHandler.queryModelView(refUUID, viewRequest.getFilters());
+        if (ontModel == null) {
+            throw new EJBException("systemCallHandler.queryModelView return null model."); 
+        }
+        ApiModelBase apiModelBase = new ApiModelBase();
+        apiModelBase.setVersion(refUUID);
+        java.util.Date now = new java.util.Date();
+        apiModelBase.setCreationTime(new java.sql.Date(now.getTime()));
+        apiModelBase.setTtlModel(ModelUtil.marshalOntModelJson(ontModel));
         return apiModelBase;
     }
 }

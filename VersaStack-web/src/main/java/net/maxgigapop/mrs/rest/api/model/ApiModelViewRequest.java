@@ -22,20 +22,9 @@ import net.maxgigapop.mrs.common.ModelUtil;
 @XmlRootElement(name="view")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ApiModelViewRequest {
-    @XmlElement(required=true) 
-    protected String referenceVersion = "";
-    
     @XmlElementWrapper
     @XmlElement(required=true, name="filter") 
     protected List<ModelUtil.ModelViewFilter> filters = new ArrayList<ModelUtil.ModelViewFilter>();
-
-    public String getReferenceVersion() {
-        return referenceVersion;
-    }
-
-    public void setReferenceVersion(String referenceVersion) {
-        this.referenceVersion = referenceVersion;
-    }
 
     public List<ModelUtil.ModelViewFilter> getFilters() {
         return filters;
