@@ -5,6 +5,7 @@
  */
 package net.maxgigapop.mrs.rest.api;
 
+import com.hp.hpl.jena.ontology.OntModel;
 import java.io.StringWriter;
 import java.util.UUID;
 import javax.ejb.EJB;
@@ -17,13 +18,16 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PUT;
 import javax.enterprise.context.RequestScoped;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.POST;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.rest.api.model.ApiModelBase;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.rest.api.model.ApiModelViewRequest;
 
 /**
  * REST Web Service
@@ -64,6 +68,7 @@ public class ModelResource {
         apiModelBase.setTtlModel(ModelUtil.marshalOntModel(modelBase.getOntModel()));
         return apiModelBase;
     }
+    
     @GET
     @Produces("application/json")
     @Path("/{refUUID}")
@@ -133,5 +138,20 @@ public class ModelResource {
         }
     }
 
-
+    
+    @POST
+    @Consumes({"application/xml","application/json"})
+    @Path("/{refUUID}")
+    public ApiModelBase queryView(@PathParam("refUUID")String refUUID, ApiModelViewRequest viewRequest) throws Exception{
+        OntModel ontModel = systemCallHandler.queryModelView(refUUID, viewRequest.getFilters());
+        if (ontModel == null) {
+            throw new EJBException("systemCallHandler.queryModelView return null model."); 
+        }
+        ApiModelBase apiModelBase = new ApiModelBase();
+        apiModelBase.setVersion(refUUID);
+        java.util.Date now = new java.util.Date();
+        apiModelBase.setCreationTime(new java.sql.Date(now.getTime()));
+        apiModelBase.setTtlModel(ModelUtil.marshalOntModel(ontModel));
+        return apiModelBase;
+    }
 }
