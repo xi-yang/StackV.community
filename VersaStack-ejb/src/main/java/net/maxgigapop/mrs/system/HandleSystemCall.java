@@ -7,6 +7,9 @@
 package net.maxgigapop.mrs.system;
 
 import com.hp.hpl.jena.ontology.OntModel;
+import com.hp.hpl.jena.ontology.OntModelSpec;
+import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
 import java.io.StringWriter;
 import static java.lang.Thread.sleep;
 import java.util.ArrayList;
@@ -17,6 +20,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.EJBException;
@@ -126,6 +131,41 @@ public class HandleSystemCall {
         return vg.createUnionModel();        
     }
     
+    public OntModel queryModelView(String refUuid, List<ModelUtil.ModelViewFilter> mvfs) {
+        VersionGroup vg = VersionGroupPersistenceManager.findByReferenceId(refUuid);
+        if (vg == null) {
+           throw new EJBException(String.format("queryModelView cannot find a VG with refUuid=%s", refUuid));
+        }
+        ModelBase vgModel = vg.createUnionModel();
+        OntModel resultModel = null;
+        for (ModelUtil.ModelViewFilter mvf: mvfs) {
+            if (!mvf.isInclusive())
+                continue;
+            try {
+                OntModel filteredModel = ModelUtil.queryViewFilter(vgModel.getOntModel(), mvf);
+                if (resultModel == null)
+                    resultModel = filteredModel;
+                else
+                    resultModel.add(filteredModel);
+            } catch (Exception ex) {
+                throw new EJBException(String.format("queryModelView cannot queryViewFilter for VG=%s", refUuid), ex);
+            }
+        }
+        if (resultModel == null) {
+            throw new EJBException(String.format("queryModelView has no inclusive filters for VG=%s", refUuid));
+        }
+        for (ModelUtil.ModelViewFilter mvf: mvfs) {
+            if (mvf.isInclusive())
+                continue;
+            try {
+                OntModel filteredModel = ModelUtil.queryViewFilter(vgModel.getOntModel(), mvf);
+                resultModel.remove(filteredModel);
+            } catch (Exception ex) {
+                throw new EJBException(String.format("queryModelView cannot queryViewFilter for VG=%s", refUuid), ex);
+            }
+        }
+        return resultModel;
+    }
     
     public SystemInstance createInstance() {
         SystemInstance systemInstance = new SystemInstance();
