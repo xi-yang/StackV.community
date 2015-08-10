@@ -487,7 +487,7 @@ body {
 }	
 /* Set to higher opacity to reduce blur effect */
 .management-table tbody:hover td {
-    color: rgba(0, 0, 0, 0.75);
+    color: rgba(0, 0, 0, 0.6);
     text-shadow: 0 0 3px #aaa;
 }
 .management-table tbody:hover tr:hover td {
@@ -527,4 +527,14 @@ body {
     color: #B60000;    
     margin-left: 75%;
     postition: relative;
+}
+
+.button-service-apply {
+    color: #B60000;    
+    postition: relative;
+}
+
+.view-flag {
+    display: inline-block;
+    margin-right: 10px;
 }

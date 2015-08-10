@@ -79,7 +79,66 @@
                                     </c:if>
                                     <!-- Creation Form -->
                                     <c:if test="${param.mode == 'create'}">
-                                        Create
+                                        <table class="management-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Query</th>
+                                                    <th>
+                                                        <span style="color:black">
+                                                            <input type="text" id="sparquery" name="sparquery" size="70" />
+                                                        </span>
+                                                    </th>
+                                                </tr>
+
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>Flags</td>
+                                                    <td>
+                                                        <div class="view-flag">
+                                                            <input type="checkbox" id="inc" name="viewInclusive"/>
+                                                            <label for="inc">Inclusive</label>
+                                                        </div>
+                                                        <div class="view-flag">
+                                                            <input type="checkbox" id="sub" name="subRecursive"/>
+                                                            <label for="sub">Subtree Recursive</label>
+                                                        </div>
+                                                        <div class="view-flag">
+                                                            <input type="checkbox" id="sup" name="supRecursive"/>
+                                                            <label for="sup">Supertree Recursive</label>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>I like</td>
+                                                    <td>
+                                                        <input type="hidden" id="likeTemp" value="I like "/>
+                                                        <input type="text" class="spar-template" id="likeInput"/>
+                                                        <button type="button" class="button-service-apply" onClick="applyTextTemplate('like')">Apply</button>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>I hate</td>
+                                                    <td>
+                                                        <input type="hidden" id="hateTemp" value="I hate "/>
+                                                        <input type="text" class="spar-template" id="hateInput"/>
+                                                        <button type="button" class="button-service-apply" onClick="applyTextTemplate('hate')">Apply</button>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>I'm neutral about</td>
+                                                    <td>
+                                                        <input type="hidden" id="neutralTemp" value="I'm neutral about "/>
+                                                        <select id="neutralInput">
+                                                            <option value="birds">Birds</option>
+                                                            <option value="cats">Cats</option>
+                                                            <option value="rocks">Random Rocks</option>
+                                                        </select>
+                                                        <button type="button" class="button-service-apply" onClick="applySelTemplate('neutral')">Apply</button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
                                     </c:if>
                                 </form>
                             </div>

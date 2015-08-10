@@ -185,6 +185,23 @@ function addVolume() {
     }
 }
 
+function applyTextTemplate(name) {
+    var template = document.getElementById(name + "Temp");
+    var input = document.getElementById(name + "Input");
+    var output = document.getElementById("sparquery");
+    
+    output.value = template.value + input.value;
+}
+
+function applySelTemplate(name) {
+    var template = document.getElementById(name + "Temp");
+    var input = document.getElementById(name + "Input");
+    var output = document.getElementById("sparquery");
+    
+    output.value = template.value + input.options[input.selectedIndex].value;
+}
+
+
 // Utility Functions
 
 function clearCounters() {
