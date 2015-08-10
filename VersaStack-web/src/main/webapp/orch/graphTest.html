@@ -51,12 +51,15 @@
                 INIT_ZOOM: 2  //The initial zoom factor effects the preciosion in which we can specify the highlighting effect
                         //However, it also seems to effect the error in zooming
             };
+            var ModelConstructor;
             var model;
             var layout;
             var render;
             var d3;
             var utils;
             var DropDownTree;
+
+            var outputApi;
 
             function onload() {
                 require(["local/versastack/topology/model",
@@ -66,7 +69,8 @@
                     "local/versastack/utils",
                     "local/versastack/topology/DropDownTree"],
                         function (m, l, r, d3_, utils_, tree) {
-                            model = m;
+                            ModelConstructor = m;
+                            model = new ModelConstructor();
                             model.init(drawGraph);
                             layout = l;
                             render = r;
@@ -74,24 +78,60 @@
                             utils = utils_;
                             map_ = utils.map_;
                             DropDownTree = tree;
+
+                            outputApi = new outputApi_();
                         });
                 buttonInit();
 
 
             }
             function drawGraph() {
-                var nodeList = model.listNodes();
-                var edgeList = model.listEdges();
                 var width = document.documentElement.clientWidth / settings.INIT_ZOOM;
                 var height = document.documentElement.clientHeight / settings.INIT_ZOOM;
                 //TODO, figure out why we need to call this twice
                 //If we do not, the layout does to converge as nicely, even if we double the number of iterations
-                layout.doLayout(nodeList, edgeList, width, height);
-                layout.doLayout(nodeList, edgeList, width, height);
+                layout.doLayout(model, null, width, height);
+                layout.doLayout(model, null, width, height);
 
 
-                render.doRender(new outputApi(), model);
+                render.doRender(outputApi, model);
 //                animStart(30);
+            }
+            function reload() {
+                var lockNodes = model.listNodes();
+                var posistionLocks = {};
+                model = new ModelConstructor(model);
+                model.init(function () {
+                    var width = document.documentElement.clientWidth / outputApi.getZoom();
+                    var height = document.documentElement.clientHeight / outputApi.getZoom();
+                    //TODO, figure out why we need to call this twice
+                    //If we do not, the layout does to converge as nicely, even if we double the number of iterations
+                    layout.doLayout(model, lockNodes, width, height);
+                    layout.doLayout(model, lockNodes, width, height);
+
+
+                    render.doRender(outputApi, model);
+
+                });
+            }
+
+            function buttonInit() {
+                $("#awsButton").click(function (evt) {
+                    $("#actionForm").load("/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=aws #service-fields");
+
+                    $("#awsButton").toggleClass("hide");
+                    $("#cancelButton").toggleClass("hide");
+
+                    evt.preventDefault();
+                });
+                $("#cancelButton").click(function (evt) {
+                    $("#actionForm").empty();
+
+                    $("#awsButton").toggleClass("hide");
+                    $("#cancelButton").toggleClass("hide");
+
+                    evt.preventDefault();
+                });
             }
 
             function buttonInit() {
@@ -128,7 +168,8 @@
                 clearInterval(animIntervalId);
             }
 
-            function outputApi() {
+
+            function outputApi_() {
                 var that = this;
                 this.getSvgContainer = function () {
                     return d3.select("#viz");
@@ -141,9 +182,9 @@
 
                 this.setDisplayName = function (name) {
                     document.getElementById("displayName").innerText = name;
-                }
-                
-                
+                };
+
+
 
 
                 var zoomFactor = settings.INIT_ZOOM;
@@ -210,7 +251,8 @@
                 };
                 this.setHoverVisible = function (vis) {
                     document.getElementById("hoverdiv").style.visibility = vis ? "visible" : "hidden";
-                }              
+                };
+
 
                 var svg = document.getElementById("viz");
                 svg.addEventListener("mousewheel", function (e) {

@@ -24,6 +24,18 @@ define([
         this.svgNodeSubnetHighlight = null; // For subnet tab
         this.folded = false;
 
+        //We are reloading this port from a new model
+        //Model.js will handle most of the reparsing, but we need to
+        //clear out some old data
+        this.reload=function(backing,map){
+            this._backing=backing;
+            this._map=map;
+            this.childrenPorts=[];
+            this.parentPort=null;
+            this.ancestorNode=null;
+            this.alias=null;
+        };
+
         this.getCenterOfMass = function () {
             if(this.getVisible()){
                 return {x: this.x, y: this.y};

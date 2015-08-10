@@ -18,8 +18,10 @@ define(["local/versastack/topology/modelConstants"],
             var i = 0;
             function Node(backing, map) {
                 this._backing = backing; //the node/topology from the model
+                this._map = map;
                 /**@type Array.Node**/
                 this.children = [];
+                this.isTopology=false;
                 this.isRoot = true;
                 this.uid = i++;
                 this.isFolded = false;
@@ -35,7 +37,7 @@ define(["local/versastack/topology/modelConstants"],
                 /**@type Array.Port**/
                 this.ports = [];
                 /**@type PortDisplayPopup**/
-                this.portPopup = null; 
+                this.portPopup = null;
                 this.x = 0;
                 this.y = 0;
                 this.dx = 0;
@@ -43,10 +45,21 @@ define(["local/versastack/topology/modelConstants"],
                 this.size = 0;
                 /**@type Node**/
                 var that = this;
+                ////We are reloading this port from a new model
+                //Model.js will handle most of the reparsing, but we need to
+                //clear out some old data
+                this.reload = function (backing, map) {
+                    this._backing = backing;
+                    this._map = map;
+                    this.children = [];
+                    this._parent = null;
+                    this.services = [];
+                    this.ports = [];
+                }
                 this.fold = function () {
                     this.isFolded = true;
                     this._updateVisible(this.isVisible); //this will update our children appropriatly
-                    if(this.portPopup){
+                    if (this.portPopup) {
                         this.portPopup.setVisible(false);
                     }
                 };
@@ -73,9 +86,9 @@ define(["local/versastack/topology/modelConstants"],
                     map_(this.children, function (child) {
                         child._updateVisible(showChildren);
                     });
-                    if(!vis){
-                        map_(this.ports,function(port){
-                           port.setVisible(false); 
+                    if (!vis) {
+                        map_(this.ports, function (port) {
+                            port.setVisible(false);
                         });
                     }
                 };
@@ -98,6 +111,15 @@ define(["local/versastack/topology/modelConstants"],
                     }
                     return ans;
                 };
+                this.getTopologies = function(){
+                    var ans=[];
+                    map_(this.children,function(child){
+                        if(child.isTopology){
+                            ans.push(child);
+                        }
+                    });
+                    return ans;
+                }
                 //Return the number of visible nodes in the subtree rooted at this;
                 this.visibleSize = function () {
                     var ans = 0;
@@ -141,7 +163,7 @@ define(["local/versastack/topology/modelConstants"],
                     return prefix + ans;
                 };
                 this.getCenterOfMass = function () {
-                    if(!this.isVisible){
+                    if (!this.isVisible) {
                         return this._parent.getCenterOfMass();
                     }
                     var ans = {x: 0, y: 0};
@@ -163,8 +185,8 @@ define(["local/versastack/topology/modelConstants"],
                     }
                     return this.isVisible && this._parent.getVisible();
                 };
-                this.getFirstVisibleParent=function(){
-                    if(this.isVisible){
+                this.getFirstVisibleParent = function () {
+                    if (this.isVisible) {
                         return this;
                     }
                     return this._parent.getFirstVisibleParent();
