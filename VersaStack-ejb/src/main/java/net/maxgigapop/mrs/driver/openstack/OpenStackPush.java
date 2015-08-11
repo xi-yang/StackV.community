@@ -401,8 +401,9 @@ public class OpenStackPush {
                                 if(p.getDeviceId().equals(routerid)){
                                     if(client1.getPortSubnetID(p).equals(subid)){
                                         osClient.networking().router().detachInterface(routerid, subid, null);
-                                        
+                                        i++;
                                     }
+                                    j++;
                                 }
                             }
                             
