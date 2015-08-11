@@ -213,6 +213,20 @@ public class CompilerBase {
                 listStmt.add(its2.next());
             }
         }
+        // add importFrom and related policyData statements
+        its = model.listStatements(res, Spa.importFrom, (Resource)null);
+        while (its.hasNext()) {
+            Statement stmt = its.next();
+            if (!stmt.getObject().isResource())
+                continue;
+            listStmt.add(stmt);
+            Resource object = stmt.getObject().asResource();
+            Property predicate = stmt.getPredicate();
+            StmtIterator its2 = object.listProperties();
+            while (its2.hasNext()) {
+                listStmt.add(its2.next());
+            }
+        }
         // add a statement for res type
         its = model.listStatements(res, RdfOwl.type, (Resource)null);
         while (its.hasNext()) {
