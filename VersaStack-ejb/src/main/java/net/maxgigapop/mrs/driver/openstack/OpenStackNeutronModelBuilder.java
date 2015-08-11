@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package net.maxgigapop.mrs.driver.openstackzanmiguel;
+package net.maxgigapop.mrs.driver.openstack;
 
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ec2.model.Instance;
@@ -167,13 +167,14 @@ public class OpenStackNeutronModelBuilder {
 
                 Resource HYPERVISOR = RdfOwl.createResource(model, topologyURI + ":" + "hypersor-name+" + hypervisorname, hypervisorService);
                 Resource VM = RdfOwl.createResource(model, topologyURI + ":" + "server-name+" + openstackget.getServereName(server), node);
-
+            
+                
                 model.add(model.createStatement(OpenstackTopology, hasNode, HOST));
 
                 model.add(model.createStatement(HOST, hasService, HYPERVISOR));
                 model.add(model.createStatement(HYPERVISOR, providesVM, VM));
                 model.add(model.createStatement(HOST, hasNode, VM));
-
+                
                 for (Port port : openstackget.getServerPorts(server)) {
                     Resource Port = model.getResource(topologyURI + ":" + "port+" + openstackget.getResourceName(port));  //use function
 
@@ -324,7 +325,9 @@ public class OpenStackNeutronModelBuilder {
                 model.add(model.createStatement(NETWORK, hasTag, TENANTNETWORK_TAG));
                 model.add(model.createStatement(TENANTNETWORK_TAG, type, "network-type"));
                 model.add(model.createStatement(TENANTNETWORK_TAG, value, "tenant"));
-
+                if(n.getSubnets().size() != 0){
+                    
+               
                 for (Subnet s : n.getNeutronSubnets()) {
 
                     String subnetId = openstackget.getResourceName(s);
@@ -412,6 +415,7 @@ public class OpenStackNeutronModelBuilder {
 
                 }
             }
+            }
         }
 
         //BUILDING THE ROUTING TABLE
@@ -430,11 +434,11 @@ public class OpenStackNeutronModelBuilder {
                         for (IP ip2 : port.getFixedIps()) {
                             String INTERFACE_IP = ip2.getIpAddress();
                             Resource ROUTER_INTERFACE_ROUTE_NEXTHOP = RdfOwl.createResource(model, topologyURI + ":router+" + routername + ":router-interface-nexthop" + INTERFACE_IP + ":-router-interface-route-nexthop", networkAddress);
-                            Resource ROUTER_INTERFACE_ROUTINGTABLE = RdfOwl.createResource(model, topologyURI + ":router+" + openstackget.getResourceName(r) + ":router-interface-routingtable", RoutingTable);
+                            Resource ROUTER_INTERFACE_ROUTINGTABLE = RdfOwl.createResource(model, topologyURI + ":router+" + openstackget.getResourceName(r) + ":router-interface-routingtable", Mrs.RoutingTable);
                             Resource ROUTER_INTERFACE_ROUTE = RdfOwl.createResource(model, topologyURI + ":router+" + openstackget.getResourceName(r) + ":" + "interfaceip+" + INTERFACE_IP + ":router-interface-route", route);
                             //Resource ROUTER_INTERFACE_ROUTE_TO = RdfOwl.createResource(model, topologyURI + ":-router-interface-route-to "+":" + SUBNET, switchingSubnet);
                             model.add(model.createStatement(routingService, providesRoutingTable, ROUTER_INTERFACE_ROUTINGTABLE));
-                            model.add(model.createStatement(ROUTER_INTERFACE_ROUTINGTABLE, hasRoute, ROUTER_INTERFACE_ROUTE));
+                            model.add(model.createStatement(ROUTER_INTERFACE_ROUTINGTABLE, providesRoute, ROUTER_INTERFACE_ROUTE));
                             model.add(model.createStatement(ROUTER_INTERFACE_ROUTE, routeTo, SUBNET));
                             model.add(model.createStatement(ROUTER_INTERFACE_ROUTE, nextHop, ROUTER_INTERFACE_ROUTE_NEXTHOP));
 
@@ -543,15 +547,28 @@ public class OpenStackNeutronModelBuilder {
 
                             FLOATADD = RdfOwl.createResource(model, topologyURI +":subnet+" + openstackget.getResourceName(sub) + ":floatingip+" + f.getFloatingIpAddress(), networkAddress);
                             model.add(model.createStatement(Subnet, hasNetworkAddress, FLOATADD));
-
+                            model.add(model.createStatement(FLOATADD, type, "floating-ip"));
+                            model.add(model.createStatement(FLOATADD, value, f.getFloatingIpAddress()));
                         } else if (ips.getIpAddress().equals(f.getFixedIpAddress())) {
+                            
                             String s = ips.getSubnetId();
                             Subnet sub = openstackget.getSubnet(s);
                             Resource Subnet = model.getResource(topologyURI + ":network+"+ openstackget.getResourceName(openstackget.getNetwork(sub.getNetworkId()))+ ":subnet+" + openstackget.getResourceName(sub));
+                            
 
                             FIXEDADD = RdfOwl.createResource(model, topologyURI + ":subnet+" + openstackget.getResourceName(sub) + ":fixedip+" + f.getFixedIpAddress(), networkAddress);
+                            
+                            for(Server servers : openstackget.getServers()){
+                                Port pt = openstackget.getPort(f.getPortId());
+                                if(servers.getId().equals(pt.getDeviceId())){
+                                Resource VM = RdfOwl.createResource(model, topologyURI + ":" + "server-name+" + openstackget.getServereName(servers), node);
+                                model.add(model.createStatement(VM, hasNetworkAddress, FIXEDADD));
+                                }
+                            }
                             model.add(model.createStatement(Subnet, hasNetworkAddress, FIXEDADD));
-
+                            
+                            model.add(model.createStatement(FIXEDADD, type, "fixed-ip"));
+                            model.add(model.createStatement(FIXEDADD, value, f.getFixedIpAddress()));
                         }
 
                     }
@@ -568,7 +585,7 @@ public class OpenStackNeutronModelBuilder {
 
             }
         }
-
+        /*
         StringWriter out = new StringWriter();
         try {
             model.write(out, "TURTLE");
@@ -576,7 +593,12 @@ public class OpenStackNeutronModelBuilder {
             throw new Exception(String.format("failure to marshall ontology model, due to %s", e.getMessage()));
         }
         String ttl = out.toString();
+<<<<<<< Updated upstream
+        System.out.println(ttl);
+        */
+
         //System.out.println(ttl);
+
         return model;
 
     }

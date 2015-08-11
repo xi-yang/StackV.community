@@ -274,6 +274,15 @@ public class HandleSystemCall {
             ModelPersistenceManager.save(targetDSD.getModelReduction());
             // push driverSystemDeltas to driverInstances
             DriverInstance driverInstance = targetDSD.getDriverInstance();
+            // remove other driverInstance.driverSystemDeltas that are not by the current systemDelta
+            if (driverInstance.getDriverSystemDeltas() != null) {
+                Iterator<DriverSystemDelta> itOtherDSD = driverInstance.getDriverSystemDeltas().iterator();
+                while (itOtherDSD.hasNext()) {
+                    DriverSystemDelta otherDSD = itOtherDSD.next();
+                    if (!otherDSD.getSystemDelta().equals(sysDelta))
+                        itOtherDSD.remove();
+                }
+            }
             driverInstance.addDriverSystemDelta(targetDSD);
             String driverEjbPath = driverInstance.getDriverEjbPath();
             // make driverSystem propagateDelta call with targetDSD
