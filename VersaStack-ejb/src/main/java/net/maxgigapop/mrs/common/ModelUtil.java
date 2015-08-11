@@ -14,6 +14,10 @@ import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.*;
+import com.hp.hpl.jena.update.Update;
+import com.hp.hpl.jena.update.UpdateAction;
+import com.hp.hpl.jena.update.UpdateFactory;
+import com.hp.hpl.jena.update.UpdateRequest;
 import java.io.ByteArrayInputStream;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -130,7 +134,7 @@ public class ModelUtil {
         return model;
     }
     
-    static public ResultSet sparqlQuery(OntModel model, String sparqlStringWithoutPrefix) {
+    static public ResultSet sparqlQuery(Model model, String sparqlStringWithoutPrefix) {
         String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
                 "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
                 "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
@@ -141,6 +145,36 @@ public class ModelUtil {
         QueryExecution qexec = QueryExecutionFactory.create(query, model);
         ResultSet rs = (ResultSet) qexec.execSelect();
         return rs;
+    }
+    
+    static public void sparqlExec(Model model, String sparqlStringWithoutPrefix) {
+        String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
+                "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
+                "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
+                "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
+                "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" +
+                sparqlStringWithoutPrefix;        
+        UpdateRequest update = UpdateFactory.create(sparqlString);
+        UpdateAction.execute(update, model);
+    }
+    
+    public static boolean evaluateStatement(Model model, Statement stmt, String sparql) {
+        // static bindings stmt->subject => $$s; stmt->predicate => $$p; $stmt->object => $$o
+        // sparql example "SELECT $s $p $o WHERE $s a nml:Topology; $o a nml:Node FILTER ($p = <http://schemas.ogf.org/nml/2013/03/base#hasNode>)"
+        sparql = sparql.replace("$$s", stmt.getSubject().getURI());
+        sparql = sparql.replace("$$p", stmt.getPredicate().getURI());
+        sparql = sparql.replace("$$o", stmt.getObject().toString());
+        if (sparql.contains("$$")) {
+            throw new EJBException(String.format("ModelUtl.evaluateStatementBySparql('%s', '%s'): Binding incomplete", stmt, sparql)); 
+        }
+        ResultSet r = ModelUtil.sparqlQuery(model, sparql);
+        return r.hasNext();
+    }
+    
+    public static boolean isResourceOfType(Model model, Resource res, Resource resType) {
+        String sparql = String.format("SELECT $s WHERE {$s a $t. FILTER($s = <%s> && $t = <%s>)}", res, resType);
+        ResultSet r = ModelUtil.sparqlQuery(model, sparql);
+        return r.hasNext();
     }
     
     static public OntModel createUnionOntModel(List<OntModel> modelList) {

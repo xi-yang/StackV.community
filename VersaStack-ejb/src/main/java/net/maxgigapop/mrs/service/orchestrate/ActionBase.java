@@ -11,6 +11,7 @@ import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Property;
+import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.rdf.model.StmtIterator;
@@ -25,7 +26,7 @@ import javax.ejb.EJBException;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-import net.maxgigapop.mrs.bean.DeltaBase;
+import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.common.ModelUtil;
@@ -43,8 +44,8 @@ public class ActionBase {
     protected String mceBeanPath = "";
     protected String state = ActionState.IDLE;
     protected ModelBase referenceModel = null;
-    protected DeltaBase inputDelta = null;
-    protected DeltaBase outputDelta = null;
+    protected ServiceDelta inputDelta = null;
+    protected ServiceDelta outputDelta = null;
     protected List<ActionBase> dependencies = new ArrayList<>();
     protected List<ActionBase> uppers  = new ArrayList<>();
     private static final Logger log = Logger.getLogger(ActionBase.class.getName());
@@ -89,19 +90,19 @@ public class ActionBase {
         this.referenceModel = referenceModel;
     }
 
-    public DeltaBase getInputDelta() {
+    public ServiceDelta getInputDelta() {
         return inputDelta;
     }
 
-    public void setInputDelta(DeltaBase inputDelta) {
+    public void setInputDelta(ServiceDelta inputDelta) {
         this.inputDelta = inputDelta;
     }
 
-    public DeltaBase getOutputDelta() {
+    public ServiceDelta getOutputDelta() {
         return outputDelta;
     }
 
-    public void setOutputDelta(DeltaBase outputDelta) {
+    public void setOutputDelta(ServiceDelta outputDelta) {
         this.outputDelta = outputDelta;
     }
 
@@ -178,12 +179,12 @@ public class ActionBase {
         return true;
     }
     
-    public Future<DeltaBase> execute() {
+    public Future<ServiceDelta> execute() {
         try {
             Context ejbCxt = new InitialContext();
             IModelComputationElement ejbMce = (IModelComputationElement)ejbCxt.lookup(this.mceBeanPath);
             this.state = ActionState.PROCESSING;
-            Future<DeltaBase> asyncResult = ejbMce.process(referenceModel, inputDelta);
+            Future<ServiceDelta> asyncResult = ejbMce.process(referenceModel, inputDelta);
             //# not FINISHED yet
             return asyncResult;
         } catch (NamingException ex) {
@@ -192,7 +193,7 @@ public class ActionBase {
         }        
     }
     
-    public void mergeResult(DeltaBase childDelta) {
+    public void mergeResult(ServiceDelta childDelta) {
         if (inputDelta == null) {
             inputDelta = childDelta;
             return;
@@ -217,25 +218,24 @@ public class ActionBase {
         //## simplified merge --> child actions are responsible to remove unneeded annotations
         mergedModel.add(modelA.getBaseModel());        
         mergedModel.add(modelB.getBaseModel());    
-        // find resolved actions from B
+        // find resolved (dungling) actions from B
         String sparql = "SELECT ?someResource ?policyAction WHERE {"
                 + "?someResource spa:dependOn ?policyAction . "
-                + "FILTER not exists {?policyAction spa:dependOn ?other} "
                 + "}";
         OntModel modelAbutB = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         modelAbutB.add(modelA.getBaseModel());
         modelAbutB.remove(modelB);
         ResultSet rs = ModelUtil.sparqlQuery(modelAbutB, sparql);
         List<QuerySolution> solutions = new ArrayList<>();
-        if (rs.hasNext()) {
+        while (rs.hasNext()) {
             solutions.add(rs.next());
         }
-        // find resolved actions from A
+        // find resolved (dungling) actions from A
         OntModel modelBbutA = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         modelBbutA.add(modelB);
         modelBbutA.remove(modelA.getBaseModel());
         rs = ModelUtil.sparqlQuery(modelBbutA, sparql);
-        if (rs.hasNext()) {
+        while (rs.hasNext()) {
             solutions.add(rs.next());
         }
         // remove all ->dependOn->policy statements
@@ -243,7 +243,45 @@ public class ActionBase {
             Resource resSome = querySolution.get("someResource").asResource();
             Resource resPolicy = querySolution.get("policyAction").asResource();
             mergedModel.remove(resSome, Spa.dependOn, resPolicy);
-        }        
+        }
+        /*
+        // collect 'dungling' PolicyData
+        solutions.clear();
+        sparql = "SELECT ?policyData WHERE {"
+                + "?someAction spa:importFrom ?policyData ."
+                + "FILTER not exists {?otherAction spa:exportTo ?policyData} "
+                + "}";
+        rs = ModelUtil.sparqlQuery(modelA, sparql);
+        while (rs.hasNext()) {
+            solutions.add(rs.next());
+        }
+        rs = ModelUtil.sparqlQuery(modelB, sparql);
+        while (rs.hasNext()) {
+            solutions.add(rs.next());
+        }
+        // in mergedModel find PolicyAction that exports the PolicyData
+        List<Statement> listStmtsToRemove = new ArrayList<>();
+        for (QuerySolution querySolution : solutions) {
+            sparql = "SELECT ?someRes ?policyAction WHERE {"
+                + "?someRes spa:dependOn ?policyAction ."
+                + "?policyAction spa:exportTo ?policyData . "
+                + "}";
+            rs = ModelUtil.sparqlQuery(mergedModel, sparql);
+            while (rs.hasNext()) {
+                QuerySolution solution = rs.next();
+                Resource resSome = solution.getResource("someRes");
+                Resource resPolicy = solution.getResource("policyAction");
+                // remove this PolicyAction and everything under the PolicyAction
+                listStmtsToRemove.add(mergedModel.createStatement(resSome, Spa.dependOn, resPolicy));
+                List<Statement> listStmts = new ArrayList<>();
+                ModelUtil.listRecursiveDownTree(resPolicy, Spa.getURI(), listStmts);
+                listStmtsToRemove.addAll(listStmts);
+            }
+        }
+        if (!listStmtsToRemove.isEmpty())
+            mergedModel.remove(listStmtsToRemove);
+        */
+        
         /*## alternative: sophisticated merge
         // 1. Get dA = A.remove(B) and dB = B.remove(A)
         OntModel modelAbutB = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
@@ -291,6 +329,60 @@ public class ActionBase {
         return mergedModel;
     }
     
+    public void cleanupOutputDelta() {
+        if (this.outputDelta != null) {
+            if (this.outputDelta.getModelAddition() != null && this.outputDelta.getModelAddition().getOntModel() != null)
+                cleanupSpaModel(this.outputDelta.getModelAddition().getOntModel());
+            if (this.outputDelta.getModelReduction() != null && this.outputDelta.getModelReduction().getOntModel() != null)
+                cleanupSpaModel(this.outputDelta.getModelReduction().getOntModel());
+        }
+    }
+    
+    //@TODO: raise exception if not completely cleannedup
+    private void cleanupSpaModel(OntModel spaModel) {
+        List<Statement> listStmtsToRemove = new ArrayList<>();
+        String sparql = "SELECT ?policyAction WHERE {"
+                + "{ ?policyAction spa:exportTo ?policyData . "
+                + "FILTER not exists {?someRes spa:dependOn ?policyAction}"
+                + "} UNION {"
+                + "?policyAction spa:importFrom ?policyData . "
+                + "FILTER not exists {?someRes spa:dependOn ?policyAction}"
+                + "} }";
+        ResultSet rs = ModelUtil.sparqlQuery(spaModel, sparql);
+        while (rs.hasNext()) {
+            QuerySolution solution = rs.next();
+            Resource resPolicy = solution.getResource("policyAction");
+            List<Statement> listStmts = new ArrayList<>();
+            resPolicy = spaModel.getResource(resPolicy.getURI());
+            ModelUtil.listRecursiveDownTree(resPolicy, Spa.getURI(), listStmts);
+            if (!listStmts.isEmpty())
+                listStmtsToRemove.addAll(listStmts);
+        }
+        // remove statements of resource of spa#Abstraction type
+        sparql = "SELECT ?abstraction WHERE {"
+                + String.format("?abstraction a <%s>. ", Spa.Abstraction)
+                + "}";
+        rs = ModelUtil.sparqlQuery(spaModel, sparql);
+        while (rs.hasNext()) {
+            QuerySolution solution = rs.next();
+            Resource resAbstraction = solution.getResource("abstraction");
+            StmtIterator iterAS = spaModel.listStatements(resAbstraction, null, (RDFNode)null);
+            while (iterAS.hasNext())
+                listStmtsToRemove.add(iterAS.next());
+        }
+        // sanity check
+        spaModel.remove(listStmtsToRemove);
+        sparql = "SELECT ?policyX WHERE {"
+                + "?policyX ?p ?o. "
+                + String.format("FILTER(regex(str(?policyX), '^%s'))", Spa.NS)
+                + "}";
+        rs = ModelUtil.sparqlQuery(spaModel, sparql);
+        if (rs.hasNext()) {
+            String policyAnotation = rs.next().getResource("policyX").toString();
+            throw new EJBException(this + ".cleanupSpaModel() failed to clean up policy annotation: " +  policyAnotation);
+        }
+    }
+
     public String toString() {
         return "WorkerAction(" + this.name+"->"+this.mceBeanPath+")";
     }
