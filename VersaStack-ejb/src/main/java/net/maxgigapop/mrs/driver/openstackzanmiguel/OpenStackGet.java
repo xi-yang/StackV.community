@@ -1,4 +1,4 @@
-/*
+ /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
@@ -27,37 +27,44 @@ import org.openstack4j.openstack.networking.domain.NeutronRouterInterface;
 public class OpenStackGet {
 
     private OSClient client = null;
-    private List< Network> networks = new ArrayList();
-    private List<Subnet> subnets = new ArrayList();
-    private List<Port> ports = new ArrayList();
-    private List<Server> servers = new ArrayList();
-    private List<Volume> volumes = new ArrayList();
-    private List<NetFloatingIP> floatingIps = new ArrayList();
-    private List<Router> routers = new ArrayList();
-    private List<RouterInterface> routerinterface = new ArrayList();
-    public List<HostRoute> hostroute = new ArrayList();
-    public List<Hypervisor> hypervisors = new ArrayList();
-    public List<NovaFloatingIP> novafloatingIps = new ArrayList();
+    private List<? extends Network> networks = null;
+    private List<? extends Subnet> subnets = null;
+    private List<? extends Port> ports = null;
+    private List<? extends Server> servers = null;
+    private List<? extends Volume> volumes = null;
+    private List<? extends NetFloatingIP> floatingIps = null;
+    private List<? extends Router> routers = null;
+    private List<? extends RouterInterface> routerinterface = null;
+    public List<? extends HostRoute> hostroute = null;
+    public List<? extends Hypervisor> hypervisors =null;
+    public List<? extends NovaFloatingIP> novafloatingIps =null;
 
-    public OpenStackGet(String url, String NATServer, String username, String password, String tenantName) {
+    public  OpenStackGet(String url,String NATServer, String username, String password, String tenantName) {
         //authenticate
         Authenticate authenticate = new Authenticate();
+        NeutronRouterInterface ri = new NeutronRouterInterface();
+        
+         client = authenticate.openStackAuthenticate(url,NATServer, username, password, tenantName);
 
-        client = authenticate.openStackAuthenticate(url, NATServer, username, password, tenantName);
 
         //get the resources
-        networks = (List<Network>) client.networking().network().list();
-        subnets = (List<Subnet>) client.networking().subnet().list();
-        ports = (List<Port>) client.networking().port().list();
-        servers = (List<Server>) client.compute().servers().list();
-        volumes = (List<Volume>) client.blockStorage().volumes().list();
-        floatingIps = (List<NetFloatingIP>) client.networking().floatingip().list();
-        routers = (List<Router>) client.networking().router().list();
-        novafloatingIps = (List<NovaFloatingIP>) client.compute().floatingIps().list();
+        networks = client.networking().network().list();
+        subnets = client.networking().subnet().list();
+        ports = client.networking().port().list();
+        servers = client.compute().servers().list();
+        volumes = client.blockStorage().volumes().list();
+        floatingIps = client.networking().floatingip().list();
+        routers = client.networking().router().list();
+        novafloatingIps = (List<? extends NovaFloatingIP>) client.compute().floatingIps().list();
+        
+    }
+
+    OpenStackGet(String url, String user_name, String password, String tenantName) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     //get all the nets in the tenant
-    public List<Network> getNetworks() {
+    public List<? extends Network> getNetworks() {
         return networks;
     }
 
@@ -72,7 +79,7 @@ public class OpenStackGet {
     }
 
     //get all the subnets in the tenant
-    public List<Subnet> getSubnets() {
+    public List<? extends Subnet> getSubnets() {
         return subnets;
     }
 
@@ -100,7 +107,7 @@ public class OpenStackGet {
     }
 
     //get all the ports in the tenant
-    public List<Port> getPorts() {
+    public List<? extends Port> getPorts() {
         return ports;
     }
 
@@ -125,7 +132,7 @@ public class OpenStackGet {
     }
 
     //get all servers in the tenant
-    public List<Server> getServers() {
+    public List<? extends Server> getServers() {
         return servers;
     }
 
@@ -179,7 +186,7 @@ public class OpenStackGet {
     }
 
     //get all volumes in the tenant
-    public List<Volume> getVolumes() {
+    public List<? extends Volume> getVolumes() {
         return volumes;
     }
 
@@ -194,7 +201,7 @@ public class OpenStackGet {
     }
 
     //get all floating ips in the tenant
-    public List<NetFloatingIP> getFloatingIp() {
+    public List<? extends NetFloatingIP> getFloatingIp() {
         return floatingIps;
     }
 
@@ -207,14 +214,11 @@ public class OpenStackGet {
         }
         return null;
     }
-
-    public List<NovaFloatingIP> getNovaFloatingIP() {
-        return novafloatingIps;
-    }
-
+   public List<? extends NovaFloatingIP> getNovaFloatingIP(){
+       return novafloatingIps;
+   }
     //get a list of all the hypervisors
-
-    public List<Hypervisor> getHypervisors() {
+    public List<? extends Hypervisor> getHypervisors() {
         return hypervisors;
     }
 
@@ -227,14 +231,16 @@ public class OpenStackGet {
         }
         return null;
     }
-
+    
     //get all the routers
-    public List<Router> getRouters() {
+    public List<? extends Router> getRouters()
+    {
         return routers;
     }
-
+    
     //get a specific route by id or name
-    public Router getRouter(String id) {
+    public Router getRouter(String id)
+    {
         for (Router router : routers) {
             if (router.getId().equals(id) || router.getName().equals(id)) {
                 return router;
@@ -262,14 +268,15 @@ public class OpenStackGet {
     //get the name of a server 
     public String getServereName(Server r) {
         String name = r.getName();
-        if (name == null || name.isEmpty()) {
+        if (name ==null || name.isEmpty()) {
             return r.getId();
         } else {
             return r.getName();
         }
     }
-
-    public String getVolumeName(Volume r) {
+    
+    public String getVolumeName(Volume r)
+    {
         String name = r.getName();
         if (name == null || name.isEmpty()) {
             return r.getId();
@@ -277,17 +284,15 @@ public class OpenStackGet {
             return r.getName();
         }
     }
-
-    public String getInterfaceSubnetID(NeutronRouterInterface i) {
+    public String getInterfaceSubnetID(NeutronRouterInterface i){
         return i.getSubnetId();
     }
-
-    public String getInterfacePortID(NeutronRouterInterface i) {
+    public String getInterfacePortID(NeutronRouterInterface i){
         return i.getPortId();
     }
-
-    public String getInterfaceRouterID(NeutronRouterInterface i) {
+    public String getInterfaceRouterID(NeutronRouterInterface i){
         return i.getId();
     }
-
+    
+   
 }

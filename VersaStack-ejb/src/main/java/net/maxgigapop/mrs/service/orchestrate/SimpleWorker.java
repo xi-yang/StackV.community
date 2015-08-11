@@ -5,12 +5,15 @@
  */
 package net.maxgigapop.mrs.service.orchestrate;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.service.compile.CompilerBase;
 import net.maxgigapop.mrs.service.compile.CompilerFactory;
+import net.maxgigapop.mrs.service.compute.MCE_InterfaceVlanStitching;
 
 /**
  *
@@ -26,10 +29,6 @@ public class SimpleWorker extends WorkerBase {
             + "@prefix spa:   <http://schemas.ogf.org/mrs/2015/02/spa#> .\n"
             + "\n"
             + "## abstract topology with policy annotations\n"
-            + "\n"
-            + "<urn:ogf:network:domain=vo1.versastack.org:network>\n"
-            + "    a            nml:Topology ;\n"
-            + "    nml:hasNode  <urn:ogf:network:domain=vo1.versastack.org:node=left>, <urn:ogf:network:domain=vo1.versastack.org:node=right> .\n"
             + "\n"
             + "<urn:ogf:network:domain=vo1.versastack.org:node=left>\n"
             + "    a                         nml:Node ;\n"
@@ -77,7 +76,7 @@ public class SimpleWorker extends WorkerBase {
             + "    a            spa:Stitching ;\n"
             + "    spa:stitchType <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> ;\n"
             + "    spa:dependOn <x-policy-annotation:action:connect-link1>, <x-policy-annotation:action:place-left> ;\n"
-            + "    spa:importFrom <x-policy-annotation:data:left-location>, <x-policy-annotation:data:link1-source-vlan> .\n"
+            + "    spa:importFrom <x-policy-annotation:data:left-location>, <x-policy-annotation:data:link1-vlan> .\n"
             + "      \n"
             + "<x-policy-annotation:action:place-right>\n"
             + "    a            spa:Placement ;\n"
@@ -89,21 +88,21 @@ public class SimpleWorker extends WorkerBase {
             + "    a            spa:Stitching ;\n"
             + "    spa:stitchType <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> ;\n"
             + "    spa:dependOn <x-policy-annotation:action:connect-link1>, <x-policy-annotation:action:place-right> ;\n"
-            + "    spa:importFrom <x-policy-annotation:data:right-location>, <x-policy-annotation:data:link1-sink-vlan> .\n"
+            + "    spa:importFrom <x-policy-annotation:data:right-stitching-type>, <x-policy-annotation:data:right-location>, <x-policy-annotation:data:link1-vlan> .\n"
             + "\n"
             + "<x-policy-annotation:action:connect-link1>\n"
             + "    a            spa:Connection ;\n"
             + "    spa:connectType <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> ;\n"
             + "    spa:dependOn <x-policy-annotation:action:place-left>, <x-policy-annotation:action:place-right> ;\n"
             + "    spa:importFrom <x-policy-annotation:data:left-location>, <x-policy-annotation:data:right-location> ;\n"
-            + "    spa:exportTo <x-policy-annotation:data:link1-source-vlan>, <x-policy-annotation:data:link1-sink-vlan> .\n"
+            + "    spa:exportTo <x-policy-annotation:data:link1-vlan> .\n"
             + "\n"
             + "## Policy data\n"
             + "\n"
             + "<x-policy-annotation:data:left-filter-criteria>\n"
             + "    a            spa:PolicyData;\n"
             + "    spa:type     nml:Topology;\n"
-            + "    spa:value    \"urn:ogf:network:rains.maxgigapop.net:2013:topology\".\n"
+            + "    spa:value    \"urn:ogf:network:rains.maxgigapop.net:2013:topology:left-domain\".\n"
             + "\n"
             //+ "<x-policy-annotation:data:left-filter-criteria2>\n"
             //+ "    a            spa:PolicyData;\n"
@@ -113,7 +112,7 @@ public class SimpleWorker extends WorkerBase {
             + "<x-policy-annotation:data:right-filter-criteria>\n"
             + "    a            spa:PolicyData;\n"
             + "    spa:type     nml:Topology;\n"
-            + "    spa:value    \"urn:ogf:network:rains.maxgigapop.net:2013:topology\".\n"
+            + "    spa:value    \"urn:ogf:network:rains.maxgigapop.net:2013:topology:right-domain\".\n"
             + "    \n"
             + "<x-policy-annotation:data:left-location>\n"
             + "    a            spa:PolicyData.\n"
@@ -125,32 +124,32 @@ public class SimpleWorker extends WorkerBase {
             //+ "    spa:type     nml:Node;\n"
             //+ "    spa:value    xsd:string.\n"
             + "    \n"
-            + "<x-policy-annotation:data:link1-source-vlan>\n"
+            + "<x-policy-annotation:data:link1-vlan>\n"
             + "    a            spa:PolicyData.\n"
             //+ "    spa:type     nml:labeltype;\n"
             //+ "    spa:value    <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>.\n"
             + "\n"
-            + "<x-policy-annotation:data:link1-sink-vlan>\n"
-            + "    a            spa:PolicyData.\n"
-            //+ "    spa:type     \"//labeltype\";\n"
-            //+ "    spa:value    <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>.\n"
+            + "<x-policy-annotation:data:right-stitching-type>\n"
+            + "    a            spa:PolicyData;\n"
+            + "    spa:type     \"InterfaceVlanStitching:StitchingType\";\n"
+            + "    spa:value    \"AWS_VPC\".\n"
             + "\n";
+    
+    private static final Logger log = Logger.getLogger(SimpleWorker.class.getName());
 
     @Override
     public void run() {
         retrieveSystemModel();
         try {
             CompilerBase simpleCompiler = CompilerFactory.createCompiler("net.maxgigapop.mrs.service.compile.SimpleCompiler");
-            ServiceDelta testSpaDelta = new ServiceDelta();
-            DeltaModel modelAdd = new DeltaModel();
-            modelAdd.setTtlModel(spaAddModel);
-            modelAdd.setOntModel(ModelUtil.unmarshalOntModel(spaAddModel));
-            testSpaDelta.setModelAddition(modelAdd);
-            simpleCompiler.setSpaDelta(testSpaDelta);
+            if (this.annoatedModelDelta == null) {
+                throw new EJBException(SimpleWorker.class.getName() + " encounters null annoatedModelDelta");
+            }
+            simpleCompiler.setSpaDelta(this.annoatedModelDelta);
             simpleCompiler.compile(this);
             this.runWorkflow();
         } catch (Exception ex) {
-            throw new EJBException(SimpleWorker.class.getName() + "caught exception", ex);
+            throw new EJBException(SimpleWorker.class.getName() + " caught exception", ex);
         }
     }
 }
