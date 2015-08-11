@@ -95,7 +95,12 @@
                                                 </tr> 
                                                 <tr>
                                                     <td>VPC ID</td>
-                                                    <td><input type="text" name="vpcID" required></td>
+                                                    <td>
+                                                    <select name="vpcID" required>
+                                                            <option></option>
+                                                            <option value="urn:ogf:network:aws.amazon.com:aws-cloud:vpc-8c5f22e9">vpc-8c5f22e9</option>
+                                                        </select>
+                                                    </td>
                                                 </tr>  
                                                 <tr>
                                                     <td>OS Type</td>
@@ -123,8 +128,13 @@
                                                     <td><input type="number" name="vmQuantity" required></td>
                                                 </tr>
                                                 <tr>
-                                                    <td>VM Subnets<br>(Newline delimited)</td>
-                                                    <td><textarea rows="3" cols="50" name="subnets"></textarea></td>
+                                                    <td>VM Subnets</td>
+                                                    <td>
+                                                        <select name="subnets" required multiple size="5">
+                                                            <option value="urn:ogf:network:aws.amazon.com:aws-cloud:subnet-2cd6ad16,10.0.0.0">aws-cloud / subnet-2cd6ad16,10.0.0.0</option>
+                                                            <option value="urn:ogf:network:aws.amazon.com:aws-cloud:subnet-85135bbf,10.0.1.0">aws-cloud / subnet-85135bbf,10.0.1.0</option>
+                                                        </select>
+                                                    </td>
                                                 </tr>
                                                 <tr>
                                                     <td>Volumes</td>
@@ -171,6 +181,7 @@
                                                         <input class="button-register" name="install" type="submit" value="Install" />
                                                         <input class="button-register" type="button" 
                                                                value="Add Volume" onClick="addVolume()">
+                                                        <input type="hidden" name="graphTopo" value="none"/>
                                                     </td>
                                                 </tr> 
                                             </tbody>
@@ -203,6 +214,7 @@
 
                             <br><a href="/VersaStack-web/ops/srvc/vmadd.jsp?self=true">Install Another VM.</a>                                
                             <br><a href="/VersaStack-web/ops/catalog.jsp">Return to Services.</a>
+                            <br><a href="/VersaStack-web/orch/graphTest.html">Return to Graphic Orchestration.</a>
                         </div>
                     </c:otherwise>
                 </c:choose>

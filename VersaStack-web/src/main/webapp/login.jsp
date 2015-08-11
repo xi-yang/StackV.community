@@ -19,7 +19,7 @@
     <body>
         <!-- Eventually update this to 2.0 EL spec -->
         <%
-            session.setMaxInactiveInterval(900);  // 15 minute time out 
+            session.setMaxInactiveInterval(6000);  // Temporary 1 hour time out 
             user.login(request.getParameter("username"),
                     request.getParameter("password"));
         %>          

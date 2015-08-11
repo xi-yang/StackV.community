@@ -18,6 +18,7 @@ import com.hp.hpl.jena.update.Update;
 import com.hp.hpl.jena.update.UpdateAction;
 import com.hp.hpl.jena.update.UpdateFactory;
 import com.hp.hpl.jena.update.UpdateRequest;
+import com.hp.hpl.jena.sparql.function.library.e;
 import java.io.ByteArrayInputStream;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -26,8 +27,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
+import javax.xml.bind.annotation.XmlElement;
 
 /**
  *
@@ -134,6 +137,14 @@ public class ModelUtil {
         return model;
     }
     
+    static public void logDumpModel(String prompt, Model model) {
+        try {
+            logger.info(prompt + " >> logDumpModel: " + ModelUtil.marshalModel(model));
+        } catch (Exception ex) {
+            Logger.getLogger(ModelUtil.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
     static public ResultSet sparqlQuery(Model model, String sparqlStringWithoutPrefix) {
         String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
                 "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
@@ -234,11 +245,14 @@ public class ModelUtil {
     private static OntModel getTopology(RDFNode node) {
         OntModel subModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         Set<RDFNode> visited = new HashSet<RDFNode>();
-        rdfDFS(node, visited, subModel);
+        List<String> includeMatches = new ArrayList<String>();
+        List<String> excludeMatches = new ArrayList<String>();
+        excludeMatches.add("#isAlias");
+        rdfDFS(node, visited, subModel, includeMatches, excludeMatches);
         return subModel;
     }
     
-    private static void rdfDFS( RDFNode node, Set<RDFNode> visited, OntModel ontModel) {
+    private static void rdfDFS(RDFNode node, Set<RDFNode> visited, Model subModel, List<String> propMatchIncludes, List<String> propMatchExcludes) {
         if ( visited.contains( node )) {
             return;
         }
@@ -248,14 +262,74 @@ public class ModelUtil {
                 StmtIterator stmts = node.asResource().listProperties();
                 while ( stmts.hasNext() ) {
                     Statement stmt = stmts.next();
-                    ontModel.add(stmt);
-                    if (!stmt.getPredicate().toString().contains("#isAlias")) {
-                    	rdfDFS( stmt.getObject(), visited, ontModel);
+                    subModel.add(stmt);
+                    boolean included = false;
+                    for (String matchStr: propMatchIncludes) {
+                        if (stmt.getPredicate().toString().contains(matchStr)) {
+                            rdfDFS(stmt.getObject(), visited, subModel, propMatchIncludes, propMatchExcludes);
+                            included = true;
+                            break;
+                        }
                     }
+                    if (included)
+                        continue;
+                    boolean excluded = false;
+                    for (String matchStr: propMatchExcludes) {
+                        if (stmt.getPredicate().toString().contains(matchStr)) {
+                            excluded = true;
+                            break;
+                        }
+                    }
+                    if (excluded)
+                        continue;
+                    rdfDFS(stmt.getObject(), visited, subModel, propMatchIncludes, propMatchExcludes);
                 }
             }
         }
     }
+    
+    
+    private static void rdfDFSReverse(Model refModel, RDFNode node, Set<RDFNode> visited, Model subModel, List<String> propMatchIncludes, List<String> propMatchExcludes) {
+        if ( visited.contains( node )) {
+            return;
+        }
+        else {
+            visited.add( node );
+            if ( node.isResource() ) {
+                StmtIterator stmts = refModel.listStatements(null, null, node);
+                while ( stmts.hasNext() ) {
+                    Statement stmt = stmts.next();
+                    subModel.add(stmt);
+                    // optional: add type statements
+                    StmtIterator stmts2 = refModel.listStatements(stmt.getSubject(), RdfOwl.type, (RDFNode)null);
+                    while (stmts2.hasNext()) {
+                        subModel.add(stmts2.next());
+                    }
+                    boolean included = false;
+                    for (String matchStr: propMatchIncludes) {
+                        if (stmt.getPredicate().toString().contains(matchStr)) {
+                            rdfDFSReverse(refModel, stmt.getSubject(), visited, subModel, propMatchIncludes, propMatchExcludes);
+                            included = true;
+                            break;
+                        }
+                    }
+                    if (included)
+                        continue;
+                    boolean excluded = false;
+                    for (String matchStr: propMatchExcludes) {
+                        if (stmt.getPredicate().toString().contains(matchStr)) {
+                            excluded = true;
+                            break;
+                        }
+                    }
+                    if (excluded)
+                        continue;
+                    rdfDFSReverse(refModel, stmt.getSubject(), visited, subModel, propMatchIncludes, propMatchExcludes);
+                }
+            }
+        }
+    }
+    
     
     public static void listRecursiveDownTree(RDFNode node, Set<RDFNode> visited, List<String> filterList, List<Statement> listStmts) {
         if ( visited.contains( node )) {
@@ -292,5 +366,98 @@ public class ModelUtil {
         filterList.add(matchStr);
         listRecursiveDownTree(node, visited, filterList, listStmts);
     }
+    
+    static public class ModelViewFilter {
+        long seqNum = 0;
+        String sparql = null;
+        boolean inclusive = true;
+        boolean subtreeRecursive = false;
+        boolean suptreeRecursive = false;
 
+        public long getSeqNum() {
+            return seqNum;
+        }
+
+        public void setSeqNum(long seqNum) {
+            this.seqNum = seqNum;
+        }
+
+        public String getSparql() {
+            return sparql;
+        }
+
+        public void setSparql(String sparql) {
+            this.sparql = sparql;
+        }
+
+        public boolean isInclusive() {
+            return inclusive;
+        }
+
+        public void setInclusive(boolean inclusive) {
+            this.inclusive = inclusive;
+        }
+
+        public boolean isSubtreeRecursive() {
+            return subtreeRecursive;
+        }
+
+        public void setSubtreeRecursive(boolean subtreeRecursive) {
+            this.subtreeRecursive = subtreeRecursive;
+        }
+
+        public boolean isSuptreeRecursive() {
+            return suptreeRecursive;
+        }
+
+        public void setSuptreeRecursive(boolean suptreeRecursive) {
+            this.suptreeRecursive = suptreeRecursive;
+        }
+    }
+    
+    public static OntModel queryViewFilter(OntModel model, ModelViewFilter mvf) throws Exception {
+        if (mvf.getSparql() == null || mvf.getSparql().isEmpty() || (!mvf.getSparql().contains("CONSTRUCT") && !mvf.getSparql().contains("construct"))) {
+            throw new Exception(String.format("ModelViewFilter(#%d) has empty or none-construct SPARQL", mvf.getSeqNum()));
+        }
+        String sparql = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
+                "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
+                "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
+                "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
+                "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" + mvf.getSparql();
+        Query query = QueryFactory.create(sparql);
+        QueryExecution qexec = QueryExecutionFactory.create(query, model);
+        Model modelConstructed = qexec.execConstruct();
+        ResIterator resIter = modelConstructed.listResourcesWithProperty(Nml.hasService);
+        List<String> includeMatches = new ArrayList<String>();
+        List<String> excludeMatches = new ArrayList<String>();
+        includeMatches.add("#has");
+        includeMatches.add("#provide");
+        includeMatches.add("#type");
+        includeMatches.add("#value");
+        Set<RDFNode> visited = new HashSet<RDFNode>();
+        while (resIter.hasNext()) {
+            Resource node = resIter.next();
+            visited.clear();
+            if (mvf.isSubtreeRecursive()) {
+                Model subModel = ModelFactory.createDefaultModel();
+                node = model.getResource(node.toString());
+                rdfDFS(node, visited, subModel, includeMatches, excludeMatches);
+                modelConstructed.add(subModel);
+                ModelUtil.logDumpModel("queryViewFilter add subtreeModel", subModel);
+            }
+            visited.clear();
+            if (mvf.isSuptreeRecursive()) {
+                Model subModel = ModelFactory.createDefaultModel();
+                rdfDFSReverse(model, node, visited, subModel, includeMatches, excludeMatches);
+                modelConstructed.add(subModel);
+                ModelUtil.logDumpModel("queryViewFilter add suptreeModel", subModel);
+            }
+        }
+        OntModel ontModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        if (mvf.isInclusive())
+            ontModel.add(modelConstructed);
+        else 
+            ontModel.remove(modelConstructed);
+        return ontModel;
+    }
 }
