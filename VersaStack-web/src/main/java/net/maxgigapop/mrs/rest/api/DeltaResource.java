@@ -6,11 +6,13 @@
 package net.maxgigapop.mrs.rest.api;
 
 import com.hp.hpl.jena.ontology.OntModel;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import javax.ejb.EJB;
 import javax.ejb.EJBException;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -19,6 +21,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.SystemDelta;
+import net.maxgigapop.mrs.bean.SystemInstance;
+import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.rest.api.model.ApiDeltaBase;
@@ -41,19 +45,43 @@ public class DeltaResource {
     
     
     @PUT
-//    @Consumes({"application/xml","application/json"})
     @Path("/{refUUID}/{action}")
-    public String commit(@PathParam("refUUID")String refUUID, @PathParam("action") String action){
+    public String commit(@PathParam("refUUID")String refUUID, @PathParam("action") String action) throws ExecutionException, InterruptedException{
         if (!action.toLowerCase().equals("commit")) {
             throw new BadRequestException("Invalid action: "+action);
         }
+        Future<String> result;
         try{
-            systemCallHandler.commitDelta(refUUID);
+            result = systemCallHandler.commitDelta(refUUID);
         }catch(EJBException e){
             return e.getMessage();
         }
-        return "commit successfully";
+        if(!result.isDone()){
+            return "PROCESSING";
+        }
+        return result.get();
     }
+    
+    @GET
+    @Path("/{refUUID}/{action}")
+    public String checkStatus(@PathParam("refUUID")String refUUID, @PathParam("action") String action) throws InterruptedException, ExecutionException{
+        if (!action.toLowerCase().equals("checkstatus")) {
+            throw new BadRequestException("Invalid action: "+action);
+        }
+        SystemInstance siCache = SystemInstancePersistenceManager.findByReferenceUUID(refUUID);
+        if (siCache == null) {
+            throw new EJBException ("checkStatus encounters unknown systemInstance with referenceUUID="+ refUUID);
+        }
+        SystemInstance siDb = SystemInstancePersistenceManager.findById(siCache.getId());
+        if(siDb.getSystemDelta() == null)
+            return "System Instance has not yet propagated";
+        if(!siCache.getCommitFlag())
+            return "System Instance has not yet commit";
+        if(siCache.getCommitStatus() == null)
+            return "PROCESSING";
+        return siCache.getCommitStatus().get();
+    }
+    
     
     @POST
     @Consumes({"application/xml","application/json"})

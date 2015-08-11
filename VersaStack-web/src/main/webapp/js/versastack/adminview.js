@@ -1,5 +1,6 @@
+"use strict";
 define([
-    "d3", "local/versastack/model", "local/versastack/utils", "local/versastack/loading", "local/d3.tip.v0.6.3"
+    "local/d3", "local/versastack/model", "local/versastack/utils", "local/versastack/loading", "local/d3.tip.v0.6.3"
 ], function(d3, model, utils, loading) {
     /** Document and canvas sizes **/
     var width = document.documentElement.clientWidth;
@@ -62,33 +63,10 @@ define([
         /** Hull size **/
         hullOffset: 15
     };
-    // Module execution starts here
-    function main(loadingItem) {
-        // Wait for json model to finish loading before displaying graph
-        if (loadingItem == null || loading.finished(loadingItem)) {
-//            createZoomSlider();
-            initForceGraph(loadingItem);
-        } else {
-            setTimeout(function() {
-                main(loadingItem);
-            }, 100);
-        }
-    }
 
     /** FUNCTIONALITY **/
-    function initForceGraph(loadingItem) {
+    function initForceGraph() {
         console.info('Initialising force graph...');
-        data = model.data;
-        for (var i = 0, l = data.links.length; i < l; ++i) {
-            var link = data.links[i];
-            link.originalSource = link.source;
-            link.originalTarget = link.target;
-        }
-
-        for (var i = 0, l = data.nodes.length; i < l; ++i) {
-            var node = data.nodes[i];
-            expand[node.id] = 0;
-        }
 
         /**
          * k is porportional to the square root of the graph density
@@ -141,63 +119,7 @@ define([
 
         map = network(data, map, expand);
         
-//        require(["dojo/_base/window", "dojo/store/Memory",
-//            "dijit/tree/ObjectStoreModel", "dijit/Tree", "dijit/Menu", "dijit/MenuItem",
-//            "dijit/registry", "dojo/domReady!"], function(win, Memory, ObjectStoreModel, Tree, Menu, MenuItem, registry) {
-//            var panel = registry.byId('networks');
-//            var nodeStore = new Memory({
-//                data: data.dictionary,
-//                getChildren: function(object) {
-//                    return this.query({parentID: object.id});
-//                }
-//            });
-//            
-//            // Create the model
-//            var nodesModel = new ObjectStoreModel({
-//                store: nodeStore,
-//                query: {hasNode: true}
-//            });
-//            
-//            // Create the Tree.
-//            var tree = new Tree({
-//                model: nodesModel,
-//                id: "nodeTree"
-//            });
-//            
-//            tree.placeAt(panel);
-//            tree.startup();
-//            
-//            var nodeMenu = new Menu({
-//                targetNodeIds:["nodeTree"]
-//            });
-//
-//            nodeMenu.addChild(new MenuItem({
-//                label:"View",
-//                iconClass:"dijitEditorIcon dijitEditorIconSelectAll",
-//                onClick: function(){
-//                }
-//            }));
-//            
-//            nodeMenu.addChild(new MenuItem({
-//                label:"Edit",
-//                iconClass:"dijitEditorIcon dijitEditorIconDelete",
-//                onClick: function(){
-//                }
-//            }));
-//            
-//            nodeMenu.addChild(new MenuItem({
-//                label:"Delete",
-//                iconClass:"dijitEditorIcon dijitEditorIconDelete",
-//                onClick: function(){
-//                }
-//            }));
-//            
-//            nodeMenu.startup();
-//        });
-        
         force.nodes(map.nodes).links(map.links);
-        console.info('output nodes', map.nodes);
-        console.info('output links', map.links);
         hullg.selectAll('path.hull').remove();
         hull = hullg.selectAll('path.hull').data(convexHulls(map.nodes, settings.hullOffset, expand)).enter().append('path').attr('class', 'hull').attr('d', drawCluster).style('fill', function(d) {
             return fill(d.id);
@@ -218,11 +140,6 @@ define([
                 .attr('class', function(d) {
                     return 'node' + (d.size > 0 ? '' : ' leaf');
                 }).on('dblclick', dblclick).on('click', click).call(drag).on('mousemove', tip.show).on('mouseout', tip.hide);
-//        nodeEnter.append('circle').style('fill', function(d) {
-//            return fill(d.id);
-//        }).attr('r', function(d) {
-//            return radius(d);
-//        });
 
         nodeEnter.append("svg:image")
                 .attr("class", "circle")
@@ -376,23 +293,6 @@ define([
             nodes: outputNodes,
             links: outputLinks
         };
-    }
-
-    /** Slider control for graph zoom level **/
-//    function createZoomSlider() {
-//        d3.select(css.IDs.zoomSlider).call(
-//                d3.slider().value(settings.baseZoomValue).orientation("vertical").on('slide', function(evt, value) {
-//            d3.select(css.IDs.zoomValue).text(Math.round(value));
-//            resize(value);
-//        }));
-//    }
-
-    function resize(size) {
-        var scaling = size / settings.baseZoomValue;
-        svg.selectAll(css.classes.nodeText).style('font-size', settings.baseFontSize * scaling + 'px');
-        svg.selectAll(css.classes.nodeImage).attr('transform', 'scale(' + scaling + ')');
-        svg.selectAll(css.classes.link).style('stroke-width', scaling);
-        svg.selectAll(css.classes.nodeCircle).attr('transform', 'scale(' + scaling + ')');
     }
 
     function convexHulls(nodes, offset, expand) {
@@ -783,7 +683,7 @@ define([
 
     /** PUBLIC INTERFACE **/
     return {
-        display: main,
+        initForceGraph: initForceGraph,
         css: css,
         settings: settings,
         toggleLock: toggleLock,
