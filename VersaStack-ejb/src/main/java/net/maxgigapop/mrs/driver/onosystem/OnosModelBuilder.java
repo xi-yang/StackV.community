@@ -79,6 +79,7 @@ public class OnosModelBuilder {
         Resource bucket = Mrs.Bucket;
         Resource volume = Mrs.Volume;
         Resource topology = Nml.Topology;
+        Resource vlan = model.createResource("http://schemas.ogf.org/nml/2012/10/ethernet#vlan");
 
         Resource networkAddress = Mrs.NetworkAddress;
         Resource switchingSubnet = Mrs.SwitchingSubnet;
@@ -111,6 +112,7 @@ public class OnosModelBuilder {
             if(device[1][i].equals("SWITCH") && device[2][i].equals("true")){
                 Resource resService = RdfOwl.createResource(model,topologyURI+":"+device[0][i]+":switching-service",switchingService);
                 model.add(model.createStatement(resNode, hasService, topologyURI+":"+device[0][i]+":switching-service"));
+                
                 String devicePorts[][]=onos.getOnosDevicePorts(subsystemBaseUrl,device[0][i]);
                 int qtyPorts=onos.qtyPorts;
                 for(int j=0;j<qtyPorts;j++){
@@ -118,12 +120,19 @@ public class OnosModelBuilder {
                         Resource resPort = RdfOwl.createResource(model,topologyURI+":"+device[0][i]+":port-"+devicePorts[4][j],biPort);
                         model.add(model.createStatement(resNode,hasBidirectionalPort,resPort));
                         model.add(model.createStatement(resService,hasBidirectionalPort,resPort));
+                        Resource resLabelGroup = RdfOwl.createResource(model,topologyURI+":"+device[0][i]+":port-"+devicePorts[4][j]+":labelGroup",Nml.LabelGroup);
+                        model.add(model.createStatement(resLabelGroup, Nml.labeltype, vlan));
+                        model.add(model.createStatement(resLabelGroup, value, ""));
+                        model.add(model.createStatement(resPort,Nml.hasLabelGroup,resLabelGroup));
+                        
                         for(int k=0;k<qtyLinks;k++){
                             if(device[0][i].equals(links[1][k]) && devicePorts[0][j].equals(links[0][k])){
                                 links[2][k]=devicePorts[4][j];
+
                             }
-                            else if(device[0][i].equals(links[1][k]) && devicePorts[0][j].equals(links[0][k])){
+                            else if(device[0][i].equals(links[4][k]) && devicePorts[0][j].equals(links[3][k])){
                                 links[5][k]=devicePorts[4][j];
+       
                             }
                         }
                     }
