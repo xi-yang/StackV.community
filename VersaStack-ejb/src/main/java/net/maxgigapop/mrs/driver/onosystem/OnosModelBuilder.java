@@ -91,43 +91,76 @@ public class OnosModelBuilder {
         
         OnosServer onos = new OnosServer();
         String device[][] = onos.getOnosDevices(subsystemBaseUrl);
+        String hosts[][]=onos.getOnosHosts(subsystemBaseUrl);
+        String links[][] = onos.getOnosLinks(subsystemBaseUrl);
+        int qtyLinks=onos.qtyLinks;
+        int qtyHosts=onos.qtyHosts;
         int qtyDevices=onos.qtyDevices;
         for(int i=0;i<qtyDevices;i++){
-            Resource resNode = RdfOwl.createResource(model,topologyURI+":"+device[1][i]+"-"+device[0][i],node);
-            model.add(model.createStatement(resNode, type, device[1][i]));
-            //System.out.println(resNode.toString());
-            String devicePorts[][]=onos.getOnosDevicePorts(subsystemBaseUrl,device[0][i]);
-            int qtyPorts=onos.qtyPorts;
-            for(int j=0;j<qtyPorts;j++){
-                Resource resPort = RdfOwl.createResource(model,topologyURI+":"+device[1][i]+"-"+device[0][i]+":port-"+devicePorts[4][j],biPort);
-                model.add(model.createStatement(resNode,hasBidirectionalPort,resPort));
-                //System.out.println(resPort.toString());
+            Resource resNode = RdfOwl.createResource(model,topologyURI+":"+device[0][i],node);
+            //model.add(model.createStatement(resNode, type, device[1][i]));
+            model.add(model.createStatement(onosTopology,hasNode,resNode));
+        }
+        for(int i=0;i<qtyHosts;i++){
+                Resource resNode = RdfOwl.createResource(model,topologyURI+":"+hosts[1][i],node);
+                model.add(model.createStatement(onosTopology,hasNode,resNode));
+        }
+        
+        for(int i=0;i<qtyDevices;i++){
+            Resource resNode = RdfOwl.createResource(model,topologyURI+":"+device[0][i],node);
+            if(device[1][i].equals("SWITCH") && device[2][i].equals("true")){
+                Resource resService = RdfOwl.createResource(model,topologyURI+":"+device[0][i]+":switching-service",switchingService);
+                model.add(model.createStatement(resNode, hasService, topologyURI+":"+device[0][i]+":switching-service"));
+                String devicePorts[][]=onos.getOnosDevicePorts(subsystemBaseUrl,device[0][i]);
+                int qtyPorts=onos.qtyPorts;
+                for(int j=0;j<qtyPorts;j++){
+                    if(devicePorts[1][j].equals("true")){
+                        Resource resPort = RdfOwl.createResource(model,topologyURI+":"+device[0][i]+":port-"+devicePorts[4][j],biPort);
+                        model.add(model.createStatement(resNode,hasBidirectionalPort,resPort));
+                        model.add(model.createStatement(resService,hasBidirectionalPort,resPort));
+                        for(int k=0;k<qtyLinks;k++){
+                            if(device[0][i].equals(links[1][k]) && devicePorts[0][j].equals(links[0][k])){
+                                links[2][k]=devicePorts[4][j];
+                            }
+                            else if(device[0][i].equals(links[1][k]) && devicePorts[0][j].equals(links[0][k])){
+                                links[5][k]=devicePorts[4][j];
+                            }
+                        }
+                    }
+                } 
             }
             
         }
-        String links[][] = onos.getOnosLinks(subsystemBaseUrl);
-        int qtyLinks=onos.qtyLinks;
+        
+        for(int i=0;i<qtyLinks;i++){
+            Resource resSrcPort=RdfOwl.createResource(model,topologyURI+":"+links[1][i]+":port-"+links[2][i],biPort);
+            Resource resDstPort=RdfOwl.createResource(model,topologyURI+":"+links[4][i]+":port-"+links[5][i],biPort);
+            model.add(model.createStatement(resSrcPort,Nml.isAlias,resDstPort));
+        }
+        //String links[][] = onos.getOnosLinks(subsystemBaseUrl);
+        //int qtyLinks=onos.qtyLinks;
             
-        for(int i=0;i<qtyDevices;i++){
-            Resource srcNode = RdfOwl.createResource(model,topologyURI+":"+device[1][i]+"-"+device[0][i],node);
+        /*for(int i=0;i<qtyLinks;i++){
+            //Resource srcLink = RdfOwl.createResource(model,topologyURI+":"+links[1][i]+"-"+device[0][i],node);
             //String links[][] = onos.getOnosLinks(subsystemBaseUrl);
             //int qtyLinks=onos.qtyLinks;
-            for(int k=0;k<qtyLinks;k++){
+            for(int k=0;k<qtyPorts;k++){
                 if(device[0][i].equals(links[1][k])){
                     for(int l=0;l<qtyDevices;l++){
                         if(links[3][k].equals(device[0][l])){
-                            Resource dstNode = RdfOwl.createResource(model,topologyURI+":"+device[1][l]+"-"+device[0][l],node);
+                            Resource dstNode = RdfOwl.createResource(model,topologyURI+":"+device[0][l],node);
                             model.add(model.createStatement(srcNode,Nml.isAlias,dstNode));
                         }
                     }
                 }
             }
-        }
-        String hosts[][]=onos.getOnosHosts(subsystemBaseUrl);
-            int qtyHosts=onos.qtyHosts;
+        }*/
+        /*String hosts[][]=onos.getOnosHosts(subsystemBaseUrl);
+            //int qtyHosts=onos.qtyHosts;
             for(int i=0;i<qtyHosts;i++){
                 Resource resNode = RdfOwl.createResource(model,topologyURI+":"+hosts[0][i],node);
-                model.add(model.createStatement(resNode,hasBidirectionalPort,biPort));
+                //model.add(model.createStatement(onosTopology,hasNode,resNode));
+                //model.add(model.createStatement(resNode,hasBidirectionalPort,biPort));
                 for(int j=0;j<qtyDevices;j++){
                     if(hosts[4][i].equals(device[0][j])){
                         Resource resDev = RdfOwl.createResource(model,topologyURI+":"+device[1][j]+"-"+device[0][j],node);
@@ -135,7 +168,7 @@ public class OnosModelBuilder {
                     }
                 }
                 //System.out.println(resPort.toString());
-            }
+            }*/
         
         
         

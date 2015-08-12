@@ -109,7 +109,7 @@ public class OnosServer {
          
             }
         }
-        String links[][]=new String[6][qtyLinks];
+        String links[][]=new String[8][qtyLinks];
         
         int j=0;
         for(int i=0;i<realSize;i++){
@@ -125,23 +125,23 @@ public class OnosServer {
             }
             if(linksArray[i].matches("(.*)\"port\":(.*)")){
                 if(linksArray[i-1].matches("(.*)\"dst\":(.*)")){
-                    links[2][j]=linksArray[i].split("\"port\":\"")[1];
-                    links[3][j]=linksArray[i+1].split("\"device\":\"")[1];
-                    links[2][j]=links[2][j].split("\"")[0];
+                    links[3][j]=linksArray[i].split("\"port\":\"")[1];
+                    links[4][j]=linksArray[i+1].split("\"device\":\"")[1];
                     links[3][j]=links[3][j].split("\"")[0];
+                    links[4][j]=links[4][j].split("\"")[0];
                 }
                 
             }
             
             if(linksArray[i].matches("(.*)\"type\":(.*)")){
                 
-                links[4][j]=linksArray[i].split("\"type\":\"")[1];
-                links[4][j]=links[4][j].split("\"")[0];
+                links[6][j]=linksArray[i].split("\"type\":\"")[1];
+                links[6][j]=links[6][j].split("\"")[0];
             }
             if(linksArray[i].matches("(.*)\"state\":(.*)")){
                 
-                links[5][j]=linksArray[i].split("\"state\":\"")[1];
-                links[5][j]=links[5][j].split("\"")[0];
+                links[7][j]=linksArray[i].split("\"state\":\"")[1];
+                links[7][j]=links[7][j].split("\"")[0];
                 j++;
             }
             
