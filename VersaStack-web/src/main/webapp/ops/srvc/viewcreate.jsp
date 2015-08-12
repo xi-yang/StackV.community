@@ -72,7 +72,7 @@
                         </div>
                         <div id="service-bottom">
                             <div id="service-fields">
-                                <form id="view-form" action="" method="post">
+                                <form id="view-form" action="/VersaStack-web/ViewServlet" method="post">
                                     <!-- Management Form -->
                                     <c:if test="${param.mode != 'create'}">
                                         Manage
@@ -110,6 +110,10 @@
                                                     </td>
                                                 </tr>
                                                 <tr>
+                                                    <td><strong>Templates</strong></td>
+                                                    <td></td>
+                                                </tr>
+                                                <tr>
                                                     <td>I like</td>
                                                     <td>
                                                         <input type="hidden" id="likeTemp" value="I like "/>
@@ -135,6 +139,12 @@
                                                             <option value="rocks">Random Rocks</option>
                                                         </select>
                                                         <button type="button" class="button-service-apply" onClick="applySelTemplate('neutral')">Apply</button>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td></td>
+                                                    <td>
+                                                        <input class="button-register" name="create" type="submit" value="Submit" />
                                                     </td>
                                                 </tr>
                                             </tbody>

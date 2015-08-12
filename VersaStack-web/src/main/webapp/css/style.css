@@ -526,12 +526,12 @@ body {
 #button-service-cancel, #button-service-return {
     color: #B60000;    
     margin-left: 75%;
-    postition: relative;
+    position: relative;
 }
 
 .button-service-apply {
     color: #B60000;    
-    postition: relative;
+    position: relative;
 }
 
 .view-flag {
