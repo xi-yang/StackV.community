@@ -14,6 +14,10 @@ import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.*;
+import com.hp.hpl.jena.update.Update;
+import com.hp.hpl.jena.update.UpdateAction;
+import com.hp.hpl.jena.update.UpdateFactory;
+import com.hp.hpl.jena.update.UpdateRequest;
 import com.hp.hpl.jena.sparql.function.library.e;
 import java.io.ByteArrayInputStream;
 import java.io.StringWriter;
@@ -23,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import javax.xml.bind.annotation.XmlElement;
@@ -69,6 +74,18 @@ public class ModelUtil {
         return ttl;
     }
 
+
+    static public Model unmarshalModel (String ttl) throws Exception {
+        Model model = ModelFactory.createDefaultModel();
+        //$$ TODO: add ontology schema and namespace handling code
+        try {
+            model.read(new ByteArrayInputStream(ttl.getBytes()), null, "TURTLE");
+        } catch (Exception e) {
+            throw new Exception(String.format("failure to unmarshall ontology model, due to %s", e.getMessage()));
+        }
+        return model;
+    }
+    
     static public String marshalModel (Model model) throws Exception {
         //$$ TODO: add namespace handling code
         StringWriter out = new StringWriter();
@@ -120,7 +137,15 @@ public class ModelUtil {
         return model;
     }
     
-    static public ResultSet sparqlQuery(OntModel model, String sparqlStringWithoutPrefix) {
+    static public void logDumpModel(String prompt, Model model) {
+        try {
+            logger.info(prompt + " >> logDumpModel: " + ModelUtil.marshalModel(model));
+        } catch (Exception ex) {
+            Logger.getLogger(ModelUtil.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    static public ResultSet sparqlQuery(Model model, String sparqlStringWithoutPrefix) {
         String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
                 "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
                 "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
@@ -131,6 +156,36 @@ public class ModelUtil {
         QueryExecution qexec = QueryExecutionFactory.create(query, model);
         ResultSet rs = (ResultSet) qexec.execSelect();
         return rs;
+    }
+    
+    static public void sparqlExec(Model model, String sparqlStringWithoutPrefix) {
+        String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
+                "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
+                "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
+                "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
+                "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" +
+                sparqlStringWithoutPrefix;        
+        UpdateRequest update = UpdateFactory.create(sparqlString);
+        UpdateAction.execute(update, model);
+    }
+    
+    public static boolean evaluateStatement(Model model, Statement stmt, String sparql) {
+        // static bindings stmt->subject => $$s; stmt->predicate => $$p; $stmt->object => $$o
+        // sparql example "SELECT $s $p $o WHERE $s a nml:Topology; $o a nml:Node FILTER ($p = <http://schemas.ogf.org/nml/2013/03/base#hasNode>)"
+        sparql = sparql.replace("$$s", stmt.getSubject().getURI());
+        sparql = sparql.replace("$$p", stmt.getPredicate().getURI());
+        sparql = sparql.replace("$$o", stmt.getObject().toString());
+        if (sparql.contains("$$")) {
+            throw new EJBException(String.format("ModelUtl.evaluateStatementBySparql('%s', '%s'): Binding incomplete", stmt, sparql)); 
+        }
+        ResultSet r = ModelUtil.sparqlQuery(model, sparql);
+        return r.hasNext();
+    }
+    
+    public static boolean isResourceOfType(Model model, Resource res, Resource resType) {
+        String sparql = String.format("SELECT $s WHERE {$s a $t. FILTER($s = <%s> && $t = <%s>)}", res, resType);
+        ResultSet r = ModelUtil.sparqlQuery(model, sparql);
+        return r.hasNext();
     }
     
     static public OntModel createUnionOntModel(List<OntModel> modelList) {
@@ -245,10 +300,15 @@ public class ModelUtil {
                 while ( stmts.hasNext() ) {
                     Statement stmt = stmts.next();
                     subModel.add(stmt);
+                    // optional: add type statements
+                    StmtIterator stmts2 = refModel.listStatements(stmt.getSubject(), RdfOwl.type, (RDFNode)null);
+                    while (stmts2.hasNext()) {
+                        subModel.add(stmts2.next());
+                    }
                     boolean included = false;
                     for (String matchStr: propMatchIncludes) {
                         if (stmt.getPredicate().toString().contains(matchStr)) {
-                            rdfDFSReverse(refModel, stmt.getObject(), visited, subModel, propMatchIncludes, propMatchExcludes);
+                            rdfDFSReverse(refModel, stmt.getSubject(), visited, subModel, propMatchIncludes, propMatchExcludes);
                             included = true;
                             break;
                         }
@@ -264,7 +324,7 @@ public class ModelUtil {
                     }
                     if (excluded)
                         continue;
-                    rdfDFSReverse(refModel, stmt.getObject(), visited, subModel, propMatchIncludes, propMatchExcludes);
+                    rdfDFSReverse(refModel, stmt.getSubject(), visited, subModel, propMatchIncludes, propMatchExcludes);
                 }
             }
         }
@@ -356,31 +416,41 @@ public class ModelUtil {
     }
     
     public static OntModel queryViewFilter(OntModel model, ModelViewFilter mvf) throws Exception {
-        if (mvf.getSparql() == null || mvf.getSparql().isEmpty() || (!mvf.getSparql().contains("CONSTUCT") && !mvf.getSparql().contains("construct"))) {
+        if (mvf.getSparql() == null || mvf.getSparql().isEmpty() || (!mvf.getSparql().contains("CONSTRUCT") && !mvf.getSparql().contains("construct"))) {
             throw new Exception(String.format("ModelViewFilter(#%d) has empty or none-construct SPARQL", mvf.getSeqNum()));
         }
-        Query query = QueryFactory.create(mvf.getSparql());
+        String sparql = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
+                "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
+                "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
+                "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
+                "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" + mvf.getSparql();
+        Query query = QueryFactory.create(sparql);
         QueryExecution qexec = QueryExecutionFactory.create(query, model);
         Model modelConstructed = qexec.execConstruct();
         ResIterator resIter = modelConstructed.listResourcesWithProperty(Nml.hasService);
+        List<String> includeMatches = new ArrayList<String>();
+        List<String> excludeMatches = new ArrayList<String>();
+        includeMatches.add("#has");
+        includeMatches.add("#provide");
+        includeMatches.add("#type");
+        includeMatches.add("#value");
+        Set<RDFNode> visited = new HashSet<RDFNode>();
         while (resIter.hasNext()) {
             Resource node = resIter.next();
-            Set<RDFNode> visited = new HashSet<RDFNode>();
-            List<String> includeMatches = new ArrayList<String>();
-            List<String> excludeMatches = new ArrayList<String>();
-            includeMatches.add("#has");
-            includeMatches.add("#provide");
-            includeMatches.add("#type");
-            includeMatches.add("#value");
+            visited.clear();
             if (mvf.isSubtreeRecursive()) {
                 Model subModel = ModelFactory.createDefaultModel();
+                node = model.getResource(node.toString());
                 rdfDFS(node, visited, subModel, includeMatches, excludeMatches);
                 modelConstructed.add(subModel);
+                ModelUtil.logDumpModel("queryViewFilter add subtreeModel", subModel);
             }
+            visited.clear();
             if (mvf.isSuptreeRecursive()) {
                 Model subModel = ModelFactory.createDefaultModel();
                 rdfDFSReverse(model, node, visited, subModel, includeMatches, excludeMatches);
                 modelConstructed.add(subModel);
+                ModelUtil.logDumpModel("queryViewFilter add suptreeModel", subModel);
             }
         }
         OntModel ontModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);

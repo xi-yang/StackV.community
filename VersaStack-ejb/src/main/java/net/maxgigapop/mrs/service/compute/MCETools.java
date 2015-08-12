@@ -13,6 +13,7 @@ import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
+import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.InfModel;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
@@ -30,9 +31,17 @@ import static java.lang.System.exit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.ejb.EJBException;
+import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.Mrs;
+import net.maxgigapop.mrs.common.Nml;
+import net.maxgigapop.mrs.common.RdfOwl;
+import net.maxgigapop.mrs.common.TagSet;
 
 /**
  *
@@ -42,7 +51,8 @@ public class MCETools {
     public static class Path extends com.hp.hpl.jena.ontology.OntTools.Path {
         private HashSet<Statement> maskedLinks = null;
         Resource deviationNode = null;
-
+        OntModel ontModel = null;
+        
         public Path() {
             super();
         }
@@ -66,7 +76,14 @@ public class MCETools {
         public void setDeviationNode(Resource deviationNode) {
             this.deviationNode = deviationNode;
         }
-        
+
+        public OntModel getOntModel() {
+            return ontModel;
+        }
+
+        public void setOntModel(OntModel ontModel) {
+            this.ontModel = ontModel;
+        } 
     }
 
     public static Path getLeastCostPath(List<Path> candidates) {
@@ -177,39 +194,40 @@ public class MCETools {
         return KSP;
     }
 
-    private static String l2NetworkConstructSparql = 
-            "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
-    		+ "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n"
-    		+ "PREFIX owl: <http://www.w3.org/2002/07/owl#>\n"
-    		+ "PREFIX nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
-    		+ "PREFIX mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
+    private static String l2NetworkConstructSparql
+            = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+            + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n"
+            + "PREFIX owl: <http://www.w3.org/2002/07/owl#>\n"
+            + "PREFIX nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
+            + "PREFIX mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
             + "CONSTRUCT {\n"
             + "# get Topology/Node -> (SwService -> *) / (BidirectionalPort -> *)\n"
-            + "  ?node nml:hasService ?swsvc. \n"
-            + "  ?node nml:hasBidirectionalPort ?biport . \n"
-            + "  ?swsvc a nml:SwitchingService . \n"
-            + "  ?swsvc ?nml_p1 ?nml_o1 . \n"
-            + "  ?biport a nml:BidirectionalPort . \n"
-            + "  ?biport ?nml_p2 ?nml_o2 . \n"
+            + "  ?topo ?has_node_or_topology ?node.\n"
+            + "  ?node nml:hasService ?swsvc.\n"
+            + "  ?node nml:hasBidirectionalPort ?biport .\n"
+            + "  ?swsvc a nml:SwitchingService .\n"
+            + "  ?swsvc ?nml_p1 ?nml_o1 .\n"
+            + "  ?biport a nml:BidirectionalPort .\n"
+            + "  ?biport ?nml_p2 ?nml_o2 .\n"
             + "# get SwSubnet as well\n"
-            + "  ?swsvc mrs:providesSubnet ?subnet . \n"
+            + "  ?swsvc mrs:providesSubnet ?subnet .\n"
             + "  ?subnet a mrs:SwitchingSubnet .\n"
             + "  ?subnet ?nml_p2_1 ?nml_o2_1 .\n"
             + "# get BidirectionalPort -> Label/LabelGroup -> *\n"
             + "  ?label a ?label_or_labelgroup .\n"
-            + "  ?label ?nml_p3 ?nml_o3 . \n"
+            + "  ?label ?nml_p3 ?nml_o3 .\n"
             + "# TODO: get everything under mrs:(De)AdaptationService\n"
             + "} WHERE {\n"
             + "  { ?node a  ?nodetype.\n"
-            + "    ?node nml:hasService ?swsvc . \n"
-            + "    ?swsvc a nml:SwitchingService . \n"
-            + "    ?swsvc ?nml_p1 ?nml_o1 . \n"
-            + "    ?swsvc nml:encoding <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> . \n"
-            + "    ?node nml:hasBidirectionalPort ?biport . \n"
-            + "    ?biport a nml:BidirectionalPort . \n"
-            + "    ?biport ?nml_p2 ?nml_o2 . \n"
+            + "    ?node nml:hasService ?swsvc .\n"
+            + "    ?swsvc a nml:SwitchingService .\n"
+            + "    ?swsvc ?nml_p1 ?nml_o1 .\n"
+            + "    ?swsvc nml:encoding <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> .\n"
+            + "    ?node nml:hasBidirectionalPort ?biport .\n"
+            + "    ?biport a nml:BidirectionalPort .\n"
+            + "    ?biport ?nml_p2 ?nml_o2 .\n"
             + "    OPTIONAL {\n"
-            + "      ?swsvc mrs:providesSubnet ?subnet . \n"
+            + "      ?swsvc mrs:providesSubnet ?subnet .\n"
             + "      ?subnet a mrs:SwitchingSubnet .\n"
             + "      ?subnet ?nml_p2_1 ?nml_o2_1 .\n"
             + "      FILTER ((REGEX(STR(?nml_p2_1), '^http://schemas.ogf.org/nml/2013/03/base#')))\n"
@@ -219,19 +237,34 @@ public class MCETools {
             + "        (REGEX(STR(?nml_p2), '^http://schemas.ogf.org/nml/2013/03/base#'))\n"
             + "    )\n"
             + "  } UNION {\n"
-            + "    ?biport a nml:BidirectionalPort . \n"
-            + "    ?biport ?haslabel_or_labelgroup ?label . \n"
+            + "    ?biport a nml:BidirectionalPort .\n"
+            + "    ?biport ?haslabel_or_labelgroup ?label .\n"
             + "    ?label a ?label_or_labelgroup .\n"
-            + "    ?label ?nml_p3 ?nml_o3 . \n"
+            + "    ?label ?nml_p3 ?nml_o3 .\n"
             + "    FILTER ((?label_or_labelgroup in (nml:Label, nml:LabelGroup)) &&\n"
-            + "    	(?haslabel_or_labelgroup in (nml:hasLabel, nml:hasLabelGroup)) &&\n"
-            + "    	(REGEX(STR(?nml_p3), '^http://schemas.ogf.org/nml/2013/03/base#'))\n"
+            + "        (?haslabel_or_labelgroup in (nml:hasLabel, nml:hasLabelGroup)) &&\n"
+            + "        (REGEX(STR(?nml_p3), '^http://schemas.ogf.org/nml/2013/03/base#'))\n"
+            + "    )\n"
+            + "  } UNION {\n"
+            + "    ?topo a  nml:Topology.\n"
+            + "    ?topo ?has_node_or_topology ?node .\n"
+            + "    ?node nml:hasService ?swsvc.\n"
+            + "    ?swsvc a nml:SwitchingService .\n"
+            + "    ?swsvc ?nml_p1 ?nml_o1 .\n"
+            + "    ?swsvc nml:encoding <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> .\n"
+            + "    OPTIONAL {\n"
+            + "      ?swsvc mrs:providesSubnet ?subnet .\n"
+            + "      ?subnet a mrs:SwitchingSubnet .\n"
+            + "      ?subnet ?nml_p2_1 ?nml_o2_1 .\n"
+            + "      FILTER ((REGEX(STR(?nml_p2_1), '^http://schemas.ogf.org/nml/2013/03/base#')))\n"
+            + "    }\n"
+            + "    FILTER ( (?has_node_or_topology in (nml:hasTopology, nml:hasNode))\n"
             + "    )\n"
             + "  }\n"
             + "}";
-    
-    private static String l2NetworkReasonerRules = 
-            "[rule1:  (?a http://schemas.ogf.org/nml/2013/03/base#hasService ?b) \n"
+
+    private static String l2NetworkReasonerRules
+            = "[rule1:  (?a http://schemas.ogf.org/nml/2013/03/base#hasService ?b) \n"
             + "         (?b http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort ?c)\n"
             + "      -> (?a http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort ?c)\n"
             + "]\n"
@@ -266,18 +299,308 @@ public class MCETools {
             + "      -> (?a http://schemas.ogf.org/nml/2013/03/base#connectsTo ?d)\n"
             + "         (?d http://schemas.ogf.org/nml/2013/03/base#connectsTo ?a)\n"
             + "]";
-    
+
     public static OntModel transformL2NetworkModel(Model inputModel) {
-        Query query = QueryFactory.create(l2NetworkConstructSparql);
-        QueryExecution qexec = QueryExecutionFactory.create(query, inputModel);
-        Model modelConstructed = qexec.execConstruct();
+        //Query query = QueryFactory.create(l2NetworkConstructSparql);
+        //QueryExecution qexec = QueryExecutionFactory.create(query, inputModel);
+        //inputModel = qexec.execConstruct();
 
         Reasoner reasoner = new GenericRuleReasoner(Rule.parseRules(l2NetworkReasonerRules));
         reasoner.setDerivationLogging(true);
-        InfModel infModel = ModelFactory.createInfModel(reasoner, modelConstructed);
+        InfModel infModel = ModelFactory.createInfModel(reasoner, inputModel);
 
         OntModel outputModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         outputModel.add(infModel);
         return outputModel;
+    }
+    
+    // define constraint sets (@TODO: combine the multuple rules into one in each set)
+    private static String[] l2PathTakeOffConstraints = {
+            "SELECT $s $p $o WHERE {$s a nml:Topology. $o a nml:Topology FILTER($s = <$$s> && $o = <$$o>)}",
+            "SELECT $s $p $o WHERE {$s a nml:Topology. $o a nml:Node FILTER($s = <$$s> && $o = <$$o>)}",
+            "SELECT $s $p $o WHERE {$s a nml:Node. $o a nml:BidirectionalPort FILTER($s = <$$s> && $o = <$$o>)}",
+            "SELECT $s $p $o WHERE {$s a nml:Topology. $o a nml:BidirectionalPort FILTER($s = <$$s> && $o = <$$o>)}",
+            "SELECT $s $p $o WHERE {$s a nml:Node. $o a nml:SwitchingService FILTER($s = <$$s> && $o = <$$o>)}",
+            "SELECT $s $p $o WHERE {$s a nml:Topology. $o a nml:SwitchingService FILTER($s = <$$s> && $o = <$$o>)}",
+    };
+    private static String[] l2PathTransitConstraints = {
+            "SELECT $s $p $o WHERE {$s a nml:BidirectionalPort. $o a nml:SwitchingService FILTER($s = <$$s> && $o = <$$o>)}",
+            "SELECT $s $p $o WHERE {$s a nml:SwitchingService. $o a nml:BidirectionalPort FILTER($s = <$$s> && $o = <$$o>)}",
+            "SELECT $s $p $o WHERE {$s a nml:BidirectionalPort. $o a nml:BidirectionalPort FILTER($s = <$$s> && $o = <$$o>)}",
+    };
+    private static String[] l2PathLandingConstraints = {
+            "SELECT $s $p $o WHERE {$s a nml:SwitchingService. $o a nml:Node FILTER($s = <$$s> && $o = <$$o>)}",
+            "SELECT $s $p $o WHERE {$s a nml:SwitchingService. $o a nml:Topology FILTER($s = <$$s> && $o = <$$o>)}",
+            "SELECT $s $p $o WHERE {$s a nml:BidirectionalPort. $o a nml:Node FILTER($s = <$$s> && $o = <$$o>)}",
+            "SELECT $s $p $o WHERE {$s a nml:BidirectionalPort. $o a nml:Topology FILTER($s = <$$s> && $o = <$$o>)}",
+            "SELECT $s $p $o WHERE {$s a nml:Node. $o a nml:Topology FILTER($s = <$$s> && $o = <$$o>)}",
+            "SELECT $s $p $o WHERE {$s a nml:Topology. $o a nml:Topology FILTER($s = <$$s> && $o = <$$o>)}",
+    };
+    
+    public static boolean verifyL2Path(Model model, Path path) {
+        String stage = "TAKEOFF";
+        Iterator<Statement> itS = path.iterator();
+        while (itS.hasNext()) {
+            Statement stmt = itS.next();
+            if (stage.equals("TRANSIT") && stmt.getObject().isResource() &&
+                    ( ModelUtil.isResourceOfType(model,stmt.getObject().asResource(), Nml.Node)
+                    || ModelUtil.isResourceOfType(model,stmt.getObject().asResource(), Nml.Topology) )
+                    )
+                stage = "LANDING";
+            if (stage.equals("TAKEOFF") &&
+                    ( ModelUtil.isResourceOfType(model,stmt.getSubject(), Nml.BidirectionalPort)
+                    || ModelUtil.isResourceOfType(model,stmt.getSubject(), Nml.SwitchingService) )
+                    )
+                stage = "TRANSIT";
+
+            if (stage.equals("TAKEOFF")) {
+                if (!evaluateStatement_AnyTrue(model, stmt, l2PathTakeOffConstraints))
+                    return false;
+            } else if (stage.equals("TRANSIT")) {
+                if (!evaluateStatement_AnyTrue(model, stmt, l2PathTransitConstraints))
+                    return false;
+            } else if (stage.equals("LANDING")) {
+                if (!evaluateStatement_AnyTrue(model, stmt, l2PathLandingConstraints))
+                    return false;                
+            }
+        }
+        return true;
+    }
+    
+    public static boolean evaluateStatement_AnyTrue(Model model, Statement stmt, String[] constraints) {
+        for (String sparql: constraints) {
+            if (ModelUtil.evaluateStatement(model, stmt, sparql))
+                return true;
+        }
+        return false;
+    }
+    
+    public static OntModel createL2PathVlanSubnets(Model model, Path path) {
+        HashMap<Resource, HashMap<String, Object>> portParamMap = new HashMap<>();
+        ListIterator<Statement> itS = path.listIterator();
+        boolean last = false;
+        Resource prevHop = null, currentHop = null, nextHop = null;
+        Resource lastPort = null;
+        // Forward iteration to calculate and collect information
+        while (itS.hasNext()) {
+            Statement stmt = itS.next();
+            if (!itS.hasNext())
+                last = true;
+            currentHop = stmt.getSubject();
+            nextHop = stmt.getObject().asResource();
+            if (prevHop != null && (ModelUtil.isResourceOfType(model, prevHop, Nml.Node)
+                    || ModelUtil.isResourceOfType(model, prevHop, Nml.Topology)) ) {
+                Resource prevSwSvc = getSwitchingServiceForHop(model, prevHop, currentHop);
+                if (prevSwSvc != null)
+                    prevHop = prevSwSvc;
+            }
+            if (nextHop != null && (ModelUtil.isResourceOfType(model, nextHop, Nml.Node)
+                    || ModelUtil.isResourceOfType(model, nextHop, Nml.Topology)) ) {
+                Resource nextSwSvc = getSwitchingServiceForHop(model, nextHop, currentHop);
+                if (nextSwSvc != null)
+                    nextHop = nextSwSvc;
+            }
+            // handle a special case where port exits a switch Node or Topology and goes back to SwitchingService under the same Node or Topology
+            if (prevHop == nextHop)
+                return null;
+            if (ModelUtil.isResourceOfType(model, currentHop, Nml.BidirectionalPort)) {
+                try {
+                    handleL2PathHop(model, prevHop, currentHop, nextHop, portParamMap, lastPort);
+                    lastPort = currentHop;
+                } catch (TagSet.NoneVlanExeption ex) {
+                    ;
+                } catch (TagSet.EmptyTagSetExeption ex) {
+                  return null; // throw Exception ?
+                }
+            }
+            prevHop = currentHop;
+            if (last) {
+                prevHop = currentHop;
+                currentHop = nextHop;
+                nextHop = null;
+                Resource prevSwSvc = getSwitchingServiceForHop(model, prevHop, currentHop);
+                if (prevSwSvc != null)
+                    prevHop = prevSwSvc;
+                if (ModelUtil.isResourceOfType(model, currentHop, Nml.BidirectionalPort)) {
+                    try {
+                        handleL2PathHop(model, prevHop, currentHop, nextHop, portParamMap, lastPort);
+                        lastPort = currentHop;
+                    } catch (TagSet.NoneVlanExeption ex) {
+                        ;
+                    } catch (TagSet.EmptyTagSetExeption ex) {
+                        return null; // throw Exception ?
+                    }
+                }
+            }
+        }
+        // Reverse iteration to calculate suggestedVlan and create SwitchingSubnet
+        OntModel l2PathModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        nextHop = null;
+        while (itS.hasPrevious()) {
+            Statement stmt = itS.previous();
+            prevHop = stmt.getSubject();
+            currentHop = stmt.getObject().asResource();
+            if (portParamMap.containsKey(currentHop)) {
+                OntModel subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, portParamMap, lastPort);
+                if (subnetModel != null) {
+                    l2PathModel.add(subnetModel.getBaseModel());
+                }
+                lastPort = currentHop; // last port in reverse order
+            }
+            nextHop = currentHop; // prev and next hops are still in forward order
+            if (!itS.hasPrevious() && stmt.getObject().isResource()) {
+                nextHop = currentHop;
+                currentHop = prevHop;
+                prevHop = null;
+                if (portParamMap.containsKey(currentHop)) {
+                    OntModel subnetModel  = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, portParamMap, lastPort);
+                    if (subnetModel != null) {
+                    l2PathModel.add(subnetModel.getBaseModel());
+                    }
+                }
+            }
+        }
+        return l2PathModel;
+    }
+    
+ 
+    //add hashMap (port, availableVlanRange + translation + ingressForSwService, egressForSwService) as params for currentHop
+    private static void handleL2PathHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, HashMap portParamMap, Resource lastPort) 
+            throws TagSet.NoneVlanExeption, TagSet.EmptyTagSetExeption {
+        if (prevHop != null && ModelUtil.isResourceOfType(model, prevHop, Nml.BidirectionalPort)) {
+            //TODO: handling adaptation?
+        }
+        String vlanAny = TagSet.VlanRangeANY.toString();
+        HashMap<String, Object> paramMap = new HashMap<>();
+        HashMap<String, Object> lastParamMap = null;
+        if (lastPort != null && portParamMap.containsKey(lastPort))
+            lastParamMap = (HashMap<String, Object>) portParamMap.get(lastPort);
+        // Get VLAN range
+        TagSet vlanRange = getVlanRangeForPort(model, currentHop);
+        // do nothing for port without a Vlan labelGroup
+        if (vlanRange == null)
+            throw new TagSet.NoneVlanExeption();
+        // interception with input availableVlanRange 
+        Boolean vlanTranslation = true;
+        Resource egressSwitchingService = null; 
+        if (prevHop != null && !vlanRange.isEmpty()) {
+            // check vlan translation
+            String sparql = String.format("SELECT ?swapping WHERE {<%s> a nml:SwitchingService. <%s> nml:labelSwapping ?swapping.}", prevHop, prevHop);
+            ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
+            if (rs.hasNext())
+                egressSwitchingService = prevHop;
+            if (!rs.hasNext() || !rs.next().getLiteral("swapping").getBoolean()) {
+                // non-translation
+                vlanTranslation = false;
+            }
+            // vlan translation
+            TagSet lastVlanRange = TagSet.VlanRangeANY;
+            // no vlan translation
+            if (!vlanTranslation && lastParamMap != null && lastParamMap.containsKey("vlanRange"))
+                lastVlanRange = (TagSet) lastParamMap.get("vlanRange");
+            vlanRange.intersect(lastVlanRange);
+        }
+        // exception if empty        
+        if (vlanRange.isEmpty())
+            throw new TagSet.EmptyTagSetExeption();
+        paramMap.put("vlanRange", vlanRange);
+        if (egressSwitchingService != null) {
+            paramMap.put("egressSwitchingService", egressSwitchingService);
+            if (lastParamMap != null)
+                lastParamMap.put("ingressSwitchingService", egressSwitchingService);
+        }
+        paramMap.put("vlanTranslation", vlanTranslation);
+        portParamMap.put(currentHop, paramMap);
+    }
+    
+    private static OntModel createVlanSubnetOnHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, HashMap portParamMap, Resource lastPort) {
+        HashMap paramMap = (HashMap) portParamMap.get(currentHop);
+        if (!paramMap.containsKey("vlanRange")) {
+            return null;
+        }
+        TagSet vlanRange = (TagSet) paramMap.get("vlanRange");
+        if (vlanRange.isEmpty()) {
+            return null;
+        }
+        HashMap lastParamMap = null;
+        if (lastPort != null && portParamMap.containsKey(lastPort))
+            lastParamMap = (HashMap) portParamMap.get(lastPort);
+        Integer suggestedVlan = null;
+        if (lastParamMap != null && lastParamMap.containsKey("suggestedVlan")) {
+            suggestedVlan = (Integer) lastParamMap.get("suggestedVlan");
+            if (!vlanRange.hasTag(suggestedVlan) &&  // if no continuous vlan
+                    (!paramMap.containsKey("vlanTranslation") 
+                    || !(Boolean)paramMap.get("vlanTranslation") ) ) { // try translation but not able to
+                return null;
+            }
+        }
+        // init vlan or do tanslation to any tag
+        if (suggestedVlan == null)
+            suggestedVlan = vlanRange.getRandom();        
+        paramMap.put("suggestedVlan", suggestedVlan);
+        
+        // create port and subnet statements
+        OntModel vlanSubnetModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+
+        // create new VLAN port with vlan label
+        String vlanPortUrn = currentHop.toString() + ":vlanport+" + suggestedVlan;
+        Resource resVlanPort = RdfOwl.createResource(vlanSubnetModel, vlanPortUrn, Nml.BidirectionalPort);
+        String vlanLabelUrn = vlanPortUrn+":label";
+        Resource resVlanPortLabel = RdfOwl.createResource(vlanSubnetModel, vlanLabelUrn, Nml.Label);
+        vlanSubnetModel.add(vlanSubnetModel.createStatement(currentHop, Nml.hasBidirectionalPort, resVlanPort));
+        vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.hasLabel, resVlanPortLabel));
+        vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPortLabel, Nml.labeltype, RdfOwl.labelTypeVLAN));
+        vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPortLabel, Nml.value, suggestedVlan.toString()));
+
+        // create ingressSubnet for ingressSwitchingService and add port the the new subnet
+        if (paramMap.containsKey("ingressSwitchingService")) {
+            Resource ingressSwitchingService = (Resource) paramMap.get("ingressSwitchingService");
+            String vlanSubnetUrn = ingressSwitchingService.toString() + ":vlan+" + suggestedVlan;
+            Resource ingressSwitchingSubnet = RdfOwl.createResource(vlanSubnetModel, vlanSubnetUrn, Mrs.SwitchingSubnet);
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingService, Mrs.providesSubnet, ingressSwitchingSubnet));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.belongsTo, ingressSwitchingService));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.hasBidirectionalPort, resVlanPort));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.belongsTo, ingressSwitchingSubnet));
+        }
+        
+        // get egressSubnet for egressSwitchingService and add port the this existing subnet
+        if (paramMap.containsKey("egressSwitchingService")) {
+            Resource egressSwitchingService = (Resource) paramMap.get("egressSwitchingService");
+            String vlanSubnetUrn = egressSwitchingService.toString() + ":vlan+" + suggestedVlan;
+            Resource egressSwitchingSubnet = RdfOwl.createResource(vlanSubnetModel, vlanSubnetUrn, Mrs.SwitchingSubnet);
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.hasBidirectionalPort, resVlanPort));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.belongsTo, egressSwitchingSubnet));
+        }
+        
+        return vlanSubnetModel;
+    }
+    
+    private static Resource getSwitchingServiceForHop(Model model, Resource nodeOrTopo, Resource port) {
+            String sparql = String.format("SELECT ?sw WHERE {<%s> nml:hasService ?sw. ?sw a nml:SwitchingService. ?sw nml:hasBidirectionalPort <%s>.}", nodeOrTopo, port);
+            ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
+            if (!rs.hasNext())
+                return null;
+            return rs.next().getResource("sw");
+    }
+    
+    //TODO: get VLAN range and remove allocated ports
+    private static TagSet getVlanRangeForPort(Model model, Resource port) {
+            String sparql = String.format("SELECT ?range WHERE {"
+                    + "<%s> nml:hasLabelGroup ?lg. ?lg nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. ?lg nml:values ?range."
+                    + "}", port);
+            ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
+            if (!rs.hasNext())
+                return null;
+            TagSet vlanRange = new TagSet(rs.next().getLiteral("range").toString());
+            sparql = String.format("SELECT ?range WHERE {"
+                    + "<%s> nml:hasBidirectionalPort ?vlan_port. ?vlan_port nml:hasLabel ?l. ?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. ?l nml:value ?vlan."
+                    + "}", port);            
+            rs = ModelUtil.sparqlQuery(model, sparql);
+            while (rs.hasNext()) {
+                String vlanStr = rs.next().getLiteral("?vlan").toString();
+                Integer vlan = Integer.getInteger(vlanStr);
+                vlanRange.removeTag(vlan);
+            }
+            return vlanRange;
     }
 }
