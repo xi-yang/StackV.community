@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost:3306
--- Generation Time: Jul 23, 2015 at 09:23 PM
+-- Generation Time: Aug 12, 2015 at 09:22 PM
 -- Server version: 5.5.42
 -- PHP Version: 5.6.7
 
@@ -13,6 +13,7 @@ SET time_zone = "+00:00";
 --
 -- Database: `frontend`
 --
+DROP DATABASE `frontend`;
 CREATE DATABASE IF NOT EXISTS `frontend` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 USE `frontend`;
 
@@ -25,7 +26,7 @@ USE `frontend`;
 CREATE TABLE `acl` (
   `acl_id` int(11) NOT NULL,
   `service_id` int(11) NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Dumping data for table `acl`
@@ -37,9 +38,9 @@ INSERT INTO `acl` (`acl_id`, `service_id`) VALUES
 (3, 3),
 (4, 4),
 (5, 5),
-(6, 6),
 (7, 7),
-(8, 8);
+(8, 8),
+(9, 9);
 
 -- --------------------------------------------------------
 
@@ -62,9 +63,9 @@ INSERT INTO `acl_entry_group` (`acl_id`, `usergroup_id`) VALUES
 (3, 1),
 (4, 1),
 (5, 1),
-(6, 1),
 (7, 1),
 (8, 1),
+(9, 1),
 (2, 2),
 (3, 2);
 
@@ -85,6 +86,7 @@ CREATE TABLE `acl_entry_user` (
 
 INSERT INTO `acl_entry_user` (`acl_id`, `user_id`) VALUES
 (2, 1),
+(9, 3),
 (5, 8);
 
 -- --------------------------------------------------------
@@ -97,22 +99,23 @@ CREATE TABLE `service` (
   `service_id` int(11) NOT NULL,
   `name` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
   `filename` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
-  `description` varchar(140) COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `description` varchar(140) COLLATE utf8_unicode_ci NOT NULL,
+  `atomic` tinyint(1) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Dumping data for table `service`
 --
 
-INSERT INTO `service` (`service_id`, `name`, `filename`, `description`) VALUES
-(1, 'User Management', 'usermgt', 'Administrative Management Functions.'),
-(2, 'Provisioning', 'provision', 'System and Topology Overviews.'),
-(3, 'Orchestration', 'orchest', 'Manipulation of the System Model.'),
-(4, 'Monitoring', 'monitor', 'System Monitoring and Logging.'),
-(5, 'Example', 'example', 'Test.'),
-(6, 'Property Addition', 'propmod', ''),
-(7, 'Driver Management', 'driver', 'Installation and Uninstallation of Driver Instances.'),
-(8, 'Virtual Machine Addition', 'vmadd', 'Instantiation and Setup of Virtual Machine Topology.');
+INSERT INTO `service` (`service_id`, `name`, `filename`, `description`, `atomic`) VALUES
+(1, 'User Management', 'usermgt', 'Administrative Management Functions.', 1),
+(2, 'Provisioning', 'provision', 'System and Topology Overviews.', 1),
+(3, 'Orchestration', 'orchest', 'Manipulation of the System Model.', 1),
+(4, 'Monitoring', 'monitor', 'System Monitoring and Logging.', 1),
+(5, 'Example', 'example', 'Test.', 0),
+(7, 'Driver Management', 'driver', 'Installation and Uninstallation of Driver Instances.', 0),
+(8, 'Virtual Machine Addition', 'vmadd', 'Instantiation and Setup of Virtual Machine Topology.', 0),
+(9, 'Orchestration View Creation', 'viewcreate', 'Creation of a new graphical view filter.', 0);
 
 -- --------------------------------------------------------
 
@@ -246,12 +249,12 @@ ALTER TABLE `usergroup`
 -- AUTO_INCREMENT for table `acl`
 --
 ALTER TABLE `acl`
-  MODIFY `acl_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=9;
+  MODIFY `acl_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=10;
 --
 -- AUTO_INCREMENT for table `service`
 --
 ALTER TABLE `service`
-  MODIFY `service_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=9;
+  MODIFY `service_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=10;
 --
 -- AUTO_INCREMENT for table `user_info`
 --
@@ -301,6 +304,7 @@ ALTER TABLE `user_info`
 --
 -- Database: `login`
 --
+DROP DATABASE `login`;
 CREATE DATABASE IF NOT EXISTS `login` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 USE `login`;
 
