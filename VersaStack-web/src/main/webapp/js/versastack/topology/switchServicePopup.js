@@ -230,6 +230,7 @@ define(["local/d3", "local/versastack/utils"],
                                 outputApi.setHoverVisible(true);
                             }
                             outputApi.setHoverLocation(d3.event.x, d3.event.y);
+
                         };
                         var OnMouseLeave = function () {
                             if (!isDragging) {

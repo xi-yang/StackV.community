@@ -134,6 +134,25 @@
                 });
             }
 
+            function buttonInit() {
+                $("#awsButton").click(function (evt) {
+                    $("#actionForm").load("/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=aws #service-fields");
+
+                    $("#awsButton").toggleClass("hide");
+                    $("#cancelButton").toggleClass("hide");
+
+                    evt.preventDefault();
+                });
+                $("#cancelButton").click(function (evt) {
+                    $("#actionForm").empty();
+
+                    $("#awsButton").toggleClass("hide");
+                    $("#cancelButton").toggleClass("hide");
+
+                    evt.preventDefault();
+                });
+            }
+
             //animStart and animStop are primarily intended as debug functions
             //They can be used to see how the layout engine behaves, and restore
             //a sane layout it it has been messed up.
@@ -164,6 +183,8 @@
                 this.setDisplayName = function (name) {
                     document.getElementById("displayName").innerText = name;
                 };
+
+
 
 
                 var zoomFactor = settings.INIT_ZOOM;
@@ -231,6 +252,7 @@
                 this.setHoverVisible = function (vis) {
                     document.getElementById("hoverdiv").style.visibility = vis ? "visible" : "hidden";
                 };
+
 
                 var svg = document.getElementById("viz");
                 svg.addEventListener("mousewheel", function (e) {

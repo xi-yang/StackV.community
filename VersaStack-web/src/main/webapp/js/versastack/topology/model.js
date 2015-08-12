@@ -32,6 +32,7 @@ define([
     function Model(oldModel) {
         var map_ = utils.map_;
         var rootNodes = [];
+        var versionID;
 
         //Associates a name with the corresponding backing
         var map = {};
@@ -50,7 +51,9 @@ define([
             request.onload = function () {
                 var data = request.responseText;
                 data = JSON.parse(data);
+                versionID=data.version;
                 map = JSON.parse(data.ttlModel);
+
 
                 if (INJECT) {
                     var newNode = {type: 'uri', value: 'FOO:1'};
@@ -59,6 +62,7 @@ define([
                     map[newNode.value][values.type] = [{type: 'uri', value: values.namedIndividual}, {type: 'uri', value: values.node}];
                 }
 //            map=data;
+
 
                 /*
                  * We begin by extracting all nodes/topologies
@@ -87,6 +91,7 @@ define([
                                 } else {
                                     toAdd = new Node(val, map);
                                 }
+                                toAdd.isTopology=type===values.topology;
                                 that.nodeMap[key] = toAdd;
                                 break;
                             case values.bidirectionalPort:
@@ -220,7 +225,6 @@ define([
                 for (var key in that.subnetMap) {
                     var subnet = that.subnetMap[key];
                     var subnet_ = subnet._backing;
-
                     for (var key in subnet_) {
                         switch (key) {
                             case "name":
@@ -307,12 +311,15 @@ define([
                     if (node.isRoot) {
                         rootNodes.push(node);
                     }
-
                 }
                 callback();
             };
             request.send();
         };
+
+        this.getVersion = function(){
+            return versionID;  
+        }
 
         this.listNodes = function () {
             var ans = [];
@@ -321,7 +328,6 @@ define([
             });
             return ans;
         };
-
         this.listEdges = function () {
             var ans = [];
             map_(rootNodes, /**@param {Node} node**/function (node) {
@@ -333,6 +339,8 @@ define([
             });
             return ans;
         };
+
+
 
         /**Begin debug functions**/
         this.listNodesPretty = function () {

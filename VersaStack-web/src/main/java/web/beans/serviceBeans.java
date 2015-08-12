@@ -19,6 +19,7 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+
 public class serviceBeans {
 
     private static final Logger logger = Logger.getLogger(serviceBeans.class.getName());
@@ -132,6 +133,7 @@ public class serviceBeans {
     }
 
     /**
+
      * Create a virtual machine. Compose the ttl model according to the parsing
      * parameters. Put the ttl model and the VersionGroup UUID in the parsing 
      * parameter into the modelAddition part and referenceVersion respectively 
@@ -146,6 +148,7 @@ public class serviceBeans {
      * 2 - plugin error.<br />
      * 3 - connection error.<br />
      * 4 - parsing parameter error<br />
+>>>>>>> 2f7f1d994d2da0cba3fd8de17c443a9bad67728f
      */
     public int vmInstall(Map<String, String> paraMap){
         String vgUuid = null;
@@ -158,7 +161,9 @@ public class serviceBeans {
         String[] subnets = null;
         String[] volumes = null;
         int quantity;
+
         //Map the parsing parameters into each variable
+
         for(Map.Entry<String, String> entry : paraMap.entrySet()){
             if(entry.getKey().equalsIgnoreCase("versionGroup"))
                 vgUuid = entry.getValue();
@@ -181,7 +186,7 @@ public class serviceBeans {
             else if(entry.getKey().equalsIgnoreCase("volumes"))
                 volumes = entry.getValue().split("\r\n");            
         }
-        
+
         try {
             URL url = new URL(String.format("%s/model/", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -213,6 +218,7 @@ public class serviceBeans {
 
         //create a system instance and get an UUID for this system instance from the API
         String siUuid;
+
         try {
             URL url = new URL(String.format("%s/model/systeminstance", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -223,7 +229,6 @@ public class serviceBeans {
         } catch (Exception e) {
             return 3;//connection error
         }
-
         //building ttl model
         String delta = "<delta>\n<id>1</id>\n"
                 + "<creationTime>2015-03-11T13:07:23.116-04:00</creationTime>\n"
@@ -289,6 +294,7 @@ public class serviceBeans {
                 + allSubnets.substring(0, (allSubnets.length()-2)) + ".\n\n";
         
         delta += model + "</modelAddition>\n</delta>";
+
         
         //push to the system api and get response
         try {
@@ -315,6 +321,7 @@ public class serviceBeans {
         
         
         return 0;
+
     }
     
     // Given a Topology, return list of VM's that can be added under it.
@@ -323,6 +330,7 @@ public class serviceBeans {
         return null;
     }
     
+
     // Given a VM type, return list of topologies that can support it.
     //TODO Fill skeleton and JavaDoc as appropriate
     public ArrayList<String> VMSearchByType(String VMString) {

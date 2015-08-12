@@ -21,6 +21,7 @@ define(["local/versastack/topology/modelConstants"],
                 this._map = map;
                 /**@type Array.Node**/
                 this.children = [];
+                this.isTopology=false;
                 this.isRoot = true;
                 this.uid = i++;
                 this.isFolded = false;
@@ -110,6 +111,15 @@ define(["local/versastack/topology/modelConstants"],
                     }
                     return ans;
                 };
+                this.getTopologies = function(){
+                    var ans=[];
+                    map_(this.children,function(child){
+                        if(child.isTopology){
+                            ans.push(child);
+                        }
+                    });
+                    return ans;
+                }
                 //Return the number of visible nodes in the subtree rooted at this;
                 this.visibleSize = function () {
                     var ans = 0;

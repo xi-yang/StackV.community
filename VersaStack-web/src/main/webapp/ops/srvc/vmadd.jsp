@@ -95,6 +95,7 @@
                                                 </tr> 
                                                 <tr>
                                                     <td>VPC ID</td>
+                                                    <td><input type="text" name="vpcID" required></td>
                                                     <td>
                                                     <select name="vpcID" required>
                                                             <option></option>
