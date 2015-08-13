@@ -274,7 +274,7 @@ public class OpenStackPush {
                             }
                         }
                         //update the client
-                        OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);//delete in the future
+                       
                         int i = 0;
                         //multiple subnet and nexthop create once a time, same concept of the router one
                         while (true) {
@@ -399,11 +399,13 @@ public class OpenStackPush {
                             String subid = subnet.getId();
                             for(Port p : client1.getPorts()){
                                 if(p.getDeviceId().equals(routerid)){
-                                    if(client1.getPortSubnetID(p).equals(subid)){
-                                        osClient.networking().router().detachInterface(routerid, subid, null);
-                                        i++;
+                                    for(String s : client1.getPortSubnetID(p)){
+                                        if(s.equals(subid)){
+                                          osClient.networking().router().detachInterface(routerid, subid, null);
+                                        i++;  
+                                        }
                                     }
-                                    j++;
+                                    
                                 }
                             }
                             
@@ -457,12 +459,14 @@ public class OpenStackPush {
                 }
             } else {
                 //1.1 make sure root topology has the newtork
+                
                 query = "SELECT ?cloud WHERE {?cloud nml:hasTopology <" + network.asResource() + ">}";
                 ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
                 if (!r1.hasNext()) {
                     throw new Exception(String.format("model addition does not specify the openStack-cloud that"
                             + "provides network : %s", network));
                 }
+                
                 //1.2 find the tag of the network
                 query = "SELECT ?tag {<" + network.asResource() + "> mrs:hasTag ?tag}";
                 r1 = executeQuery(query, emptyModel, modelDelta);
@@ -513,7 +517,8 @@ public class OpenStackPush {
         String query;
 
         //1 check if there is any subnet to create or delete
-        query = "SELECT ?subnet WHERE {?subnet a mrs:SwitchingSubnet}";
+        query = "SELECT ?service ?subnet WHERE {?service a mrs:SwitchingService ."
+                + "?service mrs:providesSubnet ?subnet}";
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
         // System.out.println(modelDelta.toString());
         while (r.hasNext()) {
@@ -843,7 +848,7 @@ public class OpenStackPush {
             //the ports will be attached during creation, not done by this method
             //here is an error
             query = "SELECT ?node WHERE {?node a nml:Node. FILTER(?node = <" + server.asResource() + ">)}";
-            System.out.println(query.toString());
+           // System.out.println(query.toString());
             ResultSet r1 = executeQuery(query, modelRef, emptyModel);
             Server s = null;
             if (r1.hasNext()) {
@@ -887,7 +892,7 @@ public class OpenStackPush {
                     requests.add(o);
                 } //1.4.2 port attachment will be deleted
                 else {
-                    if (p.getDeviceOwner() != null || !p.getDeviceOwner().isEmpty()) {
+                    if (p.getDeviceOwner() == null || p.getDeviceOwner().isEmpty()) {
                         throw new Exception(String.format("bidirectional port %s to be detached from instance %s is not"
                                 + " attached", port, serverName));
                     }
@@ -913,7 +918,8 @@ public class OpenStackPush {
         String query;
 
         //1 check for any operation involving a server
-        query = "SELECT ?server WHERE {?server a nml:Node}";
+        query = "SELECT ?server ?port WHERE {?server a nml:Node ."
+                + "?server nml:hasBidirectionalPort ?port}";
         ResultSet r = executeQuery(query, modelDelta, emptyModel);//here modified 
 
         while (r.hasNext()) {
