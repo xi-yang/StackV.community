@@ -388,10 +388,11 @@ public class OpenStackPush {
                 int j = 0;
                 while (true) {
 
-                    String key_sub = "subnet" + Integer.toString(i);
+                    
                     String key_router = "router" + Integer.toString(j);
-                    if (o.containsKey(key_router)) {
-                        while (o.containsKey(key_sub)) {
+                    
+                        String key_sub = "subnet" + Integer.toString(i);
+                        if (o.containsKey(key_sub)) {
                             Router r = client1.getRouter(o.get(key_router).toString());
                             String routerid = r.getId();
 
@@ -413,10 +414,12 @@ public class OpenStackPush {
                             //.detachInterface("routerId", "subnetId", null);
                             
                             
-                        } 
-                    } else {
-                        break;
-                    }
+                        }else{
+                            break;
+                        }
+                       
+                    
+                    
                 }
             }
 
