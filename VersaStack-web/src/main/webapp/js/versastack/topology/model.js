@@ -43,18 +43,25 @@ define([
          */
         this.init = function (mode,callback) {
             var request = new XMLHttpRequest();
-//          request.open("GET","/VersaStack-web/restapi/model/");
             if (mode === 1) {
-                request.open("GET", "/VersaStack-web/data/json/max-aws.json");
-            }
-            else if (mode === 2) {
+                //request.open("GET", "/VersaStack-web/data/json/max-aws.json");
                 request.open("GET", "/VersaStack-web/data/json/model-all-hybrid.json");
             }
+            else if (mode === 2) {              
+                request.open("GET","/VersaStack-web/restapi/model/");
+            }
+            
             console.log(mode);
             request.setRequestHeader("Accept", "application/json");
             request.onload = function () {
-                var data = request.responseText;
-                data = JSON.parse(data);
+                try {
+                    var data = request.responseText;
+                    data = JSON.parse(data);
+                }
+                catch (err) {
+                    console.log(err.message);
+                    return;
+                }
                 versionID=data.version;
                 map = JSON.parse(data.ttlModel);
 
@@ -273,10 +280,16 @@ define([
                             case values.hasTopology:
                                 var subNodes = node_[key];
                                 map_(subNodes, function (subNodeKey) {
+                                    var errorVal = subNodeKey.value;
                                     var subNode = that.nodeMap[subNodeKey.value];
-                                    subNode.isRoot = false;
-                                    node.children.push(subNode);
-                                    subNode._parent = node;
+                                    if (!subNode) {
+                                        //subnode is undefined
+                                        console.log("No subnode: " + errorVal)
+                                    } else {
+                                        subNode.isRoot = false;
+                                        node.children.push(subNode);
+                                        subNode._parent = node;
+                                    }
                                 });
                                 break;
                             case values.hasService:
@@ -287,7 +300,6 @@ define([
                                     if (!service) {
                                         //service is undefined
                                         console.log("No service: " + errorVal);
-
                                     } else {
                                         node.services.push(service);
                                     }
