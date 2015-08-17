@@ -41,12 +41,16 @@ define([
          * Initialize the model. This asyncronasly loads and parsed the model from the backend.
          * @returns {undefined}
          */
-        this.init = function (callback) {
+        this.init = function (mode,callback) {
             var request = new XMLHttpRequest();
-//         request.open("GET","/VersaStack-web/restapi/model/");
-            request.open("GET", "/VersaStack-web/data/json/max-aws.json");
-//        request.open("GET", "/VersaStack-web/data/graph-full.json");
-
+//          request.open("GET","/VersaStack-web/restapi/model/");
+            if (mode === 1) {
+                request.open("GET", "/VersaStack-web/data/json/max-aws.json");
+            }
+            else if (mode === 2) {
+                request.open("GET", "/VersaStack-web/data/json/model-all-hybrid.json");
+            }
+            console.log(mode);
             request.setRequestHeader("Accept", "application/json");
             request.onload = function () {
                 var data = request.responseText;
@@ -278,10 +282,11 @@ define([
                             case values.hasService:
                                 var services = node_[values.hasService];
                                 map_(services, function (service) {
+                                    var errorVal = service.value;
                                     service = that.serviceMap[service.value];
                                     if (!service) {
                                         //service is undefined
-                                        console.log("No service: " + service.value);
+                                        console.log("No service: " + errorVal);
 
                                     } else {
                                         node.services.push(service);
