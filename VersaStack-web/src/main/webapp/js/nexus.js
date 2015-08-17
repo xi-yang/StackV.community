@@ -1,7 +1,11 @@
-//## Service JavaScript Library
+
+// Service JavaScript Library
+
+
 
 
 // Page Load Function
+
 $(function () {
     $("#nav").load("/VersaStack-web/navbar.html");
 
@@ -38,8 +42,7 @@ $(function () {
     });
 });
 
-
-// Select Functions
+//Select Function
 function aclSelect(sel) {
     $ref = "privileges.jsp?id=" + sel.value + " #acl-tables";
     $("#acl-tables").load($ref);
@@ -52,7 +55,10 @@ function installSelect(sel) {
     }
     else {
         $ref = "/VersaStack-web/ops/srvc/driver.jsp #service-menu";
-        $ref2 = "/VersaStack-web/ops/srvc/driver.jsp #service-fields";
+
+        $ref2 = "/VersaStack-web/ops/srvc/driver.jsp #service-fields";   
+
+        
     }
     $("#service-top").load($ref);
     $("#service-bottom").load($ref2);
@@ -66,6 +72,7 @@ function viewmodeSelect(sel) {
     else {
         $ref = "/VersaStack-web/ops/srvc/viewcreate.jsp #service-menu";
         $ref2 = "/VersaStack-web/ops/srvc/viewcreate.jsp #service-fields";
+
     }
     $("#service-top").load($ref);
     $("#service-bottom").load($ref2);
@@ -75,33 +82,38 @@ function driverSelect(sel) {
     if (sel.value !== null) {
         $ref = "/VersaStack-web/ops/srvc/driver.jsp?form_install=install&driver_id=" + sel.value + " #service-fields";
     }
+
+
     else
         $ref = "/VersaStack-web/ops/srvc/driver.jsp?form_install=install #service-fields";
     $("#service-bottom").load($ref);
+
 
     fieldCounter = 0;
 }
 
 function topoSelect(sel) {
     if (sel.value !== null) {
-        if (sel.value.indexOf("aws") > -1) {
-            $ref = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=aws&topo=" + sel.value + " #service-fields";
-        }
-        else if (sel.value.indexOf("openstack") > -1) {
-            $ref = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=os #service-fields";
-        }
-        else if (sel.value.indexOf("versa") > -1) {
-            $ref = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=vs #service-fields";
-        }
-        else {
-            $ref = "/VersaStack-web/ops/srvc/vmadd.jsp #service-fields";
-        }
-    }
-    else
-        $ref = "/VersaStack-web/ops/srvc/vmadd.jsp #service-fields";
 
+           if (sel.value.indexOf("aws") > -1) {
+               $ref = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=aws&topo=" + sel.value + " #service-fields";
+           }
+           else if (sel.value.indexOf("openstack") > -1) {
+               $ref = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=os #service-fields";
+           }
+           else if (sel.value.indexOf("versa") > -1) {
+               $ref = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=vs #service-fields";
+           }
+           else {
+               $ref = "/VersaStack-web/ops/srvc/vmadd.jsp #service-fields";
+           }
+    }
+    else $ref = "/VersaStack-web/ops/srvc/vmadd.jsp #service-fields";
+    
     $("#service-bottom").load($ref);
 }
+
+
 
 function instanceSelect(sel) {
     if (sel.value !== null) {
@@ -142,6 +154,7 @@ function addPropField() {
                 + (fieldCounter) + '" placeholder="Additional Property Value" size="30" />';
 
     }
+
 }
 
 var volumeCounter = 0;
@@ -203,6 +216,7 @@ function applySelTemplate(name) {
 
 
 // Utility Functions
+
 
 function clearCounters() {
     volumeCounter = 0;

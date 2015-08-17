@@ -32,6 +32,7 @@ public class VMServlet extends HttpServlet {
         if (request.getParameter("search") != null) {
 
         } // VM installation
+
         else if (request.getParameter("install") != null) {
             HashMap<String, String> paramMap = new HashMap<>();
             Enumeration paramNames = request.getParameterNames();
