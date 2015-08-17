@@ -71,7 +71,7 @@
                         function (m, l, r, d3_, utils_, tree) {
                             ModelConstructor = m;
                             model = new ModelConstructor();
-                            model.init(drawGraph);
+                            model.init(1,drawGraph);
                             layout = l;
                             render = r;
                             d3 = d3_;
@@ -99,9 +99,9 @@
             }
             function reload() {
                 var lockNodes = model.listNodes();
-                var posistionLocks = {};
+                //var posistionLocks = {};
                 model = new ModelConstructor(model);
-                model.init(function () {
+                model.init(2,function () {
                     var width = document.documentElement.clientWidth / outputApi.getZoom();
                     var height = document.documentElement.clientHeight / outputApi.getZoom();
                     //TODO, figure out why we need to call this twice
@@ -130,6 +130,11 @@
                     $("#awsButton").toggleClass("hide");
                     $("#cancelButton").toggleClass("hide");
 
+                    evt.preventDefault();
+                });
+                $("#refreshButton").click(function (evt) {
+                    reload();
+                    
                     evt.preventDefault();
                 });
             }
@@ -324,6 +329,7 @@
         <div id="nav">
         </div>
         <div id="displayPanel">
+            <button id="refreshButton">Refresh</button>
             <div id="displayName"></div>
             <div id="treeMenu"></div>
             <div id="actionMenu">

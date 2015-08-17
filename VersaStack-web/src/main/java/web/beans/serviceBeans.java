@@ -317,18 +317,11 @@ public class serviceBeans {
         return 0;
     }
     
-    // Given a Topology, return list of VM's that can be added under it.
+    // Create new model view from parameters and push to model.
     //TODO Fill skeleton and JavaDoc as appropriate
-    public ArrayList<String> VMSearchByTopology(String topoUri) {
-        return null;
-    }
-    
-    // Given a VM type, return list of topologies that can support it.
-    //TODO Fill skeleton and JavaDoc as appropriate
-    public ArrayList<String> VMSearchByType(String VMString) {
-        return null;
-    }
-    
+    public int createModelView() {
+        return -1;
+    }       
     
     // Utility Functions
     

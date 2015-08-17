@@ -58,6 +58,19 @@ function installSelect(sel) {
     $("#service-bottom").load($ref2);
 }
 
+function viewmodeSelect(sel) {
+    if (sel.value !== null) {
+        $ref = "/VersaStack-web/ops/srvc/viewcreate.jsp?mode=" + sel.value + " #service-menu";
+        $ref2 = "/VersaStack-web/ops/srvc/viewcreate.jsp?mode=" + sel.value + " #service-fields";
+    }
+    else {
+        $ref = "/VersaStack-web/ops/srvc/viewcreate.jsp #service-menu";
+        $ref2 = "/VersaStack-web/ops/srvc/viewcreate.jsp #service-fields";
+    }
+    $("#service-top").load($ref);
+    $("#service-bottom").load($ref2);
+}
+
 function driverSelect(sel) {
     if (sel.value !== null) {
         $ref = "/VersaStack-web/ops/srvc/driver.jsp?form_install=install&driver_id=" + sel.value + " #service-fields";
@@ -171,6 +184,23 @@ function addVolume() {
 
     }
 }
+
+function applyTextTemplate(name) {
+    var template = document.getElementById(name + "Temp");
+    var input = document.getElementById(name + "Input");
+    var output = document.getElementById("sparquery");
+    
+    output.value = template.value + input.value;
+}
+
+function applySelTemplate(name) {
+    var template = document.getElementById(name + "Temp");
+    var input = document.getElementById(name + "Input");
+    var output = document.getElementById("sparquery");
+    
+    output.value = template.value + input.options[input.selectedIndex].value;
+}
+
 
 // Utility Functions
 
