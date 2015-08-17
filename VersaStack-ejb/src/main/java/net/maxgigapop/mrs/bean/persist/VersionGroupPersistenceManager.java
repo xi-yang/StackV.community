@@ -66,6 +66,18 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                     newVi.addVersionGroup(vg);
             }
         }
+        for (DriverInstance di: ditMap.values()) {
+            if (!listDI.contains(di)) {
+                synchronized (di) {
+                    VersionItem newVi = di.getHeadVersionItem();
+                    if (newVi == null) {
+                        throw new EJBException(String.format("refreshToHead encounters null head versionItem in %s", di));
+                    }
+                    newVi.addVersionGroup(vg);
+                    newVG.addVersionItem(newVi);
+                }
+            }
+        }
         if (!doUpdatePersist)
             return newVG;
         if (needToUpdate) {
