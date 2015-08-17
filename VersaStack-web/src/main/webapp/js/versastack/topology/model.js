@@ -51,20 +51,18 @@ define([
                 request.open("GET","/VersaStack-web/restapi/model/");
             }
             
-            console.log(mode);
+            console.log("Mode: " + mode);
             request.setRequestHeader("Accept", "application/json");
-            request.onload = function () {
-                try {
-                    var data = request.responseText;
-                    data = JSON.parse(data);
-                }
-                catch (err) {
-                    console.log(err.message);
+            request.onload = function () {               
+                var data = request.responseText;
+                if (data.charAt(0) === '<') {                     
+                    window.alert("Empty Topology.");
                     return;
                 }
+                
+                data = JSON.parse(data);                                    
                 versionID=data.version;
                 map = JSON.parse(data.ttlModel);
-
 
                 if (INJECT) {
                     var newNode = {type: 'uri', value: 'FOO:1'};
