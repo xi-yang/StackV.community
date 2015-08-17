@@ -23,6 +23,7 @@ define(["local/versastack/topology/modelConstants"], function (values) {
         this.getNameBrief = function () {
             return this.getName().split(":").slice(-1).pop();
         };
+
         this.getType = function () {
             return "Subnet";
         }

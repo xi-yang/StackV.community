@@ -65,6 +65,7 @@ define([
                 versionID=data.version;
                 map = JSON.parse(data.ttlModel);
 
+
                 if (INJECT) {
                     var newNode = {type: 'uri', value: 'FOO:1'};
                     map["urn:ogf:network:sdn.maxgigapop.net:network"][values.hasNode].push(newNode);
@@ -72,6 +73,7 @@ define([
                     map[newNode.value][values.type] = [{type: 'uri', value: values.namedIndividual}, {type: 'uri', value: values.node}];
                 }
 //            map=data;
+
 
                 /*
                  * We begin by extracting all nodes/topologies
@@ -234,7 +236,6 @@ define([
                 for (var key in that.subnetMap) {
                     var subnet = that.subnetMap[key];
                     var subnet_ = subnet._backing;
-
                     for (var key in subnet_) {
                         switch (key) {
                             case "name":
@@ -327,7 +328,6 @@ define([
                     if (node.isRoot) {
                         rootNodes.push(node);
                     }
-
                 }
                 callback();
             };
@@ -345,7 +345,6 @@ define([
             });
             return ans;
         };
-
         this.listEdges = function () {
             var ans = [];
             map_(rootNodes, /**@param {Node} node**/function (node) {
@@ -357,6 +356,8 @@ define([
             });
             return ans;
         };
+
+
 
         /**Begin debug functions**/
         this.listNodesPretty = function () {

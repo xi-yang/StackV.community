@@ -82,8 +82,6 @@
                             outputApi = new outputApi_();
                         });
                 buttonInit();
-
-
             }
             function drawGraph() {
                 var width = document.documentElement.clientWidth / settings.INIT_ZOOM;
@@ -171,6 +169,8 @@
                 };
 
 
+
+
                 var zoomFactor = settings.INIT_ZOOM;
                 var offsetX = 0, offsetY = 0;
                 this.zoom = function (amount, mouseX, mouseY) {
@@ -236,6 +236,7 @@
                 this.setHoverVisible = function (vis) {
                     document.getElementById("hoverdiv").style.visibility = vis ? "visible" : "hidden";
                 };
+
 
                 var svg = document.getElementById("viz");
                 svg.addEventListener("mousewheel", function (e) {
