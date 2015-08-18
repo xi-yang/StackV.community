@@ -1160,7 +1160,7 @@ public class OpenStackPush {
             RDFNode routeResource = q.get("route");
             RDFNode nextHopResource = q.get("nextHop");
             RDFNode routeToResource = q.get("routeTo");
-            while (!nextHopResource.toString().equals("local")) {
+            if (!nextHopResource.toString().equals("local")) {
 
             //1.1 check that the route was model correctly
                 //1.1.1 make sure that service provides the route
@@ -1227,13 +1227,13 @@ public class OpenStackPush {
                     throw new Exception(String.format("routeTo %s for route %s is "
                             + "malformed", routeToResource, routeResource));
                 }
-                while (r1.hasNext()) {
+                //while (r1.hasNext()) {
                     q1 = r1.next();
                     RDFNode routetosubnet = q1.get("subnet");
                     String routeTosubnet = routetosubnet.toString();
                     String subnetname = getresourcename(routeTosubnet, "+", "");
                     routetoName.add(subnetname);
-                }
+                //}
                 //next hop information
                 query = "SELECT ?type ?value WHERE {<" + nextHopResource + "> a mrs:NetworkAddress ."
                         + "<" + nextHopResource + "> mrs:type ?type ."
@@ -1245,13 +1245,13 @@ public class OpenStackPush {
                             + "malformed", nextHopResource, routeResource));
                 }
 
-                while (r1.hasNext()) {
+                //while (r1.hasNext()) {
 
                     q1 = r1.next();
                     RDFNode nextHoptype = q1.get("type");
                     String nextHopvalue = q1.get("value").toString();
                     nextHopV.add(nextHopvalue);
-                }
+                //}
                 //2 find if there is a routeFrom statement in the route 
                 query = "SELECT ?routeFrom WHERE{<" + routeResource.asResource() + "> mrs:routeFrom ?routeFrom}";
                 r1 = executeQuery(query, emptyModel, modelDelta);
@@ -1341,12 +1341,14 @@ public class OpenStackPush {
 
                 }
 
+            
+            
             }
-            requests.add(o);
+        }
+        requests.add(o);
             if (o.size() == 0) {
                 requests.remove(o);
             }
-        }
         return requests;
     }
 
