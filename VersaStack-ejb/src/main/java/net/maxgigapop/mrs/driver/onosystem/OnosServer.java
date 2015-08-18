@@ -33,6 +33,8 @@ public class OnosServer {
     public int qtyLinks=0;
     public int qtyHosts=0;
     public int qtyPorts=0;
+    public int qtyFlows=0;
+    
     private static final Logger logger = Logger.getLogger(OnosRESTDriver.class.getName());
 
     //pull Devices data
@@ -269,6 +271,81 @@ public class OnosServer {
          return(hosts);
     }   
 
+
+    //pull Device Ports Data
+    public String[][] getOnosDeviceFlows(String subsystemBaseUrl, String devId) throws MalformedURLException, IOException, ParseException {
+        qtyFlows=0;
+        
+        URL urlDevFlow = new URL(subsystemBaseUrl+"/flows/"+devId);
+        HttpURLConnection connDevFlow = (HttpURLConnection) urlDevFlow.openConnection();
+        String responseStrDevFlow = this.executeHttpMethod(urlDevFlow, connDevFlow, "GET", null);
+        responseStrDevFlow=responseStrDevFlow.replaceAll("\\}","\n\\}");
+        responseStrDevFlow=responseStrDevFlow.replaceAll("(\\[|\\]|\\{|\\}|\\},)","$1\n");
+        responseStrDevFlow=responseStrDevFlow.replaceAll(",\"",",\n\"");
+        responseStrDevFlow=responseStrDevFlow.replaceAll("\"\\}", "\"\n\\}");
+        responseStrDevFlow=responseStrDevFlow.replaceAll("\\}\n,","\\},");
+        responseStrDevFlow=responseStrDevFlow.replaceAll("\\]\n,","\\],");
+        responseStrDevFlow=responseStrDevFlow.replaceAll("\\},\\{","\\},\n\\{");
+        int auxcount=0;
+        
+        int realSize=responseStrDevFlow.split("\n").length;
+        
+        String deviceFlowsArray[]=new String[realSize];
+        deviceFlowsArray=responseStrDevFlow.split("\n");
+        for(int i=0;i<realSize;i++){
+            if(deviceFlowsArray[i].matches("(.*)\"id\":(.*)")){
+               qtyFlows++; 
+            }
+        }
+        String deviceFlows[][]=new String[9][qtyFlows];
+        int j=0;
+        
+        for(int i=0;i<realSize;i++){
+            if(deviceFlowsArray[i].matches("(.*)\"id\":(.*)")){
+                auxcount=1;
+                deviceFlows[0][j]="";
+                deviceFlows[1][j]="";
+                deviceFlows[2][j]="";
+                deviceFlows[3][j]="";
+                deviceFlows[4][j]="";
+                deviceFlows[5][j]="";
+                deviceFlows[6][j]="";
+                deviceFlows[7][j]="-1";
+                deviceFlows[8][j]="-1";
+                deviceFlows[0][j]=deviceFlowsArray[i].split("\"id\":\"")[1];
+                deviceFlows[0][j]=deviceFlows[0][j].split("\"")[0];
+                j++;
+            }
+            else if(deviceFlowsArray[i].matches("(.*)\"groupId\":(.*)")){
+                deviceFlows[1][j-1]=deviceFlowsArray[i].split("\"groupId\":")[1];
+                deviceFlows[1][j-1]=deviceFlows[1][j-1].split(",")[0];
+            }
+            else if(deviceFlowsArray[i].matches("(.*)\"deviceId\":(.*)")){
+                deviceFlows[2][j-1]=deviceFlowsArray[i].split("\"deviceId\":\"")[1];
+                deviceFlows[2][j-1]=deviceFlows[2][j-1].split("\"")[0];
+            }
+            else if(deviceFlowsArray[i].matches("(.*)\"type\":\"OUTPUT\"(.*)")){
+                deviceFlows[3][j-1]=deviceFlowsArray[i+1].split("\"port\":")[1];
+            }   
+            else if(deviceFlowsArray[i].matches("(.*)\"type\":\"IN_PORT\"(.*)")){
+                deviceFlows[4][j-1]=deviceFlowsArray[i+1].split("\"port\":")[1];
+            }    
+            else if(deviceFlowsArray[i].matches("(.*)\"type\":\"ETH_DST\"(.*)")){
+                deviceFlows[5][j-1]=deviceFlowsArray[i+1].split("\"mac\":\"")[1];
+                deviceFlows[5][j-1]=deviceFlows[5][j-1].split("\"")[0];
+            }  
+            else if(deviceFlowsArray[i].matches("(.*)\"type\":\"ETH_SRC\"(.*)")){
+                deviceFlows[6][j-1]=deviceFlowsArray[i+1].split("\"mac\":\"")[1];
+                deviceFlows[6][j-1]=deviceFlows[6][j-1].split("\"")[0];
+            }   
+            
+        }
+         return(deviceFlows);
+    }   
+
+    
+    
+    
     //send GET to HTTP server and retrieve response
     public String executeHttpMethod(URL url, HttpURLConnection conn, String method, String body) throws IOException {
         conn.setRequestMethod(method);
