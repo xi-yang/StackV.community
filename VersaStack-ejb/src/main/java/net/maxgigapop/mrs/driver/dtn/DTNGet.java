@@ -204,8 +204,8 @@ public class DTNGet {
                 }
             }
             
-            if ( doc.getElementsByTagName("Transfers").getLength()!=0 ){
-                this.active_transfers = Long.parseLong(doc.getElementsByTagName("Transfers").item(0).getTextContent());
+            if ( doc.getElementsByTagName("Active_transfers").getLength()!=0 ){
+                this.active_transfers = Long.parseLong(doc.getElementsByTagName("Active_transfers").item(0).getTextContent());
             } 
             
             if ( doc.getElementsByTagName("CPU_usage").getLength()!=0 ){
