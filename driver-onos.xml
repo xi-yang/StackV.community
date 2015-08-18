@@ -1,0 +1,1 @@
+<driverInstance><properties><entry><key>topologyUri</key><value>urn:ogf:network:onos.maxgigapop.net:network</value></entry><entry><key>driverEjbPath</key><value>java:module/OnosRESTDriver</value></entry><entry><key>subsystemBaseUrl</key><value>http://127.0.0.1:8181/onos/v1</value></entry></properties></driverInstance>
