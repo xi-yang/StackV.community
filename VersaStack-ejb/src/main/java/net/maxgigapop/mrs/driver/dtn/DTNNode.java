@@ -19,7 +19,7 @@ public class DTNNode implements Serializable{
     private final String ip;
     private final String hostname;
     private int cpu;
-    private long mem;
+    private double mem;
     private List<NIC> nics;
     private String tcp_rbuff;
     private String tcp_wbuff;
@@ -34,7 +34,7 @@ public class DTNNode implements Serializable{
         this.cpu = cpu;
     }
     
-    public void setMemory(long mem){
+    public void setMemory(double mem){
         this.mem = mem;
     }
     
@@ -62,7 +62,7 @@ public class DTNNode implements Serializable{
         return this.cpu;
     }
     
-    public long getMemorySize(){
+    public double getMemorySize(){
         return this.mem;
     }
     

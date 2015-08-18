@@ -114,6 +114,8 @@ public class Mrs {
      
     public static final Resource ClusterNetworkService = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#ClusterNetworkService" );
     
+    public static final Resource FileSystem = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#FileSystem" );   
+    
     public static final Resource GenericCapabilityService = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#GenericCapabilityService" );
     
     public static final Resource HypervisorBypassInterfaceService = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#HypervisorBypassInterfaceService" );

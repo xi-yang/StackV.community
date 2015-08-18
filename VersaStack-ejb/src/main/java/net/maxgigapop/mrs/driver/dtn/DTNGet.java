@@ -7,13 +7,28 @@ package net.maxgigapop.mrs.driver.dtn;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+//import javax.xml.bind.JAXBContext;
+//import javax.xml.bind.JAXBException;
+//import javax.xml.bind.Marshaller;
+//import javax.xml.bind.Unmarshaller;
+//import org.globusonline.transfer;
+//import java.io.InputStream;
+//import com.jcraft.jsch.Channel;
+//import com.jcraft.jsch.ChannelExec;
+//import com.jcraft.jsch.JSch;
+//import com.jcraft.jsch.Session;
+//import java.io.BufferedReader;
+//import java.io.InputStreamReader;
+//import org.globus.myproxy.MyProxy;
 
 
 /**
@@ -25,20 +40,63 @@ public class DTNGet {
     private DTNNode dtn;
     private List<FileSystem> fileSystems;
     private String transfer_service_type;
-    private String transfer_service_conf;
+    private Map<String, String> transfer_service_conf = new HashMap<String, String>();
+    private long active_transfers;
+    private double cpu_usage;
     
     public DTNGet(String user_account, String access_key, String address){
         this.dtn = null;
         this.timestamp = null;
         this.transfer_service_type = null;
-        this.transfer_service_conf = null;
         this.fileSystems = new ArrayList<>();
-
         
         //todo:authentication and communication with script on dtns
         //Parse xml file
         Node tmpNode; Element tmpEle;
         try {
+//            String cmd = "endpoint-list";
+//            JSch jSch = new JSch();
+//            //Authenticate through Private Key File
+//            jSch.addIdentity("/home/xin/.ssh/xin-mcs",access_key);
+//                        //Give the user and dnsName
+//            Session session = jSch.getSession("fillall", "cli.globusonline.org", 22);
+//                        //Required if not a trusted host
+//            java.util.Properties config = new java.util.Properties(); 
+//            config.put("StrictHostKeyChecking", "no");
+//            session.setConfig(config);
+//            BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+//            System.out.println("Enter the password: ");
+//            String password = br.readLine();
+//            session.setPassword(password);
+            
+//            session.connect();
+//
+//            System.out.println("Connected");
+//             
+//            Channel channel=session.openChannel("exec");
+//            ((ChannelExec)channel).setCommand(cmd);
+//            channel.setInputStream(null);
+//            ((ChannelExec)channel).setErrStream(System.err);
+//             
+//            InputStream in=channel.getInputStream();
+//            channel.connect();
+//            String out = null;
+//            byte[] tmp=new byte[1024];
+//            while(true){
+//              while(in.available()>0){
+//                int i=in.read(tmp, 0, 1024);
+//                if(i<0)break;
+//                out = new String(tmp, 0, i);
+//              }
+//              if(channel.isClosed()){
+//                break;
+//              }
+//              try{Thread.sleep(1000);}catch(Exception ee){}
+//            }
+//            channel.disconnect();
+//            session.disconnect();
+//            System.out.println("DONE");
+
             File inputFile = new File("/home/xin/Dropbox/RAINS/DTN_Driver/conf_files/dtn-"+address+".xml");
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
@@ -61,7 +119,7 @@ public class DTNGet {
                     
                     int cpu = Integer.parseInt(dtnNode.getElementsByTagName("CPU").item(0).getTextContent());
                     this.dtn.setCPU(cpu);
-                    long memory = Long.parseLong(dtnNode.getElementsByTagName("Memory_kB").item(0).getTextContent());
+                    double memory = Double.parseDouble(dtnNode.getElementsByTagName("Memory_kB").item(0).getTextContent())/1024.0;
                     this.dtn.setMemory(memory);
                     
                     //Get NICs
@@ -106,7 +164,11 @@ public class DTNGet {
                         if (tmpNode.getNodeType()==Node.ELEMENT_NODE){
                             Element transfer_conf = (Element) tmpNode;
                             this.transfer_service_type = transfer_conf.getElementsByTagName("Service_type").item(0).getTextContent(); 
-                            this.transfer_service_conf = transfer_conf.getElementsByTagName("Value").item(0).getTextContent();
+                            NodeList childNodes = transfer_conf.getChildNodes();
+                            for (int i = 0; i < childNodes.getLength(); i++) {
+                                Node childNode = childNodes.item(i);
+                                this.transfer_service_conf.put(childNode.getNodeName(),childNode.getTextContent());
+                            }
                         }
                     }
                 }
@@ -129,18 +191,27 @@ public class DTNGet {
                                 
                                 String mountPoint = fs.getElementsByTagName("Mount_point").item(0).getTextContent();
                                 aFS.setMountPoint(mountPoint);
-                                long size = Long.parseLong(fs.getElementsByTagName("Capacity_kB").item(0)
-                                        .getTextContent());
+                                double size = Double.parseDouble(fs.getElementsByTagName("Capacity_kB").item(0)
+                                        .getTextContent())/1024.0/1024.0;
                                 aFS.setSize(size);
-                                long avail = Long.parseLong(fs.getElementsByTagName("Available_kB").item(0)
-                                        .getTextContent());
+                                double avail = Double.parseDouble(fs.getElementsByTagName("Available_kB").item(0)
+                                        .getTextContent())/1024.0/1024.0;
                                 aFS.setAvailableSize(avail);
                                 this.fileSystems.add(aFS);
                             }
                         }
                     }
                 }
-            }     
+            }
+            
+            if ( doc.getElementsByTagName("Transfers").getLength()!=0 ){
+                this.active_transfers = Long.parseLong(doc.getElementsByTagName("Transfers").item(0).getTextContent());
+            } 
+            
+            if ( doc.getElementsByTagName("CPU_usage").getLength()!=0 ){
+                this.cpu_usage = Double.parseDouble(doc.getElementsByTagName("CPU_usage").item(0).getTextContent());
+            }            
+            
         }catch(Exception e) {
             e.printStackTrace();
         }
@@ -162,7 +233,15 @@ public class DTNGet {
         return this.transfer_service_type;
     }
     
-    public String getTransferConf(){
+    public Map<String, String> getTransferConf(){
         return this.transfer_service_conf;
+    }
+    
+    public long getActiveTransfers(){
+        return this.active_transfers;
+    }
+    
+    public double getCPUload(){
+        return this.cpu_usage;
     }
 }

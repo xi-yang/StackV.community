@@ -17,8 +17,8 @@ import java.util.Objects;
 public class FileSystem implements Serializable{
     private final String deviceName;
     private final String type;
-    private long size_kB;
-    private long avail_kB;
+    private double size_gB;
+    private double avail_gB;
     private String mount_point;
     private long block_size;
     
@@ -27,12 +27,12 @@ public class FileSystem implements Serializable{
         this.type = type;
     }
     
-    public void setSize(long size) {
-        this.size_kB = size;
+    public void setSize(double size) {
+        this.size_gB = size;
     }
     
-    public void setAvailableSize(long size){
-        this.avail_kB = size;
+    public void setAvailableSize(double size){
+        this.avail_gB = size;
     }
     
     public void setMountPoint(String mount_point){
@@ -51,12 +51,12 @@ public class FileSystem implements Serializable{
         return this.deviceName;
     }
     
-    public long getSize(){
-        return this.size_kB;
+    public double getSize(){
+        return this.size_gB;
     }
     
-    public long getAvailableSize(){
-        return this.avail_kB;
+    public double getAvailableSize(){
+        return this.avail_gB;
     }
     
     public String getMountPoint(){
@@ -99,7 +99,7 @@ public class FileSystem implements Serializable{
         tmp += "Device="+this.deviceName;
         tmp += "|Type="+this.type;
         tmp += "|Mount_point="+this.mount_point;
-        tmp += "|Disk_capacity="+this.size_kB;
+        tmp += "|Disk_capacity="+this.size_gB;
         return tmp;
     }
 }
