@@ -6,13 +6,14 @@
 package net.maxgigapop.mrs.driver.onosystem;
 
 import com.hp.hpl.jena.ontology.OntModel;
+import com.hp.hpl.jena.ontology.Ontology;
 import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+//import java.util.ArrayList;
+//import java.util.List;
 import net.maxgigapop.mrs.common.*;
 import net.maxgigapop.mrs.driver.onosystem.OnosServer;
 import org.json.simple.parser.ParseException;
@@ -35,7 +36,6 @@ public class OnosModelBuilder {
 
         //create model object
         OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-
         //set all the model prefixes"
         
         model.setNsPrefix("rdfs", RdfOwl.getRdfsURI());
@@ -44,11 +44,15 @@ public class OnosModelBuilder {
         model.setNsPrefix("owl", RdfOwl.getOwlURI());
         model.setNsPrefix("nml", Nml.getURI());
         model.setNsPrefix("mrs", Mrs.getURI());
+<<<<<<< HEAD
         
         //add SRRG
         model.setNsPrefix("sna", Sna.getURI());
 
+=======
+>>>>>>> a5cd139c5d1c9966db3cf3da14793d933c1128f8
         //set the global properties
+        
         Property hasNode = Nml.hasNode;
         Property hasBidirectionalPort = Nml.hasBidirectionalPort;
         Property hasService = Nml.hasService;
@@ -72,6 +76,11 @@ public class OnosModelBuilder {
         Property hasTag = Mrs.hasTag;
         Property hasNetworkAddress = Mrs.hasNetworkAddress;
         Property providesRoutingTable = model.createProperty(model.getNsPrefixURI("mrs") + "providesRoutingTable");
+        Property hasFlow = Mrs.hasFlow;
+        Property providesFlowTable = Mrs.providesFlowTable;
+        Property providesFlow = Mrs.providesFlow;
+        Property flowMatch = Mrs.flowMatch;
+        Property flowAction = Mrs.flowAction;
         
         //set the global resources
         Resource route = Mrs.Route;
@@ -83,7 +92,6 @@ public class OnosModelBuilder {
         Resource volume = Mrs.Volume;
         Resource topology = Nml.Topology;
         Resource vlan = model.createResource("http://schemas.ogf.org/nml/2012/10/ethernet#vlan");
-
         Resource networkAddress = Mrs.NetworkAddress;
         Resource switchingSubnet = Mrs.SwitchingSubnet;
         Resource switchingService = Mrs.SwitchingService;
@@ -92,6 +100,11 @@ public class OnosModelBuilder {
         Resource onosTopology = RdfOwl.createResource(model, topologyURI, topology);
         Resource objectStorageService = Mrs.ObjectStorageService;
         Resource routingTable = Mrs.RoutingTable;
+        Resource openflowService = Mrs.OpenflowService;
+        Resource flowTable = Mrs.FlowTable;
+        Resource flow = Mrs.Flow;
+        Resource flowRule = Mrs.FlowRule;
+        
         
         //SRRG declare, only SRRG is included here currently
         Resource SRRG = Sna.SRRG;
@@ -118,20 +131,18 @@ public class OnosModelBuilder {
         for(int i=0;i<qtyDevices;i++){
             Resource resNode = RdfOwl.createResource(model,topologyURI+":"+device[0][i],node);
             if(device[1][i].equals("SWITCH") && device[2][i].equals("true")){
-                Resource resService = RdfOwl.createResource(model,topologyURI+":"+device[0][i]+":switching-service",switchingService);
-                model.add(model.createStatement(resNode, hasService, topologyURI+":"+device[0][i]+":switching-service"));
+                Resource resOpenFlow = RdfOwl.createResource(model,topologyURI+":"+device[0][i]+":openflow-service",openflowService);
+                model.add(model.createStatement(resNode, hasService, topologyURI+":"+device[0][i]+":openflow-service"));
                 
                 String devicePorts[][]=onos.getOnosDevicePorts(subsystemBaseUrl,device[0][i]);
                 int qtyPorts=onos.qtyPorts;
+                String deviceFlows[][]=onos.getOnosDeviceFlows(subsystemBaseUrl,device[0][i]);
+                int qtyFlows=onos.qtyFlows;
                 for(int j=0;j<qtyPorts;j++){
                     if(devicePorts[1][j].equals("true")){
                         Resource resPort = RdfOwl.createResource(model,topologyURI+":"+device[0][i]+":port-"+devicePorts[4][j],biPort);
                         model.add(model.createStatement(resNode,hasBidirectionalPort,resPort));
-                        model.add(model.createStatement(resService,hasBidirectionalPort,resPort));
-                        Resource resLabelGroup = RdfOwl.createResource(model,topologyURI+":"+device[0][i]+":port-"+devicePorts[4][j]+":labelGroup",Nml.LabelGroup);
-                        model.add(model.createStatement(resLabelGroup, Nml.labeltype, vlan));
-                        model.add(model.createStatement(resLabelGroup, value, ""));
-                        model.add(model.createStatement(resPort,Nml.hasLabelGroup,resLabelGroup));
+                        model.add(model.createStatement(resOpenFlow,hasBidirectionalPort,resPort));
                         
                         for(int k=0;k<qtyLinks;k++){
                             if(device[0][i].equals(links[1][k]) && devicePorts[0][j].equals(links[0][k])){
@@ -144,7 +155,45 @@ public class OnosModelBuilder {
                             }
                         }
                     }
-                } 
+                }
+                
+                
+                for(int j=0;j<qtyFlows;j++){
+                        Resource resFlowTable = RdfOwl.createResource(model,topologyURI+":"+device[0][i]+":openflow-service:flow-table-"+deviceFlows[1][j],flowTable);
+                        model.add(model.createStatement(resOpenFlow,providesFlowTable,resFlowTable));
+                        Resource resFlow = RdfOwl.createResource(model,topologyURI+":"+device[0][i]+":openflow-service:flow-table-"+deviceFlows[1][j]+":flow-"+deviceFlows[0][j],flow);
+                        model.add(model.createStatement(resFlowTable,providesFlow,resFlow));
+                        Resource resFlowRule0 = RdfOwl.createResource(model,topologyURI+":"+device[0][i]+":openflow-service:flow-table-"+deviceFlows[1][j]+":flow-"+deviceFlows[0][j]+":rule-match-0",flowRule);
+                        Resource resFlowRule1 = RdfOwl.createResource(model,topologyURI+":"+device[0][i]+":openflow-service:flow-table-"+deviceFlows[1][j]+":flow-"+deviceFlows[0][j]+":rule-match-1",flowRule);
+                        Resource resFlowRule2 = RdfOwl.createResource(model,topologyURI+":"+device[0][i]+":openflow-service:flow-table-"+deviceFlows[1][j]+":flow-"+deviceFlows[0][j]+":rule-match-2",flowRule);
+                        Resource resFlowRule3 = RdfOwl.createResource(model,topologyURI+":"+device[0][i]+":openflow-service:flow-table-"+deviceFlows[1][j]+":flow-"+deviceFlows[0][j]+":rule-match-3",flowRule);
+                        Resource resFlowRule4 = RdfOwl.createResource(model,topologyURI+":"+device[0][i]+":openflow-service:flow-table-"+deviceFlows[1][j]+":flow-"+deviceFlows[0][j]+":rule-match-4",flowRule);
+                        Resource resFlowAction = RdfOwl.createResource(model,topologyURI+":"+device[0][i]+":openflow-service:flow-table-"+deviceFlows[1][j]+":flow-"+deviceFlows[0][j]+":rule-action-0",flowRule);
+                        model.add(model.createStatement(resFlow,flowMatch,resFlowRule0));
+                        model.add(model.createStatement(resFlowRule0,type,"IN_PORT"));
+                        model.add(model.createStatement(resFlowRule0,value,deviceFlows[4][j]));
+                        
+                        model.add(model.createStatement(resFlow,flowMatch,resFlowRule1));
+                        model.add(model.createStatement(resFlowRule1,type,"ETH_SRC_MAC"));
+                        model.add(model.createStatement(resFlowRule1,value,deviceFlows[6][j]));
+                        
+                        model.add(model.createStatement(resFlow,flowMatch,resFlowRule2));
+                        model.add(model.createStatement(resFlowRule2,type,"ETH_DST_MAC"));
+                        model.add(model.createStatement(resFlowRule2,value,deviceFlows[5][j]));
+                        
+                        model.add(model.createStatement(resFlow,flowMatch,resFlowRule3));
+                        model.add(model.createStatement(resFlowRule3,type,"ETH_SRC_VLAN"));
+                        model.add(model.createStatement(resFlowRule3,value,deviceFlows[7][j]));
+                        
+                        model.add(model.createStatement(resFlow,flowMatch,resFlowRule4));
+                        model.add(model.createStatement(resFlowRule4,type,"ETH_DST_VLAN"));
+                        model.add(model.createStatement(resFlowRule4,value,deviceFlows[8][j]));
+                        
+                        model.add(model.createStatement(resFlow,flowAction,resFlowAction));
+                        model.add(model.createStatement(resFlowAction,type,"OUT_PORT"));
+                        model.add(model.createStatement(resFlowAction,value,deviceFlows[3][j]));
+                        
+                }
             }
             
         }
