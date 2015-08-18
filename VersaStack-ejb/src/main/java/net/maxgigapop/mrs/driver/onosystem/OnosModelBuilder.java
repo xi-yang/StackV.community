@@ -44,13 +44,11 @@ public class OnosModelBuilder {
         model.setNsPrefix("owl", RdfOwl.getOwlURI());
         model.setNsPrefix("nml", Nml.getURI());
         model.setNsPrefix("mrs", Mrs.getURI());
-<<<<<<< HEAD
+
         
         //add SRRG
         model.setNsPrefix("sna", Sna.getURI());
 
-=======
->>>>>>> a5cd139c5d1c9966db3cf3da14793d933c1128f8
         //set the global properties
         
         Property hasNode = Nml.hasNode;
