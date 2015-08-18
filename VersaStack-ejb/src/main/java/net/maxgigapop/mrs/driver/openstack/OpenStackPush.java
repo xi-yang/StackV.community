@@ -324,7 +324,7 @@ public class OpenStackPush {
                     if (sn.getName().equals(o.get("subnet name").toString())) {
                         subnet = sn;
                     }
-                    break;
+                    
                 }
                 if (subnet == null) {
                     throw new EJBException("unknown subnet:" + o.get("subnet name"));
