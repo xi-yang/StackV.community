@@ -44,6 +44,9 @@ public class OnosModelBuilder {
         model.setNsPrefix("owl", RdfOwl.getOwlURI());
         model.setNsPrefix("nml", Nml.getURI());
         model.setNsPrefix("mrs", Mrs.getURI());
+        
+        //add SRRG
+        model.setNsPrefix("sna", Sna.getURI());
 
         //set the global properties
         Property hasNode = Nml.hasNode;
@@ -89,6 +92,11 @@ public class OnosModelBuilder {
         Resource onosTopology = RdfOwl.createResource(model, topologyURI, topology);
         Resource objectStorageService = Mrs.ObjectStorageService;
         Resource routingTable = Mrs.RoutingTable;
+        
+        //SRRG declare, only SRRG is included here currently
+        Resource SRRG = Sna.SRRG;
+        Property severity = Sna.severity;
+        Property occurenceProbability = Sna.occurenceProbability;
         
         OnosServer onos = new OnosServer();
         String device[][] = onos.getOnosDevices(subsystemBaseUrl);
@@ -146,6 +154,30 @@ public class OnosModelBuilder {
             Resource resDstPort=RdfOwl.createResource(model,topologyURI+":"+links[4][i]+":port-"+links[5][i],biPort);
             model.add(model.createStatement(resSrcPort,Nml.isAlias,resDstPort));
         }
+        
+        //manually insert a SRRG object for testing in mininet
+        
+        Resource resSRRG = RdfOwl.createResource(model, topologyURI+":SRRG_sampleID", SRRG);
+        for (int i=0; i<qtyDevices; i++){
+            if(device[0][i].equals("of:0000000000000002")){
+                Resource resNode = RdfOwl.createResource(model, topologyURI+":"+device[0][i],node);
+                model.add(model.createStatement(resSRRG, hasNode, resNode));
+                
+                String devicePorts[][]=onos.getOnosDevicePorts(subsystemBaseUrl,device[0][i]);
+                int qtyPorts=onos.qtyPorts;
+                for(int j=0; j<qtyPorts; j++){
+                    if(devicePorts[1][j].equals("true")){
+                        Resource resPort = RdfOwl.createResource(model,topologyURI+":"+device[0][i]+":port-"+devicePorts[4][j],biPort);
+                        model.add(model.createStatement(resSRRG, hasBidirectionalPort, resPort));
+                    }
+                }
+            }
+        }
+        model.add(model.createStatement(resSRRG, severity, "5"));
+        model.add(model.createStatement(resSRRG, occurenceProbability, "0.5"));
+        
+        
+        
         //String links[][] = onos.getOnosLinks(subsystemBaseUrl);
         //int qtyLinks=onos.qtyLinks;
             
