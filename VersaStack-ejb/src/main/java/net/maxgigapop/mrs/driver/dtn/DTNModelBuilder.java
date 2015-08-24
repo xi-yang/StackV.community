@@ -62,14 +62,15 @@ public class DTNModelBuilder {
         //set the global data properties
         Property cpu = Mrs.num_core;
         Property memory_mb = Mrs.memory_mb;
-        Property link_type = model.createProperty(model.getNsPrefixURI("mrs") + "link_type");
-        Property link_capacity_Mbps = model.createProperty(model.getNsPrefixURI("mrs") + "link_capacity_Mbps");
-        Property fs_type = model.createProperty(model.getNsPrefixURI("mrs") + "file_system_type");
+        Property type = Mrs.type;
+        Property value = Nml.value;
+        Property values = Nml.values;
+        Property link_capacity_Mbps = Mrs.capacity;
         Property disk_cap = Mrs.disk_gb;
         Property disk_avail = model.createProperty(model.getNsPrefixURI("mrs") + "disk_free_gb");
         Property mount = model.createProperty(model.getNsPrefixURI("mrs") + "mount_point");
         Property active_transfers = model.createProperty(model.getNsPrefixURI("mrs") + "active_transfers");
-        Property cpu_usage  = model.createProperty(model.getNsPrefixURI("mrs") + "cpu_usage");
+        Property cpu_usage  = model.createProperty(model.getNsPrefixURI("mrs") + "measurement");
 
         //set the global resources
         Resource storageService = Mrs.StorageService;
@@ -84,6 +85,9 @@ public class DTNModelBuilder {
         Resource fileSystem = Mrs.FileSystem;
         Resource node = Nml.Node;
         Resource biPort = Nml.BidirectionalPort;
+        
+        //create resource for tcpport labels
+        Resource tcpport = model.createResource("http://schemas.ogf.org/mrs/2015/08/label/layer4#tcpport");
 
         Resource dtnTopology = RdfOwl.createResource(model, topologyURI, topology);
         
@@ -104,7 +108,7 @@ public class DTNModelBuilder {
                     model.add(model.createStatement(dtnTopology, hasNode, DTN_NODE));
                     //create CPU and memory information
                     model.addLiteral(DTN_NODE, cpu, conf.getDTNNode().getNumCPU());
-                    model.addLiteral(DTN_NODE, cpu_usage, conf.getCPUload());
+                    model.addLiteral(DTN_NODE, cpu_usage, ResourceFactory.createTypedLiteral("cpu_usage="+conf.getCPUload(),XSDDatatype.XSDstring));
                     model.addLiteral(DTN_NODE, memory_mb, conf.getDTNNode().getMemorySize());
                     
                     //create NIC information
@@ -113,7 +117,7 @@ public class DTNModelBuilder {
                             String nic_id = i.getNICid();
                             Resource NIC = RdfOwl.createResource(model, DTN_NODE.getURI()+":nic-"+nic_id, biPort);
                             model.add(model.createStatement(DTN_NODE, hasBidirectionalPort, NIC));
-                            model.addLiteral(NIC, link_type, ResourceFactory.createTypedLiteral(i.getLinkType(),XSDDatatype.XSDstring));
+                            model.addLiteral(NIC, type, ResourceFactory.createTypedLiteral(i.getLinkType(),XSDDatatype.XSDstring));
                             if (i.getLinkCapacity()!= 0L){
                                 model.addLiteral(NIC, link_capacity_Mbps, i.getLinkCapacity());
                             }
@@ -135,7 +139,7 @@ public class DTNModelBuilder {
                                     String fs_id = f.getDeviceName();
                                     Resource LOCALFS = RdfOwl.createResource(model, DTN_NODE.getURI()+":localfilesystem-"+fs_id, fileSystem);
                                     model.add(model.createStatement(DTN_NODE, hasFileSystem, LOCALFS));
-                                    model.addLiteral(LOCALFS, fs_type, ResourceFactory.createTypedLiteral(f.getType(),XSDDatatype.XSDstring));
+                                    model.addLiteral(LOCALFS, type, ResourceFactory.createTypedLiteral(f.getType(),XSDDatatype.XSDstring));
                                     model.addLiteral(LOCALFS, mount, ResourceFactory.createTypedLiteral(f.getMountPoint(),XSDDatatype.XSDstring));
                                     if (f.isBlockStorage()){
                                         Resource BLOCKSERVICE = RdfOwl.createResource(model, LOCALFS.getURI()+":blockstorageservice", blockStorageService);
@@ -169,13 +173,26 @@ public class DTNModelBuilder {
                     if (conf.getTransferServiceType()!=null){
                         Resource TRANSFERSERVICE = RdfOwl.createResource(model, DTN_NODE.getURI()+":datatransferservice-"+conf.getTransferServiceType(), dataTransferService);
                         model.add(model.createStatement(DTN_NODE, hasService, TRANSFERSERVICE));
-                        for(Map.Entry<String, String> entry : conf.getTransferConf().entrySet()){
-                            Property key = model.createProperty(model.getNsPrefixURI("mrs") + entry.getKey());
-                            String value = entry.getValue();
-                            model.addLiteral(TRANSFERSERVICE, key, ResourceFactory.createTypedLiteral(value,XSDDatatype.XSDstring));
-                        }
+                        Map<String, String> entries = conf.getTransferConf();
+//                        for(Map.Entry<String, String> entry : conf.getTransferConf().entrySet()){
+                            if (entries.containsKey("Service_type")){
+                                model.addLiteral(TRANSFERSERVICE, type, ResourceFactory.createTypedLiteral(entries.get("Service_type"),XSDDatatype.XSDstring));
+                            }
+                            if (entries.containsKey("Port")){
+                                Resource TCPPORT = RdfOwl.createResource(model, TRANSFERSERVICE.getURI() + ":port", Nml.Label);
+                                model.add(model.createStatement(TCPPORT, Nml.labeltype, tcpport));
+                                model.add(model.createStatement(TCPPORT, value, entries.get("Service_type")));
+                                model.add(model.createStatement(TRANSFERSERVICE, Nml.hasLabel, TCPPORT));
+                            }
+                            if (entries.containsKey("Port_range")){
+                                Resource PORT_RANGE = RdfOwl.createResource(model, TRANSFERSERVICE.getURI() + ":portrange", Nml.LabelGroup);
+                                model.add(model.createStatement(PORT_RANGE, Nml.labeltype, tcpport));
+                                model.add(model.createStatement(PORT_RANGE, values, entries.get("Port_range")));
+                                model.add(model.createStatement(TRANSFERSERVICE, Nml.hasLabel, PORT_RANGE));
+                            }
+                        
                         //add dynamic information
-                        model.addLiteral(DTN_NODE, active_transfers, conf.getActiveTransfers());
+                        model.addLiteral(TRANSFERSERVICE, active_transfers, conf.getActiveTransfers());
 
                         if (endpoint.length() > 0){
                             model.add(model.createStatement(TRANSFERSERVICE, hasService, CLUSTERSERVICE));
@@ -196,7 +213,7 @@ public class DTNModelBuilder {
                 String fs_id = pf.getMountPoint();
                 Resource PARALLELEFS = RdfOwl.createResource(model, topologyURI+":parallelfilesystem-"+fs_id, node);
                 model.add(model.createStatement(STORAGE_NODE, hasFileSystem, PARALLELEFS));
-                model.addLiteral(PARALLELEFS, fs_type, ResourceFactory.createTypedLiteral(pf.getType(),XSDDatatype.XSDstring));
+                model.addLiteral(PARALLELEFS, type, ResourceFactory.createTypedLiteral(pf.getType(),XSDDatatype.XSDstring));
                 model.addLiteral(PARALLELEFS, mount, ResourceFactory.createTypedLiteral(pf.getMountPoint(),XSDDatatype.XSDstring));
                 if (pf.isBlockStorage()){
                     Resource BLOCKSERVICE = RdfOwl.createResource(model, PARALLELEFS.getURI()+":blockstorageservice", blockStorageService);
