@@ -11,12 +11,23 @@ import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.FileNotFoundException;
 //import java.util.ArrayList;
 //import java.util.List;
 import net.maxgigapop.mrs.common.*;
 import net.maxgigapop.mrs.driver.onosystem.OnosServer;
+
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
+import org.json.simple.JSONArray;
 import org.json.simple.parser.ParseException;
+import org.json.simple.parser.JSONParser;
+
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 //TODO add the public ip address that an instance might have that is not an
 //elastic ip
 
@@ -108,6 +119,8 @@ public class OnosModelBuilder {
         Resource SRRG = Sna.SRRG;
         Property severity = Sna.severity;
         Property occurenceProbability = Sna.occurenceProbability;
+        
+        String SRRG_file = "/home/onos-versastack/NetBeansProjects/onos-driver/sample_srrg.json";
         
         OnosServer onos = new OnosServer();
         String device[][] = onos.getOnosDevices(subsystemBaseUrl);
@@ -202,8 +215,72 @@ public class OnosModelBuilder {
             model.add(model.createStatement(resSrcPort,Nml.isAlias,resDstPort));
         }
         
-        //manually insert a SRRG object for testing in mininet
         
+        //manully read from a SRRG json file 
+        try{
+            FileReader reader = new FileReader(SRRG_file);
+            JSONParser jsonParser = new JSONParser();
+            JSONObject jsonObject = (JSONObject) jsonParser.parse(reader);
+            
+            JSONArray f = (JSONArray) jsonObject.get("SRRG");
+            int srrg_num = f.size();
+            
+            for(int i=0; i<srrg_num; i++){
+                JSONObject t = (JSONObject) f.get(i);
+                String id = t.get("id").toString();
+                Resource resSRRG = RdfOwl.createResource(model, topologyURI+":"+id, SRRG);
+                
+                String severity_str = t.get("severity").toString();
+                String occurenceProbability_str = t.get("occurenceProbability").toString();
+                
+                String devices_str = t.get("devices").toString();
+                if(devices_str.equals("")){
+                    Resource resNode = RdfOwl.createResource(model, "", node);
+                    model.add(model.createStatement(resSRRG, hasNode, resNode));
+                }
+                else{
+                    List<String> devices_list = Arrays.asList(devices_str.split(","));
+                    int devices_list_size = devices_list.size();
+                    
+                    for(int j=0; j<devices_list_size; j++){
+                        Resource resNode = RdfOwl.createResource(model,topologyURI+":"+devices_list.get(j).toString() , node);
+                        model.add(model.createStatement(resSRRG, hasNode, resNode));
+                    }
+                }
+                
+                String ports_str = t.get("bidirectionalPorts").toString();
+                if(ports_str.equals("")){
+                    Resource resPort = RdfOwl.createResource(model, "", biPort);
+                    model.add(model.createStatement(resSRRG, hasBidirectionalPort, resPort));
+                }
+                else{
+                    List<String> ports_list = Arrays.asList(ports_str.split(","));
+                    int ports_list_size = ports_list.size();
+                    
+                    for(int j=0; j<ports_list_size; j++){
+                        Resource resPort = RdfOwl.createResource(model,topologyURI+":"+ports_list.get(j).toString() , biPort);
+                        model.add(model.createStatement(resSRRG, hasBidirectionalPort, resPort));
+                    }
+                }
+                
+                model.add(model.createStatement(resSRRG, severity, severity_str));
+                model.add(model.createStatement(resSRRG, occurenceProbability, occurenceProbability_str));
+                
+                
+            }
+            
+        }
+        catch (FileNotFoundException ex){
+            ex.printStackTrace();
+        }catch (IOException ex){
+            ex.printStackTrace();
+        }catch (NullPointerException ex){
+            ex.printStackTrace();
+        }
+        
+        
+        //manually insert a SRRG object for testing in mininet
+        /*
         Resource resSRRG = RdfOwl.createResource(model, topologyURI+":SRRG_sampleID", SRRG);
         for (int i=0; i<qtyDevices; i++){
             if(device[0][i].equals("of:0000000000000002")){
@@ -222,7 +299,7 @@ public class OnosModelBuilder {
         }
         model.add(model.createStatement(resSRRG, severity, "5"));
         model.add(model.createStatement(resSRRG, occurenceProbability, "0.5"));
-        
+        */
         
         
         //String links[][] = onos.getOnosLinks(subsystemBaseUrl);
