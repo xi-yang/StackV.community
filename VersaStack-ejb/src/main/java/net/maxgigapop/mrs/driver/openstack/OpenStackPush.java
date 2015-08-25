@@ -49,7 +49,7 @@ import org.openstack4j.openstack.storage.block.domain.CinderVolume;
 
 /**
  *
- * @author muzcategui
+ * @author muzcategui zwang126
  */
 /**
  * **********************************************************
@@ -318,13 +318,13 @@ public class OpenStackPush {
             } else if (o.get("request").toString().equals("CreateNetworkInterfaceRequest")) {
                 Port port = new NeutronPort();
                 OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
-                
+
                 Subnet subnet = null;
                 for (Subnet sn : client1.getSubnets()) {
                     if (sn.getName().equals(o.get("subnet name").toString())) {
                         subnet = sn;
                     }
-                    
+
                 }
                 if (subnet == null) {
                     throw new EJBException("unknown subnet:" + o.get("subnet name"));
@@ -341,6 +341,7 @@ public class OpenStackPush {
                 OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);//delete in the future
                 int i = 0;
                 int j = 0;
+                String routerid = null;
                 while (true) {
 
                     String key_router = "router" + Integer.toString(j);
@@ -348,7 +349,7 @@ public class OpenStackPush {
                     String key_sub = "subnet" + Integer.toString(i);
                     if (o.containsKey(key_sub)) {
                         Router r = client1.getRouter(o.get(key_router).toString());
-                        String routerid = r.getId();
+                        routerid = r.getId();
 
                         Subnet subnet = client1.getSubnet(o.get(key_sub).toString());
                         String subid = subnet.getId();
@@ -364,25 +365,39 @@ public class OpenStackPush {
                             }
                         }
 
-                         //os.networking().router()
+                        //os.networking().router()
                         //.detachInterface("routerId", "subnetId", null);
                     } else {
                         break;
                     }
-
+                    
                 }
+                ArrayList<Boolean> arr = new ArrayList<Boolean>();
+                    for (Port p : client1.getPorts()) {
+
+                        if (p.getDeviceId().equals(routerid)) {
+                            arr.add(Boolean.TRUE);
+                        } else {
+                            arr.add(Boolean.FALSE);
+                        }
+                    }
+                    if(!arr.contains(Boolean.TRUE)){
+                        osClient.networking().router().delete(routerid);
+
             }
 
         }
 
     }
 
-    /**
-     * *****************************************************************
-     * Function to create a Vpc from a modelRef
-     * /*****************************************************************
-     */
-    private List<JSONObject> networkRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws Exception {
+}
+
+/**
+ * *****************************************************************
+ * Function to create a Vpc from a modelRef
+ * /*****************************************************************
+ */
+private List<JSONObject> networkRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws Exception {
         List<JSONObject> requests = new ArrayList();
         String query;
 
