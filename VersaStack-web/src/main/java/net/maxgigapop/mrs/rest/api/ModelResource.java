@@ -63,7 +63,7 @@ public class ModelResource {
         ApiModelBase apiModelBase = new ApiModelBase();
         apiModelBase.setId(modelBase.getId());
         apiModelBase.setVersion(refUUID);
-        apiModelBase.setCreationTime(modelBase.getCreationTime());
+        apiModelBase.setCreationTime(ModelUtil.modelDateToString(modelBase.getCreationTime()));
         apiModelBase.setStatus(vg.getStatus());
         apiModelBase.setTtlModel(ModelUtil.marshalOntModel(modelBase.getOntModel()));
         return apiModelBase;
@@ -78,7 +78,7 @@ public class ModelResource {
         ApiModelBase apiModelBase = new ApiModelBase();
         apiModelBase.setId(modelBase.getId());
         apiModelBase.setVersion(refUUID);
-        apiModelBase.setCreationTime(modelBase.getCreationTime());
+        apiModelBase.setCreationTime(ModelUtil.modelDateToString(modelBase.getCreationTime()));
         apiModelBase.setStatus(vg.getStatus());        
         apiModelBase.setTtlModel(ModelUtil.marshalOntModelJson(modelBase.getOntModel()));
         return apiModelBase;
@@ -151,7 +151,7 @@ public class ModelResource {
         ApiModelBase apiModelBase = new ApiModelBase();
         apiModelBase.setVersion(refUUID);
         java.util.Date now = new java.util.Date();
-        apiModelBase.setCreationTime(new java.sql.Date(now.getTime()));
+        apiModelBase.setCreationTime(ModelUtil.modelDateToString(new java.sql.Date(now.getTime())));
         apiModelBase.setTtlModel(ModelUtil.marshalOntModel(ontModel));
         return apiModelBase;
     }
@@ -169,7 +169,7 @@ public class ModelResource {
         ApiModelBase apiModelBase = new ApiModelBase();
         apiModelBase.setVersion(refUUID);
         java.util.Date now = new java.util.Date();
-        apiModelBase.setCreationTime(new java.sql.Date(now.getTime()));
+        apiModelBase.setCreationTime(ModelUtil.modelDateToString(new java.sql.Date(now.getTime())));
         apiModelBase.setTtlModel(ModelUtil.marshalOntModelJson(ontModel));
         return apiModelBase;
     }
