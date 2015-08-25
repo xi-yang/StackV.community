@@ -128,10 +128,11 @@ public class OnosDriver implements IHandleDriverSystemCall {
             String topologyURI = driverInstance.getProperty("topologyUri");
             String driverEjbPath = driverInstance.getProperty("driverEjbPath");
             String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
+            String srrgFile = driverInstance.getProperty("srrg");
         //Regions region = Regions.fromName(r);
 
             //OntModel ontModel = OnosModelBuilder.createOntology(access_key_id, secret_access_key, region, topologyURI);
-            OntModel ontModel = OnosModelBuilder.createOntology(topologyURI,subsystemBaseUrl);
+            OntModel ontModel = OnosModelBuilder.createOntology(topologyURI,subsystemBaseUrl,srrgFile);
             if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();
                 dm.setCommitted(true);

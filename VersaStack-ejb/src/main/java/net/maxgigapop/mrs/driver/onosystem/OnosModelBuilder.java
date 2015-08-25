@@ -41,7 +41,7 @@ do not do a routeFrom statement for every route.*/
 public class OnosModelBuilder {
 
     //public static OntModel createOntology(String access_key_id, String secret_access_key, Regions region, String topologyURI) throws IOException {
-    public static OntModel createOntology(String topologyURI, String subsystemBaseUrl) throws IOException, ParseException {
+    public static OntModel createOntology(String topologyURI, String subsystemBaseUrl, String srrgFile) throws IOException, ParseException {
 
         //create model object
         OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
@@ -118,7 +118,7 @@ public class OnosModelBuilder {
         Property severity = Sna.severity;
         Property occurenceProbability = Sna.occurenceProbability;
         
-        String SRRG_file = "/home/onos-versastack/NetBeansProjects/onos-driver/sample_srrg.json";
+        //String SRRG_file = "/home/onos-versastack/NetBeansProjects/onos-driver/sample_srrg.json";
         
         OnosServer onos = new OnosServer();
         String device[][] = onos.getOnosDevices(subsystemBaseUrl);
@@ -216,9 +216,10 @@ public class OnosModelBuilder {
         
         //manully read from a SRRG json file 
         try{
-            FileReader reader = new FileReader(SRRG_file);
+            //FileReader reader = new FileReader(SRRG_file);
             JSONParser jsonParser = new JSONParser();
-            JSONObject jsonObject = (JSONObject) jsonParser.parse(reader);
+            JSONObject jsonObject = (JSONObject) jsonParser.parse(srrgFile);
+            //JSONObject jsonObject = (JSONObject) jsonParser.parse(reader);
             
             JSONArray f = (JSONArray) jsonObject.get("SRRG");
             int srrg_num = f.size();
@@ -268,11 +269,7 @@ public class OnosModelBuilder {
             }
             
         }
-        catch (FileNotFoundException ex){
-            ex.printStackTrace();
-        }catch (IOException ex){
-            ex.printStackTrace();
-        }catch (NullPointerException ex){
+        catch (NullPointerException ex){
             ex.printStackTrace();
         }
         

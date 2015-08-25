@@ -143,6 +143,7 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
             String topologyURI = driverInstance.getProperty("topologyUri");
             //Searches for subsystemBaseUrl in Driver Instance
             String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
+            String srrgFile = driverInstance.getProperty("srrg");
             
         if (subsystemBaseUrl == null) {
             throw new EJBException(String.format("%s has no property key=subsystemBaseUrl", driverInstance));
@@ -151,7 +152,7 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
             
         //    Regions region = Regions.fromName(r);
             //Creates an Ontology Model for ONOS Server
-            OntModel ontModel = OnosModelBuilder.createOntology(topologyURI,subsystemBaseUrl);
+            OntModel ontModel = OnosModelBuilder.createOntology(topologyURI,subsystemBaseUrl, srrgFile);
             
             
             
