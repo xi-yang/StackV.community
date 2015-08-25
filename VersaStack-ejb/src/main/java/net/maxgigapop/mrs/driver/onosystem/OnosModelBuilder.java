@@ -14,8 +14,6 @@ import com.hp.hpl.jena.rdf.model.Resource;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.FileNotFoundException;
-//import java.util.ArrayList;
-//import java.util.List;
 import net.maxgigapop.mrs.common.*;
 import net.maxgigapop.mrs.driver.onosystem.OnosServer;
 
