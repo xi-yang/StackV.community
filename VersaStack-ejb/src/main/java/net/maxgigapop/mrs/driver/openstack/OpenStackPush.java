@@ -188,9 +188,13 @@ public class OpenStackPush {
                 osClient.networking().subnet().create(subnet);
 
             } else if (o.get("request").toString().equals("DeleteSubnetRequest")) {
-                Subnet net = client.getSubnet(o.get("subnet name").toString());
+                Subnet net = client.getSubnet(o.get("name").toString());
                 osClient.networking().subnet().delete(net.getId());
-            } else if (o.get("request").toString().equals("RunInstanceRequest")) {
+            } else if(o.get("request").toString().equals("DeleteNetworkRequests")){
+                OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
+                Network network = client1.getNetwork(o.get("name").toString());
+                osClient.networking().network().delete(network.getId());
+            }else if (o.get("request").toString().equals("RunInstanceRequest")) {
                 ServerCreateBuilder builder = Builders.server()
                         .name(o.get("server name").toString())
                         .image("c9cc8be0-82de-490d-a5b4-a094a66e9b11")
