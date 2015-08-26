@@ -106,11 +106,12 @@ public class OnosModelBuilder {
         int qtyLinks=onos.qtyLinks;
         int qtyHosts=onos.qtyHosts;
         int qtyDevices=onos.qtyDevices;
+        
         for(int i=0;i<qtyDevices;i++){
             Resource resNode = RdfOwl.createResource(model,topologyURI+":"+device[0][i],node);
-            //model.add(model.createStatement(resNode, type, device[1][i]));
             model.add(model.createStatement(onosTopology,hasNode,resNode));
         }
+        
         for(int i=0;i<qtyHosts;i++){
                 Resource resNode = RdfOwl.createResource(model,topologyURI+":"+hosts[1][i],node);
                 model.add(model.createStatement(onosTopology,hasNode,resNode));

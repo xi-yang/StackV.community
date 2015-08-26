@@ -7,23 +7,16 @@ package net.maxgigapop.mrs.driver.onosystem;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import net.maxgigapop.mrs.driver.OnosRESTDriver;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.JSONValue;
-import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.apache.commons.codec.binary.Base64;
 /**
  *
  * @author muzcategui
@@ -41,6 +34,8 @@ public class OnosServer {
     public String[][] getOnosDevices(String subsystemBaseUrl) throws MalformedURLException, IOException, ParseException {
       
         URL url = new URL(subsystemBaseUrl+"/devices");
+        
+       
         
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         String responseStr = this.executeHttpMethod(url, conn, "GET", null);
@@ -349,6 +344,12 @@ public class OnosServer {
     //send GET to HTTP server and retrieve response
     public String executeHttpMethod(URL url, HttpURLConnection conn, String method, String body) throws IOException {
         conn.setRequestMethod(method);
+        String username="onos";
+        String password="rocks";
+        String userPassword=username+":"+password;
+        byte[] encoded=Base64.encodeBase64(userPassword.getBytes());
+        String stringEncoded=new String(encoded);
+        conn.setRequestProperty("Authorization", "Basic "+stringEncoded);
         conn.setRequestProperty("Content-type", "application/json");
         conn.setRequestProperty("Accept", "application/json");
         if (body != null && !body.isEmpty()) {

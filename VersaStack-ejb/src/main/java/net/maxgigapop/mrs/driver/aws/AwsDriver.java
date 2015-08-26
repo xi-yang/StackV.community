@@ -47,7 +47,7 @@ public class AwsDriver implements IHandleDriverSystemCall {
 
     Logger logger = Logger.getLogger(AwsDriver.class.getName());
 
-    /*@TransactionAttribute(TransactionAttributeType.REQUIRED)
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
 
@@ -76,7 +76,7 @@ public class AwsDriver implements IHandleDriverSystemCall {
         DriverInstancePersistenceManager.merge(driverInstance);
         Logger.getLogger(AwsDriver.class.getName()).log(Level.INFO, "AWS driver delta models succesfully propagated");
     }
-
+/*
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
     @Asynchronous
     @Override
@@ -122,7 +122,6 @@ public class AwsDriver implements IHandleDriverSystemCall {
             String topologyURI = driverInstance.getProperty("topologyUri");
             Regions region = Regions.fromName(r);
             OntModel ontModel = AwsModelBuilder.createOntology(access_key_id, secret_access_key, region, topologyURI);
-            
             
             if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();

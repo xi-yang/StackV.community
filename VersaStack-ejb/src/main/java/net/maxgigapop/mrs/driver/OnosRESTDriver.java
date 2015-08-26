@@ -16,6 +16,10 @@ import java.io.InputStreamReader;
 import static java.lang.Thread.sleep;
 import com.hp.hpl.jena.ontology.OntModel;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
@@ -28,10 +32,14 @@ import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.DriverModel;
+import net.maxgigapop.mrs.bean.DriverSystemDelta;
 import net.maxgigapop.mrs.bean.VersionItem;
+import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
+import net.maxgigapop.mrs.common.ModelUtil;
+import org.json.simple.JSONObject;
 /**
  *
  * @author xyang
@@ -43,10 +51,9 @@ import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 public class OnosRESTDriver implements IHandleDriverSystemCall{       
     private static final Logger logger = Logger.getLogger(OnosRESTDriver.class.getName());
 
-    @Override
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
-    /*public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
-        //driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
+    @Override
+    public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
         aDelta = (DriverSystemDelta)DeltaPersistenceManager.findById(aDelta.getId()); // refresh
         String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
         if (subsystemBaseUrl == null) {
@@ -55,7 +62,7 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
         VersionItem refVI = aDelta.getReferenceVersionItem();
         if (refVI == null) {
             throw new EJBException(String.format("%s has no referenceVersionItem", aDelta));
-        }
+        }/*
         try {
             // compose string body (delta) using JSONObject
             JSONObject deltaJSON = new JSONObject();
@@ -80,9 +87,9 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
             }
         } catch (Exception e) {
             throw new EJBException(String.format("propagateDelta failed for %s with %s due to exception (%s)", driverInstance, aDelta, e.getMessage()));
-        }
+        }*/
     }
-
+/*
     @Override
     @Asynchronous
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
@@ -154,7 +161,8 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
             OntModel ontModel = OnosModelBuilder.createOntology(topologyURI,subsystemBaseUrl);
             
             
-            
+        //System.out.println(driverInstance.getHeadVersionItem().toString());
+                
         if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();
                 dm.setCommitted(true);

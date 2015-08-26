@@ -46,7 +46,7 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
 public class StackSystemDriver implements IHandleDriverSystemCall{
     private static Map<DriverSystemDelta, SystemInstance> driverSystemSessionMap = new HashMap<DriverSystemDelta, SystemInstance>();
             
-    /*@Override
+    @Override
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
         //driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
@@ -72,7 +72,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
             throw new EJBException(String.format("propagateDelta failed for %s with %s due to exception (%s)", driverInstance, aDelta, e.getMessage()));
         }
     }
-
+/*
     @Override
     @Asynchronous
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
