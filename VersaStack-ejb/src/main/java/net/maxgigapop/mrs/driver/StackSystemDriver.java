@@ -41,6 +41,7 @@ import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Nml;
+import net.maxgigapop.mrs.common.RdfOwl;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
@@ -130,12 +131,12 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
         }
         // Step 2. query systemInstance
         boolean doPoll = true;
-        int maxNumPolls = 10; // timeout after 5 minutes -> ? make configurable
+        int maxNumPolls = 20; // timeout after 10 minutes -> ? make configurable
         while (doPoll && (maxNumPolls--) > 0) {
             try {
                 sleep(30000L); // poll every 30 seconds -> ? make configurable
                 // pull model from REST API
-                URL url = new URL(String.format("%s/delta/%s", subsystemBaseUrl, systemInstanceUUID));
+                URL url = new URL(String.format("%s/delta/%s/checkstatus", subsystemBaseUrl, systemInstanceUUID));
                 HttpURLConnection conn = (HttpURLConnection)url.openConnection();
                 String status = this.executeHttpMethod(url, conn, "GET", null);
                 if (status.toUpperCase().equals("SUCCESS")) {
@@ -150,6 +151,16 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
             }
         }        
         // Step 3. delete systemInstance
+        try {
+            URL url = new URL(String.format("%s/model/systeminstance/%s", subsystemBaseUrl, systemInstanceUUID));
+            HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            String status = this.executeHttpMethod(url, conn, "DELETE", null);
+            if (!status.toUpperCase().contains("SUCCESS")) {
+                throw new EJBException(String.format("%s failed to delete systeminstance %s", driverInstance, systemInstanceUUID));
+            }
+        } catch (IOException ex) {
+            throw new EJBException(String.format("%s failed to connect to subsystem with exception (%s)", driverInstance, ex));
+        }
         return new AsyncResult<>("SUCCESS");
     }
     // TODO: terminate or reuse sessions in driverSystemSessionMap after commit
@@ -228,7 +239,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
                         throw new EJBException(String.format("%s encounters conflicting sub-level topology with same URI: %s", driverInstance, stackTopologyUri));
                     }
                 }
-                Resource stackTopo = ontModel.createResource(stackTopologyUri);
+                Resource stackTopo = RdfOwl.createResource(ontModel, stackTopologyUri, Nml.Topology);
                 for (RDFNode subRootTopo: listTopo) {
                     ontModel.add(ontModel.createStatement(stackTopo, Nml.hasTopology, subRootTopo));
                 }
@@ -273,10 +284,9 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
                 wr.flush();
             }
         }
-        logger.log(Level.FINEST, "Sending {0} request to URL : {1}", new Object[]{method, url});
+        //logger.log(Level.FINEST, "Sending {0} request to URL : {1}", new Object[]{method, url});
         int responseCode = conn.getResponseCode();
-        logger.log(Level.FINEST, "Response Code : {0}", responseCode);
-
+        //logger.log(Level.FINEST, "Response Code : {0}", responseCode);
         StringBuilder responseStr;
         try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
             String inputLine;
