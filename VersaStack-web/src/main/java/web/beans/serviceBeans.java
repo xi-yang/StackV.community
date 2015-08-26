@@ -325,11 +325,51 @@ public class serviceBeans {
         return 0;
 
     }
-    
-    // Create new model view from parameters and push to model.
-    //TODO Fill and JavaDoc as appropriate
+
+    /**
+     * Create a customize model view based on the criteria user specifies.
+     * @param viewName The name of this filtered model
+     * @param filters A string array. Each string contains SPARQL description, 
+     * inclusive flag, subtreeRecursive flag, and suptreeRecursive flag, 
+     * concatenated by "\r\n".<br /><br /> 
+     * For example: CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o. ?s a nml:Topology.}\r\ntrue\r\nfalse\r\nfalse
+     * @return
+     * 0 - success.<br />
+     * 1 - Query error.<br />
+     */
     public int createModelView(String viewName, String[] filters) {
-        String vgUuid = this.getVersionGroupUUID();
+        String vgUuid = null;
+        //create a new version group.
+        try {
+            URL url = new URL(String.format("%s/model/", host));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            this.executeHttpMethod(url, connection, "GET", null);           
+        } catch (Exception e) {
+            return 3;//connection error
+        }
+
+        //retrieve the version group UUID from the database.
+        Connection rains_conn;
+        try {
+
+            Class.forName("com.mysql.jdbc.Driver").newInstance();
+            Properties rains_connectionProps = new Properties();
+            rains_connectionProps.put("user", rains_db_user);
+            rains_connectionProps.put("password", rains_db_pass);
+
+            rains_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/rainsdb",
+                    rains_connectionProps);
+
+            PreparedStatement prep = rains_conn.prepareStatement("SELECT * FROM version_group ORDER BY id DESC LIMIT 1");
+            ResultSet rs1 = prep.executeQuery();
+            while (rs1.next()) {
+                vgUuid = rs1.getString("refUuid");
+            }
+        } catch (SQLException | InstantiationException | IllegalAccessException | ClassNotFoundException ex) {
+            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        //construct the queryModelView object.
         String view = "<view><filters>";
         for (String filter : filters){
             String[] filterParam = filter.split("\r\n");
@@ -339,6 +379,8 @@ public class serviceBeans {
                     + "<suptreeRecursive>" + filterParam[3] + "</suptreeRecursive></filter>";
         }
         view += "</filters></view>";
+
+        //Send the request though API to back-end system.
         String result;
         try {
             URL url = new URL(String.format("%s/model/view/%s", host,vgUuid));
@@ -347,6 +389,8 @@ public class serviceBeans {
         } catch (Exception e) {
             return 1;//query error
         }
+        
+        //Store the filtered view in the HashMap with the name of the view to be the key.
         views.put(viewName, result);
         return 0;
     }       
@@ -389,28 +433,4 @@ public class serviceBeans {
         return responseStr.toString();
     }
     
-    private String getVersionGroupUUID(){
-        String vgUuid = null;
-        Connection rains_conn;
-        try {
-
-            Class.forName("com.mysql.jdbc.Driver").newInstance();
-            Properties rains_connectionProps = new Properties();
-            rains_connectionProps.put("user", rains_db_user);
-            rains_connectionProps.put("password", rains_db_pass);
-
-            rains_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/rainsdb",
-                    rains_connectionProps);
-
-            PreparedStatement prep = rains_conn.prepareStatement("SELECT * FROM version_group ORDER BY id DESC LIMIT 1");
-            ResultSet rs1 = prep.executeQuery();
-            while (rs1.next()) {
-                vgUuid = rs1.getString("refUuid");
-            }
-        } catch (SQLException | InstantiationException | IllegalAccessException | ClassNotFoundException ex) {
-            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return vgUuid;
-    }
-
 }
