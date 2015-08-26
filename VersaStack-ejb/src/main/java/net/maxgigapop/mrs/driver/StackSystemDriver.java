@@ -7,6 +7,8 @@
 package net.maxgigapop.mrs.driver;
 
 import com.hp.hpl.jena.ontology.OntModel;
+import com.hp.hpl.jena.rdf.model.RDFNode;
+import com.hp.hpl.jena.rdf.model.Resource;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -17,6 +19,7 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
@@ -37,6 +40,7 @@ import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.Nml;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
@@ -157,6 +161,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
         if (driverInstance == null) {
             throw new EJBException(String.format("pullModel cannot find driverInance(id=%d)", driverInstanceId));
         }
+        String stackTopologyUri = driverInstance.getProperty("topologyUri");
         String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
         if (subsystemBaseUrl == null) {
             throw new EJBException(String.format("%s has no property key=subsystemBaseUrl", driverInstance));
@@ -215,8 +220,18 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
                     return new AsyncResult<>("SUCCESS");
                 }
                 // create new driverDelta and versioItem
-                //@TODO: parse RDF/JSON
                 OntModel ontModel = ModelUtil.unmarshalOntModelJson(jsonModel);
+                // Alter the model to add stack root topology to contain sub-level driver topologies.
+                List<RDFNode> listTopo = ModelUtil.getTopologyList(ontModel);
+                for (RDFNode subRootTopo: listTopo) {
+                    if (subRootTopo.toString().equals(stackTopologyUri)) {
+                        throw new EJBException(String.format("%s encounters conflicting sub-level topology with same URI: %s", driverInstance, stackTopologyUri));
+                    }
+                }
+                Resource stackTopo = ontModel.createResource(stackTopologyUri);
+                for (RDFNode subRootTopo: listTopo) {
+                    ontModel.add(ontModel.createStatement(stackTopo, Nml.hasTopology, subRootTopo));
+                }
                 dm = new DriverModel();
                 dm.setCommitted(true);
                 dm.setOntModel(ontModel);

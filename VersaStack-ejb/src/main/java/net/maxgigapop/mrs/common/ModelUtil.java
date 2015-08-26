@@ -232,7 +232,7 @@ public class ModelUtil {
         return topoModelMap;
     }
     
-    private static List<RDFNode> getTopologyList(OntModel model) {
+    public static List<RDFNode> getTopologyList(OntModel model) {
         String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
                 "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
                 "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
