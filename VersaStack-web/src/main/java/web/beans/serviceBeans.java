@@ -12,6 +12,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
@@ -30,7 +31,9 @@ public class serviceBeans {
     String rains_db_user = "root";
     String rains_db_pass = "root";
     String host = "http://localhost:8080/VersaStack-web/restapi";
-
+    
+    private Map<String,String> views = new HashMap<String,String>() {};
+    
     public serviceBeans() {
 
     }
@@ -148,7 +151,6 @@ public class serviceBeans {
      * 2 - plugin error.<br />
      * 3 - connection error.<br />
      * 4 - parsing parameter error<br />
->>>>>>> 2f7f1d994d2da0cba3fd8de17c443a9bad67728f
      */
     public int vmInstall(Map<String, String> paraMap){
         String vgUuid = null;
@@ -325,9 +327,28 @@ public class serviceBeans {
     }
     
     // Create new model view from parameters and push to model.
-    //TODO Fill skeleton and JavaDoc as appropriate
-    public int createModelView() {
-        return -1;
+    //TODO Fill and JavaDoc as appropriate
+    public int createModelView(String viewName, String[] filters) {
+        String vgUuid = this.getVersionGroupUUID();
+        String view = "<view><filters>";
+        for (String filter : filters){
+            String[] filterParam = filter.split("\r\n");
+            view += "<filter><sparql>" + filterParam[0] + "</sparql>"
+                    + "<inclusive>" + filterParam[1] + "</inclusive>"
+                    + "<subtreeRecursive>" + filterParam[2] + "</subtreeRecursive>"
+                    + "<suptreeRecursive>" + filterParam[3] + "</suptreeRecursive></filter>";
+        }
+        view += "</filters></view>";
+        String result;
+        try {
+            URL url = new URL(String.format("%s/model/view/%s", host,vgUuid));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, connection, "POST", view);
+        } catch (Exception e) {
+            return 1;//query error
+        }
+        views.put(viewName, result);
+        return 0;
     }       
 
     
@@ -366,6 +387,30 @@ public class serviceBeans {
             }
         }
         return responseStr.toString();
+    }
+    
+    private String getVersionGroupUUID(){
+        String vgUuid = null;
+        Connection rains_conn;
+        try {
+
+            Class.forName("com.mysql.jdbc.Driver").newInstance();
+            Properties rains_connectionProps = new Properties();
+            rains_connectionProps.put("user", rains_db_user);
+            rains_connectionProps.put("password", rains_db_pass);
+
+            rains_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/rainsdb",
+                    rains_connectionProps);
+
+            PreparedStatement prep = rains_conn.prepareStatement("SELECT * FROM version_group ORDER BY id DESC LIMIT 1");
+            ResultSet rs1 = prep.executeQuery();
+            while (rs1.next()) {
+                vgUuid = rs1.getString("refUuid");
+            }
+        } catch (SQLException | InstantiationException | IllegalAccessException | ClassNotFoundException ex) {
+            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return vgUuid;
     }
 
 }
