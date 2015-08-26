@@ -44,7 +44,6 @@ import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
-import org.json.simple.parser.ParseException;
 
 /**
  *
@@ -198,7 +197,9 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
                     JSONObject responseJSON = (JSONObject) JSONValue.parseWithException(responseStr);
                     creationTime = responseJSON.get("creationTime").toString();
                     // if creationTime remains the same, skip update
-                    if (headVI.getModelRef().getCreationTime().equals(creationTime)) {
+                    Date dateCreationTime = ModelUtil.modelDateFromString(creationTime);
+                    Date dateCreationTimeLast = headVI.getModelRef().getCreationTime();
+                    if (dateCreationTime.equals(dateCreationTimeLast)) {
                         return new AsyncResult<String>("SUCCESS");
                     }
                     version = responseJSON.get("version").toString();
@@ -221,8 +222,10 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
                 }
             } catch (IOException ex) {
                 throw new EJBException(String.format("%s failed to connect to subsystem with exception (%s)", driverInstance, ex));
-            } catch (ParseException ex) {
-                throw new EJBException(String.format("%s failed to parse pulled information from subsystem with exception (%s)", driverInstance, ex));
+            } catch (org.json.simple.parser.ParseException ex) {
+                throw new EJBException(String.format("%s failed to parse pulled model in JSON format with exception (%s)", driverInstance, ex));
+            } catch (java.text.ParseException ex) {
+                throw new EJBException(String.format("%s failed to parse version datetime (%s)", driverInstance, creationTime));
             }
             VersionItem vi = null;
             DriverModel dm = null;
@@ -252,7 +255,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
                 vi.setDriverInstance(driverInstance);
                 VersionItemPersistenceManager.save(vi);
                 driverInstance.setHeadVersionItem(vi);
-                VersionItemPersistenceManager.save(vi);
+                DriverInstancePersistenceManager.merge(driverInstance);
             } catch (Exception e) {
                 try {
                     if (dm != null) {
