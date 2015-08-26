@@ -96,7 +96,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
             if (!status.toUpperCase().contains("SUCCESS")) {
                 throw new EJBException(String.format("%s failed to propagate %s", driverInstance, aDelta));
             }
-            driverInstance.putProperty("systemInstanceUUID", systemInstanceUUID);
+            driverInstance.putProperty("systemInstanceUUID:"+driverInstance.getId().toString()+aDelta.getId().toString(), systemInstanceUUID);
             DriverInstancePersistenceManager.merge(driverInstance);
         } catch (Exception e) {
             throw new EJBException(String.format("propagateDelta failed for %s with %s due to exception (%s)", driverInstance, aDelta, e.getMessage()));
@@ -114,10 +114,12 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
         if (subsystemBaseUrl == null) {
             throw new EJBException(String.format("%s has no property key=subsystemBaseUrl", driverInstance));
         }
-        String systemInstanceUUID = driverInstance.getProperty("systemInstanceUUID");
+        String systemInstanceUUID = driverInstance.getProperty("systemInstanceUUID:"+driverInstance.getId().toString()+aDelta.getId().toString());
         if (systemInstanceUUID == null) {
             throw new EJBException(String.format("%s has no property key=systemInstanceUUID as required for commit", driverInstance));
         }
+        driverInstance.getProperties().remove("systemInstanceUUID:"+driverInstance.getId().toString()+aDelta.getId().toString());
+        DriverInstancePersistenceManager.merge(driverInstance);
         // Step 1. commit to systemInstance
         try {
             URL url = new URL(String.format("%s/delta/%s/commit", subsystemBaseUrl, systemInstanceUUID));
@@ -225,11 +227,6 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
             VersionItem vi = null;
             DriverModel dm = null;
             try {
-                // check if this version has been pulled before
-                vi = VersionItemPersistenceManager.findByReferenceUUID(version);
-                if (vi != null) {
-                    return new AsyncResult<>("SUCCESS");
-                }
                 // create new driverDelta and versioItem
                 OntModel ontModel = ModelUtil.unmarshalOntModelJson(jsonModel);
                 // Alter the model to add stack root topology to contain sub-level driver topologies.

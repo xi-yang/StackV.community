@@ -477,7 +477,7 @@ public class ModelUtil {
     
     public static String modelDateToString(Date date) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-        return dateFormat.format(new Date()).toString();
+        return dateFormat.format(date).toString();
     }
     
     public static Date modelDateFromString(String str) throws ParseException {
