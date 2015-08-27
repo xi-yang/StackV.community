@@ -58,7 +58,7 @@ public class ViewServlet extends HttpServlet {
         }
         
         int retCode = servBean.createModelView(name, filters.toArray(new String[filters.size()]));
-        response.sendRedirect("/VersaStack-web/ops/srvc/vmadd.jsp?ret=" + retCode);
+        response.sendRedirect("/VersaStack-web/ops/srvc/viewcreate.jsp?ret=" + retCode);
     }
 
     /**

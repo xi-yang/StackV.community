@@ -1,3 +1,10 @@
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page errorPage = "/VersaStack-web/errorPage.jsp" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
+<jsp:setProperty name="user" property="*" />  
+<jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
+<jsp:setProperty name="serv" property="*" />  
 <!DOCTYPE html>
 <html style="width:100%; height: 100%">
     <head>
