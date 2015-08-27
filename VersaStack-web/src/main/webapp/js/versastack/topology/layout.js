@@ -50,7 +50,7 @@ define([
                 var choords = node.getCenterOfMass();
                 node.x = choords.x;
                 node.y = choords.y;
-            })
+            });
         });
         force.start();
         for (var i = 0; i < 100; i++) {

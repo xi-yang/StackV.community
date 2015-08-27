@@ -538,3 +538,7 @@ body {
     display: inline-block;
     margin-right: 10px;
 }
+
+#sparquery {
+    font-weight: bold;
+}

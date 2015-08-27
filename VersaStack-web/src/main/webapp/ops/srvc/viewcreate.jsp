@@ -75,11 +75,58 @@
                                 <form id="view-form" action="/VersaStack-web/ViewServlet" method="post">
                                     <!-- Management Form -->
                                     <c:if test="${param.mode != 'create'}">
-                                        Manage
+
                                     </c:if>
                                     <!-- Creation Form -->
                                     <c:if test="${param.mode == 'create'}">
-                                        <table class="management-table">
+                                        <!-- View Creation Table -->                                        
+
+                                        <table class="management-table" id="query-table">
+
+                                            <thead>
+                                                <tr>
+                                                    <th>View Name</th>
+                                                    <th>
+                                                        <span style="color:black">
+                                                            <input type="text" name="viewName" size="30" required />
+                                                        </span>
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>Queries</td>
+                                                    <td></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><input type="text" id="sparquery" name="sparquery1" size="70" /></td>
+                                                    <td>
+                                                        <div class="view-flag">
+                                                            <input type="checkbox" id="inc1" name="viewInclusive1"/>
+                                                            <label for="inc1">Inclusive</label>
+                                                        </div>
+                                                        <div class="view-flag">
+                                                            <input type="checkbox" id="sub1" name="subRecursive1"/>
+                                                            <label for="sub1">Subtree Rec.</label>
+                                                        </div>
+                                                        <div class="view-flag">
+                                                            <input type="checkbox" id="sup1" name="supRecursive1"/>
+                                                            <label for="sup1">Supertree Rec.</label>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td></td>
+                                                    <td>
+                                                        <input class="button-register" type="button" value="Add Query" onClick="addQuery()">
+                                                        <input class="button-register" name="create" type="submit" value="Submit" />
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+
+                                        <!-- Old Query Creation Table
+                                        <table class="management-table hide" id="query-table">
                                             <thead>
                                                 <tr>
                                                     <th>Query</th>
@@ -87,9 +134,8 @@
                                                         <span style="color:black">
                                                             <input type="text" id="sparquery" name="sparquery" size="70" />
                                                         </span>
-                                                    </th>
+                                                    </th>                                                    
                                                 </tr>
-
                                             </thead>
                                             <tbody>
                                                 <tr>
@@ -143,12 +189,29 @@
                                                 </tr>
                                                 <tr>
                                                     <td></td>
-                                                    <td>
-                                                        <input class="button-register" name="create" type="submit" value="Submit" />
-                                                    </td>
+                                                    <td><button class="button-service-apply" onClick="addQuery()">Add</button></td>
                                                 </tr>
                                             </tbody>
                                         </table>
+                                        <script type="text/javascript">
+                                            var json = localStorage.getItem('queryJSON');
+                                            if (json !== null) {
+                                                var arr = JSON.parse(json);
+
+                                                var arrayLength = arr.length;
+                                                console.log("Length: " + arrayLength);
+                                                var table = document.getElementById("view-table");
+                                                for (var i = 0; i < arrayLength; i++) {
+                                                    var row = table.insertRow(0);
+                                                    var cell1 = row.insertCell(0);
+                                                    var cell2 = row.insertCell(1);
+                                                    cell1.innerHTML = 'Query';
+                                                    cell2.innerHTML = arr[i];
+                                                    console.log("Element: " + arr[i]);
+                                                }
+                                            }
+                                        </script>
+                                        -->
                                     </c:if>
                                 </form>
                             </div>
@@ -172,7 +235,7 @@
                                 </c:when>
                             </c:choose>                        
 
-                            <br><a href="/VersaStack-web/ops/srvc/driver.jsp?self=true">(Un)Install Another Driver.</a>                                
+                            <br><a href="/VersaStack-web/ops/srvc/viewcreate.jsp?self=true">Return to Views.</a>                                
                             <br><a href="/VersaStack-web/ops/catalog.jsp">Return to Services.</a>
                             <br><a href="/VersaStack-web/orch/graphTest.html">Return to Graphic Orchestration.</a>
                         </div>
