@@ -31,9 +31,7 @@ public class serviceBeans {
     String rains_db_user = "root";
     String rains_db_pass = "root";
     String host = "http://localhost:8080/VersaStack-web/restapi";
-    
-    private Map<String,String> views = new HashMap<String,String>() {};
-    
+        
     public serviceBeans() {
 
     }
@@ -334,10 +332,10 @@ public class serviceBeans {
      * concatenated by "\r\n".<br /><br /> 
      * For example: CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o. ?s a nml:Topology.}\r\ntrue\r\nfalse\r\nfalse
      * @return
-     * 0 - success.<br />
-     * 1 - Query error.<br />
+     * A string contains the filtered model in json format if creating successfully,
+     * otherwise, a string contains the error message.
      */
-    public int createModelView(String viewName, String[] filters) {
+    public String createModelView(String[] filters) {
         String vgUuid = null;
         //create a new version group.
         try {
@@ -345,7 +343,7 @@ public class serviceBeans {
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             this.executeHttpMethod(url, connection, "GET", null);           
         } catch (Exception e) {
-            return 3;//connection error
+            return e.toString();//connection error
         }
 
         //retrieve the version group UUID from the database.
@@ -387,12 +385,10 @@ public class serviceBeans {
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, connection, "POST", view);
         } catch (Exception e) {
-            return 1;//query error
+            return e.toString();//query error
         }
         
-        //Store the filtered view in the HashMap with the name of the view to be the key.
-        views.put(viewName, result);
-        return 0;
+        return result;
     }       
 
     
