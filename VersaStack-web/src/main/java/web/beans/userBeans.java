@@ -11,9 +11,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.jena.atlas.json.JSON;
 
 public class userBeans {
 
@@ -32,6 +34,7 @@ public class userBeans {
     String active_usergroup = "";
     ArrayList<Integer> service_list = new ArrayList<>();
     ArrayList<Integer> group_list = new ArrayList<>();
+    HashMap<String, JSON> model_map = new HashMap<>();
 
     boolean loggedIn = false;
 

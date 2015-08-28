@@ -335,6 +335,18 @@
         <div id="nav">
         </div>
         
+        <div id="filterPanel">
+            <div>
+                <button class="button-filter-select" id="filter1"></button>
+            </div>
+            <div>
+                <button class="button-filter-select" id="filter2"></button>
+            </div>
+            <div>
+                <button class="button-filter-select" id="filter3"></button>
+            </div>
+        </div>
+        
         <div id="displayPanel">
             <button id="refreshButton">Refresh</button>
             <div id="displayName"></div>

@@ -9,6 +9,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import web.beans.userBeans;
 
 public class ViewServlet extends HttpServlet {
 
@@ -27,6 +28,7 @@ public class ViewServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         serviceBeans servBean = new serviceBeans();
+        userBeans user = (userBeans) request.getSession().getAttribute("user");
         List<String> filters =new ArrayList<>();
 
         String name = request.getParameter("viewName");
@@ -58,7 +60,7 @@ public class ViewServlet extends HttpServlet {
         }
         
         int retCode = servBean.createModelView(name, filters.toArray(new String[filters.size()]));
-        response.sendRedirect("/VersaStack-web/ops/srvc/viewcreate.jsp?ret=" + retCode);
+        response.sendRedirect("/VersaStack-web/ops/srvc/viewcreate.jsp?ret=3");
     }
 
     /**
