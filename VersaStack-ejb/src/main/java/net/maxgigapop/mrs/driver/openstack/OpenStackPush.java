@@ -377,6 +377,7 @@ public class OpenStackPush {
                     
                 }
                 ArrayList<Boolean> arr = new ArrayList<Boolean>();
+                OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
                     for (Port p : client1.getPorts()) {
 
                         if (p.getDeviceId().equals(routerid)) {
