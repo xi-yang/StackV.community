@@ -36,7 +36,7 @@ import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
-import net.maxgigapop.www.rains.ontmodel.Spa;
+import net.maxgigapop.mrs.common.Spa;
 
 /**
  *
@@ -54,7 +54,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             throw new EJBException(String.format("%s::process ", this.getClass().getName()));
         }
         try {
-            log.log(Level.FINE, "\n>>>MCE_VMFilterPlacement--DeltaAddModel Input=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
+            log.log(Level.INFO, "\n>>>MCE_VMFilterPlacement--DeltaAddModel Input=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -64,13 +64,14 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
                 "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
                 "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
                 "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" +
-                "SELECT ?vm ?policy ?data ?type ?value WHERE {"
+                "SELECT ?vm ?policy ?data ?dataType ?dataValue WHERE {"
                 + "?vm a nml:Node ."
                 + "?vm spa:dependOn ?policy . "
-                + "?policy a spa:Placement. "
+                + "?policy a spa:PolicyAction. "
+                + "?policy spa:type 'MCE_VMFilterPlacement'. "
                 + "?policy spa:importFrom ?data. "
-                + "?data spa:type ?type. ?data spa:value ?value. "
-                + "FILTER not exists {?policy spa:dependOn ?other} "
+                + "?data spa:type ?dataType. ?data spa:value ?dataValue. "
+                + "FILTER (not exists {?policy spa:dependOn ?other}) "
                 + "}";        
         Map<Resource, List> vmPolicyMap = new HashMap<>();
         Query query = QueryFactory.create(sparqlString);
@@ -85,8 +86,8 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             }
             Resource resPolicy = querySolution.get("policy").asResource();
             Resource resData = querySolution.get("data").asResource();
-            RDFNode nodeDataType = querySolution.get("type");
-            RDFNode nodeDataValue = querySolution.get("value");
+            RDFNode nodeDataType = querySolution.get("dataType");
+            RDFNode nodeDataValue = querySolution.get("dataValue");
             Map policyData = new HashMap<>();
             policyData.put("policy", resPolicy);
             policyData.put("data", resData);
@@ -98,7 +99,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
         ServiceDelta outputDelta = annotatedDelta.clone();
         
         for (Resource vm: vmPolicyMap.keySet()) {
-            //1. compute placement based on filter/match criteria *data*
+            //1. compute placement based on filter/match criteria *policyData*
             // returned placementModel contains the VM as well as hosting Node/Topology and HypervisorService from systemModel
             //$$ TODO: virtual node should be named and tagged using URI and/or polocy/criteria data in spaModel  
             OntModel placementModel = this.doPlacement(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), vm, vmPolicyMap.get(vm));
@@ -263,7 +264,8 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
                 + "?hvservice a mrs:HypervisorService . "
                 + String.format("?hvservice mrs:providesVM <%s> .", vm.getURI())
                 + String.format("<%s> spa:dependOn ?policyAction .", vm.getURI())
-                + "?policyAction a spa:Placement."
+                + "?policyAction a spa:PolicyAction. "
+                + "?policyAction spa:type 'MCE_VMFilterPlacement'. "
                 + "?policyAction spa:exportTo ?policyData . "
                 + "?policyData a spa:PolicyData . "
                 + "}";
@@ -301,8 +303,9 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
 
         String sparql = "SELECT ?anyOther ?policyAction WHERE {"
                 + String.format("<%s> spa:dependOn ?policyAction .", vm.getURI())
-                + "?policyAction a spa:Placement."
-                + "?anyOther spa:dependOn ?policyAction . "
+                + "?policyAction a spa:PolicyAction. "
+                + "?policyAction spa:type ?actionType. "
+                + "?anyOther spa:dependOn 'MCE_VMFilterPlacement' . "
                 + "?policyData a spa:PolicyData . "
                 + "}";
         ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);

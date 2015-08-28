@@ -32,7 +32,7 @@ import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
-import net.maxgigapop.www.rains.ontmodel.Spa;
+import net.maxgigapop.mrs.common.Spa;
 
 /**
  *
@@ -45,9 +45,9 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
     @Override
     @Asynchronous
     public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
-        log.log(Level.FINE, "MCE_InterfaceVlanStitching::process {0}", annotatedDelta);
+        log.log(Level.INFO, "MCE_InterfaceVlanStitching::process {0}", annotatedDelta);
         try {
-            log.log(Level.FINE, "\n>>>MCE_InterfaceVlanStitching--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
+            log.log(Level.INFO, "\n>>>MCE_InterfaceVlanStitching--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_InterfaceVlanStitching.class.getName()).log(Level.SEVERE, null, ex);
         }
