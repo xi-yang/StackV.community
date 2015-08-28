@@ -41,7 +41,7 @@ define([
          * Initialize the model. This asyncronasly loads and parsed the model from the backend.
          * @returns {undefined}
          */
-        this.init = function (mode,callback) {
+        this.init = function (mode,callback,model) {
             var request = new XMLHttpRequest();
             if (mode === 1) {
                 //request.open("GET", "/VersaStack-web/data/json/max-aws.json");
@@ -53,8 +53,11 @@ define([
             
             console.log("Mode: " + mode);
             request.setRequestHeader("Accept", "application/json");
-            request.onload = function () {               
-                var data = request.responseText;
+            request.onload = function () {
+                if (model === null) {
+                    var data = request.responseText;
+                } else var data = model;
+                
                 if (data.charAt(0) === '<') {                     
                     window.alert("Empty Topology.");
                     return;

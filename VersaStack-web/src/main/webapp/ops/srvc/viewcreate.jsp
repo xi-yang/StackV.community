@@ -75,7 +75,7 @@
                                 <form id="view-form" action="/VersaStack-web/ViewServlet" method="post">
                                     <!-- Management Form -->
                                     <c:if test="${param.mode != 'create'}">
-
+                                        ${user.printModels()}
                                     </c:if>
                                     <!-- Creation Form -->
                                     <c:if test="${param.mode == 'create'}">

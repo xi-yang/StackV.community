@@ -34,7 +34,7 @@ public class userBeans {
     String active_usergroup = "";
     ArrayList<Integer> service_list = new ArrayList<>();
     ArrayList<Integer> group_list = new ArrayList<>();
-    HashMap<String, JSON> model_map = new HashMap<>();
+    public HashMap<String, String> model_map = new HashMap<>();
 
     boolean loggedIn = false;
 
@@ -439,5 +439,9 @@ public class userBeans {
         while (rs1.next()) {
             service_list.add(rs1.getInt("service_id"));
         }
+    }
+    
+    public String printModels() {
+        return model_map.toString();
     }
 }
