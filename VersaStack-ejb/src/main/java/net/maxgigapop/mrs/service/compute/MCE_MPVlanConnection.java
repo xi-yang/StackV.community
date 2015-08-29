@@ -59,11 +59,12 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
         String sparql =  "SELECT ?link ?policy ?data ?type ?value WHERE {"
                 + "?link a nml:Link ."
                 + "?link spa:dependOn ?policy . "
-                + "?policy a spa:Connection. "
+                + "?policy a spa:PolicyAction. "
+                + "?policy spa:type 'MCE_MPVlanConnection'. "
                 + "?policy spa:importFrom ?data. "
                 + "?data spa:type ?type. ?data spa:value ?value. "
                 + "FILTER not exists {?policy spa:dependOn ?other} "
-                + "}";        
+                + "}";
 
         ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);
         Map<Resource, List> connPolicyMap = new HashMap<>();
@@ -102,7 +103,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             
             //4. remove policy and all related SPA statements receursively under link from spaModel
             //   and also remove all statements that say dependOn this 'policy'
-            this.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), resLink);
+            MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), resLink);
             
             //5. mark the Link as an Abstraction
             outputDelta.getModelAddition().getOntModel().add(outputDelta.getModelAddition().getOntModel().createStatement(resLink, RdfOwl.type, Spa.Abstraction));
@@ -176,9 +177,9 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
         // find Connection policy -> exportTo -> policyData
         String sparql = "SELECT ?policyAction ?policyData WHERE {"
                 + String.format("<%s> spa:dependOn ?policyAction .", resLink.getURI())
-                + "?policyAction a spa:Connection."
+                + "?policyAction a spa:PolicyAction. "
+                + "?policyAction spa:type 'MCE_MPVlanConnection'. "
                 + "?policyAction spa:exportTo ?policyData . "
-                + "?policyData a spa:PolicyData . "
                 + "}";
         ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
         List<QuerySolution> solutions = new ArrayList<>();
@@ -213,47 +214,11 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
                 + " ?bp nml:hasLabel ?vlan."
                 + " ?vlan nml:value ?tag."
                 + " ?vlan nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>}");
-        /*
-        try {
-            log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--getTerminalVlanLabels from Model=\n" + ModelUtil.marshalModel(model)
-                +"\n SPARQL=\n" + sparql) ;
-        } catch (Exception ex) {
-            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        */
         ResultSet r = ModelUtil.sparqlQuery(model, sparql);
         List<QuerySolution> solutions = new ArrayList<>();
         while (r.hasNext()) {
             solutions.add(r.next());
         }
         return solutions;
-    }
-    
-    // @TODO: make this an MCE common function
-    private void removeResolvedAnnotation(OntModel spaModel, Resource link) {
-        List<Statement> listStmtsToRemove = new ArrayList<>();
-        Resource resLink = spaModel.getResource(link.getURI());
-        ModelUtil.listRecursiveDownTree(resLink, Spa.getURI(), listStmtsToRemove);
-        if (listStmtsToRemove.isEmpty()) {
-            throw new EJBException(String.format("%s::process cannot remove SPA statements under %s", this.getClass().getName(), link));
-        }
-
-        String sparql = "SELECT ?anyOther ?policyAction WHERE {"
-                + String.format("<%s> spa:dependOn ?policyAction .", link.getURI())
-                + "?policyAction a spa:Connection."
-                + "?anyOther spa:dependOn ?policyAction . "
-                + "}";
-        ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
-        List<QuerySolution> solutions = new ArrayList<>();
-        while (r.hasNext()) {
-            solutions.add(r.next());
-        }
-
-        for (QuerySolution querySolution : solutions) {
-            Resource resAnyOther = querySolution.get("anyOther").asResource();
-            Resource resPolicy = querySolution.get("policyAction").asResource();
-            spaModel.remove(resAnyOther, Spa.dependOn, resPolicy);
-        }
-        //spaModel.remove(listStmtsToRemove);
     }
 }

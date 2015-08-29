@@ -57,7 +57,8 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
         String sparql =  "SELECT ?netif ?policy ?data ?type ?value WHERE {"
                 + "?netif a nml:BidirectionalPort ."
                 + "?netif spa:dependOn ?policy . "
-                + "?policy a spa:Stitching. "
+                + "?policy a spa:PolicyAction. "
+                + "?policy spa:type 'MCE_InterfaceVlanStitching'. "
                 + "?policy spa:importFrom ?data. "
                 + "?data spa:type ?type. ?data spa:value ?value. "
                 + "FILTER not exists {?policy spa:dependOn ?other} "
@@ -89,8 +90,9 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
             // merge the placement satements into spaModel
             if (stitchModel != null)
                 outputDelta.getModelAddition().getOntModel().add(stitchModel.getBaseModel());
+            
             // remove policy dependency
-            this.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), resNetIf);   
+            MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), resNetIf);   
         }
         return new AsyncResult(outputDelta);
     }
@@ -196,24 +198,5 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
     private OntModel stitchWithOpenstackHost(OntModel systemModel, OntModel spaModel, Resource netIf, Resource endSite, List<Resource> vlanPorts) {
         // do nothing
         return null; 
-    }
-    
-    private void removeResolvedAnnotation(OntModel spaModel, Resource netIf) {
-        String sparql = "SELECT ?anyOther ?policyAction WHERE {"
-                + String.format("<%s> spa:dependOn ?policyAction .", netIf.getURI())
-                + "?policyAction a spa:Stitching."
-                + "?anyOther spa:dependOn ?policyAction . "
-                + "?policyData a spa:PolicyData . "
-                + "}";
-        ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
-        List<QuerySolution> solutions = new ArrayList<>();
-        while (r.hasNext()) {
-            solutions.add(r.next());
-        }
-        for (QuerySolution querySolution : solutions) {
-            Resource resAnyOther = querySolution.get("anyOther").asResource();
-            Resource resPolicy = querySolution.get("policyAction").asResource();
-            spaModel.remove(resAnyOther, Spa.dependOn, resPolicy);
-        }
     }
 }

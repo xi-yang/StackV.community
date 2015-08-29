@@ -187,7 +187,9 @@ public class CompilerBase {
         while (its.hasNext()) {
             Statement stmt = its.next();
             Property predicate = stmt.getPredicate();
-            if (predicate.getURI().contains("spa#") || predicate.getURI().contains("#has")) {
+            if ( predicate.getURI().contains("/nml/")
+                    || predicate.getURI().contains("/mrs/")
+                    || predicate.getURI().contains("spa#") ) {
                 if (listStmt == null)
                     listStmt = new ArrayList<>();
                 listStmt.add(stmt);

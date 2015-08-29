@@ -120,7 +120,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             
             //4. remove policy and all related SPA statements receursively under vm from spaModel
             //   and also remove all statements that say dependOn this 'policy'
-            this.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), vm);
+            MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), vm);
             
             //$$ TODO: change VM URI (and all other virtual resources) into a unique string either during compile or in stitching action
             //$$ TODO: Add dependOn->Abstraction annotation to root level spaModel and add a generic Action to remvoe that abstract nml:Topology
@@ -293,35 +293,6 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
         }
     }
 
-    private void removeResolvedAnnotation(OntModel spaModel, Resource vm) {
-        List<Statement> listStmtsToRemove = new ArrayList<>();
-        Resource resVm = spaModel.getResource(vm.getURI());
-        ModelUtil.listRecursiveDownTree(resVm, Spa.getURI(), listStmtsToRemove);
-        if (listStmtsToRemove.isEmpty()) {
-            throw new EJBException(String.format("%s::process cannot remove SPA statements under %s", this.getClass().getName(), vm));
-        }
-
-        String sparql = "SELECT ?anyOther ?policyAction WHERE {"
-                + String.format("<%s> spa:dependOn ?policyAction .", vm.getURI())
-                + "?policyAction a spa:PolicyAction. "
-                + "?policyAction spa:type ?actionType. "
-                + "?anyOther spa:dependOn 'MCE_VMFilterPlacement' . "
-                + "?policyData a spa:PolicyData . "
-                + "}";
-        ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
-        List<QuerySolution> solutions = new ArrayList<>();
-        while (r.hasNext()) {
-            solutions.add(r.next());
-        }
-
-        for (QuerySolution querySolution : solutions) {
-            Resource resAnyOther = querySolution.get("anyOther").asResource();
-            Resource resPolicy = querySolution.get("policyAction").asResource();
-            spaModel.remove(resAnyOther, Spa.dependOn, resPolicy);
-        }
-        //spaModel.remove(listStmtsToRemove);
-    }
-    
     //@TODO: matchingNetwork (VPC or TenantNetwork)
     //@TODO: matchingSunbet
 
