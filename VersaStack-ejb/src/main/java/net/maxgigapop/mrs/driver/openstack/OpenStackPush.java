@@ -14,6 +14,7 @@ import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import java.util.ArrayList;
@@ -83,6 +84,7 @@ public class OpenStackPush {
 
         //do an adjustment to the topologyUri
         this.topologyUri = topologyUri + ":";
+        topologyUri = topologyUri.replaceAll("[^A-Za-z0-9()_-]", "_");
     }
 
     private void OpenStackPushupdate(String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
@@ -342,7 +344,7 @@ public class OpenStackPush {
                 osClient.networking().port().delete(port.getId());
 
             } else if (o.get("request").toString().equals("DeleteRotingInfoRequest")) {
-                OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);//delete in the future
+                OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
                 int i = 0;
                 int j = 0;
                 String routerid = null;
@@ -1519,6 +1521,21 @@ private List<JSONObject> networkRequests(OntModel modelRef, OntModel modelDelta,
         String resource = resourcename.replace(topologyuri, "");
         int index = resource.indexOf(":");
         return resource.substring(0, index);
+    }
+    private ResultSet executeQueryUnion(String queryString, OntModel refModel, OntModel model) {
+        queryString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+                + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
+                + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
+                + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
+                + queryString;
+
+        Model unionModel = ModelFactory.createUnion(refModel, model);
+        
+        //get all the nodes that will be added
+        Query query = QueryFactory.create(queryString);
+        QueryExecution qexec = QueryExecutionFactory.create(query, unionModel);
+        ResultSet r = qexec.execSelect();
+        return r;
     }
 
 }

@@ -50,7 +50,7 @@ public class OpenStackNeutronModelBuilder {
         ArrayList fip = new ArrayList();
         String POOL = null;
         Logger logger = Logger.getLogger(OpenStackNeutronModelBuilder.class.getName());
-
+        topologyURI = topologyURI.replaceAll("[^A-Za-z0-9()_-]", "_");
         //create model object
         OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 
@@ -421,6 +421,7 @@ public class OpenStackNeutronModelBuilder {
         //BUILDING THE ROUTING TABLE
         for (Router r : openstackget.getRouters()) {
             String routername = openstackget.getResourceName(r);
+            routername = routername.replaceAll("[^A-Za-z0-9()_-]", "");
             for (Port port : openstackget.getPorts()) {
 
                 if (port.getDeviceId().equals(r.getId())) {
@@ -434,8 +435,8 @@ public class OpenStackNeutronModelBuilder {
                         for (IP ip2 : port.getFixedIps()) {
                             String INTERFACE_IP = ip2.getIpAddress();
                             Resource ROUTER_INTERFACE_ROUTE_NEXTHOP = RdfOwl.createResource(model, topologyURI + ":router+" + routername + ":router-interface-nexthop" + INTERFACE_IP + ":-router-interface-route-nexthop", networkAddress);
-                            Resource ROUTER_INTERFACE_ROUTINGTABLE = RdfOwl.createResource(model, topologyURI + ":router+" + openstackget.getResourceName(r) + ":router-interface-routingtable", Mrs.RoutingTable);
-                            Resource ROUTER_INTERFACE_ROUTE = RdfOwl.createResource(model, topologyURI + ":router+" + openstackget.getResourceName(r) + ":" + "interfaceip+" + INTERFACE_IP + ":router-interface-route", route);
+                            Resource ROUTER_INTERFACE_ROUTINGTABLE = RdfOwl.createResource(model, topologyURI + ":router+" + routername + ":router-interface-routingtable", Mrs.RoutingTable);
+                            Resource ROUTER_INTERFACE_ROUTE = RdfOwl.createResource(model, topologyURI + ":router+" + routername + ":" + "interfaceip+" + INTERFACE_IP + ":router-interface-route", route);
                             //Resource ROUTER_INTERFACE_ROUTE_TO = RdfOwl.createResource(model, topologyURI + ":-router-interface-route-to "+":" + SUBNET, switchingSubnet);
                             model.add(model.createStatement(routingService, providesRoutingTable, ROUTER_INTERFACE_ROUTINGTABLE));
                             model.add(model.createStatement(ROUTER_INTERFACE_ROUTINGTABLE, providesRoute, ROUTER_INTERFACE_ROUTE));
