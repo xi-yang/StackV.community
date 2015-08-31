@@ -58,6 +58,8 @@ define([
                     var data = request.responseText;
                 } else var data = model;
                 
+                console.log("Data: " + data);
+                
                 if (data.charAt(0) === '<') {                     
                     window.alert("Empty Topology.");
                     return;
@@ -273,9 +275,15 @@ define([
                                 var ports = node_[key];
                                 map_(ports, function (portKey) {
                                     portKey = portKey.value;
+                                    var errorVal = portKey;                                    
                                     var port = that.portMap[portKey];
-                                    node.ports.push(port);
-                                    port.setNode(node);
+                                    if (!port) {
+                                        //port is undefined
+                                        console.log("No port: " + errorVal);
+                                    } else {
+                                        node.ports.push(port);
+                                        port.setNode(node);
+                                    }
                                 });
                                 break;
                             case values.hasNode:

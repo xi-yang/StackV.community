@@ -60,7 +60,7 @@ public class ViewServlet extends HttpServlet {
         }
         
         String retView = servBean.createModelView(filters.toArray(new String[filters.size()]));
-        user.model_map.put(name, retView);
+        user.addModel(name, retView);
         response.sendRedirect("/VersaStack-web/ops/srvc/viewcreate.jsp?ret=3");
     }
 

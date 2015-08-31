@@ -40,6 +40,7 @@ $(function () {
         $("#group-specific").load($ref);
         evt.preventDefault();
     });
+    
 });
 
 //Select Function
@@ -198,16 +199,24 @@ function addVolume() {
     }
 }
 
-function applyTextTemplate(name) {
-    var template = document.getElementById(name + "Temp");
-    var input = document.getElementById(name + "Input");
-    var output = document.getElementById("sparquery");
+function openWizard(button) {
+    var queryID = button.id.substr(7);
     
+    document.getElementById("wizard-table").toggleClass("hide");
+    document.getElementById("queryNumber").value = queryID;
+}
+
+function applyTextTemplate(name) {
+    var template = document.getElementById(name + "Template");
+    var input = document.getElementById(name + "Input");
+    var queryNumber = document.getElementById("queryNumber");
+    
+    var output = document.getElementById("sparquery" + queryNumber.value);    
     output.value = template.value + input.value;
 }
 
 function applySelTemplate(name) {
-    var template = document.getElementById(name + "Temp");
+    var template = document.getElementById(name + "Template");
     var input = document.getElementById(name + "Input");
     var output = document.getElementById("sparquery");
     
@@ -228,7 +237,7 @@ function addQuery() {
         var cell1 = row.insertCell(0);
         var cell2 = row.insertCell(1);
         queryCounter++;
-        cell1.innerHTML = '<input type="text" id="sparquery" name="sparquery' + queryCounter + '" size="70" />';
+        cell1.innerHTML = '<input type="text" id="sparquery' + queryCounter + '" name="sparquery' + queryCounter + '" size="70" />';
         cell2.innerHTML = '<div class="view-flag">'
             + '<input type="checkbox" id="inc' + queryCounter + '" name="viewInclusive' + queryCounter + '"/><label for="inc' + queryCounter + '">Inclusive</label>'
             + '</div><div class="view-flag">'
@@ -267,6 +276,8 @@ function addQuery() {
     
     $("#service-bottom").load("/VersaStack-web/ops/srvc/viewcreate.jsp?mode=create #service-fields");
 }*/
+
+
 
 // Utility Functions
 

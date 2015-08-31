@@ -78,7 +78,7 @@
                         function (m, l, r, d3_, utils_, tree) {
                             ModelConstructor = m;
                             model = new ModelConstructor();
-                            model.init(1,drawGraph);
+                            model.init(1, drawGraph, null);
                             layout = l;
                             render = r;
                             d3 = d3_;
@@ -106,7 +106,7 @@
                 var lockNodes = model.listNodes();
                 //var posistionLocks = {};
                 model = new ModelConstructor(model);
-                model.init(2,function () {
+                model.init(2, function () {
                     var width = document.documentElement.clientWidth / outputApi.getZoom();
                     var height = document.documentElement.clientHeight / outputApi.getZoom();
                     //TODO, figure out why we need to call this twice
@@ -115,7 +115,23 @@
                     layout.doLayout(model, lockNodes, width, height);
 
                     render.doRender(outputApi, model);
-                });           
+                }, null);
+            }
+            
+            function filter(viewModel) {
+                var lockNodes = model.listNodes();
+                //var posistionLocks = {};
+                model = new ModelConstructor(model);
+                model.init(2, function () {
+                    var width = document.documentElement.clientWidth / outputApi.getZoom();
+                    var height = document.documentElement.clientHeight / outputApi.getZoom();
+                    //TODO, figure out why we need to call this twice
+                    //If we do not, the layout does to converge as nicely, even if we double the number of iterations
+                    layout.doLayout(model, lockNodes, width, height);
+                    layout.doLayout(model, lockNodes, width, height);
+
+                    render.doRender(outputApi, model);
+                }, viewModel);
             }
 
             function buttonInit() {
@@ -137,7 +153,25 @@
                 });
                 $("#refreshButton").click(function (evt) {
                     reload();
+
+                    evt.preventDefault();
+                });
+
+                $(".button-filter-select").click(function (evt) {
                     
+                    if (this.id === "nofilter") {
+                        reload();
+                    } else {
+                        var buttonID = this.id;
+                        console.log("Button ID: " + buttonID);
+                        var viewModels = ${user.getModels()};
+                        console.log("viewModels: " + viewModels);
+                        //viewModels = JSON.parse(viewModels);
+                        //console.log("viewModels Parsed: " + viewModels);
+                        console.log("View Model: " + viewModels[buttonID]);
+                        filter(viewModels[buttonID]);
+                    }
+
                     evt.preventDefault();
                 });
             }
@@ -334,10 +368,13 @@
         <!-- NAV BAR -->
         <div id="nav">
         </div>
-        
+
         <div id="filterPanel">
             <div>
-                <button class="button-filter-select" id="filter1"></button>
+                <button class="button-filter-select" id="nofilter">No Filter</button>
+            </div>
+            <div>
+                <button class="button-filter-select" id="Test">Test Filter</button>
             </div>
             <div>
                 <button class="button-filter-select" id="filter2"></button>
@@ -346,7 +383,7 @@
                 <button class="button-filter-select" id="filter3"></button>
             </div>
         </div>
-        
+
         <div id="displayPanel">
             <button id="refreshButton">Refresh</button>
             <div id="displayName"></div>

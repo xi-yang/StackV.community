@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.jena.atlas.json.JSON;
+import org.json.simple.JSONObject;
 
 public class userBeans {
 
@@ -34,12 +34,12 @@ public class userBeans {
     String active_usergroup = "";
     ArrayList<Integer> service_list = new ArrayList<>();
     ArrayList<Integer> group_list = new ArrayList<>();
-    public HashMap<String, String> model_map = new HashMap<>();
+    HashMap<String, String> model_map = new HashMap<>();
 
     boolean loggedIn = false;
 
     public userBeans() {
-
+        
     }
 
     public String getFirstName() {
@@ -443,5 +443,17 @@ public class userBeans {
     
     public String printModels() {
         return model_map.toString();
+    }
+    
+    public void addModel(String name, String model) {
+        model_map.put(name, model);
+    }
+    
+    public String getModel(String name) {
+        return model_map.get(name);
+    }
+    
+    public String getModels() {
+        return new JSONObject(model_map).toJSONString();
     }
 }
