@@ -32,7 +32,7 @@ import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.service.orchestrate.ActionBase;
 import net.maxgigapop.mrs.service.orchestrate.WorkerBase;
-import net.maxgigapop.www.rains.ontmodel.Spa;
+import net.maxgigapop.mrs.common.Spa;
 /**
  *
  * @author xyang
@@ -95,9 +95,7 @@ public class CompilerBase {
         while (nodeIter.hasNext()) {
             RDFNode node = nodeIter.next();
             if (node.isResource() && 
-                    (node.asResource().getURI().contains("spa#Placement")
-                    || node.asResource().getURI().contains("spa#Connection")
-                    || node.asResource().getURI().contains("spa#Stitching")
+                    (node.asResource().getURI().contains("spa#PolicyAction")
                     || node.asResource().getURI().contains("spa#Abstraction")
                     )) {
                 return true;
@@ -113,9 +111,7 @@ public class CompilerBase {
                 "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
                 "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" +
                 "SELECT ?policy WHERE {"
-                + "{?policy a spa:Placement} UNION "
-                + "{?policy a spa:Connection} UNION "
-                + "{?policy a spa:Stitching} UNION"
+                + "{?policy a spa:PolicyAction} UNION"
                 + "{?policy a spa:Abstraction}"
                 + "}";
         Query query = QueryFactory.create(sparqlString);
@@ -140,7 +136,6 @@ public class CompilerBase {
                 "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" +
                 String.format("SELECT ?o WHERE { <%s> spa:dependOn ?o }", resPolicy.toString(), resPolicy.toString());
         Query query = QueryFactory.create(sparqlString);
-        List<Resource> listRes = null;
         QueryExecution qexec = QueryExecutionFactory.create(query, spaModel);
         ResultSet r = (ResultSet) qexec.execSelect();
         if(r.hasNext())
@@ -191,14 +186,16 @@ public class CompilerBase {
         StmtIterator its = model.listStatements(null, null, res);
         while (its.hasNext()) {
             Statement stmt = its.next();
-            Resource subject = stmt.getSubject();
             Property predicate = stmt.getPredicate();
-            if (predicate.getURI().contains("spa#") || predicate.getURI().contains("#has")) {
+            if ( predicate.getURI().contains("/nml/")
+                    || predicate.getURI().contains("/mrs/")
+                    || predicate.getURI().contains("spa#") ) {
                 if (listStmt == null)
                     listStmt = new ArrayList<>();
                 listStmt.add(stmt);
             }
         }
+        // get spa# subtree for policyData 
         // add exportTo and related policyData statements
         its = model.listStatements(res, Spa.exportTo, (Resource)null);
         while (its.hasNext()) {
@@ -207,7 +204,6 @@ public class CompilerBase {
                 continue;
             listStmt.add(stmt);
             Resource object = stmt.getObject().asResource();
-            Property predicate = stmt.getPredicate();
             StmtIterator its2 = object.listProperties();
             while (its2.hasNext()) {
                 listStmt.add(its2.next());
@@ -221,7 +217,6 @@ public class CompilerBase {
                 continue;
             listStmt.add(stmt);
             Resource object = stmt.getObject().asResource();
-            Property predicate = stmt.getPredicate();
             StmtIterator its2 = object.listProperties();
             while (its2.hasNext()) {
                 listStmt.add(its2.next());
@@ -231,14 +226,22 @@ public class CompilerBase {
         its = model.listStatements(res, RdfOwl.type, (Resource)null);
         while (its.hasNext()) {
             Statement stmt = its.next();
-            /*
-            Resource object = stmt.getObject().asResource();
-            if (object.getNameSpace().equals(Spa.getURI())) {
-                if (listStmt == null)
-                    listStmt = new ArrayList<>();
-                listStmt.add(stmt);
-            }
-            */
+            if (listStmt == null)
+                listStmt = new ArrayList<>();
+            listStmt.add(stmt);
+        }
+        // add spa:type statement for res type
+        its = model.listStatements(res, Spa.type, (Resource)null);
+        while (its.hasNext()) {
+            Statement stmt = its.next();
+            if (listStmt == null)
+                listStmt = new ArrayList<>();
+            listStmt.add(stmt);
+        }
+        // add spa:value statement for res type
+        its = model.listStatements(res, Spa.value, (Resource)null);
+        while (its.hasNext()) {
+            Statement stmt = its.next();
             if (listStmt == null)
                 listStmt = new ArrayList<>();
             listStmt.add(stmt);

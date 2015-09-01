@@ -33,7 +33,7 @@ import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.service.compute.IModelComputationElement;
 import net.maxgigapop.mrs.service.compute.TestMCE;
-import net.maxgigapop.www.rains.ontmodel.Spa;
+import net.maxgigapop.mrs.common.Spa;
 
 /**
  *
