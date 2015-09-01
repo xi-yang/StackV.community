@@ -12,7 +12,7 @@
     background: rgba(255,190,190,1);
     /*The 40px is to accound for the navbar*/
     min-height: calc(100% - 40px);
-    top: 40px;
+    top: 37px;
     width: 30%;
     position: absolute;
     right:0;

@@ -95,11 +95,10 @@
                                                 </tr> 
                                                 <tr>
                                                     <td>VPC ID</td>
-                                                    <td><input type="text" name="vpcID" required></td>
                                                     <td>
                                                     <select name="vpcID" required>
                                                             <option></option>
-                                                            <option value="urn:ogf:network:aws.amazon.com:aws-cloud:vpc-8c5f22e9">vpc-8c5f22e9</option>
+                                                            <option value="urn:ogf:network:aws.amazon.com:aws-cloud:vpc-45143020">vpc-45143020</option>
                                                         </select>
                                                     </td>
                                                 </tr>  
@@ -132,8 +131,8 @@
                                                     <td>VM Subnets</td>
                                                     <td>
                                                         <select name="subnets" required multiple size="5">
-                                                            <option value="urn:ogf:network:aws.amazon.com:aws-cloud:subnet-2cd6ad16,10.0.0.0">aws-cloud / subnet-2cd6ad16,10.0.0.0</option>
-                                                            <option value="urn:ogf:network:aws.amazon.com:aws-cloud:subnet-85135bbf,10.0.1.0">aws-cloud / subnet-85135bbf,10.0.1.0</option>
+                                                            
+                                                            <option value="urn:ogf:network:aws.amazon.com:aws-cloud:subnet-a8a632f1, 10.0.1.0">aws-cloud / subnet-a8a632f1, 10.0.1.0</option>
                                                         </select>
                                                     </td>
                                                 </tr>

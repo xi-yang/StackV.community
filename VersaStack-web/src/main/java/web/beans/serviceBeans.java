@@ -148,7 +148,6 @@ public class serviceBeans {
      * 2 - plugin error.<br />
      * 3 - connection error.<br />
      * 4 - parsing parameter error<br />
->>>>>>> 2f7f1d994d2da0cba3fd8de17c443a9bad67728f
      */
     public int vmInstall(Map<String, String> paraMap){
         String vgUuid = null;
@@ -161,9 +160,7 @@ public class serviceBeans {
         String[] subnets = null;
         String[] volumes = null;
         int quantity;
-
         //Map the parsing parameters into each variable
-
         for(Map.Entry<String, String> entry : paraMap.entrySet()){
             if(entry.getKey().equalsIgnoreCase("versionGroup"))
                 vgUuid = entry.getValue();
@@ -186,7 +183,7 @@ public class serviceBeans {
             else if(entry.getKey().equalsIgnoreCase("volumes"))
                 volumes = entry.getValue().split("\r\n");            
         }
-
+        
         try {
             URL url = new URL(String.format("%s/model/", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -218,7 +215,6 @@ public class serviceBeans {
 
         //create a system instance and get an UUID for this system instance from the API
         String siUuid;
-
         try {
             URL url = new URL(String.format("%s/model/systeminstance", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -229,6 +225,7 @@ public class serviceBeans {
         } catch (Exception e) {
             return 3;//connection error
         }
+
         //building ttl model
         String delta = "<delta>\n<id>1</id>\n"
                 + "<creationTime>2015-03-11T13:07:23.116-04:00</creationTime>\n"
@@ -294,7 +291,6 @@ public class serviceBeans {
                 + allSubnets.substring(0, (allSubnets.length()-2)) + ".\n\n";
         
         delta += model + "</modelAddition>\n</delta>";
-
         
         //push to the system api and get response
         try {
@@ -321,22 +317,14 @@ public class serviceBeans {
         
         
         return 0;
-
     }
     
-    // Given a Topology, return list of VM's that can be added under it.
+    // Create new model view from parameters and push to model.
     //TODO Fill skeleton and JavaDoc as appropriate
-    public ArrayList<String> VMSearchByTopology(String topoUri) {
-        return null;
-    }
-    
+    public int createModelView() {
+        return -1;
+    }       
 
-    // Given a VM type, return list of topologies that can support it.
-    //TODO Fill skeleton and JavaDoc as appropriate
-    public ArrayList<String> VMSearchByType(String VMString) {
-        return null;
-    }
-    
     
     // Utility Functions
     

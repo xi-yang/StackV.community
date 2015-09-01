@@ -71,7 +71,7 @@
                         function (m, l, r, d3_, utils_, tree) {
                             ModelConstructor = m;
                             model = new ModelConstructor();
-                            model.init(drawGraph);
+                            model.init(1,drawGraph);
                             layout = l;
                             render = r;
                             d3 = d3_;
@@ -82,8 +82,6 @@
                             outputApi = new outputApi_();
                         });
                 buttonInit();
-
-
             }
             function drawGraph() {
                 var width = document.documentElement.clientWidth / settings.INIT_ZOOM;
@@ -99,9 +97,9 @@
             }
             function reload() {
                 var lockNodes = model.listNodes();
-                var posistionLocks = {};
+                //var posistionLocks = {};
                 model = new ModelConstructor(model);
-                model.init(function () {
+                model.init(2,function () {
                     var width = document.documentElement.clientWidth / outputApi.getZoom();
                     var height = document.documentElement.clientHeight / outputApi.getZoom();
                     //TODO, figure out why we need to call this twice
@@ -109,10 +107,8 @@
                     layout.doLayout(model, lockNodes, width, height);
                     layout.doLayout(model, lockNodes, width, height);
 
-
                     render.doRender(outputApi, model);
-
-                });
+                });           
             }
 
             function buttonInit() {
@@ -132,23 +128,9 @@
 
                     evt.preventDefault();
                 });
-            }
-
-            function buttonInit() {
-                $("#awsButton").click(function (evt) {
-                    $("#actionForm").load("/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=aws #service-fields");
-
-                    $("#awsButton").toggleClass("hide");
-                    $("#cancelButton").toggleClass("hide");
-
-                    evt.preventDefault();
-                });
-                $("#cancelButton").click(function (evt) {
-                    $("#actionForm").empty();
-
-                    $("#awsButton").toggleClass("hide");
-                    $("#cancelButton").toggleClass("hide");
-
+                $("#refreshButton").click(function (evt) {
+                    reload();
+                    
                     evt.preventDefault();
                 });
             }
@@ -346,6 +328,7 @@
         <div id="nav">
         </div>
         <div id="displayPanel">
+            <button id="refreshButton">Refresh</button>
             <div id="displayName"></div>
             <div id="treeMenu"></div>
             <div id="actionMenu">

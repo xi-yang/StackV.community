@@ -41,19 +41,28 @@ define([
          * Initialize the model. This asyncronasly loads and parsed the model from the backend.
          * @returns {undefined}
          */
-        this.init = function (callback) {
+        this.init = function (mode,callback) {
             var request = new XMLHttpRequest();
-//         request.open("GET","/VersaStack-web/restapi/model/");
-            request.open("GET", "/VersaStack-web/data/json/max-aws.json");
-//        request.open("GET", "/VersaStack-web/data/graph-full.json");
-
+            if (mode === 1) {
+                //request.open("GET", "/VersaStack-web/data/json/max-aws.json");
+                request.open("GET", "/VersaStack-web/data/json/model-all-hybrid.json");
+            }
+            else if (mode === 2) {              
+                request.open("GET","/VersaStack-web/restapi/model/");
+            }
+            
+            console.log("Mode: " + mode);
             request.setRequestHeader("Accept", "application/json");
-            request.onload = function () {
+            request.onload = function () {               
                 var data = request.responseText;
-                data = JSON.parse(data);
+                if (data.charAt(0) === '<') {                     
+                    window.alert("Empty Topology.");
+                    return;
+                }
+                
+                data = JSON.parse(data);                                    
                 versionID=data.version;
                 map = JSON.parse(data.ttlModel);
-
 
                 if (INJECT) {
                     var newNode = {type: 'uri', value: 'FOO:1'};
@@ -270,20 +279,26 @@ define([
                             case values.hasTopology:
                                 var subNodes = node_[key];
                                 map_(subNodes, function (subNodeKey) {
+                                    var errorVal = subNodeKey.value;
                                     var subNode = that.nodeMap[subNodeKey.value];
-                                    subNode.isRoot = false;
-                                    node.children.push(subNode);
-                                    subNode._parent = node;
+                                    if (!subNode) {
+                                        //subnode is undefined
+                                        console.log("No subnode: " + errorVal)
+                                    } else {
+                                        subNode.isRoot = false;
+                                        node.children.push(subNode);
+                                        subNode._parent = node;
+                                    }
                                 });
                                 break;
                             case values.hasService:
                                 var services = node_[values.hasService];
                                 map_(services, function (service) {
+                                    var errorVal = service.value;
                                     service = that.serviceMap[service.value];
                                     if (!service) {
                                         //service is undefined
-                                        console.log("No service: " + service.value);
-
+                                        console.log("No service: " + errorVal);
                                     } else {
                                         node.services.push(service);
                                     }
