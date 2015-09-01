@@ -16,6 +16,14 @@
         <servlet-name>VMServlet</servlet-name>
         <url-pattern>/VMServlet</url-pattern>
     </servlet-mapping>
+    <servlet>
+        <servlet-name>ViewServlet</servlet-name>
+        <servlet-class>web.servlets.ViewServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ViewServlet</servlet-name>
+        <url-pattern>/ViewServlet</url-pattern>
+    </servlet-mapping>
     <session-config>
         <session-timeout>
             30

@@ -13,6 +13,7 @@ import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
+import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.InfModel;
 import com.hp.hpl.jena.rdf.model.Model;
@@ -41,6 +42,7 @@ import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
+import net.maxgigapop.mrs.common.Spa;
 import net.maxgigapop.mrs.common.TagSet;
 
 /**
@@ -602,5 +604,33 @@ public class MCETools {
                 vlanRange.removeTag(vlan);
             }
             return vlanRange;
+    }
+    
+    
+    public static void removeResolvedAnnotation(OntModel spaModel, Resource res) {
+        List<Statement> listStmtsToRemove = new ArrayList<>();
+        Resource resLink = spaModel.getResource(res.getURI());
+        ModelUtil.listRecursiveDownTree(resLink, Spa.getURI(), listStmtsToRemove);
+        if (listStmtsToRemove.isEmpty()) {
+            throw new EJBException(String.format("MCETools.removeResolvedAnnotation cannot remove SPA statements under %s", res));
+        }
+
+        String sparql = "SELECT ?anyOther ?policyAction WHERE {"
+                + String.format("<%s> spa:dependOn ?policyAction .", res.getURI())
+                + "?policyAction a spa:PolicyAction. "
+                + "?anyOther spa:dependOn ?policyAction . "
+                + "}";
+        ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
+        List<QuerySolution> solutions = new ArrayList<>();
+        while (r.hasNext()) {
+            solutions.add(r.next());
+        }
+
+        for (QuerySolution querySolution : solutions) {
+            Resource resAnyOther = querySolution.get("anyOther").asResource();
+            Resource resPolicy = querySolution.get("policyAction").asResource();
+            spaModel.remove(resAnyOther, Spa.dependOn, resPolicy);
+        }
+        //spaModel.remove(listStmtsToRemove);
     }
 }
