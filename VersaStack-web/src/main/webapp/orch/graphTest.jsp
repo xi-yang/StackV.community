@@ -117,7 +117,7 @@
                     render.doRender(outputApi, model);
                 }, null);
             }
-            
+
             function filter(viewModel) {
                 var lockNodes = model.listNodes();
                 //var posistionLocks = {};
@@ -157,8 +157,12 @@
                     evt.preventDefault();
                 });
 
+                $("#modelButton").click(function (evt) {
+                    window.open('/VersaStack-web/modelView.jsp', 'newwindow', config='height=1200,width=400, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no');
+                });
+                
                 $(".button-filter-select").click(function (evt) {
-                    
+
                     if (this.id === "nofilter") {
                         reload();
                     } else {
@@ -386,6 +390,7 @@
 
         <div id="displayPanel">
             <button id="refreshButton">Refresh</button>
+            <button id="modelButton">Display Model</button>
             <div id="displayName"></div>
             <div id="treeMenu"></div>
             <div id="actionMenu">

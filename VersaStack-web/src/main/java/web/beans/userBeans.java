@@ -35,6 +35,7 @@ public class userBeans {
     ArrayList<Integer> service_list = new ArrayList<>();
     ArrayList<Integer> group_list = new ArrayList<>();
     HashMap<String, String> model_map = new HashMap<>();
+    String current_model = "";
 
     boolean loggedIn = false;
 
@@ -447,12 +448,13 @@ public class userBeans {
     
     public void addModel(String name, String model) {
         model_map.put(name, model);
+        current_model = model;
     }
     
-    public String getModel(String name) {
-        return model_map.get(name);
+    public String getModel() {
+        return current_model;
     }
-    
+        
     public String getModels() {
         return new JSONObject(model_map).toJSONString();
     }
