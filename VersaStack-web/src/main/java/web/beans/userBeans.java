@@ -15,7 +15,11 @@ import java.util.HashMap;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
+
+
 
 public class userBeans {
 
@@ -451,8 +455,16 @@ public class userBeans {
         current_model = model;
     }
     
+    public void setCurr(String newModel) {
+        current_model = newModel;
+    }
+    
     public String getModel() {
         return current_model;
+    }
+    
+    public String getTtlModel() {
+        return current_model;               
     }
         
     public String getModels() {

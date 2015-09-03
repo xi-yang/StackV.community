@@ -14,7 +14,7 @@
       
         <div id="main-pane">
             Model<br><br>
-            ${user.getModel()}
+            ${user.getTtlModel()}
         </div>        
         <!-- JS -->
         <script>

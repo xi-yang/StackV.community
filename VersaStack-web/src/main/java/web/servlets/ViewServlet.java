@@ -1,5 +1,6 @@
 package web.servlets;
 
+import java.io.BufferedReader;
 import web.beans.serviceBeans;
 
 import java.io.IOException;
@@ -29,39 +30,48 @@ public class ViewServlet extends HttpServlet {
             throws ServletException, IOException {
         serviceBeans servBean = new serviceBeans();
         userBeans user = (userBeans) request.getSession().getAttribute("user");
-        List<String> filters =new ArrayList<>();
 
-        String name = request.getParameter("viewName");
-        // Concatenate query information
-        for (int i = 1; i <= 10; i++) {
-            if (request.getParameter("sparquery" + i) != null) {                
+        if (request.getParameter("viewName") != null) {
+            List<String> filters = new ArrayList<>();
 
-                String view;
-                if (request.getParameter("viewInclusive" + i) == null) {
-                    view = "false";
-                } else {
-                    view = "true";
+            String name = request.getParameter("viewName");
+            // Concatenate query information
+            for (int i = 1; i <= 10; i++) {
+                if (request.getParameter("sparquery" + i) != null) {
+
+                    String view;
+                    if (request.getParameter("viewInclusive" + i) == null) {
+                        view = "false";
+                    } else {
+                        view = "true";
+                    }
+                    String sub;
+                    if (request.getParameter("subRecursive" + i) == null) {
+                        sub = "false";
+                    } else {
+                        sub = "true";
+                    }
+                    String sup;
+                    if (request.getParameter("supRecursive" + i) == null) {
+                        sup = "false";
+                    } else {
+                        sup = "true";
+                    }
+
+                    filters.add(request.getParameter("sparquery" + i) + "\r\n" + view + "\r\n" + sub + "\r\n" + sup);
                 }
-                String sub;
-                if (request.getParameter("subRecursive" + i) == null) {
-                    sub = "false";
-                } else {
-                    sub = "true";
-                }
-                String sup;
-                if (request.getParameter("supRecursive" + i) == null) {
-                    sup = "false";
-                } else {
-                    sup = "true";
-                }
-                
-                filters.add(request.getParameter("sparquery" + i) + "\r\n" + view + "\r\n" + sub + "\r\n" + sup);
             }
+
+            String retView = servBean.createModelView(filters.toArray(new String[filters.size()]));
+            user.addModel(name, retView);
+            response.sendRedirect("/VersaStack-web/ops/srvc/viewcreate.jsp?ret=3");
+        } else if (request.getParameter("newModel") != null) {
+            String newModel = request.getParameter("newModel"); // this is your data sent from client
+            
+            user.addModel("base", newModel);
+        } else if (request.getParameter("filterModel") != null) {
+            user.setCurr(request.getParameter("filterModel"));
         }
-        
-        String retView = servBean.createModelView(filters.toArray(new String[filters.size()]));
-        user.addModel(name, retView);
-        response.sendRedirect("/VersaStack-web/ops/srvc/viewcreate.jsp?ret=3");
     }
 
     /**

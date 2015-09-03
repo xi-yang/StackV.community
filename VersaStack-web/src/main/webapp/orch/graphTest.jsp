@@ -116,6 +116,26 @@
 
                     render.doRender(outputApi, model);
                 }, null);
+
+                var request = new XMLHttpRequest();
+                request.open("GET", "/VersaStack-web/restapi/model/");
+
+                request.setRequestHeader("Accept", "application/json");
+                request.onload = function () {
+                    var modelData = request.responseText;
+
+                    console.log("Data: " + modelData);
+
+                    if (modelData.charAt(0) === '<') {
+                        return;
+                    }
+
+                    modelData = JSON.parse(modelData);                     
+                    $.post("/VersaStack-web/ViewServlet", {newModel: modelData.ttlModel}, function(response) {
+                        // handle response from your servlet.
+                    });
+                };
+                request.send();
             }
 
             function filter(viewModel) {
@@ -132,6 +152,10 @@
 
                     render.doRender(outputApi, model);
                 }, viewModel);
+                
+                $.post("/VersaStack-web/ViewServlet", {filterModel: viewModel}, function(response) {
+                        // handle response from your servlet.
+                });
             }
 
             function buttonInit() {
@@ -158,9 +182,9 @@
                 });
 
                 $("#modelButton").click(function (evt) {
-                    window.open('/VersaStack-web/modelView.jsp', 'newwindow', config='height=1200,width=400, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no');
+                    window.open('/VersaStack-web/modelView.jsp', 'newwindow', config = 'height=1200,width=400, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no');
                 });
-                
+
                 $(".button-filter-select").click(function (evt) {
 
                     if (this.id === "nofilter") {

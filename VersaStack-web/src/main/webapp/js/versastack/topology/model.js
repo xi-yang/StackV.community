@@ -51,14 +51,14 @@ define([
                 request.open("GET","/VersaStack-web/restapi/model/");
             }
             
-            console.log("Mode: " + mode);
+            //console.log("Mode: " + mode);
             request.setRequestHeader("Accept", "application/json");
             request.onload = function () {
                 if (model === null) {
                     var data = request.responseText;
                 } else var data = model;
                 
-                console.log("Data: " + data);
+                //console.log("Data: " + data);
                 
                 if (data.charAt(0) === '<') {                     
                     window.alert("Empty Topology.");
