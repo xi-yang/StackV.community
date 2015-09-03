@@ -112,6 +112,7 @@ public class ModelUtil {
                 "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
                 "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
                 "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" +
+                "prefix sna: <http://schemas.ogf.org/sna/2015/08/network#>\n"+
                 sparqlStringWithoutPrefix;        
         Query query = QueryFactory.create(sparqlString);
         QueryExecution qexec = QueryExecutionFactory.create(query, model);

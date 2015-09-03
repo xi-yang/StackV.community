@@ -26,6 +26,8 @@ import org.json.simple.parser.JSONParser;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
+
+import net.maxgigapop.www.rains.ontmodel.Spa;
 //TODO add the public ip address that an instance might have that is not an
 //elastic ip
 
@@ -53,6 +55,7 @@ public class OnosModelBuilder {
         model.setNsPrefix("owl", RdfOwl.getOwlURI());
         model.setNsPrefix("nml", Nml.getURI());
         model.setNsPrefix("mrs", Mrs.getURI());
+        model.setNsPrefix("spa", Spa.getURI());
 
         
         //add SRRG
@@ -112,6 +115,14 @@ public class OnosModelBuilder {
         Resource flow = Mrs.Flow;
         Resource flowRule = Mrs.FlowRule;
         
+        //for test only
+        Resource link = Nml.Link;
+        Property isSource = Nml.isSource;
+        Property isSink = Nml.isSink;
+        Property dependOn = Spa.dependOn;
+        Resource connection = Spa.Connection;
+        
+        
         
         //SRRG declare, only SRRG is included here currently
         Resource SRRG = Sna.SRRG;
@@ -137,6 +148,7 @@ public class OnosModelBuilder {
                 model.add(model.createStatement(onosTopology,hasNode,resNode));
         }
         
+        /*
         for(int i=0;i<qtyDevices;i++){
             Resource resNode = RdfOwl.createResource(model,topologyURI+":"+device[0][i],node);
             if(device[1][i].equals("SWITCH") && device[2][i].equals("true")){
@@ -203,10 +215,11 @@ public class OnosModelBuilder {
                         model.add(model.createStatement(resFlowAction,value,deviceFlows[3][j]));
                         
                 }
+                
             }
             
         }
-        
+        */
         for(int i=0;i<qtyLinks;i++){
             Resource resSrcPort=RdfOwl.createResource(model,topologyURI+":"+links[1][i]+":port-"+links[2][i],biPort);
             Resource resDstPort=RdfOwl.createResource(model,topologyURI+":"+links[4][i]+":port-"+links[5][i],biPort);
@@ -273,6 +286,36 @@ public class OnosModelBuilder {
             ex.printStackTrace();
         }
         
+        //manually insert a Link request into the Model
+        try{
+            JSONParser jsonParser = new JSONParser();
+            JSONObject jsonObject = (JSONObject) jsonParser.parse(srrgFile);
+            
+            JSONArray f = (JSONArray) jsonObject.get("VLAN");
+            int vlan_num = f.size();
+            
+            for(int i=0; i<vlan_num; i++){
+                JSONObject t= (JSONObject) f.get(i);
+                String id = t.get("id").toString();
+                Resource resLink = RdfOwl.createResource(model, topologyURI+":"+id, link);
+                
+                String src_port = t.get("src_port").toString();
+                String dest_port = t.get("dest_port").toString();
+                
+                Resource sourcePort = RdfOwl.createResource(model, topologyURI+":"+src_port, biPort);
+                model.add(model.createStatement(resLink, isSink, sourcePort)); //isSink point to src_port
+                Resource destPort = RdfOwl.createResource(model, topologyURI+":"+dest_port, biPort);
+                model.add(model.createStatement(resLink, isSource, destPort)); //isSource point to dest_port
+                
+                Resource resConnection = RdfOwl.createResource(model, topologyURI+":connection_id1", connection);
+                model.add(model.createStatement(resLink, dependOn, resConnection));
+                
+            }
+            
+        }
+        catch (NullPointerException ex){
+            ex.printStackTrace();
+        }
         
         //manually insert a SRRG object for testing in mininet
         /*

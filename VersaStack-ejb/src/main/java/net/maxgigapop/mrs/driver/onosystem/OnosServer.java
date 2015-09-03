@@ -10,7 +10,7 @@ import java.io.DataOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import net.maxgigapop.mrs.driver.OnosRESTDriver;
+//import net.maxgigapop.mrs.driver.OnosRESTDriver;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
