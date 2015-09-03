@@ -88,9 +88,7 @@ public class VersionGroup extends PersistentEntity implements Serializable {
             return false;
         }
         VersionGroup other = (VersionGroup) object;
-        if ((this.refUuid != null && other.refUuid != null) && (this.refUuid.equals(other.refUuid))) {
-            return true;
-        } else if (this.getVersionItems() == null || other.getVersionItems() == null) {
+        if (this.getVersionItems() == null || other.getVersionItems() == null) {
             return false;
         } else if (this.getVersionItems().size() != other.getVersionItems().size()) {
             return false;

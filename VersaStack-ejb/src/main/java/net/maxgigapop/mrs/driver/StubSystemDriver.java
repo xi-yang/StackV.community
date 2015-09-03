@@ -40,23 +40,27 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
 /*    @Override
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
-        //driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
+        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
         aDelta = (DriverSystemDelta)DeltaPersistenceManager.findById(aDelta.getId());
         String ttlModel = driverInstance.getProperty("stubModelTtl");
         if (ttlModel == null) {
             throw new EJBException(String.format("%s has no property key=stubModelTtl", driverInstance));
+        }
+        String ttlModelNew = driverInstance.getProperty("stubModelTtl_new");
+        if (ttlModelNew != null && !ttlModelNew.isEmpty()) {
+            throw new EJBException(String.format("%s has propagated but uncommitted change.", driverInstance));
         }
         try {
             OntModel ontModel = ModelUtil.unmarshalOntModel(ttlModel);
             DriverModel dm = new DriverModel();
             dm.setOntModel(ontModel);
             ontModel = dm.applyDelta(aDelta);
-            ttlModel = ModelUtil.marshalOntModel(ontModel);
-            driverInstance.putProperty("stubModelTtl", ttlModel);
-            driverInstance.putProperty("stubModelTtl2", ttlModel);
+            ttlModel = ModelUtil.marshalModel(ontModel.getBaseModel());
+            // the extra "new:" makes two ttls always different to avoid new version_item being created before commit   
+            driverInstance.putProperty("stubModelTtl_new", "new:"+ttlModel);
             DriverInstancePersistenceManager.merge(driverInstance);
-        } catch (Exception e) {
-            throw new EJBException(String.format("propagateDelta for %s with %s raised exception(%s)", driverInstance, aDelta, e.getMessage()));
+        } catch (Exception ex) {
+            throw new EJBException(String.format("propagateDelta for %s with %s raised exception(%s)", driverInstance, aDelta, ex.getMessage()));
         }
     }
 
@@ -66,6 +70,25 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
         DriverInstance driverInstance = aDelta.getDriverInstance();
         if (driverInstance == null) {
             throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
+        }
+        String ttlModelNew = driverInstance.getProperty("stubModelTtl_new");
+        if (ttlModelNew == null || ttlModelNew.isEmpty() || !ttlModelNew.startsWith("new:")) {
+            throw new EJBException(String.format("commitDelta sees nothing new (null or empty stubModelTtl_new)"));
+        }
+        ttlModelNew = ttlModelNew.replaceFirst("new:", "");
+        try {
+            OntModel ontModelNew = ModelUtil.unmarshalOntModel(ttlModelNew);
+            String ttlModel = driverInstance.getProperty("stubModelTtl");
+            OntModel ontModel = ModelUtil.unmarshalOntModel(ttlModel);
+            if (!ontModel.getBaseModel().isIsomorphicWith(ontModelNew.getBaseModel())) {
+                driverInstance.putProperty("stubModelTtl", ttlModelNew);
+                driverInstance.putProperty("stubModelTtl_new", ttlModelNew);
+            } else {
+                driverInstance.putProperty("stubModelTtl_new", "");
+            }
+            DriverInstancePersistenceManager.merge(driverInstance);
+        } catch (Exception ex) {
+            throw new EJBException(String.format("commitDelta for %s with %s raised exception(%s)", driverInstance, aDelta, ex.getMessage()));
         }
         return new AsyncResult<String>("SUCCESS");
     }*/
@@ -81,9 +104,17 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
         if (ttlModel == null) {
             throw new EJBException(String.format("%s has no stubModelTtl property configured", driverInstance));
         }
-        // create VI using stubModel in properties
+        String ttlModelNew = driverInstance.getProperty("stubModelTtl_new");
+        // The first time model is pulled, add an empty stubModelTtl_new property.
+        // Next time, if stubModelTtl_new remains empty or different from stubModelTtl, skip. 
+        if (ttlModelNew == null) {
+            driverInstance.putProperty("stubModelTtl_new", "");
+        } else if (ttlModelNew.isEmpty()
+                || !ttlModelNew.equals(ttlModel)) {
+            return new AsyncResult<String>("SUCCESS");
+        }
+        // If first time or a stubModelTtl_new has been commited to stubModelTtl, create VI
         try {
-            //@TODO: compare to previous version model
             OntModel ontModel = ModelUtil.unmarshalOntModel(ttlModel);
             DriverModel dm = new DriverModel();
             dm.setCommitted(true);
@@ -95,6 +126,8 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
             vi.setDriverInstance(driverInstance);
             VersionItemPersistenceManager.save(vi);
             driverInstance.setHeadVersionItem(vi);
+            driverInstance.putProperty("stubModelTtl_new", "");
+            DriverInstancePersistenceManager.merge(driverInstance);
         } catch (Exception e) {
             throw new EJBException(String.format("pullModel on %s raised exception[%s]", driverInstance, e.getMessage()));
         }
