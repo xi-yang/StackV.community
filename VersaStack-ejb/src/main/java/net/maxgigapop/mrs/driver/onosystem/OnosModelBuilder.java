@@ -27,7 +27,8 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.maxgigapop.www.rains.ontmodel.Spa;
+//import net.maxgigapop.www.rains.ontmodel.Spa;
+
 //TODO add the public ip address that an instance might have that is not an
 //elastic ip
 
@@ -120,7 +121,8 @@ public class OnosModelBuilder {
         Property isSource = Nml.isSource;
         Property isSink = Nml.isSink;
         Property dependOn = Spa.dependOn;
-        Resource connection = Spa.Connection;
+        Resource condition = Spa.Condition;
+        
         
         
         
@@ -287,6 +289,7 @@ public class OnosModelBuilder {
         }
         
         //manually insert a Link request into the Model
+        /*
         try{
             JSONParser jsonParser = new JSONParser();
             JSONObject jsonObject = (JSONObject) jsonParser.parse(srrgFile);
@@ -307,8 +310,8 @@ public class OnosModelBuilder {
                 Resource destPort = RdfOwl.createResource(model, topologyURI+":"+dest_port, biPort);
                 model.add(model.createStatement(resLink, isSource, destPort)); //isSource point to dest_port
                 
-                Resource resConnection = RdfOwl.createResource(model, topologyURI+":connection_id1", connection);
-                model.add(model.createStatement(resLink, dependOn, resConnection));
+                Resource resCondition = RdfOwl.createResource(model, topologyURI+":condition", condition);
+                model.add(model.createStatement(resLink, dependOn, resCondition));
                 
             }
             
@@ -316,6 +319,7 @@ public class OnosModelBuilder {
         catch (NullPointerException ex){
             ex.printStackTrace();
         }
+        */
         
         //manually insert a SRRG object for testing in mininet
         /*

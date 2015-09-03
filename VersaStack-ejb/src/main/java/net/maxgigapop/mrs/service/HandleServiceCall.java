@@ -186,7 +186,7 @@ public class HandleServiceCall {
                 systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(systemInstance.getReferenceUUID());
                 Future<String> asynResult = systemCallHandler.commitDelta(systemInstance);
                 systemInstance.setCommitStatus(asynResult);
-                systemInstance.setCommitFlag(true);
+                //systemInstance.setCommitFlag(true);
                 serviceDelta.setStatus("COMMITTED");
                 DeltaPersistenceManager.merge(serviceDelta);
             } else {
@@ -225,9 +225,12 @@ public class HandleServiceCall {
             }
             // get cached systemInstance
             systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(systemInstance.getReferenceUUID());
+            
+            /* changes with the removal of getCommitFlag
             if (!systemInstance.getCommitFlag()) {
                 throw new EJBException(HandleServiceCall.class.getName() + ".checkStatus encounters un-commited systemInstance based on " + serviceDelta.getSystemDelta());
             }
+            */
             Future<String> asyncStatus = systemInstance.getCommitStatus();
             serviceDelta.setStatus("FAILED");
             if (asyncStatus.isDone()) {

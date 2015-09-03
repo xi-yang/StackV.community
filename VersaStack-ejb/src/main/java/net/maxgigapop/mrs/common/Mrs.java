@@ -54,8 +54,6 @@ public class Mrs {
     
     public static final Property hasRoute = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#hasRoute" );
     
-    public static final Property hasFlow = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#hasFlow" );
-    
     public static final Property hasTag = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#hasTag" );
     
     public static final Property hasTransfer = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#hasTransfer" );
@@ -122,13 +120,6 @@ public class Mrs {
     
     public static final Property value = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#value" );
     
-    public static final Property providesFlowTable = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#providesFlowTable" );
-    
-    public static final Property providesFlow = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#providesFlow" );
-    
-    public static final Property flowMatch = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#flowMatch" );
-    
-    public static final Property flowAction = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#flowAction" );
     public static final Resource Batch = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#Batch" );
     
     public static final Resource BlockStorageService = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#BlockStorageService" );
@@ -170,19 +161,10 @@ public class Mrs {
     public static final Resource POSIX_IOBenchmark = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#POSIX_IOBenchmark" );
     
     public static final Resource Route = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#Route" );
-<<<<<<< HEAD
-   
-    public static final Resource Flow = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#Flow" );
-   
-    public static final Resource FlowRule = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#FlowRule" );
-=======
->>>>>>> upstream/CoWork-ONOS-xyang
     
     public static final Resource RoutingService = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#RoutingService" );
     
     public static final Resource RoutingTable = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#RoutingTable" );
-    
-    public static final Resource FlowTable = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#FlowTable" );
     
     public static final Resource S3_IOBenchmark = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#S3_IOBenchmark" );
     
@@ -198,5 +180,4 @@ public class Mrs {
     
     public static final Resource Volume = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#Volume" );
     
-    public static final Resource OpenflowService = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#OpenflowService" );
 }
