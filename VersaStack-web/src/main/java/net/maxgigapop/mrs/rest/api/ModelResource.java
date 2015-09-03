@@ -5,11 +5,8 @@
  */
 package net.maxgigapop.mrs.rest.api;
 
-<<<<<<< HEAD
-=======
 import com.hp.hpl.jena.ontology.OntModel;
 import java.io.StringWriter;
->>>>>>> upstream/CoWork-ONOS-xyang
 import java.util.UUID;
 import javax.ejb.EJB;
 import javax.ejb.EJBException;
@@ -24,10 +21,7 @@ import javax.ws.rs.PUT;
 import javax.enterprise.context.RequestScoped;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
-<<<<<<< HEAD
 import javax.ws.rs.NotFoundException;
-=======
->>>>>>> upstream/CoWork-ONOS-xyang
 import javax.ws.rs.POST;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.VersionGroup;
@@ -35,11 +29,8 @@ import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.rest.api.model.ApiModelBase;
 import net.maxgigapop.mrs.system.HandleSystemCall;
-<<<<<<< HEAD
-=======
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.rest.api.model.ApiModelViewRequest;
->>>>>>> upstream/CoWork-ONOS-xyang
 
 /**
  * REST Web Service
@@ -67,9 +58,6 @@ public class ModelResource {
      * @return an instance of java.lang.String
      */
     @GET
-<<<<<<< HEAD
-    @Produces({"application/xml", "application/json"})
-=======
     @Produces("application/xml")
     @Path("/{refUUID}")
     public ApiModelBase pullXml(@PathParam("refUUID") String refUUID) throws Exception{
@@ -86,7 +74,6 @@ public class ModelResource {
     
     @GET
     @Produces("application/json")
->>>>>>> upstream/CoWork-ONOS-xyang
     @Path("/{refUUID}")
     public ApiModelBase pull(@PathParam("refUUID") String refUUID) throws Exception{
         VersionGroup vg = VersionGroupPersistenceManager.findByReferenceId(refUUID);
