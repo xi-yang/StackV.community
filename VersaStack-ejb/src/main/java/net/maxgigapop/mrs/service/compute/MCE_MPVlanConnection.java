@@ -94,7 +94,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             MCETools.Path l2path = this.doPathFinding(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), resLink, connPolicyMap.get(resLink));
             if (l2path == null)
                 throw new EJBException(String.format("%s::process cannot find a path for %s", this.getClass().getName(), resLink));
-                        
+
             //2. merge the placement satements into spaModel
             outputDelta.getModelAddition().getOntModel().add(l2path.getOntModel().getBaseModel());
 

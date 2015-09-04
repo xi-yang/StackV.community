@@ -436,6 +436,7 @@ public class MCETools {
             }
         }
         // Reverse iteration to calculate suggestedVlan and create SwitchingSubnet
+        // insert portParamMap for 
         OntModel l2PathModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         nextHop = null;
         while (itS.hasPrevious()) {
@@ -480,8 +481,9 @@ public class MCETools {
         // Get VLAN range
         TagSet vlanRange = getVlanRangeForPort(model, currentHop);
         // do nothing for port without a Vlan labelGroup
-        if (vlanRange == null)
+        if (vlanRange == null) {
             throw new TagSet.NoneVlanExeption();
+        }
         // interception with input availableVlanRange 
         Boolean vlanTranslation = true;
         Resource egressSwitchingService = null; 
@@ -544,12 +546,44 @@ public class MCETools {
         // create port and subnet statements
         OntModel vlanSubnetModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 
-        // create new VLAN port with vlan label
-        String vlanPortUrn = currentHop.toString() + ":vlanport+" + suggestedVlan;
-        Resource resVlanPort = RdfOwl.createResource(vlanSubnetModel, vlanPortUrn, Nml.BidirectionalPort);
+        // special handling for non-VLAN port with VLAN capable subports
+        // find a in-range sub port and use that to temporarily replace currentHop
+        String sparql = String.format("SELECT ?range WHERE {"
+            + "<%s> nml:hasLabelGroup ?lg. ?lg nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. ?lg nml:values ?range."
+                + "}", currentHop);
+        Resource subPort = null;
+        ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
+        if (!rs.hasNext()) {
+            sparql = String.format("SELECT ?sub_port ?range WHERE {"
+                    + "<%s> nml:hasBidirectionalPort ?sub_port. ?sub_port nml:hasLabelGroup ?lg. ?lg nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. ?lg nml:values ?range."
+                    + "}", currentHop);
+            rs = ModelUtil.sparqlQuery(model, sparql);
+            while (rs.hasNext()) {
+                QuerySolution solution = rs.next();
+                TagSet vlanSubRange = new TagSet(solution.getLiteral("range").toString());
+                if (vlanSubRange.hasTag(suggestedVlan)) {
+                    subPort = solution.getResource("sub_port");
+                    currentHop = subPort;
+                    break;
+                }
+            }
+            if (subPort == null)
+                return null;
+        }
+
+        String vlanPortUrn;
+        Resource resVlanPort;
+        if (subPort == null) { // create new VLAN port 
+            vlanPortUrn = currentHop.toString() + ":vlanport+" + suggestedVlan;
+            resVlanPort = RdfOwl.createResource(vlanSubnetModel, vlanPortUrn, Nml.BidirectionalPort);
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(currentHop, Nml.hasBidirectionalPort, resVlanPort));
+        } else { // use existig VLAN port
+            vlanPortUrn = currentHop.toString();
+            resVlanPort = RdfOwl.createResource(vlanSubnetModel, vlanPortUrn, Nml.BidirectionalPort);
+        }
+        // create vlan label for either new or existing VLAN port
         String vlanLabelUrn = vlanPortUrn+":label";
         Resource resVlanPortLabel = RdfOwl.createResource(vlanSubnetModel, vlanLabelUrn, Nml.Label);
-        vlanSubnetModel.add(vlanSubnetModel.createStatement(currentHop, Nml.hasBidirectionalPort, resVlanPort));
         vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.hasLabel, resVlanPortLabel));
         vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPortLabel, Nml.labeltype, RdfOwl.labelTypeVLAN));
         vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPortLabel, Nml.value, suggestedVlan.toString()));
@@ -585,16 +619,32 @@ public class MCETools {
             return rs.next().getResource("sw");
     }
     
-    //TODO: get VLAN range and remove allocated ports
+    // get VLAN range for the port plus all the available ranges in sub-ports (LabelGroup) and remove allocated vlans (Label)
     private static TagSet getVlanRangeForPort(Model model, Resource port) {
+            TagSet vlanRange = null;
             String sparql = String.format("SELECT ?range WHERE {"
                     + "<%s> nml:hasLabelGroup ?lg. ?lg nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. ?lg nml:values ?range."
                     + "}", port);
             ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
-            if (!rs.hasNext())
+            if (rs.hasNext()) {
+                vlanRange = new TagSet(rs.next().getLiteral("range").toString());
+            } else {
+                 sparql = String.format("SELECT ?range WHERE {"
+                    + "<%s> nml:hasBidirectionalPort ?sub_port. ?sub_port nml:hasLabelGroup ?lg. ?lg nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. ?lg nml:values ?range."
+                    + "}", port);
+                rs = ModelUtil.sparqlQuery(model, sparql);
+                while (rs.hasNext()) {
+                    TagSet vlanRangeAdd = new TagSet(rs.next().getLiteral("range").toString());
+                    if (vlanRange == null) {
+                        vlanRange = vlanRangeAdd;
+                    } else {
+                        vlanRange.join(vlanRangeAdd);
+                    }
+                }
+            }
+            if (vlanRange == null || vlanRange.isEmpty())
                 return null;
-            TagSet vlanRange = new TagSet(rs.next().getLiteral("range").toString());
-            sparql = String.format("SELECT ?range WHERE {"
+            sparql = String.format("SELECT ?vlan WHERE {"
                     + "<%s> nml:hasBidirectionalPort ?vlan_port. ?vlan_port nml:hasLabel ?l. ?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. ?l nml:value ?vlan."
                     + "}", port);            
             rs = ModelUtil.sparqlQuery(model, sparql);

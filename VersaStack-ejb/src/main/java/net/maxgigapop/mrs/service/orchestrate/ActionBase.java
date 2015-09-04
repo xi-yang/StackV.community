@@ -34,6 +34,7 @@ import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.service.compute.IModelComputationElement;
 import net.maxgigapop.mrs.service.compute.TestMCE;
 import net.maxgigapop.mrs.common.Spa;
+import net.maxgigapop.mrs.service.compute.MCE_MPVlanConnection;
 
 /**
  *
@@ -338,7 +339,6 @@ public class ActionBase {
         }
     }
     
-    //@TODO: raise exception if not completely cleannedup
     private void cleanupSpaModel(OntModel spaModel) {
         List<Statement> listStmtsToRemove = new ArrayList<>();
         String sparql = "SELECT ?policyAction WHERE {"
