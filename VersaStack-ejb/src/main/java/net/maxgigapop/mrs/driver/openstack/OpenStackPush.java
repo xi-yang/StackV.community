@@ -192,11 +192,11 @@ public class OpenStackPush {
             } else if (o.get("request").toString().equals("DeleteSubnetRequest")) {
                 Subnet net = client.getSubnet(o.get("name").toString());
                 osClient.networking().subnet().delete(net.getId());
-            } else if(o.get("request").toString().equals("DeleteNetworkRequests")){
+            } else if (o.get("request").toString().equals("DeleteNetworkRequests")) {
                 OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
                 Network network = client1.getNetwork(o.get("name").toString());
                 osClient.networking().network().delete(network.getId());
-            }else if (o.get("request").toString().equals("RunInstanceRequest")) {
+            } else if (o.get("request").toString().equals("RunInstanceRequest")) {
                 ServerCreateBuilder builder = Builders.server()
                         .name(o.get("server name").toString())
                         .image("c9cc8be0-82de-490d-a5b4-a094a66e9b11")
@@ -353,22 +353,42 @@ public class OpenStackPush {
                     String key_router = "router" + Integer.toString(j);
 
                     String key_sub = "subnet" + Integer.toString(i);
-                    if (o.containsKey(key_sub)) {
-                        Router r = client1.getRouter(o.get(key_router).toString());
-                        routerid = r.getId();
+                    if (o.containsKey(key_router)) {
+                        if (o.containsKey(key_sub)) {
+                            Router r = client1.getRouter(o.get(key_router).toString());
+                            routerid = r.getId();
 
-                        Subnet subnet = client1.getSubnet(o.get(key_sub).toString());
-                        String subid = subnet.getId();
-                        for (Port p : client1.getPorts()) {
-                            if (p.getDeviceId().equals(routerid)) {
-                                for (String s : client1.getPortSubnetID(p)) {
-                                    if (s.equals(subid)) {
-                                        osClient.networking().router().detachInterface(routerid, subid, null);
-                                        i++;
+                            Subnet subnet = client1.getSubnet(o.get(key_sub).toString());
+                            String subid = subnet.getId();
+                            for (Port p : client1.getPorts()) {
+                                if (p.getDeviceId().equals(routerid)) {
+                                    for (String s : client1.getPortSubnetID(p)) {
+                                        if (s.equals(subid)) {
+                                            osClient.networking().router().detachInterface(routerid, subid, null);
+                                            i++;
+                                        }
+
                                     }
                                 }
 
                             }
+                            ArrayList<Boolean> arr = new ArrayList<Boolean>();
+                            OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
+                            for (Port p : client1.getPorts()) {
+
+                                if (p.getDeviceId().equals(routerid)) {
+                                    arr.add(Boolean.TRUE);
+                                } else {
+                                    arr.add(Boolean.FALSE);
+                                }
+                            }
+                            if (!arr.contains(Boolean.TRUE)) {
+                                osClient.networking().router().delete(routerid);
+
+                            }
+                            j++;
+                        }else{
+                            
                         }
 
                         //os.networking().router()
@@ -376,20 +396,8 @@ public class OpenStackPush {
                     } else {
                         break;
                     }
-                    
-                }
-                ArrayList<Boolean> arr = new ArrayList<Boolean>();
-                OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
-                    for (Port p : client1.getPorts()) {
 
-                        if (p.getDeviceId().equals(routerid)) {
-                            arr.add(Boolean.TRUE);
-                        } else {
-                            arr.add(Boolean.FALSE);
-                        }
-                    }
-                    if(!arr.contains(Boolean.TRUE)){
-                        osClient.networking().router().delete(routerid);
+                }
 
             }
 
@@ -397,14 +405,12 @@ public class OpenStackPush {
 
     }
 
-}
-
-/**
- * *****************************************************************
- * Function to create a Vpc from a modelRef
- * /*****************************************************************
- */
-private List<JSONObject> networkRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws Exception {
+    /**
+     * *****************************************************************
+     * Function to create a Vpc from a modelRef
+     * /*****************************************************************
+     */
+    private List<JSONObject> networkRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws Exception {
         List<JSONObject> requests = new ArrayList();
         String query;
 
@@ -1184,7 +1190,7 @@ private List<JSONObject> networkRequests(OntModel modelRef, OntModel modelDelta,
             RDFNode routeToResource = q.get("routeTo");
             if (!nextHopResource.toString().equals("local")) {
 
-            //1.1 check that the route was model correctly
+                //1.1 check that the route was model correctly
                 //1.1.1 make sure that service provides the route
                 query = "SELECT ?routingtable WHERE {?routingtable mrs:providesRoute <" + routeResource.asResource() + ">}";
                 ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
@@ -1250,11 +1256,11 @@ private List<JSONObject> networkRequests(OntModel modelRef, OntModel modelDelta,
                             + "malformed", routeToResource, routeResource));
                 }
                 //while (r1.hasNext()) {
-                    q1 = r1.next();
-                    RDFNode routetosubnet = q1.get("subnet");
-                    String routeTosubnet = routetosubnet.toString();
-                    String subnetname = getresourcename(routeTosubnet, "+", "");
-                    routetoName.add(subnetname);
+                q1 = r1.next();
+                RDFNode routetosubnet = q1.get("subnet");
+                String routeTosubnet = routetosubnet.toString();
+                String subnetname = getresourcename(routeTosubnet, "+", "");
+                routetoName.add(subnetname);
                 //}
                 //next hop information
                 query = "SELECT ?type ?value WHERE {<" + nextHopResource + "> a mrs:NetworkAddress ."
@@ -1268,16 +1274,15 @@ private List<JSONObject> networkRequests(OntModel modelRef, OntModel modelDelta,
                 }
 
                 //while (r1.hasNext()) {
-
-                    q1 = r1.next();
-                    RDFNode nextHoptype = q1.get("type");
-                    String nextHopvalue = q1.get("value").toString();
-                    nextHopV.add(nextHopvalue);
+                q1 = r1.next();
+                RDFNode nextHoptype = q1.get("type");
+                String nextHopvalue = q1.get("value").toString();
+                nextHopV.add(nextHopvalue);
                 //}
                 //2 find if there is a routeFrom statement in the route 
                 query = "SELECT ?routeFrom WHERE{<" + routeResource.asResource() + "> mrs:routeFrom ?routeFrom}";
                 r1 = executeQuery(query, emptyModel, modelDelta);
-            //2.1 if there is, it means that the route is a router or subnet
+                //2.1 if there is, it means that the route is a router or subnet
                 //host route 
                 while (r1.hasNext()) {
                     //2.1.1 make sure the routeFrom statement is well formed
@@ -1363,14 +1368,12 @@ private List<JSONObject> networkRequests(OntModel modelRef, OntModel modelDelta,
 
                 }
 
-            
-            
             }
         }
         requests.add(o);
-            if (o.size() == 0) {
-                requests.remove(o);
-            }
+        if (o.size() == 0) {
+            requests.remove(o);
+        }
         return requests;
     }
 
@@ -1522,6 +1525,7 @@ private List<JSONObject> networkRequests(OntModel modelRef, OntModel modelDelta,
         int index = resource.indexOf(":");
         return resource.substring(0, index);
     }
+
     private ResultSet executeQueryUnion(String queryString, OntModel refModel, OntModel model) {
         queryString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
                 + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
@@ -1530,7 +1534,7 @@ private List<JSONObject> networkRequests(OntModel modelRef, OntModel modelDelta,
                 + queryString;
 
         Model unionModel = ModelFactory.createUnion(refModel, model);
-        
+
         //get all the nodes that will be added
         Query query = QueryFactory.create(queryString);
         QueryExecution qexec = QueryExecutionFactory.create(query, unionModel);
