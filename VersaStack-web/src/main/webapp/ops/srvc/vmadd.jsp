@@ -68,7 +68,7 @@
                         </div>
                         <div id="service-bottom">
                             <div id="service-fields">
-                                <form id="vm-form" action="/VersaStack-web/VMServlet" method="post">
+                                <form id="vm-form" action="/VersaStack-web/VMServlet" method="post">                                    
                                     <table class="management-table" id="service-form" style="margin-bottom: 0px;"> 
                                         <c:if test="${param.vm_type == 'aws'}">
                                             <thead>
@@ -98,7 +98,7 @@
                                                     <td>
                                                         <select name="vpcID" required>
                                                             <option></option>
-                                                            <option value="urn:ogf:network:aws.amazon.com:aws-cloud:vpc-45143020">vpc-45143020</option>
+                                                            <option value="${param.topo}:vpc-45143020">vpc-45143020</option>
                                                         </select>
                                                     </td>
                                                 </tr>  
@@ -132,7 +132,7 @@
                                                     <td>
                                                         <select name="subnets" required multiple size="5">
 
-                                                            <option value="urn:ogf:network:aws.amazon.com:aws-cloud:subnet-a8a632f1, 10.0.1.0">aws-cloud / subnet-a8a632f1, 10.0.1.0</option>
+                                                            <option value="${param.topo}:subnet-a8a632f1, 10.0.1.0">aws-cloud / subnet-a8a632f1, 10.0.1.0</option>
                                                         </select>
                                                     </td>
                                                 </tr>

@@ -194,9 +194,15 @@ function addVolume() {
                 + '<option value="standard">Standard</option>'
                 + '<option value="io1">io1</option>'
                 + '<option value="gp2">gp2</option>'
-                + '</select>';
+                + '</select>'
+                + '<input type="button" class="button-register" value="Remove" onClick="removeVolume(' + tableHeight + ')" />';
 
     }
+}
+
+function removeVolume(row) {
+    var table = document.getElementById("volume-table");
+    table.deleteRow(row);
 }
 
 function openWizard(button) {

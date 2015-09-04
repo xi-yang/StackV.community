@@ -344,7 +344,8 @@ public class serviceBeans {
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             this.executeHttpMethod(url, connection, "GET", null);           
         } catch (Exception e) {
-            return e.toString();//connection error
+            System.out.println(e.toString());//connection error
+            return null;
         }
 
         //retrieve the version group UUID from the database.
@@ -386,7 +387,8 @@ public class serviceBeans {
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, connection, "POST", view);
         } catch (Exception e) {
-            return e.toString();//query error
+            System.out.println(e.toString());//query error
+            return null;
         }
         
         return result;

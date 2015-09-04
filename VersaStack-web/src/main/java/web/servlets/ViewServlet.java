@@ -63,11 +63,15 @@ public class ViewServlet extends HttpServlet {
             }
 
             String retView = servBean.createModelView(filters.toArray(new String[filters.size()]));
-            user.addModel(name, retView);
-            response.sendRedirect("/VersaStack-web/ops/srvc/viewcreate.jsp?ret=3");
+            if (retView != null) {
+                user.addModel(name, retView);
+                response.sendRedirect("/VersaStack-web/ops/srvc/viewcreate.jsp?ret=0");
+            } else {
+                response.sendRedirect("/VersaStack-web/ops/srvc/viewcreate.jsp?ret=3");
+            }
         } else if (request.getParameter("newModel") != null) {
             String newModel = request.getParameter("newModel"); // this is your data sent from client
-            
+
             user.addModel("base", newModel);
         } else if (request.getParameter("filterModel") != null) {
             user.setCurr(request.getParameter("filterModel"));
