@@ -1,6 +1,5 @@
 package web.servlets;
 
-import java.io.BufferedReader;
 import web.beans.serviceBeans;
 
 import java.io.IOException;
