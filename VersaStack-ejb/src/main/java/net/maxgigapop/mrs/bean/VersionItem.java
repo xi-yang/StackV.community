@@ -84,7 +84,9 @@ public class VersionItem extends PersistentEntity implements Serializable {
             return false;
         }
         VersionItem other = (VersionItem) object;
-        if ((this.referenceUUID != null && other.referenceUUID != null) && (this.referenceUUID.equals(other.referenceUUID))) {
+        if ((this.referenceUUID != null && other.referenceUUID != null) 
+                && (this.referenceUUID.equals(other.referenceUUID))
+                && (this.id == other.id)) {
             return true;
         }
         return false;

@@ -43,6 +43,21 @@ public class SystemInstancePersistenceManager extends PersistenceManager {
 		}
     }
     
+    public static SystemInstance findBySystemDelta (SystemDelta delta) {
+		try {
+			Query q = createQuery(String.format("FROM %s WHERE systemDelta=%d", SystemInstance.class.getSimpleName(), delta.getId()));
+            List<SystemInstance> listSI = (List<SystemInstance>)q.getResultList(); 
+            if (listSI == null || listSI.isEmpty()) {
+                return null;
+            }
+            return listSI.get(0);
+		} catch (Exception e) {
+            if (e.getMessage().contains("No entity found"))
+                return null;
+            throw new EJBException(String.format("SystemInstancePersistenceManager::findBySystemDelta raised exception: %s", e.getMessage()));
+		}
+    }
+        
     public static void save(SystemInstance si) {
         PersistenceManager.save(si);
         if (systemInstanceByUuidMap == null) {

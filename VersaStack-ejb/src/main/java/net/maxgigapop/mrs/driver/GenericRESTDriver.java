@@ -115,7 +115,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
         int maxNumPolls = 10; // timeout after 5 minutes -> ? make configurable
         while (doPoll && (maxNumPolls--) > 0) {
             try {
-                sleep(30000L); // poll every 30 minutes -> ? make configurable
+                sleep(30000L); // poll every 30 seconds -> ? make configurable
                 // pull model from REST API
                 URL url = new URL(String.format("%s/delta/%s/%d", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
                 HttpURLConnection conn = (HttpURLConnection)url.openConnection();
@@ -239,9 +239,9 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
                 wr.flush();
             }
         }
-        logger.log(Level.INFO, "Sending {0} request to URL : {1}", new Object[]{method, url});
+        logger.log(Level.FINEST, "Sending {0} request to URL : {1}", new Object[]{method, url});
         int responseCode = conn.getResponseCode();
-        logger.log(Level.INFO, "Response Code : {0}", responseCode);
+        logger.log(Level.FINEST, "Response Code : {0}", responseCode);
 
         StringBuilder responseStr;
         try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {

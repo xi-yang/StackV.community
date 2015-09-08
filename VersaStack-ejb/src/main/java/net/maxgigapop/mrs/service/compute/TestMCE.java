@@ -13,7 +13,7 @@ import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.Stateless;
 import javax.ejb.LocalBean;
-import net.maxgigapop.mrs.bean.DeltaBase;
+import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ModelBase;
 
 
@@ -28,14 +28,14 @@ public class TestMCE implements IModelComputationElement {
     
     @Override
     @Asynchronous
-    public Future<DeltaBase> process(ModelBase systemModel, DeltaBase annotatedDelta) {
+    public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
         log.info("TceMCE::process #" + sn++);
         try {
             sleep(sn*1000); // sleep sn seconds
         } catch (InterruptedException ex) {
             Logger.getLogger(TestMCE.class.getName()).log(Level.SEVERE, null, ex);
         }
-        DeltaBase delta = new DeltaBase();
+        ServiceDelta delta = new ServiceDelta();
         return new AsyncResult(delta);
     }
 }

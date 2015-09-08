@@ -10,6 +10,7 @@ import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -53,10 +54,16 @@ public class VersionGroup extends PersistentEntity implements Serializable {
                 @JoinColumn(name = "item_id", referencedColumnName = "id")})
     private List<VersionItem> versionItems = null;
 
+    private Date updateTime;
+    
     @Transient 
     ModelBase cachedModelBase = null;
     
     private String status = "";
+    
+    public VersionGroup() {
+        this.updateTime = new java.util.Date();
+    }
     
     public Long getId() {
         return id;
@@ -88,9 +95,7 @@ public class VersionGroup extends PersistentEntity implements Serializable {
             return false;
         }
         VersionGroup other = (VersionGroup) object;
-        if ((this.refUuid != null && other.refUuid != null) && (this.refUuid.equals(other.refUuid))) {
-            return true;
-        } else if (this.getVersionItems() == null || other.getVersionItems() == null) {
+        if (this.getVersionItems() == null || other.getVersionItems() == null) {
             return false;
         } else if (this.getVersionItems().size() != other.getVersionItems().size()) {
             return false;
@@ -126,6 +131,14 @@ public class VersionGroup extends PersistentEntity implements Serializable {
         }
         return null;
     }
+
+    public Date getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(Date updateTime) {
+        this.updateTime = updateTime;
+    }
     
     public String getStatus() {
         return status;
@@ -156,6 +169,7 @@ public class VersionGroup extends PersistentEntity implements Serializable {
             }
             newModel.getOntModel().add(vi.getModelRef().getOntModel().getBaseModel());
        }
+        newModel.setCreationTime(this.updateTime);
         this.cachedModelBase = newModel;
         //@TBD: rebind / rerun inference for referenceModel
         return newModel;

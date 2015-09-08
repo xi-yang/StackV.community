@@ -7,6 +7,9 @@
 package net.maxgigapop.mrs.system;
 
 import com.hp.hpl.jena.ontology.OntModel;
+import com.hp.hpl.jena.ontology.OntModelSpec;
+import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
 import java.io.StringWriter;
 import static java.lang.Thread.sleep;
 import java.util.ArrayList;
@@ -17,6 +20,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.EJBException;
@@ -92,7 +97,7 @@ public class HandleSystemCall {
         }
         VersionGroup vg = new VersionGroup();
         vg.setRefUuid(refUuid);
-       for (String topoUri: topoURIs) {
+        for (String topoUri: topoURIs) {
             DriverInstance di = ditMap.get(topoUri);
             if (di == null) {
                 throw new EJBException(String.format("createHeadVersionGroup canont find driverInstance with topologyURI=%s", topoUri));
@@ -126,6 +131,41 @@ public class HandleSystemCall {
         return vg.createUnionModel();        
     }
     
+    public OntModel queryModelView(String refUuid, List<ModelUtil.ModelViewFilter> mvfs) {
+        VersionGroup vg = VersionGroupPersistenceManager.findByReferenceId(refUuid);
+        if (vg == null) {
+           throw new EJBException(String.format("queryModelView cannot find a VG with refUuid=%s", refUuid));
+        }
+        ModelBase vgModel = vg.createUnionModel();
+        OntModel resultModel = null;
+        for (ModelUtil.ModelViewFilter mvf: mvfs) {
+            if (!mvf.isInclusive())
+                continue;
+            try {
+                OntModel filteredModel = ModelUtil.queryViewFilter(vgModel.getOntModel(), mvf);
+                if (resultModel == null)
+                    resultModel = filteredModel;
+                else
+                    resultModel.add(filteredModel);
+            } catch (Exception ex) {
+                throw new EJBException(String.format("queryModelView cannot queryViewFilter for VG=%s", refUuid), ex);
+            }
+        }
+        if (resultModel == null) {
+            throw new EJBException(String.format("queryModelView has no inclusive filters for VG=%s", refUuid));
+        }
+        for (ModelUtil.ModelViewFilter mvf: mvfs) {
+            if (mvf.isInclusive())
+                continue;
+            try {
+                OntModel filteredModel = ModelUtil.queryViewFilter(vgModel.getOntModel(), mvf);
+                resultModel.remove(filteredModel);
+            } catch (Exception ex) {
+                throw new EJBException(String.format("queryModelView cannot queryViewFilter for VG=%s", refUuid), ex);
+            }
+        }
+        return resultModel;
+    }
     
     public SystemInstance createInstance() {
         SystemInstance systemInstance = new SystemInstance();
@@ -164,6 +204,9 @@ public class HandleSystemCall {
                 && !systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
             throw new EJBException(String.format("Trying to propagateDelta for %s that has delta already progagated.", systemInstance));
         }
+        if (sysDelta.getId() != null && sysDelta.getId() != 0) {
+            sysDelta = (SystemDelta) DeltaPersistenceManager.findById(sysDelta.getId());
+        }
         // Note 1: an initial VG (#1) must exist 
         VersionGroup referenceVG = sysDelta.getReferenceVersionGroup();
         if (referenceVG == null) {
@@ -190,12 +233,18 @@ public class HandleSystemCall {
             // We must persist target model VG after both propagated and committed.
             DeltaBase D12 = headSystemModel.diffFromModel(referenceOntModel);
             //          verify D12.getModelAddition().getOntModel().intersection(sysDelta.getModelReduction().getOntModel()) == empty
+            if (sysDelta.getModelReduction() != null && sysDelta.getModelReduction().getOntModel() != null) {
+                com.hp.hpl.jena.rdf.model.Model reductionConflict = D12.getModelAddition().getOntModel().intersection(sysDelta.getModelReduction().getOntModel());
+                if (!ModelUtil.isEmptyModel(reductionConflict)) {
+                    throw new EJBException(String.format("%s %s.modelReduction based on %s conflicts with current head %s", systemInstance, sysDelta, referenceVG, headVG));
+                }
+            }
             //          verify D12.getModelReduction().getOntModel().intersection(sysDelta.getModelAddiction().getOntModel()) == empty
-            com.hp.hpl.jena.rdf.model.Model reductionConflict = D12.getModelAddition().getOntModel().intersection(sysDelta.getModelReduction().getOntModel());
-            com.hp.hpl.jena.rdf.model.Model additionConflict = D12.getModelReduction().getOntModel().intersection(sysDelta.getModelAddition().getOntModel());
-            //          if either verification fails throw EJBException("version conflict");
-            if (!ModelUtil.isEmptyModel(reductionConflict) || !ModelUtil.isEmptyModel(additionConflict)) {
-                throw new EJBException(String.format("%s %s based on %s conflicts with current head %s", systemInstance, sysDelta, referenceVG, headVG));
+            if (sysDelta.getModelAddition() != null && sysDelta.getModelAddition().getOntModel() != null) {
+                com.hp.hpl.jena.rdf.model.Model additionConflict = D12.getModelReduction().getOntModel().intersection(sysDelta.getModelAddition().getOntModel());
+                if (!ModelUtil.isEmptyModel(additionConflict)) {
+                    throw new EJBException(String.format("%s %s.modelAddition based on %s conflicts with current head %s", systemInstance, sysDelta, referenceVG, headVG));
+                }
             }
             // Note: no need to update current VG to head as the targetDSD will be based the current VG and driverSystem will verify contention on its own.
         }
@@ -265,6 +314,15 @@ public class HandleSystemCall {
             ModelPersistenceManager.save(targetDSD.getModelReduction());
             // push driverSystemDeltas to driverInstances
             DriverInstance driverInstance = targetDSD.getDriverInstance();
+            // remove other driverInstance.driverSystemDeltas that are not by the current systemDelta
+            if (driverInstance.getDriverSystemDeltas() != null) {
+                Iterator<DriverSystemDelta> itOtherDSD = driverInstance.getDriverSystemDeltas().iterator();
+                while (itOtherDSD.hasNext()) {
+                    DriverSystemDelta otherDSD = itOtherDSD.next();
+                    if (!otherDSD.getSystemDelta().equals(sysDelta))
+                        itOtherDSD.remove();
+                }
+            }
             driverInstance.addDriverSystemDelta(targetDSD);
             String driverEjbPath = driverInstance.getDriverEjbPath();
             // make driverSystem propagateDelta call with targetDSD

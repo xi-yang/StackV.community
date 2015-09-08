@@ -52,8 +52,7 @@ public class ModelBase extends PersistentEntity implements Serializable {
     protected OntModel ontModel = null;    
 
     public ModelBase() {
-        java.util.Date now = new java.util.Date();
-        this.creationTime = new java.sql.Date(now.getTime());
+        this.creationTime = new java.util.Date();
     }
 
     public Long getId() {
