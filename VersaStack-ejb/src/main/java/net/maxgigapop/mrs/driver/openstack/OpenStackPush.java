@@ -354,7 +354,7 @@ public class OpenStackPush {
 
                     String key_sub = "subnet" + Integer.toString(i);
                     if (o.containsKey(key_router)) {
-                        if (o.containsKey(key_sub)) {
+                        while (o.containsKey(key_sub)) {
                             Router r = client1.getRouter(o.get(key_router).toString());
                             routerid = r.getId();
 
@@ -366,34 +366,35 @@ public class OpenStackPush {
                                         if (s.equals(subid)) {
                                             osClient.networking().router().detachInterface(routerid, subid, null);
                                             i++;
+                                            key_sub = "subnet" + Integer.toString(i);
                                         }
 
                                     }
                                 }
 
                             }
-                            ArrayList<Boolean> arr = new ArrayList<Boolean>();
-                            OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
-                            for (Port p : client1.getPorts()) {
 
-                                if (p.getDeviceId().equals(routerid)) {
-                                    arr.add(Boolean.TRUE);
-                                } else {
-                                    arr.add(Boolean.FALSE);
-                                }
-                            }
-                            if (!arr.contains(Boolean.TRUE)) {
-                                osClient.networking().router().delete(routerid);
+                        }
+                        ArrayList<Boolean> arr = new ArrayList<Boolean>();
+                        OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
+                        for (Port p : client1.getPorts()) {
 
+                            if (p.getDeviceId().equals(routerid)) {
+                                arr.add(Boolean.TRUE);
+                            } else {
+                                arr.add(Boolean.FALSE);
                             }
-                            j++;
-                        }else{
-                            
+                        }
+                        if (!arr.contains(Boolean.TRUE)) {
+                            osClient.networking().router().delete(routerid);
+
                         }
 
                         //os.networking().router()
                         //.detachInterface("routerId", "subnetId", null);
-                    } else {
+                    }
+                    j++;
+                    if (!o.containsKey(key_router)) {
                         break;
                     }
 
