@@ -69,9 +69,10 @@
                         <div id="service-bottom">
                             <div id="service-fields">
                                 <form id="vm-form" action="/VersaStack-web/VMServlet" method="post">             
-                                <input type="hidden" name="vmType" value="${param.vm_type}" />
-                                    <table class="management-table" id="service-form" style="margin-bottom: 0px;"> 
-                                        <c:if test="${param.vm_type == 'aws'}">
+                                    <input type="hidden" name="vmType" value="${param.vm_type}" />
+                                    <!-- AWS FORM -->
+                                    <c:if test="${param.vm_type == 'aws'}">
+                                        <table class="management-table" id="service-form" style="margin-bottom: 0px;">
                                             <thead>
                                                 <tr>
                                                     <th>AWS Details</th>
@@ -186,8 +187,127 @@
                                                     </td>
                                                 </tr> 
                                             </tbody>
-                                        </c:if>
-                                    </table>
+                                        </table>
+                                    </c:if>
+                                    <!-- OPENSTACK FORM -->
+                                    <c:if test="${param.vm_type == 'os'}">
+                                        <table class="management-table" id="service-form" style="margin-bottom: 0px;">
+                                            <thead>
+                                                <tr>
+                                                    <th>AWS Details</th>
+                                                    <th style="text-align: right"></th>                            
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <c:if test="${not empty param.topo}">
+                                                        <sql:query dataSource="${rains_conn}" sql="SELECT value FROM driver_instance_property P, driver_instance I 
+                                                                   WHERE property = 'region' AND I.id = P.driverInstanceId AND I.topologyUri = ?" var="regionlist">
+                                                            <sql:param value="${param.topo}" />
+                                                        </sql:query>
+
+                                                        <td>Region</td>
+                                                        <td>
+                                                            <c:forEach var="reg" items="${regionlist.rows}">
+                                                                <input type="text" name="region" value="${reg.value}" readonly />
+                                                            </c:forEach>
+                                                        </td>
+                                                    </c:if>
+                                                </tr> 
+                                                <tr>
+                                                    <td>VPC ID</td>
+                                                    <td>
+                                                        <select name="vpcID" required>
+                                                            <option></option>
+                                                            <option value="${param.topo}:vpc-45143020">vpc-45143020</option>
+                                                        </select>
+                                                    </td>
+                                                </tr>  
+                                                <tr>
+                                                    <td>OS Type</td>
+                                                    <td>
+                                                        <select name="ostype" required>
+                                                            <option></option>
+                                                            <option value="windows">Windows 7</option>
+                                                            <option value="ubuntu">Ubuntu</option>
+                                                        </select>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Instance Type</td>
+                                                    <td>
+                                                        <select name="instanceType" required onchange="instanceSelect(this)">
+                                                            <option></option>
+                                                            <option value="instance1">cpu:1, ram:512 MB</option>
+                                                            <option value="instance2">cpu:2, ram:1 GB</option>
+                                                            <option value="instance3">cpu:4, ram:4 GB</option>
+                                                        </select>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Number of VMs</td>
+                                                    <td><input type="number" name="vmQuantity" required></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>VM Subnets</td>
+                                                    <td>
+                                                        <select name="subnets" required multiple size="5">
+
+                                                            <option value="${param.topo}:subnet-a8a632f1, 10.0.1.0">aws-cloud / subnet-a8a632f1, 10.0.1.0</option>
+                                                        </select>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Volumes</td>
+                                                    <td>
+                                                        <table id="volume-table">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Name</th>
+                                                                    <th>Device Path</th>
+                                                                    <th>Snapshot</th>
+                                                                    <th>Size</th>
+                                                                    <th>Type</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>                                                                
+                                                                <tr>
+                                                                    <td>Root</td>
+                                                                    <td>
+                                                                        <input type="text" name="root-path" style="width: 8em;" readonly required/>
+                                                                    </td>
+                                                                    <td>
+                                                                        <input type="text" name="root-snapshot" style="width: 8em;" readonly required/>
+                                                                    </td>
+                                                                    <td>
+                                                                        <input type="number" name="root-size" style="width: 4em; text-align: center;" required/>
+                                                                    </td>
+                                                                    <td>
+                                                                        <select name="root-type" required>
+                                                                            <option></option>
+                                                                            <option value="standard">Standard</option>
+                                                                            <option value="io1">io1</option>
+                                                                            <option value="gp2">gp2</option>
+                                                                        </select>                                                        
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </td>
+                                                </tr>
+
+                                                <tr>
+                                                    <td></td>
+                                                    <td>
+                                                        <input class="button-register" name="install" type="submit" value="Install" />
+                                                        <input class="button-register" type="button" 
+                                                               value="Add Volume" onClick="addVolume()">
+                                                        <input type="hidden" name="graphTopo" value="none"/>
+                                                    </td>
+                                                </tr> 
+                                            </tbody>
+                                        </table>
+                                    </c:if>                                    
                                 </form>
                             </div>
                         </div>
