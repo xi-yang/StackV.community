@@ -54,6 +54,7 @@ public class MCETools {
         private HashSet<Statement> maskedLinks = null;
         Resource deviationNode = null;
         OntModel ontModel = null;
+        double failureProb = 0.0; 
         
         public Path() {
             super();
@@ -301,6 +302,128 @@ public class MCETools {
             + "      -> (?a http://schemas.ogf.org/nml/2013/03/base#connectsTo ?d)\n"
             + "         (?d http://schemas.ogf.org/nml/2013/03/base#connectsTo ?a)\n"
             + "]";
+    
+    private static String L2OpenflowPathRules
+            = "[rule1:  (?a http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort ?b)\n"
+            + "      -> (?a http://schemas.ogf.org/nml/2013/03/base#connectsTo ?b)\n"
+            + "         (?b http://schemas.ogf.org/nml/2013/03/base#connectsTo ?a)\n"
+            + "]\n"
+            + "[rule2:  (?a http://schemas.ogf.org/nml/2013/03/base#isAlias ?b) \n"
+            + "      -> (?a http://schemas.ogf.org/nml/2013/03/base#connectsTo ?b)\n"
+            + "         (?b http://schemas.ogf.org/nml/2013/03/base#connectsTo ?a)\n"
+            + "]";
+    
+    
+    public static OntModel transformL2OpenflowPathModel(Model inputModel){
+        
+        Reasoner reasoner = new GenericRuleReasoner(Rule.parseRules(L2OpenflowPathRules));
+        reasoner.setDerivationLogging(true);
+        InfModel infModel = ModelFactory.createInfModel(reasoner, inputModel);
+
+        OntModel outputModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        outputModel.add(infModel);
+        return outputModel;
+    }
+    
+        
+    private static String[] openflowPathIntoSwitchConstraints = {
+        "SELECT $s $p $o WHERE {$s a nml:BidirectionalPort. $o a nml:Node FILTER($s = <$$s> && $o = <$$o>)}",
+     };
+    
+    private static String[] openflowPathOutSwitchConstraints = {
+        "SELECT $s $p $o WHERE {$s a nml:Node. $o a nml:BidirectionalPort FILTER($s = <$$s> && $o = <$$o>)}",
+    };
+    
+    private static String[] openflowPathBetweenPortConstraints = {
+        "SELECT $s $p $o WHERE {$s a nml:BidirectionalPort. $o a nml:BidirectionalPort FILTER($s = <$$s> && $o = <$$o>)}",
+    };
+    
+    public static boolean verifyOpenFlowPath(Model model, Path path){
+        
+        //frist stage must be IntroSwitch to start from a port
+        String stage = "TakeOff";
+        Iterator<Statement> itS = path.iterator();
+        while (itS.hasNext()) {
+            Statement stmt = itS.next();
+
+            if (stage.equals("TakeOff")) {
+                if (!evaluateStatement_AnyTrue(model, stmt, openflowPathIntoSwitchConstraints)) {
+                    return false;
+                } else {
+                    stage = "IntoSwitch";
+                    continue;
+                }
+            }
+
+            if (stage.equals("IntoSwitch")) {
+                if (ModelUtil.isResourceOfType(model, stmt.getSubject(), Nml.Node)
+                        && ModelUtil.isResourceOfType(model, stmt.getObject().asResource(), Nml.BidirectionalPort)) {
+                    stage = "OutSwitch";
+                    if (!evaluateStatement_AnyTrue(model, stmt, openflowPathOutSwitchConstraints)) {
+                        return false;
+                    } else {
+                        continue;
+                    }
+                } else {
+                    return false;
+                }
+            }
+
+            if (stage.equals("OutSwitch")) {
+                if (ModelUtil.isResourceOfType(model, stmt.getSubject(), Nml.BidirectionalPort)
+                        && ModelUtil.isResourceOfType(model, stmt.getObject().asResource(), Nml.BidirectionalPort)) {
+                    stage = "BetweenPort";
+                    if (!evaluateStatement_AnyTrue(model, stmt, openflowPathBetweenPortConstraints)) {
+                        return false;
+                    } else {
+                        continue;
+                    }
+                } else {
+                    return false;
+                }
+            }
+
+            if (stage.equals("BetweenPort")) {
+                if (ModelUtil.isResourceOfType(model, stmt.getSubject(), Nml.BidirectionalPort)
+                        && ModelUtil.isResourceOfType(model, stmt.getObject().asResource(), Nml.Node)) {
+                    stage = "IntoSwitch";
+                    if (!evaluateStatement_AnyTrue(model, stmt, openflowPathIntoSwitchConstraints)) {
+                        return false;
+                    } else {
+                        continue;
+                    }
+                } else {
+                    return false;
+                }
+            }
+        }
+
+        //last stage must point to a port
+        if (stage.equals("IntoSwitch")) {
+            return false;
+        }
+        return true;
+    }
+    
+    public static void printMCEToolsPath (MCETools.Path path){
+          
+        for (Statement stmtLink : path) {
+            System.out.println(stmtLink.toString());
+        }
+    }
+    
+    public static void printKSP(List<MCETools.Path> KSP){
+                
+        int count=0;
+        
+        for(MCETools.Path candidatePath : KSP){
+            System.out.format("path[%d]: \n", count);
+            for (Statement stmtLink: candidatePath){
+                System.out.println(stmtLink.toString());
+            }
+            count = count +1;
+        }
+    }
 
     public static OntModel transformL2NetworkModel(Model inputModel) {
         //Query query = QueryFactory.create(l2NetworkConstructSparql);
@@ -368,7 +491,7 @@ public class MCETools {
         }
         return true;
     }
-    
+
     public static boolean evaluateStatement_AnyTrue(Model model, Statement stmt, String[] constraints) {
         for (String sparql: constraints) {
             if (ModelUtil.evaluateStatement(model, stmt, sparql))
