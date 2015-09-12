@@ -1,0 +1,71 @@
+
+<!DOCTYPE html>
+<html >    
+    <head>   
+        <meta charset="UTF-8">
+        <title>Overview</title>
+        <script src="js/jquery/jquery.js"></script>
+        <script src="js/bootstrap.js"></script>
+
+        <link rel="stylesheet" href="css/animate.min.css">
+        <link rel="stylesheet" href="css/font-awesome.min.css">
+        <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
+        <link rel="stylesheet" href="css/bootstrap.css">
+        <link rel="stylesheet" href="css/style.css">
+    </head>
+
+    <body>        
+        <!-- NAV BAR -->
+        <div id="nav">
+        </div>
+
+        <script type="text/javascript">
+            //Debug, break out "model" to a top level object
+            var model;
+            var layout;
+            require(["local/versastack/model","local/versastack/layout"],function(m,l){
+                model=m;
+                model.init();
+                layout=l;
+            });
+            var m=model;
+            var l=layout;
+            
+            require(["dojo/on", "dijit/registry", "dojo/ready", "dijit/layout/ContentPane"], function(on, registry, ready, ContentPane) {
+                ready(function() {
+                    var overviewPanel = registry.byId("overview");
+                    var networksPanel = registry.byId("networks");
+                    var usersPanel = registry.byId("users");
+                    var settingsPanel = registry.byId("settings");
+                    var logoutPanel = registry.byId("logout");
+
+                    on(networksPanel, 'click', callSwitchPanelsWith("Networks"));
+                    on(overviewPanel, 'show', callSwitchPanelsWith("Overview"));
+                    on(usersPanel, 'show', callSwitchPanelsWith("Users"));
+                    on(settingsPanel, 'show', callSwitchPanelsWith("Settings"));
+                    on(logoutPanel, 'show', callSwitchPanelsWith("Logout"));
+
+                    new ContentPane({
+                        title: 'Small test data-set',
+                        id: 'networkTabSmall',
+                        closable: true,
+                        content: '<svg id="topologySmall" />',
+                        onClose: function() {
+                            dijit.getEnclosingWidget(this.domNode.parentNode).removeChild(this);
+                        }
+                    });
+
+                    new ContentPane({
+                        title: 'Large test data-set',
+                        id: 'networkTabLarge',
+                        closable: true,
+                        content: '<svg id="topologyLarge" />',
+                        onClose: function() {
+                            dijit.getEnclosingWidget(this.domNode.parentNode).removeChild(this);
+                        }
+                    });
+                });
+            });
+        </script>        
+    </body>
+</html>
