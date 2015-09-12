@@ -388,7 +388,6 @@ public class ActionBase {
             */
         }
                 
-                
         // remove statements of resource of spa#Abstraction type
         sparql = "SELECT ?abstraction WHERE {"
                 + String.format("?abstraction a <%s>. ", Spa.Abstraction)
@@ -401,7 +400,7 @@ public class ActionBase {
             while (iterAS.hasNext())
                 listStmtsToRemove.add(iterAS.next());
         }
-               
+        
         // sanity check
         spaModel.remove(listStmtsToRemove);
         sparql = "SELECT ?policyX WHERE {"
@@ -413,7 +412,7 @@ public class ActionBase {
             String policyAnotation = rs.next().getResource("policyX").toString();
             throw new EJBException(this + ".cleanupSpaModel() failed to clean up policy annotation: " +  policyAnotation);
         }
-    }
+     }
 
     public String toString() {
         return "WorkerAction(" + this.name+"->"+this.mceBeanPath+")";

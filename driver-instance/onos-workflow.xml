@@ -1,5 +1,7 @@
 <serviceDelta> 
-<uuid>9047b637-13ba-4a6c-ab48-24c33d6ebda6</uuid>
+<uuid>d75d6cb5-e831-4051-8c9a-ff5e868a3d4a</uuid>
+<uuid>0a872b50-e221-413c-8b8c-9df1762a143a</uuid>
+>>>>>>> 05119e7b3862fc87e7f6de3742d23bcb6a92bfed
 <workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>
 <modelAddition>
 @prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .
