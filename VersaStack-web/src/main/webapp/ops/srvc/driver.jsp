@@ -179,12 +179,17 @@
                                                 <tr>
                                                     <sql:query dataSource="${rains_conn}" sql="SELECT driverEjbPath, topologyUri FROM driver_instance" var="driverlist" />
                                                     <td>Select Driver</td>
-                                                    <td>                                                        
-                                                        <select name="topologyUri" size="10">
-                                                            <c:forEach var="driver" items="${driverlist.rows}">
-                                                                <option value="${driver.topologyUri}">${driver.driverEjbPath} - ${driver.topologyUri}</option>
-                                                            </c:forEach>
-                                                        </select>
+                                                    <td>
+                                                        <c:if test="${not empty driverlist}">
+                                                            <select name="topologyUri" size="10">
+                                                                <c:forEach var="driver" items="${driverlist.rows}">
+                                                                    <option value="${driver.topologyUri}">${driver.driverEjbPath} - ${driver.topologyUri}</option>
+                                                                </c:forEach>
+                                                            </select>
+                                                        </c:if>
+                                                        <c:if test="${empty driverlist}">
+                                                            No Drivers Present
+                                                        </c:if>
                                                     </td>
                                                 </tr>
                                                 <tr>

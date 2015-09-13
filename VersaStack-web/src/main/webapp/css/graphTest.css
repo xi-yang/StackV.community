@@ -54,6 +54,10 @@ body{
 
 }
 
+.button-filter-select {
+    float: left;
+}
+
 #displayName{
     text-align: center;
     visibility: visible;

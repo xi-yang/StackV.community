@@ -387,7 +387,6 @@
                         e.preventDefault();
                     }
                 });
-
             }
         </script>
     </head>
@@ -402,14 +401,11 @@
                 <button class="button-filter-select" id="nofilter">No Filter</button>
             </div>
             <div>
-                <button class="button-filter-select" id="Test">Test Filter</button>
+                <button class="button-filter-select" id="Test">Test</button>
             </div>
-            <div>
-                <button class="button-filter-select" id="filter2"></button>
-            </div>
-            <div>
-                <button class="button-filter-select" id="filter3"></button>
-            </div>
+            <c:forEach items="${user.modelNames}" var="filterName">
+                <button class="button-filter-select" id="${filterName}">${filterName}</button>
+            </c:forEach>
         </div>
 
         <div id="displayPanel">

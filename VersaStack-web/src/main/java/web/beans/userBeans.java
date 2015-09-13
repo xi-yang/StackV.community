@@ -470,4 +470,8 @@ public class userBeans {
     public String getModels() {
         return new JSONObject(model_map).toJSONString();
     }
+    
+    public ArrayList<String> getModelNames() {
+        return new ArrayList<>(model_map.keySet());
+    }
 }
