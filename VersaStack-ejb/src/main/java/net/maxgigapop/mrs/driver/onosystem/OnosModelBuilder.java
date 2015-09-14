@@ -155,6 +155,7 @@ public class OnosModelBuilder {
                 String deviceFlows[][] = onos.getOnosDeviceFlows(subsystemBaseUrl, device[i][0], access_key_id, secret_access_key);
                 int qtyFlows = deviceFlows.length;
                 
+                //work from here tonight
                 for(int j=0; j<qtyFlows; j++){
                     System.out.format("for device %s, id=%s, groupId=%s, deviceId=%s, outPort=%s, inPort=%s, ETH_DST=%s, ETH_SRC=%s\n", 
                             device[i][0], deviceFlows[j][0], deviceFlows[j][1], deviceFlows[j][2], deviceFlows[j][3], deviceFlows[j][4], deviceFlows[j][5], deviceFlows[j][6]);
