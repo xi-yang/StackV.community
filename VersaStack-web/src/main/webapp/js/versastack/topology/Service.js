@@ -87,6 +87,7 @@ define([
                     iconMap[values.virtualSwitchingService] = "virtual_switch_service.png";
                     iconMap[values.switchingService] = "switching_service.png";
                     iconMap[values.topopolgySwitchingService] = iconMap[values.switchingService];
+                    iconMap[values.DataTransferService] = "data_transfer_service.png";
 //            iconMap[values.virtualCloudService]="";
 
                 }

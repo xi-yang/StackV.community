@@ -106,6 +106,7 @@ define([
                             switch (type) {
                                 case values.topology:
                                 case values.node:
+                                case values.FileSystem:
                                     var toAdd;
                                     if (oldModel && oldModel.nodeMap[key]) {
                                         toAdd = oldModel.nodeMap[key];
@@ -137,6 +138,7 @@ define([
                                 case values.hypervisorBypassInterfaceService:
                                 case values.storageService:
                                 case values.IOPerformanceMeasurementService:
+                                case values.DataTransferService:
                                     var toAdd;
                                     if (oldModel && oldModel.serviceMap[key]) {
                                         toAdd = oldModel.serviceMap[key];

@@ -244,6 +244,7 @@ define(["local/versastack/topology/modelConstants"],
                 iconMap["default"] = "default.png";
                 iconMap[values.node] = "node.png";
                 iconMap[values.topology] = "topology.png";
+                iconMap[values.FileSystem] = "filesystem.png";
             }
 
             return Node;

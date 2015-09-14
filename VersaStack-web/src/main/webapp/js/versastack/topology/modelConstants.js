@@ -7,6 +7,7 @@ define([],function(){
         isAlias: "http://schemas.ogf.org/nml/2013/03/base#isAlias",
         namedIndividual: "http://www.w3.org/2002/07/owl#NamedIndividual",
         topology: "http://schemas.ogf.org/nml/2013/03/base#Topology",
+        FileSystem: "http://schemas.ogf.org/mrs/2013/12/topology#FileSystem",
         node: "http://schemas.ogf.org/nml/2013/03/base#Node",
         bidirectionalPort: "http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort",
         labelGroup: "http://schemas.ogf.org/nml/2013/03/base#LabelGroup",
@@ -43,6 +44,7 @@ define([],function(){
         switchingService: "http://schemas.ogf.org/nml/2013/03/base#SwitchingService",
         topopolgySwitchingService: "http://schemas.ogf.org/mrs/2013/12/topology#SwitchingService",
         virtualCloudService: "http://schemas.ogf.org/mrs/2013/12/topology#VirtualCloudService",
+        DataTransferService: "http://schemas.ogf.org/mrs/2013/12/topology#DataTransferService",
         
         providesSubnet: "http://schemas.ogf.org/mrs/2013/12/topology#providesSubnet",
         encoding:"http://schemas.ogf.org/nml/2013/03/base#encoding",
