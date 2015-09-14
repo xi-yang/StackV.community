@@ -46,7 +46,7 @@ define([
             if (mode === 1) {
                 //request.open("GET", "/VersaStack-web/data/json/max-aws.json");
                 //request.open("GET", "/VersaStack-web/data/json/model-all-hybrid.json");
-                request.open("GET", "/VersaStack-web/data/json/umd-anl-all.json");
+                request.open("GET", "/VersaStack-web/data/json/umd-anl-all-2.json");
             }
             else if (mode === 2) {              
                 request.open("GET","/VersaStack-web/restapi/model/");
@@ -64,11 +64,15 @@ define([
                 if (data.charAt(0) === '<') {                     
                     window.alert("Empty Topology.");
                     return;
+                } else if (data.charAt(0) === 'u') {
+                    data = JSON.parse(data);                                    
+                    versionID=data.version;
+                    map = JSON.parse(data);
+                } else {
+                    data = JSON.parse(data);                                    
+                    versionID=data.version;
+                    map = JSON.parse(data.ttlModel); 
                 }
-                
-                data = JSON.parse(data);                                    
-                versionID=data.version;
-                map = JSON.parse(data.ttlModel);
 
                 if (INJECT) {
                     var newNode = {type: 'uri', value: 'FOO:1'};
@@ -293,6 +297,7 @@ define([
                                 break;
                             case values.hasNode:
                             case values.hasTopology:
+                            case values.hasFileSystem:
                                 var subNodes = node_[key];
                                 map_(subNodes, function (subNodeKey) {
                                     var errorVal = subNodeKey.value;

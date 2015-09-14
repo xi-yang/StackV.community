@@ -87,7 +87,28 @@
                             DropDownTree = tree;
 
                             outputApi = new outputApi_();
-                        });
+                });                    
+        
+                var request = new XMLHttpRequest();
+                request.open("GET", "/VersaStack-web/data/json/umd-anl-all.json");
+
+                request.setRequestHeader("Accept", "application/json");
+                request.onload = function () {
+                    var modelData = request.responseText;
+
+                    console.log("Data: " + modelData);
+
+                    if (modelData.charAt(0) === '<') {
+                        return;
+                    }
+
+                    modelData = JSON.parse(modelData);                     
+                    $.post("/VersaStack-web/ViewServlet", {newModel: modelData.ttlModel}, function(response) {
+                        // handle response from your servlet.
+                    });
+                };
+                request.send();
+                        
                 buttonInit();
             }
             function drawGraph() {
@@ -153,7 +174,7 @@
                     render.doRender(outputApi, model);
                 }, viewModel);
                 
-                $.post("/VersaStack-web/ViewServlet", {filterModel: viewModel}, function(response) {
+                $.post("/VersaStack-web/ViewServlet", {filterModel: viewModel.ttlModel}, function(response) {
                         // handle response from your servlet.
                 });
             }
@@ -186,18 +207,11 @@
                 });
 
                 $(".button-filter-select").click(function (evt) {
-
+                    var viewModels = ${user.getModels()};
                     if (this.id === "nofilter") {
-                        reload();
+                        filter(viewModels["base"]);
                     } else {
-                        var buttonID = this.id;
-                        console.log("Button ID: " + buttonID);
-                        var viewModels = ${user.getModels()};
-                        console.log("viewModels: " + viewModels);
-                        //viewModels = JSON.parse(viewModels);
-                        //console.log("viewModels Parsed: " + viewModels);
-                        console.log("View Model: " + viewModels[buttonID]);
-                        filter(viewModels[buttonID]);
+                        filter(viewModels[this.id]);
                     }
 
                     evt.preventDefault();
@@ -403,9 +417,11 @@
             <div>
                 <button class="button-filter-select" id="Test">Test</button>
             </div>
+            <!--
             <c:forEach items="${user.modelNames}" var="filterName">
                 <button class="button-filter-select" id="${filterName}">${filterName}</button>
             </c:forEach>
+            -->
         </div>
 
         <div id="displayPanel">

@@ -14,6 +14,7 @@ define([],function(){
         hasNode: "http://schemas.ogf.org/nml/2013/03/base#hasNode",
         hasService: "http://schemas.ogf.org/nml/2013/03/base#hasService",
         hasTopology: "http://schemas.ogf.org/nml/2013/03/base#hasTopology",
+        hasFileSystem: "http://schemas.ogf.org/mrs/2013/12/topology#hasFileSystem",
         networkAdress: "http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress",
         bucket: "http://schemas.ogf.org/mrs/2013/12/topology#Bucket",
         switchingSubnet: "http://schemas.ogf.org/mrs/2013/12/topology#SwitchingSubnet",
