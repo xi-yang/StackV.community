@@ -35,7 +35,7 @@ public class OnosServer {
     public int qtyLinks = 0;
     public int qtyHosts = 0;
     //public int qtyPorts = 0;
-    public int qtyFlows = 0;
+    //public int qtyFlows = 0;
 
     private static final Logger logger = Logger.getLogger(OnosRESTDriver.class.getName());
 
@@ -142,69 +142,100 @@ public class OnosServer {
     //pull Hosts Data
     public String[][] getOnosHosts(String subsystemBaseUrl, String access_key_id, String secret_access_key)
             throws MalformedURLException, IOException, ParseException {
-        qtyHosts = 0;
-        URL urlHosts = new URL(subsystemBaseUrl + "/hosts");
-        HttpURLConnection connHosts = (HttpURLConnection) urlHosts.openConnection();
-        String responseStrHosts = this.executeHttpMethod(urlHosts, connHosts, "GET", null, access_key_id, secret_access_key);
-        responseStrHosts = responseStrHosts.replaceAll("(\\[|\\]|\\{|\\}|,)", "$1\n");
-        responseStrHosts = responseStrHosts.replaceAll("\"\\}", "\"\n\\}");
-        responseStrHosts = responseStrHosts.replaceAll("\"\\]", "\"\n\\]");
-        responseStrHosts = responseStrHosts.replaceAll("\\]\n,", "\\],");
-        responseStrHosts = responseStrHosts.replaceAll("\\}\n,", "\\},");
-        responseStrHosts = responseStrHosts.replaceAll("\\},\\{", "\\},\n\\{");
-        int realSize = responseStrHosts.split("\n").length;
-        String hostsArray[] = new String[realSize];
-        hostsArray = responseStrHosts.split("\n");
-        for (int i = 0; i < realSize; i++) {
-            if (hostsArray[i].matches("(.*)\"id\":(.*)")) {
-                qtyHosts++;
+        
+        URL url = new URL(subsystemBaseUrl + "/hosts");
 
-            }
-        }
-        String hosts[][] = new String[6][qtyHosts];
-
-        int j = 0;
-        for (int i = 0; i < realSize; i++) {
-
-            if (hostsArray[i].matches("(.*)\"id\":(.*)")) {
-
-                hosts[0][j] = hostsArray[i].split("\"id\":\"")[1];
-                hosts[0][j] = hosts[0][j].split("\"")[0];
-            } else if (hostsArray[i].matches("(.*)\"mac\":(.*)")) {
-
-                hosts[1][j] = hostsArray[i].split("\"mac\":\"")[1];
-                hosts[1][j] = hosts[1][j].split("\"")[0];
-            } else if (hostsArray[i].matches("(.*)\"vlan\":(.*)")) {
-
-                hosts[2][j] = hostsArray[i].split("\"vlan\":\"")[1];
-                hosts[2][j] = hosts[2][j].split("\"")[0];
-            } else if (hostsArray[i].matches("(.*)\"ipAddress\":(.*)")) {
-
-                hosts[3][j] = hostsArray[i + 1].split("\"")[1];
-                hosts[3][j] = hosts[3][j].split("\"")[0];
-            } else if (hostsArray[i].matches("(.*)\"elementId\":(.*)")) {
-
-                hosts[4][j] = hostsArray[i].split("\"elementId\":\"")[1];
-                hosts[4][j] = hosts[4][j].split("\"")[0];
-            } else if (hostsArray[i].matches("(.*)\"port\":(.*)")) {
-
-                hosts[5][j] = hostsArray[i].split("\"port\":\"")[1];
-                hosts[5][j] = hosts[5][j].split("\"")[0];
-                j++;
-            }
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        String responseStr = this.executeHttpMethod(url, conn, "GET", null, access_key_id, secret_access_key);
+        
+        JSONParser jsonParser = new JSONParser();
+        JSONObject jsonObject = (JSONObject) jsonParser.parse(responseStr);
+        JSONArray hostArray = (JSONArray) jsonObject.get("hosts");
+        qtyHosts = hostArray.size();
+        
+        String hosts[][] = new String[qtyHosts][6];
+        //hosts[][0]:id; hosts[][1]:mac; hosts[][2]:vlan; hosts[][3]:ipAddresses
+        //hosts[][4]:elementid; hosts[][5]:port
+        
+        for(int i=0; i<qtyHosts; i++){
+            JSONObject hostObj = (JSONObject) hostArray.get(i);
+            
+            hosts[i][0] = (String) hostObj.get("id");
+            hosts[i][1] = (String) hostObj.get("mac");
+            hosts[i][2] = (String) hostObj.get("vlan");
+            
+            JSONArray ipArray = (JSONArray) hostObj.get("ipAddresses");
+            //hosts[i][3] = String.valueOf(ipObj);
+            
+            JSONObject locObj = (JSONObject) hostObj.get("location");
+            hosts[i][4] = (String) locObj.get("elementId");
+            hosts[i][5] = (String) locObj.get("port");
 
         }
-        return (hosts);
+        return hosts;
     }
 
     //pull Device Ports Data
     public String[][] getOnosDeviceFlows(String subsystemBaseUrl, String devId, String access_key_id, String secret_access_key)
             throws MalformedURLException, IOException, ParseException {
-        qtyFlows = 0;
 
         URL urlDevFlow = new URL(subsystemBaseUrl + "/flows/" + devId);
         HttpURLConnection connDevFlow = (HttpURLConnection) urlDevFlow.openConnection();
         String responseStrDevFlow = this.executeHttpMethod(urlDevFlow, connDevFlow, "GET", null, access_key_id, secret_access_key);
+        
+        JSONParser jsonParser = new JSONParser();
+        JSONObject jsonObject = (JSONObject) jsonParser.parse(responseStrDevFlow);
+        JSONArray flowArray = (JSONArray) jsonObject.get("flows");
+        
+        int qtyFlows = flowArray.size();
+        
+        String flows[][] = new String[qtyFlows][9];
+        //flows[][0]: id; flows[][1]:groupid; flows[][2]:deviceId; 
+        //flows[][3]: out_port, flows[][4]: in_port
+        //flows[][5]: ETH_SRC mac, flows[][6]: ETH_DST mac
+        //flows[][7]: ETH_SRC_VLAN, flows[][8]:ETH_DST_VLAN
+        
+        for(int i=0; i<qtyFlows; i++){
+            JSONObject flowObj = (JSONObject) flowArray.get(i);
+            
+            flows[i][0] = (String) flowObj.get("id");
+            flows[i][1] =  String.valueOf(flowObj.get("groupId"));
+            flows[i][2] = (String) flowObj.get("deviceId");
+            
+            JSONObject treatmentObj = (JSONObject) flowObj.get("treatment");
+            JSONArray instruArray = (JSONArray) treatmentObj.get("instructions");
+            
+            for(Object instru : instruArray){
+                JSONObject instruObj = (JSONObject) instru;
+                if(String.valueOf(instruObj.get("type")).equals("OUTPUT"))
+                    flows[i][3] = String.valueOf(instruObj.get("port"));
+            }
+            /*
+            if(String.valueOf(instruArray.get(0)).equals(String.valueOf("OUTPUT")))
+                flows[i][2] = (String) instruArray.get(1);
+            */
+            JSONObject selectorObj = (JSONObject) flowObj.get("selector");
+            JSONArray criteriaArray = (JSONArray) selectorObj.get("criteria");
+            
+            for(Object cri : criteriaArray){
+               JSONObject criObj = (JSONObject) cri;
+               if(String.valueOf(criObj.get("type")).equals("IN_PORT"))
+                   flows[i][4] = String.valueOf(criObj.get("port"));
+               else if (String.valueOf(criObj.get("type")).equals("ETH_DST"))
+                   flows[i][5] = (String) criObj.get("mac");
+               else if (String.valueOf(criObj.get("type")).equals("ETH_SRC"))
+                   flows[i][6] = (String) criObj.get("mac");
+            }
+            
+            flows[i][7] = "-1";
+            flows[i][8] = "-1";
+            
+        }
+        
+        
+        
+        /*
+        
         responseStrDevFlow = responseStrDevFlow.replaceAll("\\}", "\n\\}");
         responseStrDevFlow = responseStrDevFlow.replaceAll("(\\[|\\]|\\{|\\}|\\},)", "$1\n");
         responseStrDevFlow = responseStrDevFlow.replaceAll(",\"", ",\n\"");
@@ -260,7 +291,8 @@ public class OnosServer {
             }
 
         }
-        return (deviceFlows);
+                */
+        return (flows);
     }
 
     //send GET to HTTP server and retrieve response

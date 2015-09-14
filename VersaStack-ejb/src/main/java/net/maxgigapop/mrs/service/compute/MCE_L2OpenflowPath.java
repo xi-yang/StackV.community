@@ -104,7 +104,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         Map<Resource, List> srrgMap = this.getSrrgInfo(systemModel.getOntModel());
         
         //test printout
-        System.out.format("there are %d srrgMap\n", srrgMap.size());
+        System.out.format("there are %d SRRG\n", srrgMap.size());
         
         ServiceDelta outputDelta = annotatedDelta.clone();
 
@@ -113,7 +113,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
 
             MCETools.Path l2path = this.doSrrgPathFinding(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), resLink, linkMap.get(resLink), srrgMap);
 
-            
+   
             if (l2path == null) {
                 throw new EJBException(String.format("%s::process cannot find a path for %s", this.getClass().getName(), resLink));
             }
@@ -252,7 +252,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         
         MCETools.Path solution = getLeastSrrgCostPath(KSP, systemModel, srrgMap);
         System.out.format("Picked path with fail prob: %f\n", solution.failureProb);
-        //MCETools.printMCEToolsPath(solution);
+        MCETools.printMCEToolsPath(solution);
         return solution;
 
     }

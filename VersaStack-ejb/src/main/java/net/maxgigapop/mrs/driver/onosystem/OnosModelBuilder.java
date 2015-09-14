@@ -117,15 +117,14 @@ public class OnosModelBuilder {
 
         OnosServer onos = new OnosServer();
         String device[][] = onos.getOnosDevices(subsystemBaseUrl, access_key_id, secret_access_key);
-        //String hosts[][] = onos.getOnosHosts(subsystemBaseUrl, access_key_id, secret_access_key);
+        String hosts[][] = onos.getOnosHosts(subsystemBaseUrl, access_key_id, secret_access_key);
         String links[][] = onos.getOnosLinks(subsystemBaseUrl, access_key_id, secret_access_key);
         int qtyLinks = onos.qtyLinks;
-        //int qtyHosts = onos.qtyHosts;
+        int qtyHosts = onos.qtyHosts;
         int qtyDevices = onos.qtyDevices;
         
         
-        for (int i = 0; i < qtyDevices; i++) {
-            
+        for (int i = 0; i < qtyDevices; i++) { 
             //add device to model
             Resource resNode = RdfOwl.createResource(model, topologyURI + ":" + device[i][0], node);
             model.add(model.createStatement(onosTopology, hasNode, resNode));
@@ -152,8 +151,66 @@ public class OnosModelBuilder {
                         }
                     }
                 }
+                
+                String deviceFlows[][] = onos.getOnosDeviceFlows(subsystemBaseUrl, device[i][0], access_key_id, secret_access_key);
+                int qtyFlows = deviceFlows.length;
+                
+                for(int j=0; j<qtyFlows; j++){
+                    System.out.format("for device %s, id=%s, groupId=%s, deviceId=%s, outPort=%s, inPort=%s, ETH_DST=%s, ETH_SRC=%s\n", 
+                            device[i][0], deviceFlows[j][0], deviceFlows[j][1], deviceFlows[j][2], deviceFlows[j][3], deviceFlows[j][4], deviceFlows[j][5], deviceFlows[j][6]);
+                }
+                
+                /*
+                for(int j=0; j<qtyFlows; j++){
+                    //groupId
+                    Resource resFlowTable = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":openflow-service:flow-table-" + deviceFlows[j][1], flowTable);
+                }
+                /*
+                    for (int j = 0; j < qtyFlows; j++) {
+                    Resource resFlowTable = RdfOwl.createResource(model, topologyURI + ":" + device[0][i] + ":openflow-service:flow-table-" + deviceFlows[1][j], flowTable);
+                    model.add(model.createStatement(resOpenFlow, providesFlowTable, resFlowTable));
+                    Resource resFlow = RdfOwl.createResource(model, topologyURI + ":" + device[0][i] + ":openflow-service:flow-table-" + deviceFlows[1][j] + ":flow-" + deviceFlows[0][j], flow);
+                    model.add(model.createStatement(resFlowTable, providesFlow, resFlow));
+                    Resource resFlowRule0 = RdfOwl.createResource(model, topologyURI + ":" + device[0][i] + ":openflow-service:flow-table-" + deviceFlows[1][j] + ":flow-" + deviceFlows[0][j] + ":rule-match-0", flowRule);
+                    Resource resFlowRule1 = RdfOwl.createResource(model, topologyURI + ":" + device[0][i] + ":openflow-service:flow-table-" + deviceFlows[1][j] + ":flow-" + deviceFlows[0][j] + ":rule-match-1", flowRule);
+                    Resource resFlowRule2 = RdfOwl.createResource(model, topologyURI + ":" + device[0][i] + ":openflow-service:flow-table-" + deviceFlows[1][j] + ":flow-" + deviceFlows[0][j] + ":rule-match-2", flowRule);
+                    Resource resFlowRule3 = RdfOwl.createResource(model, topologyURI + ":" + device[0][i] + ":openflow-service:flow-table-" + deviceFlows[1][j] + ":flow-" + deviceFlows[0][j] + ":rule-match-3", flowRule);
+                    Resource resFlowRule4 = RdfOwl.createResource(model, topologyURI + ":" + device[0][i] + ":openflow-service:flow-table-" + deviceFlows[1][j] + ":flow-" + deviceFlows[0][j] + ":rule-match-4", flowRule);
+                    Resource resFlowAction = RdfOwl.createResource(model, topologyURI + ":" + device[0][i] + ":openflow-service:flow-table-" + deviceFlows[1][j] + ":flow-" + deviceFlows[0][j] + ":rule-action-0", flowRule);
+                    model.add(model.createStatement(resFlow, flowMatch, resFlowRule0));
+                    model.add(model.createStatement(resFlowRule0, type, "IN_PORT"));
+                    model.add(model.createStatement(resFlowRule0, value, deviceFlows[4][j]));
+
+                    model.add(model.createStatement(resFlow, flowMatch, resFlowRule1));
+                    model.add(model.createStatement(resFlowRule1, type, "ETH_SRC_MAC"));
+                    model.add(model.createStatement(resFlowRule1, value, deviceFlows[6][j]));
+
+                    model.add(model.createStatement(resFlow, flowMatch, resFlowRule2));
+                    model.add(model.createStatement(resFlowRule2, type, "ETH_DST_MAC"));
+                    model.add(model.createStatement(resFlowRule2, value, deviceFlows[5][j]));
+
+                    model.add(model.createStatement(resFlow, flowMatch, resFlowRule3));
+                    model.add(model.createStatement(resFlowRule3, type, "ETH_SRC_VLAN"));
+                    model.add(model.createStatement(resFlowRule3, value, deviceFlows[7][j]));
+
+                    model.add(model.createStatement(resFlow, flowMatch, resFlowRule4));
+                    model.add(model.createStatement(resFlowRule4, type, "ETH_DST_VLAN"));
+                    model.add(model.createStatement(resFlowRule4, value, deviceFlows[8][j]));
+
+                    model.add(model.createStatement(resFlow, flowAction, resFlowAction));
+                    model.add(model.createStatement(resFlowAction, type, "OUT_PORT"));
+                    model.add(model.createStatement(resFlowAction, value, deviceFlows[3][j]));
+
+                }*/
             }
         }
+        
+        for (int i=0; i< qtyHosts; i++){
+            //add hosts mac to model
+            Resource resNode = RdfOwl.createResource(model, topologyURI + ":" + hosts[i][1], node);
+            model.add(model.createStatement(onosTopology, hasNode, resNode));           
+        }
+        
         
         for (int i = 0; i < qtyLinks; i++) {
             if (links[i][5].equals("ACTIVE")) {
