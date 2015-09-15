@@ -117,10 +117,10 @@ public class OnosModelBuilder {
 
         OnosServer onos = new OnosServer();
         String device[][] = onos.getOnosDevices(subsystemBaseUrl, access_key_id, secret_access_key);
-        String hosts[][] = onos.getOnosHosts(subsystemBaseUrl, access_key_id, secret_access_key);
+        //String hosts[][] = onos.getOnosHosts(subsystemBaseUrl, access_key_id, secret_access_key);
         String links[][] = onos.getOnosLinks(subsystemBaseUrl, access_key_id, secret_access_key);
         int qtyLinks = onos.qtyLinks;
-        int qtyHosts = onos.qtyHosts;
+        //int qtyHosts = onos.qtyHosts;
         int qtyDevices = onos.qtyDevices;
         
         
@@ -151,7 +151,7 @@ public class OnosModelBuilder {
                         }
                     }
                 }
-                
+                /*
                 //add flow per device into model
                 String deviceFlows[][] = onos.getOnosDeviceFlows(subsystemBaseUrl, device[i][0], access_key_id, secret_access_key);
                 int qtyFlows = deviceFlows.length;
@@ -208,15 +208,16 @@ public class OnosModelBuilder {
                     model.add(model.createStatement(resFlowAction, value, deviceFlows[j][3]));
                     
                 }
+                */
             }
         }
-        
+        /*
         for (int i=0; i< qtyHosts; i++){
             //add hosts mac to model
             Resource resNode = RdfOwl.createResource(model, topologyURI + ":" + hosts[i][1], node);
             model.add(model.createStatement(onosTopology, hasNode, resNode));           
         }
-        
+        */
         
         for (int i = 0; i < qtyLinks; i++) {
             if (links[i][5].equals("ACTIVE")) {

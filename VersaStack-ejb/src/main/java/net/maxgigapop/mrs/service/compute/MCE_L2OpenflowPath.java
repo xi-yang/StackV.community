@@ -41,6 +41,7 @@ import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.Spa;
 
 import net.maxgigapop.mrs.common.Sna;
+import static net.maxgigapop.mrs.service.compute.MCETools.evaluateStatement_AnyTrue;
 
 /**
  *
@@ -104,16 +105,26 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         Map<Resource, List> srrgMap = this.getSrrgInfo(systemModel.getOntModel());
         
         //test printout
-        System.out.format("there are %d SRRG\n", srrgMap.size());
+        //System.out.format("there are %d SRRG\n", srrgMap.size());
         
         ServiceDelta outputDelta = annotatedDelta.clone();
 
         // compute a List<Model> of L2Openflow connections
         for (Resource resLink : linkMap.keySet()) {
 
-            MCETools.Path l2path = this.doSrrgPathFinding(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), resLink, linkMap.get(resLink), srrgMap);
-
-   
+            //MCETools.Path l2path = this.doSrrgPathFinding(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), resLink, linkMap.get(resLink), srrgMap);
+            
+            List<MCETools.Path> l2pathList = this.doSrrgPairPathFinding(
+                    systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), 
+                    resLink, linkMap.get(resLink), srrgMap);
+            
+            if(l2pathList == null){
+                throw new EJBException(String.format("%s::process cannot find a path pair for %s", this.getClass().getName(), resLink));
+            }
+            
+            MCETools.Path l2path = l2pathList.get(0);
+            MCETools.Path l2path_back = l2pathList.get(1);
+            
             if (l2path == null) {
                 throw new EJBException(String.format("%s::process cannot find a path for %s", this.getClass().getName(), resLink));
             }
@@ -308,43 +319,56 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         List<MCETools.Path> solutionList = new ArrayList<>();
 
         //filter out irrelevant statements (based on property type, label type, has switchingService etc.)
-        OntModel transformedModel = MCETools.transformL2NetworkModel(systemModel);
-
+        //filter out irrelevant statements (based on property type, label type, has switchingService etc.)
+        OntModel transformedModel = MCETools.transformL2OpenflowPathModel(systemModel);
+        
+        //verify is transformedModel is bidirectional connectsTo
+        if(!verifyConnectsToModel(transformedModel)){
+            throw new EJBException(String.valueOf("transformedModel is not fully bidirectional\n"));
+        }
+        
         //get source and dest nodes (nodeA, nodeZ), initially Link points to 2 biDirectionalPort
-        //I assume nodeA and nodeZ are accepted as two input to findShortestPath in Jena Package.
         List<Resource> terminals = new ArrayList<>();
+ 
         for (Map entry : connTerminalData) {
-            if (!entry.containsKey("data") || !entry.containsKey("type") || !entry.containsKey("value")) {
+            if (!entry.containsKey("policyData") || !entry.containsKey("type")) {
                 continue;
             }
-            Resource terminal = systemModel.getResource((String) entry.get("value"));
+            Resource terminal = systemModel.getResource(entry.get("port").toString());
             if (terminal == null) {
-                throw new EJBException(String.format("%s::process doPathFinding cannot identify terminal <%s>", (String) entry.get("value")));
+                throw new EJBException(String.format("%s::process doSrrgPathFinding cannot identify terminal <%s>", (String) entry.get("port")));
             }
             terminals.add(terminal);
         }
-        if (terminals.size() < 2) {
-            throw new EJBException(String.format("%s::process cannot doPathFinding for %s which provides fewer than 2 terminals", this.getClass().getName(), resLink));
+       
+        if (terminals.size() != 2) {
+            throw new EJBException(String.format("%s::process cannot doSrrgPathFinding for %s which provides not 2 terminals", this.getClass().getName(), resLink));
         }
+
         Resource nodeA = terminals.get(0);
         Resource nodeZ = terminals.get(1);
+        
+        System.out.format("src: %s\ndst: %s\n", nodeA.toString(), nodeZ.toString());
 
         Property[] filterProperties = {Nml.connectsTo};
         Filter<Statement> connFilters = new PredicatesFilter(filterProperties);
-        List<MCETools.Path> KSP = MCETools.computeKShortestPaths(transformedModel, nodeA, nodeZ, MCETools.KSP_K_DEFAULT, connFilters);
+        
+        List<MCETools.Path> KSP = MCETools.computeKShortestPaths(transformedModel, nodeA, nodeZ, 20, connFilters);
+        
+        System.out.format("Found %d KSP (working) before verify\n", KSP.size());
+        
         if (KSP == null || KSP.isEmpty()) {
-            throw new EJBException(String.format("%s::process doPathFinding cannot find feasible path for <%s>", resLink));
+            throw new EJBException(String.format("%s::process doSrrgPathFinding cannot find any feasible path for <%s>", resLink));
         }
 
         Iterator<MCETools.Path> itP = KSP.iterator();
         while (itP.hasNext()) {
             MCETools.Path candidatePath = itP.next();
-
-            //verify path
-            if (!MCETools.verifyL2Path(transformedModel, candidatePath)) {
+            
+            //verifyOpenflowPath: filter out useless ones
+            if (!MCETools.verifyOpenFlowPath(transformedModel, candidatePath)) {
                 itP.remove();
             } else {
-
                 //generating connection subnets (statements added to candidatePath) while verifying VLAN availability
                 OntModel l2PathModel = MCETools.createL2PathVlanSubnets(transformedModel, candidatePath);
                 if (l2PathModel == null) {
@@ -354,18 +378,31 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                 }
             }
         }
-        if (KSP.size() == 0) {
+        
+        if (KSP.isEmpty()) {
+            System.out.println("Could not find any shortest path after verify\n");
             return null;
+        } else {
+            System.out.format("Find %d KSP (working) after verify\n", KSP.size());
         }
+        
 
         double jointProbability = 1.0;
         double cost = 100000.0;
         int flag = -1;
         MCETools.Path solutionBack = null;
-
+        
         for (int i = 0; i < KSP.size(); i++) {
 
+            System.out.format("\nfor working path %d:\n", i);
             MCETools.Path path = KSP.get(i);
+            
+            transformedModel = MCETools.transformL2OpenflowPathModel(systemModel);
+
+            //verify is transformedModel is bidirectional connectsTo
+            if (!verifyConnectsToModel(transformedModel)) {
+                throw new EJBException(String.valueOf("transformedModel is not fully bidirectional\n"));
+            }
 
             MCETools.Path backPath = this.getLinkDisjointPath(transformedModel, path, resLink, terminals, srrgMap);
 
@@ -373,11 +410,13 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                 continue;
             }
 
-            jointProbability = this.getPathProbability(systemModel, path, srrgMap) * this.getPathProbability(systemModel, backPath, srrgMap);
+            //joint fail prob: both working and protection fails
+            jointProbability = (1-this.getPathProbability(transformedModel, path, srrgMap)) 
+                    * (1-this.getPathProbability(transformedModel, backPath, srrgMap));
 
-            if ((1 - jointProbability) < cost) {
+            if ( jointProbability < cost) {
                 flag = i;
-                cost = 1 - jointProbability;
+                cost = jointProbability;
                 solutionBack = backPath;
             }
         }
@@ -385,11 +424,13 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         if (flag == -1) {
             return null;
         }
-
+        
         if (flag >= KSP.size()) {
             throw new EJBException(String.format("%s::process doPathFinding cannot find feasible path for <%s>", resLink));
         }
 
+        System.out.format("\nselect pair %d\n", flag);
+        
         solutionList.add(KSP.get(flag));
         solutionList.add(solutionBack);
 
@@ -423,20 +464,21 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
 
     private MCETools.Path getLinkDisjointPath(OntModel systemModel, MCETools.Path primaryPath, Resource resLink, List<Resource> terminals, Map<Resource, List> srrgMap) {
         //return one path with min srrg probability that is link disjoint to primary path
-
-        //first I want to mask the link of primaryPath
-        for (Statement stmtLink : primaryPath) {
-            StmtIterator itStmt = systemModel.listStatements(stmtLink.getSubject(), null, (Resource) null);
-            if (itStmt.hasNext()) {
-                systemModel = (OntModel) systemModel.remove(itStmt.next());
-            }
-
-            itStmt = systemModel.listStatements(null, null, stmtLink.getSubject());
-            if (itStmt.hasNext()) {
-                systemModel = (OntModel) systemModel.remove(itStmt.next());
+        
+        MCETools.printMCEToolsPath(primaryPath);
+        
+        String[] isAliasConstraint = {
+            "SELECT $s $p $o WHERE {$s a nml:BidirectionalPort. $o a nml:BidirectionalPort FILTER($s = <$$s> && $o = <$$o>)}",};
+        //first mask the link(isAlias) of primaryPath
+        Iterator<Statement> itS = primaryPath.iterator();
+        while(itS.hasNext()){
+            Statement stmt = itS.next();
+            if(MCETools.evaluateStatement_AnyTrue(systemModel, stmt, isAliasConstraint)){
+                //System.out.format("remove this stmt: \n%s\n", stmt.toString());
+                systemModel = (OntModel) systemModel.remove(stmt);
             }
         }
-
+        
         Resource nodeA = terminals.get(0);
         Resource nodeZ = terminals.get(1);
 
@@ -444,6 +486,8 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         Filter<Statement> connFilters = new PredicatesFilter(filterProperties);
         List<MCETools.Path> backupKSP = MCETools.computeKShortestPaths(systemModel, nodeA, nodeZ, MCETools.KSP_K_DEFAULT, connFilters);
 
+        System.out.format("Find %d KSP (backup) before verify\n", backupKSP.size());
+        
         if (backupKSP == null || backupKSP.isEmpty()) {
             //throw new EJBException(String.format("%s::process doPathFinding cannot find feasible path for <%s>", resLink));
             return null;
@@ -453,10 +497,9 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         while (itP.hasNext()) {
             MCETools.Path candidatePath = itP.next();
 
-            if (!MCETools.verifyL2Path(systemModel, candidatePath)) {
+            if (!MCETools.verifyOpenFlowPath(systemModel, candidatePath)) {
                 itP.remove();
             } else {
-
                 //generating connection subnets (statements added to candidatePath) while verifying VLAN availability
                 OntModel l2PathModel = MCETools.createL2PathVlanSubnets(systemModel, candidatePath);
                 if (l2PathModel == null) {
@@ -466,13 +509,18 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                 }
             }
         }
-        if (backupKSP.size() == 0) {
+        if (backupKSP.isEmpty()) {
             return null;
+        } else{
+            System.out.format("Find %d KSP (backup) after verify\n", backupKSP.size());
         }
 
         //pick one in backupKSP that has minimum srrg probability
         MCETools.Path backPath = this.getLeastSrrgCostPath(backupKSP, systemModel, srrgMap);
 
+        System.out.println("\backup path is:");
+        MCETools.printMCEToolsPath(backPath);
+        
         return backPath;
 
     }
