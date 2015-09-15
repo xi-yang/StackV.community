@@ -66,9 +66,10 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         }
         
         // importPolicyData : Link->Connection->List<PolicyData> of terminal Node/Topology
-        String sparql = "SELECT ?link ?type ?data ?policyData WHERE {"
+        String sparql = "SELECT ?link ?type ?value ?data ?policyData WHERE {"
                 + "?link a spa:PolicyAction . "
                 + "?link spa:type ?type . "
+                + "?link spa:value ?value . "
                 + "?link spa:importFrom ?data . "
                 + "?link spa:exportTo ?policyData . "
                 + "}";
@@ -86,6 +87,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
             Resource resData = querySolution.get("data").asResource();
             Resource resPolicyData = querySolution.getResource("policyData").asResource();
             RDFNode resType = querySolution.get("type");
+            RDFNode resValue = querySolution.get("value");
             
             String sqlValue =  String.format("SELECT ?value WHERE {<%s> a spa:PolicyData. <%s> spa:value ?value.}", resData.toString(), resData.toString());
             ResultSet portValueResult = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sqlValue);
@@ -96,6 +98,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                 linkData.put("port", resPort);
                 linkData.put("policyData", resPolicyData);
                 linkData.put("type", resType.toString());
+                linkData.put("protection", resValue);
                 linkMap.get(resLink).add(linkData);
             }
         }
@@ -103,32 +106,46 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         Map<Resource, List> srrgMap = this.getSrrgInfo(systemModel.getOntModel());
         
         //test printout
-        log.log(Level.INFO, "There are {0} SRRG", String.valueOf(srrgMap.size()));
-        //System.out.format("there are %d SRRG\n", srrgMap.size());
+        log.log(Level.INFO, "There are {0} SRRG in the model", String.valueOf(srrgMap.size()));
+        log.log(Level.INFO, "There are {0} link in the spaModel", String.valueOf(linkMap.size()));
         
         ServiceDelta outputDelta = annotatedDelta.clone();
 
         // compute a List<Model> of L2Openflow connections
         for (Resource resLink : linkMap.keySet()) {
 
-            MCETools.Path l2path = this.doSrrgPathFinding(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), resLink, linkMap.get(resLink), srrgMap);
+            List<Map> connTerminalData = linkMap.get(resLink);
+            String protectionType = ((Map)connTerminalData.get(0)).get("protection").toString();
             
-            /*
-            List<MCETools.Path> l2pathList = this.doSrrgPairPathFinding(
-                    systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), 
-                    resLink, linkMap.get(resLink), srrgMap);
+            MCETools.Path l2path = new MCETools.Path();
+            MCETools.Path l2path_back = new MCETools.Path();
             
-            if(l2pathList == null){
-                throw new EJBException(String.format("%s::process cannot find a path pair for %s", this.getClass().getName(), resLink));
+            switch (protectionType) {
+                case "SRRG Path": {
+                    l2path = this.doSrrgPathFinding(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), resLink, linkMap.get(resLink), srrgMap);
+                    break;
+                }
+                case "SRRG Path Pair": {
+                    List<MCETools.Path> l2pathList = this.doSrrgPairPathFinding(
+                            systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(),
+                            resLink, linkMap.get(resLink), srrgMap);
+                    if (l2pathList == null) {
+                        throw new EJBException(String.format("%s::process cannot find a path pair for %s", this.getClass().getName(), resLink));
+                    } else if (l2pathList.size() != 2) {
+                        throw new EJBException(String.format("%s::process encounter an error when finding a path pair for %s", this.getClass().getName(), resLink));
+                    } else {
+                        l2path = l2pathList.get(0);
+                        l2path_back = l2pathList.get(1);
+                        break;
+                    }
+                }
+                default:
+                    throw new EJBException(String.format("%s::process does not support protection type %s", this.getClass().getName(), protectionType));
             }
             
-            MCETools.Path l2path = l2pathList.get(0);
-            MCETools.Path l2path_back = l2pathList.get(1);
-            */
             if (l2path == null) {
                 throw new EJBException(String.format("%s::process cannot find a path for %s", this.getClass().getName(), resLink));
             }
-            //System.out.println("Done finding a srrg Path");
             
             //2. merge the placement satements into spaModel
             outputDelta.getModelAddition().getOntModel().add(l2path.getOntModel().getBaseModel());
@@ -205,7 +222,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         List<Resource> terminals = new ArrayList<>();
  
         for (Map entry : connTerminalData) {
-            if (!entry.containsKey("policyData") || !entry.containsKey("type")) {
+            if (!entry.containsKey("policyData") || !entry.containsKey("type") || !entry.containsKey("protection")) {
                 continue;
             }
             Resource terminal = systemModel.getResource(entry.get("port").toString());
@@ -332,7 +349,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         List<Resource> terminals = new ArrayList<>();
  
         for (Map entry : connTerminalData) {
-            if (!entry.containsKey("policyData") || !entry.containsKey("type")) {
+            if (!entry.containsKey("policyData") || !entry.containsKey("type") ||!entry.containsKey("protection")) {
                 continue;
             }
             Resource terminal = systemModel.getResource(entry.get("port").toString());
@@ -360,7 +377,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         log.log(Level.INFO, "Find {0} KSP (working) before verify", KSP.size());
         
         if (KSP == null || KSP.isEmpty()) {
-            throw new EJBException(String.format("%s::process doSrrgPathFinding cannot find any feasible path for <%s>", resLink));
+            throw new EJBException(String.format("%s::process doSrrgPairPathFinding cannot find any feasible path for <%s>", resLink));
         }
 
         Iterator<MCETools.Path> itP = KSP.iterator();
@@ -383,7 +400,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         
         if (KSP.isEmpty()) {
             log.log(Level.INFO, "Could not find any shortest path after verify");
-            return null;
+            throw new EJBException(String.format("%s::process doSrrgPairPathFinding cannot find any feasible path for <%s>", resLink));
         } else {
             log.log(Level.INFO, "Find {0} KSP (working) after verify", KSP.size());
         }
@@ -424,11 +441,11 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         }
 
         if (flag == -1) {
-            return null;
+            throw new EJBException(String.format("%s::process doSrrgPairPathFinding cannot find any feasible backup path for <%s>", resLink));
         }
         
         if (flag >= KSP.size()) {
-            throw new EJBException(String.format("%s::process doPathFinding cannot find feasible path for <%s>", resLink));
+            throw new EJBException(String.format("%s::process doPathPairFinding encounter an error when finding backup paths <%s>", resLink));
         }
 
         log.log(Level.INFO, "Select pair: "+ flag);
