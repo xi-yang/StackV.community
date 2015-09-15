@@ -30,9 +30,9 @@ public interface IHandleDriverSystemCall {
 
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
     @Asynchronous
-    //public Future<String> commitDelta(DriverSystemDelta aDelta);
+    public Future<String> commitDelta(DriverSystemDelta aDelta);
 
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
-    //@Asynchronous
+    @Asynchronous
     public Future<String> pullModel(Long driverInstanceId);    
 }

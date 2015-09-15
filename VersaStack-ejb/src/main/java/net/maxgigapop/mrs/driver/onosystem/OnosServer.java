@@ -31,14 +31,14 @@ public class OnosServer {
     private static final Logger logger = Logger.getLogger(OnosRESTDriver.class.getName());
 
     //pull Devices data
-    public String[][] getOnosDevices(String subsystemBaseUrl) throws MalformedURLException, IOException, ParseException {
+    public String[][] getOnosDevices(String access_key_id,String secret_access_key,String subsystemBaseUrl) throws MalformedURLException, IOException, ParseException {
       
         URL url = new URL(subsystemBaseUrl+"/devices");
         
        
         
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        String responseStr = this.executeHttpMethod(url, conn, "GET", null);
+        String responseStr = this.executeHttpMethod(access_key_id,secret_access_key,url, conn, "GET", null);
         responseStr=responseStr.replaceAll("(\\[|\\]|,|\\{|\\})","$1\n");
         responseStr=responseStr.replaceAll("\"\\}", "\"\n\\}");
         responseStr=responseStr.replaceAll("\\}\n,","\\},");
@@ -85,12 +85,12 @@ public class OnosServer {
     }   
     
     //pull links data
-    public String[][] getOnosLinks(String subsystemBaseUrl) throws MalformedURLException, IOException, ParseException {
+    public String[][] getOnosLinks(String access_key_id,String secret_access_key,String subsystemBaseUrl) throws MalformedURLException, IOException, ParseException {
         
         URL url = new URL(subsystemBaseUrl+"/links");
         
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        String responseStr = this.executeHttpMethod(url, conn, "GET", null);
+        String responseStr = this.executeHttpMethod(access_key_id,secret_access_key,url, conn, "GET", null);
         responseStr=responseStr.replaceAll("(\\[|\\]|,|\\{|\\})","$1\n");
         responseStr=responseStr.replaceAll("\"\\}", "\"\n\\}");
         responseStr=responseStr.replaceAll("\\}\n,","\\},");
@@ -147,11 +147,11 @@ public class OnosServer {
     }   
     
     //pull Device Ports Data
-    public String[][] getOnosDevicePorts(String subsystemBaseUrl, String devId) throws MalformedURLException, IOException, ParseException {
+    public String[][] getOnosDevicePorts(String access_key_id,String secret_access_key,String subsystemBaseUrl, String devId) throws MalformedURLException, IOException, ParseException {
         qtyPorts=0;
         URL urlDevPort = new URL(subsystemBaseUrl+"/devices/"+devId+"/ports");
         HttpURLConnection connDevPort = (HttpURLConnection) urlDevPort.openConnection();
-        String responseStrDevPort = this.executeHttpMethod(urlDevPort, connDevPort, "GET", null);
+        String responseStrDevPort = this.executeHttpMethod(access_key_id,secret_access_key,urlDevPort, connDevPort, "GET", null);
         responseStrDevPort=responseStrDevPort.replaceAll("(\\[|\\]|\\{|\\}|\\},)","$1\n");
         responseStrDevPort=responseStrDevPort.replaceAll(",\"",",\n\"");
         responseStrDevPort=responseStrDevPort.replaceAll("\"\\}", "\"\n\\}");
@@ -205,11 +205,11 @@ public class OnosServer {
     }   
 
         //pull Hosts Data
-    public String[][] getOnosHosts(String subsystemBaseUrl) throws MalformedURLException, IOException, ParseException {
+    public String[][] getOnosHosts(String access_key_id,String secret_access_key,String subsystemBaseUrl) throws MalformedURLException, IOException, ParseException {
         qtyHosts=0;
         URL urlHosts = new URL(subsystemBaseUrl+"/hosts");
         HttpURLConnection connHosts = (HttpURLConnection) urlHosts.openConnection();
-        String responseStrHosts = this.executeHttpMethod(urlHosts, connHosts, "GET", null);
+        String responseStrHosts = this.executeHttpMethod(access_key_id,secret_access_key,urlHosts, connHosts, "GET", null);
         responseStrHosts=responseStrHosts.replaceAll("(\\[|\\]|\\{|\\}|,)","$1\n");
         responseStrHosts=responseStrHosts.replaceAll("\"\\}", "\"\n\\}");
         responseStrHosts=responseStrHosts.replaceAll("\"\\]", "\"\n\\]");
@@ -268,12 +268,12 @@ public class OnosServer {
 
 
     //pull Device Ports Data
-    public String[][] getOnosDeviceFlows(String subsystemBaseUrl, String devId) throws MalformedURLException, IOException, ParseException {
+    public String[][] getOnosDeviceFlows(String access_key_id,String secret_access_key,String subsystemBaseUrl, String devId) throws MalformedURLException, IOException, ParseException {
         qtyFlows=0;
         
         URL urlDevFlow = new URL(subsystemBaseUrl+"/flows/"+devId);
         HttpURLConnection connDevFlow = (HttpURLConnection) urlDevFlow.openConnection();
-        String responseStrDevFlow = this.executeHttpMethod(urlDevFlow, connDevFlow, "GET", null);
+        String responseStrDevFlow = this.executeHttpMethod(access_key_id,secret_access_key,urlDevFlow, connDevFlow, "GET", null);
         responseStrDevFlow=responseStrDevFlow.replaceAll("\\}","\n\\}");
         responseStrDevFlow=responseStrDevFlow.replaceAll("(\\[|\\]|\\{|\\}|\\},)","$1\n");
         responseStrDevFlow=responseStrDevFlow.replaceAll(",\"",",\n\"");
@@ -342,10 +342,10 @@ public class OnosServer {
     
     
     //send GET to HTTP server and retrieve response
-    public String executeHttpMethod(URL url, HttpURLConnection conn, String method, String body) throws IOException {
+    public String executeHttpMethod(String access_key_id,String secret_access_key,URL url, HttpURLConnection conn, String method, String body) throws IOException {
         conn.setRequestMethod(method);
-        String username="onos";
-        String password="rocks";
+        String username=access_key_id;
+        String password=secret_access_key;
         String userPassword=username+":"+password;
         byte[] encoded=Base64.encodeBase64(userPassword.getBytes());
         String stringEncoded=new String(encoded);

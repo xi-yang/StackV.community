@@ -76,7 +76,7 @@ public class AwsDriver implements IHandleDriverSystemCall {
         DriverInstancePersistenceManager.merge(driverInstance);
         Logger.getLogger(AwsDriver.class.getName()).log(Level.INFO, "AWS driver delta models succesfully propagated");
     }
-/*
+
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
     @Asynchronous
     @Override
@@ -103,7 +103,7 @@ public class AwsDriver implements IHandleDriverSystemCall {
 
         Logger.getLogger(AwsDriver.class.getName()).log(Level.INFO, "AWS driver delta models succesfully commited");
         return new AsyncResult<String>("SUCCESS");
-    }*/
+    }
 
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
     @Asynchronous

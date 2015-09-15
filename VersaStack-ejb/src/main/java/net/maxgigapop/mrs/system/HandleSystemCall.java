@@ -178,7 +178,6 @@ public class HandleSystemCall {
         ModelBase referenceModel = referenceVG.createUnionModel();
         OntModel referenceOntModel = referenceModel.getOntModel();
         OntModel targetOntModel = referenceModel.dryrunDelta(sysDelta);
-
         //## Step 2. verify model change
         // 2.1. get head/lastest VG based on the current versionGroup (no update / persist)
         VersionGroup headVG = VersionGroupPersistenceManager.refreshToHead(referenceVG, false); 
@@ -235,10 +234,11 @@ public class HandleSystemCall {
             targetDSD.setModelAddition(delta.getModelAddition());
             targetDSD.setModelReduction(delta.getModelReduction());
             targetDSD.setSystemDelta(sysDelta);
-            // target delta uses version reference ID of committed model that corresponds to a known version in driverSystem.
+
+// target delta uses version reference ID of committed model that corresponds to a known version in driverSystem.
             targetDSD.setReferenceVersionItem(oldVI);
             if (driverInstance == null) {
-                throw new EJBException(String.format("%s cannot find a dirverInstance for topology: %s", systemInstance, driverSystemTopoUri));
+                throw new EJBException(String.format("%s cannot find a driverInstance for topology: %s", systemInstance, driverSystemTopoUri));
             }
             // prepare to dispatch to driverInstance
             targetDSD.setDriverInstance(driverInstance);
@@ -273,7 +273,8 @@ public class HandleSystemCall {
                     ejbCxt = new InitialContext();
                 }
                 IHandleDriverSystemCall driverSystemHandler = (IHandleDriverSystemCall) ejbCxt.lookup(driverEjbPath);
- //               driverSystemHandler.propagateDelta(driverInstance, targetDSD);
+                //driverSystemHandler.propagateDelta(driverInstance, targetDSD);
+                driverSystemHandler.propagateDelta(driverInstance, targetDSD);
             } catch (NamingException e) {
                 throw new EJBException(e);
             }
@@ -290,6 +291,7 @@ public class HandleSystemCall {
         if (systemInstance.getId() != 0) {
             systemInstance = SystemInstancePersistenceManager.findById(systemInstance.getId());
         }
+        
         if (systemInstance.getSystemDelta() == null || systemInstance.getSystemDelta().getDriverSystemDeltas() == null 
                 || systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
             throw new EJBException(String.format("%s has no systemDelta or driverSystemDeltas to commit", systemInstance));
@@ -310,8 +312,10 @@ public class HandleSystemCall {
                 IHandleDriverSystemCall driverSystemHandler = (IHandleDriverSystemCall) ejbCxt.lookup(driverEjbPath);
                 // 3. Call Async commitDelta to each driverInstance based on versionItems in VG.
 //                Future<String> result = driverSystemHandler.commitDelta(dsd);
+                //Future<String> result = driverSystemHandler.commitDelta(dsd);
                 // 4. add AsyncResult to resultMap
  //               commitResultMap.put(dsd, result);
+                //commitResultMap.put(dsd, result);
             } catch (NamingException e) {
                 throw new EJBException(e);
             }
@@ -353,8 +357,8 @@ public class HandleSystemCall {
         if (systemInstance == null) {
             throw new EJBException("propagateDelta encounters unknown systemInstance with referenceUUID="+sysInstanceUUID);
         }
-        
         this.propagateDelta(systemInstance, sysDelta);
+        
     }
     
     @Asynchronous

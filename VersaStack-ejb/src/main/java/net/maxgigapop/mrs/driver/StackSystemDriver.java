@@ -72,7 +72,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
             throw new EJBException(String.format("propagateDelta failed for %s with %s due to exception (%s)", driverInstance, aDelta, e.getMessage()));
         }
     }
-/*
+
     @Override
     @Asynchronous
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
@@ -99,7 +99,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
         return new AsyncResult<String>("SUCCESS");
     }
     // TODO: terminate or reuse sessions in driverSystemSessionMap after commit
-    */
+    
     @Override
     @Asynchronous
     public Future<String> pullModel(Long driverInstanceId) {

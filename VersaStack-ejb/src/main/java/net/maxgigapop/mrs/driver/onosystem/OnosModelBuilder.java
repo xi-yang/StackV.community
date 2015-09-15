@@ -32,7 +32,7 @@ do not do a routeFrom statement for every route.*/
 public class OnosModelBuilder {
 
     //public static OntModel createOntology(String access_key_id, String secret_access_key, Regions region, String topologyURI) throws IOException {
-    public static OntModel createOntology(String topologyURI, String subsystemBaseUrl) throws IOException, ParseException {
+    public static OntModel createOntology(String access_key_id,String secret_access_key,String topologyURI, String subsystemBaseUrl) throws IOException, ParseException {
 
         //create model object
         OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
@@ -100,9 +100,9 @@ public class OnosModelBuilder {
         
         
         OnosServer onos = new OnosServer();
-        String device[][] = onos.getOnosDevices(subsystemBaseUrl);
-        String hosts[][]=onos.getOnosHosts(subsystemBaseUrl);
-        String links[][] = onos.getOnosLinks(subsystemBaseUrl);
+        String device[][] = onos.getOnosDevices(access_key_id,secret_access_key,subsystemBaseUrl);
+        String hosts[][]=onos.getOnosHosts(access_key_id,secret_access_key,subsystemBaseUrl);
+        String links[][] = onos.getOnosLinks(access_key_id,secret_access_key,subsystemBaseUrl);
         int qtyLinks=onos.qtyLinks;
         int qtyHosts=onos.qtyHosts;
         int qtyDevices=onos.qtyDevices;
@@ -121,11 +121,11 @@ public class OnosModelBuilder {
             Resource resNode = RdfOwl.createResource(model,topologyURI+":"+device[0][i],node);
             if(device[1][i].equals("SWITCH") && device[2][i].equals("true")){
                 Resource resOpenFlow = RdfOwl.createResource(model,topologyURI+":"+device[0][i]+":openflow-service",openflowService);
-                model.add(model.createStatement(resNode, hasService, topologyURI+":"+device[0][i]+":openflow-service"));
+                model.add(model.createStatement(resNode, hasService, resOpenFlow));
                 
-                String devicePorts[][]=onos.getOnosDevicePorts(subsystemBaseUrl,device[0][i]);
+                String devicePorts[][]=onos.getOnosDevicePorts(access_key_id,secret_access_key,subsystemBaseUrl,device[0][i]);
                 int qtyPorts=onos.qtyPorts;
-                String deviceFlows[][]=onos.getOnosDeviceFlows(subsystemBaseUrl,device[0][i]);
+                String deviceFlows[][]=onos.getOnosDeviceFlows(access_key_id,secret_access_key,subsystemBaseUrl,device[0][i]);
                 int qtyFlows=onos.qtyFlows;
                 for(int j=0;j<qtyPorts;j++){
                     if(devicePorts[1][j].equals("true")){

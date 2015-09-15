@@ -59,7 +59,7 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
             throw new EJBException(String.format("propagateDelta for %s with %s raised exception(%s)", driverInstance, aDelta, e.getMessage()));
         }
     }
-/*
+
     @Override
     @Asynchronous
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
@@ -68,7 +68,7 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
             throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
         }
         return new AsyncResult<String>("SUCCESS");
-    }*/
+    }
 
     @Override
     @Asynchronous
