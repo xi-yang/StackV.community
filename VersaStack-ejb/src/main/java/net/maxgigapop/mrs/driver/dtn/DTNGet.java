@@ -62,14 +62,14 @@ public class DTNGet {
             String filename = "dtn-"+address+".xml";
             //Get config file from DTN
             //todo: getting file to memory
-            String cmd = "globus-url-copy gsiftp://"+address+"/home/"+user_account+"/"+filename+" /home/xin/";
+            String cmd = "globus-url-copy gsiftp://"+address+"/tmp/"+filename+" /tmp/";
             int exitVal = runcommand(cmd);
             System.out.println("Exit Val: "+exitVal);
             if (exitVal >= 0){
-                System.out.println(exitVal+";File: "+"/home/xin/"+filename);
+                System.out.println(exitVal+";File: "+"/tmp/"+filename);
                 //Parse xml file
                 //todo: parse from memory
-                File inputFile = new File("/home/xin/"+filename);
+                File inputFile = new File("/tmp/"+filename);
                 DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
                 DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
                 Document doc = dBuilder.parse(inputFile);
