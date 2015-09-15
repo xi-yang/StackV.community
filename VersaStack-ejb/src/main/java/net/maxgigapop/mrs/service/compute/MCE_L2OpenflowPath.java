@@ -59,14 +59,12 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
     @Asynchronous
     public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
         try {
-            log.log(Level.INFO, "\n>>>MCE_L2OpenflowPath--DeltaAddModel Input=\n" + ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
+            log.log(Level.INFO, "\n>>>MCE_L2OpenflowPath--DeltaAddModel Input=\n{0}", ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
+            log.log(Level.INFO, "Entering L2OpenflowPath process!");
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
-
-        System.out.println("entering L2OpenflowPath process!");
-
-        // need to fix this part to read from spa-compile-onos2.xml
+        
         // importPolicyData : Link->Connection->List<PolicyData> of terminal Node/Topology
         String sparql = "SELECT ?link ?type ?data ?policyData WHERE {"
                 + "?link a spa:PolicyAction . "
@@ -105,6 +103,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         Map<Resource, List> srrgMap = this.getSrrgInfo(systemModel.getOntModel());
         
         //test printout
+        log.log(Level.INFO, "There are {0} SRRG", String.valueOf(srrgMap.size()));
         //System.out.format("there are %d SRRG\n", srrgMap.size());
         
         ServiceDelta outputDelta = annotatedDelta.clone();
@@ -112,8 +111,9 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         // compute a List<Model> of L2Openflow connections
         for (Resource resLink : linkMap.keySet()) {
 
-            //MCETools.Path l2path = this.doSrrgPathFinding(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), resLink, linkMap.get(resLink), srrgMap);
+            MCETools.Path l2path = this.doSrrgPathFinding(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), resLink, linkMap.get(resLink), srrgMap);
             
+            /*
             List<MCETools.Path> l2pathList = this.doSrrgPairPathFinding(
                     systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), 
                     resLink, linkMap.get(resLink), srrgMap);
@@ -124,7 +124,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
             
             MCETools.Path l2path = l2pathList.get(0);
             MCETools.Path l2path_back = l2pathList.get(1);
-            
+            */
             if (l2path == null) {
                 throw new EJBException(String.format("%s::process cannot find a path for %s", this.getClass().getName(), resLink));
             }
@@ -145,7 +145,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         }
 
         try {
-            log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--DeltaAddModel Output=\n" + ModelUtil.marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()));
+            log.log(Level.FINE, "\n>>>MCE_L2OpenflowPath--DeltaAddModel Output=\n{0}", ModelUtil.marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -222,13 +222,14 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         Resource nodeA = terminals.get(0);
         Resource nodeZ = terminals.get(1);
         
-        System.out.format("src: %s\ndst: %s\n", nodeA.toString(), nodeZ.toString());
+        log.log(Level.INFO, "Link-src: {0}", nodeA.toString());
+        log.log(Level.INFO, "Link-dst: {0}", nodeZ.toString());
 
         Property[] filterProperties = {Nml.connectsTo};
         Filter<Statement> connFilters = new PredicatesFilter(filterProperties);
         List<MCETools.Path> KSP = MCETools.computeKShortestPaths(transformedModel, nodeA, nodeZ, 20, connFilters);
         
-        System.out.format("Found %d shortest path before verify\n", KSP.size());
+        log.log(Level.INFO, "Found {0} shortest path before verify", KSP.size());
         
         if (KSP == null || KSP.isEmpty()) {
             throw new EJBException(String.format("%s::process doSrrgPathFinding cannot find any feasible path for <%s>", resLink));
@@ -253,10 +254,10 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         }
         
         if (KSP.isEmpty()) {
-            System.out.println("Could not find any shortest path after verify\n");
+            log.log(Level.INFO, "Could not find any shortest path after verify");
             return null;
         } else {
-            System.out.format("Find %d KSP after verify\n", KSP.size());
+            log.log(Level.INFO, "Find {0} KSP after verify", KSP.size());
         }
 
         //MCETools.printKSP(KSP);
@@ -348,14 +349,15 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         Resource nodeA = terminals.get(0);
         Resource nodeZ = terminals.get(1);
         
-        System.out.format("src: %s\ndst: %s\n", nodeA.toString(), nodeZ.toString());
+        log.log(Level.INFO, "Link-src: {0}", nodeA.toString());
+        log.log(Level.INFO, "Link-dst: {0}", nodeZ.toString());
 
         Property[] filterProperties = {Nml.connectsTo};
         Filter<Statement> connFilters = new PredicatesFilter(filterProperties);
         
         List<MCETools.Path> KSP = MCETools.computeKShortestPaths(transformedModel, nodeA, nodeZ, 20, connFilters);
         
-        System.out.format("Found %d KSP (working) before verify\n", KSP.size());
+        log.log(Level.INFO, "Find {0} KSP (working) before verify", KSP.size());
         
         if (KSP == null || KSP.isEmpty()) {
             throw new EJBException(String.format("%s::process doSrrgPathFinding cannot find any feasible path for <%s>", resLink));
@@ -380,10 +382,10 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         }
         
         if (KSP.isEmpty()) {
-            System.out.println("Could not find any shortest path after verify\n");
+            log.log(Level.INFO, "Could not find any shortest path after verify");
             return null;
         } else {
-            System.out.format("Find %d KSP (working) after verify\n", KSP.size());
+            log.log(Level.INFO, "Find {0} KSP (working) after verify", KSP.size());
         }
         
 
@@ -394,7 +396,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         
         for (int i = 0; i < KSP.size(); i++) {
 
-            System.out.format("\nfor working path %d:\n", i);
+            log.log(Level.INFO, "for working path {0}:", i);
             MCETools.Path path = KSP.get(i);
             
             transformedModel = MCETools.transformL2OpenflowPathModel(systemModel);
@@ -429,7 +431,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
             throw new EJBException(String.format("%s::process doPathFinding cannot find feasible path for <%s>", resLink));
         }
 
-        System.out.format("\nselect pair %d\n", flag);
+        log.log(Level.INFO, "Select pair: "+ flag);
         
         solutionList.add(KSP.get(flag));
         solutionList.add(solutionBack);
@@ -486,7 +488,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         Filter<Statement> connFilters = new PredicatesFilter(filterProperties);
         List<MCETools.Path> backupKSP = MCETools.computeKShortestPaths(systemModel, nodeA, nodeZ, MCETools.KSP_K_DEFAULT, connFilters);
 
-        System.out.format("Find %d KSP (backup) before verify\n", backupKSP.size());
+        log.log(Level.INFO, "Find {0} KSP (backup) before verify", backupKSP.size());
         
         if (backupKSP == null || backupKSP.isEmpty()) {
             //throw new EJBException(String.format("%s::process doPathFinding cannot find feasible path for <%s>", resLink));
@@ -512,13 +514,13 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         if (backupKSP.isEmpty()) {
             return null;
         } else{
-            System.out.format("Find %d KSP (backup) after verify\n", backupKSP.size());
+            log.log(Level.INFO, "Find {0} KSP (backup) after verify", backupKSP.size());
         }
 
         //pick one in backupKSP that has minimum srrg probability
         MCETools.Path backPath = this.getLeastSrrgCostPath(backupKSP, systemModel, srrgMap);
 
-        System.out.println("\backup path is:");
+        System.out.println("\nbackup path is:");
         MCETools.printMCEToolsPath(backPath);
         
         return backPath;
