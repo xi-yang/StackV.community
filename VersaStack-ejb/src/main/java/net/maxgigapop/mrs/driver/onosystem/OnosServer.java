@@ -233,7 +233,7 @@ public class OnosServer {
             flows[i][8] = "-1";
             
         }
-        return (flows);
+        return flows;
     }
 
     //send GET to HTTP server and retrieve response
