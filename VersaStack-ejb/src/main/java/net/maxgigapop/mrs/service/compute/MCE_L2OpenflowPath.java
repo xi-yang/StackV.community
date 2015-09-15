@@ -50,7 +50,7 @@ import static net.maxgigapop.mrs.service.compute.MCETools.evaluateStatement_AnyT
 @Stateless
 public class MCE_L2OpenflowPath implements IModelComputationElement {
 
-    private static final Logger log = Logger.getLogger(MCE_MPVlanConnection.class.getName());
+    private static final Logger log = Logger.getLogger(MCE_L2OpenflowPath.class.getName());
     /*
      ** Simple L2 connection will create new SwitchingSubnet on every transit switching node.
      */
@@ -62,7 +62,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
             log.log(Level.INFO, "\n>>>MCE_L2OpenflowPath--DeltaAddModel Input=\n{0}", ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
             log.log(Level.INFO, "Entering L2OpenflowPath process!");
         } catch (Exception ex) {
-            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(MCE_L2OpenflowPath.class.getName()).log(Level.SEVERE, null, ex);
         }
         
         // importPolicyData : Link->Connection->List<PolicyData> of terminal Node/Topology
