@@ -192,7 +192,7 @@ public class OnosServer {
         String flows[][] = new String[qtyFlows][9];
         //flows[][0]: id; flows[][1]:groupid; flows[][2]:deviceId; 
         //flows[][3]: out_port, flows[][4]: in_port
-        //flows[][5]: ETH_SRC mac, flows[][6]: ETH_DST mac
+        //flows[][5]: ETH_DST mac, flows[][6]: ETH_SRC mac
         //flows[][7]: ETH_SRC_VLAN, flows[][8]:ETH_DST_VLAN
         
         for(int i=0; i<qtyFlows; i++){
@@ -210,10 +210,12 @@ public class OnosServer {
                 if(String.valueOf(instruObj.get("type")).equals("OUTPUT"))
                     flows[i][3] = String.valueOf(instruObj.get("port"));
             }
-            /*
-            if(String.valueOf(instruArray.get(0)).equals(String.valueOf("OUTPUT")))
-                flows[i][2] = (String) instruArray.get(1);
-            */
+            
+            //initialize for flows[][4]-flows[][6]
+            flows[i][4] = "";
+            flows[i][5] = "";
+            flows[i][6] = "";
+            
             JSONObject selectorObj = (JSONObject) flowObj.get("selector");
             JSONArray criteriaArray = (JSONArray) selectorObj.get("criteria");
             
@@ -231,67 +233,6 @@ public class OnosServer {
             flows[i][8] = "-1";
             
         }
-        
-        
-        
-        /*
-        
-        responseStrDevFlow = responseStrDevFlow.replaceAll("\\}", "\n\\}");
-        responseStrDevFlow = responseStrDevFlow.replaceAll("(\\[|\\]|\\{|\\}|\\},)", "$1\n");
-        responseStrDevFlow = responseStrDevFlow.replaceAll(",\"", ",\n\"");
-        responseStrDevFlow = responseStrDevFlow.replaceAll("\"\\}", "\"\n\\}");
-        responseStrDevFlow = responseStrDevFlow.replaceAll("\\}\n,", "\\},");
-        responseStrDevFlow = responseStrDevFlow.replaceAll("\\]\n,", "\\],");
-        responseStrDevFlow = responseStrDevFlow.replaceAll("\\},\\{", "\\},\n\\{");
-        int auxcount = 0;
-
-        int realSize = responseStrDevFlow.split("\n").length;
-
-        String deviceFlowsArray[] = new String[realSize];
-        deviceFlowsArray = responseStrDevFlow.split("\n");
-        for (int i = 0; i < realSize; i++) {
-            if (deviceFlowsArray[i].matches("(.*)\"id\":(.*)")) {
-                qtyFlows++;
-            }
-        }
-        String deviceFlows[][] = new String[9][qtyFlows];
-        int j = 0;
-
-        for (int i = 0; i < realSize; i++) {
-            if (deviceFlowsArray[i].matches("(.*)\"id\":(.*)")) {
-                auxcount = 1;
-                deviceFlows[0][j] = "";
-                deviceFlows[1][j] = "";
-                deviceFlows[2][j] = "";
-                deviceFlows[3][j] = "";
-                deviceFlows[4][j] = "";
-                deviceFlows[5][j] = "";
-                deviceFlows[6][j] = "";
-                deviceFlows[7][j] = "-1";
-                deviceFlows[8][j] = "-1";
-                deviceFlows[0][j] = deviceFlowsArray[i].split("\"id\":\"")[1];
-                deviceFlows[0][j] = deviceFlows[0][j].split("\"")[0];
-                j++;
-            } else if (deviceFlowsArray[i].matches("(.*)\"groupId\":(.*)")) {
-                deviceFlows[1][j - 1] = deviceFlowsArray[i].split("\"groupId\":")[1];
-                deviceFlows[1][j - 1] = deviceFlows[1][j - 1].split(",")[0];
-            } else if (deviceFlowsArray[i].matches("(.*)\"deviceId\":(.*)")) {
-                deviceFlows[2][j - 1] = deviceFlowsArray[i].split("\"deviceId\":\"")[1];
-                deviceFlows[2][j - 1] = deviceFlows[2][j - 1].split("\"")[0];
-            } else if (deviceFlowsArray[i].matches("(.*)\"type\":\"OUTPUT\"(.*)")) {
-                deviceFlows[3][j - 1] = deviceFlowsArray[i + 1].split("\"port\":")[1];
-            } else if (deviceFlowsArray[i].matches("(.*)\"type\":\"IN_PORT\"(.*)")) {
-                deviceFlows[4][j - 1] = deviceFlowsArray[i + 1].split("\"port\":")[1];
-            } else if (deviceFlowsArray[i].matches("(.*)\"type\":\"ETH_DST\"(.*)")) {
-                deviceFlows[5][j - 1] = deviceFlowsArray[i + 1].split("\"mac\":\"")[1];
-                deviceFlows[5][j - 1] = deviceFlows[5][j - 1].split("\"")[0];
-            } else if (deviceFlowsArray[i].matches("(.*)\"type\":\"ETH_SRC\"(.*)")) {
-                deviceFlows[6][j - 1] = deviceFlowsArray[i + 1].split("\"mac\":\"")[1];
-                deviceFlows[6][j - 1] = deviceFlows[6][j - 1].split("\"")[0];
-            }
-
-        }
-                */
         return (flows);
     }
 
