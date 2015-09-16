@@ -1,5 +1,5 @@
 <serviceDelta> 
-<uuid>9f7f0664-a8f8-450b-8d47-d8c3e196444a</uuid>
+<uuid>713ead56-175d-4f48-a43c-fbb058962a6b</uuid>
 <workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>
 <modelAddition>
 @prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .
@@ -36,7 +36,7 @@
 &lt;x-policy-annotation:action:connect-path1&gt;
     a            spa:PolicyAction ;
     spa:type     "MCE_L2OpenflowPath" ;
-    spa:value    "SRRG Path" ;
+    spa:value    "SRRG Path Pair" ;
     spa:importFrom &lt;x-policy-annotation:data:left-location&gt;, &lt;x-policy-annotation:data:right-location&gt; ;
     spa:exportTo &lt;x-policy-annotation:data:path1-vlan&gt; .
 

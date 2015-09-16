@@ -143,10 +143,6 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                     throw new EJBException(String.format("%s::process does not support protection type %s", this.getClass().getName(), protectionType));
             }
             
-            if (l2path == null) {
-                throw new EJBException(String.format("%s::process cannot find a path for %s", this.getClass().getName(), resLink));
-            }
-            
             //2. merge the placement satements into spaModel
             outputDelta.getModelAddition().getOntModel().add(l2path.getOntModel().getBaseModel());
 
@@ -272,7 +268,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         
         if (KSP.isEmpty()) {
             log.log(Level.INFO, "Could not find any shortest path after verify");
-            return null;
+            throw new EJBException(String.format("%s::process doSrrgPathFinding cannot find any feasible path for <%s>", resLink));
         } else {
             log.log(Level.INFO, "Find {0} KSP after verify", KSP.size());
         }
@@ -377,7 +373,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         log.log(Level.INFO, "Find {0} KSP (working) before verify", KSP.size());
         
         if (KSP == null || KSP.isEmpty()) {
-            throw new EJBException(String.format("%s::process doSrrgPairPathFinding cannot find any feasible path for <%s>", resLink));
+            throw new EJBException(String.format("%s::process doSrrgPairPathFinding cannot find any working feasible path for <%s>", resLink));
         }
 
         Iterator<MCETools.Path> itP = KSP.iterator();
@@ -400,7 +396,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         
         if (KSP.isEmpty()) {
             log.log(Level.INFO, "Could not find any shortest path after verify");
-            throw new EJBException(String.format("%s::process doSrrgPairPathFinding cannot find any feasible path for <%s>", resLink));
+            throw new EJBException(String.format("%s::process doSrrgPairPathFinding cannot find any working feasible path for <%s>", resLink));
         } else {
             log.log(Level.INFO, "Find {0} KSP (working) after verify", KSP.size());
         }
@@ -440,8 +436,8 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
             }
         }
 
-        if (flag == -1) {
-            throw new EJBException(String.format("%s::process doSrrgPairPathFinding cannot find any feasible backup path for <%s>", resLink));
+        if (flag == -1 || solutionBack==null) {
+            throw new EJBException(String.format("%s::process doSrrgPairPathFinding cannot find any backup feasible path for <%s>", resLink));
         }
         
         if (flag >= KSP.size()) {
