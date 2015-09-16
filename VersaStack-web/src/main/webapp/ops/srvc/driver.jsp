@@ -136,13 +136,13 @@
                                                 </c:if>
                                                 <c:if test="${param.driver_id == 'versaNSDriver'}">
                                                     <tr>
-                                                        <td></td>
-                                                        <td></td>
-                                                    </tr>   
+                                                        <td>Topology URI</td>
+                                                        <td><input type="text" name="topologyUri" size="30" required></td>
+                                                    </tr>
                                                     <tr>
-                                                        <td></td>
-                                                        <td></td>
-                                                    </tr>                                            
+                                                        <td>Subsystem Base URL</td>
+                                                        <td><input type="text" name="subsystemBaseUrl" required></td>
+                                                    </tr>
                                                 </c:if>
                                                 <c:if test="${param.driver_id == 'openStackDriver'}">
                                                     <tr>
@@ -160,6 +160,14 @@
                                                     <tr>
                                                         <td>NAT Server</td>
                                                         <td><input type="checkbox" name="NATServer" value="yes"></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>URL</td>
+                                                        <td><input type="text" name="url" required></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Tenant</td>
+                                                        <td><input type="text" name="tenant" required></td>
                                                     </tr>
                                                 </c:if>
 

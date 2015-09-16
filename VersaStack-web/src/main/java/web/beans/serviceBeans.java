@@ -61,10 +61,10 @@ public class serviceBeans {
                         driver += "<value>java:module/AwsDriver</value></entry>";
                         break;
                     case "versaNSDriver":
-                        driver += "<value>java:module/StubSystemDriver</value></entry>";
+                        driver += "<value>java:module/GenericRESTDriver</value></entry>";
                         break;                    
                     case "openStackDriver":
-                        driver += "<value>java:module/GenericRESTDriver</value></entry>";
+                        driver += "<value>java:module/OpenStackDriver</value></entry>";
                         break;
                     case "StackDriver":
                         // to be filled
