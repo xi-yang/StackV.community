@@ -149,7 +149,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
             //3. update policyData this action exportTo 
             this.exportPolicyData(outputDelta.getModelAddition().getOntModel(), resLink, l2path);
 
-         //4. remove policy and all related SPA statements receursively under link from spaModel
+            //4. remove policy and all related SPA statements receursively under link from spaModel
             //   and also remove all statements that say dependOn this 'policy'
             MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), resLink);
 
