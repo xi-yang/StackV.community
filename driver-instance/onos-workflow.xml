@@ -1,5 +1,5 @@
 <serviceDelta> 
-<uuid>713ead56-175d-4f48-a43c-fbb058962a6b</uuid>
+<uuid>0531112b-5271-4e17-9583-021f96c0f4f3</uuid>
 <workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>
 <modelAddition>
 @prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .
@@ -47,7 +47,7 @@
 
 &lt;x-policy-annotation:data:right-location&gt;
         a            spa:PolicyData ;
-        spa:value   &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:port-s2-eth1&gt; .
+        spa:value   &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000004:port-s4-eth1&gt; .
 
     
 &lt;x-policy-annotation:data:path1-vlan&gt;

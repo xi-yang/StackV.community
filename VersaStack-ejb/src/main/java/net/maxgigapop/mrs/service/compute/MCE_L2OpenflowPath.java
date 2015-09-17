@@ -242,7 +242,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         Filter<Statement> connFilters = new PredicatesFilter(filterProperties);
         List<MCETools.Path> KSP = MCETools.computeKShortestPaths(transformedModel, nodeA, nodeZ, 20, connFilters);
         
-        log.log(Level.INFO, "Found {0} shortest path before verify", KSP.size());
+        //log.log(Level.INFO, "Found {0} shortest path before verify", KSP.size());
         
         if (KSP == null || KSP.isEmpty()) {
             throw new EJBException(String.format("%s::process doSrrgPathFinding cannot find any feasible path for <%s>", resLink));
@@ -270,13 +270,13 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
             log.log(Level.INFO, "Could not find any shortest path after verify");
             throw new EJBException(String.format("%s::process doSrrgPathFinding cannot find any feasible path for <%s>", resLink));
         } else {
-            log.log(Level.INFO, "Find {0} KSP after verify", KSP.size());
+            //log.log(Level.INFO, "Find {0} KSP after verify", KSP.size());
         }
 
         //MCETools.printKSP(KSP);
         
         MCETools.Path solution = getLeastSrrgCostPath(KSP, systemModel, srrgMap);
-        System.out.format("Picked path with fail prob: %f\n", solution.failureProb);
+        log.log(Level.INFO, "Successfully find path with fail prob: {0}", String.valueOf(solution.failureProb));
         MCETools.printMCEToolsPath(solution);
         return solution;
 
@@ -370,7 +370,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         
         List<MCETools.Path> KSP = MCETools.computeKShortestPaths(transformedModel, nodeA, nodeZ, 20, connFilters);
         
-        log.log(Level.INFO, "Find {0} KSP (working) before verify", KSP.size());
+        //log.log(Level.INFO, "Find {0} KSP (working) before verify", KSP.size());
         
         if (KSP == null || KSP.isEmpty()) {
             throw new EJBException(String.format("%s::process doSrrgPairPathFinding cannot find any working feasible path for <%s>", resLink));
@@ -398,7 +398,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
             log.log(Level.INFO, "Could not find any shortest path after verify");
             throw new EJBException(String.format("%s::process doSrrgPairPathFinding cannot find any working feasible path for <%s>", resLink));
         } else {
-            log.log(Level.INFO, "Find {0} KSP (working) after verify", KSP.size());
+            //log.log(Level.INFO, "Find {0} KSP (working) after verify", KSP.size());
         }
         
 
@@ -409,7 +409,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         
         for (int i = 0; i < KSP.size(); i++) {
 
-            log.log(Level.INFO, "for working path {0}:", i);
+            //log.log(Level.INFO, "for working path {0}:", i);
             MCETools.Path path = KSP.get(i);
             
             transformedModel = MCETools.transformL2OpenflowPathModel(systemModel);
@@ -444,10 +444,12 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
             throw new EJBException(String.format("%s::process doPathPairFinding encounter an error when finding backup paths <%s>", resLink));
         }
 
-        log.log(Level.INFO, "Select pair: "+ flag);
+        log.log(Level.INFO, "Successfully find path pair");
         
         solutionList.add(KSP.get(flag));
         solutionList.add(solutionBack);
+        
+        MCETools.printKSP(solutionList);
 
         return solutionList;
     }
@@ -480,7 +482,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
     private MCETools.Path getLinkDisjointPath(OntModel systemModel, MCETools.Path primaryPath, Resource resLink, List<Resource> terminals, Map<Resource, List> srrgMap) {
         //return one path with min srrg probability that is link disjoint to primary path
         
-        MCETools.printMCEToolsPath(primaryPath);
+        //MCETools.printMCEToolsPath(primaryPath);
         
         String[] isAliasConstraint = {
             "SELECT $s $p $o WHERE {$s a nml:BidirectionalPort. $o a nml:BidirectionalPort FILTER($s = <$$s> && $o = <$$o>)}",};
@@ -501,7 +503,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         Filter<Statement> connFilters = new PredicatesFilter(filterProperties);
         List<MCETools.Path> backupKSP = MCETools.computeKShortestPaths(systemModel, nodeA, nodeZ, MCETools.KSP_K_DEFAULT, connFilters);
 
-        log.log(Level.INFO, "Find {0} KSP (backup) before verify", backupKSP.size());
+        //log.log(Level.INFO, "Find {0} KSP (backup) before verify", backupKSP.size());
         
         if (backupKSP == null || backupKSP.isEmpty()) {
             //throw new EJBException(String.format("%s::process doPathFinding cannot find feasible path for <%s>", resLink));
@@ -527,14 +529,15 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         if (backupKSP.isEmpty()) {
             return null;
         } else{
-            log.log(Level.INFO, "Find {0} KSP (backup) after verify", backupKSP.size());
+            //log.log(Level.INFO, "Find {0} KSP (backup) after verify", backupKSP.size());
         }
 
         //pick one in backupKSP that has minimum srrg probability
+        //MCETools.printKSP(backupKSP);
         MCETools.Path backPath = this.getLeastSrrgCostPath(backupKSP, systemModel, srrgMap);
 
-        System.out.println("\nbackup path is:");
-        MCETools.printMCEToolsPath(backPath);
+        //System.out.println("\nbackup path is:");
+        //MCETools.printMCEToolsPath(backPath);
         
         return backPath;
 
