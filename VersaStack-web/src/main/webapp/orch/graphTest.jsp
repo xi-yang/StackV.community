@@ -95,9 +95,7 @@
                 request.setRequestHeader("Accept", "application/json");
                 request.onload = function () {
                     var modelData = request.responseText;
-
-                    console.log("Data: " + modelData);
-
+                    
                     if (modelData.charAt(0) === '<') {
                         return;
                     }
@@ -144,8 +142,6 @@
                 request.setRequestHeader("Accept", "application/json");
                 request.onload = function () {
                     var modelData = request.responseText;
-
-                    console.log("Data: " + modelData);
 
                     if (modelData.charAt(0) === '<') {
                         return;

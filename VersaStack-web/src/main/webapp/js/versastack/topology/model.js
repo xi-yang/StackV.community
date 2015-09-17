@@ -107,6 +107,7 @@ define([
                                 case values.topology:
                                 case values.node:
                                 case values.FileSystem:
+                                
                                     var toAdd;
                                     if (oldModel && oldModel.nodeMap[key]) {
                                         toAdd = oldModel.nodeMap[key];
@@ -139,6 +140,8 @@ define([
                                 case values.storageService:
                                 case values.IOPerformanceMeasurementService:
                                 case values.DataTransferService:
+                                case values.DataTransferClusterService:
+                                    case values.NetworkObject:
                                     var toAdd;
                                     if (oldModel && oldModel.serviceMap[key]) {
                                         toAdd = oldModel.serviceMap[key];
@@ -229,6 +232,12 @@ define([
                             case values.providesVPC:
                             case values.providesBucket:
                             case values.hasBidirectionalPort:
+                            case values.hasService:
+                            case values.active_transfers:
+                            case values.topoType:
+                            case values.value:
+                            case values.hasLabel:
+                            case values.hasLabelGroup:    
                                 break;
                             case values.providesSubnet:
                                 var subnet = service_[key];
@@ -257,6 +266,8 @@ define([
                             case values.hasNetworkAddress:
                             case values.encoding:
                             case values.labelSwapping:
+                            case values.topoType:
+                            case values.hasTag:
                                 break;
                                 //Associate ports and subnet with their parent node
                             case values.hasBidirectionalPort:
@@ -337,6 +348,12 @@ define([
                             case values.belongsTo:
                             case values.name:
                             case values.hasVolume:
+                            case values.num_core:
+                            case values.memory_mb:
+                            case values.mount_point:
+                            case values.measurement:
+                            case values.topoType:
+                            case values.hasTag:
                                 break;
                             default:
                                 console.log("Unknown key: " + key);
