@@ -54,6 +54,7 @@ public class AwsPush {
     private AwsDCGet dcClient = null;
     private String topologyUri = null;
     private Regions region = null;
+    private BatchResourcesTool batchTool = new BatchResourcesTool();
     static final Logger logger = Logger.getLogger(AwsPush.class.getName());
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 
@@ -74,7 +75,7 @@ public class AwsPush {
      * function to propagate all the requests
      * ************************************************
      */
-    public String pushPropagate(String modelRefTtl, String modelAddTtl, String modelReductTtl) {
+    public String pushPropagate(String modelRefTtl, String modelAddTtl, String modelReductTtl){
         String requests = "";
 
         OntModel modelRef;
@@ -84,6 +85,11 @@ public class AwsPush {
             modelRef = ModelUtil.unmarshalOntModel(modelRefTtl);
             modelAdd = ModelUtil.unmarshalOntModel(modelAddTtl);
             modelReduct = ModelUtil.unmarshalOntModel(modelReductTtl);
+            
+            //add the batched resources
+            modelRef = batchTool.addBatchToModel(modelRef);
+            modelAdd = batchTool.addBatchToModel(modelAdd);
+            modelReduct = batchTool.addBatchToModel(modelReduct);
         } catch (Exception ex) {
             throw new EJBException(ex);
         }
@@ -665,7 +671,7 @@ public class AwsPush {
      * a delta model where the tag was not specified
      * ****************************************************************
      */
-    private OntModel addDefaultPortTags(OntModel deltaModel) {
+    private OntModel addDefaultPortTags(OntModel deltaModel) throws EJBException {
         //get all the ports with and without tags
         String query = "SELECT ?port WHERE {?port a nml:BidirectionalPort}";
         ResultSet r1 = executeQuery(query, emptyModel, deltaModel);
