@@ -3,7 +3,6 @@ package web.beans;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -12,8 +11,6 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
@@ -327,7 +324,6 @@ public class serviceBeans {
 
     /**
      * Create a customize model view based on the criteria user specifies.
-     * @param viewName The name of this filtered model
      * @param filters A string array. Each string contains SPARQL description, 
      * inclusive flag, subtreeRecursive flag, and suptreeRecursive flag, 
      * concatenated by "\r\n".<br /><br /> 

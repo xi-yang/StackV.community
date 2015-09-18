@@ -268,6 +268,7 @@ define([
                             case values.labelSwapping:
                             case values.topoType:
                             case values.hasTag:
+                            case values.value:
                                 break;
                                 //Associate ports and subnet with their parent node
                             case values.hasBidirectionalPort:
