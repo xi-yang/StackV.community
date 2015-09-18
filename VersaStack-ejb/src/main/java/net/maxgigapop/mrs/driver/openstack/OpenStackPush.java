@@ -256,12 +256,14 @@ public class OpenStackPush {
                 String routerid = "";
                 String netid = "";
                 RouterServiceImpl rsi = new RouterServiceImpl();
+
                 //routerName = o.get("router name").toString();
                 int k = 0;
                 //check the multiple routers condition, enter the while loop
                 while (true) {
                     String key_router = "router" + Integer.toString(k);
                     if (o.containsKey(key_router)) {
+                        List<String> portId = new ArrayList<String>();
                         //if the router is not in the openstack, create one
                         if (!client.getRouters().contains(client.getRouter(o.get(key_router).toString()))) {
 
@@ -311,12 +313,29 @@ public class OpenStackPush {
 
                         OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
                         //here need to be modified
+                        //something wrong here when face the multiple routers scenario 
+                        /*
+                         for (int j = 0; j < i; j++) {
+                         Port port1 = client1.getPort("test_use" + j);
+                         String portid = port1.getId();
+                         rsi.attachInterface(routerid, AttachInterfaceType.PORT, portid);
+                         }*/
                         for (int j = 0; j < i; j++) {
-                            Port port1 = client1.getPort("test_use" + j);
-                            String portid = port1.getId();
-                            rsi.attachInterface(routerid, AttachInterfaceType.PORT, portid);
-                        }
+                            Port p1 = client1.getPort("test_use" + j);
+                            for (int l = j + 1; l < i; l++) {
+                                Port p2 = client1.getPort("test_use" + l);
+                                if (isBelongtoSameRouter(p1, p2, routerid)) {
+                                    portId.add(p1.getId());
+                                    portId.add(p2.getId());
+                                }
+                            }
 
+                        }
+                        LinkedHashSet<String> portID = new LinkedHashSet<String>(portId);//delete duplicate
+                        ArrayList<String> PortID = new ArrayList<String>(portID);
+                        for (String port : PortID) {
+                            rsi.attachInterface(routerid, AttachInterfaceType.PORT, port);
+                        }
                     } else {
                         break;
                     }
@@ -335,9 +354,14 @@ public class OpenStackPush {
                 if (subnet == null) {
                     throw new EJBException("unknown subnet:" + o.get("subnet name"));
                 }
-                port.toBuilder().name(o.get("port name").toString())
-                        .fixedIp(o.get("private address").toString(), subnet.getId())
-                        .networkId(subnet.getNetworkId());
+                if (o.get("private address").toString().equals("any")) {
+                    port.toBuilder().name(o.get("port name").toString())
+                            .networkId(subnet.getNetworkId());
+                } else {
+                    port.toBuilder().name(o.get("port name").toString())
+                            .fixedIp(o.get("private address").toString(), subnet.getId())
+                            .networkId(subnet.getNetworkId());
+                }
                 osClient.networking().port().create(port);
             } else if (o.get("request").toString().equals("DeleteNetworkInterfaceRequest")) {
                 Port port = client.getPort(o.get("port name").toString());
@@ -367,6 +391,7 @@ public class OpenStackPush {
                                             osClient.networking().router().detachInterface(routerid, subid, null);
                                             i++;
                                             key_sub = "subnet" + Integer.toString(i);
+                                            OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
                                         }
 
                                     }
@@ -753,13 +778,13 @@ public class OpenStackPush {
                         + "?address mrs:type \"ipv4:private\" ."
                         + "?address mrs:value ?value }";
                 ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
-                if (!r1.hasNext()) {
-                    throw new Exception(String.format("Delta Model does not specify privat ip address of port: %s", port));
-                }
-                QuerySolution querySolution1 = r1.next();
-                RDFNode value = querySolution1.get("value");
-                String privateAddress = value.asLiteral().toString();
+                String privateAddress = "any";
+                if (r1.hasNext()) {
 
+                    QuerySolution querySolution1 = r1.next();
+                    RDFNode value = querySolution1.get("value");
+                    privateAddress = value.asLiteral().toString();
+                }
                 //2.3 find the subnet that has the port previously found
                 //query = "SELECT ?port WHERE {?port a  nml:BidirectionalPort ."
                 // + "?port  mrs:hasTag <" + tag.asResource() + ">}";
@@ -771,7 +796,7 @@ public class OpenStackPush {
                 String subnetName = "";
                 String subnetname = "";
                 while (r1.hasNext()) {
-                    querySolution1 = r1.next();
+                    QuerySolution querySolution1 = r1.next();
                     RDFNode subnet = querySolution1.get("subnet");
 
                     /*
@@ -1217,12 +1242,7 @@ public class OpenStackPush {
                 RDFNode service = q2.get("service");
 
                 //1.1.2 make sure service is well specified in the model
-                query = "SELECT ?x WHERE{<" + service.asResource() + "> a mrs:RoutingService}";
-                r1 = executeQuery(query, modelRef, emptyModel);
-                if (!r1.hasNext()) {
-                    throw new Exception(String.format("Sercive %s is not a routing service", service));
-                }
-            //1.1.3 get the route Table of the route
+                //1.1.3 get the route Table of the route
                 //TODO make sure to skip the loop if the route is the external network route
             /*
                  query = "SELECT ?table WHERE {?table mrs:hasRoute <" + routeResource.asResource() + ">}";
@@ -1541,6 +1561,14 @@ public class OpenStackPush {
         QueryExecution qexec = QueryExecutionFactory.create(query, unionModel);
         ResultSet r = qexec.execSelect();
         return r;
+    }
+
+    private boolean isBelongtoSameRouter(Port port1, Port port2, String routerid) {
+        Router router = client1.getRouter(routerid);
+        if (port1.getDeviceOwner().equals(router.getId()) && port2.getDeviceOwner().equals(router.getId())) {
+            return true;
+        }
+        return false;
     }
 
 }
