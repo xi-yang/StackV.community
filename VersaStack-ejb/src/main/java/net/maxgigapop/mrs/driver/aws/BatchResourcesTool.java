@@ -18,8 +18,10 @@ import com.hp.hpl.jena.rdf.model.*;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
+import net.maxgigapop.mrs.common.RdfOwl;
 
 /**
  *
@@ -66,18 +68,18 @@ public class BatchResourcesTool {
         }
         return i;
     }
-    
+
     /*
-    *************************************************************************
-    Method to modify a model containing batches into specific resources, this
-    method provides an exact representation of a model after all the batched 
-    resources have been explicitly specified in the model
-    *************************************************************************
-    */
+     *************************************************************************
+     Method to modify a model containing batches into specific resources, this
+     method provides an exact representation of a model after all the batched 
+     resources have been explicitly specified in the model
+     *************************************************************************
+     */
     public OntModel addBatchToModel(OntModel model) throws Exception {
         String query;
         OntModel modelCopy = model;
-        List <Resource> resourcesToDelete =  new ArrayList();
+        List<Resource> resourcesToDelete = new ArrayList();
 
         ModelUtil.marshalOntModel(modelCopy);
         ModelUtil.marshalOntModel(model);
@@ -99,7 +101,7 @@ public class BatchResourcesTool {
 
             //insert into the copy model all the batches identified by number
             for (int i = 0; i < n; i++) {
-                //create a new bacth resource
+                //create a new bacth batchResource
                 String resourceName = name + "batch" + Integer.toString(i);
                 Resource newResource = tmp.getResource(resourceName);
                 if (newResource == null) {
@@ -111,13 +113,13 @@ public class BatchResourcesTool {
                     Property property = next.getPredicate();
                     RDFNode object = next.getObject();
                     if (object.isResource()) {
-                        //if the object is a resource, this resource could be batched too, in this case we have to scenarios
-                        //new batch resource to single resource and new batch resource to batch
+                        //if the object is a batchResource, this batchResource could be batched too, in this case we have to scenarios
+                        //new batch batchResource to single batchResource and new batch batchResource to batch
                         query = "SELECT ?x WHERE {<" + object.asResource().toString() + "> mrs:hasBatch ?x}";
                         ResultSet r2 = executeQuery(query, model);
-                        if (!r2.hasNext()) { //case of new batch resource to single resource
+                        if (!r2.hasNext()) { //case of new batch batchResource to single batchResource
                             tmp.add(tmp.createStatement(newResource, next.getPredicate(), object.asResource()));
-                        } else { //case of  new batch resource to batch resource
+                        } else { //case of  new batch batchResource to batch batchResource
                             String re = object.asResource().toString() + "batch" + Integer.toString(i);
                             Resource childResource = tmp.getResource(re);
                             if (childResource == null) {
@@ -134,7 +136,7 @@ public class BatchResourcesTool {
                 //remove the hasBatch property
                 tmp.remove(newResource.getProperty(Mrs.hasBatch));
 
-                //get the objects on top of this resource
+                //get the objects on top of this batchResource
                 query = "SELECT ?parent ?property WHERE {?parent ?property <" + resourceCopy + ">}";
                 ResultSet r2 = executeQuery(query, model);
                 while (r2.hasNext()) {
@@ -143,13 +145,13 @@ public class BatchResourcesTool {
                     String p = q2.get("property").asResource().toString();
                     Property property = tmp.createProperty(p);
                     Resource parent = q2.getResource("parent").asResource();
-                    //if the object is a resource, this resource could be batched too, in this case we have to scenarios
-                    //new batch resource to single resource and new batch resource to batch
+                    //if the object is a batchResource, this batchResource could be batched too, in this case we have to scenarios
+                    //new batch batchResource to single batchResource and new batch batchResource to batch
                     query = "SELECT ?x WHERE {<" + parent.asResource().toString() + "> mrs:hasBatch ?x}";
                     ResultSet r3 = executeQuery(query, model);
-                    if (!r3.hasNext()) { //case of parent resource to new batch resource 
-                        tmp.add(tmp.createStatement(parent, property,newResource));
-                    } else { //case of  new batch resource to batch resource
+                    if (!r3.hasNext()) { //case of parent batchResource to new batch batchResource 
+                        tmp.add(tmp.createStatement(parent, property, newResource));
+                    } else { //case of  new batch batchResource to batch batchResource
                         String re = parent.asResource().toString() + "batch" + Integer.toString(i);
                         Resource parentResource = tmp.getResource(re);
                         if (parentResource == null) {
@@ -160,15 +162,75 @@ public class BatchResourcesTool {
                 }
             }
         }
-        
-        //clean up every old resource that had batch and its corresponding batch statement
-        for(Resource r : resourcesToDelete){
-           model.removeAll(r, null, null);
-           model.removeAll(null,null,r);
+
+        //clean up every old batchResource that had batch and its corresponding batch statement
+        for (Resource r : resourcesToDelete) {
+            model.removeAll(r, null, null);
+            model.removeAll(null, null, r);
         }
 
         modelCopy.add(tmp.listStatements().toList());
         return modelCopy;
+    }
+
+    /*
+     *************************************************************************
+     Method to modify a model containing explicit resources into batches, this
+     method provides an abstract representation of a model after all the explicit
+     resources are unified into batch resources if they are part of a batch
+     *************************************************************************
+     */
+    public OntModel addModelToBatch(OntModel model) {
+        OntModel tmp = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        tmp.add(model.listStatements()); //make a copy by value of original model
+        String query = "SELECT ?r WHERE {?r Rdf:type NamedIndividual ."
+                + "FILTER regex(?r,\"batch\")}";
+        ResultSet r = executeQuery(query, tmp);
+        while (r.hasNext()) {
+            //find each of the bacthed resources 
+            QuerySolution q = r.next();
+            Resource batchResource = q.get("r").asResource();
+            String batchResourceName = batchResource.toString(); //name of original batchResource
+            String baseBatchResourceName = batchResourceName.split("batch")[0] + "batch"; //base name of all
+            String abstractResourceName = batchResourceName.split("batch")[0]; //name of abstract batchResource
+
+            Resource re = model.getResource(baseBatchResourceName);
+            if (re != null) {//already exists but increment the amount of batches
+                //since the batchResource already exists, we just need to modify the value
+                Statement valueStm = re.getProperty(Mrs.value);
+                int n = Integer.parseInt(valueStm.getObject().asLiteral().toString()) + 1; //add one to current value
+                model.remove(valueStm);
+                model.add(model.createStatement(valueStm.getSubject(), valueStm.getPredicate(), Integer.toString(n))); //add the new value statement
+            } else { //resource do not exist needs to be create and see dependencies
+                //create  base bacth and abstract resource and link them
+
+                //1) create abstract resource and give it a name and same properties as children
+                Resource abstractResource = model.createResource(abstractResourceName);
+                StmtIterator iterator = batchResource.listProperties();
+                while (iterator.hasNext()) {
+                    Statement next = iterator.next();
+                    Property property = next.getPredicate();
+                    RDFNode object = next.getObject();
+
+                    //2 need to worry on downlink dependencies that might need to be changed
+                    //if the child resource has a batch
+                    if (object.isResource()) {
+                        query = "SELECT ?r ?c WHERE {<" + batchResourceName + "> ?property ?c ."
+                                + "FILTER regex(?c,\"batch\")}";
+
+                        //if this happend child resource is a batch take care of it
+                        ResultSet r2 = executeQuery(query, tmp);
+                        if (r2.hasNext()) {
+                            //String childResourceName = r2.next().get("?c");
+                        }
+                    } else {
+
+                    }
+                }
+            }
+
+        }
+        return model;
     }
 
     /**
