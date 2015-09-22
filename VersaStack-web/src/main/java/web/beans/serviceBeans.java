@@ -336,8 +336,8 @@ public class serviceBeans {
         String vgUuid = null;
         //create a new version group.
         try {
-            URL url = new URL(String.format("http://localhost:8080/VersaStack-web/data/json/umd-anl-all.json"));
-            //URL url = new URL(String.format("%s/model/", host));
+            //URL url = new URL(String.format("http://localhost:8080/VersaStack-web/data/json/umd-anl-all.json"));
+            URL url = new URL(String.format("%s/model/", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             this.executeHttpMethod(url, connection, "GET", null);           
         } catch (Exception e) {

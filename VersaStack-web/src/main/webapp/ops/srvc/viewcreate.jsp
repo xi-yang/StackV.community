@@ -75,14 +75,40 @@
                                 <form id="view-form" action="/VersaStack-web/ViewServlet" method="post">
                                     <!-- Management Form -->
                                     <c:if test="${param.mode != 'create'}">
-                                        ${user.printModels()}
+                                        <table class="management-table" id="manage-table">
+                                            <thead><tr><th></th><th></th></tr></thead>
+                                            <tbody>
+                                                <tr>                                                    
+                                                    <td>Select Filter</td>
+                                                    <td>
+                                                        <c:if test="${not empty user.modelNames}">
+                                                            <select id="model-select" name="modelName" size="5" required>
+                                                                <c:forEach var="model" items="${user.modelNames}">
+                                                                    <c:if test="${model != 'base'}">
+                                                                        <option value="${model}">${model}</option>
+                                                                    </c:if>
+                                                                </c:forEach>
+                                                            </select>
+                                                        </c:if>
+                                                        <c:if test="${empty user.modelNames}">
+                                                            No Filters Present
+                                                        </c:if>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td></td>
+                                                    <td>
+                                                        <c:if test="${not empty user.modelNames}"><input class="button-register" name="uninstall" type="submit" value="Uninstall" /></c:if>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
                                     </c:if>
                                     <!-- Creation Form -->
                                     <c:if test="${param.mode == 'create'}">
                                         <!-- View Creation Table -->                                        
 
                                         <table class="management-table" id="query-table">
-
                                             <thead>
                                                 <tr>
                                                     <th>View Name</th>

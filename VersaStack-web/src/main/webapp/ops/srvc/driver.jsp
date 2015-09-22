@@ -100,7 +100,11 @@
                                                     </tr>
                                                     <tr>
                                                         <td>TTL</td>
-                                                        <td><input type="text" name="ttlmodel" size="30"></td>
+                                                        <td>
+                                                            <textarea rows="6" cols="50" name="ttlmodel">
+                                                                
+                                                            </textarea>
+                                                        </td>
                                                     </tr> 
                                                 </c:if>
                                                 <c:if test="${param.driver_id == 'awsdriver'}">

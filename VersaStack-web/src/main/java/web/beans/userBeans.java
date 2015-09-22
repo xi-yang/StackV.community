@@ -455,6 +455,10 @@ public class userBeans {
         current_model = model;
     }
     
+    public void removeModel(String name) {
+        model_map.remove(name);
+    }
+    
     public void setCurr(String newModel) {
         current_model = newModel;
     }

@@ -11,6 +11,7 @@
         <meta charset="utf-8">
         <title>Graphical View</title>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
+        <script src="/VersaStack-web/js/bootstrap.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>
 
         <link rel="stylesheet" type="text/css" href="/VersaStack-web/css/graphTest.css">
@@ -23,6 +24,25 @@
         <script>
             $(document).ready(function () {
                 $("#nav").load("/VersaStack-web/navbar.html");
+                                
+                $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
+                    if (${user.isAllowed(1)}) {
+                        var element = document.getElementById("service1");
+                        element.classList.remove("hide");
+                    }
+                    if (${user.isAllowed(2)}) {
+                        var element = document.getElementById("service2");
+                        element.classList.remove("hide");
+                    }
+                    if (${user.isAllowed(3)}) {
+                        var element = document.getElementById("service3");
+                        element.classList.remove("hide");
+                    }
+                    if (${user.isAllowed(4)}) {
+                        var element = document.getElementById("service4");
+                        element.classList.remove("hide");
+                    }
+                });
             });
         </script> 
 
@@ -130,8 +150,8 @@
                     var height = document.documentElement.clientHeight / outputApi.getZoom();
                     //TODO, figure out why we need to call this twice
                     //If we do not, the layout does to converge as nicely, even if we double the number of iterations
-                    layout.doLayout(model, lockNodes, width, height);
-                    layout.doLayout(model, lockNodes, width, height);
+                    layout.doLayout(model, null, width, height);
+                    layout.doLayout(model, null, width, height);
 
                     render.doRender(outputApi, model);
                 }, null);
@@ -164,8 +184,8 @@
                     var height = document.documentElement.clientHeight / outputApi.getZoom();
                     //TODO, figure out why we need to call this twice
                     //If we do not, the layout does to converge as nicely, even if we double the number of iterations
-                    layout.doLayout(model, lockNodes, width, height);
-                    layout.doLayout(model, lockNodes, width, height);
+                    layout.doLayout(model, null, width, height);
+                    layout.doLayout(model, null, width, height);
 
                     render.doRender(outputApi, model);
                 }, viewModel);
@@ -177,11 +197,18 @@
 
             function buttonInit() {
                 $("#awsButton").click(function (evt) {
-                    $("#actionForm").load("/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=aws #service-fields");
+                    var formUrl = "";
+                    if (document.getElementById("displayName").innerText.indexOf("aws") > -1) {
+                        formUrl = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=aws&graphTopo=" + document.getElementById("displayName").innerText + " #service-bottom";
+                    }
+                    if (document.getElementById("displayName").innerText.indexOf("openstack") > -1) {
+                        formUrl = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=os&graphTopo=" + document.getElementById("displayName").innerText + " #service-bottom";
+                    }
+                    if (document.getElementById("displayName").innerText.indexOf("versa") > -1) {
+                        formUrl = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=vs&graphTopo=" + document.getElementById("displayName").innerText + " #service-bottom";
+                    }
 
-                    $("#awsButton").toggleClass("hide");
-                    $("#cancelButton").toggleClass("hide");
-
+                    window.open(formUrl);
                     evt.preventDefault();
                 });
                 $("#cancelButton").click(function (evt) {
@@ -205,7 +232,7 @@
                 $(".button-filter-select").click(function (evt) {
                     var viewModels = ${user.getModels()};
                     if (this.id === "nofilter") {
-                        filter(viewModels["base"]);
+                        reload();
                     } else {
                         filter(viewModels[this.id]);
                     }
@@ -405,19 +432,19 @@
         <!-- NAV BAR -->
         <div id="nav">
         </div>
+        <!-- SIDE BAR -->
+        <div id="sidebar">            
+        </div>
 
         <div id="filterPanel">
             <div>
                 <button class="button-filter-select" id="nofilter">No Filter</button>
             </div>
-            <div>
-                <button class="button-filter-select" id="Test">Test</button>
-            </div>
-            <!--
             <c:forEach items="${user.modelNames}" var="filterName">
-                <button class="button-filter-select" id="${filterName}">${filterName}</button>
+                <c:if test="${filterName != 'base'}">
+                    <button class="button-filter-select" id="${filterName}">${filterName}</button>
+                </c:if>
             </c:forEach>
-            -->
         </div>
 
         <div id="displayPanel">
@@ -427,7 +454,6 @@
             <div id="treeMenu"></div>
             <div id="actionMenu">
                 <button id="awsButton">Install AWS</button>
-                <button id="cancelButton" class="hide">Minimize</button>
                 <div id="actionForm"></div>
             </div>
         </div>

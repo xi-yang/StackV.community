@@ -80,8 +80,9 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr>
-                                                    <c:if test="${not empty param.topo}">
+                                                <c:if test="${not empty param.topo}">
+                                                    <tr>
+
                                                         <sql:query dataSource="${rains_conn}" sql="SELECT value FROM driver_instance_property P, driver_instance I 
                                                                    WHERE property = 'region' AND I.id = P.driverInstanceId AND I.topologyUri = ?" var="regionlist">
                                                             <sql:param value="${param.topo}" />
@@ -93,8 +94,9 @@
                                                                 <input type="text" name="region" value="${reg.value}" readonly />
                                                             </c:forEach>
                                                         </td>
-                                                    </c:if>
-                                                </tr> 
+
+                                                    </tr> 
+                                                </c:if>
                                                 <tr>
                                                     <td>VPC ID</td>
                                                     <td>
