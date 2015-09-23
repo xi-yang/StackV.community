@@ -6,7 +6,7 @@
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
 <jsp:setProperty name="serv" property="*" />  
 <!DOCTYPE html>
-<html style="width:100%; height: 100%">
+<html>
     <head>
         <meta charset="utf-8">
         <title>Graphical View</title>
