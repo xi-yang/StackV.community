@@ -412,6 +412,10 @@ public class AwsModelBuilder {
             model.add(model.createStatement(s3Service, providesBucket, BUCKET));
             model.add(model.createStatement(awsTopology, hasBucket, BUCKET));
         }
+        
+        //create abstraction for batch resources
+        BatchResourcesTool batchTool = new BatchResourcesTool();
+        model = batchTool.contractExplicitModel(model);
         return model;
     }
 }

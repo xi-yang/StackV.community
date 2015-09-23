@@ -7,7 +7,6 @@ package net.maxgigapop.mrs.driver.aws;
 
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
-import com.hp.hpl.jena.ontology.OntResource;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
@@ -15,10 +14,8 @@ import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.*;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Stack;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.RdfOwl;
@@ -76,7 +73,7 @@ public class BatchResourcesTool {
      resources have been explicitly specified in the model
      *************************************************************************
      */
-    public OntModel addBatchToModel(OntModel model) throws Exception {
+    public OntModel expandBatchAbstraction(OntModel model) throws Exception {
         String query;
         OntModel modelCopy = model;
         List<Resource> resourcesToDelete = new ArrayList();
@@ -180,11 +177,13 @@ public class BatchResourcesTool {
      resources are unified into batch resources if they are part of a batch
      *************************************************************************
      */
-    public OntModel addModelToBatch(OntModel model) {
+    public OntModel contractExplicitModel(OntModel model) {
         OntModel tmp = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         tmp.add(model.listStatements()); //make a copy by value of original model
-        String query = "SELECT ?r WHERE {?r Rdf:type NamedIndividual ."
-                + "FILTER regex(?r,\"batch\")}";
+        List<Resource> resourcesToDelete = new ArrayList();
+        
+        String query = "SELECT ?r WHERE {?r rdf:type owl:NamedIndividual ."
+                + "FILTER regex(str(?r),\"batch\",'i')}";
         ResultSet r = executeQuery(query, tmp);
         while (r.hasNext()) {
             //find each of the bacthed resources 
@@ -194,16 +193,19 @@ public class BatchResourcesTool {
             String baseBatchResourceName = batchResourceName.split("batch")[0] + "batch"; //base name of all
             String abstractResourceName = batchResourceName.split("batch")[0]; //name of abstract batchResource
 
-            Resource re = model.getResource(baseBatchResourceName);
-            if (re != null) {//already exists but increment the amount of batches
-                //since the batchResource already exists, we just need to modify the value
-                Statement valueStm = re.getProperty(Mrs.value);
-                int n = Integer.parseInt(valueStm.getObject().asLiteral().toString()) + 1; //add one to current value
-                model.remove(valueStm);
-                model.add(model.createStatement(valueStm.getSubject(), valueStm.getPredicate(), Integer.toString(n))); //add the new value statement
-            } else { //resource do not exist needs to be create and see dependencies
-                //create  base bacth and abstract resource and link them
+            //omit the property of mrs:BidirectionalPort nml: hasNetworkAddress ?address
+            //as batches do not specify addresses on their pull or delta models do this on the network interfaces only
+            Statement batchIsPort =  batchResource.getProperty(Mrs.hasNetworkAddress);
+            if(batchIsPort !=null){ //meaning that it has a network address
+                //delete statement and the object resource
+                Resource delete  = batchIsPort.getObject().asResource();
+                model.removeAll(delete, null, null);
+                model.removeAll(null, null, delete);
+                resourcesToDelete.add(delete);
+            }
 
+            Resource baseBatchResource = model.getResource(baseBatchResourceName);
+            if (baseBatchResource.listProperties().hasNext() != true) {//does not exists and have properties but increment the amount of batches
                 //1) create abstract resource and give it a name and same properties as children
                 Resource abstractResource = model.createResource(abstractResourceName);
                 StmtIterator iterator = batchResource.listProperties();
@@ -215,18 +217,68 @@ public class BatchResourcesTool {
                     //2 need to worry on downlink dependencies that might need to be changed
                     //if the child resource has a batch
                     if (object.isResource()) {
-                        query = "SELECT ?r ?c WHERE {<" + batchResourceName + "> ?property ?c ."
-                                + "FILTER regex(?c,\"batch\")}";
+                        String childResourceName = object.asResource().toString();
+                        //2.1 check if object is a batch
+                        if (childResourceName.contains("batch")) { //child resource is batch
+                            childResourceName = childResourceName.substring(0, childResourceName.indexOf("batch"));
+                            Resource childResource = model.getResource(childResourceName);
+                            if (childResource == null) {
+                                childResource = model.createResource(childResourceName);
+                            }
+                            model.add(model.createStatement(abstractResource, property, childResource));
 
-                        //if this happend child resource is a batch take care of it
-                        ResultSet r2 = executeQuery(query, tmp);
-                        if (r2.hasNext()) {
-                            //String childResourceName = r2.next().get("?c");
+                        } else //object is not a batch safe to copy property
+                        {
+                            model.add(model.createStatement(abstractResource, property, object.asResource()));
                         }
-                    } else {
 
+                    } else { //object is just a literal safe to copy
+                        model.add(model.createStatement(abstractResource, property, object.asLiteral()));
+                    }
+
+                    //remove owl:Thing and rdfs:  resource 
+                }
+
+                //3 add the abtract resource mrs:hasBatch batch part of the relation
+                model.add(model.createStatement(baseBatchResource, RdfOwl.type, RdfOwl.NamedIndividual));
+                model.add(model.createStatement(baseBatchResource, RdfOwl.type, Mrs.Batch));
+                model.add(model.createStatement(baseBatchResource, Mrs.BatchRule, "numbered"));
+                model.add(model.createStatement(baseBatchResource, Mrs.value, "0"));
+                model.add(model.createStatement(abstractResource, Mrs.hasBatch, baseBatchResource));
+
+                // 3 get the objects on top of this batchResource
+                query = "SELECT ?parent ?property WHERE {?parent ?property <" + batchResourceName + ">}";
+                OntModel tmp1 = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+                tmp1.add(model.listStatements()); //make a copy by value of original model
+                ResultSet r2 = executeQuery(query, tmp1);
+                while (r2.hasNext()) {
+                    //if you find the parent and the parent has a batch, link new batch resources with parent's batch resources 
+                    QuerySolution q2 = r2.next();
+                    String p = q2.get("property").asResource().toString();
+                    Property property = tmp.createProperty(p);
+                    Resource parent = q2.getResource("parent").asResource();
+                    String parentName = parent.toString();
+
+                    if (parentName.contains("batch")) { //case of parent being a batch resource
+                        //already taken care of on the downlink part 
+                    } else { //case of  parent being a normal reosurce
+                        model.add(model.createStatement(parent, property, abstractResource));
                     }
                 }
+            }
+
+            //add +1 to the value of the baseBatch
+            Statement valueStm = baseBatchResource.getProperty(Mrs.value);
+            int n = Integer.parseInt(valueStm.getObject().asLiteral().toString()) + 1; //add one to current value
+            model.remove(valueStm);
+            model.add(model.createStatement(valueStm.getSubject(), valueStm.getPredicate(), Integer.toString(n))); //add the new value statement
+
+            //remove statements involving  the batchResources 
+            model.removeAll(batchResource, null, null);
+            model.removeAll(null, null, batchResource);
+            for(Resource delete: resourcesToDelete){
+                model.removeAll(delete,null,null);
+                model.removeAll(null,null,delete);
             }
 
         }

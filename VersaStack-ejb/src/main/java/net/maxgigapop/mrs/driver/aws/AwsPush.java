@@ -87,9 +87,9 @@ public class AwsPush {
             modelReduct = ModelUtil.unmarshalOntModel(modelReductTtl);
             
             //add the batched resources
-            modelRef = batchTool.addBatchToModel(modelRef);
-            modelAdd = batchTool.addBatchToModel(modelAdd);
-            modelReduct = batchTool.addBatchToModel(modelReduct);
+            modelRef = batchTool.expandBatchAbstraction(modelRef);
+            modelAdd = batchTool.expandBatchAbstraction(modelAdd);
+            modelReduct = batchTool.expandBatchAbstraction(modelReduct);
         } catch (Exception ex) {
             throw new EJBException(ex);
         }
