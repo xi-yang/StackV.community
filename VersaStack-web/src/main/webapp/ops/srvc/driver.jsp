@@ -71,6 +71,7 @@
                                                         <option value="awsdriver">AWS</option>
                                                         <option value="versaNSDriver">VersaStack</option>
                                                         <option value="openStackDriver">OpenStack</option>
+                                                        <option value="StackDriver">StackSystem</option>
                                                     </select>
                                                 </c:if>
                                             </th>
@@ -139,6 +140,16 @@
                                                     </tr>                                            
                                                 </c:if>
                                                 <c:if test="${param.driver_id == 'versaNSDriver'}">
+                                                    <tr>
+                                                        <td>Topology URI</td>
+                                                        <td><input type="text" name="topologyUri" size="30" required></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Subsystem Base URL</td>
+                                                        <td><input type="text" name="subsystemBaseUrl" required></td>
+                                                    </tr>
+                                                </c:if>
+                                                <c:if test="${param.driver_id == 'StackDriver'}">
                                                     <tr>
                                                         <td>Topology URI</td>
                                                         <td><input type="text" name="topologyUri" size="30" required></td>

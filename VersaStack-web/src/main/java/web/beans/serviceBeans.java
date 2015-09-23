@@ -64,7 +64,7 @@ public class serviceBeans {
                         driver += "<value>java:module/OpenStackDriver</value></entry>";
                         break;
                     case "StackDriver":
-                        // to be filled
+                        driver += "<value>java:module/StackSystemDriver</value></entry>";
                         break;
                     default:
                         break;
