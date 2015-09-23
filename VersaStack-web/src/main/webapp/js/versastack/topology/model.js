@@ -193,8 +193,13 @@ define([
                     var aliasKey = port_[values.isAlias];
                     if (aliasKey) {
                         var aliasPort = that.portMap[aliasKey[0].value];
-                        port.alias = aliasPort;
-                        aliasPort.alias = port;
+                        if (aliasPort) {
+                            port.alias = aliasPort;
+                            aliasPort.alias = port;
+                        } else {
+                            console.log("Alias Port Non-Existent!");
+                            break;
+                        }
                     } else {
                         port.alias = null;
                     }

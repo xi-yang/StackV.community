@@ -39,7 +39,7 @@ public class userBeans {
     ArrayList<Integer> service_list = new ArrayList<>();
     ArrayList<Integer> group_list = new ArrayList<>();
     HashMap<String, String> model_map = new HashMap<>();
-    String current_model = "";
+    String[] current_model = {"",""};
 
     boolean loggedIn = false;
 
@@ -452,23 +452,25 @@ public class userBeans {
     
     public void addModel(String name, String model) {
         model_map.put(name, model);
-        current_model = model;
+        current_model[0] = name;
+        current_model[1] = model;
     }
     
     public void removeModel(String name) {
         model_map.remove(name);
     }
     
-    public void setCurr(String newModel) {
-        current_model = newModel;
+    public void setCurr(String filterName, String filterModel) {
+        current_model[0] = filterName;
+        current_model[1] = filterModel;
     }
     
-    public String getModel() {
-        return current_model;
+    public String getModelName() {
+        return current_model[0];
     }
     
     public String getTtlModel() {
-        return current_model;               
+        return current_model[1];               
     }
         
     public String getModels() {

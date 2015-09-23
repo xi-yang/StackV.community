@@ -175,7 +175,7 @@
                 request.send();
             }
 
-            function filter(viewModel) {
+            function filter(viewName, viewModel) {
                 var lockNodes = model.listNodes();
                 //var posistionLocks = {};
                 model = new ModelConstructor(model);
@@ -190,7 +190,7 @@
                     render.doRender(outputApi, model);
                 }, viewModel);
                 
-                $.post("/VersaStack-web/ViewServlet", {filterModel: viewModel.ttlModel}, function(response) {
+                $.post("/VersaStack-web/ViewServlet", {filterName: viewName, filterModel: viewModel.ttlModel}, function(response) {
                         // handle response from your servlet.
                 });
             }
@@ -230,12 +230,16 @@
                 });
 
                 $(".button-filter-select").click(function (evt) {
+                    $(".current-filter").removeClass("current-filter");
+                    
                     var viewModels = ${user.getModels()};
                     if (this.id === "nofilter") {
                         reload();
                     } else {
-                        filter(viewModels[this.id]);
+                        filter(this.id, viewModels[this.id]);
                     }
+
+                    $(this).addClass("current-filter");
 
                     evt.preventDefault();
                 });
@@ -437,14 +441,14 @@
         </div>
 
         <div id="filterPanel">
-            <div>
+            <div id="filterPanel-contents">
                 <button class="button-filter-select" id="nofilter">No Filter</button>
+                <c:forEach items="${user.modelNames}" var="filterName">
+                    <c:if test="${filterName != 'base'}">
+                        <button class="button-filter-select" id="${filterName}">${filterName}</button>
+                    </c:if>
+                </c:forEach>
             </div>
-            <c:forEach items="${user.modelNames}" var="filterName">
-                <c:if test="${filterName != 'base'}">
-                    <button class="button-filter-select" id="${filterName}">${filterName}</button>
-                </c:if>
-            </c:forEach>
         </div>
 
         <div id="displayPanel">

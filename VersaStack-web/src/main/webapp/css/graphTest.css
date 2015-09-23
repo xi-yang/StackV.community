@@ -58,7 +58,15 @@ body{
 }
 
 .button-filter-select {
-    float: left;
+    background-color: rgba(0, 0, 0, .05);
+    color: black;
+    border-left: 1px solid rgba(0, 0, 0, .05);
+    border-right: 1px solid rgba(0, 0, 0, .05);
+}
+
+.current-filter {
+    color: red;
+    background-color: rgba(0, 0, 0, .10)
 }
 
 #displayName{
@@ -74,11 +82,11 @@ body{
     position: absolute;
     top: 37px;
     left: 225px;
-    border-left: 20px solid rgba(0, 0, 0, .05);
+    border-left: 5px solid rgba(0, 0, 0, .05);
 }
 
 #filterPanel-contents {
-    color: #B60000;    
+    background-color: rgba(0, 0, 0, .05);    
     position: relative;
     width: inherit;
     left: 0;

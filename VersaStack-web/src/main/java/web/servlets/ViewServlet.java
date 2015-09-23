@@ -72,8 +72,8 @@ public class ViewServlet extends HttpServlet {
             String newModel = request.getParameter("newModel"); // this is your data sent from client
 
             user.addModel("base", newModel);
-        } else if (request.getParameter("filterModel") != null) {
-            user.setCurr(request.getParameter("filterModel"));
+        } else if (request.getParameter("filterName") != null) {
+            user.setCurr(request.getParameter("filterName"), request.getParameter("filterModel"));
         } else if (request.getParameter("modelName") != null) {
             user.removeModel(request.getParameter("modelName"));
             
