@@ -7,13 +7,21 @@
 package net.maxgigapop.mrs.bean;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Future;
 import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.Lob;
+import javax.persistence.MapKeyColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Transient;
@@ -36,6 +44,13 @@ public class ServiceInstance extends PersistentEntity implements Serializable {
     @OneToMany(mappedBy="serviceInstance", cascade = {CascadeType.ALL})
     protected List<ServiceDelta> serviceDeltas = null;    
     
+    
+    @ElementCollection
+    @JoinTable(name = "service_instance_property", joinColumns = @JoinColumn(name = "serviceInstanceId"))
+    @MapKeyColumn(name = "property")
+    @Lob @Column(name="value")
+    private Map<String, String> properties = new HashMap<String, String>();
+
     String status = "INIT";
     
     public Long getId() {
@@ -70,6 +85,24 @@ public class ServiceInstance extends PersistentEntity implements Serializable {
         this.status = status;
     }
 
+    public Map<String, String> getProperties() {
+        return properties;
+    }
+
+    public void setProperties(Map<String, String> properties) {
+        this.properties = properties;
+    }
+    
+    public String getProperty(String key) {
+        if (!this.properties.containsKey(key))
+            return null;
+        return this.properties.get(key);
+    }
+
+    public void putProperty(String key, String value) {
+        this.properties.put(key, value);
+    }
+    
     @Override
     public int hashCode() {
         int hash = 0;
