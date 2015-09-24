@@ -62,7 +62,7 @@ public class ServiceResource {
 
     //GET instance property
     @GET
-    @Path("/{siUUID}/{property}/{value}")
+    @Path("/{siUUID}/{property}")
     public String getProperty(@PathParam("siUUID")String svcInstanceUUID, @PathParam("property")String property) {
         String value = serviceCallHandler.getInstanceProperty(svcInstanceUUID, property);
         if (value == null) {
