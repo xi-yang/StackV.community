@@ -63,6 +63,23 @@ public class HandleServiceCall {
         }
         ServiceInstancePersistenceManager.delete(serviceInstance);
     }
+    
+    public void setInstanceProperty(String refUUID, String property, String value) {
+        ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(refUUID);
+        if (serviceInstance == null) {
+            throw new EJBException(String.format("setInstanceProperty cannot find the ServiceInstance with referenceUUID=%s", refUUID));
+        }
+        serviceInstance.getProperties().put(property, value);
+        ServiceInstancePersistenceManager.merge(serviceInstance);
+    }
+
+    public String getInstanceProperty(String refUUID, String property) {
+        ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(refUUID);
+        if (serviceInstance == null) {
+            throw new EJBException(String.format("getInstanceProperty cannot find the ServiceInstance with referenceUUID=%s", refUUID));
+        }
+        return serviceInstance.getProperty(property);
+    }
 
     public SystemDelta compileAddDelta(String serviceInstanceUuid, String workerClassPath, ServiceDelta spaDelta) {
         ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
