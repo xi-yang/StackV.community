@@ -162,21 +162,54 @@ public class HandleServiceCall {
         if (itSD.hasNext()) { // assume failed before proven success
             serviceInstance.setStatus("FAILED"); 
         }
+        // By default propagate a delta if it is the first with init status in queue or there is only commited ones before.
+        // Commit only one delta at a time.
+        boolean canMultiPropagate = false;
+        String multiPropagate = serviceInstance.getProperty("multiPropagate");
+        if (multiPropagate != null && multiPropagate.equalsIgnoreCase("true")) {
+            canMultiPropagate = true;
+        }
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
             if (serviceDelta.getSystemDelta() == null) {
-                continue;
+                continue; // ??
             } else if (serviceDelta.getStatus().equals("INIT")) {
                 SystemInstance systemInstance = systemCallHandler.createInstance();
                 systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta());
                 serviceDelta.setStatus("PROPOGATED");
                 DeltaPersistenceManager.merge(serviceDelta);
-            } else if (!serviceDelta.getStatus().equals("PROPOGATED")) {
-                throw new EJBException(HandleServiceCall.class.getName()+".propogateDeltas (by " + serviceInstance + ") encounters "+serviceDelta +" in status=" + serviceDelta.getStatus());
+                if (!canMultiPropagate) {
+                    break;
+                }
+            } else if (!canMultiPropagate && !serviceDelta.getStatus().equals("COMMITED")) {
+                throw new EJBException(HandleServiceCall.class.getName()+".propogateDeltas (by " + serviceInstance + ") with 'multiPropagate=false' encounters "+serviceDelta +" in status=" + serviceDelta.getStatus());
             }
         }
         if (serviceInstance.getStatus().equals("FAILED")) {
-            serviceInstance.setStatus("PROPOGATED");
+            itSD = serviceInstance.getServiceDeltas().iterator();
+            boolean hasInitiated = false;
+            boolean hasPropagated = false;
+            boolean hasCommited = false;
+            while (itSD.hasNext()) {
+                ServiceDelta serviceDelta = itSD.next();
+                if (serviceDelta.getStatus().equalsIgnoreCase("PROPOGATED")) {
+                    hasInitiated = true;
+                } else if (serviceDelta.getStatus().equalsIgnoreCase("INIT")) {
+                    hasPropagated = true;
+                } else if (serviceDelta.getStatus().equalsIgnoreCase("PROPOGATED")) {
+                    hasCommited = true;
+                }
+            }
+            serviceInstance.setStatus("INIT");
+            if (hasInitiated && hasPropagated) {
+                serviceInstance.setStatus("PROPOGATED-PARTIAL");
+            } else if (hasPropagated && !hasCommited) {
+                serviceInstance.setStatus("PROPOGATED");
+            } else if (hasPropagated && hasCommited) {
+                serviceInstance.setStatus("COMMITED-PARTIAL");
+            } else if (!hasPropagated && hasCommited) {
+                serviceInstance.setStatus("COMMITED");
+            }
         }
         ServiceInstancePersistenceManager.merge(serviceInstance);     
         return serviceInstance.getStatus();
@@ -194,10 +227,17 @@ public class HandleServiceCall {
         if (itSD.hasNext()) { // assume failed before proven success
             serviceInstance.setStatus("FAILED"); 
         }
+        // By default commit a delta if it is the first with propagated status in queue or there is only commited ones before.
+        // Also commit only one delta at a time.
+        boolean canMultiCommit = false;
+        String multiCommit = serviceInstance.getProperty("multiCommit");
+        if (multiCommit != null && multiCommit.equalsIgnoreCase("true")) {
+            canMultiCommit = true;
+        }
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
-            if (serviceDelta.getSystemDelta() == null)
-                continue;
+            if (serviceDelta.getSystemDelta() == null) 
+                continue; // ??
             if (serviceDelta.getStatus().equals("PROPOGATED")) {
                 SystemInstance systemInstance = SystemInstancePersistenceManager.findBySystemDelta(serviceDelta.getSystemDelta());
                 systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(systemInstance.getReferenceUUID());
@@ -206,14 +246,39 @@ public class HandleServiceCall {
                 systemInstance.setCommitFlag(true);
                 serviceDelta.setStatus("COMMITTED");
                 DeltaPersistenceManager.merge(serviceDelta);
-            } else {
+                if (!canMultiCommit) {
+                    break;
+                }
+            } else if (!canMultiCommit && !serviceDelta.getStatus().equals("COMMITED")){
                 throw new EJBException(HandleServiceCall.class.getName()+".commitDeltas (by " + serviceInstance + ") encounters "+serviceDelta +" in status=" + serviceDelta.getStatus());
             }
         }
-
         if (serviceInstance.getStatus().equals("FAILED")) {
-            serviceInstance.setStatus("COMMITTED");
-        }        
+            itSD = serviceInstance.getServiceDeltas().iterator();
+            boolean hasInitiated = false;
+            boolean hasPropagated = false;
+            boolean hasCommited = false;
+            while (itSD.hasNext()) {
+                ServiceDelta serviceDelta = itSD.next();
+                if (serviceDelta.getStatus().equalsIgnoreCase("PROPOGATED")) {
+                    hasInitiated = true;
+                } else if (serviceDelta.getStatus().equalsIgnoreCase("INIT")) {
+                    hasPropagated = true;
+                } else if (serviceDelta.getStatus().equalsIgnoreCase("PROPOGATED")) {
+                    hasCommited = true;
+                }
+            }
+            serviceInstance.setStatus("INIT");
+            if (hasInitiated && hasPropagated) {
+                serviceInstance.setStatus("COMMITED-PARTIAL");
+            } else if (hasPropagated && !hasCommited) {
+                serviceInstance.setStatus("PROPOGATED");
+            } else if (hasPropagated && hasCommited) {
+                serviceInstance.setStatus("COMMITED-PARTIAL");
+            } else if (!hasPropagated && hasCommited) {
+                serviceInstance.setStatus("COMMITED");
+            }
+        }
         ServiceInstancePersistenceManager.merge(serviceInstance);     
         return serviceInstance.getStatus();
     }
