@@ -199,18 +199,22 @@ public class ActionBase {
             inputDelta = childDelta;
             return;
         }
+        // if outputDelta is null (action not executed) merge to inputDelta
+        ServiceDelta targetDelta = inputDelta;
+        if (outputDelta != null) // otherwise, merge to outputDelta
+            targetDelta = outputDelta;
         // merging models A (childDelta) into B (this.inputDelta)
         // merge addition 
         if (childDelta.getModelAddition() != null && childDelta.getModelAddition().getOntModel() != null &&
-                inputDelta.getModelAddition() != null && inputDelta.getModelAddition().getOntModel() != null) {
-            OntModel mergedAddition = this.mergeOntModel(childDelta.getModelAddition().getOntModel(), inputDelta.getModelAddition().getOntModel());
-            inputDelta.getModelAddition().setOntModel(mergedAddition);
+                targetDelta.getModelAddition() != null && targetDelta.getModelAddition().getOntModel() != null) {
+            OntModel mergedAddition = this.mergeOntModel(childDelta.getModelAddition().getOntModel(), targetDelta.getModelAddition().getOntModel());
+            targetDelta.getModelAddition().setOntModel(mergedAddition);
         }
         // merge reduction         
         if (childDelta.getModelReduction()!= null && childDelta.getModelReduction().getOntModel() != null &&
-                inputDelta.getModelReduction() != null && inputDelta.getModelReduction().getOntModel() != null) {
-            OntModel mergedReduction = this.mergeOntModel(childDelta.getModelReduction().getOntModel(), inputDelta.getModelReduction().getOntModel());
-            inputDelta.getModelReduction().setOntModel(mergedReduction);
+                targetDelta.getModelReduction() != null && targetDelta.getModelReduction().getOntModel() != null) {
+            OntModel mergedReduction = this.mergeOntModel(childDelta.getModelReduction().getOntModel(), targetDelta.getModelReduction().getOntModel());
+            targetDelta.getModelReduction().setOntModel(mergedReduction);
         }
     }
     
@@ -245,88 +249,15 @@ public class ActionBase {
             Resource resPolicy = querySolution.get("policyAction").asResource();
             mergedModel.remove(resSome, Spa.dependOn, resPolicy);
         }
-        /*
-        // collect 'dungling' PolicyData
-        solutions.clear();
-        sparql = "SELECT ?policyData WHERE {"
-                + "?someAction spa:importFrom ?policyData ."
-                + "FILTER not exists {?otherAction spa:exportTo ?policyData} "
-                + "}";
-        rs = ModelUtil.sparqlQuery(modelA, sparql);
-        while (rs.hasNext()) {
-            solutions.add(rs.next());
+
+        try {
+            log.log(Level.INFO, "\n>>>Merge--ModelA=\n" + ModelUtil.marshalModel(modelA.getBaseModel()));
+            log.log(Level.INFO, "\n>>>Merge--ModelB=\n" + ModelUtil.marshalModel(modelB.getBaseModel()));
+            log.log(Level.INFO, "\n>>>Merge--ModelAB=\n" + ModelUtil.marshalModel(mergedModel.getBaseModel()));
+        } catch (Exception ex) {
+            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
-        rs = ModelUtil.sparqlQuery(modelB, sparql);
-        while (rs.hasNext()) {
-            solutions.add(rs.next());
-        }
-        // in mergedModel find PolicyAction that exports the PolicyData
-        List<Statement> listStmtsToRemove = new ArrayList<>();
-        for (QuerySolution querySolution : solutions) {
-            sparql = "SELECT ?someRes ?policyAction WHERE {"
-                + "?someRes spa:dependOn ?policyAction ."
-                + "?policyAction spa:exportTo ?policyData . "
-                + "}";
-            rs = ModelUtil.sparqlQuery(mergedModel, sparql);
-            while (rs.hasNext()) {
-                QuerySolution solution = rs.next();
-                Resource resSome = solution.getResource("someRes");
-                Resource resPolicy = solution.getResource("policyAction");
-                // remove this PolicyAction and everything under the PolicyAction
-                listStmtsToRemove.add(mergedModel.createStatement(resSome, Spa.dependOn, resPolicy));
-                List<Statement> listStmts = new ArrayList<>();
-                ModelUtil.listRecursiveDownTree(resPolicy, Spa.getURI(), listStmts);
-                listStmtsToRemove.addAll(listStmts);
-            }
-        }
-        if (!listStmtsToRemove.isEmpty())
-            mergedModel.remove(listStmtsToRemove);
-        */
-        
-        /*## alternative: sophisticated merge
-        // 1. Get dA = A.remove(B) and dB = B.remove(A)
-        OntModel modelAbutB = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-        modelAbutB.add(modelA.getBaseModel());
-        modelAbutB.remove(modelB);
-        OntModel modelBbutA = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-        modelBbutA.add(modelB);
-        modelBbutA.remove(modelA.getBaseModel());
-        mergedModel.add(modelA.getBaseModel());        
-        // 2. if dA has r1 *with* annotation while r1 is not in dB, A.remove(r1)
-        StmtIterator stmtIter = modelAbutB.listStatements();
-        while (stmtIter.hasNext()) {
-            Statement stmt = stmtIter.next();
-            Property P = stmt.getPredicate();
-            Resource S = stmt.getSubject();
-            if (!modelBbutA.listStatements(S, RdfOwl.type, Spa.PolicyData).hasNext()) {
-                S = null;
-            }
-            if (!P.getNameSpace().equals(Spa.getURI()))
-                continue;
-            if (!modelBbutA.contains(stmt)
-                 // keep all importFrom->policyData->* statements when merging
-                && !P.getURI().equals(Spa.importFrom.getURI())
-                && S == null)
-               mergedModel.remove(stmt);
-        }
-        // 3. if dB has r2 *without* annoation amd r2 is not in dA, A.add(r2)
-        stmtIter = modelBbutA.listStatements();
-        while (stmtIter.hasNext()) {
-            Statement stmt = stmtIter.next();
-            Property P = stmt.getPredicate();
-            Resource S = stmt.getSubject();
-            if (!modelBbutA.listStatements(S, RdfOwl.type, Spa.PolicyData).hasNext()) {
-                S = null;
-            }
-            if (P.getNameSpace().equals(Spa.getURI())
-                    // keep all importFrom->policyData->* statements when merging
-                    && !P.getURI().equals(Spa.importFrom.getURI())
-                    && S == null)
-                continue;
-            if (!modelAbutB.contains(stmt))
-                mergedModel.add(stmt);
-        }
-        */
+
         return mergedModel;
     }
     
