@@ -184,8 +184,8 @@
                     var height = document.documentElement.clientHeight / outputApi.getZoom();
                     //TODO, figure out why we need to call this twice
                     //If we do not, the layout does to converge as nicely, even if we double the number of iterations
-                    layout.doLayout(model, null, width, height);
-                    layout.doLayout(model, null, width, height);
+                    layout.doLayout(model, lockNodes, width, height);
+                    layout.doLayout(model, lockNodes, width, height);
 
                     render.doRender(outputApi, model);
                 }, viewModel);
@@ -199,14 +199,14 @@
                 $("#awsButton").click(function (evt) {
                     var formUrl = "";
                     if (document.getElementById("displayName").innerText.indexOf("aws") > -1) {
-                        formUrl = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=aws&graphTopo=" + document.getElementById("displayName").innerText + " #service-bottom";
+                        formUrl = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=aws&graphTopo=" + document.getElementById("displayName").innerText + "";
                     }
-                    if (document.getElementById("displayName").innerText.indexOf("openstack") > -1) {
-                        formUrl = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=os&graphTopo=" + document.getElementById("displayName").innerText + " #service-bottom";
+                    else if (document.getElementById("displayName").innerText.indexOf("openstack") > -1) {
+                        formUrl = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=os&graphTopo=" + document.getElementById("displayName").innerText + "";
                     }
-                    if (document.getElementById("displayName").innerText.indexOf("versa") > -1) {
-                        formUrl = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=vs&graphTopo=" + document.getElementById("displayName").innerText + " #service-bottom";
-                    }
+                    else if (document.getElementById("displayName").innerText.indexOf("versa") > -1) {
+                        formUrl = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=vs&graphTopo=" + document.getElementById("displayName").innerText + "";
+                    } else { return; }
 
                     window.open(formUrl);
                     evt.preventDefault();

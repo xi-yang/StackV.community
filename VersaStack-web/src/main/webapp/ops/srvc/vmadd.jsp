@@ -184,7 +184,7 @@
                                                         <input class="button-register" name="install" type="submit" value="Install" />
                                                         <input class="button-register" type="button" 
                                                                value="Add Volume" onClick="addVolume()">
-                                                        <input type="hidden" name="graphTopo" value="none"/>
+                                                        <input type="hidden" name="graphTopo" value="${param.graphTopo}"/>
                                                     </td>
                                                 </tr> 
                                             </tbody>
