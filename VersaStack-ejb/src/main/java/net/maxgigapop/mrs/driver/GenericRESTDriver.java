@@ -50,7 +50,7 @@ import org.json.simple.parser.ParseException;
 public class GenericRESTDriver implements IHandleDriverSystemCall{       
     private static final Logger logger = Logger.getLogger(GenericRESTDriver.class.getName());
 
-    @Override
+    //@Override
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
         //driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
@@ -90,7 +90,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
         }
     }
 
-    @Override
+    //@Override
     @Asynchronous
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
         DriverInstance driverInstance = aDelta.getDriverInstance();
@@ -115,10 +115,9 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
         int maxNumPolls = 10; // timeout after 5 minutes -> ? make configurable
         while (doPoll && (maxNumPolls--) > 0) {
             try {
-                sleep(30000L); // poll every 30 minutes -> ? make configurable
+                sleep(30000L); // poll every 30 seconds -> ? make configurable
                 // pull model from REST API
                 URL url = new URL(String.format("%s/delta/%s/%d", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
-                //URL url = new URL(String.format("%s/devices", subsystemBaseUrl));
                 HttpURLConnection conn = (HttpURLConnection)url.openConnection();
                 String status = this.executeHttpMethod(url, conn, "GET", null);
                 if (status.toUpperCase().equals("ACTIVE")) {
@@ -160,7 +159,6 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
             try {
                 if (driverInstance.getHeadVersionItem() != null) {
                     URL url = new URL(subsystemBaseUrl + "/model/"+driverInstance.getHeadVersionItem().getReferenceUUID());
-                    //URL url = new URL(subsystemBaseUrl + "/devices");
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     String status = this.executeHttpMethod(url, conn, "GET", null);
                     if (status.toUpperCase().equals("LATEST")) {
@@ -169,7 +167,6 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
                 }
                 // pull model from REST API
                 URL url = new URL(subsystemBaseUrl + "/model");
-                //URL url = new URL(subsystemBaseUrl + "/devices");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 String responseStr = this.executeHttpMethod(url, conn, "GET", null);
                 JSONObject responseJSON = (JSONObject) JSONValue.parseWithException(responseStr);
@@ -242,9 +239,9 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
                 wr.flush();
             }
         }
-        logger.log(Level.INFO, "Sending {0} request to URL : {1}", new Object[]{method, url});
+        logger.log(Level.FINEST, "Sending {0} request to URL : {1}", new Object[]{method, url});
         int responseCode = conn.getResponseCode();
-        logger.log(Level.INFO, "Response Code : {0}", responseCode);
+        logger.log(Level.FINEST, "Response Code : {0}", responseCode);
 
         StringBuilder responseStr;
         try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {

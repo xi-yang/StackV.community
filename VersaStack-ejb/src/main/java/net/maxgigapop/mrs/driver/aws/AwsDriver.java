@@ -65,12 +65,7 @@ public class AwsDriver implements IHandleDriverSystemCall {
 
         AwsPush push = new AwsPush(access_key_id, secret_access_key, region, topologyURI);
         String requests = null;
-        try {
-            requests = push.pushPropagate(model, modelAdd, modelReduc);
-        } catch (Exception ex) {
-            Logger.getLogger(AwsDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
-        }
-
+        requests = push.pushPropagate(model, modelAdd, modelReduc);
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         driverInstance.putProperty(requestId, requests);
         DriverInstancePersistenceManager.merge(driverInstance);
@@ -122,6 +117,7 @@ public class AwsDriver implements IHandleDriverSystemCall {
             String topologyURI = driverInstance.getProperty("topologyUri");
             Regions region = Regions.fromName(r);
             OntModel ontModel = AwsModelBuilder.createOntology(access_key_id, secret_access_key, region, topologyURI);
+            
             
             if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();

@@ -34,6 +34,7 @@ public class ApplicationConfig extends Application {
         resources.add(net.maxgigapop.mrs.rest.api.DeltaResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.DriverResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.ModelResource.class);
+        resources.add(net.maxgigapop.mrs.rest.api.ServiceResource.class);
     }
     
 }

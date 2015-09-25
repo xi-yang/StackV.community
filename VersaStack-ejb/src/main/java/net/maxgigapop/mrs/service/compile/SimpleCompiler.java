@@ -6,6 +6,8 @@
 package net.maxgigapop.mrs.service.compile;
 
 import com.hp.hpl.jena.ontology.OntModel;
+import com.hp.hpl.jena.query.QuerySolution;
+import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.NodeIterator;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
@@ -15,33 +17,39 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.EJBException;
-import net.maxgigapop.mrs.bean.DeltaBase;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.ModelBase;
+import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.service.orchestrate.ActionBase;
 import net.maxgigapop.mrs.service.orchestrate.SimpleWorker;
 import net.maxgigapop.mrs.service.orchestrate.WorkerBase;
-import net.maxgigapop.www.rains.ontmodel.Spa;
+import net.maxgigapop.mrs.common.Spa;
+import net.maxgigapop.mrs.service.compute.IModelComputationElement;
 
 /**
  *
  * @author xyang
  */
 public class SimpleCompiler extends CompilerBase {        
+    private static final Logger log = Logger.getLogger(SimpleCompiler.class.getName());
     
     @Override
-    public void compile(WorkerBase worker) {        
+    public void compile(WorkerBase worker) {
         OntModel spaOntModelReduction = this.spaDelta.getModelReduction() == null ? null : this.spaDelta.getModelReduction().getOntModel();
         OntModel spaOntModelAddition = this.spaDelta.getModelAddition() == null ? null : this.spaDelta.getModelAddition().getOntModel();
-        // assemble workflow parts for reduction
-        if (this.spaDelta.getModelReduction() != null) {
+        if (spaOntModelReduction != null && !ModelUtil.isEmptyModel(spaOntModelReduction)) {
             Map<Resource, OntModel> reduceParts = this.decomposeByPolicyActions(spaOntModelReduction);
         }
-        
         // assemble workflow parts for addition
-        if (this.spaDelta.getModelAddition() != null) {
+        if (spaOntModelAddition != null && !ModelUtil.isEmptyModel(spaOntModelAddition)) {
             Queue<Resource> policyQueue = new LinkedBlockingQueue<>();
             Map<Resource, OntModel> addParts = this.decomposeByPolicyActions(spaOntModelAddition);
             if (addParts == null)
@@ -61,9 +69,9 @@ public class SimpleCompiler extends CompilerBase {
                 if (addOntModel != null) {
                     DeltaModel addModel = new DeltaModel();
                     addModel.setOntModel(addParts.get(policy));
-                    DeltaBase inputDelta = action.getInputDelta();
+                    ServiceDelta inputDelta = action.getInputDelta();
                     if (inputDelta == null)
-                        inputDelta = new DeltaBase();
+                        inputDelta = new ServiceDelta();
                     inputDelta.setModelAddition(addModel);
                     action.setInputDelta(inputDelta);
                 }
@@ -105,37 +113,34 @@ public class SimpleCompiler extends CompilerBase {
         }
     }
 
-    private ActionBase createAction(OntModel spaModel, Resource policy) {
+    private ActionBase createAction(OntModel spaModel, Resource policy)  {
         String policyActionType = null;
-        NodeIterator nodeIter = spaModel.listObjectsOfProperty(policy, RdfOwl.type);
-        while (nodeIter.hasNext()) {
-            RDFNode rn = nodeIter.next();
-            if (rn.isResource() && rn.asResource().getNameSpace().equals(Spa.getURI())) {
-                policyActionType = rn.asResource().getLocalName();
-                break;
+
+        String sparql = "SELECT ?policyAction ?actionType WHERE {"
+                + "?policyAction a spa:PolicyAction. "
+                + "?policyAction spa:type ?actionType. "
+                + "?anyOther spa:dependOn ?policyAction . "
+                + "?policyData a spa:PolicyData . "
+                + String.format("FILTER (?policyAction = <%s>) ", policy)
+                + "}";        
+
+        ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
+        if (r.hasNext()) {
+            QuerySolution solution = r.next();
+            String actionType = solution.getLiteral("actionType").toString();
+            ActionBase policyAction = new ActionBase(policy.getURI(), "java:module/" + actionType);
+            try {
+                Context ejbCxt = new InitialContext();
+                IModelComputationElement ejbMce = (IModelComputationElement) ejbCxt.lookup(policyAction.getMceBeanPath());
+                if (ejbMce == null) {
+                    throw new EJBException(SimpleCompiler.class.getName() + ":createAction does not support policy action type: " + policyActionType);
+                }
+            } catch (NamingException ex) {
+                throw new EJBException(SimpleCompiler.class.getName() + ":createAction does not support policy action type: " + policyActionType);
             }
+            return policyAction;
+        } else {
+            throw new EJBException(SimpleCompiler.class.getName() + ":createAction encounters malformed policy action: " + policy.getLocalName());       
         }
-        if (policyActionType == null) {
-            throw new EJBException(SimpleCompiler.class.getName() + ":createAction does not recognize policy action: " + policy.getLocalName());       
-        }
-        ActionBase policyAction = null;
-        switch (policyActionType) {
-            case "Placement":
-                policyAction = new ActionBase(policy.getURI(), "java:module/MCE_VMFilterPlacement");
-                break;
-            case "Connection":
-                policyAction = new ActionBase(policy.getURI(), "java:module/MCE_MPVlanConnection");
-                break;
-            case "Stitching":
-                policyAction = new ActionBase(policy.getURI(), "java:module/MCE_InterfaceVlanStitching");
-                break;
-            case "Abstraction":
-                //$$ TODO: Node has providesVM by HypervisorService will be treated with MCE_VMFilterPlacement
-                //$$ TODO: BidirectionalPort with paired isAlias or Link will be treated with MCE_MPVlanConnection plus MCE_InterfaceVlanStitching
-                break;
-            default:
-                throw new EJBException(SimpleCompiler.class.getName() + ":createAction does not support policy action type: " + policyActionType);       
-        }
-        return policyAction;
     }
 }

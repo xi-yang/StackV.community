@@ -52,24 +52,6 @@ public class OnosPush {
 
     public OnosPush(String access_key_id,String secret_access_key,String subsystemBaseUrl,String topologyURI){
         
-        //OntModel modelRef = ModelUtil.unmarshalOntModel(modelRefTtl);
-        //OntModel modelAdd = ModelUtil.unmarshalOntModel(modelAddTtl);
-        //OntModel modelReduct = ModelUtil.unmarshalOntModel(modelReductTtl);
-        
-        
-//System.out.println(modelAdd.listDatatypeProperties().toString());
-        //System.out.println(modelAdd.listIndividuals().toString());
-        
-    //public OnosPush(String user, String pass,String subsystemBaseUrl,String topologyURI) {
-        //have all the information regarding the topology
-        //ec2Client = new OnosServer();
-        //dcClient = new OnosDCGet(access_key_id, secret_access_key, region);
-//        ec2 = ec2Client.getClient();
-        //dc = dcClient.getClient();
-        //this.region = region;
-
-        //do an adjustment to the topologyUri
-        //this.topologyUri = topologyUri + ":";
     }
 
    
@@ -91,13 +73,8 @@ public class OnosPush {
       
       while (r1.hasNext()) {
             QuerySolution querySolution1 = r1.next();
-            //System.out.println(querySolution1.toString());
+            
             Resource flow = querySolution1.get("flow").asResource();
-            //System.out.println(flow.toString());
-            //RDFNode flowmatch = querySolution1.get("value");
-            //System.out.println(flowmatch.toString());
-             
-             //String query2 = "SELECT ?flowrule ?srcvlan WHERE {"
             String query2 = "SELECT ?flowrule ?rulematch WHERE {"
                      //+ "?flowrule mrs:type \"ETH_SRC_VLAN\". "
                      + "?flowrule mrs:value ?rulematch. "
@@ -109,32 +86,30 @@ public class OnosPush {
              while (r2.hasNext()) {
                 QuerySolution querySolution2 = r2.next();
                 Resource flow2 = querySolution2.get("flowrule").asResource();
-                //System.out.println(flow2.toString());
                 RDFNode rulematch = querySolution2.get("rulematch");
-                //System.out.println(rulematch.toString());
                 if(flow2.toString().equals(flow.toString()+":rule-match-0")){
                     flowdata[0]=rulematch.toString();
-                    //System.out.println(rulematch.toString());
+                    
                 }
                 if(flow2.toString().equals(flow.toString()+":rule-match-1")){
                     flowdata[1]=rulematch.toString();
-                    //System.out.println(rulematch.toString());
+                    
                 }
                 if(flow2.toString().equals(flow.toString()+":rule-match-2")){
                     flowdata[2]=rulematch.toString();
-                    //System.out.println(rulematch.toString());
+                    
                 }
                 if(flow2.toString().equals(flow.toString()+":rule-match-3")){
                     flowdata[3]=rulematch.toString();
-                    //System.out.println(rulematch.toString());
+                    
                 }
                 if(flow2.toString().equals(flow.toString()+":rule-match-4")){
                     flowdata[4]=rulematch.toString();
-                    //System.out.println(rulematch.toString());
+                    
                 }
                 if(flow2.toString().equals(flow.toString()+":rule-action-0")){
                     flowdata[5]=rulematch.toString();
-                    //System.out.println(rulematch.toString());
+                    
                 }
              }
              
@@ -142,13 +117,14 @@ public class OnosPush {
         json_string[0]=flow.toString().split(topologyURI+":")[1].split(":openflow-service")[0];
         json_string[1]="{\"isPermanent\": true,\"priority\": 100,"
                 + "\"selector\": {\"criteria\": [{\"port\": "+flowdata[0]+",\"type\":"
-                + " \"IN_PORT\"},{\"mac\": \""+flowdata[1]+"\","
-                + "\"type\": \"ETH_SRC\"},{\"mac\": \""+flowdata[2]+"\","
-                + "\"type\": \"ETH_DST\"}]},\"treatment\": {"
+                + " \"IN_PORT\"}]},"
+                //+ "{\"mac\": \""+flowdata[1]+"\","
+                //+ "\"type\": \"ETH_SRC\"},{\"mac\": \""+flowdata[2]+"\","
+                //+ "\"type\": \"ETH_DST\"}]},"
+                + "\"treatment\": {"
                 + "\"instructions\": [{\"port\": "+flowdata[5]+",\"type\": \"OUTPUT\"}]}}";
 
         
-         //System.out.println("Device: "+json_string[0]+"\nFlow: "+ json_string[1]);
          URL url = new URL(String.format(subsystemBaseUrl+"/flows/"+json_string[0]));
          HttpURLConnection conn = (HttpURLConnection)url.openConnection();
          int status = this.executeHttpMethod(access_key_id, secret_access_key,url, conn, "POST", json_string[1]);

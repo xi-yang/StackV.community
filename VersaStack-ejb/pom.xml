@@ -48,6 +48,7 @@
             <groupId>org.apache.jena</groupId>
             <artifactId>jena-arq</artifactId>
             <version>2.11.1</version>
+            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -59,6 +60,7 @@
             <groupId>com.googlecode.json-simple</groupId>
             <artifactId>json-simple</artifactId>
             <version>1.1.1</version>
+            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>org.pacesys</groupId>
