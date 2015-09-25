@@ -62,7 +62,7 @@ public class ServiceResource {
 
     //GET instance property
     @GET
-    @Path("/{siUUID}/{property}")
+    @Path("/property/{siUUID}/{property}")
     public String getProperty(@PathParam("siUUID")String svcInstanceUUID, @PathParam("property")String property) {
         String value = serviceCallHandler.getInstanceProperty(svcInstanceUUID, property);
         if (value == null) {
@@ -73,7 +73,7 @@ public class ServiceResource {
     
     //PUT to push and sync deltas
     @PUT
-    @Path("/{siUUID}/{property}/{value}")
+    @Path("/property/{siUUID}/{property}/{value}")
     public void setProperty(@PathParam("siUUID")String svcInstanceUUID, @PathParam("property")String property, @PathParam("value")String value) {
         serviceCallHandler.setInstanceProperty(svcInstanceUUID, property, value);
     }
