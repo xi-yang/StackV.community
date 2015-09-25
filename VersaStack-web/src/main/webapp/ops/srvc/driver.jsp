@@ -69,9 +69,9 @@
                                                         <option value="none"></option>
                                                         <option value="stubdriver">Stub</option>
                                                         <option value="awsdriver">AWS</option>
-                                                        <option value="versaNSDriver">VersaStack</option>
+                                                        <option value="versaNSDriver">Generic</option>
                                                         <option value="openStackDriver">OpenStack</option>
-                                                        <option value="StackDriver">StackSystem</option>
+                                                        <option value="StackDriver">Stack</option>
                                                     </select>
                                                 </c:if>
                                             </th>
