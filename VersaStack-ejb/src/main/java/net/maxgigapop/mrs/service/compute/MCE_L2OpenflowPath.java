@@ -223,7 +223,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
             }
             Resource terminal = systemModel.getResource(entry.get("port").toString());
             if (terminal == null) {
-                throw new EJBException(String.format("%s::process doSrrgPathFinding cannot identify terminal <%s>", (String) entry.get("port")));
+                throw new EJBException(String.format("%s::process doSrrgPathFinding cannot identify terminal <%s>", MCE_L2OpenflowPath.class.getName(), (String) entry.get("port")));
             }
             terminals.add(terminal);
         }
@@ -242,10 +242,10 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         Filter<Statement> connFilters = new PredicatesFilter(filterProperties);
         List<MCETools.Path> KSP = MCETools.computeKShortestPaths(transformedModel, nodeA, nodeZ, 20, connFilters);
         
-        //log.log(Level.INFO, "Found {0} shortest path before verify", KSP.size());
+        log.log(Level.INFO, "Found {0} shortest path before verify", KSP.size());
         
         if (KSP == null || KSP.isEmpty()) {
-            throw new EJBException(String.format("%s::process doSrrgPathFinding cannot find any feasible path for <%s>", resLink));
+            throw new EJBException(String.format("%s::process doSrrgPathFinding cannot find any feasible path for <%s>", this.getClass().getName(),resLink));
         }
 
         Iterator<MCETools.Path> itP = KSP.iterator();
@@ -268,7 +268,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         
         if (KSP.isEmpty()) {
             log.log(Level.INFO, "Could not find any shortest path after verify");
-            throw new EJBException(String.format("%s::process doSrrgPathFinding cannot find any feasible path for <%s>", resLink));
+            throw new EJBException(String.format("%s::process doSrrgPathFinding cannot find any feasible path for <%s>", this.getClass().getName(),resLink));
         } else {
             //log.log(Level.INFO, "Find {0} KSP after verify", KSP.size());
         }
@@ -350,7 +350,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
             }
             Resource terminal = systemModel.getResource(entry.get("port").toString());
             if (terminal == null) {
-                throw new EJBException(String.format("%s::process doSrrgPathFinding cannot identify terminal <%s>", (String) entry.get("port")));
+                throw new EJBException(String.format("%s::process doSrrgPathFinding cannot identify terminal <%s>", MCE_L2OpenflowPath.class.getName(),(String) entry.get("port")));
             }
             terminals.add(terminal);
         }
@@ -373,7 +373,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         //log.log(Level.INFO, "Find {0} KSP (working) before verify", KSP.size());
         
         if (KSP == null || KSP.isEmpty()) {
-            throw new EJBException(String.format("%s::process doSrrgPairPathFinding cannot find any working feasible path for <%s>", resLink));
+            throw new EJBException(String.format("%s::process doSrrgPairPathFinding cannot find any working feasible path for <%s>", this.getClass().getName(),resLink));
         }
 
         Iterator<MCETools.Path> itP = KSP.iterator();
@@ -396,7 +396,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         
         if (KSP.isEmpty()) {
             log.log(Level.INFO, "Could not find any shortest path after verify");
-            throw new EJBException(String.format("%s::process doSrrgPairPathFinding cannot find any working feasible path for <%s>", resLink));
+            throw new EJBException(String.format("%s::process doSrrgPairPathFinding cannot find any working feasible path for <%s>", this.getClass().getName(),resLink));
         } else {
             //log.log(Level.INFO, "Find {0} KSP (working) after verify", KSP.size());
         }
@@ -437,11 +437,11 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         }
 
         if (flag == -1 || solutionBack==null) {
-            throw new EJBException(String.format("%s::process doSrrgPairPathFinding cannot find any backup feasible path for <%s>", resLink));
+            throw new EJBException(String.format("%s::process doSrrgPairPathFinding cannot find any backup feasible path for <%s>", this.getClass().getName(),resLink));
         }
         
         if (flag >= KSP.size()) {
-            throw new EJBException(String.format("%s::process doPathPairFinding encounter an error when finding backup paths <%s>", resLink));
+            throw new EJBException(String.format("%s::process doPathPairFinding encounter an error when finding backup paths <%s>", this.getClass().getName(),resLink));
         }
 
         log.log(Level.INFO, "Successfully find path pair");
@@ -564,12 +564,12 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
 
                 Resource resPort = systemModel.getResource(srrgData.get("port").toString());
                 if (resPort == null) {
-                    throw new EJBException(String.format("%s::process getPathProbability cannot identify port <%s>", (String) srrgData.get("port")));
+                    throw new EJBException(String.format("%s::process getPathProbability cannot identify port <%s>", MCE_L2OpenflowPath.class.getName(),(String) srrgData.get("port")));
                 }
 
                 Resource resNode = systemModel.getResource(srrgData.get("node").toString());
                 if (resNode == null) {
-                    throw new EJBException(String.format("%s::process getPathProbability cannot identify port <%s>", (String) srrgData.get("node")));
+                    throw new EJBException(String.format("%s::process getPathProbability cannot identify port <%s>", MCE_L2OpenflowPath.class.getName(),(String) srrgData.get("node")));
                 }
 
                 for (Statement stmt : path) {
