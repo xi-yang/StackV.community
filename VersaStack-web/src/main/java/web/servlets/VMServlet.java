@@ -3,8 +3,17 @@ package web.servlets;
 import web.beans.serviceBeans;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -34,67 +43,101 @@ public class VMServlet extends HttpServlet {
 
         } // VM installation
         else if (request.getParameter("install") != null) {
-            if (request.getParameter("vmType").equals("aws")) {
-                HashMap<String, String> paramMap = new HashMap<>();
-                Enumeration paramNames = request.getParameterNames();
+            Connection front_conn;
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", "root");
+            front_connectionProps.put("password", "root");
+            try {
+                front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
+                        front_connectionProps);
 
-                // Collate named elements
-                while (paramNames.hasMoreElements()) {
-                    String paramName = (String) paramNames.nextElement();
-                    String[] paramValues = request.getParameterValues(paramName);
-                    if (paramValues.length == 1) {
-                        String paramValue = paramValues[0];
-                        paramMap.put(paramName, paramValue);
-                    } else if (paramValues.length > 1) {
-                        String fullValue = "";
-                        for (String paramValue : paramValues) {
-                            fullValue += paramValue + "\r\n";
+                PreparedStatement prep = front_conn.prepareStatement("SELECT service_id"
+                        + " FROM service WHERE filename = ?");
+                prep.setString(1, "vmadd");
+                ResultSet rs1 = prep.executeQuery();
+                rs1.next();
+                int serviceID = rs1.getInt(1);
+
+                Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
+                
+                prep = front_conn.prepareStatement("INSERT INTO Frontend.service_instance "
+                        + "(`service_id`, `user_id`, `status`, `creation_time`) VALUES (?, ?, ?, ?)");
+                prep.setInt(1, serviceID);
+                prep.setString(2, request.getParameter("userID"));
+                prep.setString(3, "creation");
+                prep.setTimestamp(4, timeStamp);
+                prep.executeUpdate();
+
+                if (request.getParameter("vmType").equals("aws")) {
+                    HashMap<String, String> paramMap = new HashMap<>();
+                    Enumeration paramNames = request.getParameterNames();
+
+                    // Collate named elements
+                    while (paramNames.hasMoreElements()) {
+                        String paramName = (String) paramNames.nextElement();
+                        String[] paramValues = request.getParameterValues(paramName);
+                        if (paramValues.length == 1) {
+                            String paramValue = paramValues[0];
+                            paramMap.put(paramName, paramValue);
+                        } else if (paramValues.length > 1) {
+                            String fullValue = "";
+                            for (String paramValue : paramValues) {
+                                fullValue += paramValue + "\r\n";
+                            }
+                            fullValue = fullValue.substring(0, fullValue.length() - 4);
+                            paramMap.put(paramName, fullValue);
                         }
-                        fullValue = fullValue.substring(0, fullValue.length() - 4);
-                        paramMap.put(paramName, fullValue);
+                    }
+
+                    if (!paramMap.get("graphTopo").equalsIgnoreCase("none")) {
+                        paramMap.put("topologyUri", paramMap.get("graphTopo"));
+                    }
+
+                    // Format volumes
+                    String volString = "";
+
+                    // Include root
+                    volString += paramMap.get("root-size") + ",";
+                    volString += paramMap.get("root-type") + ",";
+                    volString += paramMap.get("root-path") + ",";
+                    volString += paramMap.get("root-snapshot") + "\r\n";
+                    paramMap.remove("root-size");
+                    paramMap.remove("root-type");
+                    paramMap.remove("root-path");
+                    paramMap.remove("root-snapshot");
+
+                    for (int i = 1; i <= 10; i++) {
+                        if (paramMap.containsKey(i + "-path")) {
+                            volString += paramMap.get(i + "-size") + ",";
+                            volString += paramMap.get(i + "-type") + ",";
+                            volString += paramMap.get(i + "-path") + ",";
+                            volString += paramMap.get(i + "-snapshot") + "\r\n";
+                            paramMap.remove(i + "-size");
+                            paramMap.remove(i + "-type");
+                            paramMap.remove(i + "-path");
+                            paramMap.remove(i + "-snapshot");
+                        }
+                    }
+                    paramMap.put("volumes", volString);
+
+                    paramMap.remove("install");
+
+                    prep = front_conn.prepareStatement("UPDATE Frontend.service_instance SET `status` = ? WHERE `creation_time` = ?");
+                    prep.setString(1, "instantiation");
+                    prep.setTimestamp(2, timeStamp);
+                    prep.executeUpdate();
+
+                    for (int i = 0; i < Integer.parseInt(paramMap.get("vmQuantity")); i++) {
+                        retCode = servBean.vmInstall(paramMap);
                     }
                 }
 
-                if (!paramMap.get("graphTopo").equalsIgnoreCase("none")) {
-                    paramMap.put("topologyUri", paramMap.get("graphTopo"));
-                }
-
-                // Format volumes
-                String volString = "";
-
-                // Include root
-                volString += paramMap.get("root-size") + ",";
-                volString += paramMap.get("root-type") + ",";
-                volString += paramMap.get("root-path") + ",";
-                volString += paramMap.get("root-snapshot") + "\r\n";
-                paramMap.remove("root-size");
-                paramMap.remove("root-type");
-                paramMap.remove("root-path");
-                paramMap.remove("root-snapshot");
-
-                for (int i = 1; i <= 10; i++) {
-                    if (paramMap.containsKey(i + "-path")) {
-                        volString += paramMap.get(i + "-size") + ",";
-                        volString += paramMap.get(i + "-type") + ",";
-                        volString += paramMap.get(i + "-path") + ",";
-                        volString += paramMap.get(i + "-snapshot") + "\r\n";
-                        paramMap.remove(i + "-size");
-                        paramMap.remove(i + "-type");
-                        paramMap.remove(i + "-path");
-                        paramMap.remove(i + "-snapshot");
-                    }
-                }
-                paramMap.put("volumes", volString);
-
-                paramMap.remove("install");
-
-                for (int i = 0; i < Integer.parseInt(paramMap.get("vmQuantity")); i++) {
-                    retCode = servBean.vmInstall(paramMap);
-                }
+            } catch (SQLException ex) {
+                Logger.getLogger(VMServlet.class.getName()).log(Level.SEVERE, null, ex);
             }
-
-            response.sendRedirect("/VersaStack-web/ops/srvc/vmadd.jsp?ret=" + retCode);
         }
+
+        response.sendRedirect("/VersaStack-web/ops/srvc/vmadd.jsp?ret=" + retCode);
     }
 
     /**

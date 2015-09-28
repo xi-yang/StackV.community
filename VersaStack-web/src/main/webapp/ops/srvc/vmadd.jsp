@@ -185,6 +185,7 @@
                                                         <input class="button-register" type="button" 
                                                                value="Add Volume" onClick="addVolume()">
                                                         <input type="hidden" name="graphTopo" value="${param.graphTopo}"/>
+                                                        <input type="hidden" name="userID" value="${user.getId()}"/>
                                                     </td>
                                                 </tr> 
                                             </tbody>

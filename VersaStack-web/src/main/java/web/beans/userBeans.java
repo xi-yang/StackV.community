@@ -54,6 +54,10 @@ public class userBeans {
     public String getLastName() {
         return lastName;
     }
+    
+    public String getUsername() {
+        return username;
+    }
 
     public String getId() {
         return id;

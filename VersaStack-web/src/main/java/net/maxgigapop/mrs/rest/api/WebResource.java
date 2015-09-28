@@ -15,13 +15,16 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
+import javax.ejb.EJBException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Produces;
+import net.maxgigapop.mrs.rest.api.model.ApiDriverInstance;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
@@ -73,4 +76,15 @@ public class WebResource {
         
         return retList;
     }
+    
+    @POST
+    @Consumes({"application/xml","application/json"})
+    public String installVM(){
+        try{
+            ;
+        }catch(EJBException e){
+            return e.getMessage();
+        }
+        return "installed successfully.\n";
+    } 
 }
