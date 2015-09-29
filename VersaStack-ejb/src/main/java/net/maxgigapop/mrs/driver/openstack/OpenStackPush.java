@@ -18,8 +18,10 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
@@ -255,15 +257,20 @@ public class OpenStackPush {
                 String routerName = "";
                 String routerid = "";
                 String netid = "";
+                String subnet_name = "";
+                String router_name = "";
                 RouterServiceImpl rsi = new RouterServiceImpl();
 
                 //routerName = o.get("router name").toString();
                 int k = 0;
+                int i = 0;
+                int x = 0;
+                int j = 0;
                 //check the multiple routers condition, enter the while loop
                 while (true) {
-                    String key_router = "router" + Integer.toString(k);
+                    String key_router = "router" + Integer.toString(i);
                     if (o.containsKey(key_router)) {
-                        List<String> portId = new ArrayList<String>();
+
                         //if the router is not in the openstack, create one
                         if (!client.getRouters().contains(client.getRouter(o.get(key_router).toString()))) {
 
@@ -271,75 +278,132 @@ public class OpenStackPush {
                                     .name(o.get(key_router).toString())
                                     .adminStateUp(true)
                                     .build()));
+                            OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
 
-                        }
-                        k++;
-                        //if it has the router, get the id
-                        OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
+                            //update the client
+                            //multiple subnet and nexthop create once a time, same concept of the router one
+                            while (true) {
 
-                        for (Router router : client1.getRouters()) {
-                            if (router.getName().equals(o.get(key_router).toString())) {
-                                routerid = router.getId();
-                            }
-                        }
-                        //update the client
+                                String key_ip = "nexthop" + Integer.toString(j);
+                                String key_routinginfo = "routing_info" + Integer.toString(k);
 
-                        int i = 0;
-                        //multiple subnet and nexthop create once a time, same concept of the router one
-                        while (true) {
-                            String key_sub = "subnet" + Integer.toString(i);
-                            String key_ip = "nexthop" + Integer.toString(i);
-                            if (o.containsKey(key_sub)) {
-                                if (o.containsKey(key_ip)) {
-                                    for (Subnet s : client1.getSubnets()) {
-                                        if (openstackget.getResourceName(s).equals(o.get(key_sub).toString())) {
-                                            Port port = new NeutronPort();
-                                            netid = s.getNetworkId();
-                                            String subnetid = s.getId();
-                                            port.toBuilder().networkId(netid)
-                                                    .fixedIp(o.get(key_ip).toString(), subnetid)
-                                                    .name("test_use" + i)
-                                                    .adminState(true);
-                                            osClient1.networking().port().create(port);
-                                            i++;
+                                if (o.containsKey(key_routinginfo)) {
+                                    HashMap<String, ArrayList<HashMap<String, String>>> routing_info_for_router = new HashMap<String, ArrayList<HashMap<String, String>>>((Map<? extends String, ? extends ArrayList<HashMap<String, String>>>) o.get(key_routinginfo));
+                                    ArrayList<HashMap<String, String>> routing_info1 = new ArrayList<HashMap<String, String>>();
+
+                                    OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
+                                    if (o.containsKey(key_ip)) {
+                                        for (Router router1 : client1.getRouters()) {
+                                            if (routing_info_for_router.containsKey(router1.getName()) || routing_info_for_router.containsKey(router1.getId())) {
+
+                                                routing_info1 = routing_info_for_router.get(router1.getName());
+                                                for (HashMap<String, String> hp : routing_info1) {
+                                                    String sub_router = hp.get(o.get(key_ip).toString());
+
+                                                    String[] sub_route1 = sub_router.split(",");
+                                                    subnet_name = sub_route1[0];
+                                                    router_name = sub_route1[1];
+
+                                                    Subnet s = client1.getSubnet(subnet_name);
+                                                    Router r = client1.getRouter(router_name);
+                                                    String nexthop = o.get(key_ip).toString();
+                                                    String router_id = r.getId();
+                                                    Port port = new NeutronPort();
+                                                    netid = s.getNetworkId();
+                                                    String subnetid = s.getId();
+
+                                                    port.toBuilder().networkId(netid)
+                                                            .fixedIp(nexthop, subnetid)
+                                                            .name("router_name" + routerName + "test_use" + i)
+                                                            .adminState(true);
+
+                                                    osClient1.networking().port().create(port);
+                                                    OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
+                                                    String portid = client1.getPort("router_name" + routerName + "test_use" + i).getId();
+                                                    rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
+                                                    
+                                                    j++;
+                                                    key_ip = "nexthop" + Integer.toString(j);
+                                                }
+
+                                            }
                                         }
+                                        
                                     }
 
-                                }
-                            } else {
-                                break;
-                            }
-                        }
+                                    k++;
 
-                        OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
-                        //here need to be modified
-                        //something wrong here when face the multiple routers scenario 
-                        /*
-                         for (int j = 0; j < i; j++) {
-                         Port port1 = client1.getPort("test_use" + j);
-                         String portid = port1.getId();
-                         rsi.attachInterface(routerid, AttachInterfaceType.PORT, portid);
-                         }*/
-                        for (int j = 0; j < i; j++) {
-                            Port p1 = client1.getPort("test_use" + j);
-                            for (int l = j + 1; l < i; l++) {
-                                Port p2 = client1.getPort("test_use" + l);
-                                if (isBelongtoSameRouter(p1, p2, routerid)) {
-                                    portId.add(p1.getId());
-                                    portId.add(p2.getId());
+                                } else {
+                                    break;
                                 }
+
                             }
 
+                        } else {
+                            OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
+
+                            //update the client
+                            //multiple subnet and nexthop create once a time, same concept of the router one
+                            while (true) {
+
+                                String key_ip = "nexthop" + Integer.toString(j);
+                                String key_routinginfo = "routing_info" + Integer.toString(k);
+
+                                if (o.containsKey(key_routinginfo)) {
+                                    HashMap<String, ArrayList<HashMap<String, String>>> routing_info_for_router = new HashMap<String, ArrayList<HashMap<String, String>>>((Map<? extends String, ? extends ArrayList<HashMap<String, String>>>) o.get(key_routinginfo));
+                                    ArrayList<HashMap<String, String>> routing_info1 = new ArrayList<HashMap<String, String>>();
+
+                                    OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
+                                    if (o.containsKey(key_ip)) {
+                                        for (Router router1 : client1.getRouters()) {
+                                            if (routing_info_for_router.containsKey(router1.getName()) || routing_info_for_router.containsKey(router1.getId())) {
+
+                                                routing_info1 = routing_info_for_router.get(router1.getName());
+                                                for (HashMap<String, String> hp : routing_info1) {
+                                                    String sub_router = hp.get(o.get(key_ip).toString());
+
+                                                    String[] sub_route1 = sub_router.split(",");
+                                                    subnet_name = sub_route1[0];
+                                                    router_name = sub_route1[1];
+
+                                                    Subnet s = client1.getSubnet(subnet_name);
+                                                    Router r = client1.getRouter(router_name);
+                                                    String nexthop = o.get(key_ip).toString();
+                                                    String router_id = r.getId();
+                                                    Port port = new NeutronPort();
+                                                    netid = s.getNetworkId();
+                                                    String subnetid = s.getId();
+
+                                                    port.toBuilder().networkId(netid)
+                                                            .fixedIp(nexthop, subnetid)
+                                                            .name("router_name" + routerName + "test_use" + i)
+                                                            .adminState(true);
+
+                                                    osClient1.networking().port().create(port);
+                                                    OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
+                                                    String portid = client1.getPort("router_name" + routerName + "test_use" + i).getId();
+                                                    rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
+                                                }
+
+                                            }
+                                        }
+                                        j++;
+                                    }
+
+                                    k++;
+
+                                } else {
+                                    break;
+                                }
+                            }
                         }
-                        LinkedHashSet<String> portID = new LinkedHashSet<String>(portId);//delete duplicate
-                        ArrayList<String> PortID = new ArrayList<String>(portID);
-                        for (String port : PortID) {
-                            rsi.attachInterface(routerid, AttachInterfaceType.PORT, port);
-                        }
-                    } else {
-                        break;
+                        i++;
+                    }else{
+                       break; 
                     }
+                    
                 }
+                
             } else if (o.get("request").toString().equals("CreateNetworkInterfaceRequest")) {
                 Port port = new NeutronPort();
                 OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
@@ -1198,11 +1262,15 @@ public class OpenStackPush {
      */
     private List<JSONObject> layer3Requests(OntModel modelRef, OntModel modelDelta, boolean creation) throws Exception {
         List<JSONObject> requests = new ArrayList();
+        int x = 0;
         String query = "";
         String routername = "";
         List<String> nextHopV = new ArrayList<String>();
         List<String> routetoName = new ArrayList<String>();
         List<String> Router = new ArrayList<String>();
+        List<String> lr = new ArrayList<String>();
+        ArrayList<HashMap<String, String>> routing_info = new ArrayList<HashMap<String, String>>();
+        HashMap<String, ArrayList<HashMap<String, String>>> routing_info_for_router = new HashMap<String, ArrayList<HashMap<String, String>>>();
         JSONObject o = new JSONObject();
         //1 find out if any new routes are being add to the model
         query = "SELECT ?route ?nextHop ?routeTo WHERE {?route a mrs:Route ."
@@ -1241,31 +1309,58 @@ public class OpenStackPush {
                 QuerySolution q2 = r2.next();
                 RDFNode service = q2.get("service");
 
+                
+                String routename = routeResource.toString();
+
+                lr.add(routename);
+
+                Map<String, List<String>> hp = new HashMap<>();
+                hp.put(routername, lr);
+
+                query = "SELECT ?routeto ?nexthop WHERE {<" + routeResource.asResource() + "> a mrs:Route ."
+                        + "<" + routeResource.asResource() + "> mrs:nextHop ?nexthop ."
+
+                        + "<" + routeResource.asResource() + "> mrs:routeTo ?routeto}";
+
+                r1 = executeQuery(query, emptyModel, modelDelta);
+                if (!r1.hasNext()) {
+                    throw new Exception(String.format("nexthop and routeto %s is not provided"
+                            + "by any route", routeResource.asResource()));
+                }
+
+                QuerySolution q6 = r1.next();
+                RDFNode routeTo = q6.get("routeto");
+                RDFNode nextHop = q6.get("nexthop");
+
+                String subnet = getresourcename(routeTo.toString(), "+", "");
+                String subnet_routername = subnet + "," + routername;
+
+                query = "SELECT ?type ?value WHERE {<" + nextHop.asResource() + "> a mrs:NetworkAddress ."
+                        + "<" + nextHop.asResource() + "> mrs:type ?type ."
+                        + "<" + nextHop.asResource() + "> mrs:value ?value}";
+
+                r1 = executeQuery(query, emptyModel, modelDelta);
+                if (!r1.hasNext()) {
+                    throw new Exception(String.format("nexthop %s for route %s is "
+                            + "malformed", nextHopResource, routeResource));
+                }
+
+                while (r1.hasNext()) {
+                q1 = r1.next();
+                RDFNode nextHoptype = q1.get("type");
+                String nextHopvalue = q1.get("value").toString();
+                nextHopV.add(nextHopvalue);
+                HashMap<String, String> routinginfo = new HashMap<String, String>();
+
+                routinginfo.put(nextHopvalue, subnet_routername);
+
+                routing_info.add(routinginfo);
+                }
                 //1.1.2 make sure service is well specified in the model
                 //1.1.3 get the route Table of the route
                 //TODO make sure to skip the loop if the route is the external network route
             /*
-                 query = "SELECT ?table WHERE {?table mrs:hasRoute <" + routeResource.asResource() + ">}";
-                 r1 = executeQuery(query, emptyModel, modelDelta);
-                 if (!r1.hasNext()) {
-                 throw new Exception(String.format("route %S is not in any route table",routeResource));
-                 }
-                 q1 = r1.next();
-                 RDFNode tableResource = q1.get("table");
-                 //1.1.4 make sure the table is a routing table 
-                 query = "SELECT ?x WHERE{<"+tableResource.asResource()+"> a mrs:RoutingTable}";
-                 r1 = executeQuery(query,modelRef,modelDelta);
-                 if (!r1.hasNext()) {
-                 throw new Exception(String.format("tbale %s is not a routing table",tableResource));
-                 }
-            
-            
-            
-                 int index = 0;
-                 for (String port : portNames) {
-                 String key = "port" + Integer.toString(index);
-                 o.put(key, port);
-                 index++; //increment the device index
+                 
                  */
                 //1.2make sure routeTo is well formed
                 query = "SELECT ?subnet WHERE {?subnet a mrs:SwitchingSubnet FILTER(?subnet = <" + routeToResource + ">).}";
@@ -1284,21 +1379,7 @@ public class OpenStackPush {
                 routetoName.add(subnetname);
                 //}
                 //next hop information
-                query = "SELECT ?type ?value WHERE {<" + nextHopResource + "> a mrs:NetworkAddress ."
-                        + "<" + nextHopResource + "> mrs:type ?type ."
-                        + "<" + nextHopResource + "> mrs:value ?value}";
 
-                r1 = executeQuery(query, emptyModel, modelDelta);
-                if (!r1.hasNext()) {
-                    throw new Exception(String.format("nexthop %s for route %s is "
-                            + "malformed", nextHopResource, routeResource));
-                }
-
-                //while (r1.hasNext()) {
-                q1 = r1.next();
-                RDFNode nextHoptype = q1.get("type");
-                String nextHopvalue = q1.get("value").toString();
-                nextHopV.add(nextHopvalue);
                 //}
                 //2 find if there is a routeFrom statement in the route 
                 query = "SELECT ?routeFrom WHERE{<" + routeResource.asResource() + "> mrs:routeFrom ?routeFrom}";
@@ -1332,28 +1413,7 @@ public class OpenStackPush {
                 //if type equals subnet, then a port will be atatched or detached
                 //from subnet
             /*
-                 if (creation == true) {
-                 //1.4.1.1 see if the network interface is already atatched
-                 if (p.getDeviceOwner() != null || !p.getDeviceOwner().isEmpty()) {
-                 throw new Exception(String.format("bidirectional port %s to be attached to instance %s is already"
-                 + " attached to an instance", port, serverName));
-                 }
-
-                 o.put("request", "AttachPortRequest");
-                 o.put("port name", portName);
-                 o.put("server name", serverName);
-                 requests.add(o);
-                 } //1.4.2 port attachment will be deleted
-                 else {
-                 if (p.getDeviceOwner() != null || !p.getDeviceOwner().isEmpty()) {
-                 throw new Exception(String.format("bidirectional port %s to be detached from instance %s is not"
-                 + " attached", port, serverName));
-                 }
-                 o.put("request", "DetachPortRequest");
-                 o.put("port name", portName);
-                 o.put("server name", serverName);
-                 requests.add(o);
-                 }
+                 
                  */
                 //3.1.1 
                 Router ro = client.getRouter(routername);
@@ -1366,9 +1426,10 @@ public class OpenStackPush {
                 }
 
                 int index = 0;
-                for (String subnet : routetoName) {
+                for (String subnet1 : routetoName) {
                     String key = "subnet" + Integer.toString(index);
-                    o.put(key, subnet);
+                    o.put(key, subnet1);
+
                     index++;
                 }
                 int index1 = 0;
@@ -1383,8 +1444,12 @@ public class OpenStackPush {
                 ArrayList<String> Routers = new ArrayList<String>(routers);
                 for (String router : Routers) {
 
-                    String key = "router" + Integer.toString(index2);
-                    o.put(key, router);
+                    String key1 = "router" + Integer.toString(index2);
+                    String key2 = "routing_info" + Integer.toString(index2);
+                    routing_info_for_router.put(router, routing_info);
+                    o.put(key1, router);
+                    o.put(key2, routing_info_for_router);
+
                     index2++;
 
                 }
@@ -1565,7 +1630,7 @@ public class OpenStackPush {
 
     private boolean isBelongtoSameRouter(Port port1, Port port2, String routerid) {
         Router router = client1.getRouter(routerid);
-        if (port1.getDeviceOwner().equals(router.getId()) && port2.getDeviceOwner().equals(router.getId())) {
+        if (port1.getDeviceId().equals(router.getId()) && port2.getDeviceId().equals(router.getId())) {
             return true;
         }
         return false;
