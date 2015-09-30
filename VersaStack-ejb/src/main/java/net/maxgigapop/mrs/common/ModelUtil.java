@@ -165,7 +165,6 @@ public class ModelUtil {
                 "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
                 "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
                 "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" +
-                "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" +
                 sparqlStringWithoutPrefix;        
         UpdateRequest update = UpdateFactory.create(sparqlString);
         UpdateAction.execute(update, model);
