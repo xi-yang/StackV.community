@@ -6,22 +6,12 @@
 
 package net.maxgigapop.mrs.driver.onosystem;
 
-import com.amazonaws.regions.Regions;
-import net.maxgigapop.mrs.driver.onosystem.OnosModelBuilder;
-import net.maxgigapop.mrs.driver.onosystem.OnosPush;
-//import static com.hp.hpl.jena.sparql.lang.SPARQLParserRegistry.parser;
-//import static com.hp.hpl.jena.sparql.lang.UpdateParserRegistry.parser;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import static java.lang.Thread.sleep;
 import com.hp.hpl.jena.ontology.OntModel;
-import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-//import java.text.SimpleDateFormat;
-//import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
@@ -44,7 +34,7 @@ import org.apache.commons.codec.binary.Base64;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 /**
  *
- * @author xyang
+ * @author diogo
  */
 
 //use properties: driverSystemPath which translates to calls in driverSystemEjbPath.HandleSystemPushCall and driverSystemEjbPath.HandleSystemCall
@@ -207,15 +197,6 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
         int responseCode = conn.getResponseCode();
         logger.log(Level.INFO, "Response Code : {0}", responseCode);
 
-        /*StringBuilder responseStr;
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-            String inputLine;
-            responseStr = new StringBuilder();
-            while ((inputLine = in.readLine()) != null) {
-                responseStr.append(inputLine);
-            }
-        }
-        //return responseStr.toString();*/
         return responseCode;
     }
 }

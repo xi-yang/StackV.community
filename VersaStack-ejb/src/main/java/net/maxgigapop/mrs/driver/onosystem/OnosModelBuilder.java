@@ -6,24 +6,19 @@
 package net.maxgigapop.mrs.driver.onosystem;
 
 import com.hp.hpl.jena.ontology.OntModel;
-import com.hp.hpl.jena.ontology.Ontology;
 import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.FileNotFoundException;
 import net.maxgigapop.mrs.common.*;
 
 import org.json.simple.JSONObject;
-import org.json.simple.JSONValue;
 import org.json.simple.JSONArray;
 import org.json.simple.parser.ParseException;
 import org.json.simple.parser.JSONParser;
 
 import java.util.Arrays;
-import java.util.ArrayList;
 import java.util.List;
 //TODO add the public ip address that an instance might have that is not an
 //elastic ip
@@ -35,7 +30,7 @@ import java.util.List;
 
 /*
  *
- * @author muzcategui
+ * @author diogo
  */
 public class OnosModelBuilder {
 
@@ -231,8 +226,7 @@ public class OnosModelBuilder {
         //manully read from a SRRG json file 
         JSONParser jsonParser = new JSONParser();
         JSONObject jsonObject = (JSONObject) jsonParser.parse(srrgFile);
-        //JSONObject jsonObject = (JSONObject) jsonParser.parse(reader);
-
+  
         JSONArray f = (JSONArray) jsonObject.get("SRRG");
         int srrg_num = f.size();
 

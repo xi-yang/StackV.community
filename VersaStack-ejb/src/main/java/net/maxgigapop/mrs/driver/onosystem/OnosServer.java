@@ -7,18 +7,13 @@ package net.maxgigapop.mrs.driver.onosystem;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -27,7 +22,7 @@ import org.apache.commons.codec.binary.Base64;
 
 /**
  *
- * @author muzcategui
+ * @author diogo
  */
 public class OnosServer {
 

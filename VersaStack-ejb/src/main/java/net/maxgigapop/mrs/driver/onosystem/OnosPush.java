@@ -18,8 +18,6 @@ import com.hp.hpl.jena.rdf.model.RDFNode;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ModelUtil;
-import net.maxgigapop.mrs.common.Nml;
-import net.maxgigapop.mrs.common.RdfOwl;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -30,7 +28,7 @@ import org.apache.commons.codec.binary.Base64;
 
 /**
  *
- * @author muzcategui
+ * @author diogo
  */
 
 //TODO availability zone problems in volumes and subnets and instancees.
@@ -44,7 +42,6 @@ public class OnosPush {
     //private AmazonEC2Client ec2 = null;
     //private AmazonDirectConnectClient dc = null;
     private OnosServer ec2Client = null;
-    //private OnosDCGet dcClient = null;
     private String topologyUri = null;
     //private Regions region = null;
     static final Logger logger = Logger.getLogger(OnosPush.class.getName());
@@ -66,8 +63,7 @@ public class OnosPush {
                + "?flow a mrs:Flow. "
                + "}";
        
-       //String query = "SELECT  ?node ?volume  WHERE {?node  mrs:hasVolume  ?volume}";
-
+       
         ResultSet r1 = executeQuery(query, emptyModel, modelAdd);
         
       
@@ -76,7 +72,6 @@ public class OnosPush {
             
             Resource flow = querySolution1.get("flow").asResource();
             String query2 = "SELECT ?flowrule ?rulematch WHERE {"
-                     //+ "?flowrule mrs:type \"ETH_SRC_VLAN\". "
                      + "?flowrule mrs:value ?rulematch. "
                      + "}";
             

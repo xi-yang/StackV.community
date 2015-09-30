@@ -5,20 +5,14 @@
  */
 package net.maxgigapop.mrs.service.compute;
 
-import com.hp.hpl.jena.ontology.OntClass;
 import com.hp.hpl.jena.ontology.OntModel;
-import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.ontology.OntTools.PredicatesFilter;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
-import com.hp.hpl.jena.rdf.model.StmtIterator;
-import java.util.logging.Logger;
-import com.hp.hpl.jena.util.iterator.ExtendedIterator;
 import com.hp.hpl.jena.util.iterator.Filter;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -28,7 +22,6 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -40,17 +33,12 @@ import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.EJBException;
 import javax.ejb.Stateless;
-import net.maxgigapop.mrs.bean.DeltaBase;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.ServiceDelta;
-import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Nml;
-import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.Spa;
 
-import net.maxgigapop.mrs.common.Sna;
-import static net.maxgigapop.mrs.service.compute.MCETools.evaluateStatement_AnyTrue;
 
 /**
  *
@@ -114,9 +102,6 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         
         Map<Resource, List> srrgMap = this.getSrrgInfo(systemModel.getOntModel());
         
-        //test printout
-        //log.log(Level.INFO, "There are {0} SRRG in the model", String.valueOf(srrgMap.size()));
-        //log.log(Level.INFO, "There are {0} link in the spaModel", String.valueOf(linkMap.size()));
         ServiceDelta outputDelta = annotatedDelta.clone();
         // compute a List<Model> of L2Openflow connections
         for (Resource resLink : linkMap.keySet()) {
@@ -309,7 +294,6 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         MCETools.Path solution = getLeastSrrgCostPath(KSP, systemModel, srrgMap);
         //log.log(Level.INFO, "Successfully find path with fail prob: {0}", String.valueOf(solution.failureProb));
         MCETools.printMCEToolsPath(solution);
-        //System.out.println(solution.toString());
         return solution;
 
     }
@@ -394,9 +378,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         Resource nodeA = terminals.get(0);
         Resource nodeZ = terminals.get(1);
         
-        //log.log(Level.INFO, "Link-src: {0}", nodeA.toString());
-        //log.log(Level.INFO, "Link-dst: {0}", nodeZ.toString());
-
+        
         Property[] filterProperties = {Nml.connectsTo};
         Filter<Statement> connFilters = new PredicatesFilter(filterProperties);
         
@@ -523,7 +505,6 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         while(itS.hasNext()){
             Statement stmt = itS.next();
             if(MCETools.evaluateStatement_AnyTrue(systemModel, stmt, isAliasConstraint)){
-                //System.out.format("remove this stmt: \n%s\n", stmt.toString());
                 systemModel = (OntModel) systemModel.remove(stmt);
             }
         }
@@ -568,7 +549,6 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         //MCETools.printKSP(backupKSP);
         MCETools.Path backPath = this.getLeastSrrgCostPath(backupKSP, systemModel, srrgMap);
 
-        //System.out.println("\nbackup path is:");
         //MCETools.printMCEToolsPath(backPath);
         
         return backPath;
@@ -949,15 +929,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         
         
         String flowModelString=""+
-        /*String flowModelString="/<delta> \n" +
-"<id>1</id>\n" +
-"<creationTime>2015-09-01T10:49:40-05:00</creationTime>\n" +
-"<referenceVersion>35a31ca5-4419-4785-8321-9d3eef3c984e</referenceVersion>\n" +
-"<modelReduction>\n" +
-"@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .@prefix owl:   <http://www.w3.org/2002/07/owl#> .@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .\n" +
-"</modelReduction>\n" +
-"\n" +
-"<modelAddition>\n" +*/
+
 "@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .@prefix owl:   <http://www.w3.org/2002/07/owl#> .@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .\n" +
 "<"+topologyURI+":"+device_flow +">\n" +
 "        a      nml:Node , owl:NamedIndividual ;\n"+                
