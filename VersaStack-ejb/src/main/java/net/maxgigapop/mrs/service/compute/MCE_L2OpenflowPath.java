@@ -131,7 +131,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                 case "SRRG Path": {
                     l2path = this.doSrrgPathFinding(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), resLink, linkMap.get(resLink), srrgMap);
                 try {
-                     flow_model=generateFlowModel(l2path,null,topologyURI);
+                     flow_model=generateFlowsPathModel(l2path,topologyURI);
                     
                 } catch (IOException ex) {
                     Logger.getLogger(MCE_L2OpenflowPath.class.getName()).log(Level.SEVERE, null, ex);
@@ -150,7 +150,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                         l2path = l2pathList.get(0);
                         l2path_back = l2pathList.get(1);
                         try {
-                             flow_model=generateFlowModel(l2path,l2path_back,topologyURI);
+                             flow_model=generateFlowsPathPairModel(l2path,l2path_back,topologyURI);
                             
                         } catch (IOException ex) {
                             Logger.getLogger(MCE_L2OpenflowPath.class.getName()).log(Level.SEVERE, null, ex);
@@ -749,7 +749,77 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         return solutions;
     }
 
-    String generateFlowModel(MCETools.Path l2path, MCETools.Path l2path_back, String topologyURI) throws MalformedURLException, IOException{
+
+    String generateFlowsPathModel(MCETools.Path l2path, String topologyURI) throws MalformedURLException, IOException{
+    String flowModel="";
+    
+    
+                String l2path_string=l2path.toString();
+                String[] l2path_array=l2path_string.split(",");
+                int l2path_array_size=l2path_array.length;
+                String[] src_path=new String[l2path_array_size/3];
+                String[] dst_path=new String[l2path_array_size/3];
+                String[] src_dev=new String[l2path_array_size/3];
+                String[] src_port=new String[l2path_array_size/3];
+                String[] src_port_name=new String[l2path_array_size/3];
+                String[] dst_dev=new String[l2path_array_size/3];
+                String[] dst_port=new String[l2path_array_size/3];
+                String[] dst_port_name=new String[l2path_array_size/3];
+                int j=0;
+                for(int i=0;i<l2path_array_size;i=i+3){
+                    src_dev[j]="";
+                    src_port[j]="";
+                    src_port_name[j]="";
+                    dst_dev[j]="";
+                    dst_port[j]="";
+                    dst_port_name[j]="";
+                    src_path[j]=l2path_array[i].replaceAll("\\[","").replaceAll("\\]","");
+                    dst_path[j]=l2path_array[i+2].replaceAll("\\[","").replaceAll("\\]","");
+                    if(src_path[j].contains(topologyURI+ ":")) {
+                        src_dev[j]=src_path[j].split(topologyURI+ ":")[1];
+                    }
+                    if(src_dev[j].contains(":port")){
+                        String[] auxsplit=src_dev[j].split(":port");
+                        src_dev[j]=auxsplit[0];
+                        src_port_name[j]=auxsplit[1];
+                    }
+                    if(src_path[j].contains("-eth")){
+                        src_port[j]=src_path[j].split("-eth")[1];
+                    }
+                    
+                    if(dst_path[j].contains(topologyURI+ ":")) {
+                        dst_dev[j]=dst_path[j].split(topologyURI+ ":")[1];
+                    }
+                    if(dst_dev[j].contains(":port")){
+                        String []auxsplit=dst_dev[j].split(":port");
+                        dst_dev[j]=auxsplit[0];
+                        dst_port_name[j]=auxsplit[1];
+                    }
+                    if(dst_path[j].contains("-eth")){
+                        dst_port[j]=dst_path[j].split("-eth")[1];
+                    }
+                    
+                    j++;
+                }
+                j=0;
+                String[][] device_flow=new String[((l2path_array_size/3)+1)/3][2];
+                for(int i=0;i<l2path_array_size/3;i=i+3){
+                    device_flow[j][0]=src_dev[i];
+                    device_flow[j][1]=createFlowModel(topologyURI,device_flow[j][0],src_port[i],src_port_name[i],dst_port[i+1],dst_port_name[i+1]);
+                    flowModel=flowModel+device_flow[j][1];
+                    j++;
+                }
+                
+                
+                j=0;
+    
+                  
+    return flowModel;    
+    }
+  
+    
+    
+    String generateFlowsPathPairModel(MCETools.Path l2path, MCETools.Path l2path_back, String topologyURI) throws MalformedURLException, IOException{
     String flowModel="";
     
     
