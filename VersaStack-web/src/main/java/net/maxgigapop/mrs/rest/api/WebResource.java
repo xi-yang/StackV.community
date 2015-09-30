@@ -78,10 +78,11 @@ public class WebResource {
     }
     
     @POST
+    @Path("/installVM")
     @Consumes({"application/xml","application/json"})
-    public String installVM(){
+    public String installVM(String xmlInput){
         try{
-            ;
+            System.out.println(xmlInput);
         }catch(EJBException e){
             return e.getMessage();
         }
