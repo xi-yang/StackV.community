@@ -38,9 +38,8 @@ import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.Spa;
 
 /* TODO
-Fix the fact that a subnet's IP needs to be specify by the spa model
-*/
-
+ Fix the fact that a subnet's IP needs to be specify by the spa model
+ */
 /**
  *
  * @author max
@@ -72,7 +71,7 @@ public class MCE_NetworkPlacement implements IModelComputationElement {
                 + "?network a nml:Topology ."
                 + "?network spa:dependOn ?policy . "
                 + "?policy a spa:PolicyAction. "
-                + "?policy spa:type 'MCE_VMFilterPlacement'. "
+                + "?policy spa:type 'MCE_NetworkPlacement'. "
                 + "?policy spa:importFrom ?data. "
                 + "?data spa:type ?dataType. "
                 + "?data spa:value ?dataValue. "
@@ -147,7 +146,7 @@ public class MCE_NetworkPlacement implements IModelComputationElement {
             if (!filterCriterion.containsKey("data") || !filterCriterion.containsKey("type") || !filterCriterion.containsKey("value")) {
                 continue;
             }
-            OntModel hostModel = filterTopologyNode(systemModel, resNetwork, filterCriterion);
+            OntModel hostModel = filterTopologyNode(systemModel, spaModel, resNetwork, filterCriterion);
             if (hostModel == null) {
                 throw new EJBException(String.format("%s::process cannot place %s based on polocy %s", this.getClass().getName(), resNetwork, filterCriterion.get("policy")));
             }
@@ -162,6 +161,7 @@ public class MCE_NetworkPlacement implements IModelComputationElement {
             // ? place to a specific Node ?
             //$$ Other types of filter methods have yet to be implemented.
         }
+        System.out.println(placementModel);
         return placementModel;
     }
 
@@ -174,16 +174,17 @@ public class MCE_NetworkPlacement implements IModelComputationElement {
      * @param filterCriterion
      * @return
      */
-    private OntModel filterTopologyNode(OntModel systemModel, Resource resNetwork, Map filterCriterion) {
+    private OntModel filterTopologyNode(OntModel systemModel, OntModel spaModel, Resource resNetwork, Map filterCriterion) {
         OntModel networkModel = null;
 
-        //get main topologyUri
-        String topologyUri = resNetwork.toString().substring(0, resNetwork.toString().lastIndexOf(':'));
 
         if (((String) filterCriterion.get("type")).equalsIgnoreCase(Nml.Topology.getURI())) {
-            networkModel = modelDefaultNetwork(systemModel, resNetwork, topologyUri);
+            networkModel = modelDefaultNetwork(systemModel, spaModel, resNetwork, (String) filterCriterion.get("value"));
         } else if (((String) filterCriterion.get("type")).equalsIgnoreCase(Mrs.SwitchingSubnet.getURI())) {
-
+            networkModel = addSubnetToModel(systemModel, spaModel, resNetwork, (String) filterCriterion.get("value"));
+        }
+        else if(((String) filterCriterion.get("type")).equalsIgnoreCase(Nml.BidirectionalPort.getURI())){
+            networkModel = addGatewayToModel(systemModel, spaModel, resNetwork, (String) filterCriterion.get("value"));
         }
         return networkModel;
     }
@@ -194,21 +195,38 @@ public class MCE_NetworkPlacement implements IModelComputationElement {
      *
      ****************************************
      */
-    private OntModel modelDefaultNetwork(OntModel systemModel, Resource resNetwork, String topologyUri) {
-        OntModel networkModel = null;
+    private OntModel modelDefaultNetwork(OntModel systemModel, OntModel spaModel, Resource resNetwork, String topologyUri) {
+        OntModel networkModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        
 
-        String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+        //add to model type of resource 
+        //check if resource does not exists already
+        String sparql ="prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+                + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
+                + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
+                + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
+                + "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" 
+                +"SELECT ?network WHERE  {?network a nml:Topology ."
+                + String.format("FILTER (?network = <%s>)}", resNetwork.asResource().toString());
+        Query query = QueryFactory.create(sparql);
+        QueryExecution qexec = QueryExecutionFactory.create(query, systemModel);
+        ResultSet r = (ResultSet) qexec.execSelect();
+        if (r.hasNext()) {
+            return networkModel; //return just what we have which is basically what we have in the model
+        }
+
+        sparql = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
                 + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
                 + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
                 + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
                 + "SELECT ?topology ?virtualCloudService WHERE {"
                 + "?topology a nml:Topology ."
                 + "?topology nml:hasService ?virtualCloudService ."
-                + "?virtualCloudService a nml:VirtualCloudService ."
+                + "?virtualCloudService a mrs:VirtualCloudService ."
                 + String.format("FILTER (?topology = <%s>)}", topologyUri);
-        Query query = QueryFactory.create(sparqlString);
-        QueryExecution qexec = QueryExecutionFactory.create(query, systemModel);
-        ResultSet r = (ResultSet) qexec.execSelect();
+        query = QueryFactory.create(sparql);
+        qexec = QueryExecutionFactory.create(query, systemModel);
+        r = (ResultSet) qexec.execSelect();
         if (!r.hasNext()) {
             throw new EJBException(String.format("%s::could not find a virtual cloud service in the "
                     + "system model associated with  %s", this.getClass().getName(), topologyUri));
@@ -216,9 +234,6 @@ public class MCE_NetworkPlacement implements IModelComputationElement {
         QuerySolution querySolution = r.next();
         Resource resTopology = querySolution.get("topology").asResource();
         Resource resVirtualCloudService = querySolution.get("VirtualCloudService").asResource();
-        if (networkModel == null) {
-            networkModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-        }
 
         //get basic network elements and relations
         networkModel.add(resTopology, RdfOwl.type, Nml.Topology);
@@ -234,7 +249,7 @@ public class MCE_NetworkPlacement implements IModelComputationElement {
         networkModel.add(resNetwork, Nml.hasService, routingService);
         networkModel.add(resNetwork, RdfOwl.type, Mrs.RoutingService);
 
-        sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+        sparql = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
                 + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
                 + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
                 + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
@@ -247,8 +262,8 @@ public class MCE_NetworkPlacement implements IModelComputationElement {
 
         String value = "";
 
-        query = QueryFactory.create(sparqlString);
-        qexec = QueryExecutionFactory.create(query, systemModel);
+        query = QueryFactory.create(sparql);
+        qexec = QueryExecutionFactory.create(query, spaModel);
         r = (ResultSet) qexec.execSelect();
 
         if (!r.hasNext()) { //means that vpc does not have a network address nor route 
@@ -264,8 +279,8 @@ public class MCE_NetworkPlacement implements IModelComputationElement {
         networkModel.add(networkAddress, RdfOwl.type, Mrs.NetworkAddress);
         networkModel.add(networkAddress, Mrs.type, "ipv4-prefix");
         networkModel.add(networkAddress, Mrs.value, value);
-        Resource routingTable = networkModel.createResource(topologyUri + "rtb-" + Integer.toString(resNetwork.hashCode()));
-        Resource route = networkModel.createResource(topologyUri + "rtb-" + Integer.toString(resNetwork.hashCode()) + value.replace("/", ""));
+        Resource routingTable = networkModel.createResource(resNetwork + "rtb-" + Integer.toString(resNetwork.hashCode()));
+        Resource route = networkModel.createResource(resNetwork+ "rtb-" + Integer.toString(resNetwork.hashCode()) + value.replace("/", ""));
         networkModel.add(routingService, Mrs.providesRoutingTable, routingTable);
         networkModel.add(routingService, Mrs.providesRoute, route);
         networkModel.add(routingTable, RdfOwl.type, Mrs.RoutingTable);
@@ -283,55 +298,149 @@ public class MCE_NetworkPlacement implements IModelComputationElement {
      * Method to add subnet to model if specified
      *
      * @param spaModel
-     * @param vm 
-     *********************************************************
+     * @param vm ********************************************************
      */
-    private OntModel addSubnetToModel(OntModel systemModel, OntModel networkModel, Resource resNetwork, String value) {
-        if (networkModel == null) {
-            networkModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-        }
-        
-        
-        //get the newtork switching service
-        Resource switchingService =networkModel.getResource(resNetwork.toString() + "switchingService");
-        if(switchingService == null){
-            networkModel.add(switchingService,RdfOwl.type,Mrs.SwitchingService);
-        }
-        
-        Resource subnet = networkModel.createResource(value);
-        networkModel.add(subnet,RdfOwl.type,Mrs.SwitchingSubnet);
-        networkModel.add(switchingService,Mrs.providesSubnet,subnet);
-        
-        //TODO find a way to make Ips be abstract instead of specified
-        //assing the address of the subnet to the network
-        String sparql = "SELECT ?ip WHERE  {?a a spa:PolicyData ."
-                        + "?a spa:type mrs:SwitchingSubnet ."
-                        + String.format("?a spa:value <%s> .",value)
-                        + "?a mrs:value ?ip}";
+    private OntModel addSubnetToModel(OntModel systemModel, OntModel spaModel, Resource resNetwork, String value) {
+        OntModel networkModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+
+        //check if resource does not exists already
+        String sparql = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+                + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
+                + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
+                + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
+                + "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n"
+                +"SELECT ?subnet WHERE  {?subnet a mrs:SwitchingSubnet ."
+                + String.format("FILTER (?subnet = <%s>)}", value);
         Query query = QueryFactory.create(sparql);
         QueryExecution qexec = QueryExecutionFactory.create(query, systemModel);
         ResultSet r = (ResultSet) qexec.execSelect();
+        if (r.hasNext()) {
+            return networkModel; //return just what we have which is basically what we have in the model
+        }
+
+        //create subnet resource
+        Resource subnet = networkModel.createResource(value);
+        networkModel.add(subnet, RdfOwl.type, Mrs.SwitchingSubnet);
+        Resource switchingService = networkModel.createResource(resNetwork.toString() + "switchingService");
+        networkModel.add(switchingService, RdfOwl.type, Mrs.SwitchingService);
+
+
+        //add the switchingService statement 
+        networkModel.add(switchingService, Mrs.providesSubnet, subnet);
+
+        //TODO find a way to make Ips be abstract instead of specified
+        //assing the address of the subnet to the network
+        sparql ="prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+                + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
+                + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
+                + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
+                + "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n"
+                +"prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+                + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
+                + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
+                + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
+                + "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" 
+                +"SELECT ?ip WHERE  {?a a spa:PolicyData ."
+                + "?a spa:type mrs:SwitchingSubnet ."
+                + String.format("?a spa:value <%s> .", value)
+                + "?a mrs:value ?ip}";
+        query = QueryFactory.create(sparql);
+        qexec = QueryExecutionFactory.create(query, spaModel);
+        r = (ResultSet) qexec.execSelect();
         if (!r.hasNext()) {
             throw new EJBException(String.format("%s::could not find and ip for subnet"
                     + " %s", this.getClass().getName(), subnet));
         }
         QuerySolution q = r.next();
         String ip = q.get("ip").asLiteral().toString();
-        
+
         //add subnet address to model
         Resource networkAddress = networkModel.createResource(subnet.toString() + "networkAddress");
-        networkModel.add(subnet,Mrs.hasNetworkAddress,networkAddress);
-        networkModel.add(networkAddress,RdfOwl.type,Mrs.NetworkAddress);
-        networkModel.add(networkAddress,Mrs.type,"ipv4-prefix");
-        networkModel.add(networkAddress,Mrs.type,ip);
-        
+        networkModel.add(subnet, Mrs.hasNetworkAddress, networkAddress);
+        networkModel.add(networkAddress, RdfOwl.type, Mrs.NetworkAddress);
+        networkModel.add(networkAddress, Mrs.type, "ipv4-prefix");
+        networkModel.add(networkAddress, Mrs.type, ip);
+
         return networkModel;
     }
-    
+
+    /**
+     * ********************************************************
+     * Method to add a gateway to VPC if specified, this Gateway could be either
+     * an internet gateway vpc or a VPN gateway
+     *
+     * @param spaModel
+     * @param vm ********************************************************
+     */
+    private OntModel addGatewayToModel(OntModel systemModel, OntModel spaModel, Resource resNetwork, String value) {
+        OntModel networkModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        
+
+        //check if resource does not exists already
+        String sparql = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+                + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
+                + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
+                + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
+                + "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n"
+                +"SELECT ?gateway WHERE  {?gateway a nml:BidirectionalPort ."
+                + String.format("FILTER (?gateway = <%s>)}", value);
+        Query query = QueryFactory.create(sparql);
+        QueryExecution qexec = QueryExecutionFactory.create(query, systemModel);
+        ResultSet r = (ResultSet) qexec.execSelect();
+        if (r.hasNext()) {
+            return networkModel; //return just what we have which is basically what we have in the model
+        }
+
+        //add basic statements of any gateway
+        Resource gateway = networkModel.createResource(value);
+        networkModel.add(gateway, RdfOwl.type, Nml.BidirectionalPort);
+        networkModel.add(resNetwork, Nml.hasBidirectionalPort, gateway);
+
+        //find whihc type of gateway is 
+        sparql = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+                + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
+                + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
+                + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
+                + "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" 
+                +"SELECT ?value WHERE  {?a a spa:PolicyData ."
+                + "?a spa:type mrs:BidirectionalPort ."
+                + String.format("?a spa:value <%s> .", value)
+                + "?a mrs:value?value ."
+                + "FILTER (?value = 'internet' || ?value = 'vpn')}";
+        query = QueryFactory.create(sparql);
+        qexec = QueryExecutionFactory.create(query, spaModel);
+        r = (ResultSet) qexec.execSelect();
+
+        //assume is an internet gateway if type is not included
+        String type = "";
+        Resource tag;
+        String topoUri = resNetwork.toString().substring(0, resNetwork.toString().lastIndexOf(":"));
+        if (!r.hasNext()) {
+            type = "internet";
+        } else {
+            QuerySolution q = r.next();
+            type = q.get("type").asLiteral().toString();
+        }
+        if (type.equals("internet")) {
+            tag = networkModel.createResource(topoUri + "igwTag");
+        } else {
+            tag = networkModel.createResource(topoUri + "vpngwTag");
+        }
+
+        //Add the propert tag to the gateway
+        networkModel.add(gateway, Mrs.hasTag, tag);
+
+        return networkModel;
+    }
 
     private void exportPolicyData(OntModel spaModel, Resource vm) {
         // find Placement policy -> exportTo -> policyData
-        String sparql = "SELECT ?nodeorvpc ?policyAction ?policyData WHERE {"
+        String sparql = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+                + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
+                + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
+                + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
+                + "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n"
+                +"SELECT ?nodeorvpc ?policyAction ?policyData WHERE {"
                 + "?nodeorvpc nml:hasService ?hvservice . "
                 + "?hvservice a mrs:HypervisorService . "
                 + String.format("?hvservice mrs:providesVM <%s> .", vm.getURI())
@@ -364,7 +473,7 @@ public class MCE_NetworkPlacement implements IModelComputationElement {
             //spaModel.remove(resPolicy, Spa.exportTo, resData);
         }
     }
-
+    
     //@TODO: matchingNetwork (VPC or TenantNetwork)
     //@TODO: matchingSunbet
     //$$ regExURIFilter
