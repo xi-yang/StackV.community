@@ -11,6 +11,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -25,7 +26,9 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Produces;
 import net.maxgigapop.mrs.rest.api.model.ApiDriverInstance;
+import net.maxgigapop.mrs.rest.api.model.ApiVMInstall;
 import net.maxgigapop.mrs.system.HandleSystemCall;
+import web.beans.serviceBeans;
 
 /**
  * REST Web Service
@@ -34,7 +37,8 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
  */
 @Path("web")
 public class WebResource {
-
+    protected serviceBeans serv = new serviceBeans();
+    
     @Context
     private UriInfo context;
     
@@ -80,12 +84,20 @@ public class WebResource {
     @POST
     @Path("/installVM")
     @Consumes({"application/xml","application/json"})
-    public String installVM(String xmlInput){
+    public String installVM(ApiVMInstall input){
         try{
-            System.out.println(xmlInput);
+            Map<String, String> propMap = input.getProperties();
+            
+            int retCode = serv.vmInstall(propMap);
+            switch (retCode) {
+                case 4: return "Parsing parameter error.\n";
+                case 3: return "Connection error.\n";
+                case 2: return "Plugin error.\n";
+                case 1: return "Requesting System Instance UUID error.\n";
+                default: return "Success.\n";
+            }
         }catch(EJBException e){
             return e.getMessage();
-        }
-        return "installed successfully.\n";
+        }        
     } 
 }
