@@ -37,7 +37,7 @@ import net.maxgigapop.mrs.common.ModelUtil;
 
 @Stateless
 public class StubSystemDriver implements IHandleDriverSystemCall {   
-/*    @Override
+    @Override
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
         driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
@@ -91,7 +91,7 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
             throw new EJBException(String.format("commitDelta for %s with %s raised exception(%s)", driverInstance, aDelta, ex.getMessage()));
         }
         return new AsyncResult<String>("SUCCESS");
-    }*/
+    }
 
     @Override
     @Asynchronous

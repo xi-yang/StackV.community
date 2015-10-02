@@ -46,7 +46,7 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
 public class StackSystemDriver implements IHandleDriverSystemCall{
     private static Map<DriverSystemDelta, SystemInstance> driverSystemSessionMap = new HashMap<DriverSystemDelta, SystemInstance>();
             
-    /*@Override
+    @Override
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
         //driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
@@ -99,7 +99,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
         return new AsyncResult<String>("SUCCESS");
     }
     // TODO: terminate or reuse sessions in driverSystemSessionMap after commit
-    */
+    
     @Override
     @Asynchronous
     public Future<String> pullModel(Long driverInstanceId) {

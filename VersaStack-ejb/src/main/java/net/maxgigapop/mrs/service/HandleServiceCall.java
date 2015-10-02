@@ -184,8 +184,8 @@ public class HandleServiceCall {
             if (serviceDelta.getStatus().equals("PROPOGATED")) {
                 SystemInstance systemInstance = SystemInstancePersistenceManager.findBySystemDelta(serviceDelta.getSystemDelta());
                 systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(systemInstance.getReferenceUUID());
-                Future<String> asynResult = systemCallHandler.commitDelta(systemInstance);
-                systemInstance.setCommitStatus(asynResult);
+                //Future<String> asynResult = systemCallHandler.commitDelta(systemInstance);
+                //systemInstance.setCommitStatus(asynResult);
                 //systemInstance.setCommitFlag(true);
                 serviceDelta.setStatus("COMMITTED");
                 DeltaPersistenceManager.merge(serviceDelta);

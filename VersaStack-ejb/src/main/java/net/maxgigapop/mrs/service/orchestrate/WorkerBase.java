@@ -112,7 +112,7 @@ public class WorkerBase {
                 }
             }
             //4. poll action status 
-            long timeout = 3000; // 3000 intervals x 100ms = 300 seconds 
+            long timeout = 9000; // 3000 intervals x 100ms = 300 seconds 
             while (timeout-- > 0 && !resultMap.isEmpty()) {
                 try {
                     sleep(100);

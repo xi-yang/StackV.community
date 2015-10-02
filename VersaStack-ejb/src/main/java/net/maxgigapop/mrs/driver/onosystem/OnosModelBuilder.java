@@ -151,7 +151,7 @@ public class OnosModelBuilder {
                         }
                     }
                 }
-                /*
+                
                 //add flow per device into model
                 String deviceFlows[][] = onos.getOnosDeviceFlows(subsystemBaseUrl, device[i][0], access_key_id, secret_access_key);
                 int qtyFlows = deviceFlows.length;
@@ -208,7 +208,7 @@ public class OnosModelBuilder {
                     model.add(model.createStatement(resFlowAction, value, deviceFlows[j][3]));
                     
                 }
-                */
+
             }
         }
         /*
@@ -240,7 +240,8 @@ public class OnosModelBuilder {
             JSONObject t = (JSONObject) f.get(i);
             String id = t.get("id").toString();
             Resource resSRRG = RdfOwl.createResource(model, topologyURI + ":" + id, SRRG);
-
+            model.add(model.createStatement(onosTopology, hasNode, resSRRG));
+            
             String severity_str = t.get("severity").toString();
             String occurenceProbability_str = t.get("occurenceProbability").toString();
 

@@ -110,7 +110,7 @@ public class MCETools {
         return new MCETools.Path(path);
     }
     
-    final public static int KSP_K_DEFAULT = 20;
+    final public static int KSP_K_DEFAULT = 50;
     public static List<Path> computeKShortestPaths(Model model, Resource nodeA, Resource nodeZ, int K, Filter<Statement> filters) {
         final HashSet<Statement> maskedLinks = new HashSet<>();
         List<Path> KSP = new ArrayList<>();
@@ -305,6 +305,7 @@ public class MCETools {
     
     private static String L2OpenflowPathRules
             = "[rule1:  (?a http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort ?b)\n"
+            + "  (?a rdf:type http://schemas.ogf.org/nml/2013/03/base#Node ) \n"
             + "      -> (?a http://schemas.ogf.org/nml/2013/03/base#connectsTo ?b)\n"
             + "         (?b http://schemas.ogf.org/nml/2013/03/base#connectsTo ?a)\n"
             + "]\n"
@@ -343,9 +344,17 @@ public class MCETools {
         //frist stage must be IntroSwitch to start from a port
         String stage = "TakeOff";
         Iterator<Statement> itS = path.iterator();
+        
+        List <Resource> subjectList = new ArrayList<> (); 
         while (itS.hasNext()) {
             Statement stmt = itS.next();
-
+            
+            for(Resource subjectIter : subjectList){
+                if(stmt.getSubject().equals(subjectIter))
+                    return false;
+            }
+            subjectList.add(stmt.getSubject());
+            
             if (stage.equals("TakeOff")) {
                 if (!evaluateStatement_AnyTrue(model, stmt, openflowPathIntoSwitchConstraints)) {
                     return false;
