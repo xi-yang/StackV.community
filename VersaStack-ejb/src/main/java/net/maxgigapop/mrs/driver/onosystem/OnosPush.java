@@ -18,8 +18,6 @@ import com.hp.hpl.jena.rdf.model.RDFNode;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ModelUtil;
-import net.maxgigapop.mrs.common.Nml;
-import net.maxgigapop.mrs.common.RdfOwl;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -30,7 +28,7 @@ import org.apache.commons.codec.binary.Base64;
 
 /**
  *
- * @author muzcategui
+ * @author diogo
  */
 
 //TODO availability zone problems in volumes and subnets and instancees.
@@ -44,7 +42,6 @@ public class OnosPush {
     //private AmazonEC2Client ec2 = null;
     //private AmazonDirectConnectClient dc = null;
     private OnosServer ec2Client = null;
-    //private OnosDCGet dcClient = null;
     private String topologyUri = null;
     //private Regions region = null;
     static final Logger logger = Logger.getLogger(OnosPush.class.getName());
@@ -56,7 +53,7 @@ public class OnosPush {
 
    
     public String pushPropagate(String access_key_id, String secret_access_key,String model,String modelAddTtl,String topologyURI, String subsystemBaseUrl) throws EJBException, Exception   {
-         String requests = "Push Successfull";
+         String requests = "";
 
         OntModel modelRef = ModelUtil.unmarshalOntModel(model);
         OntModel modelAdd = ModelUtil.unmarshalOntModel(modelAddTtl);
@@ -66,8 +63,7 @@ public class OnosPush {
                + "?flow a mrs:Flow. "
                + "}";
        
-       //String query = "SELECT  ?node ?volume  WHERE {?node  mrs:hasVolume  ?volume}";
-
+       
         ResultSet r1 = executeQuery(query, emptyModel, modelAdd);
         
       
@@ -76,7 +72,6 @@ public class OnosPush {
             
             Resource flow = querySolution1.get("flow").asResource();
             String query2 = "SELECT ?flowrule ?rulematch WHERE {"
-                     //+ "?flowrule mrs:type \"ETH_SRC_VLAN\". "
                      + "?flowrule mrs:value ?rulematch. "
                      + "}";
             
@@ -114,7 +109,7 @@ public class OnosPush {
              }
              
         String[] json_string=new String[2];
-        json_string[0]=flow.toString().split(topologyURI+":")[1].split(":openflow-service")[0];
+        json_string[0]=flow.toString().split(topologyURI+":")[1].split(":openflow-service")[0]+"\n";
         json_string[1]="{\"isPermanent\": true,\"priority\": 100,"
                 + "\"selector\": {\"criteria\": [{\"port\": "+flowdata[0]+",\"type\":"
                 + " \"IN_PORT\"}]},"
@@ -122,21 +117,36 @@ public class OnosPush {
                 //+ "\"type\": \"ETH_SRC\"},{\"mac\": \""+flowdata[2]+"\","
                 //+ "\"type\": \"ETH_DST\"}]},"
                 + "\"treatment\": {"
-                + "\"instructions\": [{\"port\": "+flowdata[5]+",\"type\": \"OUTPUT\"}]}}";
+                + "\"instructions\": [{\"port\": "+flowdata[5]+",\"type\": \"OUTPUT\"}]}}\n";
 
-        
-         URL url = new URL(String.format(subsystemBaseUrl+"/flows/"+json_string[0]));
-         HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-         int status = this.executeHttpMethod(access_key_id, secret_access_key,url, conn, "POST", json_string[1]);
-         if (status!=201) {
-           throw new EJBException(String.format("Failed to push %s into %s",json_string[1],json_string[0]));
-         }
+        requests=requests+json_string[0]+json_string[1];
+         
        
       }
         
         return requests;
     
     }
+    
+    
+     public void pushCommit(String access_key_id, String secret_access_key,String model,String topologyURI, String subsystemBaseUrl) throws EJBException, Exception   {
+         
+     
+         String[] json_string=model.split("\n");
+         for(int i=0;i<json_string.length;i++){
+            System.out.println("Device: "+json_string[i]+"\nFlow: "+json_string[i+1]+"\n");
+            URL url = new URL(String.format(subsystemBaseUrl+"/flows/"+json_string[i]));
+            HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            int status = this.executeHttpMethod(access_key_id, secret_access_key,url, conn, "POST", json_string[i+1]);
+            if (status!=201) {
+                throw new EJBException(String.format("Failed to push %s into %s",json_string[i+1],json_string[i]));
+            }
+            i++;
+         }
+     }
+   
+    
+    
     
     private ResultSet executeQuery(String queryString, OntModel refModel, OntModel model) {
         queryString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"

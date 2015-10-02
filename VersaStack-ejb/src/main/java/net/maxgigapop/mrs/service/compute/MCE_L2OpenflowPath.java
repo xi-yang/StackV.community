@@ -69,8 +69,8 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
     public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
         String topologyURI = "urn:ogf:network:onos.maxgigapop.net:network";
         try {
-            log.log(Level.INFO, "\n>>>MCE_L2OpenflowPath--DeltaAddModel Input=\n{0}", ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
-            log.log(Level.INFO, "Entering L2OpenflowPath process!");
+            //log.log(Level.INFO, "\n>>>MCE_L2OpenflowPath--DeltaAddModel Input=\n{0}", ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
+            //log.log(Level.INFO, "Entering L2OpenflowPath process!");
         } catch (Exception ex) {
             Logger.getLogger(MCE_L2OpenflowPath.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -116,7 +116,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
 
         //test printout
         log.log(Level.INFO, "There are {0} SRRG in the model", String.valueOf(srrgMap.size()));
-        log.log(Level.INFO, "There are {0} link in the spaModel", String.valueOf(linkMap.size()));
+        log.log(Level.INFO, "There are {0} link request in the spaModel", String.valueOf(linkMap.size()));
         ServiceDelta outputDelta = annotatedDelta.clone();
         // compute a List<Model> of L2Openflow connections
         for (Resource resLink : linkMap.keySet()) {
@@ -272,7 +272,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         List<MCETools.Path> KSP = MCETools.computeKShortestPaths(transformedModel, nodeA, nodeZ, MCETools.KSP_K_DEFAULT, connFilters);
 
         log.log(Level.INFO, "Found {0} shortest path before verify", KSP.size());
-        MCETools.printKSP(KSP);
+        //MCETools.printKSP(KSP);
         if (KSP == null || KSP.isEmpty()) {
             throw new EJBException(String.format("%s::process doSrrgPathFinding cannot find any feasible path for <%s>", this.getClass().getName(), resLink));
         }
@@ -302,7 +302,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
             log.log(Level.INFO, "Found {0} KSP after verify", KSP.size());
         }
 
-        MCETools.printKSP(KSP);
+        //MCETools.printKSP(KSP);
         MCETools.Path solution = getLeastSrrgCostPath(KSP, systemModel, srrgMap);
         log.log(Level.INFO, "Successfully find path with fail prob: {0}", String.valueOf(solution.failureProb));
         MCETools.printMCEToolsPath(solution);

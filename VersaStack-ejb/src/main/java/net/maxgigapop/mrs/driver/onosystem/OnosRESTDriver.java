@@ -6,18 +6,12 @@
 
 package net.maxgigapop.mrs.driver.onosystem;
 
-import static com.hp.hpl.jena.sparql.lang.SPARQLParserRegistry.parser;
-import static com.hp.hpl.jena.sparql.lang.UpdateParserRegistry.parser;
-import java.io.InputStreamReader;
 import static java.lang.Thread.sleep;
 import com.hp.hpl.jena.ontology.OntModel;
-import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-//import java.text.SimpleDateFormat;
-//import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
@@ -75,21 +69,23 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
                 Logger.getLogger(OnosRESTDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
             }
 
+
+        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
+        driverInstance.putProperty(requestId, requests);
+        DriverInstancePersistenceManager.merge(driverInstance);
+        Logger.getLogger(OnosRESTDriver.class.getName()).log(Level.INFO, "ONOS REST driver delta models succesfully propagated");
+   
+       
         } catch (Exception ex) {
             Logger.getLogger(OnosRESTDriver.class.getName()).log(Level.SEVERE, null, ex);
         }
-
-        VersionItem refVI = aDelta.getReferenceVersionItem();
-        if (refVI == null) {
-            throw new EJBException(String.format("%s has no referenceVersionItem", aDelta));
-        }
-
-    }
+            
+          
+       }
 
     @Override
     @Asynchronous
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
-        
         DriverInstance driverInstance = aDelta.getDriverInstance();
         if (driverInstance == null) {
             throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
@@ -103,38 +99,21 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
         if (subsystemBaseUrl == null || access_key_id == null || secret_access_key ==null || topologyURI == null) {
             throw new EJBException(String.format("%s has no property key=subsystemBaseUrl", driverInstance));
         }
-        // commit through PUT
+        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
+        String requests = driverInstance.getProperty(requestId);
+        
+        OnosPush push=new OnosPush(access_key_id, secret_access_key, subsystemBaseUrl,topologyURI);
         try {
-            URL url = new URL(String.format("%s/delta/%s/%d/commit", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
-            HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-            int status = this.executeHttpMethod(access_key_id,secret_access_key,url, conn, "PUT", null);
-            //$$  if status == FAILED and raise exception
-        } catch (IOException ex) {
-            throw new EJBException(String.format("%s failed to connect to subsystem with exception (%s)", driverInstance, ex));
+            push.pushCommit( access_key_id,  secret_access_key,requests, topologyURI,  subsystemBaseUrl);
+        } catch (Exception ex) {
+            Logger.getLogger(OnosRESTDriver.class.getName()).log(Level.SEVERE, null, ex);
         }
-        // query through GET
-        boolean doPoll = true;
-        int maxNumPolls = 10; // timeout after 5 minutes -> ? make configurable
-        while (doPoll && (maxNumPolls--) > 0) {
-            try {
-                sleep(30000L); // poll every 30 minutes -> ? make configurable
-                // pull model from REST API
-                URL url = new URL(String.format("%s/delta/%s/%d", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
-                //URL url = new URL(String.format("%s/devices", subsystemBaseUrl));
-                HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-                int status = this.executeHttpMethod(access_key_id,secret_access_key,url, conn, "GET", null);
-                if (status==200) {
-                    doPoll = false; // committed successfully
-                } else if (status!=200) {
-                    throw new EJBException(String.format("%s failed to commit %s with status=%s", driverInstance, aDelta, status));
-                }
-            } catch (InterruptedException ex) {
-                throw new EJBException(String.format("%s poll for commit status is interrupted", driverInstance));
-            } catch (IOException ex) {
-                throw new EJBException(String.format("%s failed to communicate with subsystem with exception (%s)", driverInstance, ex));
-            }
-        }        
-        return new AsyncResult<>("SUCCESS");
+
+        driverInstance.getProperties().remove(requestId);
+        DriverInstancePersistenceManager.merge(driverInstance);
+
+        Logger.getLogger(OnosRESTDriver.class.getName()).log(Level.INFO, "ONOS driver delta models succesfully commited");
+        return new AsyncResult<String>("SUCCESS");
     }
     
     @Override
@@ -207,15 +186,6 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
         int responseCode = conn.getResponseCode();
         logger.log(Level.INFO, "Response Code : {0}", responseCode);
 
-        /*StringBuilder responseStr;
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-            String inputLine;
-            responseStr = new StringBuilder();
-            while ((inputLine = in.readLine()) != null) {
-                responseStr.append(inputLine);
-            }
-        }
-        //return responseStr.toString();*/
         return responseCode;
     }
 }

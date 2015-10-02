@@ -89,7 +89,6 @@ public class AwsDriver implements IHandleDriverSystemCall {
         Regions region = Regions.fromName(r);
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         String requests = driverInstance.getProperty(requestId);
-
         AwsPush push = new AwsPush(access_key_id, secret_access_key, region, topologyURI);
         push.pushCommit(requests);
 
