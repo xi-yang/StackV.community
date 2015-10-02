@@ -66,6 +66,7 @@ public class OpenStackNeutronModelBuilder {
         Property hasNode = Nml.hasNode;
         Property hasBidirectionalPort = Nml.hasBidirectionalPort;
         Property hasService = Nml.hasService;
+        Property providesVPC = Mrs.providesVPC;
         Property providesVM = Mrs.providesVM;
         Property type = Mrs.type;
         Property providedByService = Mrs.providedByService;
@@ -191,7 +192,8 @@ public class OpenStackNeutronModelBuilder {
             Resource NETWORK = RdfOwl.createResource(model, topologyURI + ":network+" + networkID, topology);
 
             model.add(model.createStatement(OpenstackTopology, hasTopology, NETWORK));
-
+            model.add(model.createStatement(OpenstackTopology, hasService, virtualCloudService));
+            model.add(model.createStatement(virtualCloudService, providesVPC, NETWORK));
             Resource SWITCHINGSERVICE = RdfOwl.createResource(model, topologyURI + ":network+" + networkID + ":switchingservice", switchingService);
 
             model.add(model.createStatement(NETWORK, hasService, SWITCHINGSERVICE));
