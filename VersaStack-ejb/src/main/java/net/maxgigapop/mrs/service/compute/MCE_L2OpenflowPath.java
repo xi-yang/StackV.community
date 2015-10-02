@@ -69,7 +69,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
     public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
         String topologyURI = "urn:ogf:network:onos.maxgigapop.net:network";
         try {
-            //log.log(Level.INFO, "\n>>>MCE_L2OpenflowPath--DeltaAddModel Input=\n{0}", ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
+            log.log(Level.INFO, "\n>>>MCE_L2OpenflowPath--DeltaAddModel Input=\n{0}", ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
             //log.log(Level.INFO, "Entering L2OpenflowPath process!");
         } catch (Exception ex) {
             Logger.getLogger(MCE_L2OpenflowPath.class.getName()).log(Level.SEVERE, null, ex);
