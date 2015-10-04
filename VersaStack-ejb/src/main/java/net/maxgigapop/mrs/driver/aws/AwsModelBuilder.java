@@ -5,6 +5,9 @@
  */
 package net.maxgigapop.mrs.driver.aws;
 
+import net.maxgigapop.mrs.driver.aws.AwsDCGet;
+import net.maxgigapop.mrs.driver.aws.AwsEC2Get;
+import net.maxgigapop.mrs.driver.aws.AwsS3Get;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.directconnect.model.Connection;
 import com.amazonaws.services.directconnect.model.VirtualInterface;
@@ -89,14 +92,18 @@ public class AwsModelBuilder {
         Resource awsTopology = RdfOwl.createResource(model, topologyURI, topology);
         Resource objectStorageService = Mrs.ObjectStorageService;
         Resource routingTable = Mrs.RoutingTable;
+  
 
         //get the information from the AWS account
         AwsEC2Get ec2Client = new AwsEC2Get(access_key_id, secret_access_key, region);
+
         AwsS3Get s3Client = new AwsS3Get(access_key_id, secret_access_key, region);
+
         AwsDCGet dcClient = new AwsDCGet(access_key_id, secret_access_key, region);
 
         //create the outer layer of the aws model
         Resource ec2Service = RdfOwl.createResource(model, topologyURI + ":ec2service-" + region.getName(), hypervisorService);
+  
         Resource vpcService = RdfOwl.createResource(model, topologyURI + ":vpcservice-" + region.getName(), virtualCloudService);
         Resource s3Service = RdfOwl.createResource(model, topologyURI + ":s3service-" + region.getName(), objectStorageService);
         Resource ebsService = RdfOwl.createResource(model, topologyURI + ":ebsservice-" + region.getName(), blockStorageService);

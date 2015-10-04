@@ -14,11 +14,9 @@ import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.*;
-import com.hp.hpl.jena.update.Update;
 import com.hp.hpl.jena.update.UpdateAction;
 import com.hp.hpl.jena.update.UpdateFactory;
 import com.hp.hpl.jena.update.UpdateRequest;
-import com.hp.hpl.jena.sparql.function.library.e;
 import java.io.ByteArrayInputStream;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -30,7 +28,6 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
-import javax.xml.bind.annotation.XmlElement;
 
 /**
  *
@@ -151,6 +148,7 @@ public class ModelUtil {
                 "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
                 "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
                 "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" +
+                "prefix sna: <http://schemas.ogf.org/sna/2015/08/network#>\n"+
                 sparqlStringWithoutPrefix;        
         Query query = QueryFactory.create(sparqlString);
         QueryExecution qexec = QueryExecutionFactory.create(query, model);
@@ -164,6 +162,7 @@ public class ModelUtil {
                 "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
                 "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
                 "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" +
+                "prefix sna: <http://schemas.ogf.org/sna/2015/08/network#>\n"+
                 sparqlStringWithoutPrefix;        
         UpdateRequest update = UpdateFactory.create(sparqlString);
         UpdateAction.execute(update, model);
@@ -325,10 +324,10 @@ public class ModelUtil {
                     if (excluded)
                         continue;
                     rdfDFSReverse(refModel, stmt.getSubject(), visited, subModel, propMatchIncludes, propMatchExcludes);
+                    }
                 }
             }
         }
-    }
     
     
     public static void listRecursiveDownTree(RDFNode node, Set<RDFNode> visited, List<String> filterList, List<Statement> listStmts) {
@@ -423,7 +422,8 @@ public class ModelUtil {
                 "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
                 "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
                 "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
-                "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" + mvf.getSparql();
+                "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" +
+                "prefix sna: <http://schemas.ogf.org/sna/2015/08/network#>\n"+mvf.getSparql();
         Query query = QueryFactory.create(sparql);
         QueryExecution qexec = QueryExecutionFactory.create(query, model);
         Model modelConstructed = qexec.execConstruct();

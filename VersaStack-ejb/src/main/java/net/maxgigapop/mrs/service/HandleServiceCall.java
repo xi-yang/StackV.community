@@ -9,26 +9,21 @@ import com.hp.hpl.jena.ontology.OntModel;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.ejb.AsyncResult;
-import javax.ejb.Asynchronous;
 import javax.ejb.EJB;
 import javax.ejb.EJBException;
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
-import net.maxgigapop.mrs.bean.DeltaBase;
 import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ServiceInstance;
 import net.maxgigapop.mrs.bean.SystemDelta;
 import net.maxgigapop.mrs.bean.SystemInstance;
 import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
-import net.maxgigapop.mrs.bean.persist.PersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ServiceDeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ServiceInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
@@ -186,7 +181,7 @@ public class HandleServiceCall {
                 systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(systemInstance.getReferenceUUID());
                 Future<String> asynResult = systemCallHandler.commitDelta(systemInstance);
                 systemInstance.setCommitStatus(asynResult);
-                systemInstance.setCommitFlag(true);
+                //systemInstance.setCommitFlag(true);
                 serviceDelta.setStatus("COMMITTED");
                 DeltaPersistenceManager.merge(serviceDelta);
             } else {
@@ -225,9 +220,12 @@ public class HandleServiceCall {
             }
             // get cached systemInstance
             systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(systemInstance.getReferenceUUID());
+            
+            /* changes with the removal of getCommitFlag
             if (!systemInstance.getCommitFlag()) {
                 throw new EJBException(HandleServiceCall.class.getName() + ".checkStatus encounters un-commited systemInstance based on " + serviceDelta.getSystemDelta());
             }
+            */
             Future<String> asyncStatus = systemInstance.getCommitStatus();
             serviceDelta.setStatus("FAILED");
             if (asyncStatus.isDone()) {

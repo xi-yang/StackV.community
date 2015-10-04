@@ -7,16 +7,12 @@
 package net.maxgigapop.mrs.driver;
 
 import java.util.concurrent.Future;
-import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.Local;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.DriverSystemDelta;
-import net.maxgigapop.mrs.bean.SystemDelta;
-import net.maxgigapop.mrs.bean.SystemInstance;
-import net.maxgigapop.mrs.bean.VersionItem;
 
 /**
  *

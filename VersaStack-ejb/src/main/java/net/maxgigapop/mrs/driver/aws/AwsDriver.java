@@ -5,6 +5,9 @@
  */
 package net.maxgigapop.mrs.driver.aws;
 
+import net.maxgigapop.mrs.driver.aws.AwsModelBuilder;
+import net.maxgigapop.mrs.driver.aws.AwsPush;
+import net.maxgigapop.mrs.driver.aws.AwsDriver;
 import com.amazonaws.regions.Regions;
 import com.hp.hpl.jena.ontology.OntModel;
 import java.io.IOException;
@@ -86,7 +89,6 @@ public class AwsDriver implements IHandleDriverSystemCall {
         Regions region = Regions.fromName(r);
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         String requests = driverInstance.getProperty(requestId);
-
         AwsPush push = new AwsPush(access_key_id, secret_access_key, region, topologyURI);
         push.pushCommit(requests);
 
@@ -113,9 +115,9 @@ public class AwsDriver implements IHandleDriverSystemCall {
             String r = driverInstance.getProperty("region");
             String topologyURI = driverInstance.getProperty("topologyUri");
             Regions region = Regions.fromName(r);
-
             OntModel ontModel = AwsModelBuilder.createOntology(access_key_id, secret_access_key, region, topologyURI);
-
+            
+            
             if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();
                 dm.setCommitted(true);

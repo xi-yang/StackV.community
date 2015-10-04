@@ -5,6 +5,7 @@
  */
 package net.maxgigapop.mrs.driver.aws;
 
+import net.maxgigapop.mrs.driver.aws.AwsAuthenticateService;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;

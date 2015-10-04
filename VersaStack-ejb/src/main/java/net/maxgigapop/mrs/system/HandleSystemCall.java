@@ -7,10 +7,6 @@
 package net.maxgigapop.mrs.system;
 
 import com.hp.hpl.jena.ontology.OntModel;
-import com.hp.hpl.jena.ontology.OntModelSpec;
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
-import java.io.StringWriter;
 import static java.lang.Thread.sleep;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,8 +16,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.EJBException;
@@ -43,7 +37,6 @@ import net.maxgigapop.mrs.bean.VersionItem;
 import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
-import net.maxgigapop.mrs.bean.persist.PersistenceManager;
 import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
@@ -425,7 +418,6 @@ public class HandleSystemCall {
             throw new EJBException("commitDelta has already been done once with systemInstance with referenceUUID="+sysInstanceUUID);
         }
         
-        systemInstance.setCommitFlag(true);
         Future<String> commitStatus = this.commitDelta(systemInstance);
         systemInstance.setCommitStatus(commitStatus);
         return commitStatus;

@@ -30,6 +30,7 @@ import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.service.compute.IModelComputationElement;
 import net.maxgigapop.mrs.service.compute.TestMCE;
@@ -341,23 +342,52 @@ public class ActionBase {
     //@TODO: raise exception if not completely cleannedup
     private void cleanupSpaModel(OntModel spaModel) {
         List<Statement> listStmtsToRemove = new ArrayList<>();
-        String sparql = "SELECT ?policyAction WHERE {"
+        String sparql = "SELECT ?policyAction ?policyData WHERE {"
                 + "{ ?policyAction spa:exportTo ?policyData . "
-                + "FILTER not exists {?someRes spa:dependOn ?policyAction}"
+                //+ "FILTER not exists {?someRes spa:dependOn ?policyAction}"
                 + "} UNION {"
                 + "?policyAction spa:importFrom ?policyData . "
-                + "FILTER not exists {?someRes spa:dependOn ?policyAction}"
+                //+ "FILTER not exists {?someRes spa:dependOn ?policyAction}"
                 + "} }";
         ResultSet rs = ModelUtil.sparqlQuery(spaModel, sparql);
         while (rs.hasNext()) {
             QuerySolution solution = rs.next();
             Resource resPolicy = solution.getResource("policyAction");
+            Resource resPolicyData = solution.getResource("policyData");
             List<Statement> listStmts = new ArrayList<>();
+            
             resPolicy = spaModel.getResource(resPolicy.getURI());
             ModelUtil.listRecursiveDownTree(resPolicy, Spa.getURI(), listStmts);
             if (!listStmts.isEmpty())
                 listStmtsToRemove.addAll(listStmts);
+            
+            resPolicyData = spaModel.getResource(resPolicyData.getURI());
+            ModelUtil.listRecursiveDownTree(resPolicyData, Spa.getURI(), listStmts);
+            if (!listStmts.isEmpty())
+                listStmtsToRemove.addAll(listStmts);
         }
+        
+        
+        // remove ?resData spa:dependON
+        sparql = "SELECT ?resData WHERE {"
+                + "?resData spa:dependOn ?somePolicy . "
+                + "}";
+        rs = ModelUtil.sparqlQuery(spaModel, sparql);
+        while (rs.hasNext()){
+            QuerySolution solution = rs.next();
+            Resource resData = solution.getResource("resData");
+            StmtIterator iterDO = spaModel.listStatements(resData, null, (RDFNode)null);
+            while(iterDO.hasNext())
+                listStmtsToRemove.add(iterDO.next());
+            /*
+            List<Statement> listStmts = new ArrayList<>();
+            resData = spaModel.getResource(resData.getURI());
+            ModelUtil.listRecursiveDownTree(resData, Nml.getURI(), listStmts);
+            while(!listStmts.isEmpty())
+                listStmtsToRemove.addAll(listStmts);
+            */
+        }
+                
         // remove statements of resource of spa#Abstraction type
         sparql = "SELECT ?abstraction WHERE {"
                 + String.format("?abstraction a <%s>. ", Spa.Abstraction)
@@ -370,6 +400,7 @@ public class ActionBase {
             while (iterAS.hasNext())
                 listStmtsToRemove.add(iterAS.next());
         }
+        
         // sanity check
         spaModel.remove(listStmtsToRemove);
         sparql = "SELECT ?policyX WHERE {"
@@ -377,11 +408,11 @@ public class ActionBase {
                 + String.format("FILTER(regex(str(?policyX), '^%s'))", Spa.NS)
                 + "}";
         rs = ModelUtil.sparqlQuery(spaModel, sparql);
-        if (rs.hasNext()) {
+        while (rs.hasNext()) {
             String policyAnotation = rs.next().getResource("policyX").toString();
             throw new EJBException(this + ".cleanupSpaModel() failed to clean up policy annotation: " +  policyAnotation);
         }
-    }
+     }
 
     public String toString() {
         return "WorkerAction(" + this.name+"->"+this.mceBeanPath+")";
