@@ -21,7 +21,7 @@ public class ApiDeltaBase {
     @XmlElement(required=true) 
     protected String id = "";
     @XmlElement(required=true) 
-    protected Date creationTime;
+    protected String creationTime;
     @XmlElement(required=true)
     protected String referenceVersion = "";
     @XmlElement(required=true) 
@@ -39,11 +39,11 @@ public class ApiDeltaBase {
         this.id = id;
     }
 
-    public Date getCreationTime() {
+    public String getCreationTime() {
         return creationTime;
     }
 
-    public void setCreationTime(Date creationTime) {
+    public void setCreationTime(String creationTime) {
         this.creationTime = creationTime;
     }
 

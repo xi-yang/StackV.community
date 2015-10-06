@@ -21,7 +21,10 @@ import com.hp.hpl.jena.update.UpdateRequest;
 import com.hp.hpl.jena.sparql.function.library.e;
 import java.io.ByteArrayInputStream;
 import java.io.StringWriter;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -62,6 +65,17 @@ public class ModelUtil {
         return ttl;
     }
 
+    static public OntModel unmarshalOntModelJson (String json) throws Exception {
+        OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        //$$ TODO: add ontology schema and namespace handling code
+        try {
+            model.read(new ByteArrayInputStream(json.getBytes()), null, "RDF/JSON");
+        } catch (Exception e) {
+            throw new Exception(String.format("failure to unmarshall ontology model, due to %s", e.getMessage()));
+        }
+        return model;
+    }
+    
     static public String marshalOntModelJson (OntModel model) throws Exception {
         //$$ TODO: add namespace handling code
         StringWriter out = new StringWriter();
@@ -218,7 +232,7 @@ public class ModelUtil {
         return topoModelMap;
     }
     
-    private static List<RDFNode> getTopologyList(OntModel model) {
+    public static List<RDFNode> getTopologyList(OntModel model) {
         String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
                 "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
                 "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
@@ -459,5 +473,15 @@ public class ModelUtil {
         else 
             ontModel.remove(modelConstructed);
         return ontModel;
+    }
+    
+    public static String modelDateToString(Date date) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+        return dateFormat.format(date).toString();
+    }
+    
+    public static Date modelDateFromString(String str) throws ParseException {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+        return dateFormat.parse(str);
     }
 }

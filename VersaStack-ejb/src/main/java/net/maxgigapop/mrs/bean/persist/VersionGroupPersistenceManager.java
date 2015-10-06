@@ -7,6 +7,7 @@
 package net.maxgigapop.mrs.bean.persist;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import javax.ejb.EJBException;
@@ -83,6 +84,7 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
         if (needToUpdate) {
             vg = findByReferenceId(vg.getRefUuid());
             vg.setVersionItems(newVG.getVersionItems());
+            vg.setUpdateTime(new java.util.Date());
             VersionGroupPersistenceManager.save(vg);
         }
         return vg;
