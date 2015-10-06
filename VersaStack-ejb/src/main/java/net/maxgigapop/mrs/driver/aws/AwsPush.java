@@ -1810,6 +1810,9 @@ public class AwsPush {
                         + "?address mrs:type \"ipv4-prefix\" ."
                         + "?address mrs:value ?value}";
                 r1 = executeQuery(query, model, modelAdd);
+                if(!r1.hasNext()){
+                   throw new EJBException(String.format("Subnet %s does not have a valid CIDR", subnetIdTagValue));
+                }
                 querySolution1 = r1.next();
                 RDFNode value = querySolution1.get("value");
                 String cidrBlock = value.asLiteral().toString();
