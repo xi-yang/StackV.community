@@ -32,7 +32,7 @@ import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
-import net.maxgigapop.www.rains.ontmodel.Spa;
+import net.maxgigapop.mrs.common.Spa;
 
 /**
  *
@@ -45,21 +45,23 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
     @Override
     @Asynchronous
     public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
-        log.log(Level.FINE, "MCE_InterfaceVlanStitching::process {0}", annotatedDelta);
+        log.log(Level.INFO, "MCE_InterfaceVlanStitching::process {0}", annotatedDelta);
         try {
-            log.log(Level.FINE, "\n>>>MCE_InterfaceVlanStitching--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
+            log.log(Level.INFO, "\n>>>MCE_InterfaceVlanStitching--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_InterfaceVlanStitching.class.getName()).log(Level.SEVERE, null, ex);
         }
         ServiceDelta outputDelta = annotatedDelta.clone();
 
         // importPolicyData : Interface->Stitching->List<PolicyData>
-        String sparql =  "SELECT ?netif ?policy ?data ?type ?value WHERE {"
+        String sparql =  "SELECT ?netif ?policy ?actionValue ?data ?dataType ?dataValue WHERE {"
                 + "?netif a nml:BidirectionalPort ."
                 + "?netif spa:dependOn ?policy . "
-                + "?policy a spa:Stitching. "
+                + "?policy a spa:PolicyAction. "
+                + "?policy spa:type 'MCE_InterfaceVlanStitching'. "
                 + "?policy spa:importFrom ?data. "
-                + "?data spa:type ?type. ?data spa:value ?value. "
+                + "?data spa:type ?dataType. ?data spa:value ?dataValue. "
+                + "OPTIONAL {?policy spa:value ?actionValue.} "
                 + "FILTER not exists {?policy spa:dependOn ?other} "
                 + "}";        
 
@@ -75,10 +77,14 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
             }
             Resource resPolicy = querySolution.get("policy").asResource();
             Resource resData = querySolution.get("data").asResource();
-            RDFNode nodeDataType = querySolution.get("type");
-            RDFNode nodeDataValue = querySolution.get("value");
+            RDFNode nodeDataType = querySolution.get("dataType");
+            RDFNode nodeDataValue = querySolution.get("dataValue");
             Map policyData = new HashMap<>();
             policyData.put("policy", resPolicy);
+            if (querySolution.contains("actionValue")) {
+               String option = querySolution.get("actionValue").asLiteral().toString();
+                policyData.put("option", option);
+            }
             policyData.put("data", resData);
             policyData.put("type", nodeDataType.toString());
             policyData.put("value", nodeDataValue.toString());
@@ -89,8 +95,9 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
             // merge the placement satements into spaModel
             if (stitchModel != null)
                 outputDelta.getModelAddition().getOntModel().add(stitchModel.getBaseModel());
+            
             // remove policy dependency
-            this.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), resNetIf);   
+            MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), resNetIf);   
         }
         return new AsyncResult(outputDelta);
     }
@@ -99,15 +106,16 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
     // 2. identify the "attach-point" resource (eg. VLAN port) along with a stitching path
     // 3. add statements to the stitching path to connect the terminal to the attach-point (if applicable)
     private OntModel doStitching (OntModel systemModel, OntModel spaModel, Resource netIf, List<Map> stitchPolicyData) {
-        String policyDataType = "SIMPLE_HOST";
+        String stitchOption = "SIMPLE_HOST";
         Resource endSite = null;
         List<Resource> vlanPorts = new ArrayList<>();
         for (Map entry: stitchPolicyData) {
             if (!entry.containsKey("data") || !entry.containsKey("type") || !entry.containsKey("value")) 
                 continue;
-            if (((String)entry.get("type")).equals("InterfaceVlanStitching:StitchingType")) {
-                policyDataType = (String)entry.get("value");
-            } else if (((String)entry.get("type")).equals("VMFilterPlacement:HostSite")) {
+            if (entry.containsKey("option")) {
+                stitchOption = (String)entry.get("option");
+            } 
+            if (((String)entry.get("type")).equals("VMFilterPlacement:HostSite")) {
                 endSite = systemModel.getResource((String)entry.get("value"));
             } else if (((String)entry.get("type")).equals("MPVlanConnection:VlanPorts")) {
                 Resource vlanPort = systemModel.getResource((String)entry.get("value"));
@@ -116,7 +124,7 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
         }
         if (endSite == null || vlanPorts.isEmpty())
             throw new EJBException(String.format("%s::doStitching on <%s> miss policy data.", this, netIf));
-        switch (policyDataType) {
+        switch (stitchOption) {
             case "SIMPLE_HOST":
                 return stitchWithSimpleHost(systemModel, spaModel, netIf, endSite, vlanPorts);
             case "OPENSTACK_HOST":
@@ -124,7 +132,7 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
             case "AWS_VPC":
                 return stitchWithAwsVpc(systemModel, spaModel, netIf, endSite, vlanPorts);
             default:
-                throw new EJBException(String.format("%s::doStitching on <%s> has unrecognized StitchingType='%s'.", this, netIf, policyDataType));
+                throw new EJBException(String.format("%s::doStitching on <%s> has unrecognized stitch_option='%s'.", this, netIf, stitchOption));
         }
     }
     
@@ -196,24 +204,5 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
     private OntModel stitchWithOpenstackHost(OntModel systemModel, OntModel spaModel, Resource netIf, Resource endSite, List<Resource> vlanPorts) {
         // do nothing
         return null; 
-    }
-    
-    private void removeResolvedAnnotation(OntModel spaModel, Resource netIf) {
-        String sparql = "SELECT ?anyOther ?policyAction WHERE {"
-                + String.format("<%s> spa:dependOn ?policyAction .", netIf.getURI())
-                + "?policyAction a spa:Stitching."
-                + "?anyOther spa:dependOn ?policyAction . "
-                + "?policyData a spa:PolicyData . "
-                + "}";
-        ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
-        List<QuerySolution> solutions = new ArrayList<>();
-        while (r.hasNext()) {
-            solutions.add(r.next());
-        }
-        for (QuerySolution querySolution : solutions) {
-            Resource resAnyOther = querySolution.get("anyOther").asResource();
-            Resource resPolicy = querySolution.get("policyAction").asResource();
-            spaModel.remove(resAnyOther, Spa.dependOn, resPolicy);
-        }
     }
 }

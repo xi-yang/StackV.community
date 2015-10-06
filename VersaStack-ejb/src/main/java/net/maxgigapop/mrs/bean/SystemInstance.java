@@ -46,9 +46,6 @@ public class SystemInstance extends PersistentEntity implements Serializable {
     @Transient 
     Future<String> commitStatus = null;
     
-    @Transient
-    private boolean commitFlag = false;
-    
     public Long getId() {
         return id;
     }
@@ -106,11 +103,4 @@ public class SystemInstance extends PersistentEntity implements Serializable {
         this.commitStatus = commitStatus;
     }
     
-    public boolean getCommitFlag(){
-        return commitFlag;
-    }
-    
-    public void setCommitFlag(boolean commitFlag){
-        this.commitFlag = commitFlag;
-    }
 }

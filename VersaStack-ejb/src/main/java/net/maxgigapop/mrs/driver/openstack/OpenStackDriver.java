@@ -42,7 +42,7 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
     static final Logger logger = Logger.getLogger(OpenStackDriver.class.getName());
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
-    @Override
+    //@Override
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
 
         aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId());
@@ -74,7 +74,7 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
 
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
     @Asynchronous
-    @Override
+    //@Override
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
 
         DriverInstance driverInstance = aDelta.getDriverInstance();

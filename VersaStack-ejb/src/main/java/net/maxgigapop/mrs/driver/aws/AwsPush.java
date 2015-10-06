@@ -5,6 +5,9 @@
  */
 package net.maxgigapop.mrs.driver.aws;
 
+import net.maxgigapop.mrs.driver.aws.AwsDCGet;
+import net.maxgigapop.mrs.driver.aws.AwsEC2Get;
+import net.maxgigapop.mrs.driver.aws.AwsPush;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.directconnect.AmazonDirectConnectClient;

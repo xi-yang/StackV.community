@@ -50,7 +50,7 @@ import org.json.simple.parser.ParseException;
 public class GenericRESTDriver implements IHandleDriverSystemCall{       
     private static final Logger logger = Logger.getLogger(GenericRESTDriver.class.getName());
 
-    @Override
+    //@Override
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
         //driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
@@ -90,7 +90,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
         }
     }
 
-    @Override
+    //@Override
     @Asynchronous
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
         DriverInstance driverInstance = aDelta.getDriverInstance();

@@ -1,0 +1,57 @@
+<serviceDelta> 
+<uuid>87904df9-4f5d-4c19-b71a-0f948a774673</uuid>
+<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>
+<modelAddition>
+@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .
+@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .
+@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .
+@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .
+@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .
+@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .
+@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .
+@prefix sna:   &lt;http://schemas.ogf.org/mrs/2015/08/network#&gt; . 
+
+&lt;urn:ogf:network:domain=vo1.versastack.org:node=left&gt;
+    a                         nml:Node ;
+    nml:hasBidirectionalPort  &lt;urn:ogf:network:domain=vo1.versastack.org:node=left:port=if0&gt; ;
+    nml:isAlias               &lt;urn:ogf:network:domain=vo1.versastack.org:node=right:port=if0&gt; ;
+    nml:name                  "VM-left" .
+
+&lt;urn:ogf:network:domain=vo1.versastack.org:node=left:port=if0&gt;
+    a                         nml:BidirectionalPort ;
+    nml:name                  "VM-left-data-port" ;
+    spa:dependOn &lt;x-policy-annotation:action:connect-path1&gt; .
+
+&lt;urn:ogf:network:domain=vo1.versastack.org:node=right&gt;
+    a                         nml:Node ;
+    nml:hasBidirectionalPort  &lt;urn:ogf:network:domain=vo1.versastack.org:node=right:port=if0&gt; ;
+    nml:isAlias               &lt;urn:ogf:network:domain=vo1.versastack.org:node=left:port=if0&gt; ;
+    nml:name                  "VM-right" .
+
+&lt;urn:ogf:network:domain=vo1.versastack.org:node=right:port=if0&gt;
+    a                         owl:NamedIndividual , nml:BidirectionalPort ;
+    nml:name                  "VM-right-data-port" ;
+    spa:dependOn &lt;x-policy-annotation:action:connect-path1&gt; .
+        
+&lt;x-policy-annotation:action:connect-path1&gt;
+    a            spa:PolicyAction ;
+    spa:type     "MCE_L2OpenflowPath" ;
+    spa:value    "SRRG Path" ;
+    spa:importFrom &lt;x-policy-annotation:data:left-location&gt;, &lt;x-policy-annotation:data:right-location&gt; ;
+    spa:exportTo &lt;x-policy-annotation:data:path1-vlan&gt; .
+
+&lt;x-policy-annotation:data:left-location&gt;
+        a            spa:PolicyData ;
+        spa:value    &lt;urn:ogf:network:onos.maxgigapop.net:network:of:000000000000003a:port-s58-eth1&gt; .
+
+
+&lt;x-policy-annotation:data:right-location&gt;
+        a            spa:PolicyData ;
+        spa:value    &lt;urn:ogf:network:onos.maxgigapop.net:network:of:000000000000001e:port-s30-eth1&gt; .
+
+    
+&lt;x-policy-annotation:data:path1-vlan&gt;
+    a            spa:PolicyData.
+
+</modelAddition>
+</serviceDelta>
