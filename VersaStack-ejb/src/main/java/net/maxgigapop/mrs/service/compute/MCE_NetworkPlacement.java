@@ -30,6 +30,7 @@ import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.EJBException;
 import javax.ejb.Stateless;
+import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.common.ModelUtil;
@@ -122,7 +123,7 @@ public class MCE_NetworkPlacement implements IModelComputationElement {
              }
              */
             //3. update policyData this action exportTo 
-            this.exportPolicyData(outputDelta.getModelAddition().getOntModel(), network);
+            outputDelta.getModelAddition().setOntModel(this.exportPolicyData(outputDelta.getModelAddition().getOntModel(), network));
 
             //4. remove policy and all related SPA statements receursively under vm from spaModel
             //   and also remove all statements that say dependOn this 'policy'
@@ -427,7 +428,7 @@ public class MCE_NetworkPlacement implements IModelComputationElement {
         return networkModel;
     }
 
-    private void exportPolicyData(OntModel spaModel, Resource resNetwork) {
+    private OntModel exportPolicyData(OntModel spaModel, Resource resNetwork) {
         // find Placement policy -> exportTo -> policyData for vpc
         String sparql = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
                 + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
@@ -475,21 +476,16 @@ public class MCE_NetworkPlacement implements IModelComputationElement {
             //TODO what happens if policyAction did not create a subnet
             else if (type.toString().equalsIgnoreCase(Mrs.SwitchingSubnet.toString())) {
                 sparql = String.format("SELECT ?subnet WHERE {<%s>  nml:hasService ?service .", resNetwork)
-                        +"?service a nml:SwitchingService ."
+                        +"?service a mrs:SwitchingService ."
                         + "?service mrs:providesSubnet ?subnet}";
                 r = ModelUtil.sparqlQuery(spaModel, sparql);
                 if (r.hasNext()) {
                     QuerySolution q1 = r.next();
-                    Literal subnet = q1.get("value").asLiteral();
+                    Resource subnet = q1.get("subnet").asResource();
                     spaModel.add(resData, Spa.value, subnet);
                 }
             }
         }
-        try {
-            String ttl = ModelUtil.marshalOntModel(spaModel);
-            System.out.println();
-        } catch (Exception ex) {
-            Logger.getLogger(MCE_NetworkPlacement.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        return spaModel;
     }
 }
