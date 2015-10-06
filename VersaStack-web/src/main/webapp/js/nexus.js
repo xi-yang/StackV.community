@@ -40,6 +40,7 @@ $(function () {
         $("#group-specific").load($ref);
         evt.preventDefault();
     });
+    
 });
 
 //Select Function
@@ -193,26 +194,95 @@ function addVolume() {
                 + '<option value="standard">Standard</option>'
                 + '<option value="io1">io1</option>'
                 + '<option value="gp2">gp2</option>'
-                + '</select>';
+                + '</select>'
+                + '<input type="button" class="button-register" value="Remove" onClick="removeVolume(' + tableHeight + ')" />';
 
     }
 }
 
-function applyTextTemplate(name) {
-    var template = document.getElementById(name + "Temp");
-    var input = document.getElementById(name + "Input");
-    var output = document.getElementById("sparquery");
+function removeVolume(row) {
+    var table = document.getElementById("volume-table");
+    table.deleteRow(row);
+}
+
+function openWizard(button) {
+    var queryID = button.id.substr(7);
     
+    document.getElementById("wizard-table").toggleClass("hide");
+    document.getElementById("queryNumber").value = queryID;
+}
+
+function applyTextTemplate(name) {
+    var template = document.getElementById(name + "Template");
+    var input = document.getElementById(name + "Input");
+    var queryNumber = document.getElementById("queryNumber");
+    
+    var output = document.getElementById("sparquery" + queryNumber.value);    
     output.value = template.value + input.value;
 }
 
 function applySelTemplate(name) {
-    var template = document.getElementById(name + "Temp");
+    var template = document.getElementById(name + "Template");
     var input = document.getElementById(name + "Input");
     var output = document.getElementById("sparquery");
     
     output.value = template.value + input.options[input.selectedIndex].value;
 }
+
+var queryCounter = 1;
+var queryLimit = 10;
+function addQuery() {
+    if (queryCounter === queryLimit) {
+        alert("You have reached the limit of querys.");
+    }
+    else {
+        var table = document.getElementById("query-table");
+        var tableHeight = table.rows.length;
+
+        var row = table.insertRow(tableHeight - 1);
+        var cell1 = row.insertCell(0);
+        var cell2 = row.insertCell(1);
+        queryCounter++;
+        cell1.innerHTML = '<input type="text" id="sparquery' + queryCounter + '" name="sparquery' + queryCounter + '" size="70" />';
+        cell2.innerHTML = '<div class="view-flag">'
+            + '<input type="checkbox" id="inc' + queryCounter + '" name="viewInclusive' + queryCounter + '"/><label for="inc' + queryCounter + '">Inclusive</label>'
+            + '</div><div class="view-flag">'
+            + '<input type="checkbox" id="sub' + queryCounter + '" name="subRecursive' + queryCounter + '"/><label for="sub' + queryCounter + '">Subtree Rec.</label>'
+            + '</div><div class="view-flag">'
+            + '<input type="checkbox" id="sup' + queryCounter + '" name="supRecursive' + queryCounter + '"/><label for="sup' + queryCounter + '">Supertree Rec.</label></div>';     
+    }
+    
+    evt.preventDefault();
+}
+
+/*
+function clearView() {
+    localStorage.removeItem('queryJSON');
+    
+    evt.preventDefault();
+}
+
+function newQuery() {
+    $("#query-table").toggleClass("hide");
+    
+    evt.preventDefault();
+}
+
+function addQuery() {
+    var json = localStorage.getItem('queryJSON');
+    if (json === null) {
+        var arr = [document.getElementById("sparquery").value];
+    } 
+    else {        
+        var arr = JSON.parse(json);
+        arr.push(document.getElementById("sparquery").value);
+    }
+    var newJSON = JSON.stringify(arr);
+    localStorage.setItem('queryJSON', newJSON);
+    
+    $("#service-bottom").load("/VersaStack-web/ops/srvc/viewcreate.jsp?mode=create #service-fields");
+}*/
+
 
 
 // Utility Functions

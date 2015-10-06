@@ -69,8 +69,9 @@
                                                         <option value="none"></option>
                                                         <option value="stubdriver">Stub</option>
                                                         <option value="awsdriver">AWS</option>
-                                                        <option value="versaNSDriver">VersaStack</option>
+                                                        <option value="versaNSDriver">Generic</option>
                                                         <option value="openStackDriver">OpenStack</option>
+                                                        <option value="StackDriver">Stack</option>
                                                     </select>
                                                 </c:if>
                                             </th>
@@ -100,7 +101,11 @@
                                                     </tr>
                                                     <tr>
                                                         <td>TTL</td>
-                                                        <td><input type="text" name="ttlmodel" size="30"></td>
+                                                        <td>
+                                                            <textarea rows="6" cols="50" name="ttlmodel">
+                                                                
+                                                            </textarea>
+                                                        </td>
                                                     </tr> 
                                                 </c:if>
                                                 <c:if test="${param.driver_id == 'awsdriver'}">
@@ -136,13 +141,23 @@
                                                 </c:if>
                                                 <c:if test="${param.driver_id == 'versaNSDriver'}">
                                                     <tr>
-                                                        <td></td>
-                                                        <td></td>
-                                                    </tr>   
+                                                        <td>Topology URI</td>
+                                                        <td><input type="text" name="topologyUri" size="30" required></td>
+                                                    </tr>
                                                     <tr>
-                                                        <td></td>
-                                                        <td></td>
-                                                    </tr>                                            
+                                                        <td>Subsystem Base URL</td>
+                                                        <td><input type="text" name="subsystemBaseUrl" required></td>
+                                                    </tr>
+                                                </c:if>
+                                                <c:if test="${param.driver_id == 'StackDriver'}">
+                                                    <tr>
+                                                        <td>Topology URI</td>
+                                                        <td><input type="text" name="topologyUri" size="30" required></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Subsystem Base URL</td>
+                                                        <td><input type="text" name="subsystemBaseUrl" required></td>
+                                                    </tr>
                                                 </c:if>
                                                 <c:if test="${param.driver_id == 'openStackDriver'}">
                                                     <tr>
@@ -160,6 +175,14 @@
                                                     <tr>
                                                         <td>NAT Server</td>
                                                         <td><input type="checkbox" name="NATServer" value="yes"></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>URL</td>
+                                                        <td><input type="text" name="url" required></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Tenant</td>
+                                                        <td><input type="text" name="tenant" required></td>
                                                     </tr>
                                                 </c:if>
 
@@ -179,12 +202,17 @@
                                                 <tr>
                                                     <sql:query dataSource="${rains_conn}" sql="SELECT driverEjbPath, topologyUri FROM driver_instance" var="driverlist" />
                                                     <td>Select Driver</td>
-                                                    <td>                                                        
-                                                        <select name="topologyUri" size="10">
-                                                            <c:forEach var="driver" items="${driverlist.rows}">
-                                                                <option value="${driver.topologyUri}">${driver.driverEjbPath} - ${driver.topologyUri}</option>
-                                                            </c:forEach>
-                                                        </select>
+                                                    <td>
+                                                        <c:if test="${not empty driverlist}">
+                                                            <select name="topologyUri" size="10">
+                                                                <c:forEach var="driver" items="${driverlist.rows}">
+                                                                    <option value="${driver.topologyUri}">${driver.driverEjbPath} - ${driver.topologyUri}</option>
+                                                                </c:forEach>
+                                                            </select>
+                                                        </c:if>
+                                                        <c:if test="${empty driverlist}">
+                                                            No Drivers Present
+                                                        </c:if>
                                                     </td>
                                                 </tr>
                                                 <tr>
@@ -220,7 +248,7 @@
 
                             <br><a href="/VersaStack-web/ops/srvc/driver.jsp?self=true">(Un)Install Another Driver.</a>                                
                             <br><a href="/VersaStack-web/ops/catalog.jsp">Return to Services.</a>
-                            <br><a href="/VersaStack-web/orch/graphTest.html">Return to Graphic Orchestration.</a>
+                            <br><a href="/VersaStack-web/orch/graphTest.jsp">Return to Graphic Orchestration.</a>
 
                         </div>
                     </c:otherwise>

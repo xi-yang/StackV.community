@@ -11,9 +11,15 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
+
+
 
 public class userBeans {
 
@@ -32,11 +38,13 @@ public class userBeans {
     String active_usergroup = "";
     ArrayList<Integer> service_list = new ArrayList<>();
     ArrayList<Integer> group_list = new ArrayList<>();
+    HashMap<String, String> model_map = new HashMap<>();
+    String[] current_model = {"",""};
 
     boolean loggedIn = false;
 
     public userBeans() {
-
+        
     }
 
     public String getFirstName() {
@@ -45,6 +53,10 @@ public class userBeans {
 
     public String getLastName() {
         return lastName;
+    }
+    
+    public String getUsername() {
+        return username;
     }
 
     public String getId() {
@@ -87,7 +99,7 @@ public class userBeans {
                     log_connectionProps);
 
             // Grab User Salt
-            PreparedStatement prep = log_conn.prepareStatement("SELECT salt FROM Login.cred L "
+            PreparedStatement prep = log_conn.prepareStatement("SELECT salt FROM login.cred L "
                     + "WHERE L.username = ?");
             prep.setString(1, user);
             ResultSet rs1 = prep.executeQuery();
@@ -98,7 +110,7 @@ public class userBeans {
                 String digest_str = shaEnc(pass, salt);
 
                 // Registration Authentication 
-                prep = log_conn.prepareStatement("SELECT username, password_hash FROM Login.cred L "
+                prep = log_conn.prepareStatement("SELECT username, password_hash FROM login.cred L "
                         + "WHERE L.username = ? AND L.password_hash = ?");
                 prep.setString(1, user);
                 prep.setString(2, digest_str);
@@ -111,7 +123,7 @@ public class userBeans {
                     Properties front_connectionProps = new Properties();
                     front_connectionProps.put("user", front_db_user);
                     front_connectionProps.put("password", front_db_pass);
-                    front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
+                    front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                             front_connectionProps);
 
                     username = user;
@@ -119,7 +131,7 @@ public class userBeans {
 
                     //Pull Userdata
                     prep = front_conn.prepareStatement("SELECT first_name, last_name, user_id,"
-                            + " active_usergroup FROM Frontend.user_info U WHERE U.username = ?");
+                            + " active_usergroup FROM frontend.user_info U WHERE U.username = ?");
                     prep.setString(1, user);
                     ResultSet rs2 = prep.executeQuery();
                     if (rs2.next()) {
@@ -217,12 +229,12 @@ public class userBeans {
             Properties log_connectionProps = new Properties();
             log_connectionProps.put("user", reg_db_user);
             log_connectionProps.put("password", reg_db_pass);
-            log_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Login",
+            log_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/login",
                     log_connectionProps);
 
             //Check for duplicate username
             PreparedStatement prep = log_conn.prepareStatement("SELECT username"
-                    + " FROM Login.cred L WHERE L.username = ?");
+                    + " FROM login.cred L WHERE L.username = ?");
             prep.setString(1, user);
             ResultSet rs1 = prep.executeQuery();
             if (rs1.next()) {
@@ -241,8 +253,8 @@ public class userBeans {
                 throw new IllegalStateException("SHA Encryption failure!", ex);
             }
 
-            // Registration into Login DB
-            prep = log_conn.prepareStatement("INSERT INTO Login.cred "
+            // Registration into login DB
+            prep = log_conn.prepareStatement("INSERT INTO login.cred "
                     + "(`username`, `password_hash`, `salt`) VALUES (?, ?, ?)");
             prep.setString(1, user);
             prep.setString(2, pass_enc);
@@ -251,14 +263,14 @@ public class userBeans {
 
             log_conn.close();
 
-            // Regisgration into Frontend DB
+            // Regisgration into frontend DB
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
-            prep = front_conn.prepareStatement("INSERT INTO Frontend.user_info "
+            prep = front_conn.prepareStatement("INSERT INTO frontend.user_info "
                     + "(`username`, `email`, `active_usergroup`, `first_name`, `last_name`)"
                     + " VALUES (?, ?, ?, ?, ?)");
             prep.setString(1, user);
@@ -270,13 +282,13 @@ public class userBeans {
 
             int user_id;
             prep = front_conn.prepareStatement("SELECT user_id"
-                    + " FROM Frontend.user_info I WHERE I.username = ?");
+                    + " FROM frontend.user_info I WHERE I.username = ?");
             prep.setString(1, user);
             ResultSet rs2 = prep.executeQuery();
             if (rs2.next()) {
                 user_id = rs2.getInt("user_id");
 
-                prep = front_conn.prepareStatement("INSERT INTO Frontend.user_belongs (`user_id`, `usergroup_id`)"
+                prep = front_conn.prepareStatement("INSERT INTO frontend.user_belongs (`user_id`, `usergroup_id`)"
                         + " VALUES (?, ?)");
                 prep.setInt(1, user_id);
                 prep.setInt(2, Integer.parseInt(usergroup_id));
@@ -315,7 +327,7 @@ public class userBeans {
                 Properties log_connectionProps = new Properties();
                 log_connectionProps.put("user", reg_db_user);
                 log_connectionProps.put("password", reg_db_pass);
-                log_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Login",
+                log_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/login",
                         log_connectionProps);
 
                 SecureRandom random = new SecureRandom();
@@ -329,8 +341,8 @@ public class userBeans {
                     throw new IllegalStateException("SHA Encryption failure!", ex);
                 }
 
-                // Update into Login DB
-                PreparedStatement prep = log_conn.prepareStatement("UPDATE Login.cred SET `password_hash` = ?, `salt` = ? WHERE `username` = ?");
+                // Update into login DB
+                PreparedStatement prep = log_conn.prepareStatement("UPDATE login.cred SET `password_hash` = ?, `salt` = ? WHERE `username` = ?");
                 prep.setString(1, pass_enc);
                 prep.setString(2, salt);
                 prep.setString(3, username);
@@ -344,13 +356,13 @@ public class userBeans {
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
             if (!first_name.isEmpty()) {
                 first_name = first_name.trim();
 
-                PreparedStatement prep = front_conn.prepareStatement("UPDATE Frontend.user_info SET `first_name` = ? WHERE `username` = ?");
+                PreparedStatement prep = front_conn.prepareStatement("UPDATE frontend.user_info SET `first_name` = ? WHERE `username` = ?");
                 prep.setString(1, first_name);
                 prep.setString(2, username);
                 prep.executeUpdate();
@@ -359,7 +371,7 @@ public class userBeans {
             if (!last_name.isEmpty()) {
                 last_name = last_name.trim();
 
-                PreparedStatement prep = front_conn.prepareStatement("UPDATE Frontend.user_info SET `last_name` = ? WHERE `username` = ?");
+                PreparedStatement prep = front_conn.prepareStatement("UPDATE frontend.user_info SET `last_name` = ? WHERE `username` = ?");
                 prep.setString(1, last_name);
                 prep.setString(2, username);
                 prep.executeUpdate();
@@ -368,13 +380,13 @@ public class userBeans {
             if (!email.isEmpty()) {
                 email = email.trim();
 
-                PreparedStatement prep = front_conn.prepareStatement("UPDATE Frontend.user_info SET `email` = ? WHERE `username` = ?");
+                PreparedStatement prep = front_conn.prepareStatement("UPDATE frontend.user_info SET `email` = ? WHERE `username` = ?");
                 prep.setString(1, email);
                 prep.setString(2, username);
                 prep.executeUpdate();
             }
             
-            PreparedStatement prep = front_conn.prepareStatement("UPDATE Frontend.user_info SET `active_usergroup` = ? WHERE `username` = ?");
+            PreparedStatement prep = front_conn.prepareStatement("UPDATE frontend.user_info SET `active_usergroup` = ? WHERE `username` = ?");
             prep.setString(1, activegroup);
             prep.setString(2, username);
             prep.executeUpdate();
@@ -424,7 +436,7 @@ public class userBeans {
         Properties front_connectionProps = new Properties();
         front_connectionProps.put("user", front_db_user);
         front_connectionProps.put("password", front_db_pass);
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
         service_list = new ArrayList<>();
@@ -436,5 +448,40 @@ public class userBeans {
         while (rs1.next()) {
             service_list.add(rs1.getInt("service_id"));
         }
+    }
+    
+    public String printModels() {
+        return model_map.toString();
+    }
+    
+    public void addModel(String name, String model) {
+        model_map.put(name, model);
+        current_model[0] = name;
+        current_model[1] = model;
+    }
+    
+    public void removeModel(String name) {
+        model_map.remove(name);
+    }
+    
+    public void setCurr(String filterName, String filterModel) {
+        current_model[0] = filterName;
+        current_model[1] = filterModel;
+    }
+    
+    public String getModelName() {
+        return current_model[0];
+    }
+    
+    public String getTtlModel() {
+        return current_model[1];               
+    }
+        
+    public String getModels() {
+        return new JSONObject(model_map).toJSONString();
+    }
+    
+    public ArrayList<String> getModelNames() {
+        return new ArrayList<>(model_map.keySet());
     }
 }

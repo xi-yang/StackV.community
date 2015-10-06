@@ -1,9 +1,13 @@
 VersaStack FrontEnd MySQL configuration:
 
-1) Run localhost MySQL server, and import localhost.sql, found under the VersaStack-Web module.
+1) Run localhost MySQL server, and import localhost.sql, found under the VersaStack-Web/src/main/webapp/tools folder.
+          In the SQL console - `source [path to localhost.sql file]`
+
 2) Create two users with the following credentials:
           U/N: login_view ; P/W: loginuser
           U/N: front_view ; P/W: frontuser
+          
+          In the SQL console - `CREATE USER 'login_view'@'localhost' IDENTIFIED BY 'loginuser' ; CREATE USER 'front_view'@'localhost' IDENTIFIED BY 'frontuser' ; `
           
 3) Give login_view full privileges to Login, and likewise give front_view full privileges to Frontend.
 

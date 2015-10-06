@@ -1,9 +1,17 @@
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page errorPage = "/VersaStack-web/errorPage.jsp" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
+<jsp:setProperty name="user" property="*" />  
+<jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
+<jsp:setProperty name="serv" property="*" />  
 <!DOCTYPE html>
-<html style="width:100%; height: 100%">
+<html>
     <head>
         <meta charset="utf-8">
-        <title>Orchestration</title>
+        <title>Graphical View</title>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
+        <script src="/VersaStack-web/js/bootstrap.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>
 
         <link rel="stylesheet" type="text/css" href="/VersaStack-web/css/graphTest.css">
@@ -16,6 +24,25 @@
         <script>
             $(document).ready(function () {
                 $("#nav").load("/VersaStack-web/navbar.html");
+                                
+                $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
+                    if (${user.isAllowed(1)}) {
+                        var element = document.getElementById("service1");
+                        element.classList.remove("hide");
+                    }
+                    if (${user.isAllowed(2)}) {
+                        var element = document.getElementById("service2");
+                        element.classList.remove("hide");
+                    }
+                    if (${user.isAllowed(3)}) {
+                        var element = document.getElementById("service3");
+                        element.classList.remove("hide");
+                    }
+                    if (${user.isAllowed(4)}) {
+                        var element = document.getElementById("service4");
+                        element.classList.remove("hide");
+                    }
+                });
             });
         </script> 
 
@@ -71,7 +98,7 @@
                         function (m, l, r, d3_, utils_, tree) {
                             ModelConstructor = m;
                             model = new ModelConstructor();
-                            model.init(1,drawGraph);
+                            model.init(1, drawGraph, null);
                             layout = l;
                             render = r;
                             d3 = d3_;
@@ -80,7 +107,26 @@
                             DropDownTree = tree;
 
                             outputApi = new outputApi_();
-                        });
+                });                    
+        
+                var request = new XMLHttpRequest();
+                request.open("GET", "/VersaStack-web/data/json/umd-anl-all.json");
+
+                request.setRequestHeader("Accept", "application/json");
+                request.onload = function () {
+                    var modelData = request.responseText;
+                    
+                    if (modelData.charAt(0) === '<') {
+                        return;
+                    }
+
+                    modelData = JSON.parse(modelData);                     
+                    $.post("/VersaStack-web/ViewServlet", {newModel: modelData.ttlModel}, function(response) {
+                        // handle response from your servlet.
+                    });
+                };
+                request.send();
+                        
                 buttonInit();
             }
             function drawGraph() {
@@ -99,7 +145,41 @@
                 var lockNodes = model.listNodes();
                 //var posistionLocks = {};
                 model = new ModelConstructor(model);
-                model.init(2,function () {
+                model.init(2, function () {
+                    var width = document.documentElement.clientWidth / outputApi.getZoom();
+                    var height = document.documentElement.clientHeight / outputApi.getZoom();
+                    //TODO, figure out why we need to call this twice
+                    //If we do not, the layout does to converge as nicely, even if we double the number of iterations
+                    layout.doLayout(model, null, width, height);
+                    layout.doLayout(model, null, width, height);
+
+                    render.doRender(outputApi, model);
+                }, null);
+
+                var request = new XMLHttpRequest();
+                request.open("GET", "/VersaStack-web/restapi/model/");
+
+                request.setRequestHeader("Accept", "application/json");
+                request.onload = function () {
+                    var modelData = request.responseText;
+
+                    if (modelData.charAt(0) === '<') {
+                        return;
+                    }
+
+                    modelData = JSON.parse(modelData);                     
+                    $.post("/VersaStack-web/ViewServlet", {newModel: modelData.ttlModel}, function(response) {
+                        // handle response from your servlet.
+                    });
+                };
+                request.send();
+            }
+
+            function filter(viewName, viewModel) {
+                var lockNodes = model.listNodes();
+                //var posistionLocks = {};
+                model = new ModelConstructor(model);
+                model.init(2, function () {
                     var width = document.documentElement.clientWidth / outputApi.getZoom();
                     var height = document.documentElement.clientHeight / outputApi.getZoom();
                     //TODO, figure out why we need to call this twice
@@ -108,16 +188,27 @@
                     layout.doLayout(model, lockNodes, width, height);
 
                     render.doRender(outputApi, model);
-                });           
+                }, viewModel);
+                
+                $.post("/VersaStack-web/ViewServlet", {filterName: viewName, filterModel: viewModel.ttlModel}, function(response) {
+                        // handle response from your servlet.
+                });
             }
 
             function buttonInit() {
                 $("#awsButton").click(function (evt) {
-                    $("#actionForm").load("/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=aws #service-fields");
+                    var formUrl = "";
+                    if (document.getElementById("displayName").innerText.indexOf("aws") > -1) {
+                        formUrl = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=aws&graphTopo=" + document.getElementById("displayName").innerText + "";
+                    }
+                    else if (document.getElementById("displayName").innerText.indexOf("openstack") > -1) {
+                        formUrl = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=os&graphTopo=" + document.getElementById("displayName").innerText + "";
+                    }
+                    else if (document.getElementById("displayName").innerText.indexOf("versa") > -1) {
+                        formUrl = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=vs&graphTopo=" + document.getElementById("displayName").innerText + "";
+                    } else { return; }
 
-                    $("#awsButton").toggleClass("hide");
-                    $("#cancelButton").toggleClass("hide");
-
+                    window.open(formUrl);
                     evt.preventDefault();
                 });
                 $("#cancelButton").click(function (evt) {
@@ -130,7 +221,26 @@
                 });
                 $("#refreshButton").click(function (evt) {
                     reload();
+
+                    evt.preventDefault();
+                });
+
+                $("#modelButton").click(function (evt) {
+                    window.open('/VersaStack-web/modelView.jsp', 'newwindow', config = 'height=1200,width=400, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no');
+                });
+
+                $(".button-filter-select").click(function (evt) {
+                    $(".current-filter").removeClass("current-filter");
                     
+                    var viewModels = ${user.getModels()};
+                    if (this.id === "nofilter") {
+                        reload();
+                    } else {
+                        filter(this.id, viewModels[this.id]);
+                    }
+
+                    $(this).addClass("current-filter");
+
                     evt.preventDefault();
                 });
             }
@@ -318,7 +428,6 @@
                         e.preventDefault();
                     }
                 });
-
             }
         </script>
     </head>
@@ -327,13 +436,28 @@
         <!-- NAV BAR -->
         <div id="nav">
         </div>
+        <!-- SIDE BAR -->
+        <div id="sidebar">            
+        </div>
+
+        <div id="filterPanel">
+            <div id="filterPanel-contents">
+                <button class="button-filter-select" id="nofilter">No Filter</button>
+                <c:forEach items="${user.modelNames}" var="filterName">
+                    <c:if test="${filterName != 'base'}">
+                        <button class="button-filter-select" id="${filterName}">${filterName}</button>
+                    </c:if>
+                </c:forEach>
+            </div>
+        </div>
+
         <div id="displayPanel">
             <button id="refreshButton">Refresh</button>
+            <button id="modelButton">Display Model</button>
             <div id="displayName"></div>
             <div id="treeMenu"></div>
             <div id="actionMenu">
                 <button id="awsButton">Install AWS</button>
-                <button id="cancelButton" class="hide">Minimize</button>
                 <div id="actionForm"></div>
             </div>
         </div>

@@ -11,7 +11,6 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
@@ -30,7 +29,7 @@ public class serviceBeans {
     String rains_db_user = "root";
     String rains_db_pass = "root";
     String host = "http://localhost:8080/VersaStack-web/restapi";
-
+        
     public serviceBeans() {
 
     }
@@ -59,13 +58,13 @@ public class serviceBeans {
                         driver += "<value>java:module/AwsDriver</value></entry>";
                         break;
                     case "versaNSDriver":
-                        driver += "<value>java:module/StubSystemDriver</value></entry>";
+                        driver += "<value>java:module/GenericRESTDriver</value></entry>";
                         break;                    
                     case "openStackDriver":
-                        driver += "<value>java:module/GenericRESTDriver</value></entry>";
+                        driver += "<value>java:module/OpenStackDriver</value></entry>";
                         break;
                     case "StackDriver":
-                        // to be filled
+                        driver += "<value>java:module/StackSystemDriver</value></entry>";
                         break;
                     default:
                         break;
@@ -318,11 +317,74 @@ public class serviceBeans {
         
         return 0;
     }
-    
-    // Create new model view from parameters and push to model.
-    //TODO Fill skeleton and JavaDoc as appropriate
-    public int createModelView() {
-        return -1;
+
+    /**
+     * Create a customize model view based on the criteria user specifies.
+     * @param filters A string array. Each string contains SPARQL description, 
+     * inclusive flag, subtreeRecursive flag, and suptreeRecursive flag, 
+     * concatenated by "\r\n".<br /><br /> 
+     * For example: CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o. ?s a nml:Topology.}\r\ntrue\r\nfalse\r\nfalse
+     * @return
+     * A string contains the filtered model in json format if creating successfully,
+     * otherwise, a string contains the error message.
+     */
+    public String createModelView(String[] filters) {
+        String vgUuid = null;
+        //create a new version group.
+        try {
+            //URL url = new URL(String.format("http://localhost:8080/VersaStack-web/data/json/umd-anl-all.json"));
+            URL url = new URL(String.format("%s/model/", host));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            this.executeHttpMethod(url, connection, "GET", null);           
+        } catch (Exception e) {
+            System.out.println(e.toString());//connection error
+            return null;
+        }
+
+        //retrieve the version group UUID from the database.
+        Connection rains_conn;
+        try {
+
+            Class.forName("com.mysql.jdbc.Driver").newInstance();
+            Properties rains_connectionProps = new Properties();
+            rains_connectionProps.put("user", rains_db_user);
+            rains_connectionProps.put("password", rains_db_pass);
+
+            rains_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/rainsdb",
+                    rains_connectionProps);
+
+            PreparedStatement prep = rains_conn.prepareStatement("SELECT * FROM version_group ORDER BY id DESC LIMIT 1");
+            ResultSet rs1 = prep.executeQuery();
+            while (rs1.next()) {
+                vgUuid = rs1.getString("refUuid");
+            }
+        } catch (SQLException | InstantiationException | IllegalAccessException | ClassNotFoundException ex) {
+            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        //construct the queryModelView object.
+        String view = "<view><filters>";
+        for (String filter : filters){
+            String[] filterParam = filter.split("\r\n");
+            view += "<filter><sparql>" + filterParam[0] + "</sparql>"
+                    + "<inclusive>" + filterParam[1] + "</inclusive>"
+                    + "<subtreeRecursive>" + filterParam[2] + "</subtreeRecursive>"
+                    + "<suptreeRecursive>" + filterParam[3] + "</suptreeRecursive></filter>";
+        }
+        view += "</filters></view>";
+
+        //Send the request though API to back-end system.
+        String result;
+        try {
+            URL url = new URL(String.format("%s/model/view/%s", host,vgUuid));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, connection, "POST", view);
+        } catch (Exception e) {
+            System.out.println(e.toString());//query error
+            return null;
+        }
+        
+        return result;
     }       
 
     
@@ -362,5 +424,5 @@ public class serviceBeans {
         }
         return responseStr.toString();
     }
-
+    
 }
