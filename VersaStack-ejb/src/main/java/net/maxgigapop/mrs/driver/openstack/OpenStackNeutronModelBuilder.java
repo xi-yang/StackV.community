@@ -92,7 +92,7 @@ public class OpenStackNeutronModelBuilder {
         //set the global resources
         Resource route = Mrs.Route;
         Resource hypervisorService = Mrs.HypervisorService;
-        Resource virtualCloudService = Mrs.VirtualCloudService;
+       
 
         Resource blockStorageService = Mrs.BlockStorageService;
         Resource bucket = Mrs.Bucket;
@@ -110,7 +110,7 @@ public class OpenStackNeutronModelBuilder {
         //Resource OpenstackTopology = model.createResource("urn:ogf:network:dragon.maxgigapop.net:topology");
         Resource OpenstackTopology = RdfOwl.createResource(model, topologyURI, topology);
         //Resource Neutron = model.createResource("urn:ogf:network:dragon.maxgigapop.net:openstack-neutron");
-        Resource networkService = RdfOwl.createResource(model, topologyURI + ":network-service", Nml.NetworkObject);
+        Resource networkService = RdfOwl.createResource(model, topologyURI + ":network-service", Mrs.VirtualCloudService);
 
         Resource routingService = RdfOwl.createResource(model, topologyURI + ":routing-service", RoutingService);
         Resource cinderService = RdfOwl.createResource(model, topologyURI + ":cinder-service", blockStorageService);
@@ -192,8 +192,8 @@ public class OpenStackNeutronModelBuilder {
             Resource NETWORK = RdfOwl.createResource(model, topologyURI + ":network+" + networkID, topology);
 
             model.add(model.createStatement(OpenstackTopology, hasTopology, NETWORK));
-            model.add(model.createStatement(OpenstackTopology, hasService, virtualCloudService));
-            model.add(model.createStatement(virtualCloudService, providesVPC, NETWORK));
+            
+            model.add(model.createStatement(networkService, providesVPC, NETWORK));
             Resource SWITCHINGSERVICE = RdfOwl.createResource(model, topologyURI + ":network+" + networkID + ":switchingservice", switchingService);
 
             model.add(model.createStatement(NETWORK, hasService, SWITCHINGSERVICE));
