@@ -24,6 +24,7 @@ import net.maxgigapop.mrs.service.HandleServiceCall;
 import java.util.logging.Logger;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.PUT;
+import net.maxgigapop.mrs.rest.api.model.ApiDeltaBase;
 /**
  *
  * @author max
@@ -58,18 +59,82 @@ public class ServiceResource {
             return(e.getMessage());
         }
     } 
+
+    //GET instance property
+    @GET
+    @Path("/property/{siUUID}/{property}")
+    public String getProperty(@PathParam("siUUID")String svcInstanceUUID, @PathParam("property")String property) {
+        String value = serviceCallHandler.getInstanceProperty(svcInstanceUUID, property);
+        if (value == null) {
+            throw new EJBException("Unknown property=" + property);
+        }
+        return value;
+    }
+    
+    //PUT to push and sync deltas
+    @PUT
+    @Path("/property/{siUUID}/{property}/{value}")
+    public void setProperty(@PathParam("siUUID")String svcInstanceUUID, @PathParam("property")String property, @PathParam("value")String value) {
+        serviceCallHandler.setInstanceProperty(svcInstanceUUID, property, value);
+    }
+    
     
     //POST to run workflow to compile and add service delta (SPA)
     @POST
     @Consumes({"application/xml","application/json"})
+    @Produces("application/xml")
     @Path("/{siUUID}")
-    public String compile(@PathParam("siUUID") String svcInstanceUUID, ServiceApiDelta apiDelta) {
-        String status = "success";
-        String workerClassPath = apiDelta.getWorkerClassPath();
-        SystemDelta sysDelta = serviceCallHandler.compileAddDelta(svcInstanceUUID, workerClassPath, apiDelta.getUuid(), apiDelta.getModelAddition(), apiDelta.getModelReduction());
-        return status;
+    public ApiDeltaBase compile(@PathParam("siUUID") String svcInstanceUUID, ServiceApiDelta svcApiDelta) throws Exception {
+        String workerClassPath = svcApiDelta.getWorkerClassPath();
+        SystemDelta sysDelta = serviceCallHandler.compileAddDelta(svcInstanceUUID, workerClassPath, svcApiDelta.getUuid(), svcApiDelta.getModelAddition(), svcApiDelta.getModelReduction());
+        ApiDeltaBase apiSysDelta = new ApiDeltaBase();
+        apiSysDelta.setId(sysDelta.getId().toString());
+        java.util.Date now = new java.util.Date();
+        apiSysDelta.setCreationTime(new java.sql.Date(now.getTime()).toString());
+        apiSysDelta.setReferenceVersion(sysDelta.getReferenceVersionGroup().getRefUuid());
+        if (sysDelta.getModelAddition() != null) {
+            String modelAddition = sysDelta.getModelAddition().getTtlModel();
+            if (modelAddition == null)
+                modelAddition = ModelUtil.marshalOntModel(sysDelta.getModelAddition().getOntModel());
+            apiSysDelta.setModelAddition(modelAddition);
+        }
+        if (sysDelta.getModelReduction() != null) {
+            String modelReduction = sysDelta.getModelReduction().getTtlModel();
+            if (modelReduction == null)
+                modelReduction = ModelUtil.marshalOntModel(sysDelta.getModelReduction().getOntModel());
+            apiSysDelta.setModelReduction(modelReduction);
+        }
+        return apiSysDelta;
     }
 
+    @POST
+    @Consumes({"application/xml","application/json"})
+    @Produces("application/json")
+    @Path("/{siUUID}")
+    public ApiDeltaBase compileJson(@PathParam("siUUID") String svcInstanceUUID, ServiceApiDelta svcApiDelta) throws Exception {
+        String workerClassPath = svcApiDelta.getWorkerClassPath();
+        SystemDelta sysDelta = serviceCallHandler.compileAddDelta(svcInstanceUUID, workerClassPath, svcApiDelta.getUuid(), svcApiDelta.getModelAddition(), svcApiDelta.getModelReduction());
+        ApiDeltaBase apiSysDelta = new ApiDeltaBase();
+        apiSysDelta.setId(sysDelta.getId().toString());
+        java.util.Date now = new java.util.Date();
+        apiSysDelta.setCreationTime(new java.sql.Date(now.getTime()).toString());
+        apiSysDelta.setReferenceVersion(sysDelta.getReferenceVersionGroup().getRefUuid());
+        if (sysDelta.getModelAddition() != null) {
+            String modelAddition = sysDelta.getModelAddition().getTtlModel();
+            if (modelAddition == null)
+                modelAddition = ModelUtil.marshalOntModelJson(sysDelta.getModelAddition().getOntModel());
+            apiSysDelta.setModelAddition(modelAddition);
+        }
+        if (sysDelta.getModelReduction() != null) {
+            String modelReduction = sysDelta.getModelReduction().getTtlModel();
+            if (modelReduction == null)
+                modelReduction = ModelUtil.marshalOntModelJson(sysDelta.getModelReduction().getOntModel());
+            apiSysDelta.setModelReduction(modelReduction);
+        }
+        return apiSysDelta;
+    }
+    
+    
     //PUT to push and sync deltas
     @PUT
     @Path("/{siUUID}/{action}")

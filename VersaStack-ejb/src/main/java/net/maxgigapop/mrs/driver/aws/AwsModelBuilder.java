@@ -11,6 +11,7 @@ import net.maxgigapop.mrs.driver.aws.AwsS3Get;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.directconnect.model.Connection;
 import com.amazonaws.services.directconnect.model.VirtualInterface;
+import com.amazonaws.services.directconnect.model.VirtualInterfaceState;
 import com.amazonaws.services.ec2.model.*;
 import com.amazonaws.services.s3.model.Bucket;
 import com.hp.hpl.jena.ontology.OntModel;
@@ -20,6 +21,7 @@ import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import net.maxgigapop.mrs.common.*;
 
@@ -147,47 +149,38 @@ public class AwsModelBuilder {
             Resource VPNGATEWAY = RdfOwl.createResource(model, topologyURI + ":" + vpnGatewayId, biPort);
             model.add(model.createStatement(VPNGATEWAY, hasTag, VPNGW_TAG));
             model.add(model.createStatement(awsTopology, hasBidirectionalPort, VPNGATEWAY));
-
-            for (VirtualInterface vi : dcClient.getVirtualInterfaces(g.getVpnGatewayId())) {
-                String viId = vi.getVirtualGatewayId();
-                String vlanNum = Integer.toString(vi.getVlan());
-
-                Resource VLAN_LABEL = RdfOwl.createResource(model, topologyURI + ":vlan-" + vlanNum, Nml.Label);
-                model.add(model.createStatement(VLAN_LABEL, Nml.labeltype, vlan));
-                model.add(model.createStatement(VLAN_LABEL, value, vlanNum));
-
-                Resource VIRTUAL_INTERFACE = RdfOwl.createResource(model, topologyURI + ":" + vi.getVirtualInterfaceId(), biPort);
-                model.add(model.createStatement(VIRTUAL_INTERFACE, hasTag, VIRTUAL_INTERFACE_TAG));
-                model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabel, VLAN_LABEL));
-                model.add(model.createStatement(VPNGATEWAY, Nml.isAlias, VIRTUAL_INTERFACE));
-                model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.isAlias, VPNGATEWAY));
-                model.add(model.createStatement(directConnect, hasBidirectionalPort, VIRTUAL_INTERFACE));
-
-                Connection c = dcClient.getConnection(vi);
-                if (c != null) {
-                    //model.add(model.createStatement(VLAN,Mrs.capacity,c.getBandwidth()));
-
-                }
-            }
-            //TODO: Ad a statement to indicate the status of the virtual interface
         }
 
         //get a list of all the virtual interfaces that do not bellong to a VPN gateway
         //as this Virtual interfaces could be accepted or denied to be a part of a dc connection
         //in the push part
-        for (VirtualInterface vi : dcClient.getNoAssocVirtualInterface()) {
+        for (VirtualInterface vi : dcClient.getVirtualInterfaces()) {
             String viId = vi.getVirtualGatewayId();
             String vlanNum = Integer.toString(vi.getVlan());
 
-            Resource VLAN_LABEL = RdfOwl.createResource(model, topologyURI + ":vlan-" + vlanNum, Nml.Label);
-            model.add(model.createStatement(VLAN_LABEL, Nml.labeltype, vlan));
-            model.add(model.createStatement(VLAN_LABEL, value, vlanNum));
-
+            Resource VLAN_LABEL_GROUP = RdfOwl.createResource(model, topologyURI + ":labelGroup" + vlanNum, Nml.LabelGroup);
+            model.add(model.createStatement(VLAN_LABEL_GROUP, value, vlanNum));
+            
             Resource VIRTUAL_INTERFACE = RdfOwl.createResource(model, topologyURI + ":" + vi.getVirtualInterfaceId(), biPort);
             model.add(model.createStatement(VIRTUAL_INTERFACE, hasTag, VIRTUAL_INTERFACE_TAG));
-            model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabel, VLAN_LABEL));
+            model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabelGroup, VLAN_LABEL_GROUP));
             model.add(model.createStatement(directConnect, hasBidirectionalPort, VIRTUAL_INTERFACE));
-            //TODO: Ad a statement to indicate the status of the virtual interface
+            
+            //check if it has a gateway, meaning the virtual interface is being used
+            String virtualGatewayId =  vi.getVirtualGatewayId();
+            String virtualInterfaceState =  vi.getVirtualInterfaceState();
+            String[] acceptedStates = {VirtualInterfaceState.Available.toString(),VirtualInterfaceState.Confirming.toString()
+                                                      ,VirtualInterfaceState.Deleting.toString(),VirtualInterfaceState.Verifying.toString()};
+            if(virtualGatewayId != null && (Arrays.asList(acceptedStates).contains(virtualInterfaceState)))
+            {
+                Resource VLAN_LABEL = RdfOwl.createResource(model, topologyURI + ":vlan-" + vlanNum, Nml.Label);
+                Resource VPNGATEWAY = model.getResource(topologyURI + ":" + virtualGatewayId);
+                model.add(model.createStatement(VLAN_LABEL, Nml.labeltype, vlan));
+                model.add(model.createStatement(VLAN_LABEL, value, vlanNum));
+                model.add(model.createStatement(VIRTUAL_INTERFACE,Nml.hasLabel,VLAN_LABEL));
+                model.add(model.createStatement(VPNGATEWAY, Nml.isAlias, VIRTUAL_INTERFACE));
+                model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.isAlias, VPNGATEWAY));
+            }
         }
 
         //to be used later, a list containing the elatic ips as strings
@@ -426,6 +419,10 @@ public class AwsModelBuilder {
             model.add(model.createStatement(s3Service, providesBucket, BUCKET));
             model.add(model.createStatement(awsTopology, hasBucket, BUCKET));
         }
+        
+        //create abstraction for batch resources
+        BatchResourcesTool batchTool = new BatchResourcesTool();
+        model = batchTool.contractExplicitModel(model);
         return model;
     }
 }

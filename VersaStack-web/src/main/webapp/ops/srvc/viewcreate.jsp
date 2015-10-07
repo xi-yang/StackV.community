@@ -75,48 +75,98 @@
                                 <form id="view-form" action="/VersaStack-web/ViewServlet" method="post">
                                     <!-- Management Form -->
                                     <c:if test="${param.mode != 'create'}">
-                                        Manage
+                                        <table class="management-table" id="manage-table">
+                                            <thead><tr><th></th><th></th></tr></thead>
+                                            <tbody>
+                                                <tr>                                                    
+                                                    <td>Select Filter</td>
+                                                    <td>
+                                                        <c:if test="${not empty user.modelNames}">
+                                                            <select id="model-select" name="modelName" size="5" required>
+                                                                <c:forEach var="model" items="${user.modelNames}">
+                                                                    <c:if test="${model != 'base'}">
+                                                                        <option value="${model}">${model}</option>
+                                                                    </c:if>
+                                                                </c:forEach>
+                                                            </select>
+                                                        </c:if>
+                                                        <c:if test="${empty user.modelNames}">
+                                                            No Filters Present
+                                                        </c:if>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td></td>
+                                                    <td>
+                                                        <c:if test="${not empty user.modelNames}"><input class="button-register" name="uninstall" type="submit" value="Uninstall" /></c:if>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
                                     </c:if>
                                     <!-- Creation Form -->
                                     <c:if test="${param.mode == 'create'}">
-                                        <table class="management-table">
+                                        <!-- View Creation Table -->                                        
+
+                                        <table class="management-table" id="query-table">
                                             <thead>
                                                 <tr>
-                                                    <th>Query</th>
+                                                    <th>View Name</th>
                                                     <th>
                                                         <span style="color:black">
-                                                            <input type="text" id="sparquery" name="sparquery" size="70" />
+                                                            <input type="text" name="viewName" size="30" required />
                                                         </span>
                                                     </th>
                                                 </tr>
-
                                             </thead>
                                             <tbody>
                                                 <tr>
-                                                    <td>Flags</td>
+                                                    <td>Queries</td>
+                                                    <td></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><input type="text" id="sparquery1" name="sparquery1" size="70" /></td>
                                                     <td>
                                                         <div class="view-flag">
-                                                            <input type="checkbox" id="inc" name="viewInclusive"/>
-                                                            <label for="inc">Inclusive</label>
+                                                            <input type="checkbox" id="inc1" name="viewInclusive1"/>
+                                                            <label for="inc1">Inclusive</label>
                                                         </div>
                                                         <div class="view-flag">
-                                                            <input type="checkbox" id="sub" name="subRecursive"/>
-                                                            <label for="sub">Subtree Recursive</label>
+                                                            <input type="checkbox" id="sub1" name="subRecursive1"/>
+                                                            <label for="sub1">Subtree Rec.</label>
                                                         </div>
                                                         <div class="view-flag">
-                                                            <input type="checkbox" id="sup" name="supRecursive"/>
-                                                            <label for="sup">Supertree Recursive</label>
+                                                            <input type="checkbox" id="sup1" name="supRecursive1"/>
+                                                            <label for="sup1">Supertree Rec.</label>
+                                                        </div>
+                                                        <div>
+                                                            <input type="button" id="wizard-1" value="Wizard" onClick="openWizard(this)" />
                                                         </div>
                                                     </td>
                                                 </tr>
                                                 <tr>
-                                                    <td><strong>Templates</strong></td>
                                                     <td></td>
+                                                    <td>
+                                                        <input class="button-register" name="create" type="submit" value="Submit" />
+                                                        <input class="button-register" type="button" value="Add Query" onClick="addQuery()">                                                        
+                                                    </td>
                                                 </tr>
+                                            </tbody>
+                                        </table>
+
+                                        <!-- Old Query Creation Table
+                                        <table class="management-table hide" class="hide" id="wizard-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Query Wizard</th>
+                                                    <th><input type="hidden" id="queryNumber" value=""/></th>                                                    
+                                                </tr>
+                                            </thead>
+                                            <tbody>
                                                 <tr>
                                                     <td>I like</td>
                                                     <td>
-                                                        <input type="hidden" id="likeTemp" value="I like "/>
+                                                        <input type="hidden" id="likeTemplate" value="I like "/>
                                                         <input type="text" class="spar-template" id="likeInput"/>
                                                         <button type="button" class="button-service-apply" onClick="applyTextTemplate('like')">Apply</button>
                                                     </td>
@@ -124,7 +174,7 @@
                                                 <tr>
                                                     <td>I hate</td>
                                                     <td>
-                                                        <input type="hidden" id="hateTemp" value="I hate "/>
+                                                        <input type="hidden" id="hateTemplate" value="I hate "/>
                                                         <input type="text" class="spar-template" id="hateInput"/>
                                                         <button type="button" class="button-service-apply" onClick="applyTextTemplate('hate')">Apply</button>
                                                     </td>
@@ -132,7 +182,7 @@
                                                 <tr>
                                                     <td>I'm neutral about</td>
                                                     <td>
-                                                        <input type="hidden" id="neutralTemp" value="I'm neutral about "/>
+                                                        <input type="hidden" id="neutralTemplate" value="I'm neutral about "/>
                                                         <select id="neutralInput">
                                                             <option value="birds">Birds</option>
                                                             <option value="cats">Cats</option>
@@ -141,14 +191,10 @@
                                                         <button type="button" class="button-service-apply" onClick="applySelTemplate('neutral')">Apply</button>
                                                     </td>
                                                 </tr>
-                                                <tr>
-                                                    <td></td>
-                                                    <td>
-                                                        <input class="button-register" name="create" type="submit" value="Submit" />
-                                                    </td>
-                                                </tr>
                                             </tbody>
                                         </table>
+                                        
+                                        -->
                                     </c:if>
                                 </form>
                             </div>
@@ -172,9 +218,9 @@
                                 </c:when>
                             </c:choose>                        
 
-                            <br><a href="/VersaStack-web/ops/srvc/driver.jsp?self=true">(Un)Install Another Driver.</a>                                
+                            <br><a href="/VersaStack-web/ops/srvc/viewcreate.jsp?self=true">Return to Views.</a>                                
                             <br><a href="/VersaStack-web/ops/catalog.jsp">Return to Services.</a>
-                            <br><a href="/VersaStack-web/orch/graphTest.html">Return to Graphic Orchestration.</a>
+                            <br><a href="/VersaStack-web/orch/graphTest.jsp">Return to Graphic Orchestration.</a>
                         </div>
                     </c:otherwise>
                 </c:choose>

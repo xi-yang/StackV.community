@@ -2,9 +2,8 @@
 -- version 4.4.1.1
 -- http://www.phpmyadmin.net
 --
-
 -- Host: localhost:3306
--- Generation Time: Aug 12, 2015 at 09:22 PM
+-- Generation Time: Sep 14, 2015 at 08:06 PM
 -- Server version: 5.5.42
 -- PHP Version: 5.6.7
 
@@ -14,7 +13,6 @@ SET time_zone = "+00:00";
 --
 -- Database: `frontend`
 --
-DROP DATABASE `frontend`;
 CREATE DATABASE IF NOT EXISTS `frontend` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 USE `frontend`;
 
@@ -24,6 +22,7 @@ USE `frontend`;
 -- Table structure for table `acl`
 --
 
+DROP TABLE IF EXISTS `acl`;
 CREATE TABLE `acl` (
   `acl_id` int(11) NOT NULL,
   `service_id` int(11) NOT NULL
@@ -38,7 +37,6 @@ INSERT INTO `acl` (`acl_id`, `service_id`) VALUES
 (2, 2),
 (3, 3),
 (4, 4),
-(5, 5),
 (7, 7),
 (8, 8),
 (9, 9);
@@ -49,6 +47,7 @@ INSERT INTO `acl` (`acl_id`, `service_id`) VALUES
 -- Table structure for table `acl_entry_group`
 --
 
+DROP TABLE IF EXISTS `acl_entry_group`;
 CREATE TABLE `acl_entry_group` (
   `acl_id` int(11) NOT NULL,
   `usergroup_id` int(11) NOT NULL
@@ -63,7 +62,6 @@ INSERT INTO `acl_entry_group` (`acl_id`, `usergroup_id`) VALUES
 (2, 1),
 (3, 1),
 (4, 1),
-(5, 1),
 (7, 1),
 (8, 1),
 (9, 1),
@@ -76,6 +74,7 @@ INSERT INTO `acl_entry_group` (`acl_id`, `usergroup_id`) VALUES
 -- Table structure for table `acl_entry_user`
 --
 
+DROP TABLE IF EXISTS `acl_entry_user`;
 CREATE TABLE `acl_entry_user` (
   `acl_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL
@@ -86,9 +85,11 @@ CREATE TABLE `acl_entry_user` (
 --
 
 INSERT INTO `acl_entry_user` (`acl_id`, `user_id`) VALUES
+(1, 1),
 (2, 1),
+(4, 1),
 (9, 3),
-(5, 8);
+(1, 14);
 
 -- --------------------------------------------------------
 
@@ -96,6 +97,7 @@ INSERT INTO `acl_entry_user` (`acl_id`, `user_id`) VALUES
 -- Table structure for table `service`
 --
 
+DROP TABLE IF EXISTS `service`;
 CREATE TABLE `service` (
   `service_id` int(11) NOT NULL,
   `name` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
@@ -113,10 +115,9 @@ INSERT INTO `service` (`service_id`, `name`, `filename`, `description`, `atomic`
 (2, 'Provisioning', 'provision', 'System and Topology Overviews.', 1),
 (3, 'Orchestration', 'orchest', 'Manipulation of the System Model.', 1),
 (4, 'Monitoring', 'monitor', 'System Monitoring and Logging.', 1),
-(5, 'Example', 'example', 'Test.', 0),
 (7, 'Driver Management', 'driver', 'Installation and Uninstallation of Driver Instances.', 0),
-(8, 'Virtual Machine Addition', 'vmadd', 'Instantiation and Setup of Virtual Machine Topology.', 0),
-(9, 'Orchestration View Creation', 'viewcreate', 'Creation of a new graphical view filter.', 0);
+(8, 'Virtual Machine Management', 'vmadd', 'Management, Instantiation, and Setup of Virtual Machine Topologies.', 0),
+(9, 'View Filter Management', 'viewcreate', 'Management and Creation of graphical view filters.', 0);
 
 -- --------------------------------------------------------
 
@@ -124,6 +125,7 @@ INSERT INTO `service` (`service_id`, `name`, `filename`, `description`, `atomic`
 -- Table structure for table `user_belongs`
 --
 
+DROP TABLE IF EXISTS `user_belongs`;
 CREATE TABLE `user_belongs` (
   `user_id` int(11) NOT NULL,
   `usergroup_id` int(11) NOT NULL
@@ -148,6 +150,7 @@ INSERT INTO `user_belongs` (`user_id`, `usergroup_id`) VALUES
 -- Table structure for table `user_info`
 --
 
+DROP TABLE IF EXISTS `user_info`;
 CREATE TABLE `user_info` (
   `user_id` int(11) NOT NULL,
   `username` varchar(20) COLLATE utf8_unicode_ci NOT NULL,
@@ -163,7 +166,7 @@ CREATE TABLE `user_info` (
 
 INSERT INTO `user_info` (`user_id`, `username`, `email`, `active_usergroup`, `first_name`, `last_name`) VALUES
 (1, 'admin', 'neroczan@gmail.com', 1, 'Alberto', 'Jimenez'),
-(3, 'test', 'test@test.com', 2, 'Daikoku', 'Ten'),
+(3, 'test', 'test@test.com', 2, 'Daiko', 'Ten'),
 (7, 'test2', 'james@frolick.com', 1, 'James', 'Frolick'),
 (8, 'test5', 'jim@jenson.edu', 2, 'Jim', 'Jenson'),
 (14, 'test3', 'roger@moore.com', 2, 'Roger', 'Moore'),
@@ -175,6 +178,7 @@ INSERT INTO `user_info` (`user_id`, `username`, `email`, `active_usergroup`, `fi
 -- Table structure for table `usergroup`
 --
 
+DROP TABLE IF EXISTS `usergroup`;
 CREATE TABLE `usergroup` (
   `usergroup_id` int(11) NOT NULL,
   `title` varchar(25) COLLATE utf8_unicode_ci NOT NULL
@@ -305,7 +309,6 @@ ALTER TABLE `user_info`
 --
 -- Database: `login`
 --
-DROP DATABASE `login`;
 CREATE DATABASE IF NOT EXISTS `login` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 USE `login`;
 
@@ -315,6 +318,7 @@ USE `login`;
 -- Table structure for table `cred`
 --
 
+DROP TABLE IF EXISTS `cred`;
 CREATE TABLE `cred` (
   `username` varchar(25) COLLATE utf8_unicode_ci NOT NULL,
   `password_hash` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
@@ -327,7 +331,7 @@ CREATE TABLE `cred` (
 
 INSERT INTO `cred` (`username`, `password_hash`, `salt`) VALUES
 ('admin', '-974-682329-118-94902114-95-10079105-87-3333121-41-72-14-58-2791-16884139-66-57-2126', 'kXaRVWM1YHHtn9fM'),
-('test', '5110866491678-43680-84-122-656466-76781181-107-63-1117943-2-99-9491611111117127', 'hujepei844nfh079f54gkp489oeafv3juk2s1khemeqqldglvm7smbcnlmku8lmj'),
+('test', '-12710239395522-5473-8885-336922-5353-35-34-104-4541462811961749523-18-27669-58', '89fi5qhjsua60lq6e42oon267jdlk4cmdn460dl2cmpnbsdt90ugp757k41af5ng'),
 ('test2', '49-81118-81-92-6-5786-19923576-18-1227210071-18-59101-33-504370-10847-77-9-127-105-7-62', 'qdd85hqc3ev0e4ktgjlmf55m6mebsgjhuk3lg7n7tpcqgshpg50p4vnjmn13iil6'),
 ('test3', '-23115-111-9783-10410828-65458325465119-1149489-11411749-15-42-125329-11994-122-94-58-25', '97hpe70nmh5dcp4nvnrc5lrk2qa3pp568f8n2vjgkc2b74265ga2eh5v9550pe4'),
 ('test4', '-117-12655-85539997-740-97-9937-703961-112-64-2217368-16119-319423-30-36122-93-13-21', 'aii31mao4uo88travlv6umidd58e4iarvqmadeft50ou8m1ts92973ugupqtrf2v'),

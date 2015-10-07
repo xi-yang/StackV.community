@@ -30,21 +30,22 @@ import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
+import com.hp.hpl.jena.rdf.model.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.Mrs;
+import net.maxgigapop.mrs.common.RdfOwl;
 
 /**
  *
  * @author muzcategui
  */
-
 //TODO availability zone problems in volumes and subnets and instancees.
 //add a property in the model to speicfy availability zone.
-
 //TODO associate and disassociate address methods do not do anything. Reason is
 //elastic IPs are not linked in any way to the root topology, find a way to do this
 //in the model to make the two methods work.
@@ -56,6 +57,7 @@ public class AwsPush {
     private AwsDCGet dcClient = null;
     private String topologyUri = null;
     private Regions region = null;
+    private BatchResourcesTool batchTool = new BatchResourcesTool();
     static final Logger logger = Logger.getLogger(AwsPush.class.getName());
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 
@@ -76,7 +78,7 @@ public class AwsPush {
      * function to propagate all the requests
      * ************************************************
      */
-    public String pushPropagate(String modelRefTtl, String modelAddTtl, String modelReductTtl)  {
+    public String pushPropagate(String modelRefTtl, String modelAddTtl, String modelReductTtl){
         String requests = "";
 
         OntModel modelRef;
@@ -86,10 +88,19 @@ public class AwsPush {
             modelRef = ModelUtil.unmarshalOntModel(modelRefTtl);
             modelAdd = ModelUtil.unmarshalOntModel(modelAddTtl);
             modelReduct = ModelUtil.unmarshalOntModel(modelReductTtl);
+            
+            //add the batched resources
+            modelRef = batchTool.expandBatchAbstraction(modelRef);
+            modelAdd = batchTool.expandBatchAbstraction(modelAdd);
+            modelReduct = batchTool.expandBatchAbstraction(modelReduct);
         } catch (Exception ex) {
             throw new EJBException(ex);
         }
-        
+
+        //add defaults  
+        modelAdd = addDefaultPortTags(modelAdd);
+        modelReduct = addDefaultPortTags(modelReduct);
+
         //deatch volumes that need to be detached
         requests += detachVolumeRequests(modelRef, modelReduct);
 
@@ -104,7 +115,6 @@ public class AwsPush {
 
         //disassociate an address from a network interface
         //requests += disassociateAddressRequest(modelRef, modelReduct);
-
         //Delete the network interfaces that need to be deleted
         requests += deletePortsRequests(modelRef, modelReduct);
 
@@ -164,7 +174,6 @@ public class AwsPush {
 
         //Associate an address with a  interface
         //requests += associateAddressRequest(modelRef, modelAdd);
-
         //attach ports to existing instances
         requests += attachPortRequest(modelRef, modelAdd);
 
@@ -568,7 +577,7 @@ public class AwsPush {
                     String volumeTag = parameters[7];
                     runInstance.withBlockDeviceMappings(mapping);
                 }
-                
+
                 List<InstanceNetworkInterfaceSpecification> portSpecification = new ArrayList();
                 for (int i = 9; i < parameters.length; i++) {
                     InstanceNetworkInterfaceSpecification s = new InstanceNetworkInterfaceSpecification();
@@ -651,12 +660,47 @@ public class AwsPush {
                 + queryString;
 
         Model unionModel = ModelFactory.createUnion(refModel, model);
-        
+
         //get all the nodes that will be added
         Query query = QueryFactory.create(queryString);
         QueryExecution qexec = QueryExecutionFactory.create(query, unionModel);
         ResultSet r = qexec.execSelect();
         return r;
+    }
+
+    /**
+     * ****************************************************************
+     * Method to add a portTag as default tag to all the bidirectional ports in
+     * a delta model where the tag was not specified
+     * ****************************************************************
+     */
+    private OntModel addDefaultPortTags(OntModel deltaModel) throws EJBException {
+        //get all the ports with and without tags
+        String query = "SELECT ?port WHERE {?port a nml:BidirectionalPort}";
+        ResultSet r1 = executeQuery(query, emptyModel, deltaModel);
+        List<RDFNode> portsToFix = new ArrayList();
+
+        OntModel newModel = deltaModel;
+
+        while (r1.hasNext()) {
+            QuerySolution q1 = r1.next();
+            RDFNode port = q1.get("port");
+            query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:hasTag ?tag}";
+            ResultSet r2 = executeQuery(query, emptyModel, deltaModel);
+            if (!r2.hasNext()) {
+                portsToFix.add(port);
+            }
+        }
+        if (portsToFix.isEmpty()) {
+            return deltaModel;
+        } else {
+            Resource portTag = deltaModel.createResource(topologyUri + "portTag");
+            for (RDFNode p : portsToFix) {
+
+                deltaModel.add(deltaModel.createStatement(p.asResource(), Mrs.hasTag, portTag));
+            }
+            return deltaModel;
+        }
     }
 
     /**
@@ -832,48 +876,48 @@ public class AwsPush {
             QuerySolution querySolution = r.next();
             RDFNode node = querySolution.get("node");
             /* Xi: no need to check volume 
-            query = "SELECT ?service ?volume ?port WHERE {<" + node.asResource() + "> mrs:providedByService ?service ."
-                    + "<" + node.asResource() + "> mrs:hasVolume ?volume ."
-                    + "<" + node.asResource() + "> nml:hasBidirectionalPort ?port}";
-            ResultSet r1 = executeQuery(query, model, modelReduct);
-            if (!r1.hasNext()) {
-                throw new EJBException(String.format("model reduction is malformed for node: %s", node));
-            }
-            QuerySolution querySolution1 = r1.next();
+             query = "SELECT ?service ?volume ?port WHERE {<" + node.asResource() + "> mrs:providedByService ?service ."
+             + "<" + node.asResource() + "> mrs:hasVolume ?volume ."
+             + "<" + node.asResource() + "> nml:hasBidirectionalPort ?port}";
+             ResultSet r1 = executeQuery(query, model, modelReduct);
+             if (!r1.hasNext()) {
+             throw new EJBException(String.format("model reduction is malformed for node: %s", node));
+             }
+             QuerySolution querySolution1 = r1.next();
 
-            RDFNode service = querySolution1.get("service");
-            RDFNode volume = querySolution1.get("volume");
-            RDFNode port = querySolution1.get("port");
-            if (service == null) {
-                throw new EJBException(String.format("node to delete does not specify service for node: %s", node));
-            }
-            if (volume == null) {
-                throw new EJBException(String.format("node to delete does not specify volume for node: %s", node));
-            }
-            if (port == null) {
-                throw new EJBException(String.format("node to delete does not specify port for node: %s", node));
-            }
-            //check that one of the volumes is the main device 
-            query = "SELECT ?volume ?deviceName WHERE {<" + node.asResource() + "> mrs:hasVolume ?volume ."
-                    + "?volume mrs:target_device ?deviceName}";
-            r1 = executeQuery(query, model, modelReduct);
-            if (!r1.hasNext()) {
-                throw new EJBException(String.format("model reduction does not specify root device name for volume"
-                        + " attached to instance: %s", node));
-            }
-            boolean found = false;
-            while (r1.hasNext()) {
-                QuerySolution q1 = r1.next();
-                RDFNode deviceName = q1.get("deviceName");
-                if (deviceName.toString().equals("/dev/sda1") || deviceName.toString().equals("/dev/xvda")) {
-                    found = true;
-                }
-            }
-            if (found == false) {
-                throw new EJBException(String.format("model reduction does not specify root volume"
-                        + " attached to instance: %s", node));
-            }
-            */
+             RDFNode service = querySolution1.get("service");
+             RDFNode volume = querySolution1.get("volume");
+             RDFNode port = querySolution1.get("port");
+             if (service == null) {
+             throw new EJBException(String.format("node to delete does not specify service for node: %s", node));
+             }
+             if (volume == null) {
+             throw new EJBException(String.format("node to delete does not specify volume for node: %s", node));
+             }
+             if (port == null) {
+             throw new EJBException(String.format("node to delete does not specify port for node: %s", node));
+             }
+             //check that one of the volumes is the main device 
+             query = "SELECT ?volume ?deviceName WHERE {<" + node.asResource() + "> mrs:hasVolume ?volume ."
+             + "?volume mrs:target_device ?deviceName}";
+             r1 = executeQuery(query, model, modelReduct);
+             if (!r1.hasNext()) {
+             throw new EJBException(String.format("model reduction does not specify root device name for volume"
+             + " attached to instance: %s", node));
+             }
+             boolean found = false;
+             while (r1.hasNext()) {
+             QuerySolution q1 = r1.next();
+             RDFNode deviceName = q1.get("deviceName");
+             if (deviceName.toString().equals("/dev/sda1") || deviceName.toString().equals("/dev/xvda")) {
+             found = true;
+             }
+             }
+             if (found == false) {
+             throw new EJBException(String.format("model reduction does not specify root volume"
+             + " attached to instance: %s", node));
+             }
+             */
             query = "SELECT ?vpc WHERE {?vpc nml:hasNode <" + node.asResource() + ">}";
             ResultSet r1 = executeQuery(query, model, modelReduct);
             if (!r1.hasNext()) {
@@ -1372,7 +1416,7 @@ public class AwsPush {
                 String gatewayIdTag = gateway.asResource().toString().replace(topologyUri, "");
                 String vpcIdTag = vpc.asResource().toString().replace(topologyUri, "");
                 requests += String.format("detachVpnGatewayRequest %s %s \n", gatewayIdTag, vpcIdTag);
-            }        
+            }
         }
         return requests;
     }
@@ -1769,6 +1813,9 @@ public class AwsPush {
                         + "?address mrs:type \"ipv4-prefix\" ."
                         + "?address mrs:value ?value}";
                 r1 = executeQuery(query, model, modelAdd);
+                if(!r1.hasNext()){
+                   throw new EJBException(String.format("Subnet %s does not have a valid CIDR", subnetIdTagValue));
+                }
                 querySolution1 = r1.next();
                 RDFNode value = querySolution1.get("value");
                 String cidrBlock = value.asLiteral().toString();
@@ -2499,10 +2546,10 @@ public class AwsPush {
                 query = "SELECT ?volume WHERE {<" + node.asResource() + ">  mrs:hasVolume  ?volume}";
                 ResultSet r4 = executeQuery(query, model, modelAdd);
                 /*
-                if (!r4.hasNext()) {
-                    throw new EJBException(String.format("model addition does not specify the volume of the new node: %s", node));
-                }
-                */
+                 if (!r4.hasNext()) {
+                 throw new EJBException(String.format("model addition does not specify the volume of the new node: %s", node));
+                 }
+                 */
                 List<String> volumesId = new ArrayList();
                 while (r4.hasNext())//there could be multiple volumes attached to the instance
                 {

@@ -26,7 +26,7 @@ public class Mrs {
     
     public static final Property average_rate_kbps = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#average_rate_kbps" );
     
-    public static final Property batch_rule = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#batch_rule" );
+    public static final Property BatchRule =  m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#batch_rule");
     
     public static final Property burst_size_byte = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#burst_size_byte" );
     
@@ -36,11 +36,11 @@ public class Mrs {
     
     public static final Property disk_gb = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#disk_gb" );
     
+    public static final Property hasBatch = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#hasBatch");
+    
     public static final Property flowAction = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#flowAction" );
     
     public static final Property flowMatch = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#flowMatch" );
-    
-    public static final Property hasBatch = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#hasBatch" );
     
     public static final Property hasBenchmark = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#hasBenchmark" );
     
@@ -120,7 +120,7 @@ public class Mrs {
     
     public static final Property value = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#value" );
     
-    public static final Resource Batch = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#Batch" );
+    public static final Resource Batch =  m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#Batch");
     
     public static final Resource BlockStorageService = m_model.createResource( "http://schemas.ogf.org/mrs/2013/12/topology#BlockStorageService" );
     

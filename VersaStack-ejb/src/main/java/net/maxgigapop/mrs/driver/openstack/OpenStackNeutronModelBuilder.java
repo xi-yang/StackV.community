@@ -50,7 +50,7 @@ public class OpenStackNeutronModelBuilder {
         ArrayList fip = new ArrayList();
         String POOL = null;
         Logger logger = Logger.getLogger(OpenStackNeutronModelBuilder.class.getName());
-        topologyURI = topologyURI.replaceAll("[^A-Za-z0-9()_-]", "_");
+        
         //create model object
         OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 

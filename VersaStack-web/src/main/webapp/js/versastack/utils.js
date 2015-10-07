@@ -1,6 +1,7 @@
 "use strict";
 define([], function () {
     function map_(arr, f) {
+        
         var ans = new Array(arr.length);
         for (var i = 0; i < arr.length; i++) {
             ans[i] = f(arr[i]);

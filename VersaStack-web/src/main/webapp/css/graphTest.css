@@ -9,13 +9,14 @@
 
 #displayPanel{
     float:right;
-    background: rgba(255,190,190,1);
-    /*The 40px is to accound for the navbar*/
-    min-height: calc(100% - 40px);
+    background-color: #d0d0d0;    
+    min-height: calc(50%);
     top: 37px;
-    width: 30%;
+    width: 25%;
     position: absolute;
     right:0;
+    border-left: 5px solid rgba(0, 0, 0, .05);
+    border-bottom: 5px solid rgba(0, 0, 0, .05);
     overflow: scroll;
 }
 
@@ -26,8 +27,10 @@
 
 /* CSS3 Calc for Navbar adjustment */
 #viz{
-    width: 100%;
+    width: calc(100% - 210px);
     height: calc(100% - 40px);
+    float: right;
+    border-left: 20px solid rgba(0, 0, 0, .05);
 }
 
 body{
@@ -46,6 +49,7 @@ body{
     position: absolute;
    // right: 0px;
     margin-bottom: 0px;
+    overflow: scroll;
 }
 
 #awsButton, #cancelButton {
@@ -53,11 +57,37 @@ body{
 
 }
 
+.button-filter-select {
+    background-color: rgba(0, 0, 0, .05);
+    color: black;
+    border-left: 1px solid rgba(0, 0, 0, .05);
+    border-right: 1px solid rgba(0, 0, 0, .05);
+}
+
+.current-filter {
+    color: red;
+    background-color: rgba(0, 0, 0, .10)
+}
+
 #displayName{
     text-align: center;
     visibility: visible;
     padding: 7px;
     width: content-box;
-    font-size: 180%;
-    
+    font-size: 150%;
+    overflow-wrap: break-word;
+}
+
+#filterPanel {
+    position: absolute;
+    top: 37px;
+    left: 225px;
+    border-left: 5px solid rgba(0, 0, 0, .05);
+}
+
+#filterPanel-contents {
+    background-color: rgba(0, 0, 0, .05);    
+    position: relative;
+    width: inherit;
+    left: 0;
 }
