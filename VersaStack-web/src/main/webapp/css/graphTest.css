@@ -1,3 +1,8 @@
+::-webkit-scrollbar { 
+    display: none; 
+}
+
+
 #hoverdiv{
     position: fixed;
     visibility: hidden;
@@ -18,6 +23,8 @@
     border-left: 5px solid rgba(0, 0, 0, .05);
     border-bottom: 5px solid rgba(0, 0, 0, .05);
     overflow: scroll;
+    z-index: 3;
+    
 }
 
 #displayPanel-contents {
@@ -28,9 +35,38 @@
 /* CSS3 Calc for Navbar adjustment */
 #viz{
     width: calc(100% - 210px);
-    height: calc(100% - 40px);
+    height: calc(100% - 37px);
     float: right;
     border-left: 20px solid rgba(0, 0, 0, .05);
+    
+    -webkit-transition: opacity 1s ease-in;
+    transition: opacity 1s ease-in;
+}
+
+#viz.loading {
+    /* Make the contents of the body opaque during loading */
+    opacity: 0;
+
+    /* Ensures that the transition only runs in one direction */
+    -webkit-transition: opacity 0s;
+    transition: opacity 0s;
+}
+
+#loadingPanel {
+    /* Replace #333 with the background-color of your choice */
+    /* Replace loading.gif with the loading image of your choice */
+    background: #e9e9e9 url('/VersaStack-web/resources/loading-indicator-medium.gif') no-repeat 50% 50%;
+
+    /* Ensures that the transition only runs in one direction */
+    -webkit-transition: opacity 1s ease-in;
+    transition: opacity 1s ease-in;
+    
+    position: absolute;
+    width: calc(100% - 225px);
+    height: calc(100% - 37px);
+    left: 225px;
+    top: 37px;
+    border-left: 5px solid rgba(0, 0, 0, .05);
 }
 
 body{
@@ -83,6 +119,7 @@ body{
     top: 37px;
     left: 225px;
     border-left: 5px solid rgba(0, 0, 0, .05);
+    z-index: 2;
 }
 
 #filterPanel-contents {

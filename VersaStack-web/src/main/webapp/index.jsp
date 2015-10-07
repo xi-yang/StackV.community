@@ -58,8 +58,8 @@
                     </c:otherwise>
                 </c:choose>
                 <form name="login" action="login.jsp" method="post"><br/>
-                    <input placeholder='Username' type='text' name="username" maxlength="20" required>
-                    <input placeholder='Password' type='password' name="password" maxlength="20" required>
+                    <input placeholder='Username' type='text' name="username" maxlength="20">
+                    <input placeholder='Password' type='password' name="password" maxlength="20">
                     <input id='button-login' type ="submit" value="Login" />
                 </form>
             </div>
