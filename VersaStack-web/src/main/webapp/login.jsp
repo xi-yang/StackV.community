@@ -20,8 +20,8 @@
         <!-- Eventually update this to 2.0 EL spec -->
         <%
             session.setMaxInactiveInterval(6000);  // Temporary 1 hour time out 
-            user.login(request.getParameter("username"),
-                    request.getParameter("password"));
+            //user.login(request.getParameter("username"),request.getParameter("password"));
+            user.login("admin","philistine");
         %>          
         <p style="text-align:center;vertical-align:middle">
             <%

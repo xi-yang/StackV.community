@@ -126,6 +126,10 @@
                     });
                 };
                 request.send();
+                
+                $("#loadingPanel").addClass("hide");
+                $("#hoverdiv").removeClass("hide");                    
+                $("#viz").attr("class", "");
                         
                 buttonInit();
             }
@@ -142,6 +146,10 @@
 //                animStart(30);
             }
             function reload() {
+                $("#loadingPanel").removeClass("hide");
+                $("#hoverdiv").addClass("hide");                    
+                $("#viz").attr("class", "loading");
+                
                 var lockNodes = model.listNodes();
                 //var posistionLocks = {};
                 model = new ModelConstructor(model);
@@ -173,9 +181,17 @@
                     });
                 };
                 request.send();
+                
+                $("#loadingPanel").addClass("hide");
+                $("#hoverdiv").removeClass("hide");                    
+                $("#viz").attr("class", "");
             }
 
             function filter(viewName, viewModel) {
+                $("#loadingPanel").removeClass("hide");
+                $("#hoverdiv").addClass("hide");                    
+                $("#viz").attr("class", "loading");
+                
                 var lockNodes = model.listNodes();
                 //var posistionLocks = {};
                 model = new ModelConstructor(model);
@@ -193,6 +209,10 @@
                 $.post("/VersaStack-web/ViewServlet", {filterName: viewName, filterModel: viewModel.ttlModel}, function(response) {
                         // handle response from your servlet.
                 });
+                
+                $("#loadingPanel").addClass("hide");
+                $("#hoverdiv").removeClass("hide");                    
+                $("#viz").attr("class", "");
             }
 
             function buttonInit() {
@@ -240,6 +260,18 @@
                     }
 
                     $(this).addClass("current-filter");
+
+                    evt.preventDefault();
+                });
+                
+                
+                
+                
+                $("#loadButton").click(function (evt) {
+                    $("#loadingPanel").toggleClass("hide");
+                    $("#hoverdiv").toggleClass("hide");
+                    
+                    $("#viz").attr("class", "");
 
                     evt.preventDefault();
                 });
@@ -450,7 +482,8 @@
                 </c:forEach>
             </div>
         </div>
-
+                
+        <div id="loadingPanel"></div>
         <div id="displayPanel">
             <button id="refreshButton">Refresh</button>
             <button id="modelButton">Display Model</button>
@@ -458,11 +491,13 @@
             <div id="treeMenu"></div>
             <div id="actionMenu">
                 <button id="awsButton">Install AWS</button>
+                
                 <div id="actionForm"></div>
             </div>
         </div>
-        <div id="hoverdiv"></div>
-        <svg id="viz">
+        <div class="hide" id="hoverdiv"></div>        
+        
+        <svg class="loading" id="viz">
         <defs>
         <!--When we highlight topologies without specifiyng a width and length, the get clipped
         The x,y offset are so we avoid clipping the top and left edges.
