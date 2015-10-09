@@ -150,6 +150,8 @@ public class serviceBeans {
      */
     public int vmInstall(Map<String, String> paraMap){
         String vgUuid = null;
+        String driverType = null;
+        String hypervisor = null;
         String topoUri = null;
         String region = null;
         String vpcUri = null;
@@ -159,10 +161,13 @@ public class serviceBeans {
         String[] subnets = null;
         String[] volumes = null;
         int quantity;
+
         //Map the parsing parameters into each variable
         for(Map.Entry<String, String> entry : paraMap.entrySet()){
-            if(entry.getKey().equalsIgnoreCase("versionGroup"))
-                vgUuid = entry.getValue();
+            if(entry.getKey().equalsIgnoreCase("driverType"))
+                driverType = entry.getValue();
+            else if(entry.getKey().equalsIgnoreCase("hypervisor"))
+                hypervisor = entry.getValue();
             else if(entry.getKey().equalsIgnoreCase("topologyUri"))
                 topoUri = entry.getValue();
             else if(entry.getKey().equalsIgnoreCase("region"))
@@ -182,7 +187,7 @@ public class serviceBeans {
             else if(entry.getKey().equalsIgnoreCase("volumes"))
                 volumes = entry.getValue().split("\r\n");            
         }
-        
+
         try {
             URL url = new URL(String.format("%s/model/", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -214,6 +219,7 @@ public class serviceBeans {
 
         //create a system instance and get an UUID for this system instance from the API
         String siUuid;
+
         try {
             URL url = new URL(String.format("%s/model/systeminstance", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -224,7 +230,6 @@ public class serviceBeans {
         } catch (Exception e) {
             return 3;//connection error
         }
-
         //building ttl model
         String delta = "<delta>\n<id>1</id>\n"
                 + "<creationTime>2015-03-11T13:07:23.116-04:00</creationTime>\n"
@@ -237,59 +242,76 @@ public class serviceBeans {
                 + "@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .\n"
                 + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
                 + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n\n";
-
-        String nodeTag = "&lt;" + topoUri + ":i-" + UUID.randomUUID().toString() + "&gt;";
-        String model = "&lt;" + vpcUri + "&gt;\n"
-                + "        nml:hasNode        " + nodeTag + ".\n\n"
-                + "&lt;" + topoUri + ":ec2service-" + region + "&gt;\n"
-                + "        mrs:providesVM  " + nodeTag + ".\n\n";
         
-        //building all the volumes 
-        String allVolUri = "";
-        for(String vol : volumes){
-            String volUri = "&lt;" + topoUri + ":vol-" + UUID.randomUUID().toString() + "&gt;";
-            String[] parameters = vol.split(",");
-            model += volUri +"\n        a                  mrs:Volume , owl:NamedIndividual ;\n"
+        //check if driver the client choose is of AWS
+        if(driverType.equalsIgnoreCase("awsdriver")){
+            String nodeTag = "&lt;" + topoUri + ":i-" + UUID.randomUUID().toString() + "&gt;";
+            String model = "&lt;" + vpcUri + "&gt;\n"
+                    + "        nml:hasNode        " + nodeTag + ".\n\n"
+                    + "&lt;" + topoUri + ":ec2service-" + region + "&gt;\n"
+                    + "        mrs:providesVM  " + nodeTag + ".\n\n";
+        
+            //building all the volumes 
+            String allVolUri = "";
+            for(String vol : volumes){
+               String volUri = "&lt;" + topoUri + ":vol-" + UUID.randomUUID().toString() + "&gt;";
+               String[] parameters = vol.split(",");
+               model += volUri +"\n        a                  mrs:Volume , owl:NamedIndividual ;\n"
                     + "        mrs:disk_gb        \"" + parameters[0] + "\" ;\n" 
                     + "        mrs:target_device  \"" + parameters[2] + "\" ;\n"
                     + "        mrs:value          \"" + parameters[1] + "\" .\n\n";
-            allVolUri += volUri + " , ";
-        }        
-        model += "&lt;" + topoUri + ":ebsservice-" + region + "&gt;\n"
-                + "        mrs:providesVolume  " + allVolUri.substring(0, (allVolUri.length()-2)) + ".\n\n";
+                allVolUri += volUri + " , ";
+            }        
+            model += "&lt;" + topoUri + ":ebsservice-" + region + "&gt;\n"
+                   + "        mrs:providesVolume  " + allVolUri.substring(0, (allVolUri.length()-2)) + ".\n\n";
 
-        //building all the network interfaces
-        String allSubnets = "";
-        for(String net : subnets){
-            //temporary code for assign IP
-            String[] parameter = net.split(",");
-            String assignedIp = parameter[1].substring(0, parameter[1].length()-1);
-            Random rand = new Random();
-            int i = rand.nextInt(251) + 4;
+            //building all the network interfaces
+            String allSubnets = "";
+            for(String net : subnets){
+                String portUri = "&lt;" + topoUri + ":eni-" + UUID.randomUUID().toString() + "&gt;";
+                model += "&lt;" + net + "&gt;\n        nml:hasBidirectionalPort " + portUri + " .\n\n"
+                       + portUri + "\n        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n"
+                        + "        mrs:hasTag            &lt;" + topoUri + ":portTag&gt; ;\n\n";
             
-            //codes for assigning IP should be cleaned after AWS driver code being fixed
-            String portUri = "&lt;" + topoUri + ":eni-" + UUID.randomUUID().toString() + "&gt;";
-            model += "&lt;" + parameter[0] + "&gt;\n        nml:hasBidirectionalPort " + portUri + " .\n\n"
-                    + portUri + "\n        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n"
-                    + "        mrs:hasTag            &lt;" + topoUri + ":portTag&gt; ;\n"
-                    + "        mrs:hasNetworkAddress  &lt;"+ topoUri + ":" + assignedIp + i +"&gt; .\n\n"
-                    + "&lt;"+ topoUri + ":" + assignedIp + i +"&gt;\n        "
-                    + "a      mrs:NetworkAddress , owl:NamedIndividual ;\n"
-                    + "        mrs:type  \"ipv4:private\" ;\n"
-                    + "        mrs:value \""+ assignedIp + i +"\" .\n\n";
-            
-            allSubnets += portUri + " , "; 
+                allSubnets += portUri + " , "; 
+            }
+        
+            //building the node
+            model += nodeTag +"\n        a                         nml:Node , owl:NamedIndividual ;\n"
+                    + "        mrs:providedByService     &lt;" + topoUri + ":ec2service-" + region + "&gt; ;\n"
+                    + "        mrs:hasVolume             " 
+                    + allVolUri.substring(0, (allVolUri.length()-2)) + ";\n"
+                    + "        nml:hasBidirectionalPort  "
+                    + allSubnets.substring(0, (allSubnets.length()-2)) + ".\n\n";
+        
+            delta += model + "</modelAddition>\n</delta>";
         }
-        
-        //building the node
-        model += nodeTag +"\n        a                         nml:Node , owl:NamedIndividual ;\n"
-                + "        mrs:providedByService     &lt;" + topoUri + ":ec2service-" + region + "&gt; ;\n"
-                + "        mrs:hasVolume             " 
-                + allVolUri.substring(0, (allVolUri.length()-2)) + ";\n"
-                + "        nml:hasBidirectionalPort  "
-                + allSubnets.substring(0, (allSubnets.length()-2)) + ".\n\n";
-        
-        delta += model + "</modelAddition>\n</delta>";
+        //
+        else if (driverType.equalsIgnoreCase("openStackDriver")){
+            String nodeTag = "&lt;" + topoUri + ":server-name+" + UUID.randomUUID().toString() + "&gt;";
+            String model = "&lt;" + vpcUri + "&gt;\n"
+                    + "        nml:hasNode        " + nodeTag + ".\n\n"
+                    + "&lt;" + hypervisor + "&gt;\n"
+                    + "        mrs:providesVM  " + nodeTag + ".\n\n";
+            //building all the subnets connected
+            String allSubnets = "";
+            for(String net : subnets){
+                String portUri = "&lt;" + topoUri + ":port+" + UUID.randomUUID().toString() + "&gt;";
+                model += "&lt;" + net + "&gt;\n       a       mrs:SwitchingSubnet , owl:NamedIndividual ;\n"
+                        + "        nml:hasBidirectionalPort " + portUri + " .\n\n"
+                        + portUri + "\n        a       nml:BidirectionalPort , owl:NamedIndividual ;\n"
+                        + "        mrs:hasTag             &lt;" + topoUri + ":portTag&gt; .\n\n";
+                allSubnets += portUri + " , ";
+            }
+            //building the node
+            model += nodeTag + "\n        a       nml:Node , owl:NamedIndividual ;\n"
+                    + "        nml:hasBidirectionalPort                "
+                    + allSubnets.substring(0, (allSubnets.length()-2)) + ".\n\n";
+            
+            delta += model + "</modelAddition>\n</delta>";
+        }
+
+
         
         //push to the system api and get response
         try {
@@ -316,6 +338,7 @@ public class serviceBeans {
         
         
         return 0;
+
     }
 
     /**
