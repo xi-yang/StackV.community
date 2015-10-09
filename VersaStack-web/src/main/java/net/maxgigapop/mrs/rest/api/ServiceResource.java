@@ -71,13 +71,19 @@ public class ServiceResource {
         return value;
     }
     
-    //PUT to push and sync deltas
+    //PUT to set property value
     @PUT
     @Path("/property/{siUUID}/{property}/{value}")
     public void setProperty(@PathParam("siUUID")String svcInstanceUUID, @PathParam("property")String property, @PathParam("value")String value) {
         serviceCallHandler.setInstanceProperty(svcInstanceUUID, property, value);
     }
     
+    //POST to set property value for bigger string
+    @POST
+    @Path("/property/{siUUID}/{property}")
+    public void postProperty(@PathParam("siUUID")String svcInstanceUUID, @PathParam("property")String property, String value) {
+        serviceCallHandler.setInstanceProperty(svcInstanceUUID, property, value);
+    }
     
     //POST to run workflow to compile and add service delta (SPA)
     @POST
