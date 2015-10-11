@@ -149,6 +149,8 @@ public class ServiceResource {
             return serviceCallHandler.propagateDeltas(svcInstanceUUID);
         } else if (action.equalsIgnoreCase("commit")) {
             return serviceCallHandler.commitDeltas(svcInstanceUUID);
+        } else if (action.equalsIgnoreCase("revert")) {
+            return serviceCallHandler.revertDeltas(svcInstanceUUID);
         } else {
             throw new EJBException("Unrecognized action=" + action);
         }
