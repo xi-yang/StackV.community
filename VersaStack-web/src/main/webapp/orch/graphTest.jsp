@@ -498,7 +498,7 @@
             </div>
             <div id="displayPanel-actions">
                 <button id="awsButton">Install AWS</button>
-                <button id="loadingButton">Install AWS</button>
+                <button id="loadingButton">Toggle Loading</button>
                 <div id="actionForm"></div>
             </div>
             <div id="displayPanel-tab">Test</div>

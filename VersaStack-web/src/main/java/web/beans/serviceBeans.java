@@ -422,7 +422,7 @@ public class serviceBeans {
      * @return response string.
      * @throws IOException 
      */
-    private String executeHttpMethod(URL url, HttpURLConnection conn, String method, String body) throws IOException {
+    public String executeHttpMethod(URL url, HttpURLConnection conn, String method, String body) throws IOException {
         conn.setRequestMethod(method);
         conn.setRequestProperty("Content-type", "application/xml");
         conn.setRequestProperty("Accept", "application/json");

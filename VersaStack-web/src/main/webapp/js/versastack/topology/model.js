@@ -66,11 +66,11 @@ define([
                     return;
                 } else if (data.charAt(0) === 'u') {
                     data = JSON.parse(data);                                    
-                    versionID=data.version;
+                    versionID = data.version;
                     map = JSON.parse(data);
                 } else {
                     data = JSON.parse(data);                                    
-                    versionID=data.version;
+                    versionID = data.version;
                     map = JSON.parse(data.ttlModel); 
                 }
 
