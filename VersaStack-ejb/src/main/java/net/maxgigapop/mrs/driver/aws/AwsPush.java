@@ -2013,7 +2013,7 @@ public class AwsPush {
             //look for the lable in the reference model
             query = "SELECT ?value WHERE {<" + tag.asResource() + "> mrs:type \"gateway\" ."
                     + "<" + tag.asResource() + "> mrs:value ?value}";
-            r1 = executeQuery(query, model, emptyModel);
+            r1 = executeQuery(query, model, modelAdd);
             if (!r1.hasNext()) {
                 continue;
             }
@@ -2208,7 +2208,6 @@ public class AwsPush {
             //find the destination and nex hop
             query = "SELECT  ?nextHop ?value WHERE {<" + route.asResource() + "> mrs:routeTo ?routeTo ."
                     + "<" + route.asResource() + "> mrs:nextHop ?nextHop ."
-                    + "?routeFrom mrs:type \"subnet\" ."
                     + "?routeTo mrs:value ?value}";
             r2 = executeQuery(query, emptyModel, modelAdd);
             while (r2.hasNext()) {
