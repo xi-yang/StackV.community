@@ -489,7 +489,7 @@
         </div>
 
         <div id="loadingPanel"></div>
-        <div id="displayPanel">
+        <div class="closed" id="displayPanel">
             <div id="displayPanel-contents">
                 <button id="refreshButton">Refresh</button>
                 <button id="modelButton">Display Model</button>
