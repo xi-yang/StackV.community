@@ -272,6 +272,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
                 JSONObject o = (JSONObject) routesIt.next();
                 String to = (String) o.get("to");
                 String next = (String) o.get("nextHop");
+                String from = (String) o.get("from");
 
                 //accomodate for different kinds of nextHops
                 if (next.equalsIgnoreCase("local")) {
@@ -284,12 +285,19 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
                     next = topologyUri + ":" + next; //a radom resource
                 }
 
+                //in case we want to propagate from a vpn on the main route table
+                route = spaModel.createResource(routingTable.toString() + "route" + to.replace("/", ""));
+                if (from != null && from.equalsIgnoreCase("vpn")) {
+                    from = resNetwork.toString() + "-vpngw"; //the network vpn gateway
+                    Resource routeFrom = spaModel.getResource(from);
+                    spaModel.add(route, Mrs.routeFrom, routeFrom);
+                }
+
                 //add modeling
                 Resource routeTo = spaModel.createResource(routingTable.toString() + "-" + "routeto" + to.replace("/", ""));
                 spaModel.add(routeTo, RdfOwl.type, Mrs.NetworkAddress);
                 spaModel.add(routeTo, Mrs.type, "ipv4-prefix-list");
                 spaModel.add(routeTo, Mrs.value, to);
-                route = spaModel.createResource(routingTable.toString() + "route" + to.replace("/", ""));
                 spaModel.add(route, RdfOwl.type, Mrs.Route);
                 spaModel.add(route, Mrs.routeTo, routeTo);
                 if (next.equalsIgnoreCase("local")) {
@@ -314,7 +322,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
      * @param spaModel
      * @param vm ********************************************************
      */
-    private OntModel modelSubnets(OntModel systemModel, OntModel spaModel, Resource resNetwork, String networCIDR, String topologyUri, JSONArray subnets) {
+    private OntModel modelSubnets(OntModel systemModel, OntModel spaModel, Resource resNetwork, String networkCIDR, String topologyUri, JSONArray subnets) {
         //return if no subnets specified
         if (subnets == null) {
             return spaModel;
@@ -334,7 +342,9 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
             String subnetCIDR = (String) o.get("cidr");
 
             //check for validity of subnet cidr
-            Resource subnet = spaModel.createResource(resNetwork.toString() + "-subnet" + Integer.toString(i));
+            String subnetUri = resNetwork.toString() + "-subnet" + Integer.toString(i);
+            String subnetName = subnetUri.substring(subnetUri.lastIndexOf(":") + 1);
+            Resource subnet = spaModel.createResource(subnetUri);
             spaModel.add(subnet, RdfOwl.type, Mrs.SwitchingSubnet);
             spaModel.add(switchingService, Mrs.providesSubnet, subnet);
             Resource networkAddress = spaModel.createResource(subnet.toString() + "networkAddress");
@@ -346,6 +356,27 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
             if (o.containsKey("routes")) {
                 Resource routingService = spaModel.getResource(resNetwork.toString() + "routingService");
                 Resource routingTable = spaModel.createResource(resNetwork + "rtb-" + "subnet" + Integer.toString(i));
+                spaModel.add(routingTable, RdfOwl.type, Mrs.RoutingTable);
+                spaModel.add(routingTable, Mrs.type, "local");
+                spaModel.add(routingService, Mrs.providesRoutingTable, routingTable);
+
+                //add basic modeling for routing Table
+                Resource routeTo = spaModel.createResource(routingTable.toString() + "-" + "routeto" + networkCIDR.replace("/", ""));
+                spaModel.add(routeTo, RdfOwl.type, Mrs.NetworkAddress);
+                spaModel.add(routeTo, Mrs.type, "ipv4-prefix-list");
+                spaModel.add(routeTo, Mrs.value, networkCIDR);
+                Resource routeFrom = spaModel.createResource(routingTable.toString() + "-" + "routeFrom" + networkCIDR.replace("/", ""));
+                spaModel.add(routeFrom, RdfOwl.type, Mrs.NetworkAddress);
+                spaModel.add(routeFrom, Mrs.type, "subnet");
+                spaModel.add(routeFrom, Mrs.value, subnetName);
+                Resource route = spaModel.createResource(routingTable.toString() + "route" + networkCIDR.replace("/", ""));
+                spaModel.add(route, RdfOwl.type, Mrs.Route);
+                spaModel.add(route, Mrs.routeTo, routeTo);
+                spaModel.add(route, Mrs.nextHop, "local");
+                spaModel.add(route, Mrs.routeFrom, routeFrom);
+                spaModel.add(routingTable, Mrs.hasRoute, route);
+                spaModel.add(routingService, Mrs.providesRoute, route);
+
                 JSONArray routes = (JSONArray) o.get("routes");
                 ListIterator routesIt = routes.listIterator();
                 while (routesIt.hasNext()) {
@@ -356,6 +387,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
                     }
                     String to = (String) routeObj.get("to");
                     String next = (String) routeObj.get("nextHop");
+                    String from = (String) routeObj.get("from");
 
                     //accomodate for different kinds of nextHops
                     if (next.equalsIgnoreCase("local")) {
@@ -369,11 +401,11 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
                     }
 
                     //add modeling
-                    Resource routeTo = spaModel.createResource(routingTable.toString() + "-" + "routeto" + to.replace("/", ""));
+                    routeTo = spaModel.createResource(routingTable.toString() + "-" + "routeto" + to.replace("/", ""));
                     spaModel.add(routeTo, RdfOwl.type, Mrs.NetworkAddress);
                     spaModel.add(routeTo, Mrs.type, "ipv4-prefix-list");
                     spaModel.add(routeTo, Mrs.value, to);
-                    Resource route = spaModel.createResource(routingTable.toString() + "route" + to.replace("/", ""));
+                    route = spaModel.createResource(routingTable.toString() + "route" + to.replace("/", ""));
                     spaModel.add(route, RdfOwl.type, Mrs.Route);
                     spaModel.add(route, Mrs.routeTo, routeTo);
                     if (next.equalsIgnoreCase("local")) {
@@ -382,6 +414,19 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
                         Resource nextHop = spaModel.createResource(next);
                         spaModel.add(route, Mrs.nextHop, nextHop);
                     }
+                    //decide id the routeFrom should be a VPN gateway or a subent
+                    if (from != null && from.equalsIgnoreCase("vpn")) {
+                        from = resNetwork.toString() + "-vpngw"; //the network vpn gateway
+                        routeFrom = spaModel.getResource(from);
+                        spaModel.add(route, Mrs.routeFrom, routeFrom);
+                    } else {
+                        routeFrom = spaModel.createResource(routingTable.toString() + "-" + "routeFrom" + to.replace("/", ""));
+                        spaModel.add(routeFrom, RdfOwl.type, Mrs.NetworkAddress);
+                        spaModel.add(routeFrom, Mrs.type, "subnet");
+                        spaModel.add(routeFrom, Mrs.value, subnetName);
+                        spaModel.add(route, Mrs.routeFrom, routeFrom);
+                    }
+
                     spaModel.add(routingTable, Mrs.hasRoute, route);
                     spaModel.add(routingService, Mrs.providesRoute, route);
 
@@ -480,7 +525,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
             }
             //add gateways to output JSON
             if (!gateways.isEmpty()) {
-                output.put("gateways",gateways);
+                output.put("gateways", gateways);
             }
             //export subnet results
             sparql = String.format("SELECT ?subnet WHERE {<%s>  nml:hasService ?service .", resNetwork)
@@ -498,7 +543,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
             }
             //add subnets to output
             if (!subnets.isEmpty()) {
-                output.put("subnets",subnets);
+                output.put("subnets", subnets);
             }
 
             //add output as spa:value of the export resrouce
