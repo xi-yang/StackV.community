@@ -867,7 +867,8 @@ public class OpenStackPush {
                 //query = "SELECT ?port WHERE {?port a  nml:BidirectionalPort ."
                 // + "?port  mrs:hasTag <" + tag.asResource() + ">}";
                 query = "SELECT ?subnet WHERE {?subnet a mrs:SwitchingSubnet. ?subnet  nml:hasBidirectionalPort <" + port.asResource() + ">}";
-                r1 = executeQuery(query, modelRef, modelDelta);//
+                r1 = executeQueryUnion(query,modelDelta, modelRef);//
+                //System.out.println(modelDelta.toString());
                 if (!r1.hasNext()) {
                     throw new Exception(String.format("Delta model does not specify network interface subnet of port: %s", port));
                 }
@@ -1002,8 +1003,7 @@ public class OpenStackPush {
         String query;
 
         //1 check for any operation involving a server
-        query = "SELECT ?server ?port WHERE {?server a nml:Node ."
-                + "?server nml:hasBidirectionalPort ?port}";
+        query = "SELECT ?server ?port WHERE {?server a nml:Node .}";
         ResultSet r = executeQuery(query, modelDelta, emptyModel);//here modified 
 
         while (r.hasNext()) {
