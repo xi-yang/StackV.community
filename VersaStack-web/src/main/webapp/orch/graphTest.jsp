@@ -132,6 +132,8 @@
                 $("#viz").attr("class", "");
 
                 buttonInit();
+                
+                $.get("/VersaStack-web/ServiceServlet");
             }
             function drawGraph() {
                 var width = document.documentElement.clientWidth / settings.INIT_ZOOM;
@@ -485,7 +487,17 @@
                     </c:if>
                 </c:forEach>
             </div>
-
+        </div>
+        
+        <div id="jobPanel">
+            <div id="jobPanel-tab">
+                Jobs
+            </div>
+            <div id ="jobPanel-contents">
+                <c:forEach items="${jobs}" var="job">
+                    <div>${job.key} - ${job.value}</div>
+                </c:forEach>
+            </div>
         </div>
 
         <div id="loadingPanel"></div>
@@ -501,7 +513,7 @@
                 <button id="loadingButton">Toggle Loading</button>
                 <div id="actionForm"></div>
             </div>
-            <div id="displayPanel-tab">Test</div>
+            <div id="displayPanel-tab">^^^^^</div>
         </div>
         <div class="hide" id="hoverdiv"></div>        
 

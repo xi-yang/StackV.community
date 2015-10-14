@@ -11,6 +11,8 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
@@ -412,6 +414,39 @@ public class serviceBeans {
 
     
     // Utility Functions
+    
+    public HashMap<String, String> getJobStatuses() throws SQLException {
+        HashMap<String, String> retMap = new HashMap<>();
+        
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        ArrayList<String> service_list = new ArrayList<>();
+        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID FROM service S, service_instance I WHERE I.service_id = S.service_id");
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {
+            String name = rs1.getString("name");
+            String refId = rs1.getString("referenceUUID");
+
+            String status;
+            try {
+                URL url = new URL(String.format("%s/service/%s/status", host, refId));
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                status = this.executeHttpMethod(url, connection, "GET", null);
+            } catch (Exception e) {
+                System.out.println(e.toString());//query error
+                return null;
+            }
+            
+            retMap.put(name, status);
+        }
+
+        return retMap;
+    }
     
     /**
      * Executes HTTP Request.

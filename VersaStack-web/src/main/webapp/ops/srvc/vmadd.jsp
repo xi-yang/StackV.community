@@ -69,7 +69,7 @@
                         <div id="service-bottom">
                             <div id="service-fields">
                                 <form id="vm-form" action="/VersaStack-web/VMServlet" method="post">             
-                                    <input type="hidden" name="vmType" value="${param.vm_type}" />
+                                    <input type="hidden" name="driverType" value="${param.vm_type}" />
                                     <!-- AWS FORM -->
                                     <c:if test="${param.vm_type == 'aws'}">
                                         <table class="management-table" id="service-form" style="margin-bottom: 0px;">

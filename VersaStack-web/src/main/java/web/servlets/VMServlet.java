@@ -75,7 +75,7 @@ public class VMServlet extends HttpServlet {
                 prep.setString(4, refUuid);
                 prep.executeUpdate();
 
-                if (request.getParameter("vmType").equals("aws")) {
+                if (request.getParameter("driverType").equals("aws")) {
                     HashMap<String, String> paramMap = new HashMap<>();
                     Enumeration paramNames = request.getParameterNames();
 
@@ -131,9 +131,9 @@ public class VMServlet extends HttpServlet {
 
                     for (String key : paramMap.keySet()) {
                         if (!paramMap.get(key).isEmpty()) {
-                            url = new URL(String.format("%s/service/property/%s/%s/%s", host, refUuid, key, paramMap.get(key)));
+                            url = new URL(String.format("%s/service/property/%s/%s/", host, refUuid, key));
                             connection = (HttpURLConnection) url.openConnection();
-                            servBean.executeHttpMethod(url, connection, "PUT", null);
+                            servBean.executeHttpMethod(url, connection, "POST", paramMap.get(key));
                         }
                     }
 
