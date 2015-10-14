@@ -322,7 +322,7 @@ public class OpenStackNeutronModelBuilder {
                     }
                 }
             } else {
-                Resource TENANTNETWORK_TAG = RdfOwl.createResource(model, topologyURI + "network_tag_tenant", Mrs.Tag);
+                Resource TENANTNETWORK_TAG = RdfOwl.createResource(model, topologyURI + ":network_tag_tenant", Mrs.Tag);
 
                 model.add(model.createStatement(NETWORK, hasTag, TENANTNETWORK_TAG));
                 model.add(model.createStatement(TENANTNETWORK_TAG, type, "network-type"));
