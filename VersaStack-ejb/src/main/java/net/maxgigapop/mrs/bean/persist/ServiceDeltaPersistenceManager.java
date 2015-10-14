@@ -25,17 +25,18 @@ public class ServiceDeltaPersistenceManager {
     }
 
     public static ServiceDelta findByReferenceUUID(String uuid) {
-		try {
-			Query q = createQuery(String.format("FROM %s WHERE referenceUUID='%s'", ServiceDelta.class.getSimpleName(), uuid));
-            List<ServiceDelta> listSD = (List<ServiceDelta>)q.getResultList(); 
+        try {
+            Query q = createQuery(String.format("FROM %s WHERE referenceUUID='%s'", ServiceDelta.class.getSimpleName(), uuid));
+            List<ServiceDelta> listSD = (List<ServiceDelta>) q.getResultList();
             if (listSD == null || listSD.isEmpty()) {
                 return null;
             }
             return listSD.get(0);
-		} catch (Exception e) {
-            if (e.getMessage().contains("No entity found"))
+        } catch (Exception e) {
+            if (e.getMessage().contains("No entity found")) {
                 return null;
+            }
             throw new EJBException(String.format("ServiceDeltaPersistenceManager::findByReferenceUUID raised exception: %s", e.getMessage()));
-		}
-    }    
+        }
+    }
 }

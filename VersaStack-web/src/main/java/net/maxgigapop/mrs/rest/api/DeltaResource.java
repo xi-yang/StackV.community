@@ -30,66 +30,65 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
  */
 @Path("delta")
 public class DeltaResource {
+
     @Context
     private UriInfo context;
 
     @EJB
     HandleSystemCall systemCallHandler;
-    
-    public DeltaResource(){
+
+    public DeltaResource() {
     }
-    
-    
+
     @PUT
 //    @Consumes({"application/xml","application/json"})
     @Path("/{refUUID}/{action}")
-    public String commit(@PathParam("refUUID")String refUUID, @PathParam("action") String action){
+    public String commit(@PathParam("refUUID") String refUUID, @PathParam("action") String action) {
         if (!action.toLowerCase().equals("commit")) {
-            throw new BadRequestException("Invalid action: "+action);
+            throw new BadRequestException("Invalid action: " + action);
         }
-        try{
+        try {
             systemCallHandler.commitDelta(refUUID);
-        }catch(EJBException e){
+        } catch (EJBException e) {
             return e.getMessage();
         }
         return "commit successfully";
     }
-    
+
     @POST
-    @Consumes({"application/xml","application/json"})
+    @Consumes({"application/xml", "application/json"})
     @Path("/{refUUID}/{action}")
-    public String push(@PathParam("refUUID")String SysInstanceRefUUID, ApiDeltaBase deltabase, @PathParam("action") String action) throws Exception{
+    public String push(@PathParam("refUUID") String SysInstanceRefUUID, ApiDeltaBase deltabase, @PathParam("action") String action) throws Exception {
         if (!action.toLowerCase().equals("propagate")) {
-            throw new BadRequestException("Invalid action: "+action);
+            throw new BadRequestException("Invalid action: " + action);
         }
-        
+
         SystemDelta systemDelta = new SystemDelta();
         systemDelta.setReferenceVersionGroup(VersionGroupPersistenceManager.findByReferenceId(deltabase.getReferenceVersion()));
-        
+
         OntModel modelAddition = ModelUtil.unmarshalOntModel(deltabase.getModelAddition());
         DeltaModel dmAddition = new DeltaModel();
         dmAddition.setCommitted(false);
         dmAddition.setDelta(systemDelta);
         dmAddition.setIsAddition(true);
         dmAddition.setOntModel(modelAddition);
-        
+
         OntModel modelReduction = ModelUtil.unmarshalOntModel(deltabase.getModelReduction());
         DeltaModel dmReduction = new DeltaModel();
         dmReduction.setCommitted(false);
         dmReduction.setDelta(systemDelta);
         dmReduction.setIsAddition(false);
         dmReduction.setOntModel(modelReduction);
-        
+
         systemDelta.setModelAddition(dmAddition);
         systemDelta.setModelReduction(dmReduction);
-        
-        try{
+
+        try {
             systemCallHandler.propagateDelta(SysInstanceRefUUID, systemDelta);
-        }catch(Exception e){
+        } catch (Exception e) {
             return e.getMessage();
         }
         return "propagate successfully";
     }
-    
-    
+
 }

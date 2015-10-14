@@ -99,10 +99,10 @@
                                                     <td></td>
                                                     <td>
                                                         <c:if test="${not empty user.modelNames}"><input class="button-register" name="uninstall" type="submit" value="Uninstall" /></c:if>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
                                     </c:if>
                                     <!-- Creation Form -->
                                     <c:if test="${param.mode == 'create'}">

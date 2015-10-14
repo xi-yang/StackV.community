@@ -12,6 +12,7 @@ import javax.ejb.EJBException;
  * @author xyang
  */
 public class CompilerFactory {
+
     static public CompilerBase createCompiler(String compilerClassStr) {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         CompilerBase compiler = null;
@@ -19,7 +20,7 @@ public class CompilerFactory {
             Class<?> aClass = cl.loadClass(compilerClassStr);
             compiler = (CompilerBase) aClass.newInstance();
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException ex) {
-            throw new EJBException("CompilerFactory failed to create "+compilerClassStr, ex);
+            throw new EJBException("CompilerFactory failed to create " + compilerClassStr, ex);
         }
         return compiler;
     }

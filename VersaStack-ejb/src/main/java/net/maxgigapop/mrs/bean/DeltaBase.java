@@ -3,7 +3,6 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package net.maxgigapop.mrs.bean;
 
 import java.io.Serializable;
@@ -27,8 +26,9 @@ import net.maxgigapop.mrs.bean.persist.PersistentEntity;
  */
 @Entity
 @Table(name = "delta")
-@Inheritance(strategy=InheritanceType.SINGLE_TABLE)
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 public class DeltaBase extends PersistentEntity implements Serializable {
+
     protected static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -37,7 +37,7 @@ public class DeltaBase extends PersistentEntity implements Serializable {
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "modelAdditionId")
     protected DeltaModel modelAddition = null;
-    
+
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "modelReductionId")
     protected DeltaModel modelReduction = null;
@@ -75,13 +75,15 @@ public class DeltaBase extends PersistentEntity implements Serializable {
 
     public DeltaBase clone() {
         DeltaBase cloned = new DeltaBase();
-        if (this.modelAddition != null)
+        if (this.modelAddition != null) {
             cloned.modelAddition = this.modelAddition.clone();
-        if (this.modelReduction != null)
+        }
+        if (this.modelReduction != null) {
             cloned.modelReduction = this.modelReduction.clone();
+        }
         return cloned;
     }
-    
+
     @Override
     public boolean equals(Object object) {
         // TODO: Warning - this method won't work in the case the id fields are not set
