@@ -14,8 +14,10 @@ import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
@@ -89,6 +91,15 @@ public class HandleServiceCall {
         return serviceInstance.getProperty(property);
     }
 
+
+    public Map listInstanceProperties(String refUUID) {
+        ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(refUUID);
+        if (serviceInstance == null) {
+            throw new EJBException(String.format("listInstanceProperty cannot find the ServiceInstance with referenceUUID=%s", refUUID));
+        }
+        return serviceInstance.getProperties();
+    }
+    
     public SystemDelta compileAddDelta(String serviceInstanceUuid, String workerClassPath, ServiceDelta spaDelta) {
         ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
         if (serviceInstance == null) {
