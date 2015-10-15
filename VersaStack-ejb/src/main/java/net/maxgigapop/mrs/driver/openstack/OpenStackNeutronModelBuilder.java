@@ -295,7 +295,8 @@ public class OpenStackNeutronModelBuilder {
 
                         for (HostRoute hr : s.getHostRoutes()) {
                             String destIp = hr.getDestination();
-                            String destIP = destIp.replace("/", "");
+                           // String destIP = destIp.replace("/", "");
+                            String destIP = destIp;
                             String nextHOPEXT = hr.getNexthop();
                             //System.out.println("aaaa" + destIP);
                             Resource EXHOSTROUTE = RdfOwl.createResource(model, topologyURI + ":network+" + networkID + ":dest_ip+" + destIP + ":from_subenet+" + subnetId + ":hostroute-public", route);
@@ -375,7 +376,8 @@ public class OpenStackNeutronModelBuilder {
                     //host route modeling
                     for (HostRoute hr : s.getHostRoutes()) {
                         String destIp = hr.getDestination();
-                        String destIP = destIp.replace("/", "");
+                        //String destIP = destIp.replace("/", "");
+                        String destIP = destIp;
                         String nextHOP = hr.getNexthop();
                         //System.out.println("aaaa" + destIP);
                         Resource INROUTE = RdfOwl.createResource(model, topologyURI + ":network+" + networkID + ":dest_ip+" + destIP + ":route_from+" + subnetId + ":hostroute-tenant", route);
@@ -588,7 +590,7 @@ public class OpenStackNeutronModelBuilder {
 
             }
         }
-        /*
+        
         StringWriter out = new StringWriter();
         try {
             model.write(out, "TURTLE");
@@ -596,9 +598,9 @@ public class OpenStackNeutronModelBuilder {
             throw new Exception(String.format("failure to marshall ontology model, due to %s", e.getMessage()));
         }
         String ttl = out.toString();
-<<<<<<< Updated upstream
+
         System.out.println(ttl);
-        */
+        
 
         //System.out.println(ttl);
 
