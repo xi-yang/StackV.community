@@ -162,8 +162,8 @@ public class HandleServiceCall {
         if (serviceInstance == null) {
             throw new EJBException(HandleServiceCall.class.getName() + ".propogateDeltas cannot find serviceInstance with uuid=" + serviceInstanceUuid);
         }
-        if (!serviceInstance.getStatus().equals("INIT") && !serviceInstance.getStatus().equals("PROPAGATED-PARTIAL")) {
-            throw new EJBException(HandleServiceCall.class.getName() + ".propogateDeltas needs  status='INIT' by " + serviceInstance + ", the actual status=" + serviceInstance.getStatus());
+        if (!serviceInstance.getStatus().equals("INIT") && !serviceInstance.getStatus().equals("PROPAGATED-PARTIAL") && !serviceInstance.getStatus().equals("COMMITTED-PARTIAL")) {
+            throw new EJBException(HandleServiceCall.class.getName() + ".propogateDeltas needs  status='INIT or PROPAGATED-PARTIAL or COMMITTED-PARTIAL' by " + serviceInstance + ", the actual status=" + serviceInstance.getStatus());
         }
         Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
         if (!itSD.hasNext()) {
@@ -234,7 +234,7 @@ public class HandleServiceCall {
         if (!serviceInstance.getStatus().equals("PROPAGATED")
                 && !serviceInstance.getStatus().equals("PROPAGATED-PARTIAL")
                 && !serviceInstance.getStatus().equals("COMMITTED-PARTIAL")) {
-            throw new EJBException(HandleServiceCall.class.getName() + ".commitDeltas needs  status='PROPAGATED' by " + serviceInstance + ", the actual status=" + serviceInstance.getStatus());
+            throw new EJBException(HandleServiceCall.class.getName() + ".commitDeltas needs  status='PROPAGATED or PROPAGATED-PARTIAL or COMMITTED-PARTIAL' by " + serviceInstance + ", the actual status=" + serviceInstance.getStatus());
         }
         Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
         if (!itSD.hasNext()) {
