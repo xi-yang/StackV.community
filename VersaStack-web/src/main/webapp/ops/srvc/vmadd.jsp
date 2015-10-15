@@ -68,7 +68,8 @@
                         </div>
                         <div id="service-bottom">
                             <div id="service-fields">
-                                <form id="vm-form" action="/VersaStack-web/VMServlet" method="post">             
+                                <form id="vm-form" action="/VersaStack-web/VMServlet" method="post">      
+                                    <input type="hidden" name="userID" value="${user.getId()}"/>
                                     <input type="hidden" name="driverType" value="${param.vm_type}" />
                                     <!-- AWS FORM -->
                                     <c:if test="${param.vm_type == 'aws'}">
@@ -184,8 +185,7 @@
                                                         <input class="button-register" name="install" type="submit" value="Install" />
                                                         <input class="button-register" type="button" 
                                                                value="Add Volume" onClick="addVolume()">
-                                                        <input type="hidden" name="graphTopo" value="${param.graphTopo}"/>
-                                                        <input type="hidden" name="userID" value="${user.getId()}"/>
+                                                        <input type="hidden" name="graphTopo" value="${param.graphTopo}"/>                                                        
                                                     </td>
                                                 </tr> 
                                             </tbody>

@@ -132,7 +132,7 @@
                 $("#viz").attr("class", "");
 
                 buttonInit();
-                
+
                 $.get("/VersaStack-web/ServiceServlet");
             }
             function drawGraph() {
@@ -275,10 +275,16 @@
 
                     evt.preventDefault();
                 });
-                
+
                 $("#displayPanel-tab").click(function (evt) {
                     $("#displayPanel").toggleClass("closed");
-                    
+
+                    evt.preventDefault();
+                });
+
+                $("#jobsPanel-tab").click(function (evt) {
+                    $("#jobsPanel").toggleClass("closed");
+
                     evt.preventDefault();
                 });
             }
@@ -486,17 +492,31 @@
                         <button class="button-filter-select" id="${filterName}">${filterName}</button>
                     </c:if>
                 </c:forEach>
+                ${jobs}
             </div>
         </div>
-        
-        <div id="jobPanel">
-            <div id="jobPanel-tab">
+
+        <div class="closed" id="jobsPanel">
+            <div id="jobsPanel-tab">
                 Jobs
             </div>
-            <div id ="jobPanel-contents">
-                <c:forEach items="${jobs}" var="job">
-                    <div>${job.key} - ${job.value}</div>
-                </c:forEach>
+            <div id ="jobsPanel-contents">
+                <table class="management-table" id="jobs-table">
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <c:forEach items="${serv.getJobStatuses()}" var="job">
+                            <tr>
+                                <td>${job.key}</td>
+                                <td>${job.value}</td>
+                            </tr>
+                        </c:forEach>
+                    </tbody>
+                </table>
             </div>
         </div>
 

@@ -83,6 +83,7 @@
                         <div id="service-bottom">
                             <div id="service-fields">
                                 <form id="driver-form" action="/VersaStack-web/DriverServlet" method="post">
+                                    <input type="hidden" name="userID" value="${user.getId()}"/>
                                     <input type="hidden" name="driverID" value="${param.driver_id}"/>
                                     <table class="management-table" id="service-form">                                        
                                         <thead>

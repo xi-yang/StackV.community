@@ -22,7 +22,8 @@ public class ServiceServlet extends HttpServlet {
             
             HashMap<String, String> jobs = servBean.getJobStatuses();
             request.setAttribute("jobs", jobs);
-            request.getRequestDispatcher("/VersaStack-web/orch/graphTest.jsp").forward(request, response);
+            
+            response.sendError(200);
         } catch (SQLException ex) {
             Logger.getLogger(ServiceServlet.class.getName()).log(Level.SEVERE, null, ex);
         }

@@ -437,12 +437,11 @@ public class serviceBeans {
                 URL url = new URL(String.format("%s/service/%s/status", host, refId));
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 status = this.executeHttpMethod(url, connection, "GET", null);
+                
+                retMap.put(name, status);
             } catch (Exception e) {
                 System.out.println(e.toString());//query error
-                return null;
             }
-            
-            retMap.put(name, status);
         }
 
         return retMap;
