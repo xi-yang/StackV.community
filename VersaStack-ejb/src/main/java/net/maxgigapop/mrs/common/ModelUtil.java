@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -478,6 +479,21 @@ public class ModelUtil {
         return ontModel;
     }
 
+    public static Model getModelSubTree(Model refModel, List<Resource> resList, List<String> includeMatches, List<String> excludeMatches) {
+        Model retModel = ModelFactory.createDefaultModel();
+        Set<RDFNode> visited = new HashSet<RDFNode>();
+        Iterator<Resource> resIter = resList.iterator();
+        while (resIter.hasNext()) {
+            Resource node = resIter.next();
+            visited.clear();
+            Model subModel = ModelFactory.createDefaultModel();
+            node = refModel.getResource(node.toString());
+            rdfDFS(node, visited, subModel, includeMatches, excludeMatches);
+            retModel.add(subModel);
+        }
+        return retModel;
+    }
+            
     public static String modelDateToString(Date date) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
         return dateFormat.format(date).toString();

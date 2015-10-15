@@ -189,11 +189,11 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             if (hostModel == null) {
                 hostModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
             }
-            hostModel.add(resTopology, RdfOwl.type, Nml.Topology);
-            hostModel.add(resTopology, Nml.hasNode, resHostOrVpc);
-            hostModel.add(resHostOrVpc, RdfOwl.type, Nml.Node);
-            hostModel.add(resHostOrVpc, Nml.hasService, resHvService);
-            hostModel.add(resHvService, RdfOwl.type, Mrs.HypervisorService);
+            //hostModel.add(resTopology, RdfOwl.type, Nml.Topology);
+            //hostModel.add(resTopology, Nml.hasNode, resHostOrVpc);
+            //hostModel.add(resHostOrVpc, RdfOwl.type, Nml.Node);
+            //hostModel.add(resHostOrVpc, Nml.hasService, resHvService);
+            //hostModel.add(resHvService, RdfOwl.type, Mrs.HypervisorService);
             hostModel.add(resHostOrVpc, Nml.hasNode, resVm);
             hostModel.add(resHvService, Mrs.providesVM, resVm);
             return hostModel;
@@ -221,11 +221,11 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             if (hostModel == null) {
                 hostModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
             }
-            hostModel.add(resTopology, RdfOwl.type, Nml.Topology);
-            hostModel.add(resTopology, Nml.hasTopology, resHostOrVpc);
-            hostModel.add(resHostOrVpc, RdfOwl.type, Nml.Topology);
-            hostModel.add(resTopology, Nml.hasService, resHvService);
-            hostModel.add(resHvService, RdfOwl.type, Mrs.HypervisorService);
+            //hostModel.add(resTopology, RdfOwl.type, Nml.Topology);
+            //hostModel.add(resTopology, Nml.hasTopology, resHostOrVpc);
+            //hostModel.add(resHostOrVpc, RdfOwl.type, Nml.Topology);
+            //hostModel.add(resTopology, Nml.hasService, resHvService);
+            //hostModel.add(resHvService, RdfOwl.type, Mrs.HypervisorService);
             hostModel.add(resHostOrVpc, Nml.hasNode, resVm);
             hostModel.add(resHvService, Mrs.providesVM, resVm);
             return hostModel;
@@ -251,9 +251,9 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             if (hostModel == null) {
                 hostModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
             }
-            hostModel.add(resHostTopology, RdfOwl.type, Nml.Topology);
-            hostModel.add(resHostTopology, Nml.hasService, resHvService);
-            hostModel.add(resHvService, RdfOwl.type, Mrs.HypervisorService);
+            //hostModel.add(resHostTopology, RdfOwl.type, Nml.Topology);
+            //hostModel.add(resHostTopology, Nml.hasService, resHvService);
+            //hostModel.add(resHvService, RdfOwl.type, Mrs.HypervisorService);
             hostModel.add(resHostTopology, Nml.hasNode, resVm);
             hostModel.add(resHvService, Mrs.providesVM, resVm);
             return hostModel;

@@ -7,9 +7,15 @@ package net.maxgigapop.mrs.service;
 
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
+import com.hp.hpl.jena.query.QuerySolution;
+import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.rdf.model.RDFNode;
+import com.hp.hpl.jena.rdf.model.Resource;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
@@ -20,6 +26,9 @@ import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
 import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ServiceInstance;
@@ -30,6 +39,7 @@ import net.maxgigapop.mrs.bean.persist.ServiceDeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ServiceInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.core.SystemModelCoordinator;
 import net.maxgigapop.mrs.service.orchestrate.WorkerBase;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
@@ -356,11 +366,53 @@ public class HandleServiceCall {
             if (serviceDelta.getModelAddition() != null && serviceDelta.getModelAddition().getOntModel() != null) {
                 reverseSvcDelta.getModelReduction().getOntModel().add(serviceDelta.getModelAddition().getOntModel().getBaseModel());
             }
-            if (systemDelta.getModelReduction() != null && systemDelta.getModelReduction().getOntModel() != null) {
-                reverseSysDelta.getModelAddition().getOntModel().add(systemDelta.getModelReduction().getOntModel().getBaseModel());
-            }
-            if (systemDelta.getModelAddition() != null && systemDelta.getModelAddition().getOntModel() != null) {
-                reverseSysDelta.getModelReduction().getOntModel().add(systemDelta.getModelAddition().getOntModel().getBaseModel());
+            List<String> includeMatches = new ArrayList<String>();
+            List<String> excludeMatches = new ArrayList<String>();
+            includeMatches.add("#has");
+            includeMatches.add("#provide");
+            includeMatches.add("#type");
+            includeMatches.add("#value");
+            String sparql = "SELECT ?res WHERE {?s ?p ?res. "
+                    + "FILTER(regex(str(?p), '#has|#provide'))"
+                    + "}";
+            try {
+                Context ejbCxt = new InitialContext();
+                SystemModelCoordinator systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
+                //@TODO: with verification before revert/termination we can use systemModelCoordinator.getCachedOntModel() instead
+                OntModel refModel = systemModelCoordinator.getLatestOntModel();
+                if (refModel == null) {
+                    throw new EJBException(this.getClass().getName() + " systemModelCoordinator has no cached OntModel (not ready).");
+                }
+                if (systemDelta.getModelReduction() != null && systemDelta.getModelReduction().getOntModel() != null) {
+                    reverseSysDelta.getModelAddition().getOntModel().add(systemDelta.getModelReduction().getOntModel().getBaseModel());
+                    ResultSet rs = ModelUtil.sparqlQuery(systemDelta.getModelReduction().getOntModel().getBaseModel(), sparql);
+                    List resList = new ArrayList<Resource>();
+                    while (rs.hasNext()) {
+                        QuerySolution querySolution = rs.next();
+                        Resource res = querySolution.getResource("res");      
+                        resList.add(res);
+                    }
+                    if (!resList.isEmpty()) {
+                        Model sysModelReductionExt = ModelUtil.getModelSubTree(refModel, resList, includeMatches, excludeMatches);
+                        reverseSysDelta.getModelAddition().getOntModel().add(sysModelReductionExt);
+                    }
+                }
+                if (systemDelta.getModelAddition() != null && systemDelta.getModelAddition().getOntModel() != null) {
+                    reverseSysDelta.getModelReduction().getOntModel().add(systemDelta.getModelAddition().getOntModel().getBaseModel());
+                    ResultSet rs = ModelUtil.sparqlQuery(systemDelta.getModelAddition().getOntModel().getBaseModel(), sparql);
+                    List resList = new ArrayList<Resource>();
+                    while (rs.hasNext()) {
+                        QuerySolution querySolution = rs.next();
+                        Resource res = querySolution.getResource("res");      
+                        resList.add(res);
+                    }
+                    if (!resList.isEmpty()) {
+                        Model sysModelAdditionExt = ModelUtil.getModelSubTree(refModel, resList, includeMatches, excludeMatches);
+                        reverseSysDelta.getModelReduction().getOntModel().add(sysModelAdditionExt);
+                    }
+                }
+            } catch (NamingException ex) {
+                throw new EJBException(this.getClass().getName() + " failed to inject systemModelCoordinator", ex);
             }
         }
         serviceInstance.getServiceDeltas().add(reverseSvcDelta);
