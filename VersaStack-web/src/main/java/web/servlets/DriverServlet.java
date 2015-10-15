@@ -57,7 +57,7 @@ public class DriverServlet extends HttpServlet {
 
             PreparedStatement prep = front_conn.prepareStatement("SELECT service_id"
                     + " FROM service WHERE filename = ?");
-            prep.setString(1, "vmadd");
+            prep.setString(1, "driver");
             ResultSet rs1 = prep.executeQuery();
             rs1.next();
             int serviceID = rs1.getInt(1);
