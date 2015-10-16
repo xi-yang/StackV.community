@@ -5,6 +5,11 @@
  */
 package net.maxgigapop.mrs.rest.api;
 
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import javax.ejb.EJB;
@@ -25,10 +30,16 @@ import net.maxgigapop.mrs.service.HandleServiceCall;
 import java.util.logging.Logger;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.PUT;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementWrapper;
+import javax.xml.bind.annotation.XmlRootElement;
 import net.maxgigapop.mrs.bean.ServiceInstance;
 import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ServiceInstancePersistenceManager;
 import net.maxgigapop.mrs.rest.api.model.ApiDeltaBase;
+import org.json.simple.JSONObject;
 
 /**
  *
@@ -76,7 +87,18 @@ public class ServiceResource {
         }
         return value;
     }
-
+    
+    //GET instance property
+    @GET
+    @Path("/property/{siUUID}")
+    @Consumes("application/json")
+    public String listProperties(@PathParam("siUUID") String svcInstanceUUID) {
+        Map properties = serviceCallHandler.listInstanceProperties(svcInstanceUUID);
+        JSONObject json = new JSONObject();
+        json.putAll(properties);
+        return json.toString();
+    }
+    
     //PUT to set property value
     @PUT
     @Path("/property/{siUUID}/{property}/{value}")
