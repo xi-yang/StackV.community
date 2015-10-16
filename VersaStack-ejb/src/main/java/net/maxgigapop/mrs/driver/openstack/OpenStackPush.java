@@ -193,10 +193,16 @@ public class OpenStackPush {
 
             } else if (o.get("request").toString().equals("DeleteSubnetRequest")) {
                 Subnet net = client.getSubnet(o.get("name").toString());
+                
                 osClient.networking().subnet().delete(net.getId());
             } else if (o.get("request").toString().equals("DeleteNetworkRequests")) {
                 OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
                 Network network = client1.getNetwork(o.get("name").toString());
+                for(Port p: client1.getPorts()){
+                    if(p.getNetworkId().equals(network.getId())){
+                        throw new EJBException(("port" + p.getId() + "is still attached to the network, so network" + network.getName() +"cannot be deleted"));
+                    }
+                }
                 osClient.networking().network().delete(network.getId());
             } else if (o.get("request").toString().equals("RunInstanceRequest")) {
                 ServerCreateBuilder builder = Builders.server()
