@@ -3,7 +3,6 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package net.maxgigapop.mrs.driver;
 
 import com.hp.hpl.jena.ontology.OntModel;
@@ -49,9 +48,9 @@ import org.json.simple.JSONValue;
  *
  * @author xyang
  */
-
 @Stateless
-public class StackSystemDriver implements IHandleDriverSystemCall{
+public class StackSystemDriver implements IHandleDriverSystemCall {
+
     private static Map<DriverSystemDelta, SystemInstance> driverSystemSessionMap = new HashMap<DriverSystemDelta, SystemInstance>();
     private static final Logger logger = Logger.getLogger(StackSystemDriver.class.getName());
 
@@ -59,7 +58,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
         //driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
-        aDelta = (DriverSystemDelta)DeltaPersistenceManager.findById(aDelta.getId());
+        aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId());
         String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
         if (subsystemBaseUrl == null) {
             throw new EJBException(String.format("%s has no property key=subsystemBaseUrl", driverInstance));
@@ -71,14 +70,14 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
         try {
             // Step 1. create systemInstance
             URL url = new URL(String.format("%s/model/systeminstance", subsystemBaseUrl));
-            HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String systemInstanceUUID = this.executeHttpMethod(url, conn, "GET", null);
             // Step 2. propagate delta to systemInstance
             // compose string body (delta) using JSONObject
             JSONObject deltaJSON = new JSONObject();
             deltaJSON.put("id", Long.toString(aDelta.getId()));
             deltaJSON.put("referenceVersion", refVI.getReferenceUUID());
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");         
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
             deltaJSON.put("creationTime", dateFormat.format(new Date()).toString());
             if (aDelta.getModelAddition() != null && aDelta.getModelAddition().getOntModel() != null) {
                 String ttlModelAddition = ModelUtil.marshalOntModel(aDelta.getModelAddition().getOntModel());
@@ -90,12 +89,12 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
             }
             // push via REST POST
             url = new URL(String.format("%s/delta/%s/propagate", subsystemBaseUrl, systemInstanceUUID));
-            conn = (HttpURLConnection)url.openConnection();
+            conn = (HttpURLConnection) url.openConnection();
             String status = this.executeHttpMethod(url, conn, "POST", deltaJSON.toString());
             if (!status.toUpperCase().contains("SUCCESS")) {
                 throw new EJBException(String.format("%s failed to propagate %s", driverInstance, aDelta));
             }
-            driverInstance.putProperty("systemInstanceUUID:"+driverInstance.getId().toString()+aDelta.getId().toString(), systemInstanceUUID);
+            driverInstance.putProperty("systemInstanceUUID:" + driverInstance.getId().toString() + aDelta.getId().toString(), systemInstanceUUID);
             DriverInstancePersistenceManager.merge(driverInstance);
         } catch (Exception e) {
             throw new EJBException(String.format("propagateDelta failed for %s with %s due to exception (%s)", driverInstance, aDelta, e.getMessage()));
@@ -113,16 +112,16 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
         if (subsystemBaseUrl == null) {
             throw new EJBException(String.format("%s has no property key=subsystemBaseUrl", driverInstance));
         }
-        String systemInstanceUUID = driverInstance.getProperty("systemInstanceUUID:"+driverInstance.getId().toString()+aDelta.getId().toString());
+        String systemInstanceUUID = driverInstance.getProperty("systemInstanceUUID:" + driverInstance.getId().toString() + aDelta.getId().toString());
         if (systemInstanceUUID == null) {
             throw new EJBException(String.format("%s has no property key=systemInstanceUUID as required for commit", driverInstance));
         }
-        driverInstance.getProperties().remove("systemInstanceUUID:"+driverInstance.getId().toString()+aDelta.getId().toString());
+        driverInstance.getProperties().remove("systemInstanceUUID:" + driverInstance.getId().toString() + aDelta.getId().toString());
         DriverInstancePersistenceManager.merge(driverInstance);
         // Step 1. commit to systemInstance
         try {
             URL url = new URL(String.format("%s/delta/%s/commit", subsystemBaseUrl, systemInstanceUUID));
-            HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String status = this.executeHttpMethod(url, conn, "PUT", null);
             if (status.toUpperCase().contains("FAILED")) {
                 throw new EJBException(String.format("%s failed to commit %s", driverInstance, aDelta));
@@ -138,7 +137,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
                 sleep(30000L); // poll every 30 seconds -> ? make configurable
                 // pull model from REST API
                 URL url = new URL(String.format("%s/delta/%s/checkstatus", subsystemBaseUrl, systemInstanceUUID));
-                HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 String status = this.executeHttpMethod(url, conn, "GET", null);
                 if (status.toUpperCase().equals("SUCCESS")) {
                     doPoll = false; // committed successfully
@@ -150,11 +149,11 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
             } catch (IOException ex) {
                 throw new EJBException(String.format("%s failed to communicate with subsystem with exception (%s)", driverInstance, ex));
             }
-        }        
+        }
         // Step 3. delete systemInstance
         try {
             URL url = new URL(String.format("%s/model/systeminstance/%s", subsystemBaseUrl, systemInstanceUUID));
-            HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String status = this.executeHttpMethod(url, conn, "DELETE", null);
             if (!status.toUpperCase().contains("SUCCESS")) {
                 throw new EJBException(String.format("%s failed to delete systeminstance %s", driverInstance, systemInstanceUUID));
@@ -165,7 +164,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
         return new AsyncResult<>("SUCCESS");
     }
     // TODO: terminate or reuse sessions in driverSystemSessionMap after commit
-    
+
     @Override
     @Asynchronous
     public Future<String> pullModel(Long driverInstanceId) {
@@ -178,11 +177,11 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
         if (subsystemBaseUrl == null) {
             throw new EJBException(String.format("%s has no property key=subsystemBaseUrl", driverInstance));
         }
-        if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null 
+        if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null
                 || !DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().containsKey(driverInstance.getTopologyUri())) {
             return new AsyncResult<>("INITIALIZING");
         }
-        
+
         DriverInstance syncOnDriverInstance = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().get(driverInstance.getTopologyUri());
         synchronized (syncOnDriverInstance) {
             String creationTime = null;
@@ -234,13 +233,13 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
                 OntModel ontModel = ModelUtil.unmarshalOntModelJson(jsonModel);
                 // Alter the model to add stack root topology to contain sub-level driver topologies.
                 List<RDFNode> listTopo = ModelUtil.getTopologyList(ontModel);
-                for (RDFNode subRootTopo: listTopo) {
+                for (RDFNode subRootTopo : listTopo) {
                     if (subRootTopo.toString().equals(stackTopologyUri)) {
                         throw new EJBException(String.format("%s encounters conflicting sub-level topology with same URI: %s", driverInstance, stackTopologyUri));
                     }
                 }
                 Resource stackTopo = RdfOwl.createResource(ontModel, stackTopologyUri, Nml.Topology);
-                for (RDFNode subRootTopo: listTopo) {
+                for (RDFNode subRootTopo : listTopo) {
                     ontModel.add(ontModel.createStatement(stackTopo, Nml.hasTopology, subRootTopo));
                 }
                 dm = new DriverModel();
@@ -270,8 +269,8 @@ public class StackSystemDriver implements IHandleDriverSystemCall{
                 throw new EJBException(String.format("pullModel on %s raised exception[%s]", driverInstance, e.getMessage()));
             }
         }
-        return new AsyncResult<>("SUCCESS");    }
-    
+        return new AsyncResult<>("SUCCESS");
+    }
 
     private String executeHttpMethod(URL url, HttpURLConnection conn, String method, String body) throws IOException {
         conn.setRequestMethod(method);

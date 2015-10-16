@@ -117,13 +117,12 @@ public class OnosModelBuilder {
         int qtyLinks = onos.qtyLinks;
         //int qtyHosts = onos.qtyHosts;
         int qtyDevices = onos.qtyDevices;
-        
-        
-        for (int i = 0; i < qtyDevices; i++) { 
+
+        for (int i = 0; i < qtyDevices; i++) {
             //add device to model
             Resource resNode = RdfOwl.createResource(model, topologyURI + ":" + device[i][0], node);
             model.add(model.createStatement(onosTopology, hasNode, resNode));
-            
+
             //get all devicePorts and add to model
             if (device[i][1].equals("SWITCH") && device[i][2].equals("true")) {
                 String devicePorts[][] = onos.getOnosDevicePorts(subsystemBaseUrl, device[i][0], access_key_id, secret_access_key);
@@ -131,13 +130,13 @@ public class OnosModelBuilder {
 
                 for (int j = 0; j < qtyPorts; j++) {
                     if (devicePorts[j][1].equals("true")) {
-                        
+
                         Resource resPort = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":port-" + devicePorts[j][4], biPort);
                         model.add(model.createStatement(resNode, hasBidirectionalPort, resPort));
-                        
+
                         //write src_portName and dst_portName into links[][6] and links[][7]
-                        for(int k=0; k<qtyLinks; k++){
-                            if(device[i][0].equals(links[k][0]) && devicePorts[j][0].equals(links[k][1])){
+                        for (int k = 0; k < qtyLinks; k++) {
+                            if (device[i][0].equals(links[k][0]) && devicePorts[j][0].equals(links[k][1])) {
                                 links[k][6] = devicePorts[j][4];
                             }
                             if (device[i][0].equals(links[k][2]) && devicePorts[j][0].equals(links[k][3])) {
@@ -146,7 +145,7 @@ public class OnosModelBuilder {
                         }
                     }
                 }
-                
+
                 //add flow per device into model
                 String deviceFlows[][] = onos.getOnosDeviceFlows(subsystemBaseUrl, device[i][0], access_key_id, secret_access_key);
                 int qtyFlows = deviceFlows.length;
@@ -154,66 +153,66 @@ public class OnosModelBuilder {
                 if (qtyFlows > 0) {
                     model.add(model.createStatement(resNode, hasService, resOpenFlow));
                 }
-                             
-                for(int j=0; j<qtyFlows; j++){
-                    
+
+                for (int j = 0; j < qtyFlows; j++) {
+
                     //add a flow table for each groupId
                     Resource resFlowTable = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":openflow-service:flow-table-" + deviceFlows[j][1], flowTable);
                     model.add(model.createStatement(resOpenFlow, providesFlowTable, resFlowTable));
-                    
+
                     //add each flows in each flowTable
                     Resource resFlow = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":openflow-service:flow-table-" + deviceFlows[j][1] + ":flow-" + deviceFlows[j][0], flow);
                     model.add(model.createStatement(resFlowTable, providesFlow, resFlow));
-                    
+
                     Resource resFlowRule0 = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":openflow-service:flow-table-" + deviceFlows[j][1] + ":flow-" + deviceFlows[j][0] + ":rule-match-0", flowRule);
                     Resource resFlowRule1 = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":openflow-service:flow-table-" + deviceFlows[j][1] + ":flow-" + deviceFlows[j][0] + ":rule-match-1", flowRule);
                     Resource resFlowRule2 = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":openflow-service:flow-table-" + deviceFlows[j][1] + ":flow-" + deviceFlows[j][0] + ":rule-match-2", flowRule);
                     Resource resFlowRule3 = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":openflow-service:flow-table-" + deviceFlows[j][1] + ":flow-" + deviceFlows[j][0] + ":rule-match-3", flowRule);
                     Resource resFlowRule4 = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":openflow-service:flow-table-" + deviceFlows[j][1] + ":flow-" + deviceFlows[j][0] + ":rule-match-4", flowRule);
                     Resource resFlowAction = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":openflow-service:flow-table-" + deviceFlows[j][1] + ":flow-" + deviceFlows[j][0] + ":rule-action-0", flowRule);
-                
+
                     //flowRule0: in_port
                     model.add(model.createStatement(resFlow, flowMatch, resFlowRule0));
                     model.add(model.createStatement(resFlowRule0, type, "IN_PORT"));
                     model.add(model.createStatement(resFlowRule0, value, deviceFlows[j][4]));
-                    
+
                     //flowRule1: ETH_SRC_MAC
                     model.add(model.createStatement(resFlow, flowMatch, resFlowRule1));
                     model.add(model.createStatement(resFlowRule1, type, "ETH_SRC_MAC"));
                     model.add(model.createStatement(resFlowRule1, value, deviceFlows[j][6]));
-                   
+
                     //flowRule2: ETH_DST_MAC
                     model.add(model.createStatement(resFlow, flowMatch, resFlowRule2));
                     model.add(model.createStatement(resFlowRule2, type, "ETH_DST_MAC"));
                     model.add(model.createStatement(resFlowRule2, value, deviceFlows[j][5]));
-                    
+
                     //flowRule3: ETH_SRC_VLAN
                     model.add(model.createStatement(resFlow, flowMatch, resFlowRule3));
                     model.add(model.createStatement(resFlowRule3, type, "ETH_SRC_VLAN"));
                     model.add(model.createStatement(resFlowRule3, value, deviceFlows[j][7]));
-                    
+
                     //flowRule4: ETH_DST_VLAN
                     model.add(model.createStatement(resFlow, flowMatch, resFlowRule4));
                     model.add(model.createStatement(resFlowRule4, type, "ETH_DST_VLAN"));
                     model.add(model.createStatement(resFlowRule4, value, deviceFlows[j][8]));
-                    
+
                     //flowAction: OUT_PORT
                     model.add(model.createStatement(resFlow, flowAction, resFlowAction));
                     model.add(model.createStatement(resFlowAction, type, "OUT_PORT"));
                     model.add(model.createStatement(resFlowAction, value, deviceFlows[j][3]));
-                    
+
                 }
 
             }
         }
         /*
-        for (int i=0; i< qtyHosts; i++){
-            //add hosts mac to model
-            Resource resNode = RdfOwl.createResource(model, topologyURI + ":" + hosts[i][1], node);
-            model.add(model.createStatement(onosTopology, hasNode, resNode));           
-        }
-        */
-        
+         for (int i=0; i< qtyHosts; i++){
+         //add hosts mac to model
+         Resource resNode = RdfOwl.createResource(model, topologyURI + ":" + hosts[i][1], node);
+         model.add(model.createStatement(onosTopology, hasNode, resNode));           
+         }
+         */
+
         for (int i = 0; i < qtyLinks; i++) {
             if (links[i][5].equals("ACTIVE")) {
                 //add link into model
@@ -222,11 +221,11 @@ public class OnosModelBuilder {
                 model.add(model.createStatement(resSrcPort, Nml.isAlias, resDstPort));
             }
         }
-        
+
         //manully read from a SRRG json file 
         JSONParser jsonParser = new JSONParser();
         JSONObject jsonObject = (JSONObject) jsonParser.parse(srrgFile);
-  
+
         JSONArray f = (JSONArray) jsonObject.get("SRRG");
         int srrg_num = f.size();
 
@@ -235,7 +234,7 @@ public class OnosModelBuilder {
             String id = t.get("id").toString();
             Resource resSRRG = RdfOwl.createResource(model, topologyURI + ":" + id, SRRG);
             model.add(model.createStatement(onosTopology, hasNode, resSRRG));
-            
+
             String severity_str = t.get("severity").toString();
             String occurenceProbability_str = t.get("occurenceProbability").toString();
 
@@ -270,7 +269,7 @@ public class OnosModelBuilder {
             model.add(model.createStatement(resSRRG, severity, severity_str));
             model.add(model.createStatement(resSRRG, occurenceProbability, occurenceProbability_str));
         }
-        
-    return model;
+
+        return model;
     }
 }

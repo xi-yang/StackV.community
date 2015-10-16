@@ -273,10 +273,10 @@ public class OpenStackPush {
                 while (true) {
                     String key_router = "router" + Integer.toString(x);
                     if (o.containsKey(key_router)) {
-                         k = 0;
-                         i = 0;
-                         j = 0;
-                         boolean created = false;
+                        k = 0;
+                        i = 0;
+                        j = 0;
+                        boolean created = false;
                         //if the router is not in the openstack, create one
                         if (!client.getRouters().contains(client.getRouter(o.get(key_router).toString()))) {
 
@@ -291,22 +291,18 @@ public class OpenStackPush {
                             while (true) {
 
                                 String key_ip = "nexthop" + Integer.toString(j);
-                                
 
-                                
-                                    
-                                    
-                                    HashMap<String, String> routing_info1 = new HashMap<String, String>();
+                                HashMap<String, String> routing_info1 = new HashMap<String, String>();
 
-                                    OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
+                                OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
 
-                                    if (o.containsKey(key_ip)) {
-                                        for (Router router1 : client1.getRouters()) {
-                                            
-                                            if (routing_info_for_router.containsKey(router1.getName()) || routing_info_for_router.containsKey(router1.getId())) {
-                                                router_name = router1.getName();
-                                                routing_info1 = routing_info_for_router.get(router1.getName());
-                                                if(routing_info1.containsKey(o.get(key_ip).toString())){
+                                if (o.containsKey(key_ip)) {
+                                    for (Router router1 : client1.getRouters()) {
+
+                                        if (routing_info_for_router.containsKey(router1.getName()) || routing_info_for_router.containsKey(router1.getId())) {
+                                            router_name = router1.getName();
+                                            routing_info1 = routing_info_for_router.get(router1.getName());
+                                            if (routing_info1.containsKey(o.get(key_ip).toString())) {
                                                 String sub_router = routing_info1.get(o.get(key_ip).toString());
 
                                                 String[] sub_route1 = sub_router.split(",");
@@ -335,19 +331,15 @@ public class OpenStackPush {
                                                     j++;
                                                     key_ip = "nexthop" + Integer.toString(j);
                                                 }
-                                                }else{
-                                                    j++;
-                                                    key_ip = "nexthop" + Integer.toString(j);
-                                                }
-                                            
+                                            } else {
+                                                j++;
+                                                key_ip = "nexthop" + Integer.toString(j);
                                             }
+
                                         }
-
                                     }
-                                    
-                                    
 
-                                 else {
+                                } else {
                                     break;
                                 }
 
@@ -361,7 +353,6 @@ public class OpenStackPush {
                             while (true) {
 
                                 String key_ip = "nexthop" + Integer.toString(j);
-                                
 
                                 if (o.containsKey(key_routinginfo)) {
                                     HashMap<String, String> routing_info1 = new HashMap<String, String>();
@@ -372,31 +363,30 @@ public class OpenStackPush {
                                             if (routing_info_for_router.containsKey(router1.getName()) || routing_info_for_router.containsKey(router1.getId())) {
 
                                                 routing_info1 = routing_info_for_router.get(router1.getName());
-                                               
-                                                    String sub_router = routing_info1.get(o.get(key_ip).toString());
 
-                                                    String[] sub_route1 = sub_router.split(",");
-                                                    subnet_name = sub_route1[0];
-                                                    router_name = sub_route1[1];
+                                                String sub_router = routing_info1.get(o.get(key_ip).toString());
 
-                                                    Subnet s = client1.getSubnet(subnet_name);
-                                                    Router r = client1.getRouter(router_name);
-                                                    String nexthop = o.get(key_ip).toString();
-                                                    String router_id = r.getId();
-                                                    Port port = new NeutronPort();
-                                                    netid = s.getNetworkId();
-                                                    String subnetid = s.getId();
+                                                String[] sub_route1 = sub_router.split(",");
+                                                subnet_name = sub_route1[0];
+                                                router_name = sub_route1[1];
 
-                                                    port.toBuilder().networkId(netid)
-                                                            .fixedIp(nexthop, subnetid)
-                                                            .name("router_name" + routerName + "test_use" + i)
-                                                            .adminState(true);
+                                                Subnet s = client1.getSubnet(subnet_name);
+                                                Router r = client1.getRouter(router_name);
+                                                String nexthop = o.get(key_ip).toString();
+                                                String router_id = r.getId();
+                                                Port port = new NeutronPort();
+                                                netid = s.getNetworkId();
+                                                String subnetid = s.getId();
 
-                                                    osClient1.networking().port().create(port);
-                                                    OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
-                                                    String portid = client1.getPort("router_name" + routerName + "test_use" + i).getId();
-                                                    rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
-                                                
+                                                port.toBuilder().networkId(netid)
+                                                        .fixedIp(nexthop, subnetid)
+                                                        .name("router_name" + routerName + "test_use" + i)
+                                                        .adminState(true);
+
+                                                osClient1.networking().port().create(port);
+                                                OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
+                                                String portid = client1.getPort("router_name" + routerName + "test_use" + i).getId();
+                                                rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
 
                                             }
                                         }
@@ -415,7 +405,7 @@ public class OpenStackPush {
                     } else {
                         break;
                     }
-                    
+
                 }
 
             } else if (o.get("request").toString().equals("CreateNetworkInterfaceRequest")) {
@@ -1511,15 +1501,15 @@ public class OpenStackPush {
                         break;
                     }
                 }
-                    //routing_info2.add(hp3);
+                //routing_info2.add(hp3);
 
                 routing_info_for_router2.put(rou, routing_info2);
 
             }
-            
-                String key = "routing_info" ;
-                o.put(key, routing_info_for_router2);
-            
+
+            String key = "routing_info";
+            o.put(key, routing_info_for_router2);
+
         }
         requests.add(o);
         if (o.size() == 0) {

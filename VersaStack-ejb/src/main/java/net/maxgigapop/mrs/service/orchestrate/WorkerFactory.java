@@ -12,6 +12,7 @@ import javax.ejb.EJBException;
  * @author xyang
  */
 public class WorkerFactory {
+
     static public WorkerBase createWorker(String workerClassStr) {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         WorkerBase worker = null;
@@ -19,7 +20,7 @@ public class WorkerFactory {
             Class<?> aClass = cl.loadClass(workerClassStr);
             worker = (WorkerBase) aClass.newInstance();
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException ex) {
-            throw new EJBException("WorkerFactory failed to create "+workerClassStr, ex);
+            throw new EJBException("WorkerFactory failed to create " + workerClassStr, ex);
         }
         return worker;
     }

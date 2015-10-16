@@ -41,37 +41,38 @@ define([
          * Initialize the model. This asyncronasly loads and parsed the model from the backend.
          * @returns {undefined}
          */
-        this.init = function (mode,callback,model) {
+        this.init = function (mode, callback, model) {
             var request = new XMLHttpRequest();
             if (mode === 1) {
                 //request.open("GET", "/VersaStack-web/data/json/max-aws.json");
                 //request.open("GET", "/VersaStack-web/data/json/model-all-hybrid.json");
                 request.open("GET", "/VersaStack-web/data/json/umd-anl-all-2.json");
             }
-            else if (mode === 2) {              
-                request.open("GET","/VersaStack-web/restapi/model/");
+            else if (mode === 2) {
+                request.open("GET", "/VersaStack-web/restapi/model/");
             }
-            
+
             //console.log("Mode: " + mode);
             request.setRequestHeader("Accept", "application/json");
             request.onload = function () {
                 if (model === null) {
                     var data = request.responseText;
-                } else var data = model;
-                
+                } else
+                    var data = model;
+
                 //console.log("Data: " + data);
-                
-                if (data.charAt(0) === '<') {                     
+
+                if (data.charAt(0) === '<') {
                     window.alert("Empty Topology.");
                     return;
                 } else if (data.charAt(0) === 'u') {
-                    data = JSON.parse(data);                                    
+                    data = JSON.parse(data);
                     versionID = data.version;
                     map = JSON.parse(data);
                 } else {
-                    data = JSON.parse(data);                                    
+                    data = JSON.parse(data);
                     versionID = data.version;
-                    map = JSON.parse(data.ttlModel); 
+                    map = JSON.parse(data.ttlModel);
                 }
 
                 if (INJECT) {
@@ -107,7 +108,7 @@ define([
                                 case values.topology:
                                 case values.node:
                                 case values.FileSystem:
-                                
+
                                     var toAdd;
                                     if (oldModel && oldModel.nodeMap[key]) {
                                         toAdd = oldModel.nodeMap[key];
@@ -115,7 +116,7 @@ define([
                                     } else {
                                         toAdd = new Node(val, map);
                                     }
-                                    toAdd.isTopology=type===values.topology;
+                                    toAdd.isTopology = type === values.topology;
                                     that.nodeMap[key] = toAdd;
                                     break;
                                 case values.bidirectionalPort:
@@ -141,7 +142,7 @@ define([
                                 case values.IOPerformanceMeasurementService:
                                 case values.DataTransferService:
                                 case values.DataTransferClusterService:
-                                    case values.NetworkObject:
+                                case values.NetworkObject:
                                     var toAdd;
                                     if (oldModel && oldModel.serviceMap[key]) {
                                         toAdd = oldModel.serviceMap[key];
@@ -242,7 +243,7 @@ define([
                             case values.topoType:
                             case values.value:
                             case values.hasLabel:
-                            case values.hasLabelGroup:    
+                            case values.hasLabelGroup:
                                 break;
                             case values.providesSubnet:
                                 var subnet = service_[key];
@@ -303,7 +304,7 @@ define([
                                 var ports = node_[key];
                                 map_(ports, function (portKey) {
                                     portKey = portKey.value;
-                                    var errorVal = portKey;                                    
+                                    var errorVal = portKey;
                                     var port = that.portMap[portKey];
                                     if (!port) {
                                         //port is undefined
@@ -378,8 +379,8 @@ define([
             request.send();
         };
 
-        this.getVersion = function(){
-            return versionID;  
+        this.getVersion = function () {
+            return versionID;
         }
 
         this.listNodes = function () {

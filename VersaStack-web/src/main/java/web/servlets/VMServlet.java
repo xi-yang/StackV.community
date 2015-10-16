@@ -66,7 +66,7 @@ public class VMServlet extends HttpServlet {
                 int serviceID = rs1.getInt(1);
 
                 Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
-                
+
                 prep = front_conn.prepareStatement("INSERT INTO Frontend.service_instance "
                         + "(`service_id`, `user_id`, `creation_time`, `referenceUUID`) VALUES (?, ?, ?, ?)");
                 prep.setInt(1, serviceID);

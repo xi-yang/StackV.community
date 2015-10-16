@@ -5,7 +5,7 @@ define([
         function (utils, values) {
             var map_ = utils.map_;
             function Service(backing, map) {
-                var that=this;
+                var that = this;
                 this._backing = backing;
                 this._map = map;
                 this.type = "";
@@ -24,7 +24,7 @@ define([
                     this._backing = backing;
                     this._map = map;
                     this.type = "";
-                    this.subnets=[];
+                    this.subnets = [];
                     init();
                 };
                 this.getTypeBrief = function () {

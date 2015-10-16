@@ -58,7 +58,7 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         OntModel modelAdd = aDelta.getModelAddition().getOntModel();
         OntModel modelReduc = aDelta.getModelReduction().getOntModel();
 
-        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, topologyURI);
+        OpenStackPush push = new OpenStackPush(url, NATServer, username, password, tenant, topologyURI);
         List<JSONObject> requests = null;
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         try {
@@ -91,7 +91,7 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         String requests = driverInstance.getProperty(requestId);
 
-        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, topologyURI);
+        OpenStackPush push = new OpenStackPush(url, NATServer, username, password, tenant, topologyURI);
         ObjectMapper mapper = new ObjectMapper();
         List<JSONObject> r = new ArrayList();
         try {
@@ -130,7 +130,7 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
             String topologyUri = driverInstance.getProperty("topologyUri");
             String NATServer = driverInstance.getProperty("NATServer");
 
-            OntModel ontModel = OpenStackNeutronModelBuilder.createOntology(url,NATServer, topologyUri, username, password, tenant);
+            OntModel ontModel = OpenStackNeutronModelBuilder.createOntology(url, NATServer, topologyUri, username, password, tenant);
 
             if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();

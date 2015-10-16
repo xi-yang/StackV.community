@@ -6,6 +6,8 @@
 package net.maxgigapop.mrs.service;
 
 import com.hp.hpl.jena.ontology.OntModel;
+import com.hp.hpl.jena.ontology.OntModelSpec;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.UUID;
@@ -106,7 +108,7 @@ public class HandleServiceCall {
         serviceInstance.getServiceDeltas().add(spaDelta);
         spaDelta.setServiceInstance(serviceInstance);
         DeltaPersistenceManager.save(spaDelta);
-        serviceInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
+        //serviceInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
         serviceInstance.setStatus("INIT");
         ServiceInstancePersistenceManager.merge(serviceInstance);
         return resultDelta;
@@ -150,7 +152,7 @@ public class HandleServiceCall {
         if (serviceInstance == null) {
             throw new EJBException(HandleServiceCall.class.getName() + ".propogateDeltas cannot find serviceInstance with uuid=" + serviceInstanceUuid);
         }
-        if (!serviceInstance.getStatus().equals("INIT") && !serviceInstance.getStatus().equals("PROPOGATED-PARTIAL")) {
+        if (!serviceInstance.getStatus().equals("INIT") && !serviceInstance.getStatus().equals("PROPAGATED-PARTIAL")) {
             throw new EJBException(HandleServiceCall.class.getName() + ".propogateDeltas needs  status='INIT' by " + serviceInstance + ", the actual status=" + serviceInstance.getStatus());
         }
         Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
@@ -174,10 +176,10 @@ public class HandleServiceCall {
                     systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta());
                 } catch (EJBException ejbEx) {
                     serviceInstance.setStatus("FAILED");
-                    ServiceInstancePersistenceManager.merge(serviceInstance);
+                    //ServiceInstancePersistenceManager.merge(serviceInstance);
                     throw ejbEx;
                 }
-                serviceDelta.setStatus("PROPOGATED");
+                serviceDelta.setStatus("PROPAGATED");
                 DeltaPersistenceManager.merge(serviceDelta);
                 if (!canMultiPropagate) {
                     break;
@@ -194,7 +196,7 @@ public class HandleServiceCall {
             ServiceDelta serviceDelta = itSD.next();
             if (serviceDelta.getStatus().equalsIgnoreCase("INIT")) {
                 hasInitiated = true;
-            } else if (serviceDelta.getStatus().equalsIgnoreCase("PROPOGATED")) {
+            } else if (serviceDelta.getStatus().equalsIgnoreCase("PROPAGATED")) {
                 hasPropagated = true;
             } else if (serviceDelta.getStatus().equalsIgnoreCase("COMMITTED")) {
                 hasCommited = true;
@@ -202,9 +204,9 @@ public class HandleServiceCall {
         }
         serviceInstance.setStatus("INIT");
         if (hasInitiated && hasPropagated) {
-            serviceInstance.setStatus("PROPOGATED-PARTIAL");
+            serviceInstance.setStatus("PROPAGATED-PARTIAL");
         } else if (hasPropagated && !hasCommited) {
-            serviceInstance.setStatus("PROPOGATED");
+            serviceInstance.setStatus("PROPAGATED");
         } else if (hasPropagated && hasCommited) {
             serviceInstance.setStatus("COMMITTED-PARTIAL");
         } else if (!hasPropagated && hasCommited) {
@@ -219,10 +221,10 @@ public class HandleServiceCall {
         if (serviceInstance == null) {
             throw new EJBException(HandleServiceCall.class.getName() + ".commitDeltas cannot find serviceInstance with uuid=" + serviceInstanceUuid);
         }
-        if (!serviceInstance.getStatus().equals("PROPOGATED")
-                && !serviceInstance.getStatus().equals("PROPOGATED-PARTIAL")
+        if (!serviceInstance.getStatus().equals("PROPAGATED")
+                && !serviceInstance.getStatus().equals("PROPAGATED-PARTIAL")
                 && !serviceInstance.getStatus().equals("COMMITTED-PARTIAL")) {
-            throw new EJBException(HandleServiceCall.class.getName() + ".commitDeltas needs  status='PROPOGATED' by " + serviceInstance + ", the actual status=" + serviceInstance.getStatus());
+            throw new EJBException(HandleServiceCall.class.getName() + ".commitDeltas needs  status='PROPAGATED' by " + serviceInstance + ", the actual status=" + serviceInstance.getStatus());
         }
         Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
         if (!itSD.hasNext()) {
@@ -240,7 +242,7 @@ public class HandleServiceCall {
             if (serviceDelta.getSystemDelta() == null) {
                 continue; // ??
             }
-            if (serviceDelta.getStatus().equals("PROPOGATED")) {
+            if (serviceDelta.getStatus().equals("PROPAGATED")) {
                 SystemInstance systemInstance = SystemInstancePersistenceManager.findBySystemDelta(serviceDelta.getSystemDelta());
                 systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(systemInstance.getReferenceUUID());
                 Future<String> asynResult = systemCallHandler.commitDelta(systemInstance);
@@ -263,7 +265,7 @@ public class HandleServiceCall {
             ServiceDelta serviceDelta = itSD.next();
             if (serviceDelta.getStatus().equalsIgnoreCase("INIT")) {
                 hasInitiated = true;
-            } else if (serviceDelta.getStatus().equalsIgnoreCase("PROPOGATED")) {
+            } else if (serviceDelta.getStatus().equalsIgnoreCase("PROPAGATED")) {
                 hasPropagated = true;
             } else if (serviceDelta.getStatus().equalsIgnoreCase("COMMITTED")) {
                 hasCommited = true;
@@ -271,9 +273,9 @@ public class HandleServiceCall {
         }
         serviceInstance.setStatus("INIT");
         if (hasInitiated && hasPropagated) {
-            serviceInstance.setStatus("PROPOGATED-PARTIAL");
+            serviceInstance.setStatus("PROPAGATED-PARTIAL");
         } else if (hasPropagated && !hasCommited) {
-            serviceInstance.setStatus("PROPOGATED");
+            serviceInstance.setStatus("PROPAGATED");
         } else if (hasPropagated && hasCommited) {
             serviceInstance.setStatus("COMMITTED-PARTIAL");
         } else if (!hasPropagated && hasCommited) {
@@ -283,10 +285,103 @@ public class HandleServiceCall {
         return serviceInstance.getStatus();
     }
 
+    //@TODO: get recursive tree into reduction delta
+    public String revertDeltas(String serviceInstanceUuid) {
+        ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
+        if (serviceInstance == null) {
+            throw new EJBException(HandleServiceCall.class.getName() + ".revertDeltas cannot find serviceInstance with uuid=" + serviceInstanceUuid);
+        }
+        if (!serviceInstance.getStatus().equals("PROPAGATED")
+                && !serviceInstance.getStatus().equals("COMMITTED")
+                && !serviceInstance.getStatus().equals("READY")) {
+            throw new EJBException(HandleServiceCall.class.getName() + ".revertDeltas needs  status='PROPAGATED' or 'COMMITTED' or 'READY' by " + serviceInstance + ", the actual status=" + serviceInstance.getStatus());
+        }
+        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
+        if (!itSD.hasNext()) {
+            throw new EJBException(HandleServiceCall.class.getName() + ".revertDeltas (by " + serviceInstance + ",  in status=" + serviceInstance.getStatus() + ") has none delta to commit.");
+        }
+        ServiceDelta reverseSvcDelta = new ServiceDelta();
+        reverseSvcDelta.setServiceInstance(serviceInstance);
+        reverseSvcDelta.setReferenceUUID(UUID.randomUUID().toString());
+        reverseSvcDelta.setStatus("INIT");
+        DeltaModel dmAddition = new DeltaModel();
+        dmAddition.setCommitted(false);
+        dmAddition.setDelta(reverseSvcDelta);
+        dmAddition.setIsAddition(true);
+        dmAddition.setOntModel(ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF));
+        DeltaModel dmReduction = new DeltaModel();
+        dmReduction.setCommitted(false);
+        dmReduction.setDelta(reverseSvcDelta);
+        dmReduction.setIsAddition(true);
+        dmReduction.setOntModel(ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF));
+        reverseSvcDelta.setModelAddition(dmAddition);
+        reverseSvcDelta.setModelReduction(dmReduction);
+        SystemDelta reverseSysDelta = new SystemDelta();
+        reverseSysDelta.setServiceDelta(reverseSvcDelta);
+        reverseSvcDelta.setSystemDelta(reverseSysDelta);
+        DeltaModel dmSysAddition = new DeltaModel();
+        dmSysAddition.setCommitted(false);
+        dmSysAddition.setDelta(reverseSvcDelta);
+        dmSysAddition.setIsAddition(true);
+        dmSysAddition.setOntModel(ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF));
+        DeltaModel dmSysReductiom = new DeltaModel();
+        dmSysReductiom.setCommitted(false);
+        dmSysReductiom.setDelta(reverseSvcDelta);
+        dmSysReductiom.setIsAddition(true);
+        dmSysReductiom.setOntModel(ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF));
+        reverseSysDelta.setModelAddition(dmSysAddition);
+        reverseSysDelta.setModelReduction(dmSysReductiom);
+        boolean canRevertAll = false;
+        String revertAll = serviceInstance.getProperty("revertAll");
+        if (revertAll != null && revertAll.equalsIgnoreCase("true")) {
+            canRevertAll = true;
+        }
+        while (itSD.hasNext()) {
+            ServiceDelta serviceDelta = itSD.next();
+            if (!canRevertAll && itSD.hasNext()) {
+                continue;
+            }
+            SystemDelta systemDelta = serviceDelta.getSystemDelta();
+            if (systemDelta == null) {
+                throw new EJBException(HandleServiceCall.class.getName() + ".revertDeltas encounters uncompiled (null systemDelta)  " + serviceDelta);
+            }
+            if (systemDelta.getReferenceVersionGroup() != null) {
+                //@TODO: make sure versionGroup has been updated (mandate verify method?)
+                reverseSysDelta.setReferenceVersionGroup(systemDelta.getReferenceVersionGroup());
+            }
+            // swap and add addition and reduction to reverse models
+            if (serviceDelta.getModelReduction() != null && serviceDelta.getModelReduction().getOntModel() != null) {
+                reverseSvcDelta.getModelAddition().getOntModel().add(serviceDelta.getModelReduction().getOntModel().getBaseModel());
+            }
+            if (serviceDelta.getModelAddition() != null && serviceDelta.getModelAddition().getOntModel() != null) {
+                reverseSvcDelta.getModelReduction().getOntModel().add(serviceDelta.getModelAddition().getOntModel().getBaseModel());
+            }
+            if (systemDelta.getModelReduction() != null && systemDelta.getModelReduction().getOntModel() != null) {
+                reverseSysDelta.getModelAddition().getOntModel().add(systemDelta.getModelReduction().getOntModel().getBaseModel());
+            }
+            if (systemDelta.getModelAddition() != null && systemDelta.getModelAddition().getOntModel() != null) {
+                reverseSysDelta.getModelReduction().getOntModel().add(systemDelta.getModelAddition().getOntModel().getBaseModel());
+            }
+        }
+        serviceInstance.getServiceDeltas().add(reverseSvcDelta);
+        DeltaPersistenceManager.save(reverseSvcDelta);
+        //serviceInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
+        if (serviceInstance.getStatus().equals("PROPAGATED")) {
+            serviceInstance.setStatus("PROPAGATED-PARTIAL");
+        } else {
+            serviceInstance.setStatus("COMMITTED-PARTIAL");
+        }
+        ServiceInstancePersistenceManager.merge(serviceInstance);
+        return serviceInstance.getStatus();
+    }
+
     public String checkStatus(String serviceInstanceUuid) {
         ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
         if (serviceInstance == null) {
             throw new EJBException(HandleServiceCall.class.getName() + ".checkStatus cannot find serviceInstance with uuid=" + serviceInstanceUuid);
+        }
+        if (!serviceInstance.getStatus().equals(ServiceInstancePersistenceManager.findById(serviceInstance.getId()).getStatus())) {
+            ServiceInstancePersistenceManager.merge(serviceInstance);
         }
         if (!serviceInstance.getStatus().equals("COMMITTED")) {
             return serviceInstance.getStatus();
@@ -307,12 +402,12 @@ public class HandleServiceCall {
             }
             // get cached systemInstance
             systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(systemInstance.getReferenceUUID());
-            
+
             /* changes with the removal of getCommitFlag
-            if (!systemInstance.getCommitFlag()) {
-                throw new EJBException(HandleServiceCall.class.getName() + ".checkStatus encounters un-commited systemInstance based on " + serviceDelta.getSystemDelta());
-            }
-            */
+             if (!systemInstance.getCommitFlag()) {
+             throw new EJBException(HandleServiceCall.class.getName() + ".checkStatus encounters un-commited systemInstance based on " + serviceDelta.getSystemDelta());
+             }
+             */
             Future<String> asyncStatus = systemInstance.getCommitStatus();
             serviceDelta.setStatus("FAILED");
             if (asyncStatus.isDone()) {

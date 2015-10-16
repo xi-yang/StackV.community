@@ -15,12 +15,13 @@ import javax.xml.bind.annotation.XmlRootElement;
  *
  * @author xyang
  */
-@XmlRootElement(name="serviceDelta")
+@XmlRootElement(name = "serviceDelta")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ServiceApiDelta {
-    @XmlElement(required=true) 
+
+    @XmlElement(required = true)
     protected String workerClassPath = "";
-    @XmlElement(required=true)
+    @XmlElement(required = true)
     protected String uuid = "";
     @XmlElement
     protected Date creationTime = null;
@@ -28,7 +29,7 @@ public class ServiceApiDelta {
     protected String modelReduction = null;
     @XmlElement
     protected String modelAddition = null;
-    
+
     public String getWorkerClassPath() {
         return workerClassPath;
     }
@@ -68,5 +69,5 @@ public class ServiceApiDelta {
     public void setModelAddition(String modelAddition) {
         this.modelAddition = modelAddition;
     }
-    
+
 }

@@ -78,7 +78,7 @@ public class AwsPush {
      * function to propagate all the requests
      * ************************************************
      */
-    public String pushPropagate(String modelRefTtl, String modelAddTtl, String modelReductTtl){
+    public String pushPropagate(String modelRefTtl, String modelAddTtl, String modelReductTtl) {
         String requests = "";
 
         OntModel modelRef;
@@ -88,7 +88,7 @@ public class AwsPush {
             modelRef = ModelUtil.unmarshalOntModel(modelRefTtl);
             modelAdd = ModelUtil.unmarshalOntModel(modelAddTtl);
             modelReduct = ModelUtil.unmarshalOntModel(modelReductTtl);
-            
+
             //add the batched resources
             modelRef = batchTool.expandBatchAbstraction(modelRef);
             modelAdd = batchTool.expandBatchAbstraction(modelAdd);
@@ -1813,8 +1813,8 @@ public class AwsPush {
                         + "?address mrs:type \"ipv4-prefix\" ."
                         + "?address mrs:value ?value}";
                 r1 = executeQuery(query, model, modelAdd);
-                if(!r1.hasNext()){
-                   throw new EJBException(String.format("Subnet %s does not have a valid CIDR", subnetIdTagValue));
+                if (!r1.hasNext()) {
+                    throw new EJBException(String.format("Subnet %s does not have a valid CIDR", subnetIdTagValue));
                 }
                 querySolution1 = r1.next();
                 RDFNode value = querySolution1.get("value");

@@ -34,22 +34,22 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
  *
  * @author xyang
  */
-
 @Singleton
 @LocalBean
 @Startup
-@AccessTimeout(value=10000) // 10 seconds
+@AccessTimeout(value = 10000) // 10 seconds
 public class SystemModelCoordinator {
+
     @EJB
     HandleSystemCall systemCallHandler;
-            
+
     // current VG with cached union ModelBase
     VersionGroup systemVersionGroup = null;
 
     public VersionGroup getSystemVersionGroup() {
         return systemVersionGroup;
     }
-    
+
     @Lock(LockType.WRITE)
     @Schedule(minute = "*", hour = "*", persistent = false)
     public void autoUpdate() {
@@ -58,10 +58,11 @@ public class SystemModelCoordinator {
         if (ditMap == null || ditMap.isEmpty()) {
             return;
         }
-        for (DriverInstance di: ditMap.values()) {
+        for (DriverInstance di : ditMap.values()) {
             synchronized (di) {
-                if (di.getHeadVersionItem() == null)
+                if (di.getHeadVersionItem() == null) {
                     return;
+                }
             }
         }
         if (this.systemVersionGroup == null) {
@@ -77,7 +78,7 @@ public class SystemModelCoordinator {
             }
         }
     }
-    
+
     @Lock(LockType.WRITE)
     public VersionGroup getLatest() {
         if (this.systemVersionGroup == null) {

@@ -1,23 +1,44 @@
-<driverInstance><properties>
-<entry><key>onos_access_key_id</key><value>karaf</value></entry>
-<entry><key>onos_secret_access_key</key><value>karaf</value></entry>
-<entry><key>topologyUri</key><value>urn:ogf:network:onos.maxgigapop.net:network</value></entry>
-<entry><key>driverEjbPath</key><value>java:module/OnosRESTDriver</value></entry>
-<entry><key>subsystemBaseUrl</key><value>http://127.0.0.1:8181/onos/v1</value></entry>
-<entry><key>srrg</key><value>{
-	"SRRG": [{
-		"id": "SRRG_id1",
-		"severity": 5,
-		"occurenceProbability": 0.5,
-		"devices": "of:0000000000000002",
-		"bidirectionalPorts": "of:0000000000000002:port-s2,of:0000000000000002:port-s2-eth1,of:0000000000000002:port-s2-eth2,of:0000000000000002:port-s2-eth3,of:0000000000000002:port-s2-eth4",
-	},
-	{
-		"id": "SRRG_id2",
-		"severity": 8,
-		"occurenceProbability": 0.2,
-		"devices": "of:0000000000000005",
-		"bidirectionalPorts": "of:0000000000000005:port-s5,of:0000000000000005:port-s5-eth1,of:0000000000000005:port-s5-eth2,of:0000000000000005:port-s5-eth3,of:0000000000000005:port-s5-eth4",	
-	}]
-}</value></entry></properties></driverInstance>
+<driverInstance>
+    <properties>
+        <entry>
+            <key>onos_access_key_id</key>
+            <value>karaf</value>
+        </entry>
+        <entry>
+            <key>onos_secret_access_key</key>
+            <value>karaf</value>
+        </entry>
+        <entry>
+            <key>topologyUri</key>
+            <value>urn:ogf:network:onos.maxgigapop.net:network</value>
+        </entry>
+        <entry>
+            <key>driverEjbPath</key>
+            <value>java:module/OnosRESTDriver</value>
+        </entry>
+        <entry>
+            <key>subsystemBaseUrl</key>
+            <value>http://127.0.0.1:8181/onos/v1</value>
+        </entry>
+        <entry>
+            <key>srrg</key>
+            <value>{
+                "SRRG": [{
+                "id": "SRRG_id1",
+                "severity": 5,
+                "occurenceProbability": 0.5,
+                "devices": "of:0000000000000002",
+                "bidirectionalPorts": "of:0000000000000002:port-s2,of:0000000000000002:port-s2-eth1,of:0000000000000002:port-s2-eth2,of:0000000000000002:port-s2-eth3,of:0000000000000002:port-s2-eth4",
+                },
+                {
+                "id": "SRRG_id2",
+                "severity": 8,
+                "occurenceProbability": 0.2,
+                "devices": "of:0000000000000005",
+                "bidirectionalPorts": "of:0000000000000005:port-s5,of:0000000000000005:port-s5-eth1,of:0000000000000005:port-s5-eth2,of:0000000000000005:port-s5-eth3,of:0000000000000005:port-s5-eth4",	
+                }]
+                }</value>
+        </entry>
+    </properties>
+</driverInstance>
 
