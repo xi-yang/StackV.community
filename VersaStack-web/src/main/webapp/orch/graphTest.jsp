@@ -132,8 +132,6 @@
                 $("#viz").attr("class", "");
 
                 buttonInit();
-
-                $.get("/VersaStack-web/ServiceServlet");
             }
             function drawGraph() {
                 var width = document.documentElement.clientWidth / settings.INIT_ZOOM;
