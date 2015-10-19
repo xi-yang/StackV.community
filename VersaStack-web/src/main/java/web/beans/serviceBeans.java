@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Random;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -444,6 +443,12 @@ public class serviceBeans {
             }
         }
 
+        return retMap;
+    }      
+    
+    private HashMap<String,ArrayList<String>> getJobProperties() throws SQLException {
+        HashMap<String, ArrayList<String>> retMap = new HashMap<>();
+        
         return retMap;
     }
     

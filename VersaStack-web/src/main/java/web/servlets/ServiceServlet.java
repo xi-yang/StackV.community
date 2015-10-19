@@ -28,6 +28,7 @@ public class ServiceServlet extends HttpServlet {
             Logger.getLogger(ServiceServlet.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
+    
 
     /**
      * Returns a short description of the servlet.
