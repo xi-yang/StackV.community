@@ -376,25 +376,14 @@ public class AwsModelBuilder {
                     model.add(model.createStatement(ROUTE, routeTo, ROUTE_TO));
                     while (i < associations.size() && !associations.isEmpty()) //get the routes from the amazon cloud to any destination
                     {
-                        String complementId = "-" + ec2Client.getIdTag(associations.get(i).getSubnetId());
+                        String complementId = ec2Client.getIdTag(associations.get(i).getSubnetId());
 
                         //if the association subnet is null just skip to the next one
-                        if (complementId.equals("-null")) {
+                        if (complementId.equals("null")) {
                             i++;
                             continue;
                         }
-
-                        ROUTE_FROM = RdfOwl.createResource(model, topologyURI + ":routefrom-" + routeId + complementId, networkAddress);
-
-                        String subnetId = null;
-                        if (!associations.isEmpty()) {
-                            subnetId = associations.get(i).getSubnetId();
-                        }
-                        if (subnetId != null) {
-                            model.add(model.createStatement(ROUTE_FROM, type, "subnet"));
-                            model.add(model.createStatement(ROUTE_FROM, value, ec2Client.getIdTag(subnetId)));
-                        }
-
+                        ROUTE_FROM = model.getResource(topologyURI+":"+complementId);
                         model.add(model.createStatement(ROUTE, routeFrom, ROUTE_FROM));
 
                         i++; //increment the association index

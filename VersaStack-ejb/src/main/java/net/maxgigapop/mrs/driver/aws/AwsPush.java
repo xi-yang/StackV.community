@@ -1151,28 +1151,26 @@ public class AwsPush {
             RDFNode mainRoute = q1.get("route");
 
             //get the subnets of the main route, that will tell the routeTable associations
-            query = "SELECT ?value WHERE {<" + mainRoute.asResource() + "> mrs:routeFrom ?routeFrom ."
-                    + "?routeFrom mrs:value ?value}";
+            query = "SELECT ?routeFrom WHERE {<" + mainRoute.asResource() + "> mrs:routeFrom ?routeFrom ."
+                    + "?routeFrom a mrs:SwitchingSubnet}";
             r2 = executeQuery(query, emptyModel, modelRedutc);
             while (r2.hasNext()) {
                 q1 = r2.next();
-                String value = "\"" + q1.getLiteral("value").toString() + "\"";
-                query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeFrom ?routeFrom ."
-                        + "?routeFrom mrs:value " + value + "}";
+                String routeFrom = q1.get("routeFrom").asResource().toString();
+                query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeFrom <" + routeFrom + ">}";
                 ResultSet r3 = executeQuery(query, emptyModel, modelRedutc);
                 if (!r3.hasNext()) {
                     throw new EJBException(String.format("new route %s does not contain all the subnet"
                             + " associations of the route table", route.asResource()));
                 }
             }
-            query = "SELECT ?value WHERE {<" + mainRoute.asResource() + "> mrs:routeFrom ?routeFrom ."
-                    + "?routeFrom mrs:value ?value}";
+            query = "SELECT ?routeFrom WHERE {<" + mainRoute.asResource() + "> mrs:routeFrom ?routeFrom ."
+                    + "?routeFrom a mrs:SwitchingSubnet}";
             r2 = executeQuery(query, model, emptyModel);
             while (r2.hasNext()) {
                 q1 = r2.next();
-                String value = "\"" + q1.getLiteral("value").toString() + "\"";
-                query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeFrom ?routeFrom ."
-                        + "?routeFrom mrs:value " + value + "}";
+                String routeFrom = q1.get("routeFrom").asResource().toString();
+                query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeFrom <" + routeFrom + ">}";
                 ResultSet r3 = executeQuery(query, emptyModel, modelRedutc);
                 if (!r3.hasNext()) {
                     throw new EJBException(String.format("new route %s does not contain all the subnet"
@@ -1183,7 +1181,6 @@ public class AwsPush {
             //find the destination and nex hop
             query = "SELECT  ?nextHop ?value WHERE {<" + route.asResource() + "> mrs:routeTo ?routeTo ."
                     + "<" + route.asResource() + "> mrs:nextHop ?nextHop ."
-                    + "?routeFrom mrs:type \"subnet\" ."
                     + "?routeTo mrs:value ?value}";
             r2 = executeQuery(query, emptyModel, modelRedutc);
             while (r2.hasNext()) {
@@ -1228,15 +1225,14 @@ public class AwsPush {
         String tempRequests = "";
         String query;
 
-        query = "SELECT ?route ?value WHERE {?route mrs:routeFrom ?routeFrom ."
-                + "?routeFrom mrs:type \"subnet\" ."
-                + "?routeFrom mrs:value ?value}";
+        query = "SELECT ?route ?routeFrom WHERE {?route mrs:routeFrom ?routeFrom ."
+                + "?routeFrom a mrs:SwitchingSubnet}";
         ResultSet r = executeQuery(query, emptyModel, modelReduct);
         while (r.hasNext()) {
             boolean continueFlag = false;
             boolean createRequest = true;
             QuerySolution querySolution = r.next();
-            RDFNode value = querySolution.get("value");
+            RDFNode value = querySolution.get("routeFrom");
             RDFNode route = querySolution.get("route");
 
             query = "SELECT ?table WHERE {?table mrs:hasRoute <" + route.asResource() + "> ."
@@ -1250,7 +1246,7 @@ public class AwsPush {
             QuerySolution querySolution1 = r1.next();
             RDFNode table = querySolution1.get("table");
 
-            String subnetIdTag = value.asLiteral().toString();
+            String subnetIdTag = value.asResource().toString().replace(topologyUri, "");
             String subnetId = getResourceId(subnetIdTag);
             String tableIdTag = table.asResource().toString().replace(topologyUri, "");
 
@@ -1271,17 +1267,15 @@ public class AwsPush {
                 }
             }
 
-            String querySubnetIdTag = "\"" + subnetIdTag + "\"";
             if (createRequest == true) {
                 //check that older routes in the table also include this  routeFrom
-                //network address
                 query = "SELECT ?route WHERE {<" + table.asResource() + "> mrs:hasRoute ?route}";
                 ResultSet r2 = executeQuery(query, model, emptyModel);
                 while (r2.hasNext()) {
                     QuerySolution q2 = r2.next();
                     RDFNode ro = q2.get("route");
                     query = "SELECT ?routeFrom WHERE {<" + ro.asResource() + "> mrs:routeFrom ?routeFrom ."
-                            + "?routeFrom mrs:value " + querySubnetIdTag + "}";
+                            + String.format("FILTER (?routeFrom = <%s>)}", topologyUri + subnetIdTag);
                     ResultSet r3 = executeQuery(query, emptyModel, modelReduct);
                     if (!r3.hasNext()) {
                         continueFlag = true;
@@ -1927,14 +1921,13 @@ public class AwsPush {
         String tempRequests = "";
         String query;
 
-        query = "SELECT ?route ?value WHERE {?route mrs:routeFrom ?routeFrom ."
-                + "?routeFrom mrs:type \"subnet\" ."
-                + "?routeFrom mrs:value ?value}";
+        query = "SELECT ?route ?routeFrom WHERE {?route mrs:routeFrom ?routeFrom ."
+                + "?routeFrom a mrs:SwitchingSubnet}";
         ResultSet r = executeQuery(query, emptyModel, modelAdd);
         while (r.hasNext()) {
             boolean createRequest = true;
             QuerySolution querySolution = r.next();
-            RDFNode value = querySolution.get("value");
+            RDFNode value = querySolution.get("routeFrom");
             RDFNode route = querySolution.get("route");
 
             query = "SELECT ?table WHERE {?table mrs:hasRoute <" + route.asResource() + "> ."
@@ -1948,7 +1941,7 @@ public class AwsPush {
             QuerySolution querySolution1 = r1.next();
             RDFNode table = querySolution1.get("table");
 
-            String subnetIdTag = value.asLiteral().toString();
+            String subnetIdTag = value.asResource().toString().replace(topologyUri, "");
             String tableIdTag = table.asResource().toString().replace(topologyUri, "");
 
             RouteTable rt = ec2Client.getRoutingTable(getTableId(tableIdTag));
@@ -1971,7 +1964,7 @@ public class AwsPush {
                     QuerySolution q2 = r2.next();
                     RDFNode ro = q2.get("route");
                     query = "SELECT ?routeFrom WHERE {<" + ro.asResource() + "> mrs:routeFrom ?routeFrom ."
-                            + "?routeFrom mrs:value " + querySubnetIdTag + "}";
+                            + String.format("FILTER (?routeFrom = <%s>)}", topologyUri + subnetIdTag);
                     ResultSet r3 = executeQuery(query, emptyModel, modelAdd);
                     if (!r3.hasNext()) {
                         throw new EJBException(String.format("Route  %s does state"
@@ -2197,28 +2190,26 @@ public class AwsPush {
 
             if (fromGateway == null) { //skip this step as route came from gateway
                 //get the subnets of the main route, that will tell the routeTable associations
-                query = "SELECT ?value WHERE {<" + mainRoute.asResource() + "> mrs:routeFrom ?routeFrom ."
-                        + "?routeFrom mrs:value ?value}"; //to avoid processing this routeFrom statement
+                query = "SELECT ?value WHERE {<" + mainRoute.asResource() + "> mrs:routeFrom ?routeFrom}"; //to avoid processing this routeFrom statement
                 r2 = executeQuery(query, emptyModel, modelAdd);
                 while (r2.hasNext()) {
                     q1 = r2.next();
-                    String value = "\"" + q1.getLiteral("value").toString() + "\"";
+                    String routeFrom = q1.get("routeFrom").asResource().toString();
                     query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeFrom ?routeFrom ."
-                            + "?routeFrom mrs:value " + value + "}";
+                            + String.format("FILTER (?routeFrom = <%s>)}", topologyUri + routeFrom);
                     r3 = executeQuery(query, emptyModel, modelAdd);
                     if (!r3.hasNext()) {
                         throw new EJBException(String.format("new route %s does not contain all the subnet"
                                 + "associations od the route table", route.asResource()));
                     }
                 }
-                query = "SELECT ?value WHERE {<" + mainRoute.asResource() + "> mrs:routeFrom ?routeFrom ."
-                        + "?routeFrom mrs:value ?value}"; //to avoid processing this routeFrom statement
+                query = "SELECT ?value WHERE {<" + mainRoute.asResource() + "> mrs:routeFrom ?routeFrom}"; //to avoid processing this routeFrom statement
                 r2 = executeQuery(query, model, emptyModel);
                 while (r2.hasNext()) {
                     q1 = r2.next();
-                    String value = "\"" + q1.getLiteral("value").toString() + "\"";
+                    String routeFrom = q1.getLiteral("routeFrom").toString();
                     query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeFrom ?routeFrom ."
-                            + "?routeFrom mrs:value " + value + "}";
+                            + String.format("FILTER (?routeFrom = <%s>)}", topologyUri + routeFrom);
                     r3 = executeQuery(query, emptyModel, modelAdd);
                     if (!r3.hasNext()) {
                         throw new EJBException(String.format("new route %s does not contain all the subnet"
