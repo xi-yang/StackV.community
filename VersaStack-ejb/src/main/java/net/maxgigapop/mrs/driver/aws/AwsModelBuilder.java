@@ -379,7 +379,7 @@ public class AwsModelBuilder {
                         String complementId = ec2Client.getIdTag(associations.get(i).getSubnetId());
 
                         //if the association subnet is null just skip to the next one
-                        if (complementId.equals("null")) {
+                        if (complementId == null) {
                             i++;
                             continue;
                         }

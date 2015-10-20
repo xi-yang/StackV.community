@@ -2190,26 +2190,26 @@ public class AwsPush {
 
             if (fromGateway == null) { //skip this step as route came from gateway
                 //get the subnets of the main route, that will tell the routeTable associations
-                query = "SELECT ?value WHERE {<" + mainRoute.asResource() + "> mrs:routeFrom ?routeFrom}"; //to avoid processing this routeFrom statement
+                query = "SELECT ?routeFrom WHERE {<" + mainRoute.asResource() + "> mrs:routeFrom ?routeFrom}"; //to avoid processing this routeFrom statement
                 r2 = executeQuery(query, emptyModel, modelAdd);
                 while (r2.hasNext()) {
                     q1 = r2.next();
                     String routeFrom = q1.get("routeFrom").asResource().toString();
                     query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeFrom ?routeFrom ."
-                            + String.format("FILTER (?routeFrom = <%s>)}", topologyUri + routeFrom);
+                            + String.format("FILTER (?routeFrom = <%s>)}",routeFrom);
                     r3 = executeQuery(query, emptyModel, modelAdd);
                     if (!r3.hasNext()) {
                         throw new EJBException(String.format("new route %s does not contain all the subnet"
                                 + "associations od the route table", route.asResource()));
                     }
                 }
-                query = "SELECT ?value WHERE {<" + mainRoute.asResource() + "> mrs:routeFrom ?routeFrom}"; //to avoid processing this routeFrom statement
+                query = "SELECT ?routeFrom WHERE {<" + mainRoute.asResource() + "> mrs:routeFrom ?routeFrom}"; //to avoid processing this routeFrom statement
                 r2 = executeQuery(query, model, emptyModel);
                 while (r2.hasNext()) {
                     q1 = r2.next();
                     String routeFrom = q1.getLiteral("routeFrom").toString();
                     query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeFrom ?routeFrom ."
-                            + String.format("FILTER (?routeFrom = <%s>)}", topologyUri + routeFrom);
+                            + String.format("FILTER (?routeFrom = <%s>)}",routeFrom);
                     r3 = executeQuery(query, emptyModel, modelAdd);
                     if (!r3.hasNext()) {
                         throw new EJBException(String.format("new route %s does not contain all the subnet"
