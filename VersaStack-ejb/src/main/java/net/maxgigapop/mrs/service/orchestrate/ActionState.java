@@ -10,6 +10,7 @@ package net.maxgigapop.mrs.service.orchestrate;
  * @author xyang
  */
 public class ActionState {
+
     static final public String IDLE = "IDLE";
     static final public String PROCESSING = "PROCESSING";
     static final public String CANCELLED = "CANCELLED";

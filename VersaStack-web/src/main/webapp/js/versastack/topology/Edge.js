@@ -56,8 +56,8 @@ define([], function () {
                 }
             }
         };
-        
-        
+
+
     }
     return Edge;
 });

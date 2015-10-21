@@ -42,6 +42,7 @@ import net.maxgigapop.mrs.service.compute.MCE_MPVlanConnection;
  * @author xyang
  */
 public class ActionBase {
+
     protected String name = "";
     protected String mceBeanPath = "";
     protected String state = ActionState.IDLE;
@@ -49,16 +50,17 @@ public class ActionBase {
     protected ServiceDelta inputDelta = null;
     protected ServiceDelta outputDelta = null;
     protected List<ActionBase> dependencies = new ArrayList<>();
-    protected List<ActionBase> uppers  = new ArrayList<>();
+    protected List<ActionBase> uppers = new ArrayList<>();
     private static final Logger log = Logger.getLogger(ActionBase.class.getName());
 
-    private ActionBase() { }
-    
+    private ActionBase() {
+    }
+
     public ActionBase(String name, String mceBean) {
         this.name = name;
         this.mceBeanPath = mceBean;
     }
-    
+
     public String getName() {
         return name;
     }
@@ -75,7 +77,6 @@ public class ActionBase {
         this.mceBeanPath = mceBeanPath;
     }
 
-    
     public String getState() {
         return state;
     }
@@ -83,7 +84,7 @@ public class ActionBase {
     public void setState(String mceState) {
         this.state = mceState;
     }
-    
+
     public ModelBase getReferenceModel() {
         return referenceModel;
     }
@@ -116,7 +117,6 @@ public class ActionBase {
         this.uppers = uppers;
     }
 
-    
     public List<ActionBase> getDependencies() {
         return dependencies;
     }
@@ -124,8 +124,9 @@ public class ActionBase {
     public void addDependent(ActionBase action) {
         if (!dependencies.contains(action)) {
             dependencies.add(action);
-            if (!action.getUppers().contains(this)) 
+            if (!action.getUppers().contains(this)) {
                 action.getUppers().add(this);
+            }
         }
     }
 
@@ -133,58 +134,64 @@ public class ActionBase {
         if (dependencies.contains(action)) {
             dependencies.remove(action);
             dependencies.add(action);
-            if (action.getUppers().contains(this)) 
+            if (action.getUppers().contains(this)) {
                 action.getUppers().remove(this);
+            }
         }
     }
 
     public ActionBase getIdleLeaf() {
         boolean hasChildInProcessing = false;
-        for (ActionBase action: this.dependencies) {
+        for (ActionBase action : this.dependencies) {
             ActionBase deeperAction = action.getIdleLeaf();
-            if (deeperAction != null)
+            if (deeperAction != null) {
                 return deeperAction;
-            if (action.getState().equals(ActionState.PROCESSING))
+            }
+            if (action.getState().equals(ActionState.PROCESSING)) {
                 hasChildInProcessing = true;
+            }
         }
-        if (this.state.equals(ActionState.IDLE) && !hasChildInProcessing)
+        if (this.state.equals(ActionState.IDLE) && !hasChildInProcessing) {
             return this;
+        }
         return null;
     }
-    
+
     public Set<ActionBase> getIndependentIdleLeaves(ActionBase action) {
-        if (this.equals(action))
+        if (this.equals(action)) {
             return null;
+        }
         Set<ActionBase> retList = null;
-        for (ActionBase A: this.dependencies) {
-            if (A.equals(action))
+        for (ActionBase A : this.dependencies) {
+            if (A.equals(action)) {
                 continue;
+            }
             Set<ActionBase> addList = A.getIndependentIdleLeaves(action);
             if (retList == null) {
                 retList = new HashSet<>();
             }
             if (addList != null) {
                 retList.addAll(addList);
-            } else if (A.getState().equals(ActionState.IDLE) && action.hasAllDependenciesMerged()){
+            } else if (A.getState().equals(ActionState.IDLE) && action.hasAllDependenciesMerged()) {
                 retList.add(A);
             }
         }
         return retList;
     }
-    
+
     public boolean hasAllDependenciesMerged() {
-        for (ActionBase action: this.dependencies) {
+        for (ActionBase action : this.dependencies) {
             if (!action.getState().equals(ActionState.MERGED)) {
                 return false;
             }
         }
         return true;
     }
-    
+
     public Future<ServiceDelta> execute() {
         try {
             Context ejbCxt = new InitialContext();
-            IModelComputationElement ejbMce = (IModelComputationElement)ejbCxt.lookup(this.mceBeanPath);
+            IModelComputationElement ejbMce = (IModelComputationElement) ejbCxt.lookup(this.mceBeanPath);
             this.state = ActionState.PROCESSING;
             Future<ServiceDelta> asyncResult = ejbMce.process(referenceModel, inputDelta);
             //# not FINISHED yet
@@ -192,9 +199,9 @@ public class ActionBase {
         } catch (NamingException ex) {
             this.state = ActionState.FAILED;
             throw new EJBException(this + " failed to invoke MCE bean");
-        }        
+        }
     }
-    
+
     public void mergeResult(ServiceDelta childDelta) {
         if (inputDelta == null) {
             inputDelta = childDelta;
@@ -203,27 +210,29 @@ public class ActionBase {
         // if outputDelta is null (action not executed) merge to inputDelta
         ServiceDelta targetDelta = inputDelta;
         if (outputDelta != null) // otherwise, merge to outputDelta
+        {
             targetDelta = outputDelta;
+        }
         // merging models A (childDelta) into B (this.inputDelta)
         // merge addition 
-        if (childDelta.getModelAddition() != null && childDelta.getModelAddition().getOntModel() != null &&
-                targetDelta.getModelAddition() != null && targetDelta.getModelAddition().getOntModel() != null) {
+        if (childDelta.getModelAddition() != null && childDelta.getModelAddition().getOntModel() != null
+                && targetDelta.getModelAddition() != null && targetDelta.getModelAddition().getOntModel() != null) {
             OntModel mergedAddition = this.mergeOntModel(childDelta.getModelAddition().getOntModel(), targetDelta.getModelAddition().getOntModel());
             targetDelta.getModelAddition().setOntModel(mergedAddition);
         }
         // merge reduction         
-        if (childDelta.getModelReduction()!= null && childDelta.getModelReduction().getOntModel() != null &&
-                targetDelta.getModelReduction() != null && targetDelta.getModelReduction().getOntModel() != null) {
+        if (childDelta.getModelReduction() != null && childDelta.getModelReduction().getOntModel() != null
+                && targetDelta.getModelReduction() != null && targetDelta.getModelReduction().getOntModel() != null) {
             OntModel mergedReduction = this.mergeOntModel(childDelta.getModelReduction().getOntModel(), targetDelta.getModelReduction().getOntModel());
             targetDelta.getModelReduction().setOntModel(mergedReduction);
         }
     }
-    
+
     protected OntModel mergeOntModel(OntModel modelA, OntModel modelB) {
         OntModel mergedModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         //## simplified merge --> child actions are responsible to remove unneeded annotations
-        mergedModel.add(modelA.getBaseModel());        
-        mergedModel.add(modelB.getBaseModel());    
+        mergedModel.add(modelA.getBaseModel());
+        mergedModel.add(modelB.getBaseModel());
         // find resolved (dungling) actions from B
         String sparql = "SELECT ?someResource ?policyAction WHERE {"
                 + "?someResource spa:dependOn ?policyAction . "
@@ -261,16 +270,18 @@ public class ActionBase {
 
         return mergedModel;
     }
-    
+
     public void cleanupOutputDelta() {
         if (this.outputDelta != null) {
-            if (this.outputDelta.getModelAddition() != null && this.outputDelta.getModelAddition().getOntModel() != null)
+            if (this.outputDelta.getModelAddition() != null && this.outputDelta.getModelAddition().getOntModel() != null) {
                 cleanupSpaModel(this.outputDelta.getModelAddition().getOntModel());
-            if (this.outputDelta.getModelReduction() != null && this.outputDelta.getModelReduction().getOntModel() != null)
+            }
+            if (this.outputDelta.getModelReduction() != null && this.outputDelta.getModelReduction().getOntModel() != null) {
                 cleanupSpaModel(this.outputDelta.getModelReduction().getOntModel());
+            }
         }
     }
-    
+
     private void cleanupSpaModel(OntModel spaModel) {
         List<Statement> listStmtsToRemove = new ArrayList<>();
         String sparql = "SELECT ?policyAction ?policyData WHERE {"
@@ -286,39 +297,41 @@ public class ActionBase {
             Resource resPolicy = solution.getResource("policyAction");
             Resource resPolicyData = solution.getResource("policyData");
             List<Statement> listStmts = new ArrayList<>();
-            
+
             resPolicy = spaModel.getResource(resPolicy.getURI());
             ModelUtil.listRecursiveDownTree(resPolicy, Spa.getURI(), listStmts);
-            if (!listStmts.isEmpty())
+            if (!listStmts.isEmpty()) {
                 listStmtsToRemove.addAll(listStmts);
-            
+            }
+
             resPolicyData = spaModel.getResource(resPolicyData.getURI());
             ModelUtil.listRecursiveDownTree(resPolicyData, Spa.getURI(), listStmts);
-            if (!listStmts.isEmpty())
+            if (!listStmts.isEmpty()) {
                 listStmtsToRemove.addAll(listStmts);
+            }
         }
-        
-        
+
         // remove ?resData spa:dependON
         sparql = "SELECT ?resData WHERE {"
                 + "?resData spa:dependOn ?somePolicy . "
                 + "}";
         rs = ModelUtil.sparqlQuery(spaModel, sparql);
-        while (rs.hasNext()){
+        while (rs.hasNext()) {
             QuerySolution solution = rs.next();
             Resource resData = solution.getResource("resData");
-            StmtIterator iterDO = spaModel.listStatements(resData, null, (RDFNode)null);
-            while(iterDO.hasNext())
+            StmtIterator iterDO = spaModel.listStatements(resData, null, (RDFNode) null);
+            while (iterDO.hasNext()) {
                 listStmtsToRemove.add(iterDO.next());
+            }
             /*
-            List<Statement> listStmts = new ArrayList<>();
-            resData = spaModel.getResource(resData.getURI());
-            ModelUtil.listRecursiveDownTree(resData, Nml.getURI(), listStmts);
-            while(!listStmts.isEmpty())
-                listStmtsToRemove.addAll(listStmts);
-            */
+             List<Statement> listStmts = new ArrayList<>();
+             resData = spaModel.getResource(resData.getURI());
+             ModelUtil.listRecursiveDownTree(resData, Nml.getURI(), listStmts);
+             while(!listStmts.isEmpty())
+             listStmtsToRemove.addAll(listStmts);
+             */
         }
-                
+
         // remove statements of resource of spa#Abstraction type
         sparql = "SELECT ?abstraction WHERE {"
                 + String.format("?abstraction a <%s>. ", Spa.Abstraction)
@@ -327,11 +340,12 @@ public class ActionBase {
         while (rs.hasNext()) {
             QuerySolution solution = rs.next();
             Resource resAbstraction = solution.getResource("abstraction");
-            StmtIterator iterAS = spaModel.listStatements(resAbstraction, null, (RDFNode)null);
-            while (iterAS.hasNext())
+            StmtIterator iterAS = spaModel.listStatements(resAbstraction, null, (RDFNode) null);
+            while (iterAS.hasNext()) {
                 listStmtsToRemove.add(iterAS.next());
+            }
         }
-        
+
         // sanity check
         spaModel.remove(listStmtsToRemove);
         sparql = "SELECT ?policyX WHERE {"
@@ -341,11 +355,11 @@ public class ActionBase {
         rs = ModelUtil.sparqlQuery(spaModel, sparql);
         while (rs.hasNext()) {
             String policyAnotation = rs.next().getResource("policyX").toString();
-            throw new EJBException(this + ".cleanupSpaModel() failed to clean up policy annotation: " +  policyAnotation);
+            throw new EJBException(this + ".cleanupSpaModel() failed to clean up policy annotation: " + policyAnotation);
         }
-     }
+    }
 
     public String toString() {
-        return "WorkerAction(" + this.name+"->"+this.mceBeanPath+")";
+        return "WorkerAction(" + this.name + "->" + this.mceBeanPath + ")";
     }
 }

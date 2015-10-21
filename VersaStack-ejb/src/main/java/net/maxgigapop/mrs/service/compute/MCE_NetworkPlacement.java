@@ -465,7 +465,7 @@ public class MCE_NetworkPlacement implements IModelComputationElement {
                         + "?gateway mrs:hasTag ?tag ."
                         + "?tag mrs:value ?value}";
                 r = ModelUtil.sparqlQuery(spaModel, sparql);
-                if(r.hasNext()) {
+                if (r.hasNext()) {
                     QuerySolution q1 = r.next();
                     Literal value = q1.get("value").asLiteral();
                     Resource gateway = q1.getResource("gateway");
@@ -475,7 +475,7 @@ public class MCE_NetworkPlacement implements IModelComputationElement {
             //TODO what happens if policyAction did not create a subnet
             else if (type.toString().equalsIgnoreCase(Mrs.SwitchingSubnet.toString())) {
                 sparql = String.format("SELECT ?subnet WHERE {<%s>  nml:hasService ?service .", resNetwork)
-                        +"?service a nml:SwitchingService ."
+                        + "?service a nml:SwitchingService ."
                         + "?service mrs:providesSubnet ?subnet}";
                 r = ModelUtil.sparqlQuery(spaModel, sparql);
                 if (r.hasNext()) {

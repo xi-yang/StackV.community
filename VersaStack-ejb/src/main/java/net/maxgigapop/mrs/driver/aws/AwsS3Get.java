@@ -17,67 +17,60 @@ import java.util.List;
  *
  * @author muzcategui
  */
-public class AwsS3Get 
-{
-    private AmazonS3Client client= null;
-    private List<Bucket> buckets=null;
-    
-    public AwsS3Get(String access_key_id, String secret_access_key,Regions region)
-    {
-        AwsAuthenticateService authenticate=new AwsAuthenticateService(access_key_id,secret_access_key);
+public class AwsS3Get {
+
+    private AmazonS3Client client = null;
+    private List<Bucket> buckets = null;
+
+    public AwsS3Get(String access_key_id, String secret_access_key, Regions region) {
+        AwsAuthenticateService authenticate = new AwsAuthenticateService(access_key_id, secret_access_key);
         this.client = authenticate.AwsAuthenticateS3Service(Region.getRegion(region));
-        
-         buckets=this.client.listBuckets();
+
+        buckets = this.client.listBuckets();
     }
-    
+
     //get the current client
-    public  AmazonS3Client getClient()
-    {
+    public AmazonS3Client getClient() {
         return this.client;
     }
-    
+
     //get the account owner
-    public Owner getAccountOwner()
-    {
+    public Owner getAccountOwner() {
         return this.client.getS3AccountOwner();
     }
-    
+
     //get the list of all the buckets in the account
-    public List<Bucket> getBuckets()
-    {
+    public List<Bucket> getBuckets() {
         return buckets;
     }
-    
+
     //get a specific bucket from the a list of buckets from its name
-    public Bucket getBucket(List<Bucket> buckets,String name)
-    {
-        for(Bucket b : buckets)
-        {
-            if(b.getName().equals(name))
+    public Bucket getBucket(List<Bucket> buckets, String name) {
+        for (Bucket b : buckets) {
+            if (b.getName().equals(name)) {
                 return b;
+            }
         }
-        
+
         return null;
     }
-    
-   //get a list of all the objects within an specific bucket 
-    public List<S3ObjectSummary> getObjects(Bucket bucket)
-    {
-       List<S3ObjectSummary> objects=new ArrayList(); 
-       
-       ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
-               .withBucketName(bucket.getName());
-       ObjectListing objectListing;
 
-       do {
+    //get a list of all the objects within an specific bucket 
+    public List<S3ObjectSummary> getObjects(Bucket bucket) {
+        List<S3ObjectSummary> objects = new ArrayList();
+
+        ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+                .withBucketName(bucket.getName());
+        ObjectListing objectListing;
+
+        do {
             objectListing = this.client.listObjects(listObjectsRequest);
-            for (S3ObjectSummary objectSummary :objectListing.getObjectSummaries()) 
-            {
-		objects.add(objectSummary);
+            for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
+                objects.add(objectSummary);
             }
-	listObjectsRequest.setMarker(objectListing.getNextMarker());
-            } while (objectListing.isTruncated());
-       
-       return objects;
+            listObjectsRequest.setMarker(objectListing.getNextMarker());
+        } while (objectListing.isTruncated());
+
+        return objects;
     }
 }

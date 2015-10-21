@@ -13,8 +13,8 @@ import javax.servlet.http.HttpServletResponse;
 public class DriverServlet extends HttpServlet {
 
     /**
-     * Collects parameters from Driver forms and collates into HashMap, 
-     * before passing the new map into the serviceBean for model modification.
+     * Collects parameters from Driver forms and collates into HashMap, before
+     * passing the new map into the serviceBean for model modification.
      * <br/>
      * Upon completion, servlet redirects to service page with error code.
      *
@@ -38,17 +38,17 @@ public class DriverServlet extends HttpServlet {
                 paramMap.put(paramName, paramValue);
             }
         }
-        
+
         // Connect dynamically generated elements
         for (int i = 1; i <= 5; i++) {
             if (paramMap.containsKey("apropname" + i)) {
                 paramMap.put(paramMap.get("apropname" + i), paramMap.get("apropval" + i));
-                
+
                 paramMap.remove("apropname" + i);
                 paramMap.remove("apropval" + i);
             }
         }
-        
+
         paramMap.remove("driver_id");
         paramMap.remove("form_install");
 

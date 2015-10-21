@@ -36,16 +36,15 @@ public class OpenStackGet {
     private List<? extends Router> routers = null;
     private List<? extends RouterInterface> routerinterface = null;
     public List<? extends HostRoute> hostroute = null;
-    public List<? extends Hypervisor> hypervisors =null;
-    public List<? extends NovaFloatingIP> novafloatingIps =null;
+    public List<? extends Hypervisor> hypervisors = null;
+    public List<? extends NovaFloatingIP> novafloatingIps = null;
 
-    public  OpenStackGet(String url,String NATServer, String username, String password, String tenantName) {
+    public OpenStackGet(String url, String NATServer, String username, String password, String tenantName) {
         //authenticate
         Authenticate authenticate = new Authenticate();
         NeutronRouterInterface ri = new NeutronRouterInterface();
-        
-         client = authenticate.openStackAuthenticate(url,NATServer, username, password, tenantName);
 
+        client = authenticate.openStackAuthenticate(url, NATServer, username, password, tenantName);
 
         //get the resources
         networks = client.networking().network().list();
@@ -56,7 +55,7 @@ public class OpenStackGet {
         floatingIps = client.networking().floatingip().list();
         routers = client.networking().router().list();
         novafloatingIps = (List<? extends NovaFloatingIP>) client.compute().floatingIps().list();
-        
+
     }
 
     OpenStackGet(String url, String user_name, String password, String tenantName) {
@@ -77,7 +76,6 @@ public class OpenStackGet {
         }
         return null;
     }
-   
 
     //get all the subnets in the tenant
     public List<? extends Subnet> getSubnets() {
@@ -215,9 +213,11 @@ public class OpenStackGet {
         }
         return null;
     }
-   public List<? extends NovaFloatingIP> getNovaFloatingIP(){
-       return novafloatingIps;
-   }
+
+    public List<? extends NovaFloatingIP> getNovaFloatingIP() {
+        return novafloatingIps;
+    }
+
     //get a list of all the hypervisors
     public List<? extends Hypervisor> getHypervisors() {
         return hypervisors;
@@ -232,16 +232,14 @@ public class OpenStackGet {
         }
         return null;
     }
-    
+
     //get all the routers
-    public List<? extends Router> getRouters()
-    {
+    public List<? extends Router> getRouters() {
         return routers;
     }
-    
+
     //get a specific route by id or name
-    public Router getRouter(String id)
-    {
+    public Router getRouter(String id) {
         for (Router router : routers) {
             if (router.getId().equals(id) || router.getName().equals(id)) {
                 return router;
@@ -269,15 +267,14 @@ public class OpenStackGet {
     //get the name of a server 
     public String getServereName(Server r) {
         String name = r.getName();
-        if (name ==null || name.isEmpty()) {
+        if (name == null || name.isEmpty()) {
             return r.getId();
         } else {
             return r.getName();
         }
     }
-    
-    public String getVolumeName(Volume r)
-    {
+
+    public String getVolumeName(Volume r) {
         String name = r.getName();
         if (name == null || name.isEmpty()) {
             return r.getId();
@@ -285,15 +282,17 @@ public class OpenStackGet {
             return r.getName();
         }
     }
-    public String getInterfaceSubnetID(NeutronRouterInterface i){
+
+    public String getInterfaceSubnetID(NeutronRouterInterface i) {
         return i.getSubnetId();
     }
-    public String getInterfacePortID(NeutronRouterInterface i){
+
+    public String getInterfacePortID(NeutronRouterInterface i) {
         return i.getPortId();
     }
-    public String getInterfaceRouterID(NeutronRouterInterface i){
+
+    public String getInterfaceRouterID(NeutronRouterInterface i) {
         return i.getId();
     }
-    
-   
+
 }

@@ -3,7 +3,6 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package net.maxgigapop.mrs.bean;
 
 import java.io.Serializable;
@@ -34,25 +33,26 @@ import net.maxgigapop.mrs.bean.persist.PersistentEntity;
 @Entity
 @Table(name = "service_instance")
 public class ServiceInstance extends PersistentEntity implements Serializable {
+
     private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-    
+
     private String referenceUUID;
 
-    @OneToMany(mappedBy="serviceInstance", cascade = {CascadeType.ALL})
-    protected List<ServiceDelta> serviceDeltas = null;    
-    
-    
+    @OneToMany(mappedBy = "serviceInstance", cascade = {CascadeType.ALL})
+    protected List<ServiceDelta> serviceDeltas = null;
+
     @ElementCollection
     @JoinTable(name = "service_instance_property", joinColumns = @JoinColumn(name = "serviceInstanceId"))
     @MapKeyColumn(name = "property")
-    @Lob @Column(name="value")
+    @Lob
+    @Column(name = "value")
     private Map<String, String> properties = new HashMap<String, String>();
 
     String status = "INIT";
-    
+
     public Long getId() {
         return id;
     }
@@ -92,17 +92,18 @@ public class ServiceInstance extends PersistentEntity implements Serializable {
     public void setProperties(Map<String, String> properties) {
         this.properties = properties;
     }
-    
+
     public String getProperty(String key) {
-        if (!this.properties.containsKey(key))
+        if (!this.properties.containsKey(key)) {
             return null;
+        }
         return this.properties.get(key);
     }
 
     public void putProperty(String key, String value) {
         this.properties.put(key, value);
     }
-    
+
     @Override
     public int hashCode() {
         int hash = 0;
@@ -127,5 +128,5 @@ public class ServiceInstance extends PersistentEntity implements Serializable {
     public String toString() {
         return "net.maxgigapop.mrs.model.ServiceInstance[ id=" + id + " ]";
     }
-    
+
 }

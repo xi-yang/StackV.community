@@ -16,19 +16,19 @@ import javax.xml.bind.annotation.XmlSchemaType;
  *
  * @author max
  */
-@XmlRootElement(name="model")
+@XmlRootElement(name = "model")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ApiModelBase {
-    
-    @XmlElement(required=true) 
+
+    @XmlElement(required = true)
     protected Long id = 0L;
-    @XmlElement(required=true) 
+    @XmlElement(required = true)
     protected String creationTime;
-    @XmlElement(required=true) 
+    @XmlElement(required = true)
     protected String version = "";
-    @XmlElement(required=true) 
+    @XmlElement(required = true)
     protected String ttlModel = "";
-    @XmlElement(required=true) 
+    @XmlElement(required = true)
     protected String status = "";
 
     public Long getId() {

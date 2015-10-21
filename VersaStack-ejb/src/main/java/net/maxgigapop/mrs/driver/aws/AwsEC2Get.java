@@ -612,8 +612,9 @@ public class AwsEC2Get {
         while (true) {
             try {
                 VpnGateway resource = client.describeVpnGateways(request).getVpnGateways().get(0);
-                if(resource.getState().toLowerCase().equals("deleted"))
+                if (resource.getState().toLowerCase().equals("deleted")) {
                     break;
+                }
             } catch (AmazonServiceException | NullPointerException e) {
                 break;
             }
@@ -625,7 +626,7 @@ public class AwsEC2Get {
      * function to wait for Vpn gateway attachment
      * ****************************************************************
      */
-    public void vpnGatewayAttachmentCheck(String id,String vpcId) {
+    public void vpnGatewayAttachmentCheck(String id, String vpcId) {
         DescribeVpnGatewaysRequest request = new DescribeVpnGatewaysRequest();
         request.withVpnGatewayIds(id);
 

@@ -3,7 +3,6 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package net.maxgigapop.mrs.bean;
 
 import javax.persistence.CascadeType;
@@ -22,6 +21,7 @@ import javax.persistence.Transient;
 @Entity
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 public class ServiceDelta extends DeltaBase {
+
     @ManyToOne
     @JoinColumn(name = "serviceInstanceId")
     protected ServiceInstance serviceInstance = null;
@@ -33,7 +33,7 @@ public class ServiceDelta extends DeltaBase {
     protected SystemDelta systemDelta = null;
 
     private String status = "INIT";
-    
+
     public String getReferenceUUID() {
         return referenceUUID;
     }
@@ -69,16 +69,19 @@ public class ServiceDelta extends DeltaBase {
 
     public ServiceDelta clone() {
         ServiceDelta cloned = new ServiceDelta();
-        if (this.modelAddition != null)
+        if (this.modelAddition != null) {
             cloned.modelAddition = this.modelAddition.clone();
-        if (this.modelReduction != null)
+        }
+        if (this.modelReduction != null) {
             cloned.modelReduction = this.modelReduction.clone();
+        }
         //just copy reference
-        if (this.systemDelta != null)
+        if (this.systemDelta != null) {
             cloned.systemDelta = this.systemDelta;
+        }
         return cloned;
     }
-    
+
     @Override
     public String toString() {
         return "net.maxgigapop.mrs.model.ServiceDelta[ id=" + id + " ]";

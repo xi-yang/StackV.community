@@ -14,7 +14,7 @@ define(["local/versastack/topology/modelConstants"], function (values) {
         this.reload = function (backing, map) {
             this._backing = backing;
             this._map = map;
-            this._ports=[];
+            this._ports = [];
         };
         this.getName = function () {
             return this._backing.name;

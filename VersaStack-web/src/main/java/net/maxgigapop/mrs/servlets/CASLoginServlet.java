@@ -26,14 +26,14 @@ public class CASLoginServlet extends HttpServlet {
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String loginJSP = "/WEB-INF/jsp/cas.jsp";
-        
+
         //TODO Need to integrate the CAS login users with normal users database
         UsersDBAccess userDatabase = new UsersDBAccess();
 
         AttributePrincipal principal = (AttributePrincipal) request.getUserPrincipal();
         Map attributes = principal.getAttributes();
         request.setAttribute("attributesMap", attributes);
-        
+
         request.getRequestDispatcher(loginJSP).forward(request, response);
     }
 
