@@ -192,11 +192,11 @@ public class HandleServiceCall {
         boolean hasCommited = false;
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
-            if (serviceDelta.getStatus().equalsIgnoreCase("PROPOGATED")) {
+            if (serviceDelta.getStatus().equalsIgnoreCase("INIT")) {
                 hasInitiated = true;
-            } else if (serviceDelta.getStatus().equalsIgnoreCase("INIT")) {
-                hasPropagated = true;
             } else if (serviceDelta.getStatus().equalsIgnoreCase("PROPOGATED")) {
+                hasPropagated = true;
+            } else if (serviceDelta.getStatus().equalsIgnoreCase("COMMITTED")) {
                 hasCommited = true;
             }
         }
@@ -261,11 +261,11 @@ public class HandleServiceCall {
         boolean hasCommited = false;
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
-            if (serviceDelta.getStatus().equalsIgnoreCase("PROPOGATED")) {
+            if (serviceDelta.getStatus().equalsIgnoreCase("INIT")) {
                 hasInitiated = true;
-            } else if (serviceDelta.getStatus().equalsIgnoreCase("INIT")) {
-                hasPropagated = true;
             } else if (serviceDelta.getStatus().equalsIgnoreCase("PROPOGATED")) {
+                hasPropagated = true;
+            } else if (serviceDelta.getStatus().equalsIgnoreCase("COMMITTED")) {
                 hasCommited = true;
             }
         }
