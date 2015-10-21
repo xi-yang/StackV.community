@@ -420,15 +420,11 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
                 spaModel.add(routeTo, RdfOwl.type, Mrs.NetworkAddress);
                 spaModel.add(routeTo, Mrs.type, "ipv4-prefix-list");
                 spaModel.add(routeTo, Mrs.value, networkCIDR);
-                Resource routeFrom = spaModel.createResource(routingTable.toString() + "-" + "routeFrom" + networkCIDR.replace("/", ""));
-                spaModel.add(routeFrom, RdfOwl.type, Mrs.NetworkAddress);
-                spaModel.add(routeFrom, Mrs.type, "subnet");
-                spaModel.add(routeFrom, Mrs.value, subnetName);
                 Resource route = spaModel.createResource(routingTable.toString() + "route" + networkCIDR.replace("/", ""));
                 spaModel.add(route, RdfOwl.type, Mrs.Route);
                 spaModel.add(route, Mrs.routeTo, routeTo);
                 spaModel.add(route, Mrs.nextHop, "local");
-                spaModel.add(route, Mrs.routeFrom, routeFrom);
+                spaModel.add(route, Mrs.routeFrom, subnet);
                 spaModel.add(routingTable, Mrs.hasRoute, route);
                 spaModel.add(routingService, Mrs.providesRoute, route);
 
@@ -470,16 +466,13 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
                         spaModel.add(route, Mrs.nextHop, nextHop);
                     }
                     //decide id the routeFrom should be a VPN gateway or a subent
+
                     if (from != null && from.equalsIgnoreCase("vpn")) {
                         from = resNetwork.toString() + "-vpngw"; //the network vpn gateway
-                        routeFrom = spaModel.getResource(from);
+                        Resource routeFrom = spaModel.getResource(from);
                         spaModel.add(route, Mrs.routeFrom, routeFrom);
                     } else {
-                        routeFrom = spaModel.createResource(routingTable.toString() + "-" + "routeFrom" + to.replace("/", ""));
-                        spaModel.add(routeFrom, RdfOwl.type, Mrs.NetworkAddress);
-                        spaModel.add(routeFrom, Mrs.type, "subnet");
-                        spaModel.add(routeFrom, Mrs.value, subnetName);
-                        spaModel.add(route, Mrs.routeFrom, routeFrom);
+                        spaModel.add(route, Mrs.routeFrom, subnet);
                     }
 
                     spaModel.add(routingTable, Mrs.hasRoute, route);
@@ -698,7 +691,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
                 Resource gateway = spaModel.createResource(resNetwork.toString() + "-vpngw");
                 spaModel.add(gateway, RdfOwl.type, Nml.BidirectionalPort);
                 spaModel.add(resNetwork, Nml.hasBidirectionalPort, gateway);
-                Resource tag = spaModel.createResource(topoUri + "vpngwTag");
+                Resource tag = spaModel.createResource(topoUri + ":vpngwTag");
                 spaModel.add(gateway, Mrs.hasTag, tag);
                 spaModel.add(tag, RdfOwl.type, Mrs.Tag);
                 spaModel.add(tag, Mrs.type, "gateway");
