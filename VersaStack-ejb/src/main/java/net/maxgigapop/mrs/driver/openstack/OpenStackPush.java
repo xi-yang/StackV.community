@@ -317,6 +317,7 @@ public class OpenStackPush {
                                                 if (router_name.equals(router1.getName())) {
                                                     Subnet s = client1.getSubnet(subnet_name);
                                                     Router r = client1.getRouter(router_name);
+                                                    if(!o.get(key_ip).toString().equals("any")){
 
                                                     String nexthop = o.get(key_ip).toString();
                                                     String router_id = r.getId();
@@ -336,6 +337,27 @@ public class OpenStackPush {
                                                     i++;
                                                     j++;
                                                     key_ip = "nexthop" + Integer.toString(j);
+                                                    }else{
+                                                        String nexthop = o.get(key_ip).toString();
+                                                    String router_id = r.getId();
+                                                    Port port = new NeutronPort();
+                                                    netid = s.getNetworkId();
+                                                    String subnetid = s.getId();
+
+                                                    port.toBuilder().networkId(netid)
+                                                           
+                                                            .name("router_name" + router_name + "test_use" + i)
+                                                            .adminState(true);
+
+                                                    osClient1.networking().port().create(port);
+                                                    OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
+                                                    String portid = client1.getPort("router_name" + router_name + "test_use" + i).getId();
+                                                    rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
+                                                    i++;
+                                                    j++;
+                                                    key_ip = "nexthop" + Integer.toString(j);
+                                                    }
+                                                    
                                                 }
                                             } else {
                                                 j++;
@@ -574,7 +596,7 @@ public class OpenStackPush {
                 //1.2.1 check that tag is of the appropiate type and the the value
                 query = "SELECT ?value WHERE {<" + networkTag.asResource() + "> mrs:type \"network-type\" ."
                         + "<" + networkTag.asResource() + "> mrs:value ?value}";
-                r1 = executeQuery(query, modelRef, emptyModel);
+                r1 = executeQuery(query, modelRef, modelDelta);
                 if (!r1.hasNext()) {
                     throw new EJBException(String.format("network %s has improper type of tag", network));
                 }
@@ -665,7 +687,7 @@ public class OpenStackPush {
                 //1.3.1.1 check that tag is of the appropiate type and the the value
                 query = "SELECT ?value WHERE {<" + networkTag.asResource() + "> mrs:type \"network-type\" ."
                         + "<" + networkTag.asResource() + "> mrs:value ?value}";
-                r1 = executeQuery(query, modelRef, emptyModel);
+                r1 = executeQuery(query, modelRef, modelDelta);
                 if (!r1.hasNext()) {
                     throw new EJBException(String.format("network %s for subnet  %s has improper type of tag", network, subnet));
                 }
@@ -683,7 +705,7 @@ public class OpenStackPush {
                 //1.4.1 check that tag is of the appropiate type
                 query = "SELECT ?value WHERE {<" + tag.asResource() + "> mrs:type \"subnet-type\" ."
                         + "<" + tag.asResource() + "> mrs:value ?value}";
-                r1 = executeQuery(query, modelRef, emptyModel);
+                r1 = executeQuery(query, modelRef, modelDelta);
                 if (!r1.hasNext()) {
                     throw new EJBException(String.format("Subnet %s has improper type of tag", subnet));
                 }
@@ -780,7 +802,7 @@ public class OpenStackPush {
 
                 //1.3 check that service is a block sotrage service
                 query = "SELECT ?type WHERE {<" + service.asResource() + ">  a mrs:BlockStorageService}";
-                r1 = executeQuery(query, modelRef, emptyModel);
+                r1 = executeQuery(query, modelRef, model);
                 if (!r1.hasNext()) {
                     throw new EJBException(String.format("Service %s is not a block storage service", service));
                 }
@@ -834,7 +856,7 @@ public class OpenStackPush {
         //that this is a network  interface 
         query = "SELECT ?tag WHERE {?tag mrs:type \"interface\" ."
                 + "?tag mrs:value \"network\"}";
-        ResultSet r = executeQuery(query, modelRef, emptyModel);
+        ResultSet r = executeQuery(query, modelRef, modelDelta);
         if (!r.hasNext()) {
             throw new EJBException(String.format("Reference model has no tags for network"
                     + "interfaces"));
@@ -965,7 +987,7 @@ public class OpenStackPush {
                 //1.3 check that the port has the correct tag
                 query = "SELECT ?tag WHERE {<" + tag.asResource() + "> mrs:type \"interface\". "
                         + "<" + tag.asResource() + "> mrs:value \"network\"}";
-                r2 = executeQuery(query, modelRef, emptyModel);
+                r2 = executeQuery(query, modelRef, modelDelta);
                 if (!r2.hasNext()) {
                     throw new EJBException(String.format("bidirectional port %s to be attached to instance is not a net"
                             + "work interface", port));
@@ -1313,11 +1335,11 @@ public class OpenStackPush {
 
                 //1.1 check that the route was model correctly
                 //1.1.1 make sure that service provides the route
-                query = "SELECT ?routingtable WHERE {?routingtable mrs:providesRoute <" + routeResource.asResource() + ">}";
+                query = "SELECT ?routingtable WHERE {?routingtable mrs:hasRoute <" + routeResource.asResource() + ">}";
                 ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
                 if (!r1.hasNext()) {
                     throw new EJBException(String.format("route %s is not provided"
-                            + "by any service", routeResource));
+                            + "by any routingtable", routeResource));
                 }
 
                 QuerySolution q1 = r1.next();
@@ -1345,7 +1367,14 @@ public class OpenStackPush {
 
                 String subnet = getresourcename(routeToResource.toString(), "+", "");
                 String subnet_routername = subnet + "," + routername;
-
+                
+                query = "SELECT ?service WHERE {?service mrs:providesRoute <" + routeResource.asResource() + ">}";
+                r2 = executeQuery(query, emptyModel, modelDelta);
+                if (!r2.hasNext()) {
+                    throw new EJBException(String.format("route %s is not provided"
+                            + "by any service", routeResource));
+                }
+                
                 query = "SELECT ?type ?value WHERE {<" + nextHopResource.asResource() + "> a mrs:NetworkAddress ."
                         + "<" + nextHopResource.asResource() + "> mrs:type ?type ."
                         + "<" + nextHopResource.asResource() + "> mrs:value ?value}";
