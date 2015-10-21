@@ -193,14 +193,14 @@ public class OpenStackPush {
 
             } else if (o.get("request").toString().equals("DeleteSubnetRequest")) {
                 Subnet net = client.getSubnet(o.get("name").toString());
-                
+
                 osClient.networking().subnet().delete(net.getId());
             } else if (o.get("request").toString().equals("DeleteNetworkRequests")) {
                 OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
                 Network network = client1.getNetwork(o.get("name").toString());
-                for(Port p: client1.getPorts()){
-                    if(p.getNetworkId().equals(network.getId())){
-                        throw new EJBException(("port" + p.getId() + "is still attached to the network, so network" + network.getName() +"cannot be deleted"));
+                for (Port p : client1.getPorts()) {
+                    if (p.getNetworkId().equals(network.getId())) {
+                        throw new EJBException(("port" + p.getId() + "is still attached to the network, so network" + network.getName() + "cannot be deleted"));
                     }
                 }
                 osClient.networking().network().delete(network.getId());
@@ -317,6 +317,7 @@ public class OpenStackPush {
                                                 if (router_name.equals(router1.getName())) {
                                                     Subnet s = client1.getSubnet(subnet_name);
                                                     Router r = client1.getRouter(router_name);
+
                                                     if(!o.get(key_ip).toString().equals("any")){
 
                                                     String nexthop = o.get(key_ip).toString();
@@ -358,6 +359,48 @@ public class OpenStackPush {
                                                     key_ip = "nexthop" + Integer.toString(j);
                                                     }
                                                     
+
+                                                    if (!o.get(key_ip).toString().equals("any")) {
+                                                        String nexthop = o.get(key_ip).toString();
+                                                        String router_id = r.getId();
+                                                        Port port = new NeutronPort();
+                                                        netid = s.getNetworkId();
+                                                        String subnetid = s.getId();
+
+                                                        port.toBuilder().networkId(netid)
+                                                                .fixedIp(nexthop, subnetid)
+                                                                .name("router_name" + router_name + "test_use" + i)
+                                                                .adminState(true);
+
+                                                        osClient1.networking().port().create(port);
+                                                        OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
+                                                        String portid = client1.getPort("router_name" + router_name + "test_use" + i).getId();
+                                                        rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
+                                                        i++;
+                                                        j++;
+                                                        key_ip = "nexthop" + Integer.toString(j);
+                                                    } else {
+                                                        String nexthop = o.get(key_ip).toString();
+                                                        String router_id = r.getId();
+                                                        Port port = new NeutronPort();
+                                                        netid = s.getNetworkId();
+                                                        String subnetid = s.getId();
+
+                                                        port.toBuilder().networkId(netid)
+                                                                
+                                                                .name("router_name" + router_name + "test_use" + i)
+                                                                .adminState(true);
+
+                                                        osClient1.networking().port().create(port);
+                                                        OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
+                                                        String portid = client1.getPort("router_name" + router_name + "test_use" + i).getId();
+                                                        rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
+                                                        i++;
+                                                        j++;
+                                                        key_ip = "nexthop" + Integer.toString(j);
+                                                    }
+
+
                                                 }
                                             } else {
                                                 j++;
@@ -528,8 +571,8 @@ public class OpenStackPush {
                 String routeto = o.get("routeto").toString();
                 Subnet s = client1.getSubnet(subnetname);
                 s.toBuilder().addHostRoute(nexthop, routeto);
-                 osClient.networking().subnet().update(s);
-            }else if (o.get("request").toString().equals("DeleteHostInfoRequest")){
+                osClient.networking().subnet().update(s);
+            } else if (o.get("request").toString().equals("DeleteHostInfoRequest")) {
                 OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
                 String subnetname = o.get("subnetname").toString();
                 String nexthop = o.get("nexthop").toString();
@@ -587,7 +630,7 @@ public class OpenStackPush {
 
                 //1.2 find the tag of the network
                 query = "SELECT ?tag {<" + network.asResource() + "> mrs:hasTag ?tag}";
-                r1 = executeQuery(query, emptyModel, modelDelta);
+                r1 = executeQuery(query, modelRef, modelDelta);
                 if (!r1.hasNext()) {
                     throw new EJBException(String.format("network %s does  ot have a tag", network));
                 }
@@ -1335,8 +1378,13 @@ public class OpenStackPush {
 
                 //1.1 check that the route was model correctly
                 //1.1.1 make sure that service provides the route
+
                 query = "SELECT ?routingtable WHERE {?routingtable mrs:hasRoute <" + routeResource.asResource() + ">}";
                 ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
+
+                query = "SELECT ?routingtable WHERE {?routingtable mrs:providesRoute <" + routeResource.asResource() + ">}";
+                r1 = executeQueryUnion(query, modelRef, modelDelta);
+
                 if (!r1.hasNext()) {
                     throw new EJBException(String.format("route %s is not provided"
                             + "by any routingtable", routeResource));
@@ -1347,10 +1395,11 @@ public class OpenStackPush {
                 RDFNode routingtable = q1.get("routingtable");
                 String routingtablename = routingtable.toString();
                 routername = getroutername(topologyUri, routingtablename);
+
                 Router.add(routername);
 
                 query = "SELECT ?service WHERE {?service mrs:providesRoutingTable <" + routingtable.asResource() + ">}";
-                ResultSet r2 = executeQuery(query, emptyModel, modelDelta);
+                ResultSet r2 = executeQueryUnion(query, modelRef, modelDelta);
                 if (!r2.hasNext()) {
                     throw new EJBException(String.format("routingtalbe %s is not provided"
                             + "by any service", routingtable));
@@ -1388,6 +1437,7 @@ public class OpenStackPush {
                 q1 = r1.next();
                 RDFNode nextHoptype = q1.get("type");
                 String nextHopvalue = q1.get("value").toString();
+
                 nextHopV.add(nextHopvalue);
 
                 //String subnet_routername_nexthop = subnet + "," + routername + "," + nextHopvalue ;

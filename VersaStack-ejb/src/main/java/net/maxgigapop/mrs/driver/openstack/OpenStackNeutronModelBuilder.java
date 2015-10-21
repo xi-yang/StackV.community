@@ -592,7 +592,7 @@ public class OpenStackNeutronModelBuilder {
 
             }
         }
-        
+       
         StringWriter out = new StringWriter();
         try {
             model.write(out, "TURTLE");
