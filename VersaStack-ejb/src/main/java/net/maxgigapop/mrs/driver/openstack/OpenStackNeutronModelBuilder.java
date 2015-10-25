@@ -72,6 +72,7 @@ public class OpenStackNeutronModelBuilder {
         Property providedByService = Mrs.providedByService;
         Property providesBucket = Mrs.providesBucket;
         Property providesRoute = Mrs.providesRoute;
+        Property hasRoute = Mrs.hasRoute;
 
         Property providesSubnet = Mrs.providesSubnet;
 
@@ -84,7 +85,7 @@ public class OpenStackNeutronModelBuilder {
         Property hasVolume = Mrs.hasVolume;
         Property hasTopology = Nml.hasTopology;
         Property targetDevice = model.createProperty(model.getNsPrefixURI("mrs") + "target_device");
-        Property hasRoute = Mrs.hasRoute;
+       
         Property hasTag = Mrs.hasTag;
         Property hasNetworkAddress = Mrs.hasNetworkAddress;
         Property providesRoutingTable = model.createProperty(model.getNsPrefixURI("mrs") + "providesRoutingTable");
@@ -443,7 +444,8 @@ public class OpenStackNeutronModelBuilder {
                             Resource ROUTER_INTERFACE_ROUTE = RdfOwl.createResource(model, topologyURI + ":router+" + routername + ":" + "interfaceip+" + INTERFACE_IP + ":router-interface-route", route);
                             //Resource ROUTER_INTERFACE_ROUTE_TO = RdfOwl.createResource(model, topologyURI + ":-router-interface-route-to "+":" + SUBNET, switchingSubnet);
                             model.add(model.createStatement(routingService, providesRoutingTable, ROUTER_INTERFACE_ROUTINGTABLE));
-                            model.add(model.createStatement(ROUTER_INTERFACE_ROUTINGTABLE, providesRoute, ROUTER_INTERFACE_ROUTE));
+                            model.add(model.createStatement(routingService, providesRoute, ROUTER_INTERFACE_ROUTE));
+                            model.add(model.createStatement(ROUTER_INTERFACE_ROUTINGTABLE, hasRoute, ROUTER_INTERFACE_ROUTE));
                             model.add(model.createStatement(ROUTER_INTERFACE_ROUTE, routeTo, SUBNET));
                             model.add(model.createStatement(ROUTER_INTERFACE_ROUTE, nextHop, ROUTER_INTERFACE_ROUTE_NEXTHOP));
 
@@ -590,7 +592,7 @@ public class OpenStackNeutronModelBuilder {
 
             }
         }
-        
+       
         StringWriter out = new StringWriter();
         try {
             model.write(out, "TURTLE");
@@ -599,7 +601,7 @@ public class OpenStackNeutronModelBuilder {
         }
         String ttl = out.toString();
 
-        System.out.println(ttl);
+        //System.out.println(ttl);
         
 
         //System.out.println(ttl);
