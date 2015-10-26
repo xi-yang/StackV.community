@@ -73,7 +73,6 @@ public class AwsModelBuilder {
         Property hasTopology = Nml.hasTopology;
         Property targetDevice = model.createProperty(model.getNsPrefixURI("mrs") + "target_device");
         Property hasRoute = Mrs.hasRoute;
-        Property hasTag = Mrs.hasTag;
         Property hasNetworkAddress = Mrs.hasNetworkAddress;
         Property providesRoutingTable = model.createProperty(model.getNsPrefixURI("mrs") + "providesRoutingTable");
 
@@ -117,19 +116,7 @@ public class AwsModelBuilder {
         model.add(model.createStatement(awsTopology, hasService, ebsService));
         model.add(model.createStatement(awsTopology, hasBidirectionalPort, directConnect));
 
-        //add the lables for vpn gatewyas, internet gateways, and network interfaces
-        Resource IGW_TAG = RdfOwl.createResource(model, topologyURI + ":igwTag", Mrs.Tag);
-        model.add(model.createStatement(IGW_TAG, Mrs.type, "gateway"));
-        model.add(model.createStatement(IGW_TAG, value, "internet"));
-        Resource VPNGW_TAG = RdfOwl.createResource(model, topologyURI + ":vpngwTag", Mrs.Tag);
-        model.add(model.createStatement(VPNGW_TAG, type, "gateway"));
-        model.add(model.createStatement(VPNGW_TAG, value, "vpn"));
-        Resource PORT_TAG = RdfOwl.createResource(model, topologyURI + ":portTag", Mrs.Tag);
-        model.add(model.createStatement(PORT_TAG, type, "interface"));
-        model.add(model.createStatement(PORT_TAG, value, "network"));
-        Resource VIRTUAL_INTERFACE_TAG = RdfOwl.createResource(model, topologyURI + ":virtualinterfaceTag", Mrs.Tag);
-        model.add(model.createStatement(VIRTUAL_INTERFACE_TAG, type, "interface"));
-        model.add(model.createStatement(VIRTUAL_INTERFACE_TAG, value, "virtual"));
+
 
         //create resource for Vlan labels
         Resource vlan = model.createResource("http://schemas.ogf.org/nml/2012/10/ethernet#vlan");
@@ -139,7 +126,7 @@ public class AwsModelBuilder {
             if (!t.getAttachments().isEmpty()) {
                 String internetGatewayId = ec2Client.getIdTag(t.getInternetGatewayId());
                 Resource INTERNETGATEWAY = RdfOwl.createResource(model, topologyURI + ":" + internetGatewayId, biPort);
-                model.add(model.createStatement(INTERNETGATEWAY, hasTag, IGW_TAG));
+                model.add(model.createStatement(INTERNETGATEWAY, Mrs.type, "internet-gateway"));
             }
         }
 
@@ -147,7 +134,7 @@ public class AwsModelBuilder {
         for (VpnGateway g : ec2Client.getVirtualPrivateGateways()) {
             String vpnGatewayId = ec2Client.getIdTag(g.getVpnGatewayId());
             Resource VPNGATEWAY = RdfOwl.createResource(model, topologyURI + ":" + vpnGatewayId, biPort);
-            model.add(model.createStatement(VPNGATEWAY, hasTag, VPNGW_TAG));
+            model.add(model.createStatement(VPNGATEWAY, Mrs.type, "vpn-gateway"));
             model.add(model.createStatement(awsTopology, hasBidirectionalPort, VPNGATEWAY));
         }
 
@@ -162,7 +149,7 @@ public class AwsModelBuilder {
             model.add(model.createStatement(VLAN_LABEL_GROUP, value, vlanNum));
             
             Resource VIRTUAL_INTERFACE = RdfOwl.createResource(model, topologyURI + ":" + vi.getVirtualInterfaceId(), biPort);
-            model.add(model.createStatement(VIRTUAL_INTERFACE, hasTag, VIRTUAL_INTERFACE_TAG));
+            model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.type, "virtual-interface"));
             model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabelGroup, VLAN_LABEL_GROUP));
             model.add(model.createStatement(directConnect, hasBidirectionalPort, VIRTUAL_INTERFACE));
             
@@ -208,7 +195,7 @@ public class AwsModelBuilder {
         for (NetworkInterface n : ec2Client.getNetworkInterfaces()) {
             String portId = ec2Client.getIdTag(n.getNetworkInterfaceId());
             Resource PORT = RdfOwl.createResource(model, topologyURI + ":" + portId, biPort);
-            model.add(model.createStatement(PORT, hasTag, PORT_TAG));
+            model.add(model.createStatement(PORT, Mrs.type, "network-interface"));
 
             //specify the addresses of the network interfaces 
             //put the private ip (if any) of the network interface in the model
