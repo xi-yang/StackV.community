@@ -278,8 +278,10 @@ public class OpenStackNeutronModelBuilder {
                         Resource LOCAL_ROUTE = RdfOwl.createResource(model, topologyURI + ":network+" + networkID + ":subnet+" + subnetId + ":local-route", Mrs.Route);
                         model.add(model.createStatement(NETWORK, hasService, ROUTINGSERVICE));
                         model.add(model.createStatement(ROUTINGSERVICE, providesRoutingTable, EXROUTINGTABLE));
-                        model.add(model.createStatement(EXROUTINGTABLE, providesRoute, EXROUTE));
-                        model.add(model.createStatement(EXROUTINGTABLE, providesRoute, LOCAL_ROUTE));
+                        model.add(model.createStatement(ROUTINGSERVICE, providesRoute, EXROUTE));
+                        model.add(model.createStatement(ROUTINGSERVICE, providesRoute,LOCAL_ROUTE));
+                        model.add(model.createStatement(EXROUTINGTABLE, hasRoute, EXROUTE));
+                        model.add(model.createStatement(EXROUTINGTABLE, hasRoute, LOCAL_ROUTE));
                         model.add(model.createStatement(EXROUTE, routeFrom, SUBNET));
 
                         model.add(model.createStatement(EXROUTE, routeTo, DEST_EXTERNAL));
@@ -308,7 +310,8 @@ public class OpenStackNeutronModelBuilder {
 
                             model.add(model.createStatement(NETWORK, hasService, ROUTINGSERVICE));
                             model.add(model.createStatement(ROUTINGSERVICE, providesRoutingTable, EXHOSTROUTINGTABLE));
-                            model.add(model.createStatement(EXHOSTROUTINGTABLE, providesRoute, EXHOSTROUTE));
+                            model.add(model.createStatement(ROUTINGSERVICE, providesRoute, EXHOSTROUTE));
+                            model.add(model.createStatement(EXHOSTROUTINGTABLE, hasRoute, EXHOSTROUTE));
 
                             model.add(model.createStatement(EXHOSTROUTE, routeFrom, SUBNET));
                             model.add(model.createStatement(EXHOSTROUTE, routeTo, EXHOSTROUTETO));
@@ -368,7 +371,8 @@ public class OpenStackNeutronModelBuilder {
                     //subnet route modeling 
                     model.add(model.createStatement(NETWORK, hasService, ROUTINGSERVICE));
                     model.add(model.createStatement(ROUTINGSERVICE, providesRoutingTable, ROUTINGTABLEPERNET));
-                    model.add(model.createStatement(ROUTINGTABLEPERNET, providesRoute, LOCAL_ROUTE));
+                    model.add(model.createStatement(ROUTINGSERVICE, providesRoute, LOCAL_ROUTE));
+                    model.add(model.createStatement(ROUTINGTABLEPERNET, hasRoute, LOCAL_ROUTE));
 
                     model.add(model.createStatement(LOCAL_ROUTE, routeFrom, SUBNET));
                     model.add(model.createStatement(LOCAL_ROUTE, routeTo, SUBNET_NETWORK_ADDRESS));
@@ -389,7 +393,8 @@ public class OpenStackNeutronModelBuilder {
 
                         model.add(model.createStatement(NETWORK, hasService, ROUTINGSERVICE));
                         model.add(model.createStatement(ROUTINGSERVICE, providesRoutingTable, HOSTROUTINGTABLE));
-                        model.add(model.createStatement(HOSTROUTINGTABLE, providesRoute, INROUTE));
+                        model.add(model.createStatement(ROUTINGSERVICE, providesRoute, INROUTE));
+                        model.add(model.createStatement(HOSTROUTINGTABLE, hasRoute, INROUTE));
                         model.add(model.createStatement(INROUTE, routeFrom, INROUTEFROM));
                         model.add(model.createStatement(INROUTE, routeTo, INROUTETO));
                         model.add(model.createStatement(INROUTE, nextHop, INNEXTHOP));
@@ -482,6 +487,7 @@ public class OpenStackNeutronModelBuilder {
                 Resource RHOSTROUTENEXTHOP = RdfOwl.createResource(model, topologyURI + ":router-host-route-nexthop+" + RHOSTNEXTHOP, networkAddress);
 
                 model.add(model.createStatement(routingService, providesRoutingTable, RHOSTROUTINGTABLE));
+                model.add(model.createStatement(routingService, providesRoute, RHOSTROUTE));
                 model.add(model.createStatement(RHOSTROUTINGTABLE, hasRoute, RHOSTROUTE));
                 model.add(model.createStatement(RHOSTROUTE, routeTo, RHOSTROUTETO));
                 model.add(model.createStatement(RHOSTROUTE, nextHop, RHOSTROUTENEXTHOP));

@@ -1628,7 +1628,7 @@ public class OpenStackPush {
             RDFNode routeToResource = q.get("routeTo");
             RDFNode routeFromResource = q.get("routeFrom");
             if (!nextHopResource.toString().equals("local")) {
-                query = "SELECT ?routingtable WHERE {?routingtable mrs:providesRoute <" + routeResource.asResource() + ">}";
+                query = "SELECT ?routingtable WHERE {?routingtable mrs:hasRoute <" + routeResource.asResource() + ">}";
                 ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
                 if (!r1.hasNext()) {
                     throw new EJBException(String.format("route %s is not provided"
