@@ -82,7 +82,7 @@
                         </div>
                         <div id="service-bottom">
                             <div id="service-fields">
-                                <form id="driver-form" action="/VersaStack-web/DriverServlet" method="post">
+                                <form id="driver-form" action="/VersaStack-web/ServiceServlet" method="post">
                                     <input type="hidden" name="userID" value="${user.getId()}"/>
                                     <input type="hidden" name="driverID" value="${param.driver_id}"/>
                                     <table class="management-table" id="service-form">                                        
@@ -191,7 +191,7 @@
                                                     <tr>
                                                         <td></td>
                                                         <td>
-                                                            <input class="button-register" name="install" type="submit" value="Install" />
+                                                            <input class="button-register" name="install" type="submit" value="driver" />
                                                             <input class="button-register" type="button" 
                                                                    value="Add Additional Properties" onClick="addPropField()">
                                                         </td>
@@ -219,7 +219,7 @@
                                                 <tr>
                                                     <td></td>
                                                     <td>
-                                                        <input class="button-register" name="uninstall" type="submit" value="Uninstall" />
+                                                        <input class="button-register" name="uninstall" type="submit" value="driver" />
                                                     </td>
                                                 </tr>
                                             </c:if>

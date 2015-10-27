@@ -68,7 +68,7 @@
                         </div>
                         <div id="service-bottom">
                             <div id="service-fields">
-                                <form id="vm-form" action="/VersaStack-web/VMServlet" method="post">      
+                                <form id="vm-form" action="/VersaStack-web/ServiceServlet" method="post">      
                                     <input type="hidden" name="userID" value="${user.getId()}"/>
                                     <input type="hidden" name="driverType" value="${param.vm_type}" />
                                     <!-- AWS FORM -->
@@ -182,7 +182,7 @@
                                                 <tr>
                                                     <td></td>
                                                     <td>
-                                                        <input class="button-register" name="install" type="submit" value="Install" />
+                                                        <input class="button-register" name="install" type="submit" value="vm" />
                                                         <input class="button-register" type="button" 
                                                                value="Add Volume" onClick="addVolume()">
                                                         <input type="hidden" name="graphTopo" value="${param.graphTopo}"/>                                                        
@@ -257,7 +257,7 @@
                                                 <tr>
                                                     <td></td>
                                                     <td>
-                                                        <input class="button-register" name="install" type="submit" value="Install" />                                                        
+                                                        <input class="button-register" name="install" type="submit" value="vm" />                                                        
                                                         <input type="hidden" name="graphTopo" value="none"/>
                                                     </td>
                                                 </tr> 
