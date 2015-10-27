@@ -1010,7 +1010,7 @@ public class OpenStackPush {
             //here is an error
             query = "SELECT ?node WHERE {?node a nml:Node. FILTER(?node = <" + server.asResource() + ">)}";
             // System.out.println(query.toString());
-            ResultSet r1 = executeQuery(query, modelRef, emptyModel);
+            ResultSet r1 = executeQuery(query, modelRef, modelDelta);
             Server s = null;
             if (r1.hasNext()) {
                 s = client.getServer(serverName);
@@ -1382,9 +1382,7 @@ public class OpenStackPush {
                 query = "SELECT ?routingtable WHERE {?routingtable mrs:hasRoute <" + routeResource.asResource() + ">}";
                 ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
 
-                query = "SELECT ?routingtable WHERE {?routingtable mrs:providesRoute <" + routeResource.asResource() + ">}";
-                r1 = executeQueryUnion(query, modelRef, modelDelta);
-
+                
                 if (!r1.hasNext()) {
                     throw new EJBException(String.format("route %s is not provided"
                             + "by any routingtable", routeResource));
@@ -1497,12 +1495,7 @@ public class OpenStackPush {
                     //2.1.2 TODO differentiate between subnet host route or router host route
                 }
 
-            //3.1 because the route did not have a route to, it means that an 
-                //interface will be attached or dettached
-                //String toValue = routeToValue.asLiteral().toString();
-                //String toType = routeToType.asLiteral().toString();
-                //if type equals subnet, then a port will be atatched or detached
-                //from subnet
+           
             /*
                  
                  */

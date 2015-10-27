@@ -116,7 +116,7 @@ public class OpenStackNeutronModelBuilder {
         Resource routingService = RdfOwl.createResource(model, topologyURI + ":routing-service", RoutingService);
         Resource cinderService = RdfOwl.createResource(model, topologyURI + ":cinder-service", blockStorageService);
 
-        Resource RoutingTable = RdfOwl.createResource(model, topologyURI + "routing-table", Mrs.RoutingTable);
+        
         //port tag
         Resource PORT_TAG = RdfOwl.createResource(model, topologyURI + ":portTag", Mrs.Tag);
 
