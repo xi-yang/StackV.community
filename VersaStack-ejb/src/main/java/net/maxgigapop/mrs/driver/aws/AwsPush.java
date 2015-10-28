@@ -97,10 +97,6 @@ public class AwsPush {
             throw new EJBException(ex);
         }
 
-        //add defaults  
-        modelAdd = addDefaultPortTags(modelAdd);
-        modelReduct = addDefaultPortTags(modelReduct);
-
         //deatch volumes that need to be detached
         requests += detachVolumeRequests(modelRef, modelReduct);
 
@@ -673,41 +669,6 @@ public class AwsPush {
 
     /**
      * ****************************************************************
-     * Method to add a portTag as default tag to all the bidirectional ports in
-     * a delta model where the tag was not specified
-     * ****************************************************************
-     */
-    private OntModel addDefaultPortTags(OntModel deltaModel) throws EJBException {
-        //get all the ports with and without tags
-        String query = "SELECT ?port WHERE {?port a nml:BidirectionalPort}";
-        ResultSet r1 = executeQuery(query, emptyModel, deltaModel);
-        List<RDFNode> portsToFix = new ArrayList();
-
-        OntModel newModel = deltaModel;
-
-        while (r1.hasNext()) {
-            QuerySolution q1 = r1.next();
-            RDFNode port = q1.get("port");
-            query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:hasTag ?tag}";
-            ResultSet r2 = executeQuery(query, emptyModel, deltaModel);
-            if (!r2.hasNext()) {
-                portsToFix.add(port);
-            }
-        }
-        if (portsToFix.isEmpty()) {
-            return deltaModel;
-        } else {
-            Resource portTag = deltaModel.createResource(topologyUri + "portTag");
-            for (RDFNode p : portsToFix) {
-
-                deltaModel.add(deltaModel.createStatement(p.asResource(), Mrs.hasTag, portTag));
-            }
-            return deltaModel;
-        }
-    }
-
-    /**
-     * ****************************************************************
      * Detach a volume to an existing instance AWS
      * ****************************************************************
      */
@@ -800,20 +761,9 @@ public class AwsPush {
         String requests = "";
         String query;
 
-        //get the tag resource from the reference model that indicates 
-        //that this is a network  interface 
-        query = "SELECT ?tag WHERE {?tag mrs:type \"interface\" ."
-                + "?tag mrs:value \"network\"}";
-        ResultSet r = executeQuery(query, model, emptyModel);
-        if (!r.hasNext()) {
-            throw new EJBException(String.format("Reference model has no tags for network"
-                    + "interfaces"));
-        }
-        QuerySolution q = r.next();
-        RDFNode tag = q.get("tag");
         query = "SELECT ?port WHERE {?port a  nml:BidirectionalPort ."
-                + "?port  mrs:hasTag <" + tag.asResource() + ">}";
-        r = executeQuery(query, emptyModel, modelReduct);
+                + "?port  mrs:type \"network-interface\"}";
+        ResultSet r = executeQuery(query, emptyModel, modelReduct);
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode port = querySolution.get("port");
@@ -975,19 +925,10 @@ public class AwsPush {
                 r1.next();
                 String portIdTag = port.asResource().toString().replace(topologyUri, "");
 
-                query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:hasTag ?tag}";
+                query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:type ?network-interface}";
                 ResultSet r2 = executeQuery(query, model, modelReduct);
                 if (!r2.hasNext()) {
-                    throw new EJBException(String.format("bidirectional port %s to be detached to intsnace does not specify a tag", port));
-                }
-                QuerySolution q2 = r2.next();
-                RDFNode tag = q2.get("tag");
-                query = "SELECT ?tag WHERE {<" + tag.asResource() + "> mrs:type \"interface\". "
-                        + "<" + tag.asResource() + "> mrs:value \"network\"}";
-                r2 = executeQuery(query, model, emptyModel);
-                if (!r2.hasNext()) {
-                    throw new EJBException(String.format("bidirectional port %s to be detached to instance is not a net"
-                            + "work interface", port));
+                    throw new EJBException(String.format("bidirectional port %s to be detaches is not of type network-interface", port));
                 }
 
                 String attachmentId = "";
@@ -1325,24 +1266,15 @@ public class AwsPush {
             RDFNode igw = q.get("igw");
             String idTag = igw.asResource().toString().replace(topologyUri, "");
 
-            query = "SELECT ?tag WHERE {<" + igw.asResource() + "> mrs:hasTag ?tag}";
-            ResultSet r1 = executeQuery(query, emptyModel, modelReduct);
-            if (!r1.hasNext()) {
-                throw new EJBException(String.format("Tag for Internet gateway %s i"
-                        + "s not specified in model reduction", igw));
-            }
-            QuerySolution q1 = r1.next();
-            RDFNode tag = q1.get("tag");
-
-            //look for the lable in the reference model
-            query = "SELECT ?value WHERE {<" + tag.asResource() + "> mrs:type \"gateway\" ."
-                    + "<" + tag.asResource() + "> mrs:value ?value}";
-            r1 = executeQuery(query, model, emptyModel);
+            //look too see if resource is a internet gateway or not
+            query = "SELECT ?type WHERE {<" + igw.asResource() + "> mrs:type ?type ."
+                    + "FILTER(?type In (\"internet-gateway\",\"vpn-gateway\")}";
+            ResultSet r1 = executeQuery(query, model, emptyModel);
             if (!r1.hasNext()) {
                 continue;
             }
-            q1 = r1.next();
-            String value = q1.get("value").asLiteral().toString();
+            QuerySolution q1 = r1.next();
+            String type = q1.get("type").asLiteral().toString();
 
             //find the vpc of the gateway
             query = "SELECT ?vpc ?port  WHERE {?vpc nml:hasBidirectionalPort <" + igw + ">}";
@@ -1361,7 +1293,7 @@ public class AwsPush {
                 throw new EJBException(String.format("VPC %s for gateway %s is not "
                         + "of type topology", vpc, igw));
             }
-            if (value.equals("internet")) {
+            if (type.equals("internet-gateway")) {
 
                 //check that the topology for the internet gateway is not the main topology
                 //as the internet gateway should be attached to a VPC not the main topology
@@ -1374,7 +1306,7 @@ public class AwsPush {
                 } else {
                     requests += String.format("DeleteInternetGatewayRequest %s %s \n", idTag, vpcIdTag);
                 }
-            } else if (value.equals("vpn")) {
+            } else if (type.equals("vpn-gateway")) {
                 if (ec2Client.getVirtualPrivateGateway(getVpnGatewayId(idTag)) == null) {
                     throw new EJBException(String.format("VPN gateway %s does not exists", idTag));
                 } else {
@@ -1403,9 +1335,7 @@ public class AwsPush {
             query = "SELECT ?vpc ?port ?tag WHERE {?vpc nml:hasBidirectionalPort ?port . "
                     + "?vpc nml:hasService ?service . "
                     + "?service a  mrs:SwitchingService . "
-                    + "?port mrs:hasTag ?tag ."
-                    + "?tag mrs:type \"gateway\" . "
-                    + "?tag mrs:value  \"vpn\" "
+                    + "?port mrs:type \"vpn-gateway\" ."
                     + String.format("FILTER(?vpc = <%s> && ?port = <%s>) ", vpc, gateway)
                     + "}";
             ResultSet r1 = executeQueryUnion(query, model, modelReduct);
@@ -1997,24 +1927,12 @@ public class AwsPush {
             RDFNode igw = q.get("igw");
             String idTag = igw.asResource().toString().replace(topologyUri, "");
 
-            query = "SELECT ?tag WHERE {<" + igw.asResource() + "> mrs:hasTag ?tag}";
-            ResultSet r1 = executeQuery(query, emptyModel, modelAdd);
-            if (!r1.hasNext()) {
-                throw new EJBException(String.format("Label for bidirectional port %s i"
-                        + "s not specified in model addition", igw));
-            }
+            //look for the type in the reference model
+            query = "SELECT ?type WHERE {<" + igw.asResource() + "> mrs:type ?type ."
+                    + "FILTER(?type In (\"internet-gateway\",\"vpn-gateway\")}";
+            ResultSet r1 = executeQuery(query, model, modelAdd);
             QuerySolution q1 = r1.next();
-            RDFNode tag = q1.get("tag");
-
-            //look for the lable in the reference model
-            query = "SELECT ?value WHERE {<" + tag.asResource() + "> mrs:type \"gateway\" ."
-                    + "<" + tag.asResource() + "> mrs:value ?value}";
-            r1 = executeQuery(query, model, modelAdd);
-            if (!r1.hasNext()) {
-                continue;
-            }
-            q1 = r1.next();
-            String value = q1.get("value").asLiteral().toString();
+            String type = q1.get("type").asLiteral().toString();
 
             //find the vpc of the gateway
             query = "SELECT ?vpc ?port  WHERE {?vpc nml:hasBidirectionalPort <" + igw + ">}";
@@ -2033,7 +1951,7 @@ public class AwsPush {
                 throw new EJBException(String.format("VPC %s for gateway %s is not "
                         + "of type topology", vpc, igw));
             }
-            if (value.equals("internet")) {
+            if (type.equals("internet")) {
 
                 //check that the topology for the internet gateway is not the main topology
                 //as the internet gateway should be attached to a VPC not the main topology
@@ -2047,7 +1965,7 @@ public class AwsPush {
                 } else {
                     requests += String.format("CreateInternetGatewayRequest %s %s \n", idTag, vpcIdTag);
                 }
-            } else if (value.equals("vpn")) {
+            } else if (type.equals("vpn")) {
                 if (ec2Client.getVirtualPrivateGateway(getVpnGatewayId(idTag)) != null) {
                     throw new EJBException(String.format("VPN gateway %s already exists", idTag));
                 } else {
@@ -2073,12 +1991,10 @@ public class AwsPush {
             RDFNode vpc = q.get("vpc");
             RDFNode gateway = q.get("port");
             // check if the new port is an VGW gateway for an VPC 
-            query = "SELECT ?vpc ?port ?tag WHERE {?vpc nml:hasBidirectionalPort ?port . "
+            query = "SELECT ?vpc ?port WHERE {?vpc nml:hasBidirectionalPort ?port . "
                     + "?vpc nml:hasService ?service . "
                     + "?service a  mrs:SwitchingService . "
-                    + "?port mrs:hasTag ?tag ."
-                    + "?tag mrs:type \"gateway\" . "
-                    + "?tag mrs:value  \"vpn\" "
+                    + "?port mrs:type \"vpn-gateway\" ."
                     + String.format("FILTER(?vpc = <%s> && ?port = <%s>) ", vpc, gateway)
                     + "}";
             ResultSet r1 = executeQueryUnion(query, model, modelAdd);
@@ -2179,9 +2095,7 @@ public class AwsPush {
                 QuerySolution q3 = r3.next();
                 String routeFrom = q3.get("routeFrom").asResource().toString();
                 query = String.format("SELECT ?gateway WHERE{<%s> a nml:BidirectionalPort .", routeFrom)
-                        + String.format("<%s> mrs:hasTag ?tag .", routeFrom)
-                        + "?tag mrs:type \"gateway\" ."
-                        + "?tag mrs:value \"vpn\"}";
+                        + String.format("<%s> mrs:type \"vpn-gateway\"}", routeFrom);
                 ResultSet r4 = executeQuery(query, model, modelAdd);
                 if (r4.hasNext()) {
                     fromGateway = routeFrom;
@@ -2196,7 +2110,7 @@ public class AwsPush {
                     q1 = r2.next();
                     String routeFrom = q1.get("routeFrom").asResource().toString();
                     query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeFrom ?routeFrom ."
-                            + String.format("FILTER (?routeFrom = <%s>)}",routeFrom);
+                            + String.format("FILTER (?routeFrom = <%s>)}", routeFrom);
                     r3 = executeQuery(query, emptyModel, modelAdd);
                     if (!r3.hasNext()) {
                         throw new EJBException(String.format("new route %s does not contain all the subnet"
@@ -2209,7 +2123,7 @@ public class AwsPush {
                     q1 = r2.next();
                     String routeFrom = q1.getLiteral("routeFrom").toString();
                     query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeFrom ?routeFrom ."
-                            + String.format("FILTER (?routeFrom = <%s>)}",routeFrom);
+                            + String.format("FILTER (?routeFrom = <%s>)}", routeFrom);
                     r3 = executeQuery(query, emptyModel, modelAdd);
                     if (!r3.hasNext()) {
                         throw new EJBException(String.format("new route %s does not contain all the subnet"
@@ -2241,9 +2155,7 @@ public class AwsPush {
                     //if the resource is a vpn gateway then just do a vpngateway propagation
                     //instead of route addition
                     query = String.format("SELECT ?gateway WHERE{<%s> a nml:BidirectionalPort .", targetResource)
-                            + String.format("<%s> mrs:hasTag ?tag .", targetResource)
-                            + "?tag mrs:type \"gateway\" ."
-                            + "?tag mrs:value \"vpn\"}";
+                            + String.format("<%s> mrs:type \"vpn-gateway\" }", targetResource);
                     r3 = executeQuery(query, model, modelAdd);
                     if (fromGateway != null && r3.hasNext()) {
                         tempRequest = String.format("PropagateVpnRequest %s %s \n", tableIdTag, target);
@@ -2339,21 +2251,10 @@ public class AwsPush {
         String requests = "";
         String query;
 
-        //get the tag resource from the reference model that indicates 
-        //that this is a network  interface 
-        query = "SELECT ?tag WHERE {?tag mrs:type \"interface\" ."
-                + "?tag mrs:value \"network\"}";
-        ResultSet r = executeQuery(query, model, emptyModel);
-        if (!r.hasNext()) {
-            throw new EJBException(String.format("Reference model has no tags for network"
-                    + "interfaces"));
-        }
-        QuerySolution q = r.next();
-        RDFNode tag = q.get("tag");
-
+        //query for the port 
         query = "SELECT ?port WHERE {?port a  nml:BidirectionalPort ."
-                + "?port  mrs:hasTag <" + tag.asResource() + ">}";
-        r = executeQuery(query, emptyModel, modelAdd);
+                + "?port  mrs:type \"network-interface\"}";
+        ResultSet r = executeQuery(query, emptyModel, modelAdd);
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode port = querySolution.get("port");
@@ -2471,19 +2372,10 @@ public class AwsPush {
                 r1.next();
                 String portIdTag = port.asResource().toString().replace(topologyUri, "");
 
-                query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:hasTag ?tag}";
+                query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:type \"network-interface\"}";
                 ResultSet r2 = executeQuery(query, model, modelAdd);
                 if (!r2.hasNext()) {
-                    throw new EJBException(String.format("bidirectional port %s to be attached to intsnace does not specify a tag", port));
-                }
-                QuerySolution q2 = r2.next();
-                RDFNode tag = q2.get("tag");
-                query = "SELECT ?tag WHERE {<" + tag.asResource() + "> mrs:type \"interface\". "
-                        + "<" + tag.asResource() + "> mrs:value \"network\"}";
-                r2 = executeQuery(query, model, emptyModel);
-                if (!r2.hasNext()) {
-                    throw new EJBException(String.format("bidirectional port %s to be attached to instance is not a net"
-                            + "work interface", port));
+                    throw new EJBException(String.format("bidirectional port %s to be attached to intsnace does not specify a network interface type", port));
                 }
 
                 //see if the network interface is already atatched
@@ -2704,9 +2596,7 @@ public class AwsPush {
 
             //check to see if x is the virtual interface
             query = "SELECT  ?tag WHERE {<" + x.asResource() + ">  a  nml:BidirectionalPort ."
-                    + "<" + x.asResource() + "> mrs:hasTag ?tag ."
-                    + "?tag mrs:type \"interface\" ."
-                    + "?tag mrs:value \"virtual\"}";
+                    + "<" + x.asResource() + "> mrs:type \"direct-connect-vif\"}";
             ResultSet r1 = executeQueryUnion(query, model, modelAdd);
             if (r1.hasNext()) {
                 gateway = y;
@@ -2716,9 +2606,7 @@ public class AwsPush {
             //check to see if y is the interface
             //check to see if x is the virtual interface
             query = "SELECT  ?tag WHERE {<" + y.asResource() + ">  a  nml:BidirectionalPort ."
-                    + "<" + y.asResource() + "> mrs:hasTag ?tag ."
-                    + "?tag mrs:type \"interface\" ."
-                    + "?tag mrs:value \"virtual\"}";
+                    + "<" + y.asResource() + "> mrs:type \"direct-connect-vif\"}";
             r1 = executeQueryUnion(query, model, modelAdd);
             if (r1.hasNext()) {
                 gateway = x;
@@ -2737,21 +2625,10 @@ public class AwsPush {
             }
 
             //make sure that the gateway is a virtual private gateway
-            query = "SELECT ?tag WHERE {<" + gateway.asResource() + "> mrs:hasTag ?tag}";
+            query = "SELECT ?tag WHERE {<" + gateway.asResource() + "> mrs:type \"vpn-gateway\"}";
             r1 = executeQueryUnion(query, model, modelAdd);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("Label for bidirectional port %s i"
-                        + "s not specified in model addition", gateway));
-            }
-            QuerySolution q1 = r1.next();
-            RDFNode tag = q1.get("tag");
-
-            //look for the lable in the reference model
-            query = "SELECT ?value WHERE {<" + tag.asResource() + "> mrs:type \"gateway\" ."
-                    + "<" + tag.asResource() + "> mrs:value \"vpn\"}";
-            r1 = executeQueryUnion(query, model, modelAdd);
-            if (!r1.hasNext()) {
-                throw new EJBException(String.format("%s is not a VPN gateway", gateway));
+                throw new EJBException(String.format("Gateway %s is not a vpn gateway", gateway));
             }
 
             String gatewayIdTag = gateway.asResource().toString().replace(topologyUri, "");
@@ -2783,9 +2660,7 @@ public class AwsPush {
 
             //check to see if x is the virtual interface
             query = "SELECT  ?tag WHERE {<" + x.asResource() + ">  a  nml:BidirectionalPort ."
-                    + "<" + x.asResource() + "> mrs:hasTag ?tag ."
-                    + "?tag mrs:type \"interface\" ."
-                    + "?tag mrs:value \"virtual\"}";
+                    + "<" + x.asResource() + "> mrs:type \"direct-connect-vif\"}";
             ResultSet r1 = executeQueryUnion(query, model, modelReduct);
             if (r1.hasNext()) {
                 gateway = y;
@@ -2795,9 +2670,7 @@ public class AwsPush {
             //check to see if y is the interface
             //check to see if x is the virtual interface
             query = "SELECT  ?tag WHERE {<" + y.asResource() + ">  a  nml:BidirectionalPort ."
-                    + "<" + y.asResource() + "> mrs:hasTag ?tag ."
-                    + "?tag mrs:type \"interface\" ."
-                    + "?tag mrs:value \"virtual\"}";
+                    + "<" + y.asResource() + "> mrs:type \"direct-connect-vif\"}";
             r1 = executeQueryUnion(query, model, modelReduct);
             if (r1.hasNext()) {
                 gateway = x;
@@ -2816,21 +2689,10 @@ public class AwsPush {
             }
 
             //make sure that the gateway is a virtual private gateway
-            query = "SELECT ?tag WHERE {<" + gateway.asResource() + "> mrs:hasTag ?tag}";
+            query = "SELECT ?tag WHERE {<" + gateway.asResource() + "> mrs:type \"vpn-gateway\"}";
             r1 = executeQueryUnion(query, model, modelReduct);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("Label for bidirectional port %s i"
-                        + "s not specified in model addition", gateway));
-            }
-            QuerySolution q1 = r1.next();
-            RDFNode tag = q1.get("tag");
-
-            //look for the lable in the reference model
-            query = "SELECT ?value WHERE {<" + tag.asResource() + "> mrs:type \"gateway\" ."
-                    + "<" + tag.asResource() + "> mrs:value \"vpn\"}";
-            r1 = executeQueryUnion(query, model, modelReduct);
-            if (!r1.hasNext()) {
-                throw new EJBException(String.format("%s is not a VPN gateway", gateway));
+                throw new EJBException(String.format("Gateway %s is not a vpn gateway", gateway));
             }
 
             String gatewayIdTag = gateway.asResource().toString().replace(topologyUri, "");

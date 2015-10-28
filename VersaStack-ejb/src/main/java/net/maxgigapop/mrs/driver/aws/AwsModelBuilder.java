@@ -149,7 +149,7 @@ public class AwsModelBuilder {
             model.add(model.createStatement(VLAN_LABEL_GROUP, value, vlanNum));
             
             Resource VIRTUAL_INTERFACE = RdfOwl.createResource(model, topologyURI + ":" + vi.getVirtualInterfaceId(), biPort);
-            model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.type, "virtual-interface"));
+            model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.type, "direct-connect-vif"));
             model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabelGroup, VLAN_LABEL_GROUP));
             model.add(model.createStatement(directConnect, hasBidirectionalPort, VIRTUAL_INTERFACE));
             
