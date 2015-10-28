@@ -925,7 +925,7 @@ public class AwsPush {
                 r1.next();
                 String portIdTag = port.asResource().toString().replace(topologyUri, "");
 
-                query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:type ?network-interface}";
+                query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:type \"network-interface\"}";
                 ResultSet r2 = executeQuery(query, model, modelReduct);
                 if (!r2.hasNext()) {
                     throw new EJBException(String.format("bidirectional port %s to be detaches is not of type network-interface", port));
@@ -1166,8 +1166,7 @@ public class AwsPush {
         String tempRequests = "";
         String query;
 
-        query = "SELECT ?route ?routeFrom WHERE {?route mrs:routeFrom ?routeFrom ."
-                + "?routeFrom a mrs:SwitchingSubnet}";
+        query = "SELECT ?route ?routeFrom WHERE {?route mrs:routeFrom ?routeFrom}";
         ResultSet r = executeQuery(query, emptyModel, modelReduct);
         while (r.hasNext()) {
             boolean continueFlag = false;
@@ -1176,9 +1175,16 @@ public class AwsPush {
             RDFNode value = querySolution.get("routeFrom");
             RDFNode route = querySolution.get("route");
 
+            //routeFrom must be a subnet
+            query = "SELECT ?a WHERE {<" + value.asResource().toString() + "> a mrs:SwitchingSubnet}";
+            ResultSet r1 = executeQuery(query, model, modelReduct);
+            if (!r1.hasNext()) {
+                continue;
+            }
+
             query = "SELECT ?table WHERE {?table mrs:hasRoute <" + route.asResource() + "> ."
                     + "?service mrs:providesRoute <" + route.asResource() + ">}";
-            ResultSet r1 = executeQuery(query, model, modelReduct);
+            r1 = executeQuery(query, model, modelReduct);
             if (!r1.hasNext()) {
                 throw new EJBException(String.format("Route  %s"
                         + " does not exist in a route table or is not being provided "
@@ -1268,10 +1274,10 @@ public class AwsPush {
 
             //look too see if resource is a internet gateway or not
             query = "SELECT ?type WHERE {<" + igw.asResource() + "> mrs:type ?type ."
-                    + "FILTER(?type In (\"internet-gateway\",\"vpn-gateway\")}";
+                    + "FILTER(?type In (\"internet-gateway\",\"vpn-gateway\"))}";
             ResultSet r1 = executeQuery(query, model, emptyModel);
             if (!r1.hasNext()) {
-                continue;
+                continue; //not a gateway
             }
             QuerySolution q1 = r1.next();
             String type = q1.get("type").asLiteral().toString();
@@ -1312,6 +1318,8 @@ public class AwsPush {
                 } else {
                     requests += String.format("DeleteVpnGatewayRequest %s \n", idTag);
                 }
+            } else {
+                throw new EJBException(String.format("Gateway %s has an invalid type", igw));
             }
         }
         return requests;
@@ -1851,8 +1859,7 @@ public class AwsPush {
         String tempRequests = "";
         String query;
 
-        query = "SELECT ?route ?routeFrom WHERE {?route mrs:routeFrom ?routeFrom ."
-                + "?routeFrom a mrs:SwitchingSubnet}";
+        query = "SELECT ?route ?routeFrom WHERE {?route mrs:routeFrom ?routeFrom}";
         ResultSet r = executeQuery(query, emptyModel, modelAdd);
         while (r.hasNext()) {
             boolean createRequest = true;
@@ -1860,9 +1867,16 @@ public class AwsPush {
             RDFNode value = querySolution.get("routeFrom");
             RDFNode route = querySolution.get("route");
 
+            //routeFrom must be a subnet
+            query = "SELECT ?a WHERE {<" + value.asResource().toString() + "> a mrs:SwitchingSubnet}";
+            ResultSet r1 = executeQuery(query, model, modelAdd);
+            if (!r1.hasNext()) {
+                continue;
+            }
+
             query = "SELECT ?table WHERE {?table mrs:hasRoute <" + route.asResource() + "> ."
                     + "?service mrs:providesRoute <" + route.asResource() + ">}";
-            ResultSet r1 = executeQuery(query, model, modelAdd);
+            r1 = executeQuery(query, model, modelAdd);
             if (!r1.hasNext()) {
                 throw new EJBException(String.format("Route  %s"
                         + "does not have a route table or is not"
@@ -1929,8 +1943,11 @@ public class AwsPush {
 
             //look for the type in the reference model
             query = "SELECT ?type WHERE {<" + igw.asResource() + "> mrs:type ?type ."
-                    + "FILTER(?type In (\"internet-gateway\",\"vpn-gateway\")}";
+                    + "FILTER(?type In (\"internet-gateway\",\"vpn-gateway\"))}";
             ResultSet r1 = executeQuery(query, model, modelAdd);
+            if(!r1.hasNext()){
+                continue; //not a gateway
+            }
             QuerySolution q1 = r1.next();
             String type = q1.get("type").asLiteral().toString();
 
@@ -1951,7 +1968,7 @@ public class AwsPush {
                 throw new EJBException(String.format("VPC %s for gateway %s is not "
                         + "of type topology", vpc, igw));
             }
-            if (type.equals("internet")) {
+            if (type.equals("internet-gateway")) {
 
                 //check that the topology for the internet gateway is not the main topology
                 //as the internet gateway should be attached to a VPC not the main topology
@@ -1965,12 +1982,14 @@ public class AwsPush {
                 } else {
                     requests += String.format("CreateInternetGatewayRequest %s %s \n", idTag, vpcIdTag);
                 }
-            } else if (type.equals("vpn")) {
+            } else if (type.equals("vpn-gateway")) {
                 if (ec2Client.getVirtualPrivateGateway(getVpnGatewayId(idTag)) != null) {
                     throw new EJBException(String.format("VPN gateway %s already exists", idTag));
                 } else {
                     requests += String.format("CreateVpnGatewayRequest %s \n", idTag);
                 }
+            } else {
+                throw new EJBException(String.format("Gateway %s has an invalid type", igw));
             }
         }
         return requests;
@@ -2096,7 +2115,7 @@ public class AwsPush {
                 String routeFrom = q3.get("routeFrom").asResource().toString();
                 query = String.format("SELECT ?gateway WHERE{<%s> a nml:BidirectionalPort .", routeFrom)
                         + String.format("<%s> mrs:type \"vpn-gateway\"}", routeFrom);
-                ResultSet r4 = executeQuery(query, model, modelAdd);
+                ResultSet r4 = executeQueryUnion(query, model, modelAdd);
                 if (r4.hasNext()) {
                     fromGateway = routeFrom;
                 }
@@ -2121,7 +2140,7 @@ public class AwsPush {
                 r2 = executeQuery(query, model, emptyModel);
                 while (r2.hasNext()) {
                     q1 = r2.next();
-                    String routeFrom = q1.getLiteral("routeFrom").toString();
+                    String routeFrom = q1.get("routeFrom").asResource().toString();
                     query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeFrom ?routeFrom ."
                             + String.format("FILTER (?routeFrom = <%s>)}", routeFrom);
                     r3 = executeQuery(query, emptyModel, modelAdd);
