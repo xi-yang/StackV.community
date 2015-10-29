@@ -640,9 +640,8 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
                                     + String.format("FILTER (?network = <%s>)", tmpNext)
                                     + "}";
                         }
-                        query = QueryFactory.create(sparqlString);
-                        qexec = QueryExecutionFactory.create(query, systemModel);
-                        r = (ResultSet) qexec.execSelect();
+
+                        r = executeQuery(sparqlString,systemModel,spaModel);
                         if (!r.hasNext()) {
                             throw new EJBException(String.format("%s::main topology %s does not have a public subnet to route to the internet ", this.getClass().getName(), topologyUri));
                         }
@@ -785,5 +784,32 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
         } catch (Exception ex) {
             Logger.getLogger(MCE_VirtualNetworkCreation.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+    
+    /**
+     * ****************************************************************
+     * function that executes a query using a model addition/subtraction and a
+     * reference model, returns the result of the query
+     * ****************************************************************
+     */
+    private ResultSet executeQuery(String queryString, OntModel refModel, OntModel model) {
+        queryString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+                + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
+                + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
+                + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
+                + queryString;
+
+        //get all the nodes that will be added
+        Query query = QueryFactory.create(queryString);
+        QueryExecution qexec = QueryExecutionFactory.create(query, model);
+        ResultSet r = qexec.execSelect();
+
+        //check on reference model if the statement is not in the model addition,
+        //or model subtraction
+        if (!r.hasNext()) {
+            qexec = QueryExecutionFactory.create(query, refModel);
+            r = qexec.execSelect();
+        }
+        return r;
     }
 }
