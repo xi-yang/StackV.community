@@ -1805,10 +1805,14 @@ public class OpenStackPush {
     }
 
     private String getroutername(String topologyUri, String resourcename) {
+        if(resourcename.contains("router+")){
         String topologyuri = topologyUri + "router+";
         String resource = resourcename.replace(topologyuri, "");
         int index = resource.indexOf(":");
         return resource.substring(0, index);
+        }else{
+            return resourcename;
+        }
     }
 
     private static String getHostRouteSubname(String topologyUri, String resourcename) {
