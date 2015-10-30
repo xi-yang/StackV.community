@@ -2182,7 +2182,7 @@ public class AwsPush {
                         + String.format("<%s> mrs:hasTag ?tag .", routeFrom)
                         + "?tag mrs:type \"gateway\" ."
                         + "?tag mrs:value \"vpn\"}";
-                ResultSet r4 = executeQuery(query, model, modelAdd);
+                ResultSet r4 = executeQueryUnion(query, model, modelAdd);
                 if (r4.hasNext()) {
                     fromGateway = routeFrom;
                 }
@@ -2244,7 +2244,7 @@ public class AwsPush {
                             + String.format("<%s> mrs:hasTag ?tag .", targetResource)
                             + "?tag mrs:type \"gateway\" ."
                             + "?tag mrs:value \"vpn\"}";
-                    r3 = executeQuery(query, model, modelAdd);
+                    r3 = executeQueryUnion(query, model, modelAdd);
                     if (fromGateway != null && r3.hasNext()) {
                         tempRequest = String.format("PropagateVpnRequest %s %s \n", tableIdTag, target);
                     } else {

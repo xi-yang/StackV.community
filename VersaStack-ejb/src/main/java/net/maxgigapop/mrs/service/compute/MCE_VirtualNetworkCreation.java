@@ -159,9 +159,6 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
             } else {
                 placementModel.add(hostModel.getBaseModel());
             }
-
-            // ? place to a specific Node ?
-            //$$ Other types of filter methods have yet to be implemented.
         }
         System.out.println(placementModel);
         return placementModel;
@@ -200,11 +197,6 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
             throw new EJBException(String.format("%s::process network %s does not have a parent topology", this.getClass().getName(), value));
         }
 
-        //2.2 check if resource has topology name on it
-        if (!resNetwork.toString().contains(topologyUri)) {
-            throw new EJBException(String.format("%s::%s network does not contain same topology URI as parent topology %s", this.getClass().getName(), resNetwork, topologyUri));
-        }
-
         //2.3 check if it is openstack or AWS
         boolean aws = false;
         boolean ops = false;
@@ -226,7 +218,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
         } else {
             ops = true;
         }
-        spaModel = modelDefaultNetwork(systemModel, spaModel, resNetwork, type, networkCIDR, topologyUri, routes);
+        spaModel = modelDefaultNetwork(systemModel, spaModel,ops, resNetwork, type, networkCIDR, topologyUri, routes);
         if (aws == true) {
             spaModel = modelGateways(systemModel, spaModel, resNetwork, gateways, topologyUri);
             spaModel = modelAwsSubnets(systemModel, spaModel, resNetwork, networkCIDR, type, topologyUri, subnets);
@@ -243,7 +235,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
      *
      ****************************************
      */
-    private OntModel modelDefaultNetwork(OntModel systemModel, OntModel spaModel, Resource resNetwork, String type, String networkCIDR, String topologyUri, JSONArray routes) {
+    private OntModel modelDefaultNetwork(OntModel systemModel, OntModel spaModel,boolean ops, Resource resNetwork, String type, String networkCIDR, String topologyUri, JSONArray routes) {
         String sparql = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
                 + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
                 + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
@@ -303,7 +295,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
         spaModel.add(route, Mrs.routeTo, networkAddress);
 
         //add the routes to the main routing table
-        if (routes != null) {
+        if (routes != null && !ops ==true) { //openStack does not have this
             ListIterator routesIt = routes.listIterator();
             while (routesIt.hasNext()) {
                 JSONObject o = (JSONObject) routesIt.next();
@@ -603,7 +595,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
                         //we have the route completed from subnet to router 
                         //now we need the part that goes from router to public subnet 
                         //first we need find the public subnet
-                        if (!next.equalsIgnoreCase("internet:")) {
+                        if (!next.contains("internet:")) {
                             sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
                                     + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
                                     + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
@@ -622,7 +614,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
                         } else {
                             //get the network name
                             String tmpNext = next.replace("internet:","");
-                            tmpNext = topologyUri+"network+"+tmpNext;
+                            tmpNext = topologyUri+":network+"+tmpNext;
                             sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
                                     + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
                                     + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
