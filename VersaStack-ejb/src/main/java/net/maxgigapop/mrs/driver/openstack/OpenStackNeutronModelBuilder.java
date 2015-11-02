@@ -46,7 +46,8 @@ import org.openstack4j.openstack.networking.domain.NeutronRouterInterface;
  */
 public class OpenStackNeutronModelBuilder {
 
-    public static OntModel createOntology(String url, String NATServer, String topologyURI, String user_name, String password, String tenantName) throws IOException, Exception {
+    public static OntModel createOntology(String url, String NATServer, String topologyURI, String user_name, String password, String tenantName,
+            OntModel modelExt) throws IOException, Exception {
         ArrayList fip = new ArrayList();
         String POOL = null;
         Logger logger = Logger.getLogger(OpenStackNeutronModelBuilder.class.getName());
@@ -605,14 +606,11 @@ public class OpenStackNeutronModelBuilder {
         } catch (Exception e) {
             throw new Exception(String.format("failure to marshall ontology model, due to %s", e.getMessage()));
         }
-        String ttl = out.toString();
-
+        //String ttl = out.toString();
         //System.out.println(ttl);
-        
-
         //System.out.println(ttl);
-
+        if (modelExt != null)
+        model.add(modelExt.getBaseModel());
         return model;
-
     }
 }

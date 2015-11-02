@@ -6,8 +6,10 @@
 package net.maxgigapop.mrs.driver.openstack;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.model.common.Resource;
@@ -38,14 +40,14 @@ public class OpenStackGet {
     public List<? extends HostRoute> hostroute = null;
     public List<? extends Hypervisor> hypervisors =null;
     public List<? extends NovaFloatingIP> novafloatingIps =null;
-
+    public Map<Server, Map<String, String>> metadata = null;
+    
     public  OpenStackGet(String url,String NATServer, String username, String password, String tenantName) {
         //authenticate
         Authenticate authenticate = new Authenticate();
         NeutronRouterInterface ri = new NeutronRouterInterface();
         
-         client = authenticate.openStackAuthenticate(url,NATServer, username, password, tenantName);
-
+        client = authenticate.openStackAuthenticate(url,NATServer, username, password, tenantName);
 
         //get the resources
         networks = client.networking().network().list();
@@ -56,7 +58,13 @@ public class OpenStackGet {
         floatingIps = client.networking().floatingip().list();
         routers = client.networking().router().list();
         novafloatingIps = (List<? extends NovaFloatingIP>) client.compute().floatingIps().list();
-        
+        for (Server server: servers) {
+            Map<String, String> data = client.compute().servers().getMetadata(server.getId());
+            if (metadata == null && !data.isEmpty())
+                metadata = new HashMap<>();
+            if (!data.isEmpty())
+                metadata.put(server, data);
+        }
     }
 
     OpenStackGet(String url, String user_name, String password, String tenantName) {
