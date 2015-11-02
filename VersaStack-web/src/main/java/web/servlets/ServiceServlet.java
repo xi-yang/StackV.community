@@ -108,7 +108,7 @@ public class ServiceServlet extends HttpServlet {
                 response.sendRedirect(createDriverInstance(paramMap));
             } else if (paramMap.containsKey("driverType")) { // VM
                 response.sendRedirect(createVMInstance(paramMap));
-            } else if (paramMap.containsKey("netCreation")) { // Network Creation
+            } else if (paramMap.containsKey("netCreate")) { // Network Creation
                 response.sendRedirect(createFullNetwork(paramMap));
             } else {
                 response.sendRedirect("/VersaStack-web/errorPage.jsp");
@@ -197,6 +197,6 @@ public class ServiceServlet extends HttpServlet {
     private String createFullNetwork(HashMap<String, String> paramMap) {
         int retCode = -1;
         
-        return ("/VersaStack-web/ops/srvc/.jsp?ret=" + retCode);
+        return ("/VersaStack-web/ops/srvc/netcreate.jsp?ret=" + retCode);
     }
 }

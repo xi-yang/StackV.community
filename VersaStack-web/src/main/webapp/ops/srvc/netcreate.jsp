@@ -14,7 +14,7 @@
 <html >    
     <head>   
         <meta charset="UTF-8">
-        <title>Template Service</title>
+        <title>Network Creation Service</title>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>
@@ -49,7 +49,7 @@
                                     <button type="button" id="button-service-return">Cancel</button>
                                 </c:if>
                                 <table class="management-table">
-
+                                    
                                 </table>
                             </div>
                         </div>
@@ -57,8 +57,20 @@
                             <div id="service-fields">
                                 <form id="vm-form" action="/VersaStack-web/ServiceServlet" method="post">
                                     <table class="management-table" id="service-form" style="margin-bottom: 0px;"> 
-
-                                    </table>
+                                        <thead>
+                                            <tr>
+                                                <th>Template Name</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Basic</td>
+                                                <td><input type="submit" name="template1" value="Select" /></td>
+                                            </tr>                                            
+                                        </tbody>
+                                    </table>    
+                                    <input type="hidden" name="netCreate" value="true"/>
                                 </form>
                             </div>
                         </div>
@@ -82,7 +94,7 @@
                             </c:when>                                      
                         </c:choose>                        
 
-                        <br><a href="/VersaStack-web/ops/srvc/template.jsp?self=true">Repeat.</a>                                
+                        <br><a href="/VersaStack-web/ops/srvc/netcreate.jsp?self=true">Repeat.</a>                                
                         <br><a href="/VersaStack-web/ops/catalog.jsp">Return to Services.</a>
                         <br><a href="/VersaStack-web/orch/graphTest.jsp">Return to Graphic Orchestration.</a>
                     </div>

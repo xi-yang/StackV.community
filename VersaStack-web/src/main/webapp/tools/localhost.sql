@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost:3306
--- Generation Time: Sep 14, 2015 at 08:06 PM
+-- Generation Time: Nov 02, 2015 at 06:01 PM
 -- Server version: 5.5.42
 -- PHP Version: 5.6.7
 
@@ -13,6 +13,7 @@ SET time_zone = "+00:00";
 --
 -- Database: `frontend`
 --
+DROP DATABASE `frontend`;
 CREATE DATABASE IF NOT EXISTS `frontend` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 USE `frontend`;
 
@@ -26,7 +27,7 @@ DROP TABLE IF EXISTS `acl`;
 CREATE TABLE `acl` (
   `acl_id` int(11) NOT NULL,
   `service_id` int(11) NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Dumping data for table `acl`
@@ -39,7 +40,8 @@ INSERT INTO `acl` (`acl_id`, `service_id`) VALUES
 (4, 4),
 (7, 7),
 (8, 8),
-(9, 9);
+(9, 9),
+(10, 10);
 
 -- --------------------------------------------------------
 
@@ -65,6 +67,7 @@ INSERT INTO `acl_entry_group` (`acl_id`, `usergroup_id`) VALUES
 (7, 1),
 (8, 1),
 (9, 1),
+(10, 1),
 (2, 2),
 (3, 2);
 
@@ -104,7 +107,7 @@ CREATE TABLE `service` (
   `filename` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
   `description` varchar(140) COLLATE utf8_unicode_ci NOT NULL,
   `atomic` tinyint(1) NOT NULL DEFAULT '0'
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Dumping data for table `service`
@@ -117,7 +120,23 @@ INSERT INTO `service` (`service_id`, `name`, `filename`, `description`, `atomic`
 (4, 'Monitoring', 'monitor', 'System Monitoring and Logging.', 1),
 (7, 'Driver Management', 'driver', 'Installation and Uninstallation of Driver Instances.', 0),
 (8, 'Virtual Machine Management', 'vmadd', 'Management, Instantiation, and Setup of Virtual Machine Topologies.', 0),
-(9, 'View Filter Management', 'viewcreate', 'Management and Creation of graphical view filters.', 0);
+(9, 'View Filter Management', 'viewcreate', 'Management and Creation of graphical view filters.', 0),
+(10, 'Network Creation', 'netcreate', 'Network Creation Pilot Testbed', 0);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `service_instance`
+--
+
+DROP TABLE IF EXISTS `service_instance`;
+CREATE TABLE `service_instance` (
+  `service_instance_id` int(11) NOT NULL,
+  `service_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `creation_time` datetime DEFAULT NULL,
+  `referenceUUID` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -225,6 +244,14 @@ ALTER TABLE `service`
   ADD PRIMARY KEY (`service_id`);
 
 --
+-- Indexes for table `service_instance`
+--
+ALTER TABLE `service_instance`
+  ADD PRIMARY KEY (`service_instance_id`),
+  ADD KEY `service_instance-service_idx` (`service_id`),
+  ADD KEY `service_instance-user_info_idx` (`user_id`);
+
+--
 -- Indexes for table `user_belongs`
 --
 ALTER TABLE `user_belongs`
@@ -254,12 +281,17 @@ ALTER TABLE `usergroup`
 -- AUTO_INCREMENT for table `acl`
 --
 ALTER TABLE `acl`
-  MODIFY `acl_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=10;
+  MODIFY `acl_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=11;
 --
 -- AUTO_INCREMENT for table `service`
 --
 ALTER TABLE `service`
-  MODIFY `service_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=10;
+  MODIFY `service_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=11;
+--
+-- AUTO_INCREMENT for table `service_instance`
+--
+ALTER TABLE `service_instance`
+  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=23;
 --
 -- AUTO_INCREMENT for table `user_info`
 --
@@ -295,6 +327,13 @@ ALTER TABLE `acl_entry_user`
   ADD CONSTRAINT `acl_entry_user-user_info` FOREIGN KEY (`user_id`) REFERENCES `user_info` (`user_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 --
+-- Constraints for table `service_instance`
+--
+ALTER TABLE `service_instance`
+  ADD CONSTRAINT `service_instance-service` FOREIGN KEY (`service_id`) REFERENCES `service` (`service_id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT `service_instance-user_info` FOREIGN KEY (`user_id`) REFERENCES `user_info` (`user_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
 -- Constraints for table `user_belongs`
 --
 ALTER TABLE `user_belongs`
@@ -305,10 +344,11 @@ ALTER TABLE `user_belongs`
 -- Constraints for table `user_info`
 --
 ALTER TABLE `user_info`
-  ADD CONSTRAINT `user_info-usergroup` FOREIGN KEY (`active_usergroup`) REFERENCES `usergroup` (`usergroup_id`) ON DELETE SET NULL ON UPDATE NO ACTION;
+  ADD CONSTRAINT `user_info-usergroup` FOREIGN KEY (`active_usergroup`) REFERENCES `usergroup` (`usergroup_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 --
 -- Database: `login`
 --
+DROP DATABASE `login`;
 CREATE DATABASE IF NOT EXISTS `login` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 USE `login`;
 
