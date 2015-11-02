@@ -20,32 +20,6 @@ USE `frontend`;
 -- --------------------------------------------------------
 
 --
--- Table structure for table `acl`
---
-
-DROP TABLE IF EXISTS `acl`;
-CREATE TABLE `acl` (
-  `acl_id` int(11) NOT NULL,
-  `service_id` int(11) NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
---
--- Dumping data for table `acl`
---
-
-INSERT INTO `acl` (`acl_id`, `service_id`) VALUES
-(1, 1),
-(2, 2),
-(3, 3),
-(4, 4),
-(7, 7),
-(8, 8),
-(9, 9),
-(10, 10);
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `acl_entry_group`
 --
 
@@ -93,6 +67,32 @@ INSERT INTO `acl_entry_user` (`acl_id`, `user_id`) VALUES
 (4, 1),
 (9, 3),
 (1, 14);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `acl`
+--
+
+DROP TABLE IF EXISTS `acl`;
+CREATE TABLE `acl` (
+  `acl_id` int(11) NOT NULL,
+  `service_id` int(11) NOT NULL
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Dumping data for table `acl`
+--
+
+INSERT INTO `acl` (`acl_id`, `service_id`) VALUES
+(1, 1),
+(2, 2),
+(3, 3),
+(4, 4),
+(7, 7),
+(8, 8),
+(9, 9),
+(10, 10);
 
 -- --------------------------------------------------------
 
