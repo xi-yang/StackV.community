@@ -681,8 +681,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
             }
             String value = (String) o.get("type");
             if (value.equalsIgnoreCase("internet")) {
-                Resource gateway = spaModel.createResource(resNetwork.toString() + "-igw");
-                spaModel.add(gateway, RdfOwl.type, Nml.BidirectionalPort);
+                Resource gateway = RdfOwl.createResource(spaModel,resNetwork.toString() + "-igw",Nml.BidirectionalPort);
                 spaModel.add(resNetwork, Nml.hasBidirectionalPort, gateway);
                 Resource tag = spaModel.createResource(topoUri + "igwTag");
                 spaModel.add(gateway, Mrs.hasTag, tag);
