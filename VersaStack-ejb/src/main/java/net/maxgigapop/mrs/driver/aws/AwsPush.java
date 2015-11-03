@@ -2250,7 +2250,7 @@ public class AwsPush {
                     r3 = executeQuery(query, model, modelAdd);
                     if (!r3.hasNext()) {
                         throw new EJBException(String.format("next hop %s does not exist in delta "
-                                + "or system model", target));
+                                + "or system model", targetResource));
                     }
                     query = String.format("SELECT ?gateway WHERE{<%s> a nml:BidirectionalPort .", targetResource)
                             + String.format("<%s> mrs:hasTag ?tag .", targetResource)
