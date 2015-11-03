@@ -160,7 +160,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
                 placementModel.add(hostModel.getBaseModel());
             }
         }
-        System.out.println(placementModel);
+        //System.out.println(placementModel);
         return placementModel;
     }
 

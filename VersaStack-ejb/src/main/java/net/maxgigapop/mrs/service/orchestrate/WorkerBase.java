@@ -87,7 +87,7 @@ public class WorkerBase {
     }
     
     protected void runWorkflow() {
-        final ActionBase mergedRoot = rootActions.get(0);
+        ActionBase mergedRoot = null;
         Map<ActionBase, Future<ServiceDelta>> resultMap = new HashMap<>();
 
         // start workflow run
@@ -135,6 +135,9 @@ public class WorkerBase {
                                     upperAction.mergeResult(resultDelta);
                                     action.setState(ActionState.MERGED);
                                 }
+                            } else if (mergedRoot == null){
+                                // merge root actions delta to the first root element
+                                mergedRoot = action;
                             } else if (!action.equals(mergedRoot)){
                                 // merge root actions delta to the first root element
                                 mergedRoot.mergeResult(resultDelta);
@@ -162,14 +165,14 @@ public class WorkerBase {
             // continue to batch execution (to exectute new action and/or wait ones in processing)            
         }
         //@TODO: throw exception if top loop times out
-        
         mergedRoot.cleanupOutputDelta();
+        /*
         try {
-            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.FINE, "\n>>>Workflow--DeltaAddModel Output=\n" + ModelUtil.marshalOntModel(mergedRoot.getOutputDelta().getModelAddition().getOntModel()));
+            Logger.getLogger(WorkerBase.class.getName()).log(Level.INFO, "\n>>>Workflow--DeltaAddModel(after cleanup) Output=\n" + ModelUtil.marshalOntModel(mergedRoot.getOutputDelta().getModelAddition().getOntModel()));
         } catch (Exception ex) {
-            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(WorkerBase.class.getName()).log(Level.SEVERE, null, ex);
         }
-
+        */
         //@TODO: convert serviceDelta into systemDelta and raise exception if some annotation remains
         this.resultModelDelta = new SystemDelta();
         this.resultModelDelta.setModelAddition(mergedRoot.getOutputDelta().getModelAddition());
