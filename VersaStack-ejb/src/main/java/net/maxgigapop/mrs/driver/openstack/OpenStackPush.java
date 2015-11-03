@@ -36,6 +36,7 @@ import org.openstack4j.model.compute.ServerCreate;
 import org.openstack4j.model.compute.builder.ServerCreateBuilder;
 import org.openstack4j.model.network.IP;
 import org.openstack4j.model.network.*;
+import org.openstack4j.model.network.builder.NetworkBuilder;
 import org.openstack4j.model.network.builder.RouterBuilder;
 import org.openstack4j.model.storage.block.*;
 import org.openstack4j.openstack.compute.domain.NovaInterfaceAttachment;
@@ -159,7 +160,7 @@ public class OpenStackPush {
                 Network network = new NeutronNetwork();
                 network.toBuilder().name(o.get("name").toString())
                         .tenantId("3cf2d992f604479dbcb1a6c679c6697a")
-                        .adminStateUp(true);//hard code here
+                        .adminStateUp(true); //hard code here
                 osClient.networking().network().create(network);
 
             } else if (o.get("request").toString().equals("CreateSubnetRequest")) {
@@ -594,6 +595,7 @@ public class OpenStackPush {
                 }
 
                 //1.2 find the tag of the network
+                /*
                 query = "SELECT ?tag {<" + network.asResource() + "> mrs:hasTag ?tag}";
                 r1 = executeQuery(query, modelRef, modelDelta);
                 if (!r1.hasNext()) {
@@ -610,7 +612,7 @@ public class OpenStackPush {
                 }
                 q1 = r1.next();
                 String networkTagValue = q1.get("value").asLiteral().toString();
-
+                */
                 //1.3 check taht network offers switching service
                 query = "SELECT ?service  WHERE {<" + network.asResource() + "> nml:hasService  ?service ."
                         + "?service a  mrs:SwitchingService}";
@@ -618,9 +620,20 @@ public class OpenStackPush {
                 if (!r1.hasNext()) {
                     throw new EJBException(String.format("New network %s does not speicfy Switching Service", network));
                 }
-
-                //1.4 TODO if the netwrk is external, make sure it has the route to connect
                 JSONObject o = new JSONObject();
+                query = "SELECT ?exnetwork WHERE {?exnetwork mrs:Type \"external-network\"}";
+                ResultSet r2 = executeQuery(query, emptyModel, modelDelta);
+               
+                if(r2.hasNext()){
+                    QuerySolution q = r2.next();
+                    RDFNode network_ex = q.get("exnetwork");
+                    String exnetworkname = network_ex.toString();
+                    String exnetworkName = getresourcename(exnetworkname,"+","");
+                    Network n = client.getNetwork(exnetworkName);
+                    o.put("exteral-network", client.getResourceName(n));
+                }
+                 //1.4 TODO if the netwrk is external, make sure it has the route to connect
+                
                 if (creation == true) {
                     o.put("request", "CreateNetworkRequests");
                 } else {
@@ -685,6 +698,7 @@ public class OpenStackPush {
                 String networkname = network.asResource().toString();
                 String networkName = getresourcename(networkname, "+", "");
                 //1.3.1 gte the tag of the network 
+                /*
                 query = "SELECT ?tag {<" + network.asResource() + "> mrs:hasTag ?tag}";
                 r1 = executeQuery(query, emptyModel, modelDelta);
                 if (!r1.hasNext()) {
@@ -729,6 +743,7 @@ public class OpenStackPush {
                     throw new EJBException(String.format("private subnet %s cannot be in external network "
                             + "network %s", subnet, network));
                 }
+                */
 
                 //get the netwokr addresses of the subnet
                 query = "SELECT ?subnet ?address ?value WHERE {<" + subnet.asResource() + "> mrs:hasNetworkAddress ?address ."
@@ -862,20 +877,11 @@ public class OpenStackPush {
 
         //1 get the tag resource from the reference model that indicates 
         //that this is a network  interface 
-        query = "SELECT ?tag WHERE {?tag mrs:type \"interface\" ."
-                + "?tag mrs:value \"network\"}";
-        ResultSet r = executeQuery(query, modelRef, modelDelta);
-        if (!r.hasNext()) {
-            throw new EJBException(String.format("Reference model has no tags for network"
-                    + "interfaces"));
-        }
-        QuerySolution q = r.next();
-        RDFNode tag = q.get("tag");
+       
 
         //2 select all the ports in the reference model that have that tag
-        query = "SELECT ?port WHERE {?port a  nml:BidirectionalPort ."
-                + "?port  mrs:hasTag <" + tag.asResource() + ">}";
-        r = executeQuery(query, emptyModel, modelDelta);
+        query = "SELECT ?port WHERE {?port a  nml:BidirectionalPort .}";
+        ResultSet r = executeQuery(query, emptyModel, modelDelta);
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode port = querySolution.get("port");
@@ -959,7 +965,8 @@ public class OpenStackPush {
 
         //1 check for any addition of a port into a device or subnet
         //some error here
-        query = "SELECT ?node ?port WHERE {?node nml:hasBidirectionalPort ?port}";
+        query = "SELECT ?node ?port WHERE {?node nml:hasBidirectionalPort ?port"
+                + "?node a nml:Node}";
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
         while (r.hasNext()) {
             QuerySolution q = r.next();
@@ -984,6 +991,7 @@ public class OpenStackPush {
                 String portName = getresourcename(portname, "+", "");
 
                 //1.2 check that the port has a tag
+                /*
                 query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:hasTag ?tag}";
                 ResultSet r2 = executeQuery(query, modelRef, modelDelta);
                 if (!r2.hasNext()) {
@@ -1000,7 +1008,7 @@ public class OpenStackPush {
                     throw new EJBException(String.format("bidirectional port %s to be attached to instance is not a net"
                             + "work interface", port));
                 }
-
+                */
                 //1.4 create the request
                 JSONObject o = new JSONObject();
                 Port p = client.getPort(portName);
