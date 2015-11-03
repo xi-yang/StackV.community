@@ -164,10 +164,10 @@ public class OpenStackNeutronModelBuilder {
 
                 String hypervisorname = server.getHypervisorHostname();
 
-                Resource HOST = RdfOwl.createResource(model, topologyURI + ":" + "hostID+" + hostID, node);
+                Resource HOST = RdfOwl.createResource(model, topologyURI + ":" + "host+" + hostID, node);
 
-                Resource HYPERVISOR = RdfOwl.createResource(model, topologyURI + ":" + "hypersor-name+" + hypervisorname, hypervisorService);
-                Resource VM = RdfOwl.createResource(model, topologyURI + ":" + "server-name+" + openstackget.getServereName(server), node);
+                Resource HYPERVISOR = RdfOwl.createResource(model, topologyURI + ":" + "hypervisor+" + hypervisorname, hypervisorService);
+                Resource VM = RdfOwl.createResource(model, topologyURI + ":" + "server+" + openstackget.getServereName(server), node);
 
                 model.add(model.createStatement(OpenstackTopology, hasNode, HOST));
 
@@ -575,7 +575,7 @@ public class OpenStackNeutronModelBuilder {
                             for (Server servers : openstackget.getServers()) {
                                 Port pt = openstackget.getPort(f.getPortId());
                                 if (servers.getId().equals(pt.getDeviceId())) {
-                                    Resource VM = RdfOwl.createResource(model, topologyURI + ":" + "server-name+" + openstackget.getServereName(servers), node);
+                                    Resource VM = RdfOwl.createResource(model, topologyURI + ":" + "server+" + openstackget.getServereName(servers), node);
                                     model.add(model.createStatement(VM, hasNetworkAddress, FIXEDADD));
                                 }
                             }
