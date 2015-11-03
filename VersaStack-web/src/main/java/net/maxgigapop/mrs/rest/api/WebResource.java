@@ -106,4 +106,17 @@ public class WebResource {
             return e.getMessage();
         }
     }
+    
+    @POST
+    @Path("/createNetwork")
+    @Consumes({"application/xml", "application/json"})
+    public String createNet(ApiVMInstall input) {
+        try {
+            Map<String, String> propMap = input.getProperties();
+
+            return "";
+        } catch (EJBException e) {
+            return e.getMessage();
+        }
+    }
 }

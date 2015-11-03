@@ -191,7 +191,7 @@
                                                     <tr>
                                                         <td></td>
                                                         <td>
-                                                            <input class="button-register" name="install" type="submit" value="driver" />
+                                                            <input class="button-register" name="install" type="submit" value="Install" />
                                                             <input class="button-register" type="button" 
                                                                    value="Add Additional Properties" onClick="addPropField()">
                                                         </td>
@@ -219,7 +219,7 @@
                                                 <tr>
                                                     <td></td>
                                                     <td>
-                                                        <input class="button-register" name="uninstall" type="submit" value="driver" />
+                                                        <input class="button-register" name="uninstall" type="submit" value="Uninstall" />
                                                     </td>
                                                 </tr>
                                             </c:if>

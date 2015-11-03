@@ -81,7 +81,7 @@
                     <div class="form-result" id="service-result">
                         <c:choose>
                             <c:when test="${param.ret == '0'}">
-                                Installation Success!
+                                Creation Success!
                             </c:when>
                             <c:when test="${param.ret == '1'}">
                                 Error 1.
