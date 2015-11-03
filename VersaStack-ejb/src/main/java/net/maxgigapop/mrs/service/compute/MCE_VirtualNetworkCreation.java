@@ -107,7 +107,6 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
         for (Resource network : networkPolicyMap.keySet()) {
             //1. compute placement based on filter/match criteria *policyData*
             // returned placementModel contains the VM as well as hosting Node/Topology and HypervisorService from systemModel
-            //$$ TODO: virtual node should be named and tagged using URI and/or polocy/criteria data in spaModel  
             OntModel placementModel = this.doCreation(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), network, networkPolicyMap.get(network));
             if (placementModel == null) {
                 throw new EJBException(String.format("%s::process cannot resolve any policy to place %s", this.getClass().getName(), network));
@@ -218,7 +217,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
         } else {
             ops = true;
         }
-        spaModel = modelDefaultNetwork(systemModel, spaModel,ops, resNetwork, type, networkCIDR, topologyUri, routes);
+        spaModel = modelDefaultNetwork(systemModel, spaModel, ops, resNetwork, type, networkCIDR, topologyUri, routes);
         if (aws == true) {
             spaModel = modelGateways(systemModel, spaModel, resNetwork, gateways, topologyUri);
             spaModel = modelAwsSubnets(systemModel, spaModel, resNetwork, networkCIDR, type, topologyUri, subnets);
@@ -235,7 +234,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
      *
      ****************************************
      */
-    private OntModel modelDefaultNetwork(OntModel systemModel, OntModel spaModel,boolean ops, Resource resNetwork, String type, String networkCIDR, String topologyUri, JSONArray routes) {
+    private OntModel modelDefaultNetwork(OntModel systemModel, OntModel spaModel, boolean ops, Resource resNetwork, String type, String networkCIDR, String topologyUri, JSONArray routes) {
         String sparql = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
                 + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
                 + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
@@ -271,11 +270,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
         spaModel.add(routingService, RdfOwl.type, Mrs.RoutingService);
 
         //add network type to the model
-        Resource networkTag = spaModel.getResource(topologyUri + ":network_tag_" + type);
-        spaModel.add(networkTag, RdfOwl.type, Mrs.Tag);
-        spaModel.add(networkTag, Mrs.type, "network-type");
-        spaModel.add(networkTag, Mrs.value, type);
-        spaModel.add(resNetwork, Mrs.hasTag, networkTag);
+        spaModel.add(resNetwork, Mrs.type, type);
 
         //add routing info
         Resource networkAddress = spaModel.createResource(resNetwork.toString() + "networkAddress");
@@ -295,7 +290,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
         spaModel.add(route, Mrs.routeTo, networkAddress);
 
         //add the routes to the main routing table
-        if (routes != null && !ops ==true) { //openStack does not have this
+        if (routes != null && !ops == true) { //openStack does not have this
             ListIterator routesIt = routes.listIterator();
             while (routesIt.hasNext()) {
                 JSONObject o = (JSONObject) routesIt.next();
@@ -387,18 +382,6 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
             spaModel.add(networkAddress, RdfOwl.type, Mrs.NetworkAddress);
             spaModel.add(networkAddress, Mrs.type, "ipv4-prefix");
             spaModel.add(networkAddress, Mrs.value, subnetCIDR);
-
-            //add the subnet tag
-            if (networkType.equalsIgnoreCase("external")) {
-                networkType = "public";
-            } else {
-                networkType = "private";
-            }
-            Resource subnetTag = spaModel.getResource(topologyUri + ":subnet_tag_" + networkType);
-            spaModel.add(subnetTag, RdfOwl.type, Mrs.Tag);
-            spaModel.add(subnetTag, Mrs.type, "network-type");
-            spaModel.add(subnetTag, Mrs.value, networkType);
-            spaModel.add(subnet, Mrs.hasTag, subnetTag);
 
             if (o.containsKey("routes")) {
                 Resource routingService = spaModel.getResource(resNetwork.toString() + "routingService");
@@ -521,17 +504,6 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
             spaModel.add(networkAddress, Mrs.type, "ipv4-prefix");
             spaModel.add(networkAddress, Mrs.value, subnetCIDR);
 
-            //add the subnet tag
-            if (networkType.equalsIgnoreCase("external")) {
-                networkType = "public";
-            } else {
-                networkType = "private";
-            }
-            Resource subnetTag = spaModel.getResource(topologyUri + ":subnet_tag_" + networkType);
-            spaModel.add(subnetTag, RdfOwl.type, Mrs.Tag);
-            spaModel.add(subnetTag, Mrs.type, "network-type");
-            spaModel.add(subnetTag, Mrs.value, networkType);
-            spaModel.add(subnet, Mrs.hasTag, subnetTag);
 
             //add basic routing for the subnet
             Resource routingService = spaModel.getResource(resNetwork.toString() + "routingService");
@@ -602,38 +574,32 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
                                     + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
                                     + "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n"
                                     + "SELECT ?subnet WHERE {?topology nml:hasTopology ?network ."
-                                    + "?network mrs:hasTag ?networkTag ."
-                                    + "?networkTag mrs:value \"external\" ."
+                                    + "?network mrs:type \"external\" ."
                                     + "?network nml:hasService ?service ."
                                     + "?service a mrs:SwitchingService ."
                                     + "?service mrs:providesSubnet ?subnet ."
-                                    + "?subnet mrs:hasTag ?subnetTag ."
-                                    + "?subnetTag mrs:value \"public\" ."
                                     + String.format("FILTER (?topology = <%s>)", topologyUri)
                                     + "}";
                         } else {
                             //get the network name
-                            String tmpNext = next.replace("internet:","");
-                            tmpNext = topologyUri+":network+"+tmpNext;
+                            String tmpNext = next.replace("internet:", "");
+                            tmpNext = topologyUri + ":network+" + tmpNext;
                             sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
                                     + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
                                     + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
                                     + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
                                     + "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n"
                                     + "SELECT ?subnet WHERE {?topology nml:hasTopology ?network ."
-                                    + "?network mrs:hasTag ?networkTag ."
-                                    + "?networkTag mrs:value \"external\" ."
+                                    + "?network mrs:type \"external\" ."
                                     + "?network nml:hasService ?service ."
                                     + "?service a mrs:SwitchingService ."
                                     + "?service mrs:providesSubnet ?subnet ."
-                                    + "?subnet mrs:hasTag ?subnetTag ."
-                                    + "?subnetTag mrs:value \"public\" ."
                                     + String.format("FILTER (?topology = <%s>)", topologyUri)
                                     + String.format("FILTER (?network = <%s>)", tmpNext)
                                     + "}";
                         }
 
-                        r = executeQuery(sparqlString,systemModel,spaModel);
+                        r = executeQuery(sparqlString, systemModel, spaModel);
                         if (!r.hasNext()) {
                             throw new EJBException(String.format("%s::main topology %s does not have a public subnet to route to the internet ", this.getClass().getName(), topologyUri));
                         }
@@ -681,21 +647,13 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
             }
             String value = (String) o.get("type");
             if (value.equalsIgnoreCase("internet")) {
-                Resource gateway = RdfOwl.createResource(spaModel,resNetwork.toString() + "-igw",Nml.BidirectionalPort);
+                Resource gateway = RdfOwl.createResource(spaModel, resNetwork.toString() + "-igw", Nml.BidirectionalPort);
                 spaModel.add(resNetwork, Nml.hasBidirectionalPort, gateway);
-                Resource tag = spaModel.createResource(topoUri + "igwTag");
-                spaModel.add(gateway, Mrs.hasTag, tag);
-                spaModel.add(tag, RdfOwl.type, Mrs.Tag);
-                spaModel.add(tag, Mrs.type, "gateway");
-                spaModel.add(tag, Mrs.value, "internet");
+                spaModel.add(gateway, Mrs.type, "internet-gateway");
             } else if (value.equalsIgnoreCase("vpn")) {
-                Resource gateway = RdfOwl.createResource(spaModel,resNetwork.toString() + "-vpngw",Nml.BidirectionalPort);
+                Resource gateway = RdfOwl.createResource(spaModel, resNetwork.toString() + "-vpngw", Nml.BidirectionalPort);
                 spaModel.add(resNetwork, Nml.hasBidirectionalPort, gateway);
-                Resource tag = spaModel.createResource(topoUri + ":vpngwTag");
-                spaModel.add(gateway, Mrs.hasTag, tag);
-                spaModel.add(tag, RdfOwl.type, Mrs.Tag);
-                spaModel.add(tag, Mrs.type, "gateway");
-                spaModel.add(tag, Mrs.value, "vpn");
+                spaModel.add(gateway, Mrs.type, "vpn-gateway");
             }
         }
         return spaModel;
@@ -730,8 +688,8 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
             output.put("uri", resNetwork);
 
             sparql = String.format("SELECT ?gateway ?value WHERE {<%s> nml:hasBidirectionalPort ?gateway .", resNetwork.toString())
-                    + "?gateway mrs:hasTag ?tag ."
-                    + "?tag mrs:value ?value}";
+                    + "?gateway mrs:type ?type ."
+                    + "FILTER (?type IN (\"internet-gateway\",\"vpn-gateway\")}";
             r = ModelUtil.sparqlQuery(spaModel, sparql);
             JSONArray gateways = new JSONArray();
             while (r.hasNext()) {
@@ -775,7 +733,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
             Logger.getLogger(MCE_VirtualNetworkCreation.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
     /**
      * ****************************************************************
      * function that executes a query using a model addition/subtraction and a
