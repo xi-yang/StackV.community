@@ -965,7 +965,7 @@ public class OpenStackPush {
 
         //1 check for any addition of a port into a device or subnet
         //some error here
-        query = "SELECT ?node ?port WHERE {?node nml:hasBidirectionalPort ?port"
+        query = "SELECT ?node ?port WHERE {?node nml:hasBidirectionalPort ?port ."
                 + "?node a nml:Node}";
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
         while (r.hasNext()) {
