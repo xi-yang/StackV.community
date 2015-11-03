@@ -250,15 +250,13 @@ public class ActionBase {
             Resource resPolicy = querySolution.get("policyAction").asResource();
             mergedModel.remove(resSome, Spa.dependOn, resPolicy);
         }
-
         try {
-            log.log(Level.INFO, "\n>>>Merge--ModelA=\n" + ModelUtil.marshalModel(modelA.getBaseModel()));
-            log.log(Level.INFO, "\n>>>Merge--ModelB=\n" + ModelUtil.marshalModel(modelB.getBaseModel()));
-            log.log(Level.INFO, "\n>>>Merge--ModelAB=\n" + ModelUtil.marshalModel(mergedModel.getBaseModel()));
+            //log.log(Level.INFO, "\n>>>Merge--ModelA=\n" + ModelUtil.marshalModel(modelA.getBaseModel()));
+            //log.log(Level.INFO, "\n>>>Merge--ModelB=\n" + ModelUtil.marshalModel(modelB.getBaseModel()));
+            //log.log(Level.INFO, "\n>>>Merge--ModelAB=\n" + ModelUtil.marshalModel(mergedModel.getBaseModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
-
         return mergedModel;
     }
     
