@@ -10,26 +10,23 @@ package net.maxgigapop.mrs.common;
  * @author muzcategui
  */
 public class ResourceTool {
+    
+    private static final String versaStackPrefix = "urn:ogf:network:";
 
     public static String getResourceUri(String topologyUri, String name) {
         String uri;
-        if (name.startsWith("urn:ogf:network:")) {
+        if (name.startsWith(versaStackPrefix)) {
             return name;
         } else {
-            return topologyUri + name;
+            return versaStackPrefix + name;
         }
     }
 
     public static String getResourceName(String topologyUri, String name) {
         //remove the topologyUri first
-        if (name != null) {
-            if (name.startsWith(topologyUri)) {
-                name = name.replace(topologyUri, "");
-            } else if (name.startsWith("urn:ogf:network:")) {//remove the urn:ogf:network: if it is left
-                name = name.replace("urn:ogf:network:", "");
-            }
+        if (name != null && name.startsWith(versaStackPrefix)) {
+            name = name.replace(versaStackPrefix, "");
         }
         return name;
     }
-
 }
