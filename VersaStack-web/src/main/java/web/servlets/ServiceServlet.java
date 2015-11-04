@@ -197,6 +197,14 @@ public class ServiceServlet extends HttpServlet {
     private String createFullNetwork(HashMap<String, String> paramMap) {
         int retCode = -1;
         
+        if (paramMap.containsKey("template1")) { // Basic Template
+            // Add template data.
+            paramMap.put(null, null);
+            
+            
+            // retCode = servBean.netCreate(paramMap);
+        }
+        
         return ("/VersaStack-web/ops/srvc/netcreate.jsp?ret=" + retCode);
     }
 }
