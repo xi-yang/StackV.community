@@ -47,7 +47,7 @@ import org.openstack4j.openstack.networking.domain.NeutronRouterInterface;
 public class OpenStackNeutronModelBuilder {
 
     public static OntModel createOntology(String url, String NATServer, String topologyURI, String user_name, String password, String tenantName,
-            OntModel modelExt) throws IOException, Exception {
+            String adminUsername, String adminPassword, String adminTenant, OntModel modelExt) throws IOException, Exception {
         ArrayList fip = new ArrayList();
         String POOL = null;
         Logger logger = Logger.getLogger(OpenStackNeutronModelBuilder.class.getName());
@@ -122,9 +122,12 @@ public class OpenStackNeutronModelBuilder {
         model.add(model.createStatement(PORT_TAG, type, "interface"));
         model.add(model.createStatement(PORT_TAG, value, "network"));
 
-        //OpenStackGet openstackget = new OpenStackGet(url, NATServer, user_name, password, tenantName);
         OpenStackGet openstackget = new OpenStackGet(url, NATServer, user_name, password, tenantName);
-
+        if (adminUsername != null && adminPassword != null && adminTenant != null) {
+            Authenticate authenticate = new Authenticate();        
+            OSClient adminClient = authenticate.openStackAuthenticate(url, NATServer, adminUsername, adminPassword, adminTenant);
+            openstackget.fetchAddResources(adminClient);
+        }
         model.add(model.createStatement(OpenstackTopology, hasService, routingService));
         model.add(model.createStatement(OpenstackTopology, hasService, cinderService));
         model.add(model.createStatement(OpenstackTopology, hasService, networkService));

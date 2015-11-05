@@ -27,37 +27,55 @@ import org.openstack4j.openstack.networking.domain.NeutronRouterInterface;
  * @author max
  */
 public class OpenStackGet {
-
     private OSClient client = null;
-    private List<? extends Network> networks = null;
-    private List<? extends Subnet> subnets = null;
-    private List<? extends Port> ports = null;
-    private List<? extends Server> servers = null;
-    private List<? extends Volume> volumes = null;
-    private List<? extends NetFloatingIP> floatingIps = null;
-    private List<? extends Router> routers = null;
-    private List<? extends RouterInterface> routerinterface = null;
-    public List<? extends HostRoute> hostroute = null;
-    public List<? extends Hypervisor> hypervisors =null;
-    public List<? extends NovaFloatingIP> novafloatingIps =null;
-    public Map<Server, Map<String, String>> metadata = null;
+    private List<Network> networks = new ArrayList<>();
+    private List<Subnet> subnets = new ArrayList<>();
+    private List<Port> ports = new ArrayList<>();
+    private List<Server> servers = new ArrayList<>();
+    private List<Volume> volumes = new ArrayList<>();
+    private List<NetFloatingIP> floatingIps = new ArrayList<>();
+    private List<Router> routers = new ArrayList<>();
+    private List<RouterInterface> routerinterface = new ArrayList<>();
+    private List<HostRoute> hostroute = new ArrayList<>();
+    private List<Hypervisor> hypervisors = new ArrayList<>();
+    private List<NovaFloatingIP> novafloatingIps =new ArrayList<>();
+    private Map<Server, Map<String, String>> metadata = new HashMap<>();
     
     public  OpenStackGet(String url,String NATServer, String username, String password, String tenantName) {
-        //authenticate
-        Authenticate authenticate = new Authenticate();
-        NeutronRouterInterface ri = new NeutronRouterInterface();
-        
+        Authenticate authenticate = new Authenticate();        
         client = authenticate.openStackAuthenticate(url,NATServer, username, password, tenantName);
+        fetchAddResources(client);
+    }
 
-        //get the resources
-        networks = client.networking().network().list();
-        subnets = client.networking().subnet().list();
-        ports = client.networking().port().list();
-        servers = client.compute().servers().list();
-        volumes = client.blockStorage().volumes().list();
-        floatingIps = client.networking().floatingip().list();
-        routers = client.networking().router().list();
-        novafloatingIps = (List<? extends NovaFloatingIP>) client.compute().floatingIps().list();
+    OpenStackGet(String url, String user_name, String password, String tenantName) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    public void fetchAddResources(OSClient client) {
+        List<? extends Network> nets = client.networking().network().list();
+        if (nets != null && !nets.isEmpty())
+            networks.addAll(nets);
+        List<? extends Subnet> subs = client.networking().subnet().list();
+        if (subs != null && !subs.isEmpty())
+            subnets.addAll(subs);
+        List<? extends Port> pors = client.networking().port().list();
+        if (pors != null && !pors.isEmpty())
+            ports.addAll(pors);
+        List<? extends Server> sers = client.compute().servers().list();
+        if (sers != null && !sers.isEmpty())
+            servers.addAll(sers);
+        List<? extends Volume> vols = client.blockStorage().volumes().list();
+        if (vols != null && !vols.isEmpty())
+            volumes.addAll(vols);
+        List<? extends NetFloatingIP> fips = client.networking().floatingip().list();
+        if (fips != null && !fips.isEmpty())
+            floatingIps.addAll(fips);
+        List<? extends Router> rous = client.networking().router().list();
+        if (rous != null && !rous.isEmpty())
+            routers.addAll(rous);
+        List<? extends NovaFloatingIP> nfips = (List<NovaFloatingIP>) client.compute().floatingIps().list();
+        if (nfips != null && !nfips.isEmpty())
+            novafloatingIps.addAll(nfips);
         for (Server server: servers) {
             Map<String, String> data = client.compute().servers().getMetadata(server.getId());
             if (metadata == null && !data.isEmpty())
@@ -66,13 +84,9 @@ public class OpenStackGet {
                 metadata.put(server, data);
         }
     }
-
-    OpenStackGet(String url, String user_name, String password, String tenantName) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
+            
     //get all the nets in the tenant
-    public List<? extends Network> getNetworks() {
+    public List<Network> getNetworks() {
         return networks;
     }
 
@@ -88,7 +102,7 @@ public class OpenStackGet {
    
 
     //get all the subnets in the tenant
-    public List<? extends Subnet> getSubnets() {
+    public List<Subnet> getSubnets() {
         return subnets;
     }
 
@@ -116,7 +130,7 @@ public class OpenStackGet {
     }
 
     //get all the ports in the tenant
-    public List<? extends Port> getPorts() {
+    public List<Port> getPorts() {
         return ports;
     }
 
@@ -141,7 +155,7 @@ public class OpenStackGet {
     }
 
     //get all servers in the tenant
-    public List<? extends Server> getServers() {
+    public List<Server> getServers() {
         return servers;
     }
 
@@ -195,7 +209,7 @@ public class OpenStackGet {
     }
 
     //get all volumes in the tenant
-    public List<? extends Volume> getVolumes() {
+    public List<Volume> getVolumes() {
         return volumes;
     }
 
@@ -210,7 +224,7 @@ public class OpenStackGet {
     }
 
     //get all floating ips in the tenant
-    public List<? extends NetFloatingIP> getFloatingIp() {
+    public List<NetFloatingIP> getFloatingIp() {
         return floatingIps;
     }
 
@@ -223,11 +237,11 @@ public class OpenStackGet {
         }
         return null;
     }
-   public List<? extends NovaFloatingIP> getNovaFloatingIP(){
+   public List<NovaFloatingIP> getNovaFloatingIP(){
        return novafloatingIps;
    }
     //get a list of all the hypervisors
-    public List<? extends Hypervisor> getHypervisors() {
+    public List<Hypervisor> getHypervisors() {
         return hypervisors;
     }
 
@@ -242,7 +256,7 @@ public class OpenStackGet {
     }
     
     //get all the routers
-    public List<? extends Router> getRouters()
+    public List<Router> getRouters()
     {
         return routers;
     }

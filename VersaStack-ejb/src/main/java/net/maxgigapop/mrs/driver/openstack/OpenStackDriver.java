@@ -130,15 +130,20 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
             String topologyUri = driverInstance.getProperty("topologyUri");
             String NATServer = driverInstance.getProperty("NATServer");
             String modelExtTtl = driverInstance.getProperty("modelExt");
+            String adminUsername = driverInstance.getProperty("adminUsername");
+            String adminPassword = driverInstance.getProperty("adminPassword");
+            String adminTenant = driverInstance.getProperty("adminTenant");
             OntModel modelExt = null;
             if (modelExtTtl != null && !modelExtTtl.isEmpty()) {
                 modelExt = ModelUtil.unmarshalOntModel(modelExtTtl);
             }
 
-            OntModel ontModel = OpenStackNeutronModelBuilder.createOntology(url, NATServer, topologyUri, username, password, tenant, modelExt);
+            OntModel ontModel = OpenStackNeutronModelBuilder.createOntology(url, NATServer, topologyUri, username, password, tenant, 
+                    adminUsername, adminPassword, adminTenant, modelExt);
             
             // combine injected Model extension
-            if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
+            if (driverInstance.getHeadVersionItem() == null 
+                    || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();
                 dm.setCommitted(true);
                 dm.setOntModel(ontModel);
