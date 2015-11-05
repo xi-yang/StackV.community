@@ -83,15 +83,10 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         String NATServer = driverInstance.getProperty("NATServer");
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         String requests = driverInstance.getProperty(requestId);
-<<<<<<< HEAD
-
-        OpenStackPush push = new OpenStackPush(url, NATServer, username, password, tenant, topologyURI);
-=======
         if (requests == null || requests.isEmpty()) {
             throw new EJBException(String.format("commitDelta encounters empty requests data for %s", driverInstance));
         }
         OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, topologyURI);
->>>>>>> origin/Feature-virtual_cloud_network_mce-M6-miguel
         ObjectMapper mapper = new ObjectMapper();
         List<JSONObject> r = new ArrayList();
         try {
