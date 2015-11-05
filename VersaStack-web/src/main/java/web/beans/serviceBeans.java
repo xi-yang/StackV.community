@@ -272,7 +272,7 @@ public class serviceBeans {
                 String portUri = "&lt;" + topoUri + ":eni-" + UUID.randomUUID().toString() + "&gt;";
                 model += "&lt;" + net + "&gt;\n        nml:hasBidirectionalPort " + portUri + " .\n\n"
                        + portUri + "\n        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n"
-                        + "        mrs:hasTag            &lt;" + topoUri + ":portTag&gt; ;\n\n";
+                        + "        mrs:hasTag            &lt;" + topoUri + ":portTag&gt; .\n\n";
             
                 allSubnets += portUri + " , "; 
             }
