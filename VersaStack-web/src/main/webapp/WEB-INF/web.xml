@@ -8,24 +8,7 @@
         <servlet-name>ServiceServlet</servlet-name>
         <url-pattern>/ServiceServlet</url-pattern>
     </servlet-mapping>
-    
-    <servlet>
-        <servlet-name>DriverServlet</servlet-name>
-        <servlet-class>web.servlets.DriverServlet</servlet-class>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>DriverServlet</servlet-name>
-        <url-pattern>/DriverServlet</url-pattern>
-    </servlet-mapping>
-    
-    <servlet>
-        <servlet-name>VMServlet</servlet-name>
-        <servlet-class>web.servlets.VMServlet</servlet-class>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>VMServlet</servlet-name>
-        <url-pattern>/VMServlet</url-pattern>
-    </servlet-mapping>
+   
     
     <servlet>
         <servlet-name>ViewServlet</servlet-name>

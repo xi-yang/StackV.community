@@ -43,6 +43,7 @@ public class ServiceServlet extends HttpServlet {
             throws ServletException, IOException {
         try {
             // Instance Creation
+            String serviceString = "";
             HashMap<String, String> paramMap = new HashMap<>();
             Enumeration paramNames = request.getParameterNames();
             String host = "http://localhost:8080/VersaStack-web/restapi";
@@ -59,16 +60,26 @@ public class ServiceServlet extends HttpServlet {
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
                     front_connectionProps);
 
-            // Select the correct service.            
+            // Select the correct service.
+            if (paramMap.containsKey("driverID")) { // Driver
+                serviceString = "driver";
+            } else if (paramMap.containsKey("driverType")) { // VM
+                serviceString = "vmadd";
+            } else if (paramMap.containsKey("netCreate")) { // Network Creation
+                serviceString = "netcreate";
+            } else {
+                response.sendRedirect("/VersaStack-web/errorPage.jsp");
+            }
+            
             PreparedStatement prep = front_conn.prepareStatement("SELECT service_id"
                     + " FROM service WHERE filename = ?");
-            prep.setString(1, "driver");
+            prep.setString(1, serviceString);
             ResultSet rs1 = prep.executeQuery();
             rs1.next();
             int serviceID = rs1.getInt(1);
-
             Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
 
+            // Install Instance into DB.
             prep = front_conn.prepareStatement("INSERT INTO Frontend.service_instance "
                     + "(`service_id`, `user_id`, `creation_time`, `referenceUUID`) VALUES (?, ?, ?, ?)");
             prep.setInt(1, serviceID);
@@ -104,11 +115,11 @@ public class ServiceServlet extends HttpServlet {
             }
 
             // Execute service Creation.
-            if (paramMap.containsKey("driverID")) { // Driver
+            if (serviceString.equals("driver")) { // Driver
                 response.sendRedirect(createDriverInstance(paramMap));
-            } else if (paramMap.containsKey("driverType")) { // VM
+            } else if (serviceString.equals("vmadd")) { // VM
                 response.sendRedirect(createVMInstance(paramMap));
-            } else if (paramMap.containsKey("netCreate")) { // Network Creation
+            } else if (serviceString.equals("netcreate")) { // Network Creation
                 response.sendRedirect(createFullNetwork(paramMap));
             } else {
                 response.sendRedirect("/VersaStack-web/errorPage.jsp");
