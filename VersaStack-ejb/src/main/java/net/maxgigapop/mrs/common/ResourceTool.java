@@ -13,19 +13,44 @@ public class ResourceTool {
     
     private static final String versaStackPrefix = "urn:ogf:network:";
 
-    public static String getResourceUri(String topologyUri, String name) {
+    public static String getResourceUri(String name, String pattern) {
         String uri;
+        //check if name starts with versaStackPrefix
         if (name.startsWith(versaStackPrefix)) {
-            return name;
+            //string already starts with right prefix we can remove
+            String tmp = name.replace(versaStackPrefix,"");
+            //check for the correct pattern
+            if(tmp.startsWith(pattern)){
+                return name;
+            }
+            else
+            {
+                name = pattern + name;
+            }
+            
         } else {
-            return versaStackPrefix + name;
+            //name does not start with prefix
+            //check if it at least starts with pattern
+            if(name.startsWith(pattern)){
+                //just append prefix
+                name = versaStackPrefix + name;
+            }
+            else
+            {
+                name = versaStackPrefix + pattern + name;
+            }
         }
+        return name;
     }
 
-    public static String getResourceName(String topologyUri, String name) {
+    public static String getResourceName(String name, String pattern) {
         //remove the topologyUri first
-        if (name != null && name.startsWith(versaStackPrefix)) {
+        if (name.startsWith(versaStackPrefix)) {
             name = name.replace(versaStackPrefix, "");
+            
+            if (name.startsWith(pattern)){
+               name = name.replace(pattern,"");
+            }
         }
         return name;
     }

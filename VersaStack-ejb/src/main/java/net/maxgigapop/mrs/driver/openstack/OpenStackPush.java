@@ -324,17 +324,22 @@ public class OpenStackPush {
                                                         String router_id = r.getId();
                                                         Port port = new NeutronPort();
                                                         netid = s.getNetworkId();
+                                                        boolean isNetworkExternal = osClient.networking().network().get(netid).isRouterExternal();
                                                         String subnetid = s.getId();
+                                                        if (isNetworkExternal == true) {
+                                                            osClient.networking().router().update(router.toBuilder().id(router_id).externalGateway(netid).build());
+                                                            OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
+                                                        } else {
+                                                            port.toBuilder().networkId(netid)
+                                                                    .fixedIp(nexthop, subnetid)
+                                                                    .name("router_name" + router_name + "test_use" + i)
+                                                                    .adminState(true);
 
-                                                        port.toBuilder().networkId(netid)
-                                                                .fixedIp(nexthop, subnetid)
-                                                                .name("router_name" + router_name + "test_use" + i)
-                                                                .adminState(true);
-
-                                                        osClient1.networking().port().create(port);
-                                                        OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
-                                                        String portid = client1.getPort("router_name" + router_name + "test_use" + i).getId();
-                                                        rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
+                                                            osClient1.networking().port().create(port);
+                                                            OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
+                                                            String portid = client1.getPort("router_name" + router_name + "test_use" + i).getId();
+                                                            rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
+                                                        }
                                                         i++;
                                                         j++;
                                                         key_ip = "nexthop" + Integer.toString(j);
@@ -1805,12 +1810,12 @@ public class OpenStackPush {
     }
 
     private String getroutername(String topologyUri, String resourcename) {
-        if(resourcename.contains("router+")){
-        String topologyuri = topologyUri + "router+";
-        String resource = resourcename.replace(topologyuri, "");
-        int index = resource.indexOf(":");
-        return resource.substring(0, index);
-        }else{
+        if (resourcename.contains("router+")) {
+            String topologyuri = topologyUri + "router+";
+            String resource = resourcename.replace(topologyuri, "");
+            int index = resource.indexOf(":");
+            return resource.substring(0, index);
+        } else {
             return resourcename;
         }
     }
