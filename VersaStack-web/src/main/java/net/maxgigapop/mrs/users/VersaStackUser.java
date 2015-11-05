@@ -28,7 +28,7 @@ public class VersaStackUser {
     public String getLastLogin() {
         return lastLogin;
     }
-    
+
     public String getSalt() {
         return salt;
     }
@@ -52,7 +52,7 @@ public class VersaStackUser {
     public void setLastLogin(String lastLogin) {
         this.lastLogin = lastLogin;
     }
-    
+
     public void setSalt(String salt) {
         this.salt = salt;
     }

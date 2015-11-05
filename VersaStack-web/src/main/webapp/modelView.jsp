@@ -11,7 +11,7 @@
     </head>
 
     <body>        
-      
+
         <div id="main-pane">
             Model<br><br>
             ${user.getTtlModel()}

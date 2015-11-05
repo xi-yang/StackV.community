@@ -19,11 +19,12 @@ import net.maxgigapop.mrs.common.ModelUtil;
  *
  * @author max
  */
-@XmlRootElement(name="view")
+@XmlRootElement(name = "view")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ApiModelViewRequest {
+
     @XmlElementWrapper
-    @XmlElement(required=true, name="filter") 
+    @XmlElement(required = true, name = "filter")
     protected List<ModelUtil.ModelViewFilter> filters = new ArrayList<ModelUtil.ModelViewFilter>();
 
     public List<ModelUtil.ModelViewFilter> getFilters() {
@@ -33,6 +34,5 @@ public class ApiModelViewRequest {
     public void setFilters(List<ModelUtil.ModelViewFilter> filters) {
         this.filters = filters;
     }
-    
-    
+
 }

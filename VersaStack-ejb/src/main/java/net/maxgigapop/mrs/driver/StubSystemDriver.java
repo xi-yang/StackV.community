@@ -3,7 +3,6 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package net.maxgigapop.mrs.driver;
 
 import com.hp.hpl.jena.ontology.OntModel;
@@ -32,16 +31,15 @@ import net.maxgigapop.mrs.common.ModelUtil;
  *
  * @author xyang
  */
-
 //use properties: stubModelTtl
-
 @Stateless
-public class StubSystemDriver implements IHandleDriverSystemCall {   
+public class StubSystemDriver implements IHandleDriverSystemCall {
+
     @Override
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
         driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
-        aDelta = (DriverSystemDelta)DeltaPersistenceManager.findById(aDelta.getId());
+        aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId());
         String ttlModel = driverInstance.getProperty("stubModelTtl");
         if (ttlModel == null) {
             throw new EJBException(String.format("%s has no property key=stubModelTtl", driverInstance));
@@ -57,7 +55,7 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
             ontModel = dm.applyDelta(aDelta);
             ttlModel = ModelUtil.marshalModel(ontModel.getBaseModel());
             // the extra "new:" makes two ttls always different to avoid new version_item being created before commit   
-            driverInstance.putProperty("stubModelTtl_new", "new:"+ttlModel);
+            driverInstance.putProperty("stubModelTtl_new", "new:" + ttlModel);
             DriverInstancePersistenceManager.merge(driverInstance);
         } catch (Exception ex) {
             throw new EJBException(String.format("propagateDelta for %s with %s raised exception(%s)", driverInstance, aDelta, ex.getMessage()));

@@ -116,7 +116,7 @@ public class UsersDBAccess {
         byte[] salt = DatatypeConverter.parseBase64Binary(u.getSalt());
         byte[] actualPassword = DatatypeConverter.parseBase64Binary(u.getPassword());
         boolean valid;
-        
+
         try {
             valid = PasswordCryptoService.authenticate(password, actualPassword, salt);
         } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
@@ -136,7 +136,7 @@ public class UsersDBAccess {
                 close();
             }
         }
-        
+
         return valid;
     }
 

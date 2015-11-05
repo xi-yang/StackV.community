@@ -24,7 +24,7 @@
     border-bottom: 5px solid rgba(0, 0, 0, .05);
     overflow: scroll;
     z-index: 3;
-    
+
 }
 
 #displayPanel-contents {
@@ -38,7 +38,7 @@
     height: calc(100% - 37px);
     float: right;
     border-left: 20px solid rgba(0, 0, 0, .05);
-    
+
     -webkit-transition: opacity 1s ease-in;
     transition: opacity 1s ease-in;
 }
@@ -60,7 +60,7 @@
     /* Ensures that the transition only runs in one direction */
     -webkit-transition: opacity 1s ease-in;
     transition: opacity 1s ease-in;
-    
+
     position: absolute;
     width: calc(100% - 225px);
     height: calc(100% - 37px);
@@ -83,7 +83,7 @@ body{
 #actionMenu {    
     bottom: 0px;
     position: absolute;
-   // right: 0px;
+    // right: 0px;
     margin-bottom: 0px;
     overflow: scroll;
 }

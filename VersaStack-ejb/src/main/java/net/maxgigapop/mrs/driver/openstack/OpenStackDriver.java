@@ -83,10 +83,15 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         String NATServer = driverInstance.getProperty("NATServer");
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         String requests = driverInstance.getProperty(requestId);
+<<<<<<< HEAD
+
+        OpenStackPush push = new OpenStackPush(url, NATServer, username, password, tenant, topologyURI);
+=======
         if (requests == null || requests.isEmpty()) {
             throw new EJBException(String.format("commitDelta encounters empty requests data for %s", driverInstance));
         }
         OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, topologyURI);
+>>>>>>> origin/Feature-virtual_cloud_network_mce-M6-miguel
         ObjectMapper mapper = new ObjectMapper();
         List<JSONObject> r = new ArrayList();
         try {
@@ -125,7 +130,7 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
             String topologyUri = driverInstance.getProperty("topologyUri");
             String NATServer = driverInstance.getProperty("NATServer");
 
-            OntModel ontModel = OpenStackNeutronModelBuilder.createOntology(url,NATServer, topologyUri, username, password, tenant);
+            OntModel ontModel = OpenStackNeutronModelBuilder.createOntology(url, NATServer, topologyUri, username, password, tenant);
 
             if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();

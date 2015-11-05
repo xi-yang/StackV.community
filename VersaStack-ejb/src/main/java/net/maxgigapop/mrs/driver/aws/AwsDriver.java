@@ -36,10 +36,8 @@ import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
  *
  * @author muzcategui
  */
-
 //TODO make the stirng returned by the push.progate function to be in JSON format
 // and adapt it to the driver
-
 //TODO make request not to be in the database as a driver property, as they do not
 //truly get deleted.
 @Stateless
@@ -117,8 +115,7 @@ public class AwsDriver implements IHandleDriverSystemCall {
             String topologyURI = driverInstance.getProperty("topologyUri");
             Regions region = Regions.fromName(r);
             OntModel ontModel = AwsModelBuilder.createOntology(access_key_id, secret_access_key, region, topologyURI);
-            
-            
+
             if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();
                 dm.setCommitted(true);

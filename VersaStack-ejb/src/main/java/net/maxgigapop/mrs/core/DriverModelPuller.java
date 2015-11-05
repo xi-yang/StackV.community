@@ -3,7 +3,6 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package net.maxgigapop.mrs.core;
 
 import java.util.HashMap;
@@ -38,11 +37,12 @@ import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 @LocalBean
 @Startup
 public class DriverModelPuller {
-    private @PersistenceContext(unitName="RAINSAgentPU")    
+
+    private @PersistenceContext(unitName = "RAINSAgentPU")
     EntityManager entityManager;
-    
+
     private Map<DriverInstance, Future<String>> pullResultMap = new HashMap<DriverInstance, Future<String>>();
-    
+
     @PostConstruct
     public void init() {
         if (PersistenceManager.getEntityManager() == null) {
@@ -52,12 +52,12 @@ public class DriverModelPuller {
             DriverInstancePersistenceManager.refreshAll();
         }
     }
-    
+
     @Lock(LockType.WRITE)
     @Schedule(minute = "*", hour = "*", persistent = false)
     public void run() {
         if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null
-            || DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().isEmpty()) {
+                || DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().isEmpty()) {
             DriverInstancePersistenceManager.refreshAll();
         }
         Context ejbCxt = null;
