@@ -3,6 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
+
 package net.maxgigapop.mrs.bean;
 
 import com.hp.hpl.jena.ontology.OntModelSpec;
@@ -31,21 +32,23 @@ import net.maxgigapop.mrs.bean.persist.*;
 @Entity
 @Table(name = "system_instance")
 public class SystemInstance extends PersistentEntity implements Serializable {
-
     private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
     private String referenceUUID;
-
+            
     @OneToOne(cascade = {CascadeType.ALL})
     @JoinColumn(name = "systemDeltaId")
-    protected SystemDelta systemDelta = null;
+    protected SystemDelta systemDelta = null;    
 
-    @Transient
+    @Transient 
     Future<String> commitStatus = null;
-
+    
+    @Transient
+    private boolean commitFlag = false;
+    
     public Long getId() {
         return id;
     }
@@ -102,5 +105,12 @@ public class SystemInstance extends PersistentEntity implements Serializable {
     public void setCommitStatus(Future<String> commitStatus) {
         this.commitStatus = commitStatus;
     }
-
+    
+    public boolean getCommitFlag(){
+        return commitFlag;
+    }
+    
+    public void setCommitFlag(boolean commitFlag){
+        this.commitFlag = commitFlag;
+    }
 }
