@@ -3,7 +3,6 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package net.maxgigapop.mrs.web.test;
 
 import com.hp.hpl.jena.ontology.OntModel;
@@ -32,29 +31,26 @@ import net.maxgigapop.mrs.system.*;
 @LocalBean
 @Startup
 public class IntegrationTest1 {
+
     private static final Logger logger = Logger.getLogger(IntegrationTest1.class.getName());
 
     @EJB
     HandleSystemCall systemCallHandler;
 
-  private final String modelAdditionStr = "@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n"
-                + "@prefix owl:   <http://www.w3.org/2002/07/owl#> .\n"
-                + "@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .\n"
-                + "@prefix rdf:   <http://schemas.ogf.org/nml/2013/03/base#> .\n"
-                + "@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .\n"
-                + "@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .";
+    private final String modelAdditionStr = "@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n"
+            + "@prefix owl:   <http://www.w3.org/2002/07/owl#> .\n"
+            + "@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .\n"
+            + "@prefix rdf:   <http://schemas.ogf.org/nml/2013/03/base#> .\n"
+            + "@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .\n"
+            + "@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .";
 
+    private final String modelReductionStr = "@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n"
+            + "@prefix owl:   <http://www.w3.org/2002/07/owl#> .\n"
+            + "@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .\n"
+            + "@prefix rdf:   <http://schemas.ogf.org/nml/2013/03/base#> .\n"
+            + "@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .\n"
+            + "@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .";
 
-
-
-    
-private final String modelReductionStr = "@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n" +
-"@prefix owl:   <http://www.w3.org/2002/07/owl#> .\n" +
-"@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .\n" +
-"@prefix rdf:   <http://schemas.ogf.org/nml/2013/03/base#> .\n" +
-"@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .\n" +
-"@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .";
-    
     //@PostConstruct
     public void testSystemPullAndPush1() {
         try {
@@ -82,7 +78,7 @@ private final String modelReductionStr = "@prefix rdfs:  <http://www.w3.org/2000
             while (!asyncStatus.isDone()) {
                 sleep(10000);
             }
-            logger.info("commit status="+asyncStatus.get());
+            logger.info("commit status=" + asyncStatus.get());
         } catch (Exception ex) {
             logger.log(Level.SEVERE, null, ex);
         }

@@ -40,8 +40,9 @@ import net.maxgigapop.mrs.common.Spa;
  */
 @Stateless
 public class MCE_InterfaceVlanStitching implements IModelComputationElement {
+
     private static final Logger log = Logger.getLogger(MCE_InterfaceVlanStitching.class.getName());
-    
+
     @Override
     @Asynchronous
     public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
@@ -54,7 +55,7 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
         ServiceDelta outputDelta = annotatedDelta.clone();
 
         // importPolicyData : Interface->Stitching->List<PolicyData>
-        String sparql =  "SELECT ?netif ?policy ?actionValue ?data ?dataType ?dataValue WHERE {"
+        String sparql = "SELECT ?netif ?policy ?actionValue ?data ?dataType ?dataValue WHERE {"
                 + "?netif a nml:BidirectionalPort ."
                 + "?netif spa:dependOn ?policy . "
                 + "?policy a spa:PolicyAction. "
@@ -63,12 +64,11 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
                 + "?data spa:type ?dataType. ?data spa:value ?dataValue. "
                 + "OPTIONAL {?policy spa:value ?actionValue.} "
                 + "FILTER not exists {?policy spa:dependOn ?other} "
-                + "}";        
-
+                + "}";
 
         ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);
         Map<Resource, List> stitchPolicyMap = new HashMap<>();
-        while(r.hasNext()) {
+        while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             Resource resNetIf = querySolution.get("netif").asResource();
             if (!stitchPolicyMap.containsKey(resNetIf)) {
@@ -82,22 +82,23 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
             Map policyData = new HashMap<>();
             policyData.put("policy", resPolicy);
             if (querySolution.contains("actionValue")) {
-               String option = querySolution.get("actionValue").asLiteral().toString();
+                String option = querySolution.get("actionValue").asLiteral().toString();
                 policyData.put("option", option);
             }
             policyData.put("data", resData);
             policyData.put("type", nodeDataType.toString());
             policyData.put("value", nodeDataValue.toString());
             stitchPolicyMap.get(resNetIf).add(policyData);
-        }        
+        }
         for (Resource resNetIf : stitchPolicyMap.keySet()) {
             OntModel stitchModel = this.doStitching(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), resNetIf, stitchPolicyMap.get(resNetIf));
             // merge the placement satements into spaModel
-            if (stitchModel != null)
+            if (stitchModel != null) {
                 outputDelta.getModelAddition().getOntModel().add(stitchModel.getBaseModel());
-            
+            }
+
             // remove policy dependency
-            MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), resNetIf);   
+            MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), resNetIf);
         }
         return new AsyncResult(outputDelta);
     }
@@ -105,25 +106,27 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
     // General logic: 1. find the "terminal / end" containing resource (eg. Host Node or Topology)
     // 2. identify the "attach-point" resource (eg. VLAN port) along with a stitching path
     // 3. add statements to the stitching path to connect the terminal to the attach-point (if applicable)
-    private OntModel doStitching (OntModel systemModel, OntModel spaModel, Resource netIf, List<Map> stitchPolicyData) {
+    private OntModel doStitching(OntModel systemModel, OntModel spaModel, Resource netIf, List<Map> stitchPolicyData) {
         String stitchOption = "SIMPLE_HOST";
         Resource endSite = null;
         List<Resource> vlanPorts = new ArrayList<>();
-        for (Map entry: stitchPolicyData) {
-            if (!entry.containsKey("data") || !entry.containsKey("type") || !entry.containsKey("value")) 
+        for (Map entry : stitchPolicyData) {
+            if (!entry.containsKey("data") || !entry.containsKey("type") || !entry.containsKey("value")) {
                 continue;
+            }
             if (entry.containsKey("option")) {
-                stitchOption = (String)entry.get("option");
-            } 
-            if (((String)entry.get("type")).equals("VMFilterPlacement:HostSite")) {
-                endSite = systemModel.getResource((String)entry.get("value"));
-            } else if (((String)entry.get("type")).equals("MPVlanConnection:VlanPorts")) {
-                Resource vlanPort = systemModel.getResource((String)entry.get("value"));
+                stitchOption = (String) entry.get("option");
+            }
+            if (((String) entry.get("type")).equals("VMFilterPlacement:HostSite")) {
+                endSite = systemModel.getResource((String) entry.get("value"));
+            } else if (((String) entry.get("type")).equals("MPVlanConnection:VlanPorts")) {
+                Resource vlanPort = systemModel.getResource((String) entry.get("value"));
                 vlanPorts.add(vlanPort);
             }
         }
-        if (endSite == null || vlanPorts.isEmpty())
+        if (endSite == null || vlanPorts.isEmpty()) {
             throw new EJBException(String.format("%s::doStitching on <%s> miss policy data.", this, netIf));
+        }
         switch (stitchOption) {
             case "SIMPLE_HOST":
                 return stitchWithSimpleHost(systemModel, spaModel, netIf, endSite, vlanPorts);
@@ -135,12 +138,12 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
                 throw new EJBException(String.format("%s::doStitching on <%s> has unrecognized stitch_option='%s'.", this, netIf, stitchOption));
         }
     }
-    
+
     private OntModel stitchWithSimpleHost(OntModel systemModel, OntModel spaModel, Resource netIf, Resource endSite, List<Resource> vlanPorts) {
         // do nothing
         return null;
     }
-    
+
     private OntModel stitchWithAwsVpc(OntModel systemModel, OntModel spaModel, Resource netIf, Resource endSite, List<Resource> vlanPorts) {
         OntModel stitchModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         Model unionSysModel = spaModel.union(systemModel);
@@ -151,7 +154,7 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
         }
         // select a VPC based on endSite
         List<QuerySolution> solutions = new ArrayList<>();
-        for (Resource resVlanPort: vlanPorts) {
+        for (Resource resVlanPort : vlanPorts) {
             String sparql = "SELECT ?aws ?vpc ?subnet ?dcVx WHERE {"
                     + "?aws nml:hasBidirectionalPort?dcPort ."
                     + "?aws nml:hasTopology ?vpc."
@@ -163,15 +166,16 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
                     + "?subnet a mrs:SwitchingSubnet."
                     + "?dcPort a nml:BidirectionalPort."
                     + "?dcPort nml:hasBidirectionalPort ?dcVx."
-                    + String.format("FILTER ((?aws = <%s> || ?vpc = <%s>) && ?dcVx = <%s>)", endSite.getURI(), endSite.getURI(),  resVlanPort.getURI())
+                    + String.format("FILTER ((?aws = <%s> || ?vpc = <%s>) && ?dcVx = <%s>)", endSite.getURI(), endSite.getURI(), resVlanPort.getURI())
                     + "}";
             ResultSet r = ModelUtil.sparqlQuery(unionSysModel, sparql);
             while (r.hasNext()) {
                 solutions.add(r.next());
             }
         }
-        if (solutions.isEmpty())
+        if (solutions.isEmpty()) {
             return null;
+        }
         Resource resAws = solutions.get(0).getResource("aws");
         Resource resVpc = solutions.get(0).getResource("vpc");
         Resource resSubnet = solutions.get(0).getResource("subnet");
@@ -198,11 +202,11 @@ public class MCE_InterfaceVlanStitching implements IModelComputationElement {
         stitchModel.add(stitchModel.createStatement(PORT_TAG, Mrs.value, "network"));
         stitchModel.add(stitchModel.createStatement(netIf, Mrs.hasTag, PORT_TAG));
 
-        return stitchModel; 
+        return stitchModel;
     }
-    
+
     private OntModel stitchWithOpenstackHost(OntModel systemModel, OntModel spaModel, Resource netIf, Resource endSite, List<Resource> vlanPorts) {
         // do nothing
-        return null; 
+        return null;
     }
 }

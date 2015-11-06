@@ -6,8 +6,8 @@
 // Public - contructs a new tooltip
 //
 // Returns a tip
-define(["d3"], function(d3lib) {    
-    d3.tip = function() {
+define(["d3"], function (d3lib) {
+    d3.tip = function () {
         var direction = d3_tip_direction,
                 offset = d3_tip_offset,
                 html = d3_tip_html,
@@ -25,7 +25,7 @@ define(["d3"], function(d3lib) {
         // Public - show the tooltip on the screen
         //
         // Returns a tip
-        tip.show = function() {
+        tip.show = function () {
             var args = Array.prototype.slice.call(arguments)
             if (args[args.length - 1] instanceof SVGElement)
                 target = args.pop()
@@ -53,7 +53,7 @@ define(["d3"], function(d3lib) {
         // Public - hide the tooltip
         //
         // Returns a tip
-        tip.hide = function() {
+        tip.hide = function () {
             nodel = d3.select(node)
             nodel.style({opacity: 0, 'pointer-events': 'none'})
             return tip
@@ -65,7 +65,7 @@ define(["d3"], function(d3lib) {
         // v - value of the attribute
         //
         // Returns tip or attribute value
-        tip.attr = function(n, v) {
+        tip.attr = function (n, v) {
             if (arguments.length < 2 && typeof n === 'string') {
                 return d3.select(node).attr(n)
             } else {
@@ -82,7 +82,7 @@ define(["d3"], function(d3lib) {
         // v - value of the property
         //
         // Returns tip or style property value
-        tip.style = function(n, v) {
+        tip.style = function (n, v) {
             if (arguments.length < 2 && typeof n === 'string') {
                 return d3.select(node).style(n)
             } else {
@@ -99,7 +99,7 @@ define(["d3"], function(d3lib) {
         //     sw(southwest), ne(northeast) or se(southeast)
         //
         // Returns tip or direction
-        tip.direction = function(v) {
+        tip.direction = function (v) {
             if (!arguments.length)
                 return direction
             direction = v == null ? v : d3.functor(v)
@@ -112,7 +112,7 @@ define(["d3"], function(d3lib) {
         // v - Array of [x, y] offset
         //
         // Returns offset or
-        tip.offset = function(v) {
+        tip.offset = function (v) {
             if (!arguments.length)
                 return offset
             offset = v == null ? v : d3.functor(v)
@@ -125,7 +125,7 @@ define(["d3"], function(d3lib) {
         // v - String value of the tip
         //
         // Returns html value or tip
-        tip.html = function(v) {
+        tip.html = function (v) {
             if (!arguments.length)
                 return html
             html = v == null ? v : d3.functor(v)

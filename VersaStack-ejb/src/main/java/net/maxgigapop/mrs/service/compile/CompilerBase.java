@@ -33,11 +33,13 @@ import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.service.orchestrate.ActionBase;
 import net.maxgigapop.mrs.service.orchestrate.WorkerBase;
 import net.maxgigapop.mrs.common.Spa;
+
 /**
  *
  * @author xyang
  */
 public class CompilerBase {
+
     protected ServiceDelta spaDelta = null;
 
     public ServiceDelta getSpaDelta() {
@@ -51,7 +53,7 @@ public class CompilerBase {
     public void compile(WorkerBase worker) {
         throw new EJBException("CompilerBase::compile() is abstract. Use a specific implementation instead!");
     }
-    
+
     protected Map<Resource, OntModel> decomposeByPolicyActions(OntModel spaModel) {
         Map<Resource, OntModel> leafPolicyModelMap = null;
         List<Resource> spaActions = getPolicyActionList(spaModel);
@@ -62,42 +64,41 @@ public class CompilerBase {
             // test resAtion is terminal/leaf
             if (this.isLeafPolicy(spaModel, policy)) {
                 OntModel modelPart = getReverseDependencyTree(spaModel, policy);
-                StmtIterator stmtIter = spaModel.listStatements(policy, Spa.importFrom, (Resource)null);
+                StmtIterator stmtIter = spaModel.listStatements(policy, Spa.importFrom, (Resource) null);
                 while (stmtIter.hasNext()) {
                     Statement stmt = stmtIter.next();
                     modelPart.add(stmt);
-                    StmtIterator stmtIter2 = spaModel.listStatements(stmt.getObject().asResource(), null, (Resource)null);
+                    StmtIterator stmtIter2 = spaModel.listStatements(stmt.getObject().asResource(), null, (Resource) null);
                     while (stmtIter2.hasNext()) {
                         modelPart.add(stmtIter2.next());
                     }
                 }
-                stmtIter = spaModel.listStatements(policy, Spa.exportTo, (Resource)null);
+                stmtIter = spaModel.listStatements(policy, Spa.exportTo, (Resource) null);
                 while (stmtIter.hasNext()) {
                     Statement stmt = stmtIter.next();
                     modelPart.add(stmt);
-                    StmtIterator stmtIter2 = spaModel.listStatements(stmt.getObject().asResource(), null, (Resource)null);
+                    StmtIterator stmtIter2 = spaModel.listStatements(stmt.getObject().asResource(), null, (Resource) null);
                     while (stmtIter2.hasNext()) {
                         modelPart.add(stmtIter2.next());
                     }
                 }
-                if (leafPolicyModelMap == null)
+                if (leafPolicyModelMap == null) {
                     leafPolicyModelMap = new HashMap<>();
+                }
                 leafPolicyModelMap.put(policy, modelPart);
             }
         }
-        
+
         return leafPolicyModelMap;
     }
-    
-    
+
     protected boolean isPolicyAction(OntModel spaModel, Resource res) {
         NodeIterator nodeIter = spaModel.listObjectsOfProperty(res, RdfOwl.type);
         while (nodeIter.hasNext()) {
             RDFNode node = nodeIter.next();
-            if (node.isResource() && 
-                    (node.asResource().getURI().contains("spa#PolicyAction")
-                    || node.asResource().getURI().contains("spa#Abstraction")
-                    )) {
+            if (node.isResource()
+                    && (node.asResource().getURI().contains("spa#PolicyAction")
+                    || node.asResource().getURI().contains("spa#Abstraction"))) {
                 return true;
             }
         }
@@ -105,12 +106,12 @@ public class CompilerBase {
     }
 
     protected List<Resource> getPolicyActionList(OntModel spaModel) {
-        String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
-                "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
-                "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
-                "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
-                "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" +
-                "SELECT ?policy WHERE {"
+        String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+                + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
+                + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
+                + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
+                + "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n"
+                + "SELECT ?policy WHERE {"
                 + "{?policy a spa:PolicyAction} UNION"
                 + "{?policy a spa:Abstraction}"
                 + "}";
@@ -118,44 +119,46 @@ public class CompilerBase {
         List<Resource> listRes = null;
         QueryExecution qexec = QueryExecutionFactory.create(query, spaModel);
         ResultSet r = (ResultSet) qexec.execSelect();
-        while(r.hasNext()) {
+        while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode node = querySolution.get("policy");
-            if (listRes == null)
-            	listRes = new ArrayList<>();
-            listRes.add(node.asResource());            
+            if (listRes == null) {
+                listRes = new ArrayList<>();
+            }
+            listRes.add(node.asResource());
         }
         return listRes;
     }
 
     protected boolean isLeafPolicy(OntModel spaModel, Resource resPolicy) {
-        String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
-                "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
-                "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
-                "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
-                "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" +
-                String.format("SELECT ?o WHERE { <%s> spa:dependOn ?o }", resPolicy.toString(), resPolicy.toString());
+        String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+                + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
+                + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
+                + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
+                + "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n"
+                + String.format("SELECT ?o WHERE { <%s> spa:dependOn ?o }", resPolicy.toString(), resPolicy.toString());
         Query query = QueryFactory.create(sparqlString);
         QueryExecution qexec = QueryExecutionFactory.create(query, spaModel);
         ResultSet r = (ResultSet) qexec.execSelect();
-        if(r.hasNext())
+        if (r.hasNext()) {
             return false;
+        }
         return true;
     }
-    
+
     protected OntModel stripPolicyAnnotation(OntModel spaModel) {
         OntModel newModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF, spaModel);
-        String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
-                "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
-                "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
-                "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
-                "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" +
-                "DELETE WHERE {?s ?p ?o . FILTER regex(?p , '^spa:', 'i')}";
+        String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+                + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
+                + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
+                + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
+                + "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n"
+                + "DELETE WHERE {?s ?p ?o . FILTER regex(?p , '^spa:', 'i')}";
         UpdateRequest update = UpdateFactory.create(sparqlString);
         UpdateAction.execute(update, newModel);
         return newModel;
     }
-    
+
     protected OntModel getReverseDependencyTree(OntModel spaModel, Resource leaf) {
         OntModel modelPart = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         List<Resource> visited = new ArrayList<>();
@@ -164,17 +167,16 @@ public class CompilerBase {
         modelPart.add(stmts);
         return modelPart;
     }
-    
+
     private void reverseDFS(OntModel ontModel, Resource res, List<Resource> visited, List<Statement> allStmts) {
-        if ( visited.contains( res )) {
+        if (visited.contains(res)) {
             return;
-        }
-        else {
-            visited.add( res );
+        } else {
+            visited.add(res);
             List<Statement> listStmt = this.listUpDownStatements(ontModel, res);
             if (listStmt != null) {
                 allStmts.addAll(listStmt);
-                for (Statement stmt: listStmt) {
+                for (Statement stmt : listStmt) {
                     reverseDFS(ontModel, stmt.getSubject(), visited, allStmts);
                 }
             }
@@ -182,26 +184,28 @@ public class CompilerBase {
     }
 
     protected List<Statement> listUpDownStatements(OntModel model, Resource res) {
-        List<Statement> listStmt = null; 
+        List<Statement> listStmt = null;
         StmtIterator its = model.listStatements(null, null, res);
         while (its.hasNext()) {
             Statement stmt = its.next();
             Property predicate = stmt.getPredicate();
-            if ( predicate.getURI().contains("/nml/")
+            if (predicate.getURI().contains("/nml/")
                     || predicate.getURI().contains("/mrs/")
-                    || predicate.getURI().contains("spa#") ) {
-                if (listStmt == null)
+                    || predicate.getURI().contains("spa#")) {
+                if (listStmt == null) {
                     listStmt = new ArrayList<>();
+                }
                 listStmt.add(stmt);
             }
         }
         // get spa# subtree for policyData 
         // add exportTo and related policyData statements
-        its = model.listStatements(res, Spa.exportTo, (Resource)null);
+        its = model.listStatements(res, Spa.exportTo, (Resource) null);
         while (its.hasNext()) {
             Statement stmt = its.next();
-            if (!stmt.getObject().isResource())
+            if (!stmt.getObject().isResource()) {
                 continue;
+            }
             listStmt.add(stmt);
             Resource object = stmt.getObject().asResource();
             StmtIterator its2 = object.listProperties();
@@ -210,11 +214,12 @@ public class CompilerBase {
             }
         }
         // add importFrom and related policyData statements
-        its = model.listStatements(res, Spa.importFrom, (Resource)null);
+        its = model.listStatements(res, Spa.importFrom, (Resource) null);
         while (its.hasNext()) {
             Statement stmt = its.next();
-            if (!stmt.getObject().isResource())
+            if (!stmt.getObject().isResource()) {
                 continue;
+            }
             listStmt.add(stmt);
             Resource object = stmt.getObject().asResource();
             StmtIterator its2 = object.listProperties();
@@ -223,40 +228,44 @@ public class CompilerBase {
             }
         }
         // add a statement for res type
-        its = model.listStatements(res, RdfOwl.type, (Resource)null);
+        its = model.listStatements(res, RdfOwl.type, (Resource) null);
         while (its.hasNext()) {
             Statement stmt = its.next();
-            if (listStmt == null)
+            if (listStmt == null) {
                 listStmt = new ArrayList<>();
+            }
             listStmt.add(stmt);
         }
         // add spa:type statement for res type
-        its = model.listStatements(res, Spa.type, (Resource)null);
+        its = model.listStatements(res, Spa.type, (Resource) null);
         while (its.hasNext()) {
             Statement stmt = its.next();
-            if (listStmt == null)
+            if (listStmt == null) {
                 listStmt = new ArrayList<>();
+            }
             listStmt.add(stmt);
         }
         // add spa:value statement for res type
-        its = model.listStatements(res, Spa.value, (Resource)null);
+        its = model.listStatements(res, Spa.value, (Resource) null);
         while (its.hasNext()) {
             Statement stmt = its.next();
-            if (listStmt == null)
+            if (listStmt == null) {
                 listStmt = new ArrayList<>();
+            }
             listStmt.add(stmt);
         }
         return listStmt;
     }
 
     protected List<Resource> listParentPolicies(OntModel model, Resource res) {
-        List<Resource> listParents = null; 
+        List<Resource> listParents = null;
         StmtIterator its = model.listStatements(null, Spa.dependOn, res);
         while (its.hasNext()) {
             Statement stmt = its.next();
             Resource subject = stmt.getSubject();
-            if (!isPolicyAction(model, subject))
+            if (!isPolicyAction(model, subject)) {
                 continue;
+            }
             if (listParents == null) {
                 listParents = new ArrayList<>();
             }
@@ -264,14 +273,15 @@ public class CompilerBase {
         }
         return listParents;
     }
-    
+
     protected List<Resource> listChildPolicies(OntModel model, Resource res) {
-        List<Resource> listChildren = null; 
+        List<Resource> listChildren = null;
         NodeIterator itn = model.listObjectsOfProperty(res, Spa.dependOn);
         while (itn.hasNext()) {
             Resource child = itn.next().asResource();
-            if (!isPolicyAction(model, child))
+            if (!isPolicyAction(model, child)) {
                 continue;
+            }
             if (listChildren == null) {
                 listChildren = new ArrayList<>();
             }
