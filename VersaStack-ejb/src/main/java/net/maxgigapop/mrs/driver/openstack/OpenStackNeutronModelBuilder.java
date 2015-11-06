@@ -602,16 +602,18 @@ public class OpenStackNeutronModelBuilder {
 
             }
         }
-
+        /*
         StringWriter out = new StringWriter();
         try {
             model.write(out, "TURTLE");
         } catch (Exception e) {
             throw new Exception(String.format("failure to marshall ontology model, due to %s", e.getMessage()));
         }
-        //String ttl = out.toString();
-        //System.out.println(ttl);
-        //System.out.println(ttl);
+        String ttl = out.toString();
+        System.out.println(ttl);
+        System.out.println(ttl);
+        */
+        // combine extra model (static injection)
         if (modelExt != null) {
             model.add(modelExt.getBaseModel());
         }
