@@ -1060,10 +1060,13 @@ public class OpenStackPush {
                 //1.4 create the request
                 JSONObject o = new JSONObject();
                 Port p = client.getPort(portName);
+                if (p == null) {
+                    throw new EJBException(String.format("unknown port name '%s'", portName));
+                }
                 //1.4.1 port attachment will be added
                 if (creation == true) {
                     //1.4.1.1 see if the network interface is already atatched
-                    if (p.getDeviceOwner() != null || !p.getDeviceOwner().isEmpty()) {
+                    if (p.getDeviceOwner() != null && !p.getDeviceOwner().isEmpty()) {
                         throw new EJBException(String.format("bidirectional port %s to be attached to instance %s is already"
                                 + " attached to an instance", port, serverName));
                     }
@@ -1074,7 +1077,7 @@ public class OpenStackPush {
                     requests.add(o);
                 } //1.4.2 port attachment will be deleted
                 else {
-                    if (p.getDeviceOwner() == null || p.getDeviceOwner().isEmpty()) {
+                    if (p.getDeviceOwner() == null && p.getDeviceOwner().isEmpty()) {
                         throw new EJBException(String.format("bidirectional port %s to be detached from instance %s is not"
                                 + " attached", port, serverName));
                     }
