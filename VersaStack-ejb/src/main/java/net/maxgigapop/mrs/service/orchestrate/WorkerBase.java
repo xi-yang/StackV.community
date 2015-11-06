@@ -37,11 +37,12 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
  * @author xyang
  */
 public class WorkerBase {
+
     protected VersionGroup referenceSystemModelVG = null;
     protected ServiceDelta annoatedModelDelta = null;
     protected SystemDelta resultModelDelta = null;
     protected List<ActionBase> rootActions = new ArrayList<>();
-       
+
     public void setAnnoatedModel(ServiceDelta annoatedDelta) {
         this.annoatedModelDelta = annoatedDelta;
     }
@@ -61,23 +62,24 @@ public class WorkerBase {
     public void addDependency(ActionBase parent, ActionBase child) {
         parent.addDependent(child);
     }
-    
+
     // DFS to return the first Idle action that has none un-merged child
     protected ActionBase lookupIdleLeafAction() {
-        for (ActionBase action: rootActions) {
+        for (ActionBase action : rootActions) {
             ActionBase idleLeaf = action.getIdleLeaf();
-            if (idleLeaf != null)
+            if (idleLeaf != null) {
                 return idleLeaf;
+            }
         }
-        return null; 
-    } 
+        return null;
+    }
 
     // return set of actions that are Idle AND (not in its subtree) AND (have none un-merged child)
     // the returned list include the input ActionBase itself
     protected Set<ActionBase> lookupIndependentActions(ActionBase action) {
         Set<ActionBase> list = new HashSet<>();
         list.add(action);
-        for (ActionBase aRoot: rootActions) {
+        for (ActionBase aRoot : rootActions) {
             Set<ActionBase> listAdd = aRoot.getIndependentIdleLeaves(action);
             if (listAdd != null) {
                 list.addAll(listAdd);
@@ -85,7 +87,7 @@ public class WorkerBase {
         }
         return list;
     }
-    
+
     protected void runWorkflow() {
         ActionBase mergedRoot = null;
         Map<ActionBase, Future<ServiceDelta>> resultMap = new HashMap<>();
@@ -100,13 +102,13 @@ public class WorkerBase {
         while (!batchOfActions.isEmpty()) {
             //3. execute the idle actions in the list (asynchronously)
             Iterator<ActionBase> itA = batchOfActions.iterator();
-            while (itA.hasNext()){
+            while (itA.hasNext()) {
                 ActionBase action = itA.next();
                 if (action.getState().equals(ActionState.IDLE)) {
                     action.setReferenceModel(this.referenceSystemModelVG.getCachedModelBase());
                     Future<ServiceDelta> asyncResult = action.execute();
                     resultMap.put(action, asyncResult);
-                } else if (action.getState().equals(ActionState.FINISHED) 
+                } else if (action.getState().equals(ActionState.FINISHED)
                         || action.getState().equals(ActionState.MERGED)) {
                     itA.remove();
                 }
@@ -131,7 +133,7 @@ public class WorkerBase {
                             // if a run action return successfully
                             // collect resultDelta and merge to parent input annotatedDelta
                             if (!action.getUppers().isEmpty()) {
-                                for (ActionBase upperAction: action.getUppers()) {
+                                for (ActionBase upperAction : action.getUppers()) {
                                     upperAction.mergeResult(resultDelta);
                                     action.setState(ActionState.MERGED);
                                 }
@@ -146,10 +148,11 @@ public class WorkerBase {
                         } catch (Exception ex) {
                             //$$ TODO: cleanup and cancel/shutdown other actions in workflow
                             String errMsg;
-                            if (action.getState() == ActionState.FAILED)
+                            if (action.getState() == ActionState.FAILED) {
                                 errMsg = "workflow caught exception from " + action;
-                            else 
+                            } else {
                                 errMsg = "workflow is interrupted when " + action + " is in sate " + action.getState();
+                            }
                             throw new EJBException(errMsg + action, ex);
                         }
                     }
@@ -179,11 +182,11 @@ public class WorkerBase {
         this.resultModelDelta.setModelReduction(mergedRoot.getOutputDelta().getModelReduction());
         this.resultModelDelta.setReferenceVersionGroup(referenceSystemModelVG);
     }
-    
+
     protected void retrieveSystemModel() {
         try {
             Context ejbCxt = new InitialContext();
-            SystemModelCoordinator systemModelCoordinator = (SystemModelCoordinator)ejbCxt.lookup("java:module/SystemModelCoordinator");
+            SystemModelCoordinator systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
             //referenceSystemModelVG = systemModelCoordinator.getLatestVersionGroupWithUnionModel();
             referenceSystemModelVG = systemModelCoordinator.getSystemVersionGroup();
             if (referenceSystemModelVG == null) {
@@ -197,7 +200,7 @@ public class WorkerBase {
             throw new EJBException(this.getClass().getName() + " failed to inject systemModelCoordinator");
         }
     }
-    
+
     public void run() {
         // get system base model from SystemModelCoordinator singleton
         retrieveSystemModel();

@@ -36,10 +36,8 @@ import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
  *
  * @author muzcategui
  */
-
 //TODO make the stirng returned by the push.progate function to be in JSON format
 // and adapt it to the driver
-
 //TODO make request not to be in the database as a driver property, as they do not
 //truly get deleted.
 @Stateless
@@ -76,8 +74,7 @@ public class AwsDriver implements IHandleDriverSystemCall {
     @Asynchronous
     @Override
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
-
-        DriverInstance driverInstance = aDelta.getDriverInstance();
+        DriverInstance driverInstance = DriverInstancePersistenceManager.findById(aDelta.getDriverInstance().getId());
         if (driverInstance == null) {
             throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
         }
@@ -89,9 +86,11 @@ public class AwsDriver implements IHandleDriverSystemCall {
         Regions region = Regions.fromName(r);
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         String requests = driverInstance.getProperty(requestId);
+        if (requests == null || requests.isEmpty()) {
+            throw new EJBException(String.format("commitDelta encounters empty requests data for %s", driverInstance));
+        }
         AwsPush push = new AwsPush(access_key_id, secret_access_key, region, topologyURI);
         push.pushCommit(requests);
-
         driverInstance.getProperties().remove(requestId);
         DriverInstancePersistenceManager.merge(driverInstance);
 
@@ -116,8 +115,7 @@ public class AwsDriver implements IHandleDriverSystemCall {
             String topologyURI = driverInstance.getProperty("topologyUri");
             Regions region = Regions.fromName(r);
             OntModel ontModel = AwsModelBuilder.createOntology(access_key_id, secret_access_key, region, topologyURI);
-            
-            
+
             if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();
                 dm.setCommitted(true);

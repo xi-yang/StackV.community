@@ -3,7 +3,6 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package net.maxgigapop.mrs.bean;
 
 import com.hp.hpl.jena.ontology.OntModel;
@@ -23,10 +22,11 @@ import net.maxgigapop.mrs.common.ModelUtil;
  * @author xyang
  */
 @Entity
-@Inheritance(strategy=InheritanceType.SINGLE_TABLE)
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 public class DeltaModel extends ModelBase {
+
     protected boolean isAddition = true; // true = addition; false = reduction
-    
+
     @OneToOne
     @JoinColumn(name = "deltaId")
     protected DeltaBase delta = null;
@@ -46,7 +46,7 @@ public class DeltaModel extends ModelBase {
     public void setDelta(DeltaBase delta) {
         this.delta = delta;
     }
-    
+
     public DeltaModel clone() {
         DeltaModel cloned = new DeltaModel();
         cloned.setCommitted(this.committed);
@@ -59,9 +59,9 @@ public class DeltaModel extends ModelBase {
         cloned.setPersistent(this.isPersistent());
         cloned.setIsAddition(this.isAddition);
         cloned.setDelta(this.delta);
-        return cloned;    
+        return cloned;
     }
-    
+
     @Override
     public String toString() {
         return "net.maxgigapop.mrs.model.DeltaModel[ id=" + id + " ]";

@@ -59,15 +59,9 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         OntModel modelReduc = aDelta.getModelReduction().getOntModel();
 
         OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, topologyURI);
-        List<JSONObject> requests = null;
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
-        try {
-            requests = push.propagate(model, modelAdd, modelReduc);
-            driverInstance.putProperty(requestId, requests.toString());
-        } catch (Exception ex) {
-            Logger.getLogger(OpenStackDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
-        }
-
+        List<JSONObject> requests = push.propagate(model, modelAdd, modelReduc);
+        driverInstance.putProperty(requestId, requests.toString());
         DriverInstancePersistenceManager.merge(driverInstance);
         Logger.getLogger(OpenStackDriver.class.getName()).log(Level.INFO, "OpenStack driver delta models succesfully propagated");
     }
@@ -76,8 +70,7 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
     @Asynchronous
     //@Override
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
-
-        DriverInstance driverInstance = aDelta.getDriverInstance();
+        DriverInstance driverInstance = DriverInstancePersistenceManager.findById(aDelta.getDriverInstance().getId());
         if (driverInstance == null) {
             throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
         }
@@ -90,7 +83,9 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         String NATServer = driverInstance.getProperty("NATServer");
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         String requests = driverInstance.getProperty(requestId);
-
+        if (requests == null || requests.isEmpty()) {
+            throw new EJBException(String.format("commitDelta encounters empty requests data for %s", driverInstance));
+        }
         OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, topologyURI);
         ObjectMapper mapper = new ObjectMapper();
         List<JSONObject> r = new ArrayList();
@@ -130,7 +125,7 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
             String topologyUri = driverInstance.getProperty("topologyUri");
             String NATServer = driverInstance.getProperty("NATServer");
 
-            OntModel ontModel = OpenStackNeutronModelBuilder.createOntology(url,NATServer, topologyUri, username, password, tenant);
+            OntModel ontModel = OpenStackNeutronModelBuilder.createOntology(url, NATServer, topologyUri, username, password, tenant);
 
             if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();

@@ -29,9 +29,9 @@ import net.maxgigapop.mrs.common.*;
 //elastic ip
 
 /*TODO: Intead of having separate routeFrom statements for routes in a route table 
-associated with subnets. Include the routeFrom statement just once in the model, 
-meaning that look just once for the associations of the route table, 
-do not do a routeFrom statement for every route.*/
+ associated with subnets. Include the routeFrom statement just once in the model, 
+ meaning that look just once for the associations of the route table, 
+ do not do a routeFrom statement for every route.*/
 
 /*
  *
@@ -154,7 +154,7 @@ public class AwsModelBuilder {
             model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.type, "direct-connect-vif"));
             model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabelGroup, VLAN_LABEL_GROUP));
             model.add(model.createStatement(directConnect, hasBidirectionalPort, VIRTUAL_INTERFACE));
-            
+
             //check if it has a gateway, meaning the virtual interface is being used
             String virtualGatewayId =  vi.getVirtualGatewayId();
             String virtualInterfaceState =  vi.getVirtualInterfaceState();
@@ -166,7 +166,7 @@ public class AwsModelBuilder {
                 Resource VPNGATEWAY = model.getResource(ResourceTool.getResourceUri(topologyURI,virtualGatewayId));
                 model.add(model.createStatement(VLAN_LABEL, Nml.labeltype, vlan));
                 model.add(model.createStatement(VLAN_LABEL, value, vlanNum));
-                model.add(model.createStatement(VIRTUAL_INTERFACE,Nml.hasLabel,VLAN_LABEL));
+                model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabel, VLAN_LABEL));
                 model.add(model.createStatement(VPNGATEWAY, Nml.isAlias, VIRTUAL_INTERFACE));
                 model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.isAlias, VPNGATEWAY));
             }
@@ -397,7 +397,7 @@ public class AwsModelBuilder {
             model.add(model.createStatement(s3Service, providesBucket, BUCKET));
             model.add(model.createStatement(awsTopology, hasBucket, BUCKET));
         }
-        
+
         //create abstraction for batch resources
         BatchResourcesTool batchTool = new BatchResourcesTool();
         model = batchTool.contractExplicitModel(model);

@@ -14,14 +14,16 @@ import javax.ejb.EJBException;
  * @author xyang
  */
 public class TagSet {
+
     public static final Integer MAX_VLAN = 4096;
     public static final String VLAN_ANY_RANGE = "2-4094";
     public static TagSet VlanRangeANY = new TagSet(TagSet.VLAN_ANY_RANGE);
     private int base;
     private int interval;
     private boolean[] map;
-    
+
     public static class EmptyTagSetExeption extends Exception {
+
         @Override
         public String getMessage() {
             return "TagSet is empty .";
@@ -29,12 +31,13 @@ public class TagSet {
     }
 
     public static class NoneVlanExeption extends Exception {
+
         @Override
         public String getMessage() {
             return "Found none VLAN resource.";
         }
     }
-    
+
     private void init(int num, int base, int interval) {
         map = new boolean[num];
         for (int i = 0; i < num; i++) {
@@ -43,15 +46,15 @@ public class TagSet {
         this.base = base;
         this.interval = interval;
     }
-    
+
     public TagSet() {
         init(MAX_VLAN, 0, 1);
     }
-    
+
     public TagSet(int num, int base, int interval) {
         init(num, base, interval);
     }
-    
+
     // VLAN range only
     public TagSet(String range) {
         init(MAX_VLAN, 0, 1);
@@ -64,28 +67,28 @@ public class TagSet {
             return;
         }
 
-        if(range.toLowerCase().equals("any")){
+        if (range.toLowerCase().equals("any")) {
             range = VLAN_ANY_RANGE;
         }
 
         String[] rangeList = range.split(",");
         try {
-            for(int i = 0; i < rangeList.length; i++){
+            for (int i = 0; i < rangeList.length; i++) {
                 if (rangeList[i].trim().equals("")) {
                     continue;
                 }
                 String[] rangeEnds = rangeList[i].trim().split("-");
-                if (rangeEnds.length == 1){
+                if (rangeEnds.length == 1) {
                     int tag = Integer.parseInt(rangeEnds[0].trim());
                     map[tag] = true;
-                } else if(rangeEnds.length == 2 && "".equals(rangeEnds[0])){
+                } else if (rangeEnds.length == 2 && "".equals(rangeEnds[0])) {
                     int tag = Integer.parseInt(rangeEnds[1].trim());
                     map[tag] = true;
-                } else if(rangeEnds.length == 2){
+                } else if (rangeEnds.length == 2) {
                     int start = Integer.parseInt(rangeEnds[0].trim());
                     int end = Integer.parseInt(rangeEnds[1].trim());
                     if (end < start) {
-                        throw new RuntimeException("Invalid range: end < start: "+range);
+                        throw new RuntimeException("Invalid range: end < start: " + range);
                     }
                     for (int k = start; k <= end; k++) {
                         map[k] = true;
@@ -93,10 +96,10 @@ public class TagSet {
                 }
             }
         } catch (NumberFormatException ex) {
-            throw new EJBException("Invalid VLAN range format: "+ ex.getMessage());
+            throw new EJBException("Invalid VLAN range format: " + ex.getMessage());
         }
     }
-    
+
     public TagSet clone() {
         TagSet tagset = new TagSet(map.length, base, interval);
         for (int i = 0; i < map.length; i++) {
@@ -104,17 +107,21 @@ public class TagSet {
         }
         return tagset;
     }
-    
+
     public boolean isEmpty() {
         for (int i = 0; i < map.length; i++) {
-            if (map[i]) return false;
+            if (map[i]) {
+                return false;
+            }
         }
         return true;
     }
 
     public int getFirst() {
         for (int i = 0; i < map.length; i++) {
-            if (map[i]) return i;
+            if (map[i]) {
+                return i;
+            }
         }
         return -1;
     }
@@ -122,17 +129,19 @@ public class TagSet {
     public int getRandom() {
         ArrayList<Integer> choices = new ArrayList<Integer>();
         for (int i = 0; i < map.length; i++) {
-            if (map[i]) choices.add(i);
+            if (map[i]) {
+                choices.add(i);
+            }
         }
 
-        if(choices.isEmpty()){
+        if (choices.isEmpty()) {
             return -1;
         }
 
         Random rand = new Random();
         return choices.get(rand.nextInt(choices.size()));
     }
-    
+
     public String toString() {
         String range = "";
         int start = 0;
@@ -153,7 +162,7 @@ public class TagSet {
         fragment[0] = start;
         fragment[1] = map.length - 1;
         boolean prev = true;
-        for (int i = start+1; i < map.length; i++) {
+        for (int i = start + 1; i < map.length; i++) {
             if (prev != map[i]) {
                 if (prev) {
                     fragment[1] = i - 1;
@@ -169,11 +178,11 @@ public class TagSet {
         for (int i = 0; i < fragments.size(); i++) {
             int[] tmp = fragments.get(i);
             if (tmp[0] == tmp[1]) {
-                range += tmp[0]*interval;
+                range += tmp[0] * interval;
             } else {
-                range += (tmp[0]*interval)+"-"+(tmp[1]*interval);
+                range += (tmp[0] * interval) + "-" + (tmp[1] * interval);
             }
-            if (i < fragments.size() -1) {
+            if (i < fragments.size() - 1) {
                 range += ",";
             }
         }

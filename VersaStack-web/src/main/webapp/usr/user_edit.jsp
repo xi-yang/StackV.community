@@ -119,9 +119,9 @@
                         </c:when>
                         <c:otherwise>
                             <div class="form-result">Operation Not Allowed.<br>
-                            <a href="/VersaStack-web/index.jsp">Return to Home.</a></div>
-                        </c:otherwise>
-                    </c:choose>
+                                <a href="/VersaStack-web/index.jsp">Return to Home.</a></div>
+                            </c:otherwise>
+                        </c:choose>
                 </div>
             </div>
         </div>        

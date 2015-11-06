@@ -20,6 +20,7 @@ import net.maxgigapop.mrs.service.compute.MCE_InterfaceVlanStitching;
  * @author xyang
  */
 public class SimpleWorker extends WorkerBase {
+
     private static final Logger log = Logger.getLogger(SimpleWorker.class.getName());
 
     @Override

@@ -17,31 +17,31 @@ import org.openstack4j.model.network.Network;
  * @author tcm
  */
 public class ModelAdd {
-   /* for(Network net : networks) {
+    /* for(Network net : networks) {
             
-            JSONArray node = (JSONArray) ((JSONObject) o).get("host");
+     JSONArray node = (JSONArray) ((JSONObject) o).get("host");
             
-            if(node != null) {
+     if(node != null) {
                 
-                JSONObject resource = (JSONObject) ((JSONObject)node.get(0)).get("resource");
-                String nodeName = (String) resource.get("host");
-                Long numCpu = (Long) resource.get("cpu");
-                Long memMb = (Long) resource.get("memory_mb");
-                Long diskGb = (Long) resource.get("disk_gb");
+     JSONObject resource = (JSONObject) ((JSONObject)node.get(0)).get("resource");
+     String nodeName = (String) resource.get("host");
+     Long numCpu = (Long) resource.get("cpu");
+     Long memMb = (Long) resource.get("memory_mb");
+     Long diskGb = (Long) resource.get("disk_gb");
                 
-                Resource computeNode = model.createResource("urn:ogf:network:dragon.maxgigapop.net:" + nodeName);
-                Literal cpu = model.createTypedLiteral(numCpu);
-                Literal mem = model.createTypedLiteral(memMb);
-                Literal disk = model.createTypedLiteral(diskGb);
+     Resource computeNode = model.createResource("urn:ogf:network:dragon.maxgigapop.net:" + nodeName);
+     Literal cpu = model.createTypedLiteral(numCpu);
+     Literal mem = model.createTypedLiteral(memMb);
+     Literal disk = model.createTypedLiteral(diskGb);
                 
-                model.add(model.createStatement(OpenstackTopology, hasNode, computeNode));
-                model.add(model.createStatement(computeNode, type, Node));
-                model.add(model.createStatement(computeNode, type, NamedIndividual));
-                model.add(model.createStatement(computeNode, hasService, Nova));
+     model.add(model.createStatement(OpenstackTopology, hasNode, computeNode));
+     model.add(model.createStatement(computeNode, type, Node));
+     model.add(model.createStatement(computeNode, type, NamedIndividual));
+     model.add(model.createStatement(computeNode, hasService, Nova));
                 
-                model.add(model.createStatement(computeNode, memory_mb, mem));
-                model.add(model.createStatement(computeNode, disk_gb, disk));
-                model.add(model.createStatement(computeNode, num_core, cpu));                               
-            }
-    */
+     model.add(model.createStatement(computeNode, memory_mb, mem));
+     model.add(model.createStatement(computeNode, disk_gb, disk));
+     model.add(model.createStatement(computeNode, num_core, cpu));                               
+     }
+     */
 }

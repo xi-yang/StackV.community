@@ -15,13 +15,13 @@ import org.openstack4j.openstack.OSFactory;
  */
 public class Authenticate {
 
-    public OSClient openStackAuthenticate(String url,String NATServer, String username, String password, String tenantName) {
+    public OSClient openStackAuthenticate(String url, String NATServer, String username, String password, String tenantName) {
 
         //define OS Client
         OSClient client = null;
-        
-       // If the OpenStack controller  is behind NAT, it needs to be specified
-       //to authenticate 
+
+        // If the OpenStack controller  is behind NAT, it needs to be specified
+        //to authenticate 
         if (NATServer.isEmpty()) {
             client = OSFactory.builder()
                     .endpoint(url)
@@ -30,8 +30,7 @@ public class Authenticate {
                     .withConfig(Config.DEFAULT)
                     .authenticate();
 
-        } 
-        else {
+        } else {
             client = OSFactory.builder()
                     .endpoint(url)
                     .credentials(username, password)

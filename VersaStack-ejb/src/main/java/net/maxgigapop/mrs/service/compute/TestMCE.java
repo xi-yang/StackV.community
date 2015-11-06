@@ -16,22 +16,22 @@ import javax.ejb.LocalBean;
 import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ModelBase;
 
-
 /**
  *
  * @author xyang
  */
 @Stateless
 public class TestMCE implements IModelComputationElement {
+
     private static Logger log = Logger.getLogger(TestMCE.class.getName());
     private static int sn = 1;
-    
+
     @Override
     @Asynchronous
     public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
         log.info("TceMCE::process #" + sn++);
         try {
-            sleep(sn*1000); // sleep sn seconds
+            sleep(sn * 1000); // sleep sn seconds
         } catch (InterruptedException ex) {
             Logger.getLogger(TestMCE.class.getName()).log(Level.SEVERE, null, ex);
         }
