@@ -12,50 +12,51 @@ import java.util.Objects;
  *
  * @author xin
  */
-public class NIC implements Serializable{
+public class NIC implements Serializable {
+
     private final String nic_id;
     private final String link_type;
     private final String ip_addr;
     private long link_capacity_Mbps;
-    
-    public NIC(String id, String link_type, String ip_addr){
+
+    public NIC(String id, String link_type, String ip_addr) {
         this.nic_id = id;
         this.link_type = link_type;
         this.ip_addr = ip_addr;
     }
-    
-    public void setLinkCapacity(long link_cap){
+
+    public void setLinkCapacity(long link_cap) {
         this.link_capacity_Mbps = link_cap;
     }
-    
-    public String getNICid(){
+
+    public String getNICid() {
         return this.nic_id;
     }
-    
-    public String getLinkType(){
+
+    public String getLinkType() {
         return this.link_type;
     }
-    
-    public String getIPAddress(){
+
+    public String getIPAddress() {
         return this.ip_addr;
     }
-    
-    public long getLinkCapacity(){
+
+    public long getLinkCapacity() {
         return this.link_capacity_Mbps;
     }
-    
+
     @Override
-    public String toString(){
+    public String toString() {
         String tmp = null;
-        tmp += "NIC_ID="+this.nic_id;
-        tmp += "|Link_type="+this.link_type;
-        tmp += "|IP_address="+this.ip_addr;
-        tmp += "|Link_capacity="+this.link_capacity_Mbps;
+        tmp += "NIC_ID=" + this.nic_id;
+        tmp += "|Link_type=" + this.link_type;
+        tmp += "|IP_address=" + this.ip_addr;
+        tmp += "|Link_capacity=" + this.link_capacity_Mbps;
         return tmp;
     }
-    
+
     @Override
-    public boolean equals(Object obj){
+    public boolean equals(Object obj) {
         if (!(obj instanceof FileSystem)) {
             return false;
         }
@@ -70,5 +71,5 @@ public class NIC implements Serializable{
         hash = 29 * hash + Objects.hashCode(this.ip_addr);
         return hash;
     }
-    
+
 }

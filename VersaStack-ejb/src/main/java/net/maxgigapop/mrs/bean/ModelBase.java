@@ -3,7 +3,6 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package net.maxgigapop.mrs.bean;
 
 import com.hp.hpl.jena.ontology.OntModel;
@@ -28,7 +27,6 @@ import javax.persistence.Transient;
 import net.maxgigapop.mrs.bean.persist.PersistentEntity;
 import net.maxgigapop.mrs.common.ModelUtil;
 
-
 /**
  *
  * @author xyang
@@ -37,11 +35,12 @@ import net.maxgigapop.mrs.common.ModelUtil;
 @Table(name = "model")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 public class ModelBase extends PersistentEntity implements Serializable {
+
     protected static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     protected Long id = 0L;
-    
+
     protected Date creationTime;
     protected Long cxtVersion = 0L;
     protected String cxtVersionTag = "";
@@ -49,7 +48,7 @@ public class ModelBase extends PersistentEntity implements Serializable {
     @Lob
     protected String ttlModel = "";
     @Transient
-    protected OntModel ontModel = null;    
+    protected OntModel ontModel = null;
 
     public ModelBase() {
         this.creationTime = new java.util.Date();
@@ -74,7 +73,7 @@ public class ModelBase extends PersistentEntity implements Serializable {
     public String getCxtVersionTag() {
         return cxtVersionTag;
     }
-    
+
     public Long getCxtVersion() {
         return cxtVersion;
     }
@@ -110,7 +109,7 @@ public class ModelBase extends PersistentEntity implements Serializable {
     public void setOntModel(OntModel ontModel) {
         this.ontModel = ontModel;
     }
-    
+
     @Override
     public int hashCode() {
         int hash = 0;
@@ -131,18 +130,18 @@ public class ModelBase extends PersistentEntity implements Serializable {
         return true;
     }
 
-    
     @Override
     public String toString() {
         try {
-            if (ontModel != null && (ttlModel == null || ttlModel.isEmpty()))
-            ttlModel = ModelUtil.marshalOntModel(ontModel);
+            if (ontModel != null && (ttlModel == null || ttlModel.isEmpty())) {
+                ttlModel = ModelUtil.marshalOntModel(ontModel);
+            }
         } catch (Exception e) {
             ;
         }
         return "net.maxgigapop.mrs.model.MrsModel[ id=" + id + " ]\n Model = " + ttlModel;
     }
-    
+
     public ModelBase clone() {
         ModelBase cloned = new ModelBase();
         cloned.setCommitted(this.committed);
@@ -155,22 +154,22 @@ public class ModelBase extends PersistentEntity implements Serializable {
         cloned.setPersistent(this.isPersistent());
         return cloned;
     }
-    
+
     @SuppressWarnings("unused")
     @PostLoad
     public void postLoad() {
-        if (ttlModel.isEmpty())
+        if (ttlModel.isEmpty()) {
             ontModel = null;
-        else {
-          try {
-            ontModel = ModelUtil.unmarshalOntModel(ttlModel);
-          } catch (Exception e) {
-              // logging
-              ontModel = null;
-          }
+        } else {
+            try {
+                ontModel = ModelUtil.unmarshalOntModel(ttlModel);
+            } catch (Exception e) {
+                // logging
+                ontModel = null;
+            }
         }
     }
-    
+
     @SuppressWarnings("unused")
     @PrePersist
     @PreUpdate
@@ -179,54 +178,54 @@ public class ModelBase extends PersistentEntity implements Serializable {
             try {
                 ttlModel = ModelUtil.marshalOntModel(ontModel);
             } catch (Exception e) {
-              // logging
+                // logging
             }
-         }
+        }
     }
-    
+
     public OntModel applyDelta(DeltaBase delta) {
         if (this.ontModel == null) {
-            throw new EJBException("applyDelta encounters null this.ontModel");            
+            throw new EJBException("applyDelta encounters null this.ontModel");
         }
         if (delta == null || (delta.getModelReduction() == null && delta.getModelAddition() == null)) {
             throw new EJBException("applyDelta encounters null/empty delta");
         }
-        if (delta.getModelReduction() != null && delta.getModelReduction().getOntModel() !=null) {
+        if (delta.getModelReduction() != null && delta.getModelReduction().getOntModel() != null) {
             this.ontModel.remove(delta.getModelReduction().getOntModel());
         }
-        if (delta.getModelAddition() != null && delta.getModelAddition().getOntModel() !=null) {
+        if (delta.getModelAddition() != null && delta.getModelAddition().getOntModel() != null) {
             this.ontModel.add(delta.getModelAddition().getOntModel());
         }
         return this.ontModel;
     }
-    
+
     public OntModel dryrunDelta(DeltaBase delta) {
         if (this.ontModel == null) {
-            throw new EJBException("dryrunDelta encounters null this.ontModel");            
+            throw new EJBException("dryrunDelta encounters null this.ontModel");
         }
         if (delta == null || (delta.getModelReduction() == null && delta.getModelAddition() == null)) {
             throw new EJBException("dryrunDelta encounters null/empty delta");
         }
         OntModel om = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-        om.add(this.ontModel);        
-        if (delta.getModelReduction() != null && delta.getModelReduction().getOntModel() !=null) {
+        om.add(this.ontModel);
+        if (delta.getModelReduction() != null && delta.getModelReduction().getOntModel() != null) {
             om.remove(delta.getModelReduction().getOntModel());
         }
-        if (delta.getModelAddition() != null && delta.getModelAddition().getOntModel() !=null) {
+        if (delta.getModelAddition() != null && delta.getModelAddition().getOntModel() != null) {
             om.add(delta.getModelAddition().getOntModel());
         }
         return om;
     }
-    
+
     //calculate the delta that makes the otherOntModel become this.ontModel
     public DeltaBase diffFromModel(OntModel otherOntModel) {
         DeltaBase delta = new DeltaBase();
         OntModel modelA = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         modelA.add(this.ontModel);
-        modelA = (OntModel)modelA.remove(otherOntModel);
+        modelA = (OntModel) modelA.remove(otherOntModel);
         OntModel modelR = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         modelR.add(otherOntModel);
-        modelR = (OntModel)modelR.remove(this.ontModel);
+        modelR = (OntModel) modelR.remove(this.ontModel);
         DeltaModel deltaModelA = new DeltaModel();
         deltaModelA.setOntModel(modelA);
         DeltaModel deltaModelR = new DeltaModel();
@@ -239,16 +238,16 @@ public class ModelBase extends PersistentEntity implements Serializable {
         deltaModelR.setDelta(delta);
         return delta;
     }
-    
+
     //calculate the delta that makes this.ontModel becomes the otherOntModel 
     public DeltaBase diffToModel(OntModel otherOntModel) {
         DeltaBase delta = new DeltaBase();
         OntModel modelR = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         modelR.add(this.ontModel);
-        modelR = (OntModel)modelR.remove(otherOntModel);
+        modelR = (OntModel) modelR.remove(otherOntModel);
         OntModel modelA = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         modelA.add(otherOntModel);
-        modelA = (OntModel)modelA.remove(this.ontModel);
+        modelA = (OntModel) modelA.remove(this.ontModel);
         DeltaModel deltaModelA = new DeltaModel();
         deltaModelA.setOntModel(modelA);
         DeltaModel deltaModelR = new DeltaModel();

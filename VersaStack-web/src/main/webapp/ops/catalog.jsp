@@ -96,7 +96,7 @@
                         var element = document.getElementById("service4");
                         element.classList.remove("hide");
                     }
-                });                
+                });
             });
 
         </script>        

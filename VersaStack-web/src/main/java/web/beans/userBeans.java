@@ -19,8 +19,6 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
-
-
 public class userBeans {
 
     String login_db_user = "login_view";
@@ -39,12 +37,12 @@ public class userBeans {
     ArrayList<Integer> service_list = new ArrayList<>();
     ArrayList<Integer> group_list = new ArrayList<>();
     HashMap<String, String> model_map = new HashMap<>();
-    String[] current_model = {"",""};
+    String[] current_model = {"", ""};
 
     boolean loggedIn = false;
 
     public userBeans() {
-        
+
     }
 
     public String getFirstName() {
@@ -54,7 +52,7 @@ public class userBeans {
     public String getLastName() {
         return lastName;
     }
-    
+
     public String getUsername() {
         return username;
     }
@@ -78,9 +76,10 @@ public class userBeans {
     public void logOut() {
         loggedIn = false;
     }
-    
+
     /**
      * Authenticates user against login database.
+     *
      * @param user username
      * @param pass unencrypted password
      * @return true if authentication is successful; false otherwise.
@@ -202,8 +201,8 @@ public class userBeans {
     }
 
     /**
-     * Registers new user into frontend database.
-     * Parameters self-explanatory.
+     * Registers new user into frontend database. Parameters self-explanatory.
+     *
      * @param user
      * @param pass
      * @param first_name
@@ -211,8 +210,8 @@ public class userBeans {
      * @param usergroup_id
      * @param email
      * @return error code:<br />
-     *  0 - success.<br />
-     *  3 - duplicate username.<br />
+     * 0 - success.<br />
+     * 3 - duplicate username.<br />
      */
     public int register(String user, String pass, String first_name,
             String last_name, String usergroup_id, String email) {
@@ -306,14 +305,15 @@ public class userBeans {
     }
 
     /**
-     * Updates user information. Only processes fields entered.
-     * Parameters self-explanatory.
+     * Updates user information. Only processes fields entered. Parameters
+     * self-explanatory.
+     *
      * @param username
      * @param pass
      * @param first_name
      * @param last_name
      * @param email
-     * @param activegroup 
+     * @param activegroup
      */
     public void update(String username, String pass, String first_name,
             String last_name, String email, String activegroup) {
@@ -385,7 +385,7 @@ public class userBeans {
                 prep.setString(2, username);
                 prep.executeUpdate();
             }
-            
+
             PreparedStatement prep = front_conn.prepareStatement("UPDATE frontend.user_info SET `active_usergroup` = ? WHERE `username` = ?");
             prep.setString(1, activegroup);
             prep.setString(2, username);
@@ -401,14 +401,14 @@ public class userBeans {
     }
 
     // Utility Functions
-    
     /**
      * Encrypts password using SHA-256 salted encryption.
+     *
      * @param pass unencrypted password
      * @param salt randomly-generated salt
      * @return encrypted password.
      * @throws UnsupportedEncodingException
-     * @throws NoSuchAlgorithmException 
+     * @throws NoSuchAlgorithmException
      */
     private static String shaEnc(String pass, String salt) throws UnsupportedEncodingException, NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -427,7 +427,8 @@ public class userBeans {
 
     /**
      * Refreshes local ACL permissions list.
-     * @throws SQLException 
+     *
+     * @throws SQLException
      */
     private void refreshACL() throws SQLException {
         service_list.clear();
@@ -449,38 +450,38 @@ public class userBeans {
             service_list.add(rs1.getInt("service_id"));
         }
     }
-    
+
     public String printModels() {
         return model_map.toString();
     }
-    
+
     public void addModel(String name, String model) {
         model_map.put(name, model);
         current_model[0] = name;
         current_model[1] = model;
     }
-    
+
     public void removeModel(String name) {
         model_map.remove(name);
     }
-    
+
     public void setCurr(String filterName, String filterModel) {
         current_model[0] = filterName;
         current_model[1] = filterModel;
     }
-    
+
     public String getModelName() {
         return current_model[0];
     }
-    
+
     public String getTtlModel() {
-        return current_model[1];               
+        return current_model[1];
     }
-        
+
     public String getModels() {
         return new JSONObject(model_map).toJSONString();
     }
-    
+
     public ArrayList<String> getModelNames() {
         return new ArrayList<>(model_map.keySet());
     }

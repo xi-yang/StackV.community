@@ -3,7 +3,6 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package net.maxgigapop.mrs.driver;
 
 import com.hp.hpl.jena.ontology.OntModel;
@@ -43,18 +42,17 @@ import org.json.simple.parser.ParseException;
  *
  * @author xyang
  */
-
 //use properties: driverSystemPath which translates to calls in driverSystemEjbPath.HandleSystemPushCall and driverSystemEjbPath.HandleSystemCall
-
 @Stateless
-public class GenericRESTDriver implements IHandleDriverSystemCall{       
+public class GenericRESTDriver implements IHandleDriverSystemCall {
+
     private static final Logger logger = Logger.getLogger(GenericRESTDriver.class.getName());
 
     //@Override
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
         //driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
-        aDelta = (DriverSystemDelta)DeltaPersistenceManager.findById(aDelta.getId()); // refresh
+        aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId()); // refresh
         String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
         if (subsystemBaseUrl == null) {
             throw new EJBException(String.format("%s has no property key=subsystemBaseUrl", driverInstance));
@@ -68,7 +66,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
             JSONObject deltaJSON = new JSONObject();
             deltaJSON.put("id", Long.toString(aDelta.getId()));
             deltaJSON.put("referenceVersion", refVI.getReferenceUUID());
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");         
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
             deltaJSON.put("creationTime", dateFormat.format(new Date()).toString());
             if (aDelta.getModelAddition() != null && aDelta.getModelAddition().getOntModel() != null) {
                 String ttlModelAddition = ModelUtil.marshalOntModel(aDelta.getModelAddition().getOntModel());
@@ -80,7 +78,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
             }
             // push via REST POST
             URL url = new URL(String.format("%s/delta", subsystemBaseUrl));
-            HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String status = this.executeHttpMethod(url, conn, "POST", deltaJSON.toString());
             if (!status.toUpperCase().equals("CONFIRMED")) {
                 throw new EJBException(String.format("%s failed to push %s into CONFIRMED status", driverInstance, aDelta));
@@ -93,7 +91,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
     //@Override
     @Asynchronous
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
-        DriverInstance driverInstance = aDelta.getDriverInstance();
+        DriverInstance driverInstance = DriverInstancePersistenceManager.findById(aDelta.getDriverInstance().getId());
         if (driverInstance == null) {
             throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
         }
@@ -104,7 +102,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
         // commit through PUT
         try {
             URL url = new URL(String.format("%s/delta/%s/%d/commit", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
-            HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String status = this.executeHttpMethod(url, conn, "PUT", null);
             //$$  if status == FAILED and raise exception
         } catch (IOException ex) {
@@ -118,7 +116,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
                 sleep(30000L); // poll every 30 seconds -> ? make configurable
                 // pull model from REST API
                 URL url = new URL(String.format("%s/delta/%s/%d", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
-                HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 String status = this.executeHttpMethod(url, conn, "GET", null);
                 if (status.toUpperCase().equals("ACTIVE")) {
                     doPoll = false; // committed successfully
@@ -130,10 +128,10 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
             } catch (IOException ex) {
                 throw new EJBException(String.format("%s failed to communicate with subsystem with exception (%s)", driverInstance, ex));
             }
-        }        
+        }
         return new AsyncResult<>("SUCCESS");
     }
-    
+
     @Override
     @Asynchronous
     @SuppressWarnings("empty-statement")
@@ -146,7 +144,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
         if (subsystemBaseUrl == null) {
             throw new EJBException(String.format("%s has no property key=subsystemBaseUrl", driverInstance));
         }
-        if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null 
+        if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null
                 || !DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().containsKey(driverInstance.getTopologyUri())) {
             return new AsyncResult<>("INITIALIZING");
         }
@@ -158,7 +156,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
             String creationTimestamp = null;
             try {
                 if (driverInstance.getHeadVersionItem() != null) {
-                    URL url = new URL(subsystemBaseUrl + "/model/"+driverInstance.getHeadVersionItem().getReferenceUUID());
+                    URL url = new URL(subsystemBaseUrl + "/model/" + driverInstance.getHeadVersionItem().getReferenceUUID());
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     String status = this.executeHttpMethod(url, conn, "GET", null);
                     if (status.toUpperCase().equals("LATEST")) {
@@ -227,7 +225,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall{
         }
         return new AsyncResult<>("SUCCESS");
     }
-    
+
     private String executeHttpMethod(URL url, HttpURLConnection conn, String method, String body) throws IOException {
         conn.setRequestMethod(method);
         conn.setRequestProperty("Content-type", "application/json");

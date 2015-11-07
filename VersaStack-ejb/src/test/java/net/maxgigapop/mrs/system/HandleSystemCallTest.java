@@ -3,7 +3,6 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package net.maxgigapop.mrs.system;
 
 import static java.lang.Thread.sleep;
@@ -56,7 +55,7 @@ public class HandleSystemCallTest {
 
     @EJB
     HandleSystemCall systemCallHandler;
-    
+
     @PersistenceContext(unitName = "RAINSAgentPU")
     EntityManager entityManager;
 
@@ -74,5 +73,5 @@ public class HandleSystemCallTest {
         VersionGroup result = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
         System.out.println("createHeadVersionGroup result=" + result);
         assertFalse("createHeadVersionGroup results in null VersionGroup", expResult == null);
-   }
+    }
 }
