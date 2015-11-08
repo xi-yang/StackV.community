@@ -72,15 +72,19 @@ public class OpenStackPush {
     private OSClient osClient = null;
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
     private String topologyUri;
+    private String defaultImage;
+    private String defaultFlavor;
 
     /*public static void main(String[] args) {
      OpenStackPush test = new OpenStackPush();
 
      }*/
-    public OpenStackPush(String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
+    public OpenStackPush(String url, String NATServer, String username, String password, String tenantName, String topologyUri,
+            String defaultImage, String defaultFlavor) {
         client = new OpenStackGet(url, NATServer, username, password, tenantName);
         osClient = client.getClient();
-
+        this.defaultImage = defaultImage;
+        this.defaultFlavor = defaultFlavor;
         //do an adjustment to the topologyUri
         this.topologyUri = topologyUri + ":";
         topologyUri = topologyUri.replaceAll("[^A-Za-z0-9()_-]", "_");
@@ -204,16 +208,18 @@ public class OpenStackPush {
                 osClient.networking().network().delete(network.getId());
             } else if (o.get("request").toString().equals("RunInstanceRequest")) {
                 //@TODO: get image and flavor from mrs:type, if not available do:
-                if (client.getImages().isEmpty()) {
-                    throw new EJBException(String.format("openstack has none defined image."));
+                String imageType = defaultImage;
+                String flavorType = defaultFlavor;
+                if (imageType == null || imageType.isEmpty()) {
+                    throw new EJBException(String.format("Cannot determine server image type."));
                 }
-                if (client.getFlavors().isEmpty()) {
-                    throw new EJBException(String.format("openstack has none defined flavor."));
+                if (flavorType == null || flavorType.isEmpty()) {
+                    throw new EJBException(String.format("Cannot determine server image type."));
                 }
                 ServerCreateBuilder builder = Builders.server()
                         .name(o.get("server name").toString())
-                        .image(client.getImages().get(0).getId())
-                        .flavor(client.getFlavors().get(0).getId());
+                        .image(imageType)
+                        .flavor(flavorType);
 
                 int index = 0;
                 String portid = "";
@@ -1242,14 +1248,16 @@ public class OpenStackPush {
 
                 o.put("server name", serverName);
                 //@TODO: get image and flavor from mrs:type, if not available do:
-                if (client.getImages().isEmpty()) {
-                    throw new EJBException(String.format("openstack has none defined image."));
+                String imageType = defaultImage;
+                String flavorType = defaultFlavor;
+                if (imageType == null || imageType.isEmpty()) {
+                    throw new EJBException(String.format("Cannot determine server image type."));
                 }
-                if (client.getFlavors().isEmpty()) {
-                    throw new EJBException(String.format("openstack has none defined flavor."));
+                if (flavorType == null || flavorType.isEmpty()) {
+                    throw new EJBException(String.format("Cannot determine server image type."));
                 }
-                o.put("image", client.getImages().get(0).getId());
-                o.put("flavor", client.getFlavors().get(0).getId());
+                o.put("image", imageType);
+                o.put("flavor", flavorType);
 
                 //1.10.1 put all the ports in the request
                 int index = 0;
