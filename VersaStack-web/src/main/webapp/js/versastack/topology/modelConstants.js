@@ -1,5 +1,5 @@
 "use strict";
-define([],function(){
+define([], function () {
     /**These are the strings used in the model**/
     return{
         type: "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
@@ -37,13 +37,12 @@ define([],function(){
         hasTag: "http://schemas.ogf.org/mrs/2013/12/topology#hasTag",
         topoType: "http://schemas.ogf.org/mrs/2013/12/topology#type",
         measurement: "http://schemas.ogf.org/mrs/2013/12/topology#measurement",
-        mount_point: "http://schemas.ogf.org/mrs/2013/12/topology#mount_point",                
+        mount_point: "http://schemas.ogf.org/mrs/2013/12/topology#mount_point",
         memory_mb: "http://schemas.ogf.org/mrs/2013/12/topology#memory_mb",
         num_core: "http://schemas.ogf.org/mrs/2013/12/topology#num_core",
         NetworkObject: "http://schemas.ogf.org/nml/2013/03/base#NetworkObject",
         value: "http://schemas.ogf.org/mrs/2013/12/topology#value",
         active_transfers: "http://schemas.ogf.org/mrs/2013/12/topology#active_transfers",
-        
         hypervisorService: "http://schemas.ogf.org/mrs/2013/12/topology#HypervisorService",
         routingService: "http://schemas.ogf.org/mrs/2013/12/topology#RoutingService",
         storageService: "http://schemas.ogf.org/mrs/2013/12/topology#StorageService",
@@ -57,16 +56,15 @@ define([],function(){
         virtualCloudService: "http://schemas.ogf.org/mrs/2013/12/topology#VirtualCloudService",
         DataTransferService: "http://schemas.ogf.org/mrs/2013/12/topology#DataTransferService",
         DataTransferClusterService: "http://schemas.ogf.org/mrs/2013/12/topology#DataTransferClusterService",
-        
         providesSubnet: "http://schemas.ogf.org/mrs/2013/12/topology#providesSubnet",
-        encoding:"http://schemas.ogf.org/nml/2013/03/base#encoding",
-        labelSwapping:"http://schemas.ogf.org/nml/2013/03/base#labelSwapping",
-        providesVolume:"http://schemas.ogf.org/mrs/2013/12/topology#providesVolume",
-        providesRoutingTable:"http://schemas.ogf.org/mrs/2013/12/topology#providesRoutingTable",
-        providesRoute:"http://schemas.ogf.org/mrs/2013/12/topology#providesRoute",
-        providesVM:"http://schemas.ogf.org/mrs/2013/12/topology#providesVM",
-        providesVPC:"http://schemas.ogf.org/mrs/2013/12/topology#providesVPC",
-        providesBucket:"http://schemas.ogf.org/mrs/2013/12/topology#providesBucket"
-        
+        encoding: "http://schemas.ogf.org/nml/2013/03/base#encoding",
+        labelSwapping: "http://schemas.ogf.org/nml/2013/03/base#labelSwapping",
+        providesVolume: "http://schemas.ogf.org/mrs/2013/12/topology#providesVolume",
+        providesRoutingTable: "http://schemas.ogf.org/mrs/2013/12/topology#providesRoutingTable",
+        providesRoute: "http://schemas.ogf.org/mrs/2013/12/topology#providesRoute",
+        providesVM: "http://schemas.ogf.org/mrs/2013/12/topology#providesVM",
+        providesVPC: "http://schemas.ogf.org/mrs/2013/12/topology#providesVPC",
+        providesBucket: "http://schemas.ogf.org/mrs/2013/12/topology#providesBucket"
+
     };
 });

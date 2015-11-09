@@ -76,7 +76,7 @@ public class ViewServlet extends HttpServlet {
             user.setCurr(request.getParameter("filterName"), request.getParameter("filterModel"));
         } else if (request.getParameter("modelName") != null) {
             user.removeModel(request.getParameter("modelName"));
-            
+
             response.sendRedirect("/VersaStack-web/ops/srvc/viewcreate.jsp?self=true");
         }
     }

@@ -10,6 +10,7 @@ import javax.crypto.spec.PBEKeySpec;
 
 // Based on code by Jerry Orr http://blog.jerryorr.com/2012/05/secure-password-storage-lots-of-donts.html
 public class PasswordCryptoService {
+
     public static boolean authenticate(String attemptedPassword, byte[] encryptedPassword, byte[] salt)
             throws NoSuchAlgorithmException, InvalidKeySpecException {
         // Encrypt the attempted password using the original salt
@@ -45,6 +46,6 @@ public class PasswordCryptoService {
         byte[] salt = new byte[8];
         random.nextBytes(salt);
 
-        return salt; 
-   }
+        return salt;
+    }
 }

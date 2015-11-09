@@ -1,7 +1,7 @@
 "use strict";
 define([
     "local/d3", "local/versastack/model", "local/versastack/utils", "local/versastack/loading", "local/d3.tip.v0.6.3"
-], function(d3, model, utils, loading) {
+], function (d3, model, utils, loading) {
     /** Document and canvas sizes **/
     var width = document.documentElement.clientWidth;
     var height = document.documentElement.clientHeight;
@@ -84,14 +84,14 @@ define([
         var gravity = settings.baseGravity;
         var distance = settings.baseDistance;
         force = d3.layout.force().size([canvasWidth, canvasHeight]).charge(charge).gravity(gravity).linkDistance(distance).friction(friction).on('tick', tick)
-                .on('start', function() {
-                    setTimeout(function() {
+                .on('start', function () {
+                    setTimeout(function () {
                         force.alpha(force.alpha() / 3);
                     }, 250);
-                    setTimeout(function() {
+                    setTimeout(function () {
                         force.alpha(force.alpha() / 3);
                     }, 500);
-                    setTimeout(function() {
+                    setTimeout(function () {
                         force.stop();
                     }, 1000);
                 });
@@ -99,7 +99,7 @@ define([
         hullg = svg.append('g');
         linkg = svg.append('g');
         nodeg = svg.append('g');
-        tip = d3.tip().attr('class', 'd3-tip').offset([-10, 0]).html(function(d) {
+        tip = d3.tip().attr('class', 'd3-tip').offset([-10, 0]).html(function (d) {
             return "<strong>" + d.name + "</strong>";
         });
         svg.call(tip);
@@ -118,32 +118,32 @@ define([
         }
 
         map = network(data, map, expand);
-        
+
         force.nodes(map.nodes).links(map.links);
         hullg.selectAll('path.hull').remove();
-        hull = hullg.selectAll('path.hull').data(convexHulls(map.nodes, settings.hullOffset, expand)).enter().append('path').attr('class', 'hull').attr('d', drawCluster).style('fill', function(d) {
+        hull = hullg.selectAll('path.hull').data(convexHulls(map.nodes, settings.hullOffset, expand)).enter().append('path').attr('class', 'hull').attr('d', drawCluster).style('fill', function (d) {
             return fill(d.id);
-        }).on('dblclick', function(d) {
+        }).on('dblclick', function (d) {
             console.log('hull click', d, arguments, this, expand[d.id]);
             cycleState(d.id);
             restart();
         }).on('mousemove', tip.show).on('mouseout', tip.hide);
         link = linkg.selectAll(css.classes.link).data(map.links, getLinkID);
         link.exit().remove();
-        link.enter().append('line').classed('link', true).style('stroke-width', function(d) {
+        link.enter().append('line').classed('link', true).style('stroke-width', function (d) {
             return d.size || 1;
         });
         node = nodeg.selectAll('g').data(map.nodes, getUID);
         node.exit().remove();
         var nodeEnter = node.enter().append('g')
                 // if (d.size) -- d.size > 0 when d is a group node.
-                .attr('class', function(d) {
+                .attr('class', function (d) {
                     return 'node' + (d.size > 0 ? '' : ' leaf');
                 }).on('dblclick', dblclick).on('click', click).call(drag).on('mousemove', tip.show).on('mouseout', tip.hide);
 
         nodeEnter.append("svg:image")
                 .attr("class", "circle")
-                .attr("xlink:href", function(d) {
+                .attr("xlink:href", function (d) {
                     return d.icon;
                 })
                 .attr("x", "-15px")
@@ -184,7 +184,7 @@ define([
                 outputNodes = [],
                 outputLinks = [];
         if (previous) { // process nodes from previous iteration
-            previous.nodes.forEach(function(node) {
+            previous.nodes.forEach(function (node) {
                 processPrevious(node, previousGroups, previousCentroids);
             });
             console.info('Processed previous', 'previous group', previousGroups, 'previous nodes', previousCentroids);
@@ -603,8 +603,8 @@ define([
 //        }
 
         lastClicked = d;
-        require(["dojo/on", "dijit/registry", "dojo/ready"], function(on, registry, ready) {
-            ready(function() {
+        require(["dojo/on", "dijit/registry", "dojo/ready"], function (on, registry, ready) {
+            ready(function () {
                 registry.byId('networks').set('content', html);
                 var networksButton = registry.byId("networksButton");
                 on(networksButton, 'click', callSwitchPanelsWith("Networks"));
@@ -649,16 +649,16 @@ define([
         }
 
         link = linkg.selectAll(css.classes.link);
-        link.attr('x1', function(d) {
+        link.attr('x1', function (d) {
             return d.source.x;
-        }).attr('y1', function(d) {
+        }).attr('y1', function (d) {
             return d.source.y;
-        }).attr('x2', function(d) {
+        }).attr('x2', function (d) {
             return d.target.x;
-        }).attr('y2', function(d) {
+        }).attr('y2', function (d) {
             return d.target.y;
         });
-        link.attr('opacity', function(d) {
+        link.attr('opacity', function (d) {
             if (d.visible) {
                 return 100;
             } else {
@@ -666,7 +666,7 @@ define([
             }
         });
         node = nodeg.selectAll('g');
-        node.attr('transform', function(d) {
+        node.attr('transform', function (d) {
 //            var r = radius(d),
 //                    x = Math.max(r, Math.min(canvasWidth - r, d.x)),
 //                    y = Math.max(r, Math.min(canvasHeight - r, d.y));

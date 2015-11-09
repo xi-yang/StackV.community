@@ -181,7 +181,7 @@ public class BatchResourcesTool {
         OntModel tmp = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         tmp.add(model.listStatements()); //make a copy by value of original model
         List<Resource> resourcesToDelete = new ArrayList();
-        
+
         String query = "SELECT ?r WHERE {?r rdf:type owl:NamedIndividual ."
                 + "FILTER regex(str(?r),\"batch\",'i')}";
         ResultSet r = executeQuery(query, tmp);
@@ -195,10 +195,10 @@ public class BatchResourcesTool {
 
             //omit the property of mrs:BidirectionalPort nml: hasNetworkAddress ?address
             //as batches do not specify addresses on their pull or delta models do this on the network interfaces only
-            Statement batchIsPort =  batchResource.getProperty(Mrs.hasNetworkAddress);
-            if(batchIsPort !=null){ //meaning that it has a network address
+            Statement batchIsPort = batchResource.getProperty(Mrs.hasNetworkAddress);
+            if (batchIsPort != null) { //meaning that it has a network address
                 //delete statement and the object resource
-                Resource delete  = batchIsPort.getObject().asResource();
+                Resource delete = batchIsPort.getObject().asResource();
                 model.removeAll(delete, null, null);
                 model.removeAll(null, null, delete);
                 resourcesToDelete.add(delete);
@@ -276,9 +276,9 @@ public class BatchResourcesTool {
             //remove statements involving  the batchResources 
             model.removeAll(batchResource, null, null);
             model.removeAll(null, null, batchResource);
-            for(Resource delete: resourcesToDelete){
-                model.removeAll(delete,null,null);
-                model.removeAll(null,null,delete);
+            for (Resource delete : resourcesToDelete) {
+                model.removeAll(delete, null, null);
+                model.removeAll(null, null, delete);
             }
 
         }

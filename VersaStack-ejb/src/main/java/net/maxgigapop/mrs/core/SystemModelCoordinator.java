@@ -5,51 +5,42 @@
  */
 package net.maxgigapop.mrs.core;
 
-import static java.lang.Math.log;
+import com.hp.hpl.jena.ontology.OntModel;
 import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ejb.AccessTimeout;
 import javax.ejb.EJB;
-import javax.ejb.EJBException;
 import javax.ejb.LocalBean;
 import javax.ejb.Lock;
 import javax.ejb.LockType;
 import javax.ejb.Schedule;
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
 import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.VersionGroup;
-import net.maxgigapop.mrs.bean.VersionItem;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
-import net.maxgigapop.mrs.common.ModelUtil;
-import net.maxgigapop.mrs.service.compute.MCE_MPVlanConnection;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
  *
  * @author xyang
  */
-
 @Singleton
 @LocalBean
 @Startup
-@AccessTimeout(value=10000) // 10 seconds
+@AccessTimeout(value = 10000) // 10 seconds
 public class SystemModelCoordinator {
+
     @EJB
     HandleSystemCall systemCallHandler;
-            
+
     // current VG with cached union ModelBase
     VersionGroup systemVersionGroup = null;
 
     public VersionGroup getSystemVersionGroup() {
         return systemVersionGroup;
     }
-    
+
     @Lock(LockType.WRITE)
     @Schedule(minute = "*", hour = "*", persistent = false)
     public void autoUpdate() {
@@ -58,10 +49,11 @@ public class SystemModelCoordinator {
         if (ditMap == null || ditMap.isEmpty()) {
             return;
         }
-        for (DriverInstance di: ditMap.values()) {
+        for (DriverInstance di : ditMap.values()) {
             synchronized (di) {
-                if (di.getHeadVersionItem() == null)
+                if (di.getHeadVersionItem() == null) {
                     return;
+                }
             }
         }
         if (this.systemVersionGroup == null) {
@@ -77,7 +69,7 @@ public class SystemModelCoordinator {
             }
         }
     }
-    
+
     @Lock(LockType.WRITE)
     public VersionGroup getLatest() {
         if (this.systemVersionGroup == null) {
@@ -103,5 +95,17 @@ public class SystemModelCoordinator {
             }
         }
         return this.systemVersionGroup;
+    }
+    
+    public OntModel getCachedOntModel() {
+        if (this.systemVersionGroup != null) {
+            return this.systemVersionGroup.getCachedModelBase().getOntModel();
+        }
+        return null;
+    }
+
+    public OntModel getLatestOntModel() {
+        VersionGroup vg = getLatest();
+        return vg.getCachedModelBase().getOntModel();
     }
 }
