@@ -292,7 +292,9 @@ public class OpenStackPush {
                                     .adminStateUp(true)
                                     .build()));
                             OpenStackPushupdate(url, NATServer, username, password, tenantName, topologyUri);
-
+                            if(osClient.networking().network().list().contains(o.get(key_router).toString())){
+                                System.out.println("find it");
+                            }
                             //update the client
                             //multiple subnet and nexthop create once a time, same concept of the router one
                             while (true) {
@@ -1015,21 +1017,24 @@ public class OpenStackPush {
                 //1.4.1 port attachment will be added
                 if (creation == true) {
                     //1.4.1.1 see if the network interface is already atatched
+                    /*
                     if (p.getDeviceOwner() != null || !p.getDeviceOwner().isEmpty()) {
                         throw new EJBException(String.format("bidirectional port %s to be attached to instance %s is already"
                                 + " attached to an instance", port, serverName));
                     }
-
+                    */
                     o.put("request", "AttachPortRequest");
                     o.put("port name", portName);
                     o.put("server name", serverName);
                     requests.add(o);
                 } //1.4.2 port attachment will be deleted
                 else {
+                    /*
                     if (p.getDeviceOwner() == null || p.getDeviceOwner().isEmpty()) {
                         throw new EJBException(String.format("bidirectional port %s to be detached from instance %s is not"
                                 + " attached", port, serverName));
                     }
+                    */
                     o.put("request", "DetachPortRequest");
                     o.put("port name", portName);
                     o.put("server name", serverName);

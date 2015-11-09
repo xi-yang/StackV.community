@@ -163,7 +163,8 @@ public class OpenStackNeutronModelBuilder {
                 }
 
                 String hypervisorname = server.getHypervisorHostname();
-
+                String image = server.getImageId();
+                String flavor = server.getFlavorId();
                 Resource HOST = RdfOwl.createResource(model, topologyURI + ":" + "hostID+" + hostID, node);
 
                 Resource HYPERVISOR = RdfOwl.createResource(model, topologyURI + ":" + "hypersor-name+" + hypervisorname, hypervisorService);
@@ -181,6 +182,7 @@ public class OpenStackNeutronModelBuilder {
 
                     model.add(model.createStatement(VM, hasBidirectionalPort, Port));
                     //model.add(model.createStatement(Port, type, "network-interface"));
+                    
                 }
 
             }
@@ -607,7 +609,7 @@ public class OpenStackNeutronModelBuilder {
         //System.out.println(ttl);
         
 
-        //System.out.println(ttl);
+        System.out.println(ttl);
 
         return model;
 
