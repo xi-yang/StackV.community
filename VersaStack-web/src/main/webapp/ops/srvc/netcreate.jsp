@@ -56,7 +56,7 @@
                         <div id="service-bottom">
                             <div id="service-fields">
                                 <form id="vm-form" action="/VersaStack-web/ServiceServlet" method="post">
-                                    <table class="management-table" id="service-form" style="margin-bottom: 0px;"> 
+                                    <table class="management-table" id="net-template-form" style="margin-bottom: 0px;"> 
                                         <thead>
                                             <tr>
                                                 <th>Template Name</th>
@@ -74,6 +74,30 @@
                                             </tr>
                                         </tbody>
                                     </table>    
+                                    
+                                    <table class="management-table" id="net-custom-form">
+                                        <thead>
+                                            <tr>
+                                                <th></th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Field 1</td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Field 2</td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Field 3</td>
+                                                <td></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    
                                     <input type="hidden" name="netCreate" value="true"/>
                                 </form>
                             </div>
