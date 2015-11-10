@@ -104,7 +104,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall {
     @Override
     @Asynchronous
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
-        DriverInstance driverInstance = aDelta.getDriverInstance();
+        DriverInstance driverInstance = DriverInstancePersistenceManager.findById(aDelta.getDriverInstance().getId());
         if (driverInstance == null) {
             throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
         }

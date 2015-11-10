@@ -16,53 +16,54 @@ import net.maxgigapop.mrs.bean.VersionItem;
  *
  * @author max
  */
-@XmlRootElement(name="model")
+@XmlRootElement(name = "model")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ApiVersionGroup {
-        @XmlElement(required=true)
-        private Long id;
-        @XmlElement(required=true)
-        private String refUuid = null;
-        @XmlElement(required=true)
-        private List<VersionItem> versionItems = null;
-        @XmlElement(required=true)
-        private String status = "";
-        
-        public Long getId(){
-            return id;
-        }
-        
-        public void setId(Long id){
-            this.id = id;
-        }
-        
-        public String getRefUuid() {
-            return refUuid;
-        }
 
-        public void setRefUuid(String refUuid) {
-            this.refUuid = refUuid;
-        }
-        
-        public List<VersionItem> getVersionItems() {
-            return versionItems;
-        }
+    @XmlElement(required = true)
+    private Long id;
+    @XmlElement(required = true)
+    private String refUuid = null;
+    @XmlElement(required = true)
+    private List<VersionItem> versionItems = null;
+    @XmlElement(required = true)
+    private String status = "";
 
-        public void setVersionItems(List<VersionItem> versionItems) {
-            this.versionItems = versionItems;
-        }
-    
-        public String getStatus() {
-            return status;
-        }
+    public Long getId() {
+        return id;
+    }
 
-        public void setStatus(String status) {
-            this.status = status;
-        }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-        @Override
-        public String toString() {
-            return "net.maxgigapop.mrs.bean.VersionGroup[ id=" + id + " ]";
-        }
+    public String getRefUuid() {
+        return refUuid;
+    }
+
+    public void setRefUuid(String refUuid) {
+        this.refUuid = refUuid;
+    }
+
+    public List<VersionItem> getVersionItems() {
+        return versionItems;
+    }
+
+    public void setVersionItems(List<VersionItem> versionItems) {
+        this.versionItems = versionItems;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    @Override
+    public String toString() {
+        return "net.maxgigapop.mrs.bean.VersionGroup[ id=" + id + " ]";
+    }
 
 }
