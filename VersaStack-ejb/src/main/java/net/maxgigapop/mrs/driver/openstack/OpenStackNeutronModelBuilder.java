@@ -46,7 +46,8 @@ import org.openstack4j.openstack.networking.domain.NeutronRouterInterface;
  */
 public class OpenStackNeutronModelBuilder {
 
-    public static OntModel createOntology(String url, String NATServer, String topologyURI, String user_name, String password, String tenantName) throws IOException, Exception {
+    public static OntModel createOntology(String url, String NATServer, String topologyURI, String user_name, String password, String tenantName,
+            String adminUsername, String adminPassword, String adminTenant, OntModel modelExt) throws IOException, Exception {
         ArrayList fip = new ArrayList();
         String POOL = null;
         Logger logger = Logger.getLogger(OpenStackNeutronModelBuilder.class.getName());
@@ -72,6 +73,7 @@ public class OpenStackNeutronModelBuilder {
         Property providedByService = Mrs.providedByService;
         Property providesBucket = Mrs.providesBucket;
         Property providesRoute = Mrs.providesRoute;
+        Property hasRoute = Mrs.hasRoute;
 
         Property providesSubnet = Mrs.providesSubnet;
 
@@ -84,7 +86,7 @@ public class OpenStackNeutronModelBuilder {
         Property hasVolume = Mrs.hasVolume;
         Property hasTopology = Nml.hasTopology;
         Property targetDevice = model.createProperty(model.getNsPrefixURI("mrs") + "target_device");
-        Property hasRoute = Mrs.hasRoute;
+
         Property hasTag = Mrs.hasTag;
         Property hasNetworkAddress = Mrs.hasNetworkAddress;
         Property providesRoutingTable = model.createProperty(model.getNsPrefixURI("mrs") + "providesRoutingTable");
@@ -114,16 +116,18 @@ public class OpenStackNeutronModelBuilder {
         Resource routingService = RdfOwl.createResource(model, topologyURI + ":routing-service", RoutingService);
         Resource cinderService = RdfOwl.createResource(model, topologyURI + ":cinder-service", blockStorageService);
 
-        Resource RoutingTable = RdfOwl.createResource(model, topologyURI + "routing-table", Mrs.RoutingTable);
         //port tag
         Resource PORT_TAG = RdfOwl.createResource(model, topologyURI + ":portTag", Mrs.Tag);
 
         model.add(model.createStatement(PORT_TAG, type, "interface"));
         model.add(model.createStatement(PORT_TAG, value, "network"));
 
-        //OpenStackGet openstackget = new OpenStackGet(url, NATServer, user_name, password, tenantName);
         OpenStackGet openstackget = new OpenStackGet(url, NATServer, user_name, password, tenantName);
-
+        if (adminUsername != null && adminPassword != null && adminTenant != null) {
+            Authenticate authenticate = new Authenticate();        
+            OSClient adminClient = authenticate.openStackAuthenticate(url, NATServer, adminUsername, adminPassword, adminTenant);
+            openstackget.fetchAddResources(adminClient);
+        }
         model.add(model.createStatement(OpenstackTopology, hasService, routingService));
         model.add(model.createStatement(OpenstackTopology, hasService, cinderService));
         model.add(model.createStatement(OpenstackTopology, hasService, networkService));
@@ -163,10 +167,10 @@ public class OpenStackNeutronModelBuilder {
 
                 String hypervisorname = server.getHypervisorHostname();
 
-                Resource HOST = RdfOwl.createResource(model, topologyURI + ":" + "hostID+" + hostID, node);
+                Resource HOST = RdfOwl.createResource(model, topologyURI + ":" + "host+" + hostID, node);
 
-                Resource HYPERVISOR = RdfOwl.createResource(model, topologyURI + ":" + "hypersor-name+" + hypervisorname, hypervisorService);
-                Resource VM = RdfOwl.createResource(model, topologyURI + ":" + "server-name+" + openstackget.getServereName(server), node);
+                Resource HYPERVISOR = RdfOwl.createResource(model, topologyURI + ":" + "hypervisor+" + hypervisorname, hypervisorService);
+                Resource VM = RdfOwl.createResource(model, topologyURI + ":" + "server+" + openstackget.getServereName(server), node);
 
                 model.add(model.createStatement(OpenstackTopology, hasNode, HOST));
 
@@ -183,17 +187,19 @@ public class OpenStackNeutronModelBuilder {
 
             }
         }
+        //@xyang
+        for (NetFloatingIP f : openstackget.getFloatingIp()) {
+            fip.add(f.getFloatingIpAddress());
+        }
+        String FLOATING_IP_INUSE = fip.toString();
 
         //Right subnet part
         for (Network n : openstackget.getNetworks()) {
             String networkID = openstackget.getResourceName(n);
             Resource NETWORK = RdfOwl.createResource(model, topologyURI + ":network+" + networkID, topology);
-
             model.add(model.createStatement(OpenstackTopology, hasTopology, NETWORK));
-
             model.add(model.createStatement(networkService, providesVPC, NETWORK));
             Resource SWITCHINGSERVICE = RdfOwl.createResource(model, topologyURI + ":network+" + networkID + ":switchingservice", switchingService);
-
             model.add(model.createStatement(NETWORK, hasService, SWITCHINGSERVICE));
 
             //TO FIND THE EXTERNAL OR INTERNAL NETWORK
@@ -205,15 +211,14 @@ public class OpenStackNeutronModelBuilder {
                 model.add(model.createStatement(EXTERNALNETWORK_TAG, value, "external"));
 
                 for (Subnet s : n.getNeutronSubnets()) {
-                    for (NetFloatingIP f : openstackget.getFloatingIp()) {
-                        fip.add(f.getFloatingIpAddress());
-
+                    //@xyang hack to work around a openstack4j flaw
+                    if (s == null) {
+                        continue;
                     }
 
                     for (Pool ap : s.getAllocationPools()) {
                         String START = ap.getStart();
                         String END = ap.getEnd();
-                        String FLOATING_IP_INUSE = fip.toString();
                         String subnetId = openstackget.getResourceName(s);
 
                         Resource SUBNET = RdfOwl.createResource(model, topologyURI + ":" + "network+" + networkID + ":subnet+" + subnetId, switchingSubnet);
@@ -275,8 +280,10 @@ public class OpenStackNeutronModelBuilder {
                         Resource LOCAL_ROUTE = RdfOwl.createResource(model, topologyURI + ":network+" + networkID + ":subnet+" + subnetId + ":local-route", Mrs.Route);
                         model.add(model.createStatement(NETWORK, hasService, ROUTINGSERVICE));
                         model.add(model.createStatement(ROUTINGSERVICE, providesRoutingTable, EXROUTINGTABLE));
-                        model.add(model.createStatement(EXROUTINGTABLE, providesRoute, EXROUTE));
-                        model.add(model.createStatement(EXROUTINGTABLE, providesRoute, LOCAL_ROUTE));
+                        model.add(model.createStatement(ROUTINGSERVICE, providesRoute, EXROUTE));
+                        model.add(model.createStatement(ROUTINGSERVICE, providesRoute, LOCAL_ROUTE));
+                        model.add(model.createStatement(EXROUTINGTABLE, hasRoute, EXROUTE));
+                        model.add(model.createStatement(EXROUTINGTABLE, hasRoute, LOCAL_ROUTE));
                         model.add(model.createStatement(EXROUTE, routeFrom, SUBNET));
 
                         model.add(model.createStatement(EXROUTE, routeTo, DEST_EXTERNAL));
@@ -293,7 +300,8 @@ public class OpenStackNeutronModelBuilder {
 
                         for (HostRoute hr : s.getHostRoutes()) {
                             String destIp = hr.getDestination();
-                            String destIP = destIp.replace("/", "");
+                            // String destIP = destIp.replace("/", "");
+                            String destIP = destIp;
                             String nextHOPEXT = hr.getNexthop();
                             //System.out.println("aaaa" + destIP);
                             Resource EXHOSTROUTE = RdfOwl.createResource(model, topologyURI + ":network+" + networkID + ":dest_ip+" + destIP + ":from_subenet+" + subnetId + ":hostroute-public", route);
@@ -304,7 +312,8 @@ public class OpenStackNeutronModelBuilder {
 
                             model.add(model.createStatement(NETWORK, hasService, ROUTINGSERVICE));
                             model.add(model.createStatement(ROUTINGSERVICE, providesRoutingTable, EXHOSTROUTINGTABLE));
-                            model.add(model.createStatement(EXHOSTROUTINGTABLE, providesRoute, EXHOSTROUTE));
+                            model.add(model.createStatement(ROUTINGSERVICE, providesRoute, EXHOSTROUTE));
+                            model.add(model.createStatement(EXHOSTROUTINGTABLE, hasRoute, EXHOSTROUTE));
 
                             model.add(model.createStatement(EXHOSTROUTE, routeFrom, SUBNET));
                             model.add(model.createStatement(EXHOSTROUTE, routeTo, EXHOSTROUTETO));
@@ -320,7 +329,7 @@ public class OpenStackNeutronModelBuilder {
                     }
                 }
             } else {
-                Resource TENANTNETWORK_TAG = RdfOwl.createResource(model, topologyURI + "network_tag_tenant", Mrs.Tag);
+                Resource TENANTNETWORK_TAG = RdfOwl.createResource(model, topologyURI + ":network_tag_tenant", Mrs.Tag);
 
                 model.add(model.createStatement(NETWORK, hasTag, TENANTNETWORK_TAG));
                 model.add(model.createStatement(TENANTNETWORK_TAG, type, "network-type"));
@@ -328,7 +337,11 @@ public class OpenStackNeutronModelBuilder {
                 if (n.getSubnets().size() != 0) {
 
                     for (Subnet s : n.getNeutronSubnets()) {
-
+                        //@xyang hack to work around a openstack4j flaw
+                        if (s == null) {
+                            continue;
+                        }
+                        
                         String subnetId = openstackget.getResourceName(s);
                         Resource SUBNET = RdfOwl.createResource(model, topologyURI + ":network+" + networkID + ":subnet+" + subnetId, switchingSubnet);
                         //Resource ROUTE = RdfOwl.createResource(model, topologyURI + ":" + s.get, switchingSubnet);
@@ -363,7 +376,8 @@ public class OpenStackNeutronModelBuilder {
                         //subnet route modeling 
                         model.add(model.createStatement(NETWORK, hasService, ROUTINGSERVICE));
                         model.add(model.createStatement(ROUTINGSERVICE, providesRoutingTable, ROUTINGTABLEPERNET));
-                        model.add(model.createStatement(ROUTINGTABLEPERNET, providesRoute, LOCAL_ROUTE));
+                        model.add(model.createStatement(ROUTINGSERVICE, providesRoute, LOCAL_ROUTE));
+                        model.add(model.createStatement(ROUTINGTABLEPERNET, hasRoute, LOCAL_ROUTE));
 
                         model.add(model.createStatement(LOCAL_ROUTE, routeFrom, SUBNET));
                         model.add(model.createStatement(LOCAL_ROUTE, routeTo, SUBNET_NETWORK_ADDRESS));
@@ -372,7 +386,8 @@ public class OpenStackNeutronModelBuilder {
                         //host route modeling
                         for (HostRoute hr : s.getHostRoutes()) {
                             String destIp = hr.getDestination();
-                            String destIP = destIp.replace("/", "");
+                            //String destIP = destIp.replace("/", "");
+                            String destIP = destIp;
                             String nextHOP = hr.getNexthop();
                             //System.out.println("aaaa" + destIP);
                             Resource INROUTE = RdfOwl.createResource(model, topologyURI + ":network+" + networkID + ":dest_ip+" + destIP + ":route_from+" + subnetId + ":hostroute-tenant", route);
@@ -383,7 +398,8 @@ public class OpenStackNeutronModelBuilder {
 
                             model.add(model.createStatement(NETWORK, hasService, ROUTINGSERVICE));
                             model.add(model.createStatement(ROUTINGSERVICE, providesRoutingTable, HOSTROUTINGTABLE));
-                            model.add(model.createStatement(HOSTROUTINGTABLE, providesRoute, INROUTE));
+                            model.add(model.createStatement(ROUTINGSERVICE, providesRoute, INROUTE));
+                            model.add(model.createStatement(HOSTROUTINGTABLE, hasRoute, INROUTE));
                             model.add(model.createStatement(INROUTE, routeFrom, INROUTEFROM));
                             model.add(model.createStatement(INROUTE, routeTo, INROUTETO));
                             model.add(model.createStatement(INROUTE, nextHop, INNEXTHOP));
@@ -438,7 +454,8 @@ public class OpenStackNeutronModelBuilder {
                             Resource ROUTER_INTERFACE_ROUTE = RdfOwl.createResource(model, topologyURI + ":router+" + routername + ":" + "interfaceip+" + INTERFACE_IP + ":router-interface-route", route);
                             //Resource ROUTER_INTERFACE_ROUTE_TO = RdfOwl.createResource(model, topologyURI + ":-router-interface-route-to "+":" + SUBNET, switchingSubnet);
                             model.add(model.createStatement(routingService, providesRoutingTable, ROUTER_INTERFACE_ROUTINGTABLE));
-                            model.add(model.createStatement(ROUTER_INTERFACE_ROUTINGTABLE, providesRoute, ROUTER_INTERFACE_ROUTE));
+                            model.add(model.createStatement(routingService, providesRoute, ROUTER_INTERFACE_ROUTE));
+                            model.add(model.createStatement(ROUTER_INTERFACE_ROUTINGTABLE, hasRoute, ROUTER_INTERFACE_ROUTE));
                             model.add(model.createStatement(ROUTER_INTERFACE_ROUTE, routeTo, SUBNET));
                             model.add(model.createStatement(ROUTER_INTERFACE_ROUTE, nextHop, ROUTER_INTERFACE_ROUTE_NEXTHOP));
 
@@ -475,6 +492,7 @@ public class OpenStackNeutronModelBuilder {
                 Resource RHOSTROUTENEXTHOP = RdfOwl.createResource(model, topologyURI + ":router-host-route-nexthop+" + RHOSTNEXTHOP, networkAddress);
 
                 model.add(model.createStatement(routingService, providesRoutingTable, RHOSTROUTINGTABLE));
+                model.add(model.createStatement(routingService, providesRoute, RHOSTROUTE));
                 model.add(model.createStatement(RHOSTROUTINGTABLE, hasRoute, RHOSTROUTE));
                 model.add(model.createStatement(RHOSTROUTE, routeTo, RHOSTROUTETO));
                 model.add(model.createStatement(RHOSTROUTE, nextHop, RHOSTROUTENEXTHOP));
@@ -560,7 +578,7 @@ public class OpenStackNeutronModelBuilder {
                             for (Server servers : openstackget.getServers()) {
                                 Port pt = openstackget.getPort(f.getPortId());
                                 if (servers.getId().equals(pt.getDeviceId())) {
-                                    Resource VM = RdfOwl.createResource(model, topologyURI + ":" + "server-name+" + openstackget.getServereName(servers), node);
+                                    Resource VM = RdfOwl.createResource(model, topologyURI + ":" + "server+" + openstackget.getServereName(servers), node);
                                     model.add(model.createStatement(VM, hasNetworkAddress, FIXEDADD));
                                 }
                             }
@@ -585,19 +603,20 @@ public class OpenStackNeutronModelBuilder {
             }
         }
         /*
-         StringWriter out = new StringWriter();
-         try {
-         model.write(out, "TURTLE");
-         } catch (Exception e) {
-         throw new Exception(String.format("failure to marshall ontology model, due to %s", e.getMessage()));
-         }
-         String ttl = out.toString();
-         <<<<<<< Updated upstream
-         System.out.println(ttl);
-         */
-
-        //System.out.println(ttl);
+        StringWriter out = new StringWriter();
+        try {
+            model.write(out, "TURTLE");
+        } catch (Exception e) {
+            throw new Exception(String.format("failure to marshall ontology model, due to %s", e.getMessage()));
+        }
+        String ttl = out.toString();
+        System.out.println(ttl);
+        System.out.println(ttl);
+        */
+        // combine extra model (static injection)
+        if (modelExt != null) {
+            model.add(modelExt.getBaseModel());
+        }
         return model;
-
     }
 }
