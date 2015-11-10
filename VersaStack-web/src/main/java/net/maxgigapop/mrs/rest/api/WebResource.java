@@ -20,12 +20,11 @@ import javax.ejb.EJBException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.Consumes;
-import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Produces;
-import net.maxgigapop.mrs.rest.api.model.ApiDriverInstance;
+import net.maxgigapop.mrs.rest.api.model.ApiNetCreation;
 import net.maxgigapop.mrs.rest.api.model.ApiVMInstall;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 import web.beans.serviceBeans;
@@ -102,6 +101,19 @@ public class WebResource {
                 default:
                     return "Success.\n";
             }
+        } catch (EJBException e) {
+            return e.getMessage();
+        }
+    }
+    
+    @POST
+    @Path("/createNetwork")
+    @Consumes({"application/xml", "application/json"})
+    public String createNet(ApiNetCreation input) {
+        try {
+            Map<String, String> propMap = input.getProperties();
+
+            return "";
         } catch (EJBException e) {
             return e.getMessage();
         }

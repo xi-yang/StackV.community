@@ -37,19 +37,4 @@
             <value>8,standard,/dev/xvda,snapshot\r\n</value>
         </entry>       
     </properties>
-    
-    <subnets>
-        <subnet>
-            <uri>urn:ogf:network:aws.amazon.com:aws-cloud:subnet-a8a632f1</uri>
-            <address>10.0.1.0</address>
-        </subnet>
-    </subnets>
-    <volumes>
-        <volume>
-            <path>/dev/xvda</path>
-            <snapshot>snapshot</snapshot>
-            <size>8</size>
-            <type>standard</type>
-        </volume>
-    </volumes>
 </vm-install>
