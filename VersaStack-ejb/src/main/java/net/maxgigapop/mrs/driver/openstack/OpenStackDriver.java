@@ -53,12 +53,14 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         String topologyURI = driverInstance.getProperty("topologyUri");
         String url = driverInstance.getProperty("url");
         String NATServer = driverInstance.getProperty("NATServer");
+        String defaultImage = driverInstance.getProperty("defaultImage");
+        String defaultFlavor = driverInstance.getProperty("defaultFlavor");
 
         OntModel model = driverInstance.getHeadVersionItem().getModelRef().getOntModel();
         OntModel modelAdd = aDelta.getModelAddition().getOntModel();
         OntModel modelReduc = aDelta.getModelReduction().getOntModel();
 
-        OpenStackPush push = new OpenStackPush(url, NATServer, username, password, tenant, topologyURI);
+        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, topologyURI, defaultImage, defaultFlavor);
         List<JSONObject> requests = null;
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         try {
@@ -88,10 +90,12 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         String topologyURI = driverInstance.getProperty("topologyUri");
         String url = driverInstance.getProperty("url");
         String NATServer = driverInstance.getProperty("NATServer");
+        String defaultImage = driverInstance.getProperty("defaultImage");
+        String defaultFlavor = driverInstance.getProperty("defaultFlavor");
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         String requests = driverInstance.getProperty(requestId);
 
-        OpenStackPush push = new OpenStackPush(url, NATServer, username, password, tenant, topologyURI);
+        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, topologyURI, defaultFlavor, defaultFlavor);
         ObjectMapper mapper = new ObjectMapper();
         List<JSONObject> r = new ArrayList();
         try {
@@ -129,10 +133,21 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
             String url = driverInstance.getProperty("url");
             String topologyUri = driverInstance.getProperty("topologyUri");
             String NATServer = driverInstance.getProperty("NATServer");
+            String modelExtTtl = driverInstance.getProperty("modelExt");
+            String adminUsername = driverInstance.getProperty("adminUsername");
+            String adminPassword = driverInstance.getProperty("adminPassword");
+            String adminTenant = driverInstance.getProperty("adminTenant");
+            OntModel modelExt = null;
+            if (modelExtTtl != null && !modelExtTtl.isEmpty()) {
+                modelExt = ModelUtil.unmarshalOntModel(modelExtTtl);
+            }
 
-            OntModel ontModel = OpenStackNeutronModelBuilder.createOntology(url, NATServer, topologyUri, username, password, tenant);
-
-            if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
+            OntModel ontModel = OpenStackNeutronModelBuilder.createOntology(url, NATServer, topologyUri, username, password, tenant, 
+                    adminUsername, adminPassword, adminTenant, modelExt);
+            
+            // combine injected Model extension
+            if (driverInstance.getHeadVersionItem() == null 
+                    || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();
                 dm.setCommitted(true);
                 dm.setOntModel(ontModel);
@@ -145,14 +160,10 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
                 VersionItemPersistenceManager.save(vi);
                 driverInstance.setHeadVersionItem(vi);
             }
-
-        } catch (IOException e) {
-            throw new EJBException(String.format("pullModel on %s raised exception[%s]", driverInstance, e.getMessage()));
         } catch (Exception ex) {
             Logger.getLogger(OpenStackDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
+            throw new EJBException(String.format("pullModel on %s raised exception[%s]", driverInstance, ex.getMessage()));
         }
-
-        //Logger.getLogger(AwsDriver.class.getName()).log(Level.INFO, "AWS driver ontology model succesfully pulled");
         return new AsyncResult<>("SUCCESS");
     }
 

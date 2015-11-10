@@ -422,10 +422,14 @@ public class HandleSystemCall {
         if (systemInstance.getCommitStatus() != null) {
             throw new EJBException("commitDelta has already been done once with systemInstance with referenceUUID=" + sysInstanceUUID);
         }
-
-        Future<String> commitStatus = this.commitDelta(systemInstance);
-        systemInstance.setCommitStatus(commitStatus);
-        return commitStatus;
+        try{
+            Future<String> commitStatus = this.commitDelta(systemInstance);
+            systemInstance.setCommitStatus(commitStatus);            
+        }catch(EJBException ex){
+            systemInstance.setCommitStatus(new AsyncResult<>(ex.getMessage()));                                    
+        }
+        systemInstance.setCommitFlag(true);
+        return systemInstance.getCommitStatus();
     }
 
     public void plugDriverInstance(Map<String, String> properties) {
