@@ -387,7 +387,7 @@ public class HandleSystemCall {
                 try {
                     String resultStatus = asyncResult.get();
                 } catch (InterruptedException | ExecutionException e) {
-                    throw new EJBException(String.format("commitDelta for %s raised exception from %s ", systemInstance, dsd.getDriverInstance()));
+                    throw new EJBException(String.format("commitDelta for (SI=%s, DI=%s) raised exception: %s", systemInstance, dsd.getDriverInstance(), e));
                 }
             }
             if (doneSucessful) {
@@ -413,6 +413,7 @@ public class HandleSystemCall {
         this.propagateDelta(systemInstance, sysDelta);
     }
 
+    /*
     @Asynchronous
     public Future<String> commitDelta(String sysInstanceUUID) {
         SystemInstance systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(sysInstanceUUID);
@@ -431,7 +432,8 @@ public class HandleSystemCall {
         systemInstance.setCommitFlag(true);
         return systemInstance.getCommitStatus();
     }
-
+    */
+    
     public void plugDriverInstance(Map<String, String> properties) {
         if (!properties.containsKey("topologyUri") || !properties.containsKey("driverEjbPath")) {
             throw new EJBException(String.format("plugDriverInstance must provide both topologyUri and driverEjbPath properties"));

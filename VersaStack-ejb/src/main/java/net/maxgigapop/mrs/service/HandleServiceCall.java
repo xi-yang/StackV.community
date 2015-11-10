@@ -466,11 +466,6 @@ public class HandleServiceCall {
             // get cached systemInstance
             systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(systemInstance.getReferenceUUID());
 
-            /* changes with the removal of getCommitFlag
-             if (!systemInstance.getCommitFlag()) {
-             throw new EJBException(HandleServiceCall.class.getName() + ".checkStatus encounters un-commited systemInstance based on " + serviceDelta.getSystemDelta());
-             }
-             */
             Future<String> asyncStatus = systemInstance.getCommitStatus();
             serviceDelta.setStatus("FAILED");
             if (asyncStatus.isDone()) {
@@ -480,6 +475,7 @@ public class HandleServiceCall {
                         serviceDelta.setStatus("READY");
                     }
                 } catch (Exception ex) {
+                    //@TODO: add exception into ErrorReport
                     serviceDelta.setStatus("FAILED");
                 }
             } else {
