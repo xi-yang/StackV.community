@@ -211,11 +211,28 @@ public class OpenStackPush {
                 if (client.getFlavors().isEmpty()) {
                     throw new EJBException(String.format("openstack has none defined flavor."));
                 }
-                ServerCreateBuilder builder = Builders.server()
-                        .name(o.get("server name").toString())
+                ServerCreateBuilder builder = Builders.server();
+                if(o.get("image").toString().equals("any") && o.get("image").toString().equals("any")){
+                
+                        builder.name(o.get("server name").toString())
                         .image(client.getImages().get(0).getId())
                         .flavor(client.getFlavors().get(0).getId());
-
+                }else if(o.get("image").toString().equals("any")){
+                   
+                        builder.name(o.get("server name").toString())
+                        .image(client.getImages().get(0).getId())
+                        .flavor(o.get("flavor").toString());
+                }else if(o.get("flavor").toString().equals("any")){
+                    
+                        builder.name(o.get("server name").toString())
+                        .image(o.get("image").toString())
+                        .flavor(client.getFlavors().get(0).getId());
+                }else{
+                   
+                        builder.name(o.get("server name").toString())
+                        .image(o.get("image").toString())
+                        .flavor(o.get("flavor").toString());
+                }
                 int index = 0;
                 String portid = "";
                 while (true) {
@@ -1202,7 +1219,20 @@ public class OpenStackPush {
                 if (!r5.hasNext()) {
                     throw new EJBException(String.format("Vm %s does not specify the attached network interface", vm));
                 }
-
+                query = "SELECT ?type WHERE {<" + subnet.asResource() + "> nmrs:Type ?type}";
+                r5 = executeQuery(query, emptyModel, modelDelta);
+                String imageID ="any";
+                String flavorID = "any";
+                while(r5.hasNext()){
+                    QuerySolution q2 = r5.next();
+                    RDFNode type = q2.get("type");
+                    String typename = type.asResource().toString();
+                    if(typename.contains("image:UUID")){
+                        imageID = getresourcename(typename, "+" ,"");
+                    }else if(typename.contains("flavorID")){
+                        flavorID = getresourcename(typename, "+" ,"");
+                    }
+                }
                 //1.7 to find the subnet the server is in first  find the port the server uses
                 query = "SELECT ?port WHERE {<" + vm.asResource() + "> nml:hasBidirectionalPort ?port}";
                 ResultSet r2 = executeQuery(query, modelRef, modelDelta);
@@ -1274,9 +1304,12 @@ public class OpenStackPush {
                 if (client.getFlavors().isEmpty()) {
                     throw new EJBException(String.format("openstack has none defined flavor."));
                 }
+                /*
                 o.put("image", client.getImages().get(0).getId());
                 o.put("flavor", client.getFlavors().get(0).getId());
-
+                */
+                o.put("image", imageID);
+                o.put("flavor", flavorID);
                 //1.10.1 put all the ports in the request
                 int index = 0;
                 for (String port : portNames) {
