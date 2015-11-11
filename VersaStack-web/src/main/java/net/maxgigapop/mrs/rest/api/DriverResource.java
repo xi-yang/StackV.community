@@ -29,55 +29,56 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
  */
 @Path("driver")
 public class DriverResource {
+
     @Context
     private UriInfo context;
 
     @EJB
     HandleSystemCall systemCallHandler;
-    
-    public DriverResource(){
+
+    public DriverResource() {
     }
-    
+
     @GET
-    @Produces({"application/xml","application/json"})
-    public String pullAll(){
+    @Produces({"application/xml", "application/json"})
+    public String pullAll() {
         Set<String> instanceSet = systemCallHandler.retrieveAllDriverInstanceMap().keySet();
         String allInstance = "";
-        for(String instance : instanceSet)
-            allInstance += instance+"\n";
+        for (String instance : instanceSet) {
+            allInstance += instance + "\n";
+        }
         return allInstance;
     }
-    
+
     @GET
-    @Produces({"application/xml","application/json"})
+    @Produces({"application/xml", "application/json"})
     @Path("/{topoUri}")
-    public ApiDriverInstance pull(@PathParam("topoUri")String topoUri){
+    public ApiDriverInstance pull(@PathParam("topoUri") String topoUri) {
         DriverInstance driverInstance = systemCallHandler.retrieveDriverInstance(topoUri);
         ApiDriverInstance adi = new ApiDriverInstance();
         adi.setProperties(driverInstance.getProperties());
         return adi;
     }
 
-    
     @DELETE
-    @Path("/{topoUri}")    
-    public String unplug(@PathParam("topoUri")String topoUri){
-        try{
+    @Path("/{topoUri}")
+    public String unplug(@PathParam("topoUri") String topoUri) {
+        try {
             systemCallHandler.unplugDriverInstance(topoUri);
-        }catch(EJBException e){
+        } catch (EJBException e) {
             return e.getMessage();
         }
         return "unplug successfully";
-    } 
-    
+    }
+
     @POST
-    @Consumes({"application/xml","application/json"})
-    public String plug(ApiDriverInstance di){
-        try{
+    @Consumes({"application/xml", "application/json"})
+    public String plug(ApiDriverInstance di) {
+        try {
             systemCallHandler.plugDriverInstance(di.getProperties());
-        }catch(EJBException e){
+        } catch (EJBException e) {
             return e.getMessage();
         }
         return "plug successfully";
-    }    
+    }
 }

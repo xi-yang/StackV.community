@@ -38,9 +38,10 @@ import net.maxgigapop.mrs.service.compute.IModelComputationElement;
  *
  * @author xyang
  */
-public class SimpleCompiler extends CompilerBase {        
+public class SimpleCompiler extends CompilerBase {
+
     private static final Logger log = Logger.getLogger(SimpleCompiler.class.getName());
-    
+
     @Override
     public void compile(WorkerBase worker) {
         OntModel spaOntModelReduction = this.spaDelta.getModelReduction() == null ? null : this.spaDelta.getModelReduction().getOntModel();
@@ -52,15 +53,16 @@ public class SimpleCompiler extends CompilerBase {
         if (spaOntModelAddition != null && !ModelUtil.isEmptyModel(spaOntModelAddition)) {
             Queue<Resource> policyQueue = new LinkedBlockingQueue<>();
             Map<Resource, OntModel> addParts = this.decomposeByPolicyActions(spaOntModelAddition);
-            if (addParts == null)
+            if (addParts == null) {
                 throw new EJBException(SimpleCompiler.class.getName() + " found none terminal / leaf policy action.");
+            }
             // start queue terminal / leaf policy actions
-            for (Resource policy: addParts.keySet()) {
+            for (Resource policy : addParts.keySet()) {
                 // enqueue child policy
-                policyQueue.add(policy); 
+                policyQueue.add(policy);
             }
             Map<Resource, List<ActionBase>> parentPolicyChildActionMap = new HashMap<>();
-            while(!policyQueue.isEmpty()) {
+            while (!policyQueue.isEmpty()) {
                 // dequeue policy
                 Resource policy = policyQueue.poll();
                 // create Action and assign delta part
@@ -70,15 +72,16 @@ public class SimpleCompiler extends CompilerBase {
                     DeltaModel addModel = new DeltaModel();
                     addModel.setOntModel(addParts.get(policy));
                     ServiceDelta inputDelta = action.getInputDelta();
-                    if (inputDelta == null)
+                    if (inputDelta == null) {
                         inputDelta = new ServiceDelta();
+                    }
                     inputDelta.setModelAddition(addModel);
                     action.setInputDelta(inputDelta);
                 }
                 // lookup dependency 
                 if (parentPolicyChildActionMap.containsKey(policy)) {
                     List<ActionBase> childActions = parentPolicyChildActionMap.get(policy);
-                    for (ActionBase child: childActions) {
+                    for (ActionBase child : childActions) {
                         worker.addDependency(action, child);
                     }
                     // check if the parent (action) has got all dependencies (children)
@@ -92,7 +95,7 @@ public class SimpleCompiler extends CompilerBase {
                 // traverse upwards to get parent actions
                 List<Resource> parentPolicies = this.listParentPolicies(spaOntModelAddition, policy);
                 if (parentPolicies != null) {
-                    for (Resource parent: parentPolicies) {
+                    for (Resource parent : parentPolicies) {
                         // enqueue parent policy
                         if (!policyQueue.contains(parent)) {
                             policyQueue.add(parent);
@@ -113,7 +116,7 @@ public class SimpleCompiler extends CompilerBase {
         }
     }
 
-    private ActionBase createAction(OntModel spaModel, Resource policy)  {
+    private ActionBase createAction(OntModel spaModel, Resource policy) {
         String policyActionType = null;
 
         String sparql = "SELECT ?policyAction ?actionType WHERE {"
@@ -122,7 +125,7 @@ public class SimpleCompiler extends CompilerBase {
                 + "?anyOther spa:dependOn ?policyAction . "
                 + "?policyData a spa:PolicyData . "
                 + String.format("FILTER (?policyAction = <%s>) ", policy)
-                + "}";        
+                + "}";
 
         ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
         if (r.hasNext()) {
@@ -140,7 +143,7 @@ public class SimpleCompiler extends CompilerBase {
             }
             return policyAction;
         } else {
-            throw new EJBException(SimpleCompiler.class.getName() + ":createAction encounters malformed policy action: " + policy.getLocalName());       
+            throw new EJBException(SimpleCompiler.class.getName() + ":createAction encounters malformed policy action: " + policy.getLocalName());
         }
     }
 }

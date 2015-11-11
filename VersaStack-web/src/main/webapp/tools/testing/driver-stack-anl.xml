@@ -1,1 +1,16 @@
-<driverInstance><properties><entry><key>topologyUri</key><value>urn:ogf:network:charon.dragon.maxgigapop.net:substack</value></entry><entry><key>driverEjbPath</key><value>java:module/StackSystemDriver</value></entry><entry><key>subsystemBaseUrl</key><value>http://140.221.96.35:50100/VersaStack-web/restapi</value></entry></properties></driverInstance>
+<driverInstance>
+    <properties>
+        <entry>
+            <key>topologyUri</key>
+            <value>urn:ogf:network:charon.dragon.maxgigapop.net:substack</value>
+        </entry>
+        <entry>
+            <key>driverEjbPath</key>
+            <value>java:module/StackSystemDriver</value>
+        </entry>
+        <entry>
+            <key>subsystemBaseUrl</key>
+            <value>http://140.221.96.35:50100/VersaStack-web/restapi</value>
+        </entry>
+    </properties>
+</driverInstance>

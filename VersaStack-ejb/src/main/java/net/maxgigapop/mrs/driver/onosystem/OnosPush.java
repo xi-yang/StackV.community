@@ -30,10 +30,8 @@ import org.apache.commons.codec.binary.Base64;
  *
  * @author diogo
  */
-
 //TODO availability zone problems in volumes and subnets and instancees.
 //add a property in the model to speicfy availability zone.
-
 //TODO associate and disassociate address methods do not do anything. Reason is
 //elastic IPs are not linked in any way to the root topology, find a way to do this
 //in the model to make the two methods work.
@@ -47,107 +45,98 @@ public class OnosPush {
     static final Logger logger = Logger.getLogger(OnosPush.class.getName());
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 
-    public OnosPush(String access_key_id,String secret_access_key,String subsystemBaseUrl,String topologyURI){
-        
+    public OnosPush(String access_key_id, String secret_access_key, String subsystemBaseUrl, String topologyURI) {
+
     }
 
-   
-    public String pushPropagate(String access_key_id, String secret_access_key,String model,String modelAddTtl,String topologyURI, String subsystemBaseUrl) throws EJBException, Exception   {
-         String requests = "";
+    public String pushPropagate(String access_key_id, String secret_access_key, String model, String modelAddTtl, String topologyURI, String subsystemBaseUrl) throws EJBException, Exception {
+        String requests = "";
 
         OntModel modelRef = ModelUtil.unmarshalOntModel(model);
         OntModel modelAdd = ModelUtil.unmarshalOntModel(modelAddTtl);
         //OntModel modelReduct = ModelUtil.unmarshalOntModel(modelReductTtl);
 
-       String query = "SELECT ?flow  WHERE {"
-               + "?flow a mrs:Flow. "
-               + "}";
-       
-       
+        String query = "SELECT ?flow  WHERE {"
+                + "?flow a mrs:Flow. "
+                + "}";
+
         ResultSet r1 = executeQuery(query, emptyModel, modelAdd);
-        
-      
-      while (r1.hasNext()) {
+
+        while (r1.hasNext()) {
             QuerySolution querySolution1 = r1.next();
-            
+
             Resource flow = querySolution1.get("flow").asResource();
             String query2 = "SELECT ?flowrule ?rulematch WHERE {"
-                     + "?flowrule mrs:value ?rulematch. "
-                     + "}";
-            
-             ResultSet r2 = executeQuery(query2, emptyModel, modelAdd);
-             String[] flowdata=new String[6];
-             
-             while (r2.hasNext()) {
+                    + "?flowrule mrs:value ?rulematch. "
+                    + "}";
+
+            ResultSet r2 = executeQuery(query2, emptyModel, modelAdd);
+            String[] flowdata = new String[6];
+
+            while (r2.hasNext()) {
                 QuerySolution querySolution2 = r2.next();
                 Resource flow2 = querySolution2.get("flowrule").asResource();
                 RDFNode rulematch = querySolution2.get("rulematch");
-                if(flow2.toString().equals(flow.toString()+":rule-match-0")){
-                    flowdata[0]=rulematch.toString();
-                    
-                }
-                if(flow2.toString().equals(flow.toString()+":rule-match-1")){
-                    flowdata[1]=rulematch.toString();
-                    
-                }
-                if(flow2.toString().equals(flow.toString()+":rule-match-2")){
-                    flowdata[2]=rulematch.toString();
-                    
-                }
-                if(flow2.toString().equals(flow.toString()+":rule-match-3")){
-                    flowdata[3]=rulematch.toString();
-                    
-                }
-                if(flow2.toString().equals(flow.toString()+":rule-match-4")){
-                    flowdata[4]=rulematch.toString();
-                    
-                }
-                if(flow2.toString().equals(flow.toString()+":rule-action-0")){
-                    flowdata[5]=rulematch.toString();
-                    
-                }
-             }
-             
-        String[] json_string=new String[2];
-        json_string[0]=flow.toString().split(topologyURI+":")[1].split(":openflow-service")[0]+"\n";
-        json_string[1]="{\"isPermanent\": true,\"priority\": 100,"
-                + "\"selector\": {\"criteria\": [{\"port\": "+flowdata[0]+",\"type\":"
-                + " \"IN_PORT\"}]},"
-                //+ "{\"mac\": \""+flowdata[1]+"\","
-                //+ "\"type\": \"ETH_SRC\"},{\"mac\": \""+flowdata[2]+"\","
-                //+ "\"type\": \"ETH_DST\"}]},"
-                + "\"treatment\": {"
-                + "\"instructions\": [{\"port\": "+flowdata[5]+",\"type\": \"OUTPUT\"}]}}\n";
+                if (flow2.toString().equals(flow.toString() + ":rule-match-0")) {
+                    flowdata[0] = rulematch.toString();
 
-        requests=requests+json_string[0]+json_string[1];
-         
-       
-      }
-        
+                }
+                if (flow2.toString().equals(flow.toString() + ":rule-match-1")) {
+                    flowdata[1] = rulematch.toString();
+
+                }
+                if (flow2.toString().equals(flow.toString() + ":rule-match-2")) {
+                    flowdata[2] = rulematch.toString();
+
+                }
+                if (flow2.toString().equals(flow.toString() + ":rule-match-3")) {
+                    flowdata[3] = rulematch.toString();
+
+                }
+                if (flow2.toString().equals(flow.toString() + ":rule-match-4")) {
+                    flowdata[4] = rulematch.toString();
+
+                }
+                if (flow2.toString().equals(flow.toString() + ":rule-action-0")) {
+                    flowdata[5] = rulematch.toString();
+
+                }
+            }
+
+            String[] json_string = new String[2];
+            json_string[0] = flow.toString().split(topologyURI + ":")[1].split(":openflow-service")[0] + "\n";
+            json_string[1] = "{\"isPermanent\": true,\"priority\": 100,"
+                    + "\"selector\": {\"criteria\": [{\"port\": " + flowdata[0] + ",\"type\":"
+                    + " \"IN_PORT\"}]},"
+                    //+ "{\"mac\": \""+flowdata[1]+"\","
+                    //+ "\"type\": \"ETH_SRC\"},{\"mac\": \""+flowdata[2]+"\","
+                    //+ "\"type\": \"ETH_DST\"}]},"
+                    + "\"treatment\": {"
+                    + "\"instructions\": [{\"port\": " + flowdata[5] + ",\"type\": \"OUTPUT\"}]}}\n";
+
+            requests = requests + json_string[0] + json_string[1];
+
+        }
+
         return requests;
-    
+
     }
-    
-    
-     public void pushCommit(String access_key_id, String secret_access_key,String model,String topologyURI, String subsystemBaseUrl) throws EJBException, Exception   {
-         
-     
-         String[] json_string=model.split("\n");
-         for(int i=0;i<json_string.length;i++){
-            System.out.println("Device: "+json_string[i]+"\nFlow: "+json_string[i+1]+"\n");
-            URL url = new URL(String.format(subsystemBaseUrl+"/flows/"+json_string[i]));
-            HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-            int status = this.executeHttpMethod(access_key_id, secret_access_key,url, conn, "POST", json_string[i+1]);
-            if (status!=201) {
-                throw new EJBException(String.format("Failed to push %s into %s",json_string[i+1],json_string[i]));
+
+    public void pushCommit(String access_key_id, String secret_access_key, String model, String topologyURI, String subsystemBaseUrl) throws EJBException, Exception {
+
+        String[] json_string = model.split("\n");
+        for (int i = 0; i < json_string.length; i++) {
+            System.out.println("Device: " + json_string[i] + "\nFlow: " + json_string[i + 1] + "\n");
+            URL url = new URL(String.format(subsystemBaseUrl + "/flows/" + json_string[i]));
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            int status = this.executeHttpMethod(access_key_id, secret_access_key, url, conn, "POST", json_string[i + 1]);
+            if (status != 201) {
+                throw new EJBException(String.format("Failed to push %s into %s", json_string[i + 1], json_string[i]));
             }
             i++;
-         }
-     }
-   
-    
-    
-    
+        }
+    }
+
     private ResultSet executeQuery(String queryString, OntModel refModel, OntModel model) {
         queryString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
                 + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
@@ -168,14 +157,15 @@ public class OnosPush {
         }
         return r;
     }
-private int executeHttpMethod(String access_key_id,String secret_access_key,URL url, HttpURLConnection conn, String method, String body) throws IOException {
+
+    private int executeHttpMethod(String access_key_id, String secret_access_key, URL url, HttpURLConnection conn, String method, String body) throws IOException {
         conn.setRequestMethod(method);
-        String username=access_key_id;
-        String password=secret_access_key;
-        String userPassword=username+":"+password;
-        byte[] encoded=Base64.encodeBase64(userPassword.getBytes());
-        String stringEncoded=new String(encoded);
-        conn.setRequestProperty("Authorization", "Basic "+stringEncoded);
+        String username = access_key_id;
+        String password = secret_access_key;
+        String userPassword = username + ":" + password;
+        byte[] encoded = Base64.encodeBase64(userPassword.getBytes());
+        String stringEncoded = new String(encoded);
+        conn.setRequestProperty("Authorization", "Basic " + stringEncoded);
         conn.setRequestProperty("Content-type", "application/json");
         conn.setRequestProperty("Accept", "application/json");
         if (body != null && !body.isEmpty()) {
@@ -190,14 +180,14 @@ private int executeHttpMethod(String access_key_id,String secret_access_key,URL 
         logger.log(Level.INFO, "Response Code : {0}", responseCode);
 
         /*StringBuilder responseStr;
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-            String inputLine;
-            responseStr = new StringBuilder();
-            while ((inputLine = in.readLine()) != null) {
-                responseStr.append(inputLine);
-            }
-        }
-        //return responseStr.toString();*/
+         try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+         String inputLine;
+         responseStr = new StringBuilder();
+         while ((inputLine = in.readLine()) != null) {
+         responseStr.append(inputLine);
+         }
+         }
+         //return responseStr.toString();*/
         return responseCode;
     }
 

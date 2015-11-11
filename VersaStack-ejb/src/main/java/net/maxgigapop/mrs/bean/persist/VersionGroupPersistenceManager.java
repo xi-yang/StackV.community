@@ -3,7 +3,6 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package net.maxgigapop.mrs.bean.persist;
 
 import java.util.ArrayList;
@@ -55,19 +54,21 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
         for (VersionItem vi : vg.getVersionItems()) {
             DriverInstance di = vi.getDriverInstance();
             if (di != null) {
-                if (listDI.contains(di))
+                if (listDI.contains(di)) {
                     continue;
+                }
                 listDI.add(di);
                 VersionItem newVi = di.getHeadVersionItem();
                 if (!newVi.equals(vi)) {
                     needToUpdate = true;
                 }
                 newVG.addVersionItem(newVi);
-                if (!newVi.getVersionGroups().contains(vg))
+                if (!newVi.getVersionGroups().contains(vg)) {
                     newVi.addVersionGroup(vg);
+                }
             }
         }
-        for (DriverInstance di: ditMap.values()) {
+        for (DriverInstance di : ditMap.values()) {
             if (!listDI.contains(di)) {
                 synchronized (di) {
                     VersionItem newVi = di.getHeadVersionItem();
@@ -79,8 +80,9 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                 }
             }
         }
-        if (!doUpdatePersist)
+        if (!doUpdatePersist) {
             return newVG;
+        }
         if (needToUpdate) {
             vg = findByReferenceId(vg.getRefUuid());
             vg.setVersionItems(newVG.getVersionItems());

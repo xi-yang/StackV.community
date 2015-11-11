@@ -92,11 +92,10 @@ public class OnosDCGet {
     public List<VirtualGateway> getVirtualGateways() {
         return virtualGateways;
     }
-    
+
     //get the client  for AWS DC
-    public AmazonDirectConnectClient getClient()
-    {
+    public AmazonDirectConnectClient getClient() {
         return client;
     }
-    
+
 }

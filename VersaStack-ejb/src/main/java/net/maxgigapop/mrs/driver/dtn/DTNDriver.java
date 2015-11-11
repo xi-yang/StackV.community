@@ -27,12 +27,14 @@ import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
+
 /**
  *
  * @author xin
  */
 @Stateless
-public class DTNDriver implements IHandleDriverSystemCall{
+public class DTNDriver implements IHandleDriverSystemCall {
+
     Logger logger = Logger.getLogger(DTNDriver.class.getName());
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
@@ -62,12 +64,11 @@ public class DTNDriver implements IHandleDriverSystemCall{
         DriverInstancePersistenceManager.merge(driverInstance);
         Logger.getLogger(DTNDriver.class.getName()).log(Level.INFO, "DTN driver delta models succesfully propagated");
     }
-    
+
     @Asynchronous
     @Override
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
- 
-        DriverInstance driverInstance = aDelta.getDriverInstance();
+        DriverInstance driverInstance = DriverInstancePersistenceManager.findById(aDelta.getDriverInstance().getId());
         if (driverInstance == null) {
             throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
         }
@@ -103,8 +104,7 @@ public class DTNDriver implements IHandleDriverSystemCall{
             String topologyURI = driverInstance.getProperty("topologyUri");
             String addresses = driverInstance.getProperty("addresses");
             String endpoint = driverInstance.getProperty("endpoint");
-            
-            
+
 //            System.out.println("Start creating dtn model.endpoint: "+endpoint);
             OntModel ontModel = DTNModelBuilder.createOntology(user_account, access_key, addresses, topologyURI, endpoint);
 
@@ -128,5 +128,5 @@ public class DTNDriver implements IHandleDriverSystemCall{
         //Logger.getLogger(DTNDriver.class.getName()).log(Level.INFO, "DTN driver ontology model succesfully pulled");
         return new AsyncResult<>("SUCCESS");
     }
-    
+
 }
