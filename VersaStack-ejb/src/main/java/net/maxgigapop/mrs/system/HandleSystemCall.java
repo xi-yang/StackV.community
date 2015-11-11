@@ -189,6 +189,9 @@ public class HandleSystemCall {
             }
         }
         SystemInstancePersistenceManager.delete(systemInstance);
+        if (systemInstance.getSystemDelta() != null) {
+            DeltaPersistenceManager.delete(systemInstance.getSystemDelta());
+        }
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
