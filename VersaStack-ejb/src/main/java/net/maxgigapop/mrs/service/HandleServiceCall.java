@@ -227,7 +227,7 @@ public class HandleServiceCall {
                 if (!canMultiPropagate) {
                     break;
                 }
-            } else if (!canMultiPropagate && !serviceDelta.getStatus().equals("COMMITTED")) {
+            } else if (!canMultiPropagate && !serviceDelta.getStatus().equals("COMMITTED") && !serviceDelta.getStatus().equals("READY")) {
                 throw new EJBException(HandleServiceCall.class.getName() + ".propogateDeltas (by " + serviceInstance + ") with 'multiPropagate=false' encounters " + serviceDelta + " in status=" + serviceDelta.getStatus());
             }
         }
@@ -296,7 +296,7 @@ public class HandleServiceCall {
                 if (!canMultiCommit) {
                     break;
                 }
-            } else if (!canMultiCommit && !serviceDelta.getStatus().equals("COMMITTED")) {
+            } else if (!canMultiCommit && !serviceDelta.getStatus().equals("COMMITTED") && !serviceDelta.getStatus().equals("READY")) {
                 throw new EJBException(HandleServiceCall.class.getName() + ".commitDeltas (by " + serviceInstance + ") encounters " + serviceDelta + " in status=" + serviceDelta.getStatus());
             }
         }
@@ -476,6 +476,9 @@ public class HandleServiceCall {
             ServiceDelta serviceDelta = itSD.next();
             if (serviceDelta.getSystemDelta() == null) {
                 throw new EJBException(HandleServiceCall.class.getName() + ".checkStatus (by " + serviceInstance + ") encounters " + serviceDelta + " without compiled systemDelta.");
+            }
+            if (serviceDelta.getStatus().equals("READY")) {
+                continue;
             }
             if (!serviceDelta.getStatus().equals("COMMITTED")) {
                 throw new EJBException(HandleServiceCall.class.getName() + ".checkStatus (by " + serviceInstance + ") encounters " + serviceDelta + " in status=" + serviceDelta.getStatus());
