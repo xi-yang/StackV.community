@@ -44,6 +44,9 @@
                 <c:when test="${empty param.ret}">  <!-- Display this section when no return value supplied -->
                     <div id="service-specific">
                         <div id="service-top">
+                            <div id="service-title">
+                                Network Creation
+                            </div>
                             <div id="service-menu">
                                 <c:if test="${not empty param.self}">
                                     <button type="button" id="button-service-return">Cancel</button>
@@ -53,13 +56,13 @@
                                 </table>
                             </div>
                         </div>
-                        <div id="service-bottom">
-                            <div id="service-fields">
+                        <div id="service-bottom">                            
+                            <div id="service-fields">                                
                                 <form id="vm-form" action="/VersaStack-web/ServiceServlet" method="post">
                                     <table class="management-table" id="net-template-form" style="margin-bottom: 0px;"> 
                                         <thead>
                                             <tr>
-                                                <th>Template Name</th>
+                                                <th>Templates</th>
                                                 <th></th>
                                             </tr>
                                         </thead>
@@ -78,22 +81,31 @@
                                     <table class="management-table" id="net-custom-form">
                                         <thead>
                                             <tr>
-                                                <th></th>
+                                                <th>Custom</th>
                                                 <th></th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <tr>
                                                 <td>Field 1</td>
-                                                <td></td>
+                                                <td><input type="text" name="field1" /></td>
                                             </tr>
                                             <tr>
                                                 <td>Field 2</td>
-                                                <td></td>
+                                                <td><input type="text" name="field2" /></td>
                                             </tr>
                                             <tr>
                                                 <td>Field 3</td>
+                                                <td>
+                                                    <select name="field3">
+                                                        <option value="select1">Option 1</option>
+                                                        <option value="select2">Option 2</option>
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                            <tr>
                                                 <td></td>
+                                                <td><input type="submit" name="custom" value="Submit" /></td>
                                             </tr>
                                         </tbody>
                                     </table>

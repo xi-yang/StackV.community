@@ -404,6 +404,11 @@ body {
     text-align: right;
 }
 
+#service-title {
+    font-weight: bold;
+    text-align: left;
+}
+
 #service-menu {
     margin: 1% auto;
     width: 65%;

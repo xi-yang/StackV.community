@@ -42,8 +42,11 @@
         <div id="main-pane">
             <c:choose>                  
                 <c:when test="${empty param.ret}">  <!-- Display this section when no return value supplied -->
-                    <div id="service-specific">
+                    <div id="service-specific">                        
                         <div id="service-top">
+                            <div id="service-title">
+
+                            </div>
                             <div id="service-menu">
                                 <c:if test="${not empty param.self}">
                                     <button type="button" id="button-service-return">Cancel</button>
