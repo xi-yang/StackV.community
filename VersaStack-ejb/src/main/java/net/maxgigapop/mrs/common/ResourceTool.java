@@ -5,53 +5,72 @@
  */
 package net.maxgigapop.mrs.common;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.ejb.EJBException;
+
 /**
  *
  * @author muzcategui
  */
 public class ResourceTool {
-    
+
     private static final String versaStackPrefix = "urn:ogf:network:";
 
-    public static String getResourceUri(String name, String pattern) {
+    public static String getResourceUri(String name, String pattern, String... patterParam) {
         String uri;
         //check if name starts with versaStackPrefix
         if (name.startsWith(versaStackPrefix)) {
             //string already starts with right prefix we can remove
-            String tmp = name.replace(versaStackPrefix,"");
-            //check for the correct pattern
-            if(tmp.startsWith(pattern)){
-                return name;
-            }
-            else
-            {
-                name = pattern + name;
-            }
-            
+            return name;
+
         } else {
             //name does not start with prefix
-            //check if it at least starts with pattern
-            if(name.startsWith(pattern)){
+            //check if it at least matches pattern           
+            if (patternMatch(name,pattern) == true) {
                 //just append prefix
                 name = versaStackPrefix + name;
+            } else {
+                pattern = String.format(pattern, patterParam);
+                name = versaStackPrefix + pattern;
             }
-            else
-            {
-                name = versaStackPrefix + pattern + name;
-            }
+            return name;
         }
-        return name;
     }
 
     public static String getResourceName(String name, String pattern) {
         //remove the topologyUri first
         if (name.startsWith(versaStackPrefix)) {
             name = name.replace(versaStackPrefix, "");
-            
-            if (name.startsWith(pattern)){
-               name = name.replace(pattern,"");
+            if (patternMatch(name, pattern) == true) {
+                return getShortName(name);
+            } else {
+                return versaStackPrefix + name;
             }
+        } else {
+            throw new EJBException(String.format("Resource %s does not contain valid"
+                    + " URI", name));
         }
-        return name;
+    }
+
+    private static boolean patternMatch(String name,String pattern) {
+
+        //if we have "vpc+%s:subnet+%s" convert to "vpc[+].+:subnet[+].+ 
+        pattern = pattern.replaceAll("[+]", "[+]");
+        pattern =pattern.replaceAll("%s",".+");
+        
+        Pattern pat = Pattern.compile(pattern);
+        Matcher match = pat.matcher(name);
+        return match.matches(); 
+    }
+
+    private static String getShortName(String name) {
+        //TODO not a good logic
+        String params[] = name.split("[+]");
+        
+        //get the last one of params this will be the short name
+        String shortName = params[params.length -1];
+        
+        return shortName;
     }
 }

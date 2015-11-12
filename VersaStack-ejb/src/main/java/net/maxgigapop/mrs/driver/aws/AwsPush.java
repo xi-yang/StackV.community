@@ -286,8 +286,26 @@ public class AwsPush {
 
                 Vpc vpc = ec2Client.getVpc(parameters[1]);
                 DeleteVpcRequest vpcRequest = new DeleteVpcRequest();
-                vpcRequest.withVpcId(vpc.getVpcId());
-                ec2.deleteVpc(vpcRequest);
+                vpcRequest.getDryRunRequest().getAWSRequestMetrics();
+                int tries = 0;
+
+                while (true) {
+                    try {
+                        ec2.deleteVpc(vpcRequest);
+                    } catch (AmazonServiceException e) {
+                        try {
+                            Thread.sleep(1000);                 //1000 milliseconds is one second.
+                        } catch (InterruptedException ex) {
+                            Thread.currentThread().interrupt();
+                        }
+                        tries++;
+                        if(tries >3){
+                            break;
+                        }
+                        continue;
+                    }
+                    break;
+                }
 
                 ec2Client.getVpcs().remove(vpc);
 
@@ -369,10 +387,13 @@ public class AwsPush {
                 ec2Client.vpcStatusCheck(vpcId, VpcState.Available.name().toLowerCase());
 
                 //tag the routing table of the 
+                RouteTable mainTable = null;
                 DescribeRouteTablesResult tablesResult = this.ec2.describeRouteTables();
-                List<RouteTable> routeTables = tablesResult.getRouteTables();
-                routeTables.removeAll(ec2Client.getRoutingTables()); //get the new routing table
-                RouteTable mainTable = routeTables.get(0);
+                for (RouteTable tb : tablesResult.getRouteTables()) {
+                    if (tb.getVpcId().equals(vpcId)) {
+                        mainTable = tb;
+                    }
+                }
                 ec2Client.getRoutingTables().add(mainTable);
                 //create the tag for the vpc
                 tagResource(vpcId, parameters[2]);
@@ -683,9 +704,9 @@ public class AwsPush {
         while (r1.hasNext()) {
             QuerySolution querySolution1 = r1.next();
             RDFNode node = querySolution1.get("node");
-            String nodeTagId = ResourceTool.getResourceName(node.asResource().toString(),AwsPrefix.instance);
+            String nodeTagId = ResourceTool.getResourceName(node.asResource().toString(), AwsPrefix.instance);
             RDFNode volume = querySolution1.get("volume");
-            String volumeTagId = ResourceTool.getResourceName(volume.asResource().toString(),AwsPrefix.volume);
+            String volumeTagId = ResourceTool.getResourceName(volume.asResource().toString(), AwsPrefix.volume);
             String volumeId = getVolumeId(volumeTagId);
 
             query = "SELECT ?deviceName WHERE{<" + volume.asResource() + "> mrs:target_device ?deviceName}";
@@ -733,7 +754,7 @@ public class AwsPush {
             QuerySolution querySolution1 = r1.next();
             RDFNode address = querySolution1.get("address");
             RDFNode port = querySolution1.get(("port"));
-            String portIdTagValue = ResourceTool.getResourceName(port.asResource().toString(),AwsPrefix.nic);
+            String portIdTagValue = ResourceTool.getResourceName(port.asResource().toString(), AwsPrefix.nic);
             query = "SELECT  ?a WHERE {<" + address.asResource() + ">  mrs:type \"ipv4:public\"}";
             ResultSet r2 = executeQuery(query, model, modelReduct);
             if (r2.hasNext()) {
@@ -745,7 +766,7 @@ public class AwsPush {
                 }
                 QuerySolution querySolution2 = r2.next();
                 RDFNode value = querySolution2.get("value");
-                String publicAddress = ResourceTool.getResourceName(value.asLiteral().toString(),"public-ip-");
+                String publicAddress = ResourceTool.getResourceName(value.asLiteral().toString(), "public-ip-");
                 requests += "disassociateAddressRequest " + publicAddress + " " + portIdTagValue
                         + " \n";
             }
@@ -768,7 +789,7 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode port = querySolution.get("port");
-            String portIdTagValue = ResourceTool.getResourceName(port.asResource().toString(),AwsPrefix.nic);
+            String portIdTagValue = ResourceTool.getResourceName(port.asResource().toString(), AwsPrefix.nic);
             String portId = getResourceId(portIdTagValue);
 
             NetworkInterface p = ec2Client.getNetworkInterface(portId);
@@ -801,7 +822,7 @@ public class AwsPush {
                     ResultSet r3 = executeQuery(query, model, modelReduct);
                     while (r3.hasNext()) //search in the model to see if subnet existed before
                     {
-                        subnetId = ResourceTool.getResourceName(subnet.asResource().toString(),AwsPrefix.subnet);
+                        subnetId = ResourceTool.getResourceName(subnet.asResource().toString(), AwsPrefix.subnet);
                         subnetId = getResourceId(subnetId);
                         break;
                     }
@@ -884,7 +905,7 @@ public class AwsPush {
                 throw new EJBException(String.format("model reduction does not specify service of node: %s", node));
             }
 
-            String nodeIdTagValue = ResourceTool.getResourceName(node.asResource().toString(),AwsPrefix.instance);
+            String nodeIdTagValue = ResourceTool.getResourceName(node.asResource().toString(), AwsPrefix.instance);
             String nodeId = getInstanceId(nodeIdTagValue);
 
             Instance instance = ec2Client.getInstance(nodeId);
@@ -913,7 +934,7 @@ public class AwsPush {
             QuerySolution q = r.next();
             RDFNode port = q.get("port");
             RDFNode node = q.get("node");
-            String nodeIdTag = ResourceTool.getResourceName(node.asResource().toString(),AwsPrefix.instance);
+            String nodeIdTag = ResourceTool.getResourceName(node.asResource().toString(), AwsPrefix.instance);
             query = "SELECT ?node WHERE {<" + node.asResource() + "> a nml:Node}";
             ResultSet r1 = executeQuery(query, model, emptyModel);
             ResultSet r1_1 = executeQuery(query, emptyModel, modelReduct);
@@ -922,9 +943,9 @@ public class AwsPush {
                 String nodeId = getInstanceId(nodeIdTag);
                 i = ec2Client.getInstance(nodeId);
             }
-            while (r1.hasNext() && !r1_1.hasNext()) {
+            while (r1.hasNext() && !r1.hasNext()) {
                 r1.next();
-                String portIdTag = ResourceTool.getResourceName(port.asResource().toString(),AwsPrefix.nic);
+                String portIdTag = ResourceTool.getResourceName(port.asResource().toString(), AwsPrefix.nic);
 
                 query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:type \"network-interface\"}";
                 ResultSet r2 = executeQuery(query, model, modelReduct);
@@ -933,6 +954,7 @@ public class AwsPush {
                 }
 
                 String attachmentId = "";
+                int deviceIndex = 0;
                 for (InstanceNetworkInterface eni : i.getNetworkInterfaces()) {
                     if (eni.getNetworkInterfaceId().equals(getResourceId(portIdTag))) {
                         attachmentId = eni.getAttachment().getAttachmentId();
@@ -965,7 +987,7 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode volume = querySolution.get("volume");
-            String volumeIdTagValue = ResourceTool.getResourceName(volume.asResource().toString(),AwsPrefix.volume);
+            String volumeIdTagValue = ResourceTool.getResourceName(volume.asResource().toString(), AwsPrefix.volume);
             String volumeId = getVolumeId(volumeIdTagValue);
 
             Volume v = ec2Client.getVolume(volumeId);
@@ -1080,7 +1102,7 @@ public class AwsPush {
                 continue;
             }
 
-            String tableIdTag = ResourceTool.getResourceName(table.asResource().toString(),AwsPrefix.routingTable);
+            String tableIdTag = ResourceTool.getResourceName(table.asResource().toString(), AwsPrefix.routingTable);
 
             //make sure the new route will have all the source subnets as the table already has
             //take as reference the main route of the route table
@@ -1132,12 +1154,15 @@ public class AwsPush {
                 String destination = value.asLiteral().toString();
                 String target;
                 String gatewayId;
+
+                //check next hop
                 if (nextHop.isLiteral()) {
                     target = nextHop.asLiteral().toString();
                     gatewayId = target;
                 } else {
-                    target = ResourceTool.getResourceName(nextHop.asResource().toString(),AwsPrefix.gateway);
-                    query = String.format("SELECT ?gateway WHERE{<%s> a owl:NamedIndividual}", target);
+                    String nextHopResource = nextHop.asResource().toString();
+                    target = ResourceTool.getResourceName(nextHop.asResource().toString(), AwsPrefix.gateway);
+                    query = String.format("SELECT ?gateway WHERE{<%s> a owl:NamedIndividual}", nextHopResource);
                     ResultSet r3 = executeQuery(query, model, modelReduct);
                     if (!r3.hasNext()) {
                         throw new EJBException(String.format("next hop %s does not exist in delta "
@@ -1181,6 +1206,7 @@ public class AwsPush {
             QuerySolution querySolution = r.next();
             RDFNode value = querySolution.get("routeFrom");
             RDFNode route = querySolution.get("route");
+            RDFNode routeFrom = querySolution.get("routeFrom");
 
             //routeFrom must be a subnet
             query = "SELECT ?a WHERE {<" + value.asResource().toString() + "> a mrs:SwitchingSubnet}";
@@ -1200,9 +1226,9 @@ public class AwsPush {
             QuerySolution querySolution1 = r1.next();
             RDFNode table = querySolution1.get("table");
 
-            String subnetIdTag = ResourceTool.getResourceName(value.asResource().toString(),AwsPrefix.subnet);
+            String subnetIdTag = ResourceTool.getResourceName(value.asResource().toString(), AwsPrefix.subnet);
             String subnetId = getResourceId(subnetIdTag);
-            String tableIdTag = ResourceTool.getResourceName(table.asResource().toString(),AwsPrefix.routingTable);
+            String tableIdTag = ResourceTool.getResourceName(table.asResource().toString(), AwsPrefix.routingTable);
 
             if (ec2Client.getSubnet(subnetId) == null) {
                 throw new EJBException(String.format("subnet %s to disassociate from"
@@ -1228,9 +1254,8 @@ public class AwsPush {
                 while (r2.hasNext()) {
                     QuerySolution q2 = r2.next();
                     RDFNode ro = q2.get("route");
-                    query = "SELECT ?routeFrom WHERE {<" + ro.asResource() + "> mrs:routeFrom ?routeFrom ."
-                            + String.format("FILTER (?routeFrom = <%s>)}", topologyUri + subnetIdTag);
-                    ResultSet r3 = executeQuery(query, emptyModel, modelReduct);
+                    query = "SELECT ?routeFrom WHERE {<" + routeFrom.asResource() + "> a mrs:SwitchingSubnet}";
+                    ResultSet r3 = executeQuery(query, model, modelReduct);
                     if (!r3.hasNext()) {
                         continueFlag = true;
                         break;
@@ -1277,7 +1302,7 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution q = r.next();
             RDFNode igw = q.get("igw");
-            String idTag = ResourceTool.getResourceName(igw.asResource().toString(),AwsPrefix.gateway);
+            String idTag = ResourceTool.getResourceName(igw.asResource().toString(), AwsPrefix.gateway);
 
             //look too see if resource is a internet gateway or not
             query = "SELECT ?type WHERE {<" + igw.asResource() + "> mrs:type ?type ."
@@ -1297,7 +1322,7 @@ public class AwsPush {
             }
             q = r1.next();
             RDFNode vpc = q.get("vpc");
-            String vpcIdTag = ResourceTool.getResourceName(vpc.asResource().toString(),AwsPrefix.vpc);
+            String vpcIdTag = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.vpc);
 
             //check that the vpc is of type topology
             query = "SELECT ?vpc WHERE {<" + vpc.asResource() + "> a nml:Topology}";
@@ -1355,8 +1380,8 @@ public class AwsPush {
                     + "}";
             ResultSet r1 = executeQueryUnion(query, model, modelReduct);
             if (r1.hasNext()) {
-                String gatewayIdTag = ResourceTool.getResourceName(gateway.asResource().toString(),AwsPrefix.gateway);
-                String vpcIdTag = ResourceTool.getResourceName(vpc.asResource().toString(),AwsPrefix.vpc);
+                String gatewayIdTag = ResourceTool.getResourceName(gateway.asResource().toString(), AwsPrefix.gateway);
+                String vpcIdTag = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.vpc);
                 requests += String.format("detachVpnGatewayRequest %s %s \n", gatewayIdTag, vpcIdTag);
             }
         }
@@ -1378,7 +1403,7 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode table = querySolution.get("table");
-            String tableIdTagValue = ResourceTool.getResourceName(table.asResource().toString(),AwsPrefix.routingTable);
+            String tableIdTagValue = ResourceTool.getResourceName(table.asResource().toString(), AwsPrefix.routingTable);
             String tableId = getTableId(tableIdTagValue);
             if (ec2Client.getRoutingTable(tableId) != null) {
                 //check route table is modeled 
@@ -1412,7 +1437,7 @@ public class AwsPush {
                 querySolution1 = r1.next();
                 RDFNode address = querySolution1.get("address");
                 RDFNode vpc = querySolution1.get("vpc");
-                String vpcIdTagValue = ResourceTool.getResourceName(vpc.asResource().toString(),AwsPrefix.vpc);
+                String vpcIdTagValue = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.vpc);
 
                 //if the table was a main table, it was created with
                 //the vpc
@@ -1462,7 +1487,7 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode vpc = querySolution.get("vpc");
-            String vpcIdTagValue = ResourceTool.getResourceName(vpc.asResource().toString(),AwsPrefix.vpc);
+            String vpcIdTagValue = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.vpc);
             String vpcId = getVpcId(vpcIdTagValue);
 
             //double check vpc does not exist in the cloud
@@ -1526,7 +1551,7 @@ public class AwsPush {
 
                 querySolution1 = r1.next();
                 RDFNode routingTable = querySolution1.get("routingTable");
-                String routeTableIdTagValue = ResourceTool.getResourceName(routingTable.asResource().toString(),AwsPrefix.routingTable);
+                String routeTableIdTagValue = ResourceTool.getResourceName(routingTable.asResource().toString(), AwsPrefix.routingTable);
 
                 //add routeTable id tag to the request to tatg the main route Table later
                 String vpcIp = cidrBlock;
@@ -1563,7 +1588,7 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode subnet = querySolution.get("subnet");
-            String subnetIdTagValue = ResourceTool.getResourceName(subnet.asResource().toString(),AwsPrefix.subnet);
+            String subnetIdTagValue = ResourceTool.getResourceName(subnet.asResource().toString(), AwsPrefix.subnet);
             String subnetId = getResourceId(subnetIdTagValue);
 
             Subnet s = ec2Client.getSubnet(subnetId);
@@ -1590,7 +1615,7 @@ public class AwsPush {
                 }
                 querySolution1 = r1.next();
                 RDFNode vpc = querySolution1.get("vpc");
-                String vpcIdTagValue = ResourceTool.getResourceName(vpc.asResource().toString(),AwsPrefix.subnet);
+                String vpcIdTagValue = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.subnet);
 
                 query = "SELECT ?subnet ?address ?value WHERE {<" + subnet.asResource() + "> mrs:hasNetworkAddress ?address ."
                         + "?address a mrs:NetworkAddress ."
@@ -1622,7 +1647,7 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode vpc = querySolution.get("vpc");
-            String vpcIdTagValue = ResourceTool.getResourceName(vpc.asResource().toString(),AwsPrefix.subnet);
+            String vpcIdTagValue = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.vpc);
             String vpcId = getVpcId(vpcIdTagValue);
 
             //double check vpc does not exist in the cloud
@@ -1685,7 +1710,7 @@ public class AwsPush {
 
                 querySolution1 = r1.next();
                 RDFNode routingTable = querySolution1.get("routingTable");
-                String routeTableIdTagValue = ResourceTool.getResourceName(routingTable.asResource().toString(),AwsPrefix.routingTable);
+                String routeTableIdTagValue = ResourceTool.getResourceName(routingTable.asResource().toString(), AwsPrefix.routingTable);
 
                 String vpcIp = cidrBlock;
                 cidrBlock = "\"" + cidrBlock + "\"";
@@ -1721,7 +1746,7 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode subnet = querySolution.get("subnet");
-            String subnetIdTagValue = ResourceTool.getResourceName(subnet.asResource().toString(),AwsPrefix.subnet);
+            String subnetIdTagValue = ResourceTool.getResourceName(subnet.asResource().toString(), AwsPrefix.subnet);
             String subnetId = getResourceId(subnetIdTagValue);
 
             Subnet s = ec2Client.getSubnet(subnetId);
@@ -1748,7 +1773,7 @@ public class AwsPush {
                 }
                 querySolution1 = r1.next();
                 RDFNode vpc = querySolution1.get("vpc");
-                String vpcIdTagValue = ResourceTool.getResourceName(vpc.asResource().toString(),AwsPrefix.vpc);
+                String vpcIdTagValue = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.vpc);
 
                 query = "SELECT ?subnet ?address ?value WHERE {<" + subnet.asResource() + "> mrs:hasNetworkAddress ?address ."
                         + "?address a mrs:NetworkAddress ."
@@ -1784,7 +1809,7 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode table = querySolution.get("table");
-            String tableIdTagValue = ResourceTool.getResourceName(table.asResource().toString(),AwsPrefix.routingTable);
+            String tableIdTagValue = ResourceTool.getResourceName(table.asResource().toString(), AwsPrefix.routingTable);
             String tableId = getTableId(tableIdTagValue);
             if (ec2Client.getRoutingTable(tableId) != null) //routing table already exists
             {
@@ -1821,7 +1846,7 @@ public class AwsPush {
                 querySolution1 = r1.next();
                 RDFNode address = querySolution1.get("address");
                 RDFNode vpc = querySolution1.get("vpc");
-                String vpcIdTagValue = ResourceTool.getResourceName(vpc.asResource().toString(),AwsPrefix.vpc);
+                String vpcIdTagValue = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.vpc);
 
                 //if the table was a main table, it was created with
                 //the vpc
@@ -1873,6 +1898,7 @@ public class AwsPush {
             QuerySolution querySolution = r.next();
             RDFNode value = querySolution.get("routeFrom");
             RDFNode route = querySolution.get("route");
+            RDFNode routeFrom = querySolution.get("routeFrom");
 
             //routeFrom must be a subnet
             query = "SELECT ?a WHERE {<" + value.asResource().toString() + "> a mrs:SwitchingSubnet}";
@@ -1892,8 +1918,8 @@ public class AwsPush {
             QuerySolution querySolution1 = r1.next();
             RDFNode table = querySolution1.get("table");
 
-            String subnetIdTag = ResourceTool.getResourceName(value.asResource().toString(),AwsPrefix.subnet);
-            String tableIdTag = ResourceTool.getResourceName(table.asResource().toString(),AwsPrefix.routingTable);
+            String subnetIdTag = ResourceTool.getResourceName(value.asResource().toString(), AwsPrefix.subnet);
+            String tableIdTag = ResourceTool.getResourceName(table.asResource().toString(), AwsPrefix.routingTable);
 
             RouteTable rt = ec2Client.getRoutingTable(getTableId(tableIdTag));
             if (rt == null) {
@@ -1914,9 +1940,8 @@ public class AwsPush {
                 while (r2.hasNext()) {
                     QuerySolution q2 = r2.next();
                     RDFNode ro = q2.get("route");
-                    query = "SELECT ?routeFrom WHERE {<" + ro.asResource() + "> mrs:routeFrom ?routeFrom ."
-                            + String.format("FILTER (?routeFrom = <%s>)}", topologyUri + subnetIdTag);
-                    ResultSet r3 = executeQuery(query, emptyModel, modelAdd);
+                    query = "SELECT ?routeFrom WHERE {<" + routeFrom.asResource() + "> a mrs:SwitchingSubnet}";
+                    ResultSet r3 = executeQuery(query, model, modelAdd);
                     if (!r3.hasNext()) {
                         throw new EJBException(String.format("Route  %s does state"
                                 + "new association with subnet %s in the model addition", ro, subnetIdTag));
@@ -1946,13 +1971,13 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution q = r.next();
             RDFNode igw = q.get("igw");
-            String idTag = ResourceTool.getResourceName(igw.asResource().toString(),AwsPrefix.gateway);
+            String idTag = ResourceTool.getResourceName(igw.asResource().toString(), AwsPrefix.gateway);
 
             //look for the type in the reference model
             query = "SELECT ?type WHERE {<" + igw.asResource() + "> mrs:type ?type ."
                     + "FILTER(?type In (\"internet-gateway\",\"vpn-gateway\"))}";
             ResultSet r1 = executeQuery(query, model, modelAdd);
-            if(!r1.hasNext()){
+            if (!r1.hasNext()) {
                 continue; //not a gateway
             }
             QuerySolution q1 = r1.next();
@@ -1966,7 +1991,7 @@ public class AwsPush {
             }
             q = r1.next();
             RDFNode vpc = q.get("vpc");
-            String vpcIdTag = ResourceTool.getResourceName(vpc.asResource().toString(),AwsPrefix.vpc);
+            String vpcIdTag = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.vpc);
 
             //check that the vpc is of type topology
             query = "SELECT ?vpc WHERE {<" + vpc.asResource() + "> a nml:Topology}";
@@ -2025,8 +2050,8 @@ public class AwsPush {
                     + "}";
             ResultSet r1 = executeQueryUnion(query, model, modelAdd);
             if (r1.hasNext()) {
-                String gatewayIdTag = ResourceTool.getResourceName(gateway.asResource().toString(),AwsPrefix.gateway);
-                String vpcIdTag = ResourceTool.getResourceName(vpc.asResource().toString(),AwsPrefix.vpc);
+                String gatewayIdTag = ResourceTool.getResourceName(gateway.asResource().toString(), AwsPrefix.gateway);
+                String vpcIdTag = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.vpc);
                 requests += String.format("AttachVpnGatewayRequest %s %s \n", gatewayIdTag, vpcIdTag);
             }
         }
@@ -2101,7 +2126,7 @@ public class AwsPush {
                 continue;
             }
 
-            String tableIdTag = ResourceTool.getResourceName(table.asResource().toString(),AwsPrefix.routingTable);
+            String tableIdTag = ResourceTool.getResourceName(table.asResource().toString(), AwsPrefix.routingTable);
 
             //make sure the new route will have all the source subnets as the table already has
             //take as reference the main route of the route table
@@ -2170,13 +2195,15 @@ public class AwsPush {
                 String destination = value.asLiteral().toString();
                 String target;
                 String gatewayId;
+
+                //check next Hop
                 if (nextHop.isLiteral()) {
                     target = nextHop.asLiteral().toString();
                     gatewayId = target;
                     tempRequest = String.format("CreateRouteRequest %s %s %s \n", tableIdTag, destination, target);
                 } else {
                     String targetResource = nextHop.asResource().toString();
-                    target = ResourceTool.getResourceName(nextHop.asResource().toString(),AwsPrefix.gateway);
+                    target = ResourceTool.getResourceName(nextHop.asResource().toString(), AwsPrefix.gateway);
                     gatewayId = getResourceId(target);
                     //if the resource is a vpn gateway then just do a vpngateway propagation
                     //instead of route addition
@@ -2218,7 +2245,7 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode volume = querySolution.get("volume");
-            String volumeIdTagValue = ResourceTool.getResourceName(volume.asResource().toString(),AwsPrefix.volume);
+            String volumeIdTagValue = ResourceTool.getResourceName(volume.asResource().toString(), AwsPrefix.volume);
             String volumeId = getVolumeId(volumeIdTagValue);
 
             Volume v = ec2Client.getVolume(volumeId);
@@ -2290,7 +2317,7 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode port = querySolution.get("port");
-            String portIdTagValue = ResourceTool.getResourceName(port.asResource().toString(),AwsPrefix.nic);
+            String portIdTagValue = ResourceTool.getResourceName(port.asResource().toString(), AwsPrefix.nic);
             String portId = getResourceId(portIdTagValue);
 
             NetworkInterface p = ec2Client.getNetworkInterface(portId);
@@ -2325,7 +2352,7 @@ public class AwsPush {
                     ResultSet r3 = executeQuery(query, model, modelAdd);
                     while (r3.hasNext()) //search in the model to see if subnet existed before
                     {
-                        subnetId = ResourceTool.getResourceName(subnet.asResource().toString(),AwsPrefix.subnet);
+                        subnetId = ResourceTool.getResourceName(subnet.asResource().toString(), AwsPrefix.subnet);
                         subnetId = getResourceId(subnetId);
                         break;
                     }
@@ -2355,7 +2382,7 @@ public class AwsPush {
             QuerySolution querySolution1 = r1.next();
             RDFNode address = querySolution1.get("address");
             RDFNode port = querySolution1.get("port");
-            String portIdTagValue = ResourceTool.getResourceName(port.asResource().toString(),AwsPrefix.nic);
+            String portIdTagValue = ResourceTool.getResourceName(port.asResource().toString(), AwsPrefix.nic);
             query = "SELECT  ?a WHERE {<" + address.asResource() + ">  mrs:type \"ipv4:public\"}";
             ResultSet r2 = executeQuery(query, model, emptyModel);
             if (r2.hasNext()) {
@@ -2367,7 +2394,7 @@ public class AwsPush {
                 }
                 QuerySolution querySolution2 = r2.next();
                 RDFNode value = querySolution2.get("value");
-                String publicAddress = ResourceTool.getResourceName(value.asLiteral().toString(),AwsPrefix.publicAddress);
+                String publicAddress = ResourceTool.getResourceName(value.asLiteral().toString(), AwsPrefix.publicAddress);
                 requests += "AssociateAddressRequest " + publicAddress + " " + portIdTagValue
                         + " \n";
             }
@@ -2390,7 +2417,7 @@ public class AwsPush {
             QuerySolution q = r.next();
             RDFNode port = q.get("port");
             RDFNode node = q.get("node");
-            String nodeIdTag = ResourceTool.getResourceName(node.asResource().toString(),AwsPrefix.instance);
+            String nodeIdTag = ResourceTool.getResourceName(node.asResource().toString(), AwsPrefix.instance);
             query = "SELECT ?node WHERE {<" + node.asResource() + "> a nml:Node}";
             ResultSet r1 = executeQuery(query, model, emptyModel);
             Instance i = null;
@@ -2402,7 +2429,7 @@ public class AwsPush {
             }
             while (r1.hasNext()) {
                 r1.next();
-                String portIdTag = ResourceTool.getResourceName(port.asResource().toString(),AwsPrefix.nic);
+                String portIdTag = ResourceTool.getResourceName(port.asResource().toString(), AwsPrefix.nic);
 
                 query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:type \"network-interface\"}";
                 ResultSet r2 = executeQuery(query, model, modelAdd);
@@ -2440,7 +2467,7 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode node = querySolution.get("node");
-            String nodeIdTagValue = ResourceTool.getResourceName(node.asResource().toString(),AwsPrefix.instance);
+            String nodeIdTagValue = ResourceTool.getResourceName(node.asResource().toString(), AwsPrefix.instance);
             String nodeId = getInstanceId(nodeIdTagValue);
 
             Instance instance = ec2Client.getInstance(nodeId);
@@ -2464,7 +2491,7 @@ public class AwsPush {
                 }
                 QuerySolution querySolution1 = r1.next();
                 RDFNode vpc = querySolution1.get("vpc");
-                String vpcId = ResourceTool.getResourceName(vpc.asResource().toString(),AwsPrefix.vpc);
+                String vpcId = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.vpc);
 
                 //to find the subnet the node is in first  find the port the node uses
                 query = "SELECT ?port WHERE {<" + node.asResource() + "> nml:hasBidirectionalPort ?port}";
@@ -2478,7 +2505,7 @@ public class AwsPush {
                 {
                     QuerySolution querySolution2 = r2.next();
                     RDFNode port = querySolution2.get("port");
-                    String id = ResourceTool.getResourceName(port.asResource().toString(),AwsPrefix.nic);
+                    String id = ResourceTool.getResourceName(port.asResource().toString(), AwsPrefix.nic);
                     portsId.add(getResourceId(id));
                     lastPort = port;
                 }
@@ -2496,7 +2523,7 @@ public class AwsPush {
                 {
                     QuerySolution querySolution4 = r4.next();
                     RDFNode volume = querySolution4.get("volume");
-                    String id = ResourceTool.getResourceName(volume.asResource().toString(),AwsPrefix.volume);
+                    String id = ResourceTool.getResourceName(volume.asResource().toString(), AwsPrefix.volume);
                     volumesId.add(getVolumeId(id));
                 }
 
@@ -2514,7 +2541,7 @@ public class AwsPush {
                 while (r4.hasNext()) {
                     QuerySolution querySolution4 = r4.next();
                     RDFNode volume = querySolution4.get("volume");
-                    String volumeTag = ResourceTool.getResourceName(volume.asResource().toString(),AwsPrefix.volume);
+                    String volumeTag = ResourceTool.getResourceName(volume.asResource().toString(), AwsPrefix.volume);
                     String type = querySolution4.get("type").asLiteral().toString();
                     String size = querySolution4.get("size").asLiteral().toString();
                     String deviceName = querySolution4.get("deviceName").asLiteral().toString();
@@ -2554,9 +2581,9 @@ public class AwsPush {
         while (r1.hasNext()) {
             QuerySolution querySolution1 = r1.next();
             RDFNode node = querySolution1.get("node");
-            String nodeTagId = ResourceTool.getResourceName(node.asResource().toString(),AwsPrefix.instance);
+            String nodeTagId = ResourceTool.getResourceName(node.asResource().toString(), AwsPrefix.instance);
             RDFNode volume = querySolution1.get("volume");
-            String volumeTagId = ResourceTool.getResourceName(volume.asResource().toString(),AwsPrefix.volume);
+            String volumeTagId = ResourceTool.getResourceName(volume.asResource().toString(), AwsPrefix.volume);
             String volumeId = getVolumeId(volumeTagId);
 
             query = "SELECT ?deviceName WHERE{<" + volume.asResource() + "> mrs:target_device ?deviceName}";
@@ -2663,8 +2690,8 @@ public class AwsPush {
                 throw new EJBException(String.format("Gateway %s is not a vpn gateway", gateway));
             }
 
-            String gatewayIdTag = ResourceTool.getResourceName(gateway.asResource().toString(),AwsPrefix.gateway);
-            String interfaceId = ResourceTool.getResourceName(vInterface.asResource().toString(),AwsPrefix.vif);
+            String gatewayIdTag = ResourceTool.getResourceName(gateway.asResource().toString(), AwsPrefix.gateway);
+            String interfaceId = ResourceTool.getResourceName(vInterface.asResource().toString(), AwsPrefix.vif);
 
             requests += String.format("AcceptVirtualInterface %s %s \n", interfaceId, gatewayIdTag);
         }
@@ -2727,8 +2754,8 @@ public class AwsPush {
                 throw new EJBException(String.format("Gateway %s is not a vpn gateway", gateway));
             }
 
-            String gatewayIdTag = ResourceTool.getResourceName(gateway.asResource().toString(),AwsPrefix.gateway);
-            String interfaceId = ResourceTool.getResourceName(vInterface.asResource().toString(),AwsPrefix.vif);
+            String gatewayIdTag = ResourceTool.getResourceName(gateway.asResource().toString(), AwsPrefix.gateway);
+            String interfaceId = ResourceTool.getResourceName(vInterface.asResource().toString(), AwsPrefix.vif);
 
             requests += String.format("DeleteVirtualInterface %s %s \n", interfaceId, gatewayIdTag);
         }

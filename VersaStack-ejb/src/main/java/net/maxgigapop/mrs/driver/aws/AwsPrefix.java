@@ -11,52 +11,54 @@ package net.maxgigapop.mrs.driver.aws;
  */
 public class AwsPrefix {
     
-    public static String bucket = "bucket-";
+    public static String bucket = "aws.amazon.cloud:bucket+%s";
     
-    public static String ebsService = "ebsservice-";
+    public static String ebsService = "aws.amazon.cloud:ebsservice+%s";
 
-    public static String ec2Service = "ec2service-";
+    public static String ec2Service = "aws.amazon.cloud:ec2service+%s";
 
-    public static String directConnectService = "directconnect";
+    public static String directConnectService = "aws.amazon.cloud:directconnect+%s";
 
-    public static String gateway = "gateway-";
+    public static String gateway = "aws.amazon.cloud:gateway+%s";
 
-    public static String instance = "instance-";
+    public static String instance = "aws.amazon.cloud:vpc+%s:subnet+%s:instance+%s";
 
-    public static String labelGroup = "labelGroup-";
+    public static String labelGroup = "aws.amazon.cloud:vif+%s:labelgroup+%s";
 
-    public static String nic = "nic-";
+    public static String nic = "aws.amazon.cloud:vpc+%s:subnet+%s:nic+%s";
     
-    public static String publicAddress = "public-address";
+    public static String nicNetworkAddress = "aws.amazon.cloud:vpc+%s:subnet+%s:nic+%s:ip+%s";
+    
+    public static String publicAddress = "aws.amazon.cloud:public-address";
 
-    public static String route = "route-";
+    public static String route = "aws.amazon.cloud:vpc+%s:routingtable+%s:route+%s";
 
-    public static String routeFrom = "routeFrom-";
+    public static String routeFrom = "aws.amazon.cloud:vpc+%s:routingtable+%s:route+%s:routefrom";
 
-    public static String routeTo = "routeTo-";
+    public static String routeTo = "aws.amazon.cloud:vpc+%s:routingtable+%s:route+%s:routeto";
 
-    public static String routingService = "routingservice-";
+    public static String routingService = "aws.amazon.cloud:vpc+%s:routingservice";
 
-    public static String routingTable = "routing-table-";
+    public static String routingTable = "aws.amazon.cloud:vpc+%s:routingtable+%s";
 
-    public static String s3Service = "s3service-";
+    public static String s3Service = "aws.amazon.cloud:s3service+%s";
 
-    public static String subnet = "subnet-";
+    public static String subnet = "aws.amazon.cloud:vpc+%s:subnet+%s";
 
-    public static String subnetNetworkAddress = "subnetnetworkaddress-";
+    public static String subnetNetworkAddress = "aws.amazon.cloud:vpc+%s:subnet+%s:cidr";
 
-    public static String switchingService = "switchingservice-";
+    public static String switchingService = "aws.amazon.cloud:vpc+%s:switchingservice";
 
-    public static String vif = "vif-";
+    public static String vif = "aws.amazon.cloud:vif%s";
 
-    public static String vlan = "vlan-";
+    public static String vlan = "aws.amazon.cloud:vif+%s:vlan+%s";
 
-    public static String volume = "volume-";
+    public static String volume = "aws.amazon.cloud:volume+%s";
 
-    public static String vpc = "vpc-";
+    public static String vpc = "aws.amazon.cloud:vpc+%s";
 
-    public static String vpcNetworkAddress = "vpcnetworkaddress-";
+    public static String vpcNetworkAddress = "aws.amazon.cloud:vpc+%s:cidr";
 
-    public static String vpcService = "vpcservice-";
+    public static String vpcService = "aws.amazon.cloud:vpcservice+%s";
 
 }
