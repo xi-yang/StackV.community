@@ -32,6 +32,8 @@ public class OpenStackGet {
     private List<Subnet> subnets = new ArrayList<>();
     private List<Port> ports = new ArrayList<>();
     private List<Server> servers = new ArrayList<>();
+    private List<Image> images = new ArrayList<>();
+    private List<Flavor> flavors = new ArrayList<>();
     private List<Volume> volumes = new ArrayList<>();
     private List<NetFloatingIP> floatingIps = new ArrayList<>();
     private List<Router> routers = new ArrayList<>();
@@ -53,38 +55,145 @@ public class OpenStackGet {
 
     public void fetchAddResources(OSClient client) {
         List<? extends Network> nets = client.networking().network().list();
-        if (nets != null && !nets.isEmpty())
+        if (nets != null && !nets.isEmpty()) {
             networks.addAll(nets);
+        }
         List<? extends Subnet> subs = client.networking().subnet().list();
-        if (subs != null && !subs.isEmpty())
+        if (subs != null && !subs.isEmpty()) {
             subnets.addAll(subs);
+        }
         List<? extends Port> pors = client.networking().port().list();
-        if (pors != null && !pors.isEmpty())
+        if (pors != null && !pors.isEmpty()) {
             ports.addAll(pors);
+        }
         List<? extends Server> sers = client.compute().servers().list();
-        if (sers != null && !sers.isEmpty())
+        if (sers != null && !sers.isEmpty()) {
             servers.addAll(sers);
+        }
+        List<? extends Image> imgs = client.compute().images().list();
+        if (imgs != null && !imgs.isEmpty()) {
+            images.addAll(imgs);
+        }
+        List<? extends Flavor> flas = client.compute().flavors().list();
+        if (flas != null && !flas.isEmpty()) {
+            flavors.addAll(flas);
+        }
         List<? extends Volume> vols = client.blockStorage().volumes().list();
-        if (vols != null && !vols.isEmpty())
+        if (vols != null && !vols.isEmpty()) {
             volumes.addAll(vols);
+        }
         List<? extends NetFloatingIP> fips = client.networking().floatingip().list();
-        if (fips != null && !fips.isEmpty())
+        if (fips != null && !fips.isEmpty()) {
             floatingIps.addAll(fips);
+        }
         List<? extends Router> rous = client.networking().router().list();
-        if (rous != null && !rous.isEmpty())
+        if (rous != null && !rous.isEmpty()) {
             routers.addAll(rous);
+        }
         List<? extends NovaFloatingIP> nfips = (List<NovaFloatingIP>) client.compute().floatingIps().list();
-        if (nfips != null && !nfips.isEmpty())
+        if (nfips != null && !nfips.isEmpty()) {
             novafloatingIps.addAll(nfips);
-        for (Server server: servers) {
+        }
+        for (Server server : servers) {
             Map<String, String> data = client.compute().servers().getMetadata(server.getId());
-            if (metadata == null && !data.isEmpty())
+            if (metadata == null && !data.isEmpty()) {
                 metadata = new HashMap<>();
-            if (!data.isEmpty())
+            }
+            if (!data.isEmpty()) {
                 metadata.put(server, data);
+            }
         }
     }
-            
+
+    public void updateResources(String type) {
+        switch (type) {
+            case "Network":
+                networks.clear();
+                List<? extends Network> nets = client.networking().network().list();
+                if (nets != null && !nets.isEmpty()) {
+                    networks.addAll(nets);
+                }
+                break;
+            case "Subnet":
+                subnets.clear();
+                List<? extends Subnet> subs = client.networking().subnet().list();
+                if (subs != null && !subs.isEmpty()) {
+                    subnets.addAll(subs);
+                }
+                break;
+            case "Port":
+                ports.clear();
+                List<? extends Port> pors = client.networking().port().list();
+                if (pors != null && !pors.isEmpty()) {
+                    ports.addAll(pors);
+                }
+                break;
+            case "Server":
+                servers.clear();
+                List<? extends Server> sers = client.compute().servers().list();
+                if (sers != null && !sers.isEmpty()) {
+                    servers.addAll(sers);
+                }
+                break;
+            case "Image":
+                images.clear();
+                List<? extends Image> imgs = client.compute().images().list();
+                if (imgs != null && !imgs.isEmpty()) {
+                    images.addAll(imgs);
+                }
+                break;
+            case "Flavor":
+                flavors.clear();
+                List<? extends Flavor> flas = client.compute().flavors().list();
+                if (flas != null && !flas.isEmpty()) {
+                    flavors.addAll(flas);
+                }
+                break;
+            case "Volume":
+                volumes.clear();
+                List<? extends Volume> vols = client.blockStorage().volumes().list();
+                if (vols != null && !vols.isEmpty()) {
+                    volumes.addAll(vols);
+                }
+                break;
+            case "NetFloatingIP":
+                floatingIps.clear();
+                List<? extends NetFloatingIP> fips = client.networking().floatingip().list();
+                if (fips != null && !fips.isEmpty()) {
+                    floatingIps.addAll(fips);
+                }
+                break;
+            case "Router":
+                routers.clear();
+                List<? extends Router> rous = client.networking().router().list();
+                if (rous != null && !rous.isEmpty()) {
+                    routers.addAll(rous);
+                }
+                break;
+            case "NovaFloatingIP":
+                novafloatingIps.clear();
+                List<? extends NovaFloatingIP> nfips = (List<NovaFloatingIP>) client.compute().floatingIps().list();
+                if (nfips != null && !nfips.isEmpty()) {
+                    novafloatingIps.addAll(nfips);
+                }
+                break;
+            case "MetaData":
+                metadata.clear();
+                for (Server server : servers) {
+                    Map<String, String> data = client.compute().servers().getMetadata(server.getId());
+                    if (metadata == null && !data.isEmpty()) {
+                        metadata = new HashMap<>();
+                    }
+                    if (!data.isEmpty()) {
+                        metadata.put(server, data);
+                    }
+                }
+                break;
+            default:
+                ;
+        }
+    }
+
     //get all the nets in the tenant
     public List<Network> getNetworks() {
         return networks;
@@ -167,6 +276,22 @@ public class OpenStackGet {
             }
         }
         return null;
+    }
+
+    public List<Image> getImages() {
+        return images;
+    }
+
+    public void setImages(List<Image> images) {
+        this.images = images;
+    }
+
+    public List<Flavor> getFlavors() {
+        return flavors;
+    }
+
+    public void setFlavors(List<Flavor> flavors) {
+        this.flavors = flavors;
     }
 
     //get the Networks of  a server
