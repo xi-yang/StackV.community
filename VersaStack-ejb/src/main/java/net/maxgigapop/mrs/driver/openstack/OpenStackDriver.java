@@ -53,12 +53,14 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         String topologyURI = driverInstance.getProperty("topologyUri");
         String url = driverInstance.getProperty("url");
         String NATServer = driverInstance.getProperty("NATServer");
+        String defaultImage = driverInstance.getProperty("defaultImage");
+        String defaultFlavor = driverInstance.getProperty("defaultFlavor");
 
         OntModel model = driverInstance.getHeadVersionItem().getModelRef().getOntModel();
         OntModel modelAdd = aDelta.getModelAddition().getOntModel();
         OntModel modelReduc = aDelta.getModelReduction().getOntModel();
 
-        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, topologyURI);
+        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, topologyURI, defaultImage, defaultFlavor);
         List<JSONObject> requests = null;
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         try {
@@ -88,10 +90,12 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         String topologyURI = driverInstance.getProperty("topologyUri");
         String url = driverInstance.getProperty("url");
         String NATServer = driverInstance.getProperty("NATServer");
+        String defaultImage = driverInstance.getProperty("defaultImage");
+        String defaultFlavor = driverInstance.getProperty("defaultFlavor");
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         String requests = driverInstance.getProperty(requestId);
 
-        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, topologyURI);
+        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, topologyURI, defaultFlavor, defaultFlavor);
         ObjectMapper mapper = new ObjectMapper();
         List<JSONObject> r = new ArrayList();
         try {

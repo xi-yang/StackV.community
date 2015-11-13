@@ -32,11 +32,14 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import net.maxgigapop.mrs.bean.DeltaModel;
+import net.maxgigapop.mrs.bean.DriverInstance;
+import net.maxgigapop.mrs.bean.DriverSystemDelta;
 import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ServiceInstance;
 import net.maxgigapop.mrs.bean.SystemDelta;
 import net.maxgigapop.mrs.bean.SystemInstance;
 import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
+import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ServiceDeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ServiceInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
@@ -65,11 +68,30 @@ public class HandleServiceCall {
 
     public void terminateInstance(String refUUID) {
         ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(refUUID);
+        serviceInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
         if (serviceInstance == null) {
             throw new EJBException(String.format("terminateInstance cannot find the ServiceInstance with referenceUUID=%s", refUUID));
         }
         if (serviceInstance.getServiceDeltas() != null) {
-            // clean up serviceDeltas ?
+            // clean up serviceDeltas
+            for (Iterator<ServiceDelta> svcDeltaIt = serviceInstance.getServiceDeltas().iterator(); svcDeltaIt.hasNext();) {
+                ServiceDelta svcDelta = svcDeltaIt.next();
+                if (svcDelta.getSystemDelta() != null) {
+                    if (svcDelta.getSystemDelta().getDriverSystemDeltas() != null) {
+                        for (Iterator<DriverSystemDelta> dsdIt = svcDelta.getSystemDelta().getDriverSystemDeltas().iterator(); dsdIt.hasNext();) {
+                            DriverSystemDelta dsd = dsdIt.next();
+                            DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(dsd.getDriverInstance().getTopologyUri());
+                            driverInstance.getDriverSystemDeltas().remove(dsd);
+                            DeltaPersistenceManager.delete(dsd);
+                        }
+                    }
+                    SystemInstance systemInstance = SystemInstancePersistenceManager.findBySystemDelta(svcDelta.getSystemDelta());
+                    SystemInstancePersistenceManager.delete(systemInstance);
+                    DeltaPersistenceManager.delete(svcDelta.getSystemDelta());
+                }
+                svcDeltaIt.remove();
+                DeltaPersistenceManager.delete(svcDelta);
+            }
         }
         ServiceInstancePersistenceManager.delete(serviceInstance);
     }
@@ -466,11 +488,6 @@ public class HandleServiceCall {
             // get cached systemInstance
             systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(systemInstance.getReferenceUUID());
 
-            /* changes with the removal of getCommitFlag
-             if (!systemInstance.getCommitFlag()) {
-             throw new EJBException(HandleServiceCall.class.getName() + ".checkStatus encounters un-commited systemInstance based on " + serviceDelta.getSystemDelta());
-             }
-             */
             Future<String> asyncStatus = systemInstance.getCommitStatus();
             serviceDelta.setStatus("FAILED");
             if (asyncStatus.isDone()) {
@@ -480,6 +497,7 @@ public class HandleServiceCall {
                         serviceDelta.setStatus("READY");
                     }
                 } catch (Exception ex) {
+                    //@TODO: add exception into ErrorReport
                     serviceDelta.setStatus("FAILED");
                 }
             } else {
