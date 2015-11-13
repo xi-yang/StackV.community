@@ -35,6 +35,9 @@ import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.Spa;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 /**
  *
@@ -125,21 +128,44 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
         // filter out irrelevant statements (based on property type, label type, has switchingService etc.)
         OntModel transformedModel = MCETools.transformL2NetworkModel(systemModel);
         try {
-            log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--SystemModel=\n" + ModelUtil.marshalModel(transformedModel));
+            log.log(Level.INFO, "\n>>>MCE_MPVlanConnection--SystemModel=\n" + ModelUtil.marshalModel(transformedModel));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
         // get source and destination nodes (nodeA, nodeZ) -- only picks fist two terminals for now 
         List<Resource> terminals = new ArrayList<>();
+        JSONObject jsonStpTeMap = null;
         for (Map entry : connTerminalData) {
             if (!entry.containsKey("data") || !entry.containsKey("type") || !entry.containsKey("value")) {
                 continue;
             }
-            Resource terminal = systemModel.getResource((String) entry.get("value"));
-            if (terminal == null) {
-                throw new EJBException(String.format("%s::process doPathFinding cannot identify terminal <%s>", (String) entry.get("value")));
+            if (entry.get("type").toString().equalsIgnoreCase("JSON")) {
+                // get STPs, VLAN tags and bandwidth
+                // {'stp1_urn': {'vlan_tag': '100', 'vlan_tag_inner': '', 'bandwidth': '100M'}, 'stp2_urn': {'vlan_tag': '101', 'vlan_tag_inner': '', 'bandwidth': '100M'},}
+                JSONParser parser = new JSONParser();
+                Object obj = new Object();
+                try {
+                    obj = parser.parse((String) entry.get("value"));
+                } catch (ParseException e) {
+                    throw new EJBException(String.format("%s::process  cannot parse json string %s", this.getClass().getName(), (String) entry.get("value")));
+                }
+                jsonStpTeMap = (JSONObject) obj;
+                for (Object key: jsonStpTeMap.keySet()) {
+                    Resource terminal = systemModel.getResource((String) key);
+                    if (!systemModel.contains(terminal, null)) {
+                        throw new EJBException(String.format("%s::process doPathFinding cannot identify terminal <%s> in JSON data", (String) entry.get("value")));
+                    }
+                    terminals.add(terminal);
+                }
+            } else if (entry.get("type").toString().equals(Nml.BidirectionalPort.toString()) 
+                    || entry.get("type").toString().equals(Nml.Node.toString()) 
+                    || entry.get("type").toString().equals(Nml.Topology.toString())) {
+                Resource terminal = systemModel.getResource((String) entry.get("value"));
+                if (!systemModel.contains(terminal, null)) {
+                    throw new EJBException(String.format("%s::process doPathFinding cannot identify terminal <%s> of %s type", (String) entry.get("value"), entry.get("type").toString()));
+                }
+                terminals.add(terminal);
             }
-            terminals.add(terminal);
         }
         if (terminals.size() < 2) {
             throw new EJBException(String.format("%s::process cannot doPathFinding for %s which provides fewer than 2 terminals", this.getClass().getName(), resLink));
@@ -158,10 +184,12 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
         while (itP.hasNext()) {
             MCETools.Path candidatePath = itP.next();
             // verify path
+            //@TODO: TE constraint if jsonStpTeMap != null
             if (!MCETools.verifyL2Path(transformedModel, candidatePath)) {
                 itP.remove();
             } else {
                 // generating connection subnets (statements added to candidatePath) while verifying VLAN availability
+                //@TODO: TE constraint if jsonStpTeMap != null
                 OntModel l2PathModel = MCETools.createL2PathVlanSubnets(transformedModel, candidatePath);
                 if (l2PathModel == null) {
                     itP.remove();
