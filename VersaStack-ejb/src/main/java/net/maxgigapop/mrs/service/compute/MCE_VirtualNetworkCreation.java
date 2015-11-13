@@ -187,7 +187,14 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
 
         //2 create the basic topology model
         //2.1 check for type and networkCIDR
-        if (type == null || !type.equalsIgnoreCase("tenant") || !type.equalsIgnoreCase("external")) {
+        if (type == null) {
+            type = "tenant";
+        }
+        else if(type.equalsIgnoreCase("external")){
+            type = "external";
+        }
+        else
+        {
             type = "tenant";
         }
         if (networkCIDR == null) {
