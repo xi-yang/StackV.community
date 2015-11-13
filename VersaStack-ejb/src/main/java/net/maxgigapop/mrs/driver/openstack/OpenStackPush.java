@@ -1305,10 +1305,10 @@ public class OpenStackPush {
                 o.put("server name", serverName);
                 String imageType = defaultImage;
                 String flavorType = defaultFlavor;
-                if (imageType == null || imageType.isEmpty()) {
+                if ((imageType == null || imageType.isEmpty()) && imageID.equals("any")) {
                     throw new EJBException(String.format("Cannot determine server image type."));
                 }
-                if (flavorType == null || flavorType.isEmpty()) {
+                if ((flavorType == null || flavorType.isEmpty()) && flavorID.equals("any")) {
                     throw new EJBException(String.format("Cannot determine server image type."));
                 }
                 if (imageID.equals("any"))
