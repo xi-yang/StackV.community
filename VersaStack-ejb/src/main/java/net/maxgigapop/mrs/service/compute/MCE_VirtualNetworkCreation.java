@@ -257,7 +257,6 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
         Resource resVirtualCloudService = querySolution.get("virtualCloudService").asResource();
 
         //get basic network elements and relations
-        spaModel.add(resTopology, RdfOwl.type, Nml.Topology);
         spaModel.add(resTopology, Nml.hasService, resVirtualCloudService);
         spaModel.add(resTopology, Nml.hasTopology, resNetwork);
         spaModel.add(resVirtualCloudService, Mrs.providesVPC, resNetwork);
