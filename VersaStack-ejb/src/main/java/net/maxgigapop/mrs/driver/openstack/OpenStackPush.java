@@ -612,7 +612,7 @@ public class OpenStackPush {
             o.put("fixed ip", fixvalue);
             o.put("float ip", floatvalue);
                 */
-                String servername = o.get("server name").toString();
+                String servername = o.get("server name fixip").toString();
                 String subnetnamefloat = o.get("subnet name floatip").toString();
                 String subnetnamefix = o.get("subnet name fixip").toString();
                 String fixip = o.get("fixed ip").toString();
@@ -1792,7 +1792,8 @@ public class OpenStackPush {
     private List<JSONObject> isAliasRequest(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
         List<JSONObject> requests = new ArrayList();
         String query = "";
-        query = "SELECT ?fixip ?floatingip WHERE{?fixedip nml:isAlias ?floatingip}";
+        query = "SELECT ?fixip ?floatingip WHERE{?fixedip a mrs:NetworkAddress ."
+                + "?fixip nml:isAlias ?floatingip}";
         ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
         //find the fixip and floatingip
         while (r1.hasNext()) {
@@ -1829,7 +1830,7 @@ public class OpenStackPush {
             String subnetnamefloat = getresourcename(subnetNamefloat, "+", "");
 
             //query for the server
-            query = "SELECT ?server WHERE{?subnet mrs:hasNetworkAddress <" + fixip.asResource() + ">}";
+            query = "SELECT ?server WHERE{?server mrs:hasNetworkAddress <" + fixip.asResource() + ">}";
             r1 = executeQuery(query, emptyModel, modelDelta);
             while (!r1.hasNext()) {
                 throw new EJBException(String.format("routeTo %s  is "
@@ -1880,8 +1881,9 @@ public class OpenStackPush {
             o.put("server name fixip", servername);
             o.put("fixed ip", fixvalue);
             o.put("float ip", floatvalue);
+            requests.add(o);
         }
-
+             
         return requests;
     }
 
