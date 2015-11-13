@@ -18,6 +18,7 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.json.simple.JSONObject;
 
 
 public class serviceBeans {
@@ -450,6 +451,75 @@ public class serviceBeans {
         HashMap<String, ArrayList<String>> retMap = new HashMap<>();
         
         return retMap;
+    }
+    
+    public int creatNetwork(Map<String, String> paraMap){
+        String topoUri = "";
+        String driverType = "";
+        String netCidr = "";
+        for(Map.Entry<String, String> entry : paraMap.entrySet()){
+            if(entry.getKey().equalsIgnoreCase("driverType"))
+                driverType = entry.getValue();
+            else if(entry.getKey().equalsIgnoreCase("topoUri"))
+                topoUri = entry.getValue();
+            else if(entry.getKey().equalsIgnoreCase("netCidr"))
+                netCidr = entry.getValue();
+                    
+        }
+        
+        JSONObject network = new JSONObject();
+        network.put("type", "internal");
+        network.put("cidr", netCidr);
+        network.put("parent", topoUri);
+        
+        JSONObject subnets = new JSONObject();
+        //to be filled
+        network.put("subnets", subnets);
+        
+        JSONObject gateway = new JSONObject();
+        //to be filled
+        network.put("gateways", gateway);
+        
+        JSONObject routes = new JSONObject();
+        routes.put("to","0.0.0.0/0");
+        routes.put("nextHop", "internet");
+        network.put("routes", routes);
+        
+        String svcDelta = "<serviceDelta>\n<uuid>" + UUID.randomUUID().toString()+
+                "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"+
+                "\n\n<modelAddition>\n" +
+                "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n" +
+                "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n" +
+                "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n" +
+                "@prefix rdf:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n" +
+                "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n" +
+                "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n" +
+                "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n" +
+                "&lt;" + topoUri + ":vpc=abstract&gt;\n" +
+                "    a                         nml:Topology ;\n" +
+                "    spa:dependOn &lt;x-policy-annotation:action:create-" + driverType + "-vpc&gt; .\n\n" +
+                "&lt;x-policy-annotation:action:create-" + driverType + "-vpc&gt;\n" +
+                "    a           spa:PolicyAction ;\n" +
+                "    spa:type     \"MCE_NetworkPlacement\" ;\n" +
+                "    spa:importFrom &lt;x-policy-annotation:data:vpc-criteria&gt; ;\n" +
+                "    spa:exportTo &lt;x-policy-annotation:data:vpc-criteriaexport&gt; .\n" +
+                "\n" +
+                "\n" +
+                "&lt;x-policy-annotation:data:vpc-criteria&gt;\n" +
+                "    a            spa:PolicyData;\n" +
+                "    spa:type     nml:Topology;\n" +
+                "    spa:value    \"\"\"" + network.toString().replace("\\", "")+
+                "\"\"\".\n" +
+                "\n" +
+                "\n" +
+                "&lt;x-policy-annotation:data:vpc-criteriaexport&gt;\n" +
+                "    a            spa:PolicyData;\n" +
+                "\n" +
+                "</modelAddition>\n" +
+                "\n" +
+                "</serviceDelta>";
+        
+        return 0;
     }
     
     /**
