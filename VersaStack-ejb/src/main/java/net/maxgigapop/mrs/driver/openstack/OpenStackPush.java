@@ -1311,11 +1311,11 @@ public class OpenStackPush {
                 if (flavorType == null || flavorType.isEmpty()) {
                     throw new EJBException(String.format("Cannot determine server image type."));
                 }
-                if (imageID.equals("any")
+                if (imageID.equals("any"))
                     o.put("image", imageType);
                 else 
                     o.put("image", imageID);
-                if (flavorID.equals("any")
+                if (flavorID.equals("any"))
                     o.put("flavor", flavorType);
                 else 
                     o.put("flavor", flavorID);
