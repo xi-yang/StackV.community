@@ -118,7 +118,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
                 URL url = new URL(String.format("%s/delta/%s/%d", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 String status = this.executeHttpMethod(url, conn, "GET", null);
-                if (status.toUpperCase().equals("ACTIVE")) {
+                if (status.toUpperCase().equals("ACTIVE") || status.toUpperCase().equals("TERMINATED")) {
                     doPoll = false; // committed successfully
                 } else if (status.toUpperCase().contains("FAILED")) {
                     throw new EJBException(String.format("%s failed to commit %s with status=%s", driverInstance, aDelta, status));

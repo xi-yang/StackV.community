@@ -266,14 +266,22 @@
                     evt.preventDefault();
                 });
 
+                $("#loadingButton").click(function (evt) {
+                    $("#loadingPanel").removeClass("hide");
+                    $("#hoverdiv").addClass("hide");
+                    $("#viz").attr("class", "loading");
 
+                    evt.preventDefault();
+                });
 
+                $("#displayPanel-tab").click(function (evt) {
+                    $("#displayPanel").toggleClass("closed");
 
-                $("#loadButton").click(function (evt) {
-                    $("#loadingPanel").toggleClass("hide");
-                    $("#hoverdiv").toggleClass("hide");
+                    evt.preventDefault();
+                });
 
-                    $("#viz").attr("class", "");
+                $("#jobsPanel-tab").click(function (evt) {
+                    $("#jobsPanel").toggleClass("closed");
 
                     evt.preventDefault();
                 });
@@ -482,20 +490,48 @@
                         <button class="button-filter-select" id="${filterName}">${filterName}</button>
                     </c:if>
                 </c:forEach>
+                ${jobs}
+            </div>
+        </div>
+
+        <div class="closed" id="jobsPanel">
+            <div id="jobsPanel-tab">
+                Jobs
+            </div>
+            <div id ="jobsPanel-contents">
+                <table class="management-table" id="jobs-table">
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <c:forEach items="${serv.getJobStatuses()}" var="job">
+                            <tr>
+                                <td>${job.key}</td>
+                                <td>${job.value}</td>
+                            </tr>
+                        </c:forEach>
+                    </tbody>
+                </table>
             </div>
         </div>
 
         <div id="loadingPanel"></div>
-        <div id="displayPanel">
-            <button id="refreshButton">Refresh</button>
-            <button id="modelButton">Display Model</button>
-            <div id="displayName"></div>
-            <div id="treeMenu"></div>
-            <div id="actionMenu">
+        <div class="closed" id="displayPanel">
+            <div id="displayPanel-contents">
+                <button id="refreshButton">Refresh</button>
+                <button id="modelButton">Display Model</button>
+                <div id="displayName"></div>
+                <div id="treeMenu"></div>                
+            </div>
+            <div id="displayPanel-actions">
                 <button id="awsButton">Install AWS</button>
-
+                <button id="loadingButton">Toggle Loading</button>
                 <div id="actionForm"></div>
             </div>
+            <div id="displayPanel-tab">^^^^^</div>
         </div>
         <div class="hide" id="hoverdiv"></div>        
 
