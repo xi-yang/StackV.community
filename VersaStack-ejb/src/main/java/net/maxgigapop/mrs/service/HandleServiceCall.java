@@ -401,12 +401,17 @@ public class HandleServiceCall {
             }
             List<String> includeMatches = new ArrayList<String>();
             List<String> excludeMatches = new ArrayList<String>();
+            /*
             includeMatches.add("#has");
-            includeMatches.add("#provide");
+            includeMatches.add("#provides");
             includeMatches.add("#type");
             includeMatches.add("#value");
+            includeMatches.add("#route");
+            */
+            excludeMatches.add("#isAlias");
+            excludeMatches.add("#providedBy");
             String sparql = "SELECT ?res WHERE {?s ?p ?res. "
-                    + "FILTER(regex(str(?p), '#has|#provide'))"
+                    + "FILTER(regex(str(?p), '#has|#provides'))"
                     + "}";
             try {
                 Context ejbCxt = new InitialContext();
