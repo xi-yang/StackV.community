@@ -113,7 +113,7 @@ public class WebResource {
         try {
             Map<String, String> propMap = input.getProperties();
 
-            int retCode = serv.creatNetwork(propMap);
+            int retCode = serv.createNetwork(propMap);
             switch (retCode) {
                 case 4:
                     return "Parsing parameter error.\n";
