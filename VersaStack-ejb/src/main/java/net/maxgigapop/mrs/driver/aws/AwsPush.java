@@ -1,4 +1,4 @@
-/*
+ /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
@@ -1034,7 +1034,7 @@ public class AwsPush {
             {
                 //check what service is providing the volume
                 query = "SELECT ?type WHERE {?service mrs:providesVolume <" + volume.asResource() + ">}";
-                ResultSet r1 = executeQuery(query, emptyModel, modelReduct);
+                ResultSet r1 = executeQuery(query, model, modelReduct);
                 if (!r1.hasNext()) {
                     throw new EJBException(String.format("model reduction does not specify service that provides volume: %s", volume));
                 }
@@ -1194,8 +1194,9 @@ public class AwsPush {
                     target = nextHop.asLiteral().toString();
                     gatewayId = target;
                 } else {
+                    String targetResource = nextHop.asResource().toString();
                     target = nextHop.asResource().toString().replace(topologyUri, "");
-                    query = String.format("SELECT ?gateway WHERE{<%s> a owl:NamedIndividual}", target);
+                    query = String.format("SELECT ?gateway WHERE{<%s> a owl:NamedIndividual}", targetResource);
                     ResultSet r3 = executeQuery(query, model, modelReduct);
                     if (!r3.hasNext()) {
                         throw new EJBException(String.format("next hop %s does not exist in delta "
@@ -1267,7 +1268,7 @@ public class AwsPush {
                         + " does not exist", tableIdTag));
             } else {
                 for (RouteTableAssociation as : rt.getAssociations()) {
-                    if (as.getSubnetId().equals(getResourceId(subnetIdTag))) {
+                    if (as != null && as.getSubnetId() != null && as.getSubnetId().equals(getResourceId(subnetIdTag))) { //main routeTable may have implicit associations
                         createRequest = true;
                     }
                 }
@@ -1296,14 +1297,24 @@ public class AwsPush {
                 //get the association id of the route table association to delete
                 String associationId = "";
                 for (RouteTableAssociation as : rt.getAssociations()) {
-                    if (as.getSubnetId().equals(subnetId)) {
+                    if (as != null && as.getSubnetId() != null && as.getSubnetId().equals(subnetId)) {
                         associationId = as.getRouteTableAssociationId();
                         break;
                     }
                 }
                 if (associationId.isEmpty()) {
-                    throw new EJBException(String.format("The route table association id for subnet %s"
-                            + " in route tabe %s does not exist", subnetIdTag, tableIdTag));
+                    boolean main = false;
+                    List<RouteTableAssociation> as = rt.getAssociations();
+                    if (!as.isEmpty()) {
+                        main = as.get(0).getMain();
+                    }
+                    if (main == true) //skip this as it is an implicit assco with the main table
+                    {
+                        continue;
+                    } else {
+                        throw new EJBException(String.format("The route table association id for subnet %s"
+                                + " in route tabe %s does not exist", subnetIdTag, tableIdTag));
+                    }
                 }
                 tempRequests = String.format("DisassociateTableRequest %s \n", associationId);
                 if (!requests.contains(tempRequests))//dont include duplicate requests
