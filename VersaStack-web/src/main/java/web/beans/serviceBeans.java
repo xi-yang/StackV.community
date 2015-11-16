@@ -453,7 +453,7 @@ public class serviceBeans {
         return retMap;
     }
     
-    public int creatNetwork(Map<String, String> paraMap){
+    public int createNetwork(Map<String, String> paraMap){
         String topoUri = "";
         String driverType = "";
         String netCidr = "";
@@ -519,7 +519,41 @@ public class serviceBeans {
                 "\n" +
                 "</serviceDelta>";
         
-        return 0;
+        String siUuid;
+        String result;
+        try {
+            URL url = new URL(String.format("%s/service/instance", host));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            siUuid = this.executeHttpMethod(url, connection, "GET", null);
+            if (siUuid.length() != 36)
+                return 2;//Error occurs when interacting with back-end system
+            url = new URL(String.format("%s/service/%s",host,siUuid));
+            HttpURLConnection compile = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, compile, "POST", svcDelta);
+            if(!result.contains("<referenceVersion>"))
+                return 2;//Error occurs when interacting with back-end system
+            url = new URL(String.format("%s/service/%s/propagate",host,siUuid));
+            HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, propagate, "PUT", null);
+            if(!result.equals("PROPAGATED"))
+                return 2;//Error occurs when interacting with back-end system
+            url = new URL(String.format("%s/service/%s/commit",host,siUuid));
+            HttpURLConnection commit = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, commit, "PUT", null);
+            if(!result.equals("COMMITTED"))
+                return 2;//Error occurs when interacting with back-end system
+            url = new URL(String.format("%s/service/%s/status",host,siUuid));
+            HttpURLConnection status = (HttpURLConnection) url.openConnection();
+            while(true){
+                result = this.executeHttpMethod(url, status, "GET", null); 
+                if(result.equals("READY"))
+                    return 0;//create network successfully
+                else if(!result.equals("COMMITED"))
+                    return 3;//Fail to create network
+            }
+        } catch (Exception e) {
+            return 1;//connection error
+        }
     }
     
     /**
