@@ -87,12 +87,12 @@
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <td>Field 1</td>
-                                                <td><input type="text" name="field1" /></td>
+                                                <td>Topology URI</td>
+                                                <td><input type="text" name="topoUri" /></td>
                                             </tr>
                                             <tr>
-                                                <td>Field 2</td>
-                                                <td><input type="text" name="field2" /></td>
+                                                <td>Network CIDR</td>
+                                                <td><input type="text" name="netCidr" /></td>
                                             </tr>
                                             <tr>
                                                 <td>Field 3</td>

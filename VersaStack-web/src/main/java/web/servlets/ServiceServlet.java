@@ -210,10 +210,12 @@ public class ServiceServlet extends HttpServlet {
         
         if (paramMap.containsKey("template1")) { // Basic Template
             // Add template data.
-            paramMap.put(null, null);
+            paramMap.put("driverType", null);
+            paramMap.put("topoUri", null);
+            paramMap.put("netCidr", null);
             
             
-            // retCode = servBean.netCreate(paramMap);
+            retCode = servBean.createNetwork(paramMap);
         }
         
         return ("/VersaStack-web/ops/srvc/netcreate.jsp?ret=" + retCode);
