@@ -45,7 +45,7 @@ public class ResourceTool {
             if (patternMatch(name, pattern) == true) {
                 return getShortName(name);
             } else {
-                return name;
+                return versaStackPrefix + name;
             }
         } else {
             throw new EJBException(String.format("Resource %s does not contain valid"

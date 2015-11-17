@@ -286,7 +286,7 @@ public class AwsPush {
 
                 Vpc vpc = ec2Client.getVpc(parameters[1]);
                 DeleteVpcRequest vpcRequest = new DeleteVpcRequest();
-                vpcRequest.getDryRunRequest().getAWSRequestMetrics();
+                vpcRequest.withVpcId(vpc.getVpcId());
                 int tries = 0;
 
                 while (true) {
@@ -294,7 +294,7 @@ public class AwsPush {
                         ec2.deleteVpc(vpcRequest);
                     } catch (AmazonServiceException e) {
                         try {
-                            Thread.sleep(10000);                 //1000 milliseconds is one second.
+                            Thread.sleep(60000);                 //1000 milliseconds is one second.
                         } catch (InterruptedException ex) {
                             Thread.currentThread().interrupt();
                         }
