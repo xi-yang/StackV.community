@@ -1219,7 +1219,7 @@ public class OpenStackPush {
                 if (!r5.hasNext()) {
                     throw new EJBException(String.format("Vm %s does not specify the attached network interface", vm));
                 }
-                query = "SELECT ?type WHERE {<" + subnet.asResource() + "> nmrs:Type ?type}";
+                query = "SELECT ?type WHERE {<" + subnet.asResource() + "> mrs:Type ?type}";
                 r5 = executeQuery(query, emptyModel, modelDelta);
                 String imageID ="any";
                 String flavorID = "any";
