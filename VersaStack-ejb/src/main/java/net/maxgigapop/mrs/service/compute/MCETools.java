@@ -44,6 +44,7 @@ import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.Spa;
 import net.maxgigapop.mrs.common.TagSet;
+import org.json.simple.JSONObject;
 
 /**
  *
@@ -518,7 +519,7 @@ public class MCETools {
         return false;
     }
 
-    public static OntModel createL2PathVlanSubnets(Model model, Path path) {
+    public static OntModel createL2PathVlanSubnets(Model model, Path path, JSONObject portTeMap) {
         HashMap<Resource, HashMap<String, Object>> portParamMap = new HashMap<>();
         ListIterator<Statement> itS = path.listIterator();
         boolean last = false;
@@ -552,7 +553,7 @@ public class MCETools {
             }
             if (ModelUtil.isResourceOfType(model, currentHop, Nml.BidirectionalPort)) {
                 try {
-                    handleL2PathHop(model, prevHop, currentHop, nextHop, portParamMap, lastPort);
+                    handleL2PathHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap, portTeMap);
                     lastPort = currentHop;
                 } catch (TagSet.NoneVlanExeption ex) {
                     ;
@@ -571,7 +572,7 @@ public class MCETools {
                 }
                 if (ModelUtil.isResourceOfType(model, currentHop, Nml.BidirectionalPort)) {
                     try {
-                        handleL2PathHop(model, prevHop, currentHop, nextHop, portParamMap, lastPort);
+                        handleL2PathHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap, portTeMap);
                         lastPort = currentHop;
                     } catch (TagSet.NoneVlanExeption ex) {
                         ;
@@ -590,7 +591,7 @@ public class MCETools {
             prevHop = stmt.getSubject();
             currentHop = stmt.getObject().asResource();
             if (portParamMap.containsKey(currentHop)) {
-                OntModel subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, portParamMap, lastPort);
+                OntModel subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap);
                 if (subnetModel != null) {
                     l2PathModel.add(subnetModel.getBaseModel());
                 }
@@ -602,7 +603,7 @@ public class MCETools {
                 currentHop = prevHop;
                 prevHop = null;
                 if (portParamMap.containsKey(currentHop)) {
-                    OntModel subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, portParamMap, lastPort);
+                    OntModel subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap);
                     if (subnetModel != null) {
                         l2PathModel.add(subnetModel.getBaseModel());
                     }
@@ -613,13 +614,20 @@ public class MCETools {
     }
 
     //add hashMap (port, availableVlanRange + translation + ingressForSwService, egressForSwService) as params for currentHop
-    private static void handleL2PathHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, HashMap portParamMap, Resource lastPort)
+    private static void handleL2PathHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, Resource lastPort, HashMap portParamMap, JSONObject portTeMap)
             throws TagSet.NoneVlanExeption, TagSet.EmptyTagSetExeption {
         if (prevHop != null && ModelUtil.isResourceOfType(model, prevHop, Nml.BidirectionalPort)) {
             //TODO: handling adaptation?
         }
-        String vlanAny = TagSet.VlanRangeANY.toString();
+        TagSet allowedVlanRange = null;
         HashMap<String, Object> paramMap = new HashMap<>();
+        if (portTeMap != null && portTeMap.containsKey(currentHop.toString())) {
+            JSONObject jsonTe = (JSONObject) portTeMap.get(currentHop.toString());
+            if (jsonTe.containsKey("vlan_tag")) {
+                allowedVlanRange = new TagSet((String)jsonTe.get("vlan_tag"));
+                paramMap.put("allowedVlanRange", allowedVlanRange);
+            }
+        }
         HashMap<String, Object> lastParamMap = null;
         if (lastPort != null && portParamMap.containsKey(lastPort)) {
             lastParamMap = (HashMap<String, Object>) portParamMap.get(lastPort);
@@ -650,6 +658,7 @@ public class MCETools {
             if (!vlanTranslation && lastParamMap != null && lastParamMap.containsKey("vlanRange")) {
                 lastVlanRange = (TagSet) lastParamMap.get("vlanRange");
             }
+            vlanRange.intersect(allowedVlanRange);
             vlanRange.intersect(lastVlanRange);
         }
         // exception if empty        
@@ -667,7 +676,7 @@ public class MCETools {
         portParamMap.put(currentHop, paramMap);
     }
 
-    private static OntModel createVlanSubnetOnHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, HashMap portParamMap, Resource lastPort) {
+    private static OntModel createVlanSubnetOnHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, Resource lastPort, HashMap portParamMap) {
         HashMap paramMap = (HashMap) portParamMap.get(currentHop);
         if (!paramMap.containsKey("vlanRange")) {
             return null;
