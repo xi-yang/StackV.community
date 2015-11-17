@@ -470,8 +470,7 @@ public class AwsEC2Get {
         while (true) {
             try {
                 Subnet resource = client.describeSubnets(request).getSubnets().get(0);
-                if (resource.getState().toLowerCase().equals(status.toLowerCase())) {
-                }
+                break;
             } catch (AmazonServiceException | NullPointerException e) {
                 break;
             }
