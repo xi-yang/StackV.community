@@ -73,15 +73,19 @@ public class OpenStackPush {
     private OSClient osClient = null;
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
     private String topologyUri;
+    private String defaultImage;
+    private String defaultFlavor;
 
     /*public static void main(String[] args) {
      OpenStackPush test = new OpenStackPush();
 
      }*/
-    public OpenStackPush(String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
+    public OpenStackPush(String url, String NATServer, String username, String password, String tenantName, String topologyUri,
+            String defaultImage, String defaultFlavor) {
         client = new OpenStackGet(url, NATServer, username, password, tenantName);
         osClient = client.getClient();
-
+        this.defaultImage = defaultImage;
+        this.defaultFlavor = defaultFlavor;
         //do an adjustment to the topologyUri
         this.topologyUri = topologyUri + ":";
         topologyUri = topologyUri.replaceAll("[^A-Za-z0-9()_-]", "_");
@@ -205,11 +209,13 @@ public class OpenStackPush {
                 osClient.networking().network().delete(network.getId());
             } else if (o.get("request").toString().equals("RunInstanceRequest")) {
                 //@TODO: get image and flavor from mrs:type, if not available do:
-                if (client.getImages().isEmpty()) {
-                    throw new EJBException(String.format("openstack has none defined image."));
+                String imageType = defaultImage;
+                String flavorType = defaultFlavor;
+                if (imageType == null || imageType.isEmpty()) {
+                    throw new EJBException(String.format("Cannot determine server image type."));
                 }
-                if (client.getFlavors().isEmpty()) {
-                    throw new EJBException(String.format("openstack has none defined flavor."));
+                if (flavorType == null || flavorType.isEmpty()) {
+                    throw new EJBException(String.format("Cannot determine server image type."));
                 }
                 ServerCreateBuilder builder = Builders.server();
                 if(o.get("image").toString().equals("any") && o.get("image").toString().equals("any")){
@@ -314,13 +320,11 @@ public class OpenStackPush {
                                     .adminStateUp(true)
                                     .build()));
 
-                           
-                            if(osClient.networking().network().list().contains(o.get(key_router).toString())){
+                            if (osClient.networking().network().list().contains(o.get(key_router).toString())) {
                                 System.out.println("find it");
                             }
 
                             OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-
 
                             //update the client
                             //multiple subnet and nexthop create once a time, same concept of the router one
@@ -355,16 +359,22 @@ public class OpenStackPush {
                                                         Port port = new NeutronPort();
                                                         netid = s.getNetworkId();
                                                         String subnetid = s.getId();
+                                                        boolean isNetworkExternal = osClient.networking().network().get(netid).isRouterExternal();
+                                                        if (isNetworkExternal == true) {
+                                                            osClient.networking().router().update(router.toBuilder().id(router_id).externalGateway(netid).build());
+                                                            OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                                                        } else {
+                                                            port.toBuilder().networkId(netid)
+                                                                    .fixedIp(nexthop, subnetid)
+                                                                    .name("router_name" + router_name + "test_use" + i)
+                                                                    .adminState(true)
+                                                                    .state(State.ACTIVE);
 
-                                                        port.toBuilder().networkId(netid)
-                                                                .fixedIp(nexthop, subnetid)
-                                                                .name("router_name" + router_name + "test_use" + i)
-                                                                .adminState(true);
-
-                                                        osClient.networking().port().create(port);
-                                                        OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-                                                        String portid = client.getPort("router_name" + router_name + "test_use" + i).getId();
-                                                        rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
+                                                            client.getClient().networking().port().create(port);
+                                                            OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                                                            String portid = client.getPort("router_name" + router_name + "test_use" + i).getId();
+                                                            rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
+                                                        }
                                                         i++;
                                                         j++;
                                                         key_ip = "nexthop" + Integer.toString(j);
@@ -375,14 +385,20 @@ public class OpenStackPush {
                                                         netid = s.getNetworkId();
                                                         String subnetid = s.getId();
 
-                                                        port.toBuilder().networkId(netid)
-                                                                .name("router_name" + router_name + "test_use" + i)
-                                                                .adminState(true);
+                                                        boolean isNetworkExternal = osClient.networking().network().get(netid).isRouterExternal();
+                                                        if (isNetworkExternal == true) {
+                                                            osClient.networking().router().update(router.toBuilder().id(router_id).externalGateway(netid).build());
+                                                            OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                                                        } else {
+                                                            port.toBuilder().networkId(netid)
+                                                                    .name("router_name" + router_name + "test_use" + i)
+                                                                    .adminState(true);
 
-                                                        osClient.networking().port().create(port);
-                                                        OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-                                                        String portid = client.getPort("router_name" + router_name + "test_use" + i).getId();
-                                                        rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
+                                                            client.getClient().networking().port().create(port);
+                                                            OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                                                            String portid = client.getPort("router_name" + router_name + "test_use" + i).getId();
+                                                            rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
+                                                        }
                                                         i++;
                                                         j++;
                                                         key_ip = "nexthop" + Integer.toString(j);
@@ -603,23 +619,23 @@ public class OpenStackPush {
                 String routeto = o.get("routeto").toString();
                 Subnet s = client.getSubnet(subnetname);
                 System.out.println("There is currently no way to delete the host route through api");
-            }else if(o.get("request").toString().equals("CreateisAliaseRequest")){
+            } else if (o.get("request").toString().equals("CreateisAliaseRequest")) {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 /*
-                o.put("subnet name fixip", subnetnamefix);
-            o.put("subnet name floatip", subnetnamefloat);
-            o.put("server name fixip", servername);
-            o.put("fixed ip", fixvalue);
-            o.put("float ip", floatvalue);
-                */
-                String servername = o.get("server name fixip").toString();
+                 o.put("subnet name fixip", subnetnamefix);
+                 o.put("subnet name floatip", subnetnamefloat);
+                 o.put("server name fixip", servername);
+                 o.put("fixed ip", fixvalue);
+                 o.put("float ip", floatvalue);
+                 */
+                String servername = o.get("server name").toString();
                 String subnetnamefloat = o.get("subnet name floatip").toString();
                 String subnetnamefix = o.get("subnet name fixip").toString();
                 String fixip = o.get("fixed ip").toString();
                 String floatip = o.get("float ip").toString();
                 Server s = client.getServer(servername);
                 ActionResponse ar = osClient.compute().floatingIps().addFloatingIP(s, fixip, floatip);
-            }else if(o.get("request").toString().equals("DeleteAliaseRequest")){
+            } else if (o.get("request").toString().equals("DeleteAliaseRequest")) {
                 String servername = o.get("server name").toString();
                 String subnetnamefloat = o.get("subnet name floatip").toString();
                 String subnetnamefix = o.get("subnet name fixip").toString();
@@ -678,23 +694,23 @@ public class OpenStackPush {
 
                 //1.2 find the tag of the network
                 /*
-                query = "SELECT ?tag {<" + network.asResource() + "> mrs:hasTag ?tag}";
-                r1 = executeQuery(query, modelRef, modelDelta);
-                if (!r1.hasNext()) {
-                    throw new EJBException(String.format("network %s does  ot have a tag", network));
-                }
-                QuerySolution q1 = r1.next();
-                RDFNode networkTag = q1.get("tag");
-                //1.2.1 check that tag is of the appropiate type and the the value
-                query = "SELECT ?value WHERE {<" + networkTag.asResource() + "> mrs:type \"network-type\" ."
-                        + "<" + networkTag.asResource() + "> mrs:value ?value}";
-                r1 = executeQuery(query, modelRef, modelDelta);
-                if (!r1.hasNext()) {
-                    throw new EJBException(String.format("network %s has improper type of tag", network));
-                }
-                q1 = r1.next();
-                String networkTagValue = q1.get("value").asLiteral().toString();
-                */
+                 query = "SELECT ?tag {<" + network.asResource() + "> mrs:hasTag ?tag}";
+                 r1 = executeQuery(query, modelRef, modelDelta);
+                 if (!r1.hasNext()) {
+                 throw new EJBException(String.format("network %s does  ot have a tag", network));
+                 }
+                 QuerySolution q1 = r1.next();
+                 RDFNode networkTag = q1.get("tag");
+                 //1.2.1 check that tag is of the appropiate type and the the value
+                 query = "SELECT ?value WHERE {<" + networkTag.asResource() + "> mrs:type \"network-type\" ."
+                 + "<" + networkTag.asResource() + "> mrs:value ?value}";
+                 r1 = executeQuery(query, modelRef, modelDelta);
+                 if (!r1.hasNext()) {
+                 throw new EJBException(String.format("network %s has improper type of tag", network));
+                 }
+                 q1 = r1.next();
+                 String networkTagValue = q1.get("value").asLiteral().toString();
+                 */
                 //1.3 check taht network offers switching service
                 query = "SELECT ?service  WHERE {<" + network.asResource() + "> nml:hasService  ?service ."
                         + "?service a  mrs:SwitchingService}";
@@ -705,17 +721,17 @@ public class OpenStackPush {
                 JSONObject o = new JSONObject();
                 query = "SELECT ?exnetwork WHERE {?exnetwork mrs:Type \"external-network\"}";
                 ResultSet r2 = executeQuery(query, emptyModel, modelDelta);
-               
-                if(r2.hasNext()){
+
+                if (r2.hasNext()) {
                     QuerySolution q = r2.next();
                     RDFNode network_ex = q.get("exnetwork");
                     String exnetworkname = network_ex.toString();
-                    String exnetworkName = getresourcename(exnetworkname,"+","");
+                    String exnetworkName = getresourcename(exnetworkname, "+", "");
                     Network n = client.getNetwork(exnetworkName);
                     o.put("exteral-network", client.getResourceName(n));
                 }
-                 //1.4 TODO if the netwrk is external, make sure it has the route to connect
-                
+                //1.4 TODO if the netwrk is external, make sure it has the route to connect
+
                 if (creation == true) {
                     o.put("request", "CreateNetworkRequests");
                 } else {
@@ -781,51 +797,51 @@ public class OpenStackPush {
                 String networkName = getresourcename(networkname, "+", "");
                 //1.3.1 gte the tag of the network 
                 /*
-                query = "SELECT ?tag {<" + network.asResource() + "> mrs:hasTag ?tag}";
-                r1 = executeQuery(query, modelRef, modelDelta);
-                if (!r1.hasNext()) {
-                    throw new EJBException(String.format("network %s does  not have a tag", network));
-                }
-                q1 = r1.next();
-                RDFNode networkTag = q1.get("tag");
-                //1.3.1.1 check that tag is of the appropiate type and the the value
-                query = "SELECT ?value WHERE {<" + networkTag.asResource() + "> mrs:type \"network-type\" ."
-                        + "<" + networkTag.asResource() + "> mrs:value ?value}";
-                r1 = executeQuery(query, modelRef, modelDelta);
-                if (!r1.hasNext()) {
-                    throw new EJBException(String.format("network %s for subnet  %s has improper type of tag", network, subnet));
-                }
-                q1 = r1.next();
-                String networkTagValue = q1.get("value").asLiteral().toString();
+                 query = "SELECT ?tag {<" + network.asResource() + "> mrs:hasTag ?tag}";
+                 r1 = executeQuery(query, modelRef, modelDelta);
+                 if (!r1.hasNext()) {
+                 throw new EJBException(String.format("network %s does  not have a tag", network));
+                 }
+                 q1 = r1.next();
+                 RDFNode networkTag = q1.get("tag");
+                 //1.3.1.1 check that tag is of the appropiate type and the the value
+                 query = "SELECT ?value WHERE {<" + networkTag.asResource() + "> mrs:type \"network-type\" ."
+                 + "<" + networkTag.asResource() + "> mrs:value ?value}";
+                 r1 = executeQuery(query, modelRef, modelDelta);
+                 if (!r1.hasNext()) {
+                 throw new EJBException(String.format("network %s for subnet  %s has improper type of tag", network, subnet));
+                 }
+                 q1 = r1.next();
+                 String networkTagValue = q1.get("value").asLiteral().toString();
 
-                //1.4 check the subnet has a tag and get the tag
-                query = "SELECT ?tag {<" + subnet.asResource() + "> mrs:hasTag ?tag}";
-                r1 = executeQuery(query, emptyModel, modelDelta);
-                if (!r1.hasNext()) {
-                    throw new EJBException(String.format("Subnet %s does  ot have a tag", subnet));
-                }
-                q1 = r1.next();
-                RDFNode tag = q1.get("tag");
-                //1.4.1 check that tag is of the appropiate type
-                query = "SELECT ?value WHERE {<" + tag.asResource() + "> mrs:type \"subnet-type\" ."
-                        + "<" + tag.asResource() + "> mrs:value ?value}";
-                r1 = executeQuery(query, modelRef, modelDelta);
-                if (!r1.hasNext()) {
-                    throw new EJBException(String.format("Subnet %s has improper type of tag", subnet));
-                }
-                q1 = r1.next();
-                String subnetTagValue = q1.get("value").asLiteral().toString();
+                 //1.4 check the subnet has a tag and get the tag
+                 query = "SELECT ?tag {<" + subnet.asResource() + "> mrs:hasTag ?tag}";
+                 r1 = executeQuery(query, emptyModel, modelDelta);
+                 if (!r1.hasNext()) {
+                 throw new EJBException(String.format("Subnet %s does  ot have a tag", subnet));
+                 }
+                 q1 = r1.next();
+                 RDFNode tag = q1.get("tag");
+                 //1.4.1 check that tag is of the appropiate type
+                 query = "SELECT ?value WHERE {<" + tag.asResource() + "> mrs:type \"subnet-type\" ."
+                 + "<" + tag.asResource() + "> mrs:value ?value}";
+                 r1 = executeQuery(query, modelRef, modelDelta);
+                 if (!r1.hasNext()) {
+                 throw new EJBException(String.format("Subnet %s has improper type of tag", subnet));
+                 }
+                 q1 = r1.next();
+                 String subnetTagValue = q1.get("value").asLiteral().toString();
 
-                //1.5 check that a public subnet is not being created in a private network or viceversa
-                if (networkTagValue.equals("tenant") && subnetTagValue.equals("public")) {
-                    throw new EJBException(String.format("public subnet %s cannot be in tenant network "
-                            + "network %s", subnet, network));
-                }
-                if ((networkTagValue.equals("external") && subnetTagValue.equals("private"))) {
-                    throw new EJBException(String.format("private subnet %s cannot be in external network "
-                            + "network %s", subnet, network));
-                }
-                */
+                 //1.5 check that a public subnet is not being created in a private network or viceversa
+                 if (networkTagValue.equals("tenant") && subnetTagValue.equals("public")) {
+                 throw new EJBException(String.format("public subnet %s cannot be in tenant network "
+                 + "network %s", subnet, network));
+                 }
+                 if ((networkTagValue.equals("external") && subnetTagValue.equals("private"))) {
+                 throw new EJBException(String.format("private subnet %s cannot be in external network "
+                 + "network %s", subnet, network));
+                 }
+                 */
 
                 //get the netwokr addresses of the subnet
                 query = "SELECT ?subnet ?address ?value WHERE {<" + subnet.asResource() + "> mrs:hasNetworkAddress ?address ."
@@ -959,8 +975,6 @@ public class OpenStackPush {
 
         //1 get the tag resource from the reference model that indicates 
         //that this is a network  interface 
-       
-
         //2 select all the ports in the reference model that have that tag
         query = "SELECT ?port WHERE {?port a  nml:BidirectionalPort .}";
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
@@ -1074,23 +1088,23 @@ public class OpenStackPush {
 
                 //1.2 check that the port has a tag
                 /*
-                query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:hasTag ?tag}";
-                ResultSet r2 = executeQuery(query, modelRef, modelDelta);
-                if (!r2.hasNext()) {
-                    throw new EJBException(String.format("bidirectional port %s to be attached to intsnace does not specify a tag", port));
-                }
-                QuerySolution q2 = r2.next();
-                RDFNode tag = q2.get("tag");
+                 query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:hasTag ?tag}";
+                 ResultSet r2 = executeQuery(query, modelRef, modelDelta);
+                 if (!r2.hasNext()) {
+                 throw new EJBException(String.format("bidirectional port %s to be attached to intsnace does not specify a tag", port));
+                 }
+                 QuerySolution q2 = r2.next();
+                 RDFNode tag = q2.get("tag");
 
-                //1.3 check that the port has the correct tag
-                query = "SELECT ?tag WHERE {<" + tag.asResource() + "> mrs:type \"interface\". "
-                        + "<" + tag.asResource() + "> mrs:value \"network\"}";
-                r2 = executeQuery(query, modelRef, modelDelta);
-                if (!r2.hasNext()) {
-                    throw new EJBException(String.format("bidirectional port %s to be attached to instance is not a net"
-                            + "work interface", port));
-                }
-                */
+                 //1.3 check that the port has the correct tag
+                 query = "SELECT ?tag WHERE {<" + tag.asResource() + "> mrs:type \"interface\". "
+                 + "<" + tag.asResource() + "> mrs:value \"network\"}";
+                 r2 = executeQuery(query, modelRef, modelDelta);
+                 if (!r2.hasNext()) {
+                 throw new EJBException(String.format("bidirectional port %s to be attached to instance is not a net"
+                 + "work interface", port));
+                 }
+                 */
                 //1.4 create the request
                 JSONObject o = new JSONObject();
                 Port p = client.getPort(portName);
@@ -1104,12 +1118,12 @@ public class OpenStackPush {
                     /*
                     
 
-                    if (p.getDeviceOwner() != null && !p.getDeviceOwner().isEmpty()) {
+                     if (p.getDeviceOwner() != null && !p.getDeviceOwner().isEmpty()) {
 
-                        throw new EJBException(String.format("bidirectional port %s to be attached to instance %s is already"
-                                + " attached to an instance", port, serverName));
-                    }
-                    */
+                     throw new EJBException(String.format("bidirectional port %s to be attached to instance %s is already"
+                     + " attached to an instance", port, serverName));
+                     }
+                     */
                     o.put("request", "AttachPortRequest");
                     o.put("port name", portName);
                     o.put("server name", serverName);
@@ -1120,12 +1134,12 @@ public class OpenStackPush {
                     /*
                   
 
-                    if (p.getDeviceOwner() == null && p.getDeviceOwner().isEmpty()) {
+                     if (p.getDeviceOwner() == null && p.getDeviceOwner().isEmpty()) {
 
-                        throw new EJBException(String.format("bidirectional port %s to be detached from instance %s is not"
-                                + " attached", port, serverName));
-                    }
-                    */
+                     throw new EJBException(String.format("bidirectional port %s to be detached from instance %s is not"
+                     + " attached", port, serverName));
+                     }
+                     */
                     o.put("request", "DetachPortRequest");
                     o.put("port name", portName);
                     o.put("server name", serverName);
@@ -1221,16 +1235,16 @@ public class OpenStackPush {
                 }
                 query = "SELECT ?type WHERE {<" + subnet.asResource() + "> mrs:Type ?type}";
                 r5 = executeQuery(query, emptyModel, modelDelta);
-                String imageID ="any";
+                String imageID = "any";
                 String flavorID = "any";
-                while(r5.hasNext()){
+                while (r5.hasNext()) {
                     QuerySolution q2 = r5.next();
                     RDFNode type = q2.get("type");
                     String typename = type.asResource().toString();
-                    if(typename.contains("image:UUID")){
-                        imageID = getresourcename(typename, "+" ,"");
-                    }else if(typename.contains("flavorID")){
-                        flavorID = getresourcename(typename, "+" ,"");
+                    if (typename.contains("image:UUID")) {
+                        imageID = getresourcename(typename, "+", "");
+                    } else if (typename.contains("flavorID")) {
+                        flavorID = getresourcename(typename, "+", "");
                     }
                 }
                 //1.7 to find the subnet the server is in first  find the port the server uses
@@ -1297,19 +1311,23 @@ public class OpenStackPush {
                 }
 
                 o.put("server name", serverName);
-                //@TODO: get image and flavor from mrs:type, if not available do:
-                if (client.getImages().isEmpty()) {
-                    throw new EJBException(String.format("openstack has none defined image."));
+                String imageType = defaultImage;
+                String flavorType = defaultFlavor;
+                if ((imageType == null || imageType.isEmpty()) && imageID.equals("any")) {
+                    throw new EJBException(String.format("Cannot determine server image type."));
                 }
-                if (client.getFlavors().isEmpty()) {
-                    throw new EJBException(String.format("openstack has none defined flavor."));
+                if ((flavorType == null || flavorType.isEmpty()) && flavorID.equals("any")) {
+                    throw new EJBException(String.format("Cannot determine server image type."));
                 }
-                /*
-                o.put("image", client.getImages().get(0).getId());
-                o.put("flavor", client.getFlavors().get(0).getId());
-                */
-                o.put("image", imageID);
-                o.put("flavor", flavorID);
+                if (imageID.equals("any"))
+                    o.put("image", imageType);
+                else 
+                    o.put("image", imageID);
+                if (flavorID.equals("any"))
+                    o.put("flavor", flavorType);
+                else 
+                    o.put("flavor", flavorID);
+
                 //1.10.1 put all the ports in the request
                 int index = 0;
                 for (String port : portNames) {
@@ -1934,12 +1952,12 @@ public class OpenStackPush {
     }
 
     private String getroutername(String topologyUri, String resourcename) {
-        if(resourcename.contains("router+")){
-        String topologyuri = topologyUri + "router+";
-        String resource = resourcename.replace(topologyuri, "");
-        int index = resource.indexOf(":");
-        return resource.substring(0, index);
-        }else{
+        if (resourcename.contains("router+")) {
+            String topologyuri = topologyUri + "router+";
+            String resource = resourcename.replace(topologyuri, "");
+            int index = resource.indexOf(":");
+            return resource.substring(0, index);
+        } else {
             return resourcename;
         }
     }

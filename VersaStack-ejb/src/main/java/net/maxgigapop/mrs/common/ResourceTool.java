@@ -5,6 +5,10 @@
  */
 package net.maxgigapop.mrs.common;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.ejb.EJBException;
+
 /**
  *
  * @author muzcategui
@@ -49,7 +53,7 @@ public class ResourceTool {
             if (patternMatch(name, pattern) == true) {
                 return getShortName(name);
             } else {
-                return name;
+                return versaStackPrefix + name;
             }
         } else {
             throw new EJBException(String.format("Resource %s does not contain valid"

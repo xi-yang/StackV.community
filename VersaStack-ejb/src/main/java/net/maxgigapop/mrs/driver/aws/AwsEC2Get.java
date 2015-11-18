@@ -48,7 +48,11 @@ public class AwsEC2Get {
         instances = new ArrayList();
         if (reservation.size() >= 1) {
             for (Reservation t : reservation) {
-                instances.add(t.getInstances().get(0));
+                for (Instance i : t.getInstances()) {
+                    if (i.getState().getCode() != 48) { //do not add terminated instances
+                        instances.add(i);
+                    }
+                }
             }
         }
 
@@ -466,8 +470,7 @@ public class AwsEC2Get {
         while (true) {
             try {
                 Subnet resource = client.describeSubnets(request).getSubnets().get(0);
-                if (resource.getState().toLowerCase().equals(status.toLowerCase())) {
-                }
+                break;
             } catch (AmazonServiceException | NullPointerException e) {
                 break;
             }

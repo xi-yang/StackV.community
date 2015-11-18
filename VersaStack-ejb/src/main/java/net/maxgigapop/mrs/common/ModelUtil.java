@@ -278,17 +278,15 @@ public class ModelUtil {
                 while (stmts.hasNext()) {
                     Statement stmt = stmts.next();
                     subModel.add(stmt);
-                    boolean included = false;
+                    // included==true if empty list or matched pattern
+                    boolean included = propMatchIncludes.isEmpty();
                     for (String matchStr : propMatchIncludes) {
                         if (stmt.getPredicate().toString().contains(matchStr)) {
-                            rdfDFS(stmt.getObject(), visited, subModel, propMatchIncludes, propMatchExcludes);
                             included = true;
                             break;
                         }
                     }
-                    if (included) {
-                        continue;
-                    }
+                    // included==true only if matched pattern
                     boolean excluded = false;
                     for (String matchStr : propMatchExcludes) {
                         if (stmt.getPredicate().toString().contains(matchStr)) {
@@ -296,10 +294,9 @@ public class ModelUtil {
                             break;
                         }
                     }
-                    if (excluded) {
-                        continue;
+                    if (included && !excluded) {
+                        rdfDFS(stmt.getObject(), visited, subModel, propMatchIncludes, propMatchExcludes);
                     }
-                    rdfDFS(stmt.getObject(), visited, subModel, propMatchIncludes, propMatchExcludes);
                 }
             }
         }
@@ -320,16 +317,12 @@ public class ModelUtil {
                     while (stmts2.hasNext()) {
                         subModel.add(stmts2.next());
                     }
-                    boolean included = false;
+                    boolean included = propMatchIncludes.isEmpty();
                     for (String matchStr : propMatchIncludes) {
                         if (stmt.getPredicate().toString().contains(matchStr)) {
-                            rdfDFSReverse(refModel, stmt.getSubject(), visited, subModel, propMatchIncludes, propMatchExcludes);
                             included = true;
                             break;
                         }
-                    }
-                    if (included) {
-                        continue;
                     }
                     boolean excluded = false;
                     for (String matchStr : propMatchExcludes) {
@@ -338,10 +331,9 @@ public class ModelUtil {
                             break;
                         }
                     }
-                    if (excluded) {
-                        continue;
+                    if (included && !excluded) {
+                        rdfDFSReverse(refModel, stmt.getSubject(), visited, subModel, propMatchIncludes, propMatchExcludes);
                     }
-                    rdfDFSReverse(refModel, stmt.getSubject(), visited, subModel, propMatchIncludes, propMatchExcludes);
                 }
             }
         }
@@ -485,7 +477,7 @@ public class ModelUtil {
         Iterator<Resource> resIter = resList.iterator();
         while (resIter.hasNext()) {
             Resource node = resIter.next();
-            visited.clear();
+            //visited.clear();
             Model subModel = ModelFactory.createDefaultModel();
             node = refModel.getResource(node.toString());
             rdfDFS(node, visited, subModel, includeMatches, excludeMatches);

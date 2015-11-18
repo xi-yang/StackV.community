@@ -14,7 +14,7 @@
 <html >    
     <head>   
         <meta charset="UTF-8">
-        <title>Template Service</title>
+        <title>Network Creation Service</title>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>
@@ -49,16 +49,56 @@
                                     <button type="button" id="button-service-return">Cancel</button>
                                 </c:if>
                                 <table class="management-table">
-
+                                    
                                 </table>
                             </div>
                         </div>
                         <div id="service-bottom">
                             <div id="service-fields">
                                 <form id="vm-form" action="/VersaStack-web/ServiceServlet" method="post">
-                                    <table class="management-table" id="service-form" style="margin-bottom: 0px;"> 
-
+                                    <table class="management-table" id="net-template-form" style="margin-bottom: 0px;"> 
+                                        <thead>
+                                            <tr>
+                                                <th>Template Name</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Basic</td>
+                                                <td><input type="submit" name="template1" value="Select" /></td>
+                                            </tr>                                            
+                                            <tr>
+                                                <td>Advanced</td>
+                                                <td><input type="submit" name="template2" value="Select" /></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>    
+                                    
+                                    <table class="management-table" id="net-custom-form">
+                                        <thead>
+                                            <tr>
+                                                <th></th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Field 1</td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Field 2</td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Field 3</td>
+                                                <td></td>
+                                            </tr>
+                                        </tbody>
                                     </table>
+                                    
+                                    <input type="hidden" name="netCreate" value="true"/>
                                 </form>
                             </div>
                         </div>
@@ -69,7 +109,7 @@
                     <div class="form-result" id="service-result">
                         <c:choose>
                             <c:when test="${param.ret == '0'}">
-                                Installation Success!
+                                Creation Success!
                             </c:when>
                             <c:when test="${param.ret == '1'}">
                                 Error 1.
@@ -82,7 +122,7 @@
                             </c:when>                                      
                         </c:choose>                        
 
-                        <br><a href="/VersaStack-web/ops/srvc/template.jsp?self=true">Repeat.</a>                                
+                        <br><a href="/VersaStack-web/ops/srvc/netcreate.jsp?self=true">Repeat.</a>                                
                         <br><a href="/VersaStack-web/ops/catalog.jsp">Return to Services.</a>
                         <br><a href="/VersaStack-web/orch/graphTest.jsp">Return to Graphic Orchestration.</a>
                     </div>

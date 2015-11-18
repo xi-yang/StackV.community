@@ -16,9 +16,9 @@ import javax.xml.bind.annotation.XmlRootElement;
  *
  * @author max
  */
-@XmlRootElement(name = "vm-install")
+@XmlRootElement(name = "net-create")
 @XmlAccessorType(XmlAccessType.FIELD)
-public class ApiVMInstall {
+public class ApiNetCreation {
 
     @XmlElement(required = true)
     protected Map<String, String> properties = new HashMap<>();

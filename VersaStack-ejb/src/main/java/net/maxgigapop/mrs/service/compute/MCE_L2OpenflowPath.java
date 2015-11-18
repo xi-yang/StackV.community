@@ -286,7 +286,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                 itP.remove();
             } else {
                 //generating connection subnets (statements added to candidatePath) while verifying VLAN availability
-                OntModel l2PathModel = MCETools.createL2PathVlanSubnets(transformedModel, candidatePath);
+                OntModel l2PathModel = MCETools.createL2PathVlanSubnets(transformedModel, candidatePath, null);
                 if (l2PathModel == null) {
                     itP.remove();
                 } else {
@@ -412,7 +412,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                 itP.remove();
             } else {
                 //generating connection subnets (statements added to candidatePath) while verifying VLAN availability
-                OntModel l2PathModel = MCETools.createL2PathVlanSubnets(transformedModel, candidatePath);
+                OntModel l2PathModel = MCETools.createL2PathVlanSubnets(transformedModel, candidatePath, null);
                 if (l2PathModel == null) {
                     itP.remove();
                 } else {
@@ -542,7 +542,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                 itP.remove();
             } else {
                 //generating connection subnets (statements added to candidatePath) while verifying VLAN availability
-                OntModel l2PathModel = MCETools.createL2PathVlanSubnets(systemModel, candidatePath);
+                OntModel l2PathModel = MCETools.createL2PathVlanSubnets(systemModel, candidatePath, null);
                 if (l2PathModel == null) {
                     itP.remove();
                 } else {
@@ -672,7 +672,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                 itP.remove();
             } else {
                 // generating connection subnets (statements added to candidatePath) while verifying VLAN availability
-                OntModel l2PathModel = MCETools.createL2PathVlanSubnets(transformedModel, candidatePath);
+                OntModel l2PathModel = MCETools.createL2PathVlanSubnets(transformedModel, candidatePath, null);
                 if (l2PathModel == null) {
                     System.out.println("Remove here\n");
                     itP.remove();
