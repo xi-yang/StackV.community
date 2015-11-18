@@ -5,6 +5,10 @@
  */
 package net.maxgigapop.mrs.common;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.ejb.EJBException;
+
 /**
  *
  * @author muzcategui
@@ -55,8 +59,9 @@ public class ResourceTool {
             throw new EJBException(String.format("Resource %s does not contain valid"
                     + " URI", name));
         }
-    }
 
+    }
+ 
     private static boolean patternMatch(String name,String pattern) {
 
         //if we have "vpc+%s:subnet+%s" convert to "vpc[+].+:subnet[+].+ 
