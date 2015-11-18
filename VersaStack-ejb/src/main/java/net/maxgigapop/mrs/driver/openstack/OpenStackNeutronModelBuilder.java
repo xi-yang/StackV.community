@@ -46,7 +46,7 @@ import org.openstack4j.openstack.networking.domain.NeutronRouterInterface;
  * @author max
  */
 public class OpenStackNeutronModelBuilder {
-    private static final String uri = "urn:ogf:network";
+    private static final String uri = "urn:ogf:network:";
 
     public static OntModel createOntology(String url, String NATServer, String topologyURI, String user_name, String password, String tenantName,
             String adminUsername, String adminPassword, String adminTenant, OntModel modelExt) throws IOException, Exception {

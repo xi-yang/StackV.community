@@ -726,13 +726,10 @@ public class OpenStackPush {
                 if (r2.hasNext()) {
                     QuerySolution q = r2.next();
                     RDFNode network_ex = q.get("exnetwork");
-<<<<<<< HEAD
-                    String exnetworkname = network_ex.toString();
-                    String exnetworkName = getresourcename(exnetworkname, "+", "");
-=======
+
                     String exnetworkname = network_ex.asResource().toString();
                     String exnetworkName = ResourceTool.getResourceName(exnetworkname, OpenstackPrefix.NETWORK);
->>>>>>> zwang126-M6-Openstack-fix
+
                     Network n = client.getNetwork(exnetworkName);
                     o.put("exteral-network", client.getResourceName(n));
                 }
@@ -1319,7 +1316,7 @@ public class OpenStackPush {
                 o.put("server name", serverName);
                 String imageType = defaultImage;
                 String flavorType = defaultFlavor;
-<<<<<<< HEAD
+
                 if ((imageType == null || imageType.isEmpty()) && imageID.equals("any")) {
                     throw new EJBException(String.format("Cannot determine server image type."));
                 }
@@ -1334,26 +1331,7 @@ public class OpenStackPush {
                     o.put("flavor", flavorType);
                 else 
                     o.put("flavor", flavorID);
-=======
-                if (imageType == null || imageType.isEmpty()) {
-                    throw new EJBException(String.format("Cannot determine server image type."));
-                }
-                if (flavorType == null || flavorType.isEmpty()) {
-                    throw new EJBException(String.format("Cannot determine server image type."));
-                }
-                if (imageID.equals("any"))
-                      {
-                    o.put("image", imageType);
-                } else {
-                    o.put("image", imageID);
-                }
-                if (flavorID.equals("any"))
-                      {
-                    o.put("flavor", flavorType);
-                } else {
-                    o.put("flavor", flavorID);
-                }
->>>>>>> zwang126-M6-Openstack-fix
+
 
                 //1.10.1 put all the ports in the request
                 int index = 0;
