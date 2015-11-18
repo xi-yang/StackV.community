@@ -623,13 +623,13 @@ public class OpenStackPush {
             } else if (o.get("request").toString().equals("CreateisAliaseRequest")) {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 /*
-                o.put("subnet name fixip", subnetnamefix);
-            o.put("subnet name floatip", subnetnamefloat);
-            o.put("server name fixip", servername);
-            o.put("fixed ip", fixvalue);
-            o.put("float ip", floatvalue);
-                */
-                String servername = o.get("server name fixip").toString();
+                 o.put("subnet name fixip", subnetnamefix);
+                 o.put("subnet name floatip", subnetnamefloat);
+                 o.put("server name fixip", servername);
+                 o.put("fixed ip", fixvalue);
+                 o.put("float ip", floatvalue);
+                 */
+                String servername = o.get("server name").toString();
                 String subnetnamefloat = o.get("subnet name floatip").toString();
                 String subnetnamefix = o.get("subnet name fixip").toString();
                 String fixip = o.get("fixed ip").toString();
