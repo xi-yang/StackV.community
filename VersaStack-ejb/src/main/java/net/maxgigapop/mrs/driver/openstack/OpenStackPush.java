@@ -26,6 +26,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.ResourceTool;
 import net.maxgigapop.mrs.service.compute.MCE_InterfaceVlanStitching;
 import org.json.simple.JSONObject;
 import org.openstack4j.api.Builders;
@@ -218,26 +219,26 @@ public class OpenStackPush {
                     throw new EJBException(String.format("Cannot determine server image type."));
                 }
                 ServerCreateBuilder builder = Builders.server();
-                if(o.get("image").toString().equals("any") && o.get("image").toString().equals("any")){
-                
-                        builder.name(o.get("server name").toString())
-                        .image(client.getImages().get(0).getId())
-                        .flavor(client.getFlavors().get(0).getId());
-                }else if(o.get("image").toString().equals("any")){
-                   
-                        builder.name(o.get("server name").toString())
-                        .image(client.getImages().get(0).getId())
-                        .flavor(o.get("flavor").toString());
-                }else if(o.get("flavor").toString().equals("any")){
-                    
-                        builder.name(o.get("server name").toString())
-                        .image(o.get("image").toString())
-                        .flavor(client.getFlavors().get(0).getId());
-                }else{
-                   
-                        builder.name(o.get("server name").toString())
-                        .image(o.get("image").toString())
-                        .flavor(o.get("flavor").toString());
+                if (o.get("image").toString().equals("any") && o.get("image").toString().equals("any")) {
+
+                    builder.name(o.get("server name").toString())
+                            .image(client.getImages().get(0).getId())
+                            .flavor(client.getFlavors().get(0).getId());
+                } else if (o.get("image").toString().equals("any")) {
+
+                    builder.name(o.get("server name").toString())
+                            .image(client.getImages().get(0).getId())
+                            .flavor(o.get("flavor").toString());
+                } else if (o.get("flavor").toString().equals("any")) {
+
+                    builder.name(o.get("server name").toString())
+                            .image(o.get("image").toString())
+                            .flavor(client.getFlavors().get(0).getId());
+                } else {
+
+                    builder.name(o.get("server name").toString())
+                            .image(o.get("image").toString())
+                            .flavor(o.get("flavor").toString());
                 }
                 int index = 0;
                 String portid = "";
@@ -671,7 +672,7 @@ public class OpenStackPush {
             QuerySolution querySolution = r.next();
             RDFNode network = querySolution.get("network");
             String NetworkName = network.asResource().toString();
-            String networkName = getresourcename(NetworkName, "+", "");
+            String networkName = ResourceTool.getResourceName(NetworkName, OpenstackPrefix.NETWORK);
             Network net = client.getNetwork(networkName);
 
             //1.1 see if the operation desired is valid
@@ -725,8 +726,13 @@ public class OpenStackPush {
                 if (r2.hasNext()) {
                     QuerySolution q = r2.next();
                     RDFNode network_ex = q.get("exnetwork");
+<<<<<<< HEAD
                     String exnetworkname = network_ex.toString();
                     String exnetworkName = getresourcename(exnetworkname, "+", "");
+=======
+                    String exnetworkname = network_ex.asResource().toString();
+                    String exnetworkName = ResourceTool.getResourceName(exnetworkname, OpenstackPrefix.NETWORK);
+>>>>>>> zwang126-M6-Openstack-fix
                     Network n = client.getNetwork(exnetworkName);
                     o.put("exteral-network", client.getResourceName(n));
                 }
@@ -762,7 +768,7 @@ public class OpenStackPush {
             QuerySolution q = r.next();
             RDFNode subnet = q.get("subnet");
             String subnetname = subnet.asResource().toString();
-            String subnetName = getresourcename(subnetname, "+", "");
+            String subnetName = ResourceTool.getResourceName(subnetname, OpenstackPrefix.subnet);
             Subnet s = client.getSubnet(subnetName);
 
             //1.1 make sure that the operation that wants to be done is valid
@@ -794,7 +800,7 @@ public class OpenStackPush {
                 q1 = r1.next();
                 RDFNode network = q1.get("network");
                 String networkname = network.asResource().toString();
-                String networkName = getresourcename(networkname, "+", "");
+                String networkName = ResourceTool.getResourceName(networkname, OpenstackPrefix.NETWORK);
                 //1.3.1 gte the tag of the network 
                 /*
                  query = "SELECT ?tag {<" + network.asResource() + "> mrs:hasTag ?tag}";
@@ -899,8 +905,8 @@ public class OpenStackPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode volume = querySolution.get("volume");
-            String volumeName = volume.asResource().toString().replace(topologyUri, "");
-
+            String volumeName = volume.asResource().toString();
+            volumeName = ResourceTool.getResourceName(volumeName, OpenstackPrefix.volume);
             Volume v = client.getVolume(volumeName);
 
             //1.1 check if desired operagtion can be done
@@ -982,7 +988,7 @@ public class OpenStackPush {
             QuerySolution querySolution = r.next();
             RDFNode port = querySolution.get("port");
             String portname = port.asResource().toString();
-            String portName = getresourcename(portname, "+", "");
+            String portName = ResourceTool.getResourceName(portname, OpenstackPrefix.PORT);
             Port p = client.getPort(portName);
 
             //2.1 make sure that the desired operation is valid
@@ -1029,7 +1035,7 @@ public class OpenStackPush {
                     //query = "SELECT ?subnet WHERE {?subnet  a  mrs:SwitchingSubnet}";
                     //ResultSet r3 = executeQuery(query, modelRef, modelDelta);
                     subnetname = subnet.asResource().toString();
-                    subnetName = getresourcename(subnetname, "+", "");
+                    subnetName = ResourceTool.getResourceName(subnetname, OpenstackPrefix.subnet);
                     break;
                 }
 
@@ -1069,7 +1075,7 @@ public class OpenStackPush {
             RDFNode port = q.get("port");
             RDFNode server = q.get("node");
             String servername = server.asResource().toString();
-            String serverName = getresourcename(servername, "+", "");
+            String serverName = ResourceTool.getResourceName(servername, OpenstackPrefix.vm);
 
             //1.1 get the server name, if no server is found, it means the port is not being attached to a server
             //so we will just skip this iteration
@@ -1084,7 +1090,7 @@ public class OpenStackPush {
                 s = client.getServer(serverName);
                 r1.next();
                 String portname = port.asResource().toString();
-                String portName = getresourcename(portname, "+", "");
+                String portName = ResourceTool.getResourceName(portname, OpenstackPrefix.PORT);
 
                 //1.2 check that the port has a tag
                 /*
@@ -1169,7 +1175,7 @@ public class OpenStackPush {
             QuerySolution q = r.next();
             RDFNode vm = q.get("server");
             String servername = vm.asResource().toString();
-            String serverName = getresourcename(servername, "+", "");
+            String serverName = ResourceTool.getResourceName(servername, OpenstackPrefix.vm);
             Server server = client.getServer(serverName);
 
             //1.1 check if the desired operation is a valid operation
@@ -1259,7 +1265,7 @@ public class OpenStackPush {
                     QuerySolution q2 = r2.next();
                     RDFNode port = q2.get("port");
                     String Name = port.asResource().toString();
-                    String name = getresourcename(Name, "+", "");
+                    String name = ResourceTool.getResourceName(Name, OpenstackPrefix.PORT);
                     portNames.add(name);
                 }
                 /*
@@ -1313,6 +1319,7 @@ public class OpenStackPush {
                 o.put("server name", serverName);
                 String imageType = defaultImage;
                 String flavorType = defaultFlavor;
+<<<<<<< HEAD
                 if ((imageType == null || imageType.isEmpty()) && imageID.equals("any")) {
                     throw new EJBException(String.format("Cannot determine server image type."));
                 }
@@ -1327,6 +1334,26 @@ public class OpenStackPush {
                     o.put("flavor", flavorType);
                 else 
                     o.put("flavor", flavorID);
+=======
+                if (imageType == null || imageType.isEmpty()) {
+                    throw new EJBException(String.format("Cannot determine server image type."));
+                }
+                if (flavorType == null || flavorType.isEmpty()) {
+                    throw new EJBException(String.format("Cannot determine server image type."));
+                }
+                if (imageID.equals("any"))
+                      {
+                    o.put("image", imageType);
+                } else {
+                    o.put("image", imageID);
+                }
+                if (flavorID.equals("any"))
+                      {
+                    o.put("flavor", flavorType);
+                } else {
+                    o.put("flavor", flavorID);
+                }
+>>>>>>> zwang126-M6-Openstack-fix
 
                 //1.10.1 put all the ports in the request
                 int index = 0;
@@ -1358,9 +1385,10 @@ public class OpenStackPush {
             QuerySolution querySolution1 = r1.next();
             RDFNode server = querySolution1.get("node");
             String servername = server.asResource().toString();
-            String serverName = getresourcename(servername, "+", "");
+            String serverName = ResourceTool.getResourceName(servername, OpenstackPrefix.vm);
             RDFNode volume = querySolution1.get("volume");
-            String volumeName = volume.asResource().toString().replace(topologyUri, "");
+            String volumeName = volume.asResource().toString();
+            volumeName = ResourceTool.getResourceName(volumeName, OpenstackPrefix.volume);
 
             //1.1 find the device name of the volume
             query = "SELECT ?deviceName WHERE{<" + volume.asResource() + "> mrs:target_device ?deviceName}";
@@ -1500,7 +1528,7 @@ public class OpenStackPush {
                 QuerySolution q1 = r1.next();
 
                 RDFNode routingtable = q1.get("routingtable");
-                String routingtablename = routingtable.toString();
+                String routingtablename = routingtable.asResource().toString();
                 routername = getroutername(topologyUri, routingtablename);
 
                 Router.add(routername);
@@ -1831,7 +1859,7 @@ public class OpenStackPush {
 
             RDFNode subNetfix = q1.get("subnet");
             String subnetNamefix = subNetfix.toString();
-            String subnetnamefix = getresourcename(subnetNamefix, "+", "");
+            String subnetnamefix = ResourceTool.getResourceName(subnetNamefix, OpenstackPrefix.subnet);
 
             //query subnet for the floating ip
             query = "SELECT ?subnet WHERE{?subnet mrs:hasNetworkAddress <" + floatingip.asResource() + ">}";
@@ -1845,7 +1873,7 @@ public class OpenStackPush {
 
             RDFNode subNetfloat = q2.get("subnet");
             String subnetNamefloat = subNetfloat.toString();
-            String subnetnamefloat = getresourcename(subnetNamefloat, "+", "");
+            String subnetnamefloat = ResourceTool.getResourceName(subnetNamefloat, OpenstackPrefix.subnet);
 
             //query for the server
             query = "SELECT ?server WHERE{?server mrs:hasNetworkAddress <" + fixip.asResource() + ">}";
@@ -1858,7 +1886,7 @@ public class OpenStackPush {
             QuerySolution q3 = r1.next();
             RDFNode serVer = q3.get("server");
             String serverName = serVer.toString();
-            String servername = getresourcename(serverName, "+", "");
+            String servername = ResourceTool.getResourceName(serverName, OpenstackPrefix.vm);
 
             query = "SELECT ?type ?value WHERE {<" + fixip.asResource() + "> a mrs:NetworkAddress ."
                     + "<" + fixip.asResource() + "> mrs:type ?type ."

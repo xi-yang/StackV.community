@@ -5,6 +5,7 @@
  */
 package net.maxgigapop.mrs.common;
 
+<<<<<<< HEAD
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.ejb.EJBException;
@@ -13,6 +14,8 @@ import javax.ejb.EJBException;
  *
  * @author muzcategui
  */
+=======
+>>>>>>> zwang126-M6-Openstack-fix
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.ejb.EJBException;

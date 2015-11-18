@@ -286,7 +286,11 @@ public class AwsPush {
 
                 Vpc vpc = ec2Client.getVpc(parameters[1]);
                 DeleteVpcRequest vpcRequest = new DeleteVpcRequest();
+<<<<<<< HEAD
                 vpcRequest.withVpcId(vpc.getVpcId());
+=======
+                vpcRequest.getDryRunRequest().getAWSRequestMetrics();
+>>>>>>> zwang126-M6-Openstack-fix
                 int tries = 0;
 
                 while (true) {
@@ -294,7 +298,11 @@ public class AwsPush {
                         ec2.deleteVpc(vpcRequest);
                     } catch (AmazonServiceException e) {
                         try {
+<<<<<<< HEAD
                             Thread.sleep(60000);                 //1000 milliseconds is one second.
+=======
+                            Thread.sleep(10000);                 //1000 milliseconds is one second.
+>>>>>>> zwang126-M6-Openstack-fix
                         } catch (InterruptedException ex) {
                             Thread.currentThread().interrupt();
                         }
