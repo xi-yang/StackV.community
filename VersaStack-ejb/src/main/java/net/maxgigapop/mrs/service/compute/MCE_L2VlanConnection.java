@@ -65,7 +65,7 @@ public class MCE_L2VlanConnection implements IModelComputationElement {
                 + "?link a nml:Link ."
                 + "?link spa:dependOn ?policy . "
                 + "?policy a spa:PolicyAction. "
-                + "?policy spa:type 'MCE_MPVlanConnection'. "
+                + "?policy spa:type 'MCE_L2VlanConnection'. "
                 + "?policy spa:importFrom ?data. "
                 + "?data spa:type ?type. ?data spa:value ?value. "
                 + "FILTER not exists {?policy spa:dependOn ?other} "
