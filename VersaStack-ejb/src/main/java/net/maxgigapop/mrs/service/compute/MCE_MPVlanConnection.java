@@ -142,14 +142,18 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
                 continue;
             }
             if (entry.get("type").toString().equalsIgnoreCase("JSON")) {
-                // get Mulit-path request in array of elements, each in a map format below
-                // {'stp1_urn': {'vlan_tag': '100', 'vlan_tag_inner': '', 'bandwidth': '100M'}, 'stp2_urn': {'vlan_tag': '101', 'vlan_tag_inner': '', 'bandwidth': '100M'},}
+                JSONParser parser = new JSONParser();
+                try {
+                    jsonConnReqs = (JSONObject) parser.parse((String) entry.get("value"));
+                } catch (ParseException e) {
+                    throw new EJBException(String.format("%s::process  cannot parse json string %s", this.getClass().getName(), (String) entry.get("value")));
+                }
             } else {
                 throw new EJBException(String.format("%s::process doMultiPathFinding does not import policyData of %s type", entry.get("type").toString()));
             }
         }
         if (jsonConnReqs == null || jsonConnReqs.isEmpty()) {
-            throw new EJBException(String.format("%s::process cannot doMultiPathFinding for %s receive none connection request for <%s>", this.getClass().getName(), resLink));
+            throw new EJBException(String.format("%s::process cannot doMultiPathFinding receive none connection request for <%s>", this.getClass().getName(), resLink));
         }
         for (Object connReq: jsonConnReqs.keySet()) {
             String connId = (String) connReq;
