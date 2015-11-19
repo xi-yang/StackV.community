@@ -13,13 +13,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.json.Json;
-import javax.json.JsonObject;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -459,65 +458,95 @@ public class serviceBeans {
     public int createNetwork(Map<String, String> paraMap){
         String topoUri = null;
         String driverType = null;
+        String netType = null;
         String netCidr = null;
-        String[] subnets = null;
-        String gateways = null;
+        List<String> subnets = new ArrayList<String>();;
+        String[] netRoutes = null;
+        boolean gwInternet = false;
+        boolean gwVpn = false;        
         
         for(Map.Entry<String, String> entry : paraMap.entrySet()){
             if(entry.getKey().equalsIgnoreCase("driverType"))
                 driverType = entry.getValue();
             else if(entry.getKey().equalsIgnoreCase("topoUri"))
                 topoUri = entry.getValue();
+            else if(entry.getKey().equalsIgnoreCase("netType"))
+                netType = entry.getValue();
             else if(entry.getKey().equalsIgnoreCase("netCidr"))
                 netCidr = entry.getValue();
-            else if(entry.getKey().equalsIgnoreCase("subnets"))
-                subnets = entry.getValue().split("\r\n");
-            else if(entry.getKey().equalsIgnoreCase("gateways"))
-                subnets = entry.getValue().split("\r\n");
+            else if(entry.getKey().contains("subnet"))
+                subnets.add(entry.getValue());
+            else if (entry.getKey().equalsIgnoreCase("netRoutes"))
+                netRoutes = entry.getValue().split("\r\n");
         }
         
         JSONObject network = new JSONObject();
-        network.put("type", "internal");
+        network.put("type", netType);
         network.put("cidr", netCidr);
         network.put("parent", topoUri);
         
         JSONArray subnetsJson = new JSONArray();
-        //need to solve the routing problem
+        //routing problem solved. need testing.
         for(String net : subnets){
-            String[] properties = net.split(",");
-            JSONObject netProperties = new JSONObject();
-            for(String keyValue : properties){
-                String[] split = keyValue.split("\\+");
-                netProperties.put(split[0], split[1]);
+            String[] netPara = net.split("&");
+            JSONObject subnetValue = new JSONObject();
+            for(String para : netPara){
+                if(para.startsWith("routes")){
+                    String[] route = para.substring(6).split("\r\n");
+                    JSONArray routesArray = new JSONArray();
+                    for(String r : route){
+                        String[] routePara = r.split(",");
+                        JSONObject jsonRoute = new JSONObject();
+                        for(String rp : routePara){
+                            String[] keyValue = rp.split("\\+");
+                            jsonRoute.put(keyValue[0], keyValue[1]);
+                            if(keyValue[1].contains("internet"))
+                                gwInternet = true;
+                            if(keyValue[1].contains("vpn"))
+                                gwVpn = true;
+                        }
+                        routesArray.add(jsonRoute);
+                    }
+                    subnetValue.put("routes",routesArray);
+                }
+                else{
+                    String[] keyValue = para.split("\\+");
+                    subnetValue.put(keyValue[0], keyValue[1]);
+                }
             }
+            subnetsJson.add(subnetValue);
         }
         network.put("subnets", subnetsJson);
         
+        
+        JSONArray routesJson = new JSONArray();
+        for(String route : netRoutes){
+            JSONObject routesValue = new JSONObject();
+            String[] routeDetail = route.split(",");
+            for(String r : routeDetail){
+                String[] keyValue = r.split("\\+");
+                routesValue.put(keyValue[0], keyValue[1]);
+                if(keyValue[1].contains("internet"))
+                    gwInternet = true;
+                if(keyValue[1].contains("vpn"))
+                    gwVpn = true;
+            }
+            routesJson.add(routesValue);
+        }
+        network.put("routes", routesJson);
+        
         JSONArray gatewaysJson = new JSONArray();
-        //to be filled
-        JSONObject gatewayValue = new JSONObject();
-        if(gateways.equals("1")){
+        if(gwInternet){
+            JSONObject gatewayValue = new JSONObject();
             gatewayValue.put("type", "internet");
             gatewaysJson.add(gatewayValue);
         }
-        else if(gateways.equals("2")){
-            gatewayValue.put("type", "vpn");
-            gatewaysJson.add(gatewayValue);
-        }
-        else{
-            gatewayValue.put("type", "internet");
-            gatewaysJson.add(gatewayValue);
+        if(gwVpn){
+            JSONObject gatewayValue = new JSONObject();
             gatewayValue.put("type", "vpn");
             gatewaysJson.add(gatewayValue);
         }
         network.put("gateways", gatewaysJson);
-        
-        JSONArray routesJson = new JSONArray();
-        JSONObject routesValue = new JSONObject();
-        routesValue.put("to","0.0.0.0/0");
-        routesValue.put("nextHop", "internet");
-        routesJson.add(routesValue);
-        network.put("routes", routesJson);
         
         String svcDelta = "<serviceDelta>\n<uuid>" + UUID.randomUUID().toString()+
                 "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"+
