@@ -456,7 +456,7 @@ public class OpenStackNeutronModelBuilder {
         //BUILDING THE ROUTING TABLE
         for (Router r : openstackget.getRouters()) {
             String routername = openstackget.getResourceName(r);
-            routername = routername.replaceAll("[^A-Za-z0-9()_-]", "");
+           // routername = routername.replaceAll("[^A-Za-z0-9()_-]", "");
             for (Port port : openstackget.getPorts()) {
 
                 if (port.getDeviceId().equals(r.getId())) {

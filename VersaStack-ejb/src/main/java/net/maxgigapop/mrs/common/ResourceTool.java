@@ -46,6 +46,7 @@ public class ResourceTool {
 
     public static String getResourceName(String name, String pattern) {
         //remove the topologyUri first
+        
         if (name.startsWith(versaStackPrefix)) {
             name = name.replace(versaStackPrefix, "");
             if (patternMatch(name, pattern) == true) {
