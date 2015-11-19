@@ -15,18 +15,9 @@ Any value defined here will override the pom.xml file value but is only applicab
 -->
         <org-netbeans-modules-maven-jaxws.rest_2e_config_2e_type>ide</org-netbeans-modules-maven-jaxws.rest_2e_config_2e_type>
         <org-netbeans-modules-maven-j2ee.netbeans_2e_hint_2e_deploy_2e_server>WildFly</org-netbeans-modules-maven-j2ee.netbeans_2e_hint_2e_deploy_2e_server>
-<<<<<<< HEAD
+
 
         <netbeans.compile.on.save>none</netbeans.compile.on.save>
 
-=======
-<<<<<<< HEAD
-        <netbeans.compile.on.save>none</netbeans.compile.on.save>
-=======
-
-        <netbeans.compile.on.save>none</netbeans.compile.on.save>
-
->>>>>>> e2646b1d7c199504838659a0791fb46e676bcd19
->>>>>>> M6-Openstack-fix
     </properties>
 </project-shared-configuration>
