@@ -1,5 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page errorPage = "/VersaStack-web/errorPage.jsp" %>
+<%@page isErrorPage="true" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
 <jsp:setProperty name="user" property="*" />  
@@ -29,6 +29,30 @@
         <div id="main-pane">
             <br><br>
             Fatal Error!<br>
+
+            <table width="75%" border="1">
+                <tr valign="top">
+                    <td width="40%"><b>Error:</b></td>
+                    <td>${pageContext.exception}</td>
+                </tr>
+                <tr valign="top">
+                    <td><b>URI:</b></td>
+                    <td>${pageContext.errorData.requestURI}</td>
+                </tr>
+                <tr valign="top">
+                    <td><b>Status code:</b></td>
+                    <td>${pageContext.errorData.statusCode}</td>
+                </tr>
+                <tr valign="top">
+                    <td><b>Stack trace:</b></td>
+                    <td>
+                        <c:forEach var="trace" 
+                                   items="${pageContext.exception.stackTrace}">
+                            <p>${trace}</p>
+                        </c:forEach>
+                    </td>
+                </tr>
+            </table>
         </div>        
         <!-- JS -->
         <script>
