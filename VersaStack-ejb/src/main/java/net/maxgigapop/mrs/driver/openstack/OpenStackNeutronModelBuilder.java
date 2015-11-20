@@ -23,6 +23,7 @@ import static net.maxgigapop.mrs.common.Mrs.hasNetworkAddress;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.ResourceTool;
+import org.apache.commons.net.util.SubnetUtils;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.api.networking.RouterService;
 import org.openstack4j.model.compute.Server;
@@ -142,10 +143,11 @@ public class OpenStackNeutronModelBuilder {
         for (Port p : openstackget.getPorts()) {
             String PortID = openstackget.getResourceName(p);
             Resource PORT = RdfOwl.createResource(model, topologyURI + ":" + "port+" + openstackget.getResourceName(p), biPort);
-
+            
             for (IP q : p.getFixedIps()) {
                 if (q.getIpAddress() != null || !q.getIpAddress().isEmpty()) {
                     if (openstackget.getNetwork(p.getNetworkId()).isRouterExternal()) {
+                        
                         //Resource PUBLIC_ADDRESS = RdfOwl.createResource(model, topologyURI + ":port+" + PortID + ":" + "public-ip-address+" + q.getIpAddress(), networkAddress);
                         String public_address = q.getIpAddress();
                         Resource PUBLIC_ADDRESS = RdfOwl.createResource(model, ResourceTool.getResourceUri(public_address, OpenstackPrefix.public_address , OpenstackPrefix.uri, PortID,public_address), networkAddress);
@@ -231,9 +233,12 @@ public class OpenStackNeutronModelBuilder {
                     if (s == null) {
                         continue;
                     }
-
+                    
+                    
                     for (Pool ap : s.getAllocationPools()) {
                         String START = ap.getStart();
+                        
+                        
                         String END = ap.getEnd();
                         String subnetId = openstackget.getResourceName(s);
 

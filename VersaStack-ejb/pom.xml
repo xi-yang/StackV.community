@@ -31,7 +31,7 @@
         </dependencies>  
     </dependencyManagement> 
     
- 
+    
     
     <dependencies>
         <dependency>
@@ -39,6 +39,12 @@
             <artifactId>jena-core</artifactId>
             <version>2.11.1</version>
         </dependency>
+        <dependency>
+            <groupId>commons-net</groupId>
+            <artifactId>commons-net</artifactId>
+            <version>2.0</version>
+        </dependency>
+
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk</artifactId>
