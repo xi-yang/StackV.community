@@ -61,16 +61,16 @@ public class ServiceServlet extends HttpServlet {
                     front_connectionProps);
 
             // Select the correct service.
-            if (paramMap.containsKey("driverID")) { // Driver
+            if (request.getParameter("driverID") != null) { // Driver
                 serviceString = "driver";
-            } else if (paramMap.containsKey("driverType")) { // VM
+            } else if (request.getParameter("driverType") != null) { // VM
                 serviceString = "vmadd";
-            } else if (paramMap.containsKey("netCreate")) { // Network Creation
+            } else if (request.getParameter("netCreate") != null) { // Network Creation
                 serviceString = "netcreate";
             } else {
                 response.sendRedirect("/VersaStack-web/errorPage.jsp");
             }
-            
+
             PreparedStatement prep = front_conn.prepareStatement("SELECT service_id"
                     + " FROM service WHERE filename = ?");
             prep.setString(1, serviceString);
@@ -125,7 +125,7 @@ public class ServiceServlet extends HttpServlet {
                 response.sendRedirect("/VersaStack-web/errorPage.jsp");
             }
         } catch (SQLException ex) {
-            Logger.getLogger(DriverServlet.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ServiceServlet.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
@@ -204,20 +204,45 @@ public class ServiceServlet extends HttpServlet {
         }
         return ("/VersaStack-web/ops/srvc/vmadd.jsp?ret=" + retCode);
     }
-    
-    private String createFullNetwork(HashMap<String, String> paramMap) {
-        int retCode = -1;
-        
+
+    private String createFullNetwork(HashMap<String, String> paramMap) throws SQLException {
+        int retCode;
+
+        Connection rains_conn;
+        Properties rains_connectionProps = new Properties();
+        rains_connectionProps.put("user", "root");
+        rains_connectionProps.put("password", "root");
+
+        rains_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/rainsdb",
+                rains_connectionProps);
+
         if (paramMap.containsKey("template1")) { // Basic Template
             // Add template data.
-            paramMap.put("driverType", null);
-            paramMap.put("topoUri", null);
-            paramMap.put("netCidr", null);
-            
-            
+            paramMap.put("driverType", "aws");
+            paramMap.put("topoUri", "urn:ogf:network:aws.amazon.com:aws-cloud");
+            paramMap.put("netType", "internal");
+            paramMap.put("netCidr", "10.0.0.0/16");
+            paramMap.put("subnet1", "name+ &cidr+ 10.0.0.0/24&routesto+206.196.0.0/16,nextHop+internet\r\nfrom+vpn,to+0.0.0.0/0,nextHop+vpn\r\nto+72.24.24.0/24,nextHop+vpn");
+            paramMap.put("subnet2", "name+ &cidr+ 10.0.1.0/24");
+            paramMap.put("netRoutes", "to+0.0.0.0/0,nextHop+internet\r\nto+0.0.0.0/0,nextHop+internet");
+
+            retCode = servBean.createNetwork(paramMap);
+        } else { // Custom Form Handling
+            PreparedStatement prep = rains_conn.prepareStatement("SELECT driverEjbPath"
+                    + " FROM driver_instance WHERE topologyUri = ?");
+            prep.setString(1, paramMap.get("topoUri"));
+            ResultSet rs1 = prep.executeQuery();
+            rs1.next();
+            String driverPath = rs1.getString(1);
+            if (driverPath.contains("Aws") || driverPath.contains("aws")) {
+                paramMap.put("driverType", "aws");
+            } else if (driverPath.contains("Os") || driverPath.contains("os")) {
+                paramMap.put("driverType", "os");
+            }
+
             retCode = servBean.createNetwork(paramMap);
         }
-        
+
         return ("/VersaStack-web/ops/srvc/netcreate.jsp?ret=" + retCode);
     }
 }

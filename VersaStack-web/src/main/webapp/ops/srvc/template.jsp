@@ -58,7 +58,8 @@
                         </div>
                         <div id="service-bottom">
                             <div id="service-fields">
-                                <form id="vm-form" action="/VersaStack-web/ServiceServlet" method="post">
+                                <form id="template-form" action="/VersaStack-web/ServiceServlet" method="post">
+                                    <input type="hidden" name="userID" value="${user.getId()}"/>
                                     <table class="management-table" id="service-form" style="margin-bottom: 0px;"> 
 
                                     </table>

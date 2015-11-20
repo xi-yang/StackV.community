@@ -59,6 +59,7 @@
                         <div id="service-bottom">                            
                             <div id="service-fields">                                
                                 <form id="vm-form" action="/VersaStack-web/ServiceServlet" method="post">
+                                    <input type="hidden" name="userID" value="${user.getId()}"/>
                                     <table class="management-table" id="net-template-form" style="margin-bottom: 0px;"> 
                                         <thead>
                                             <tr>
@@ -88,7 +89,19 @@
                                         <tbody>
                                             <tr>
                                                 <td>Topology URI</td>
-                                                <td><input type="text" name="topoUri" /></td>
+                                                <td>
+                                                    <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance" var="driverlist" />
+                                                    <select name="topoUri" >
+                                                        <option></option>
+                                                        <c:forEach var="driver" items="${driverlist.rows}">
+                                                            <option value="${driver.topologyUri}">${driver.topologyUri}</option>
+                                                        </c:forEach>
+                                                    </select>   
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Network Type</td>
+                                                <td><input type="text" name="netType" /></td>
                                             </tr>
                                             <tr>
                                                 <td>Network CIDR</td>
@@ -124,17 +137,17 @@
                                 Creation Success!
                             </c:when>
                             <c:when test="${param.ret == '1'}">
-                                Error 1.
+                                Connection Error.
                             </c:when>    
                             <c:when test="${param.ret == '2'}">
-                                Error 2.
+                                Back-end Interaction Error.
                             </c:when>    
                             <c:when test="${param.ret == '3'}">
-                                Error 3.
+                                Failed to Create Network.
                             </c:when>                                      
                         </c:choose>                        
 
-                        <br><a href="/VersaStack-web/ops/srvc/netcreate.jsp?self=true">Repeat.</a>                                
+                        <br><a href="/VersaStack-web/ops/srvc/netcreate.jsp?self=true">Create Another Network.</a>                                
                         <br><a href="/VersaStack-web/ops/catalog.jsp">Return to Services.</a>
                         <br><a href="/VersaStack-web/orch/graphTest.jsp">Return to Graphic Orchestration.</a>
                     </div>
