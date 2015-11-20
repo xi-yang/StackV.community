@@ -28,6 +28,7 @@ import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.ResourceTool;
 import net.maxgigapop.mrs.service.compute.MCE_InterfaceVlanStitching;
+import org.apache.commons.net.util.SubnetUtils;
 import org.json.simple.JSONObject;
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient;
@@ -368,8 +369,7 @@ public class OpenStackPush {
                                                             port.toBuilder().networkId(netid)
                                                                     .fixedIp(nexthop, subnetid)
                                                                     .name("router_name" + router_name + "test_use" + i)
-                                                                    .adminState(true)
-                                                                    .state(State.ACTIVE);
+                                                                    .adminState(true);
 
                                                             client.getClient().networking().port().create(port);
                                                             OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
@@ -382,7 +382,6 @@ public class OpenStackPush {
                                                     } else {
                                                         String nexthop = o.get(key_ip).toString();
                                                         String router_id = r.getId();
-                                                        Port port = new NeutronPort();
                                                         netid = s.getNetworkId();
                                                         String subnetid = s.getId();
 
@@ -391,12 +390,28 @@ public class OpenStackPush {
                                                             osClient.networking().router().update(router.toBuilder().id(router_id).externalGateway(netid).build());
                                                             OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                                                         } else {
-                                                            port.toBuilder().networkId(netid)
-                                                                    .name("router_name" + router_name + "test_use" + i)
-                                                                    .adminState(true);
+                                                            Boolean portCreated = false;
+                                                            SubnetUtils info = new SubnetUtils(s.getCidr());
+                                                            for (String ip : info.getInfo().getAllAddresses()) {
+                                                                try {
+                                                                    Port port = new NeutronPort();
+                                                                    port.toBuilder().name("router_name" + router_name + "test_use" + i)
+                                                                            .adminState(true)
+                                                                            .fixedIp(ip, s.getId())
+                                                                            .networkId(netid);
+                                                                    client.getClient().networking().port().create(port);
+                                                                    OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                                                                    portCreated = true;
+                                                                    break;
+                                                                } catch (Exception e) {
+                                                                    //do nothing try again with different ip
+                                                                    e.toString();
+                                                                }
+                                                            }
+                                                            if (portCreated == false) {
+                                                                throw new EJBException(String.format("could not create port %s", "router_name" + router_name + "test_use" + i));
+                                                            }
 
-                                                            client.getClient().networking().port().create(port);
-                                                            OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                                                             String portid = client.getPort("router_name" + router_name + "test_use" + i).getId();
                                                             rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
                                                         }
@@ -729,7 +744,6 @@ public class OpenStackPush {
 
                     String exnetworkname = network_ex.asResource().toString();
                     String exnetworkName = ResourceTool.getResourceName(exnetworkname, OpenstackPrefix.NETWORK);
-
 
                     Network n = client.getNetwork(exnetworkName);
                     o.put("exteral-network", client.getResourceName(n));
@@ -1283,30 +1297,30 @@ public class OpenStackPush {
                      }
 
 
-                o.put("server name", serverName);
-                String imageType = defaultImage;
-                String flavorType = defaultFlavor;
-                if ((imageType == null || imageType.isEmpty()) && imageID.equals("any")) {
-                    throw new EJBException(String.format("Cannot determine server image type."));
-                }
-                if ((flavorType == null || flavorType.isEmpty()) && flavorID.equals("any")) {
-                    throw new EJBException(String.format("Cannot determine server image type."));
-                }
-                if (imageID.equals("any"))
-                    o.put("image", imageType);
-                else 
-                    o.put("image", imageID);
-                if (flavorID.equals("any"))
-                    o.put("flavor", flavorType);
-                else 
-                    o.put("flavor", flavorID);
+                     o.put("server name", serverName);
+                     String imageType = defaultImage;
+                     String flavorType = defaultFlavor;
+                     if ((imageType == null || imageType.isEmpty()) && imageID.equals("any")) {
+                     throw new EJBException(String.format("Cannot determine server image type."));
+                     }
+                     if ((flavorType == null || flavorType.isEmpty()) && flavorID.equals("any")) {
+                     throw new EJBException(String.format("Cannot determine server image type."));
+                     }
+                     if (imageID.equals("any"))
+                     o.put("image", imageType);
+                     else 
+                     o.put("image", imageID);
+                     if (flavorID.equals("any"))
+                     o.put("flavor", flavorType);
+                     else 
+                     o.put("flavor", flavorID);
 
-                //1.10.1 put all the ports in the request
-                int index = 0;
-                for (String port : portNames) {
-                    String key = "port" + Integer.toString(index);
-                    o.put(key, port);
-                    index++; //increment the device index
+                     //1.10.1 put all the ports in the request
+                     int index = 0;
+                     for (String port : portNames) {
+                     String key = "port" + Integer.toString(index);
+                     o.put(key, port);
+                     index++; //increment the device index
 
                      //1.9 put the root device of the instance
                      query = "SELECT ?volume ?deviceName ?size ?type  WHERE {"
@@ -1856,7 +1870,7 @@ public class OpenStackPush {
             RDFNode floatingip = q.get("floatingip");
             //find the subnet
             //query = "SELECT ?subnet ?port WHERE {?subnet a mrs:SwitchingSubnet ."
-                       // + "?subnet nml:hasBidirectionalPort ?port}";
+            // + "?subnet nml:hasBidirectionalPort ?port}";
             //
             query = "SELECT ?subnet WHERE{?subnet a mrs:SwitchingSubnet ."
                     + "?subnet mrs:hasNetworkAddress <" + fixip.asResource() + "> }";
