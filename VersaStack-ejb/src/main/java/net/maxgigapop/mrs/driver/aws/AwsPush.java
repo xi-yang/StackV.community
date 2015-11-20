@@ -943,7 +943,7 @@ public class AwsPush {
                 String nodeId = getInstanceId(nodeIdTag);
                 i = ec2Client.getInstance(nodeId);
             }
-            while (r1.hasNext() && !r1.hasNext()) {
+            while (r1.hasNext() && !r1_1.hasNext()) {
                 r1.next();
                 String portIdTag = ResourceTool.getResourceName(port.asResource().toString(), AwsPrefix.nic);
 
