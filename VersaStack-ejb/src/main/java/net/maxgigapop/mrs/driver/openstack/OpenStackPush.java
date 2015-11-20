@@ -5,7 +5,6 @@
  */
 package net.maxgigapop.mrs.driver.openstack;
 
-import com.amazonaws.services.ec2.model.Instance;
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.query.Query;
@@ -22,34 +21,25 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
-import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.ResourceTool;
-import net.maxgigapop.mrs.service.compute.MCE_InterfaceVlanStitching;
+import org.apache.commons.net.util.SubnetUtils;
+import org.apache.commons.net.util.SubnetUtils.SubnetInfo;
 import org.json.simple.JSONObject;
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.model.compute.ActionResponse;
-import org.openstack4j.model.compute.InterfaceAttachment;
 import org.openstack4j.model.compute.Server;
 import org.openstack4j.model.compute.ServerCreate;
 import org.openstack4j.model.compute.builder.ServerCreateBuilder;
-import org.openstack4j.model.network.IP;
 import org.openstack4j.model.network.*;
-import org.openstack4j.model.network.builder.NetworkBuilder;
-import org.openstack4j.model.network.builder.RouterBuilder;
 import org.openstack4j.model.storage.block.*;
-import org.openstack4j.openstack.compute.domain.NovaInterfaceAttachment;
-import org.openstack4j.openstack.compute.domain.NovaServer;
 import org.openstack4j.openstack.compute.internal.ServerServiceImpl;
 import org.openstack4j.openstack.compute.internal.ext.InterfaceServiceImpl;
 import org.openstack4j.openstack.networking.domain.NeutronNetwork;
 import org.openstack4j.openstack.networking.domain.NeutronPort;
-import org.openstack4j.openstack.networking.domain.NeutronRouterInterface;
 import org.openstack4j.openstack.networking.domain.NeutronSubnet;
-import org.openstack4j.openstack.networking.internal.PortServiceImpl;
 import org.openstack4j.openstack.networking.internal.RouterServiceImpl;
 import org.openstack4j.openstack.storage.block.domain.CinderVolume;
 
@@ -368,10 +358,9 @@ public class OpenStackPush {
                                                             port.toBuilder().networkId(netid)
                                                                     .fixedIp(nexthop, subnetid)
                                                                     .name("router_name" + router_name + "test_use" + i)
-                                                                    .adminState(true)
-                                                                    .state(State.ACTIVE);
+                                                                    .adminState(true);
 
-                                                            client.getClient().networking().port().create(port);
+                                                            osClient.networking().port().create(port);
                                                             OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                                                             String portid = client.getPort("router_name" + router_name + "test_use" + i).getId();
                                                             rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
@@ -380,12 +369,74 @@ public class OpenStackPush {
                                                         j++;
                                                         key_ip = "nexthop" + Integer.toString(j);
                                                     } else {
+                                                        OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                                                         String nexthop = o.get(key_ip).toString();
                                                         String router_id = r.getId();
                                                         Port port = new NeutronPort();
                                                         netid = s.getNetworkId();
-                                                        String subnetid = s.getId();
+                                                        /*
+                                                        String start = null;
+                                                        String end = null;
 
+                                                        int in_use_ip = 0;
+                                                        
+
+                                                        for (Pool pool : s.getAllocationPools()) {
+                                                            start = pool.getStart();
+                                                            end = pool.getEnd();
+
+                                                        }
+
+                                                        int bis = start.lastIndexOf(".");
+                                                        int bie = end.lastIndexOf(".");
+                                                        String prefix = start.substring(0, bis + 1);
+                                                        int res_s = Integer.parseInt(start.substring(bis + 1));
+                                                        int res_e = Integer.parseInt(end.substring(bie + 1));
+                                                        int[] ip_pool = new int[res_e - res_s + 1];
+
+                                                        for (Port p : client.getPorts()) {
+                                                            for (String subid : client.getPortSubnetID(p)) {
+                                                                if (subid.equals(s.getId())) {
+                                                                    for (IP in_use : p.getFixedIps()) {
+                                                                        String using = in_use.getIpAddress();
+                                                                        int usi = using.lastIndexOf(".");
+                                                                        in_use_ip = Integer.parseInt(using.substring(usi+1));
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                        for (int index = res_s; index <= res_e; index++) {
+
+                                                            if (index == in_use_ip) {
+                                                                index++;
+                                                            } else {
+                                                                ip_pool[index] = index;
+                                                            }
+
+                                                        }
+                                                        Integer res = ip_pool[0];
+                                                        String result = res.toString();
+                                                        */
+                                                        SubnetUtils info = new SubnetUtils(s.getCidr());
+                                                        String addresses[] =info.getInfo().getAllAddresses();
+                                                        ArrayList<String> pool = new ArrayList<String>();
+                                                        for(int index = 0; index < addresses.length ; index++){
+                                                            pool.add(addresses[index]);
+                                                        }
+                                                        for (Port p : client.getPorts()) {
+                                                            for (String subid : client.getPortSubnetID(p)) {
+                                                                if (subid.equals(s.getId())) {
+                                                                    for (IP in_use : p.getFixedIps()) {
+                                                                        String using = in_use.getIpAddress();
+                                                                        if(pool.contains(using)){
+                                                                            pool.remove(using);
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                        
+                                                        String final_res = pool.get(1);
                                                         boolean isNetworkExternal = osClient.networking().network().get(netid).isRouterExternal();
                                                         if (isNetworkExternal == true) {
                                                             osClient.networking().router().update(router.toBuilder().id(router_id).externalGateway(netid).build());
@@ -393,6 +444,7 @@ public class OpenStackPush {
                                                         } else {
                                                             port.toBuilder().networkId(netid)
                                                                     .name("router_name" + router_name + "test_use" + i)
+                                                                    .fixedIp(final_res, s.getId())
                                                                     .adminState(true);
 
                                                             client.getClient().networking().port().create(port);
@@ -1828,7 +1880,7 @@ public class OpenStackPush {
             RDFNode floatingip = q.get("floatingip");
             //find the subnet
             //query = "SELECT ?subnet ?port WHERE {?subnet a mrs:SwitchingSubnet ."
-                       // + "?subnet nml:hasBidirectionalPort ?port}";
+            // + "?subnet nml:hasBidirectionalPort ?port}";
             //
             query = "SELECT ?subnet WHERE{?subnet a mrs:SwitchingSubnet ."
                     + "?subnet mrs:hasNetworkAddress <" + fixip.asResource() + "> }";
