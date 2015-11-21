@@ -5,7 +5,6 @@
  */
 package net.maxgigapop.mrs.driver.openstack;
 
-import com.amazonaws.services.ec2.model.Instance;
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.query.Query;
@@ -22,35 +21,25 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
-import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.ResourceTool;
-import net.maxgigapop.mrs.service.compute.MCE_InterfaceVlanStitching;
 import org.apache.commons.net.util.SubnetUtils;
+import org.apache.commons.net.util.SubnetUtils.SubnetInfo;
 import org.json.simple.JSONObject;
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.model.compute.ActionResponse;
-import org.openstack4j.model.compute.InterfaceAttachment;
 import org.openstack4j.model.compute.Server;
 import org.openstack4j.model.compute.ServerCreate;
 import org.openstack4j.model.compute.builder.ServerCreateBuilder;
-import org.openstack4j.model.network.IP;
 import org.openstack4j.model.network.*;
-import org.openstack4j.model.network.builder.NetworkBuilder;
-import org.openstack4j.model.network.builder.RouterBuilder;
 import org.openstack4j.model.storage.block.*;
-import org.openstack4j.openstack.compute.domain.NovaInterfaceAttachment;
-import org.openstack4j.openstack.compute.domain.NovaServer;
 import org.openstack4j.openstack.compute.internal.ServerServiceImpl;
 import org.openstack4j.openstack.compute.internal.ext.InterfaceServiceImpl;
 import org.openstack4j.openstack.networking.domain.NeutronNetwork;
 import org.openstack4j.openstack.networking.domain.NeutronPort;
-import org.openstack4j.openstack.networking.domain.NeutronRouterInterface;
 import org.openstack4j.openstack.networking.domain.NeutronSubnet;
-import org.openstack4j.openstack.networking.internal.PortServiceImpl;
 import org.openstack4j.openstack.networking.internal.RouterServiceImpl;
 import org.openstack4j.openstack.storage.block.domain.CinderVolume;
 
@@ -371,7 +360,7 @@ public class OpenStackPush {
                                                                     .name("router_name" + router_name + "test_use" + i)
                                                                     .adminState(true);
 
-                                                            client.getClient().networking().port().create(port);
+                                                            osClient.networking().port().create(port);
                                                             OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                                                             String portid = client.getPort("router_name" + router_name + "test_use" + i).getId();
                                                             rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
@@ -380,11 +369,10 @@ public class OpenStackPush {
                                                         j++;
                                                         key_ip = "nexthop" + Integer.toString(j);
                                                     } else {
+                                                        OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                                                         String nexthop = o.get(key_ip).toString();
                                                         String router_id = r.getId();
                                                         netid = s.getNetworkId();
-                                                        String subnetid = s.getId();
-
                                                         boolean isNetworkExternal = osClient.networking().network().get(netid).isRouterExternal();
                                                         if (isNetworkExternal == true) {
                                                             osClient.networking().router().update(router.toBuilder().id(router_id).externalGateway(netid).build());
@@ -1383,7 +1371,6 @@ public class OpenStackPush {
                         index++; //increment the device index
                     }
                     requests.add(o);
-
                 }
             }
         }
@@ -1568,7 +1555,8 @@ public class OpenStackPush {
 
                 lr.add(routename);
 
-                Map<String, List<String>> hp = new HashMap<>();
+                Map<String, List<String>> hp;
+                hp = new HashMap<>();
                 hp.put(routername, lr);
 
                 String subnet = getresourcename(routeToResource.toString(), "+", "");
