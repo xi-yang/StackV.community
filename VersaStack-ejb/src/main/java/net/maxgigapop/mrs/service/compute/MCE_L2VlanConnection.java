@@ -62,7 +62,7 @@ public class MCE_L2VlanConnection implements IModelComputationElement {
 
         // importPolicyData : Link->Connection->List<PolicyData> of terminal Node/Topology
         String sparql = "SELECT ?link ?policy ?data ?type ?value WHERE {"
-                + "?link a nml:Link ."
+                //+ "?link a nml:Link ."
                 + "?link spa:dependOn ?policy . "
                 + "?policy a spa:PolicyAction. "
                 + "?policy spa:type 'MCE_L2VlanConnection'. "

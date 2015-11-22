@@ -43,7 +43,7 @@ public class OpenstackPrefix {
     
     public static String gateway  = "%s:network+%s:subnet+%s:subnetgateway+%s";
     
-    public static String gateway_address  = "%s:network+%s:subnet+%s:subnet_gateway_address+%s";
+    public static String gateway_address  = "%s:network+%s:subnet+%s:subnetgateway+%s:address";
     
     public static String network_routing_service  = "%s:network+%s:network-routingservice";
     
