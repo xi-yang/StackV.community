@@ -357,12 +357,12 @@ public class OpenStackPush {
                                                         } else {
                                                             port.toBuilder().networkId(netid)
                                                                     .fixedIp(nexthop, subnetid)
-                                                                    .name("router_name" + router_name + "test_use" + i)
+                                                                    .name(router_name + "port" + i)
                                                                     .adminState(true);
 
                                                             osClient.networking().port().create(port);
                                                             OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-                                                            String portid = client.getPort("router_name" + router_name + "test_use" + i).getId();
+                                                            String portid = client.getPort(router_name + "port" + i).getId();
                                                             rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
                                                         }
                                                         i++;
@@ -383,7 +383,7 @@ public class OpenStackPush {
                                                             for (String ip : info.getInfo().getAllAddresses()) {
                                                                 try {
                                                                     Port port = new NeutronPort();
-                                                                    port.toBuilder().name("router_name" + router_name + "test_use" + i)
+                                                                    port.toBuilder().name(router_name + "port" + i )
                                                                             .adminState(true)
                                                                             .fixedIp(ip, s.getId())
                                                                             .networkId(netid);
@@ -397,10 +397,10 @@ public class OpenStackPush {
                                                                 }
                                                             }
                                                             if (portCreated == false) {
-                                                                throw new EJBException(String.format("could not create port %s", "router_name" + router_name + "test_use" + i));
+                                                                throw new EJBException(String.format("could not create port %s", router_name + "port" + i));
                                                             }
 
-                                                            String portid = client.getPort("router_name" + router_name + "test_use" + i).getId();
+                                                            String portid = client.getPort(router_name + "port" + i ).getId();
                                                             rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
                                                         }
                                                         i++;
@@ -462,12 +462,12 @@ public class OpenStackPush {
 
                                                         port.toBuilder().networkId(netid)
                                                                 .fixedIp(nexthop, subnetid)
-                                                                .name("router_name" + router_name + "test_use" + i)
+                                                                .name(router_name + "port" + i)
                                                                 .adminState(true);
 
                                                         osClient.networking().port().create(port);
                                                         OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-                                                        String portid = client.getPort("router_name" + router_name + "test_use" + i).getId();
+                                                        String portid = client.getPort( router_name + "port" + i).getId();
                                                         rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
                                                         i++;
                                                         j++;
@@ -480,12 +480,12 @@ public class OpenStackPush {
                                                         String subnetid = s.getId();
 
                                                         port.toBuilder().networkId(netid)
-                                                                .name("router_name" + router_name + "test_use" + i)
+                                                                .name(router_name + "port" + i)
                                                                 .adminState(true);
 
                                                         osClient.networking().port().create(port);
                                                         OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-                                                        String portid = client.getPort("router_name" + router_name + "test_use" + i).getId();
+                                                        String portid = client.getPort(router_name + "port" + i).getId();
                                                         rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
                                                         i++;
                                                         j++;
