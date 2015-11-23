@@ -100,11 +100,12 @@ public class OpenStackPush {
         requests.addAll(volumesAttachmentRequests(modelRef, modelReduct, false));
         requests.addAll(volumeRequests(modelRef, modelReduct, false));
         requests.addAll((portRequests(modelRef, modelReduct, false)));
-        requests.addAll(subnetRequests(modelRef, modelReduct, false));
-        requests.addAll(networkRequests(modelRef, modelReduct, false));
+        
         requests.addAll(serverRequests(modelRef, modelReduct, false));
         requests.addAll(layer3Requests(modelRef, modelReduct, false));
         requests.addAll(isAliasRequest(modelRef, modelReduct, false));
+        requests.addAll(subnetRequests(modelRef, modelReduct, false));
+        requests.addAll(networkRequests(modelRef, modelReduct, false));
         requests.addAll(networkRequests(modelRef, modelAdd, true));
         requests.addAll(subnetRequests(modelRef, modelAdd, true));
         requests.addAll(volumeRequests(modelRef, modelAdd, true));
@@ -355,6 +356,9 @@ public class OpenStackPush {
                                                             osClient.networking().router().update(router.toBuilder().id(router_id).externalGateway(netid).build());
                                                             OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                                                         } else {
+                                                            if(client.getPort(router_name+"port"+ i) != null){
+                                                                        i++;
+                                                                    }
                                                             port.toBuilder().networkId(netid)
                                                                     .fixedIp(nexthop, subnetid)
                                                                     .name(router_name + "port" + i)
@@ -383,6 +387,9 @@ public class OpenStackPush {
                                                             for (String ip : info.getInfo().getAllAddresses()) {
                                                                 try {
                                                                     Port port = new NeutronPort();
+                                                                    if(client.getPort(router_name+"port"+ i) != null){
+                                                                        i++;
+                                                                    }
                                                                     port.toBuilder().name(router_name + "port" + i )
                                                                             .adminState(true)
                                                                             .fixedIp(ip, s.getId())
@@ -459,7 +466,9 @@ public class OpenStackPush {
                                                         Port port = new NeutronPort();
                                                         netid = s.getNetworkId();
                                                         String subnetid = s.getId();
-
+                                                        if(client.getPort(router_name+"port"+ i) != null){
+                                                                        i++;
+                                                                    }
                                                         port.toBuilder().networkId(netid)
                                                                 .fixedIp(nexthop, subnetid)
                                                                 .name(router_name + "port" + i)
@@ -478,7 +487,9 @@ public class OpenStackPush {
                                                         Port port = new NeutronPort();
                                                         netid = s.getNetworkId();
                                                         String subnetid = s.getId();
-
+                                                        if(client.getPort(router_name+"port"+ i) != null){
+                                                                        i++;
+                                                                    }
                                                         port.toBuilder().networkId(netid)
                                                                 .name(router_name + "port" + i)
                                                                 .adminState(true);
