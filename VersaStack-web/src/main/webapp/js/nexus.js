@@ -258,25 +258,20 @@ function addQuery() {
 
 var routeCounter = 1;
 var routeLimit = 10;
-function addQuery() {
+function addRoute() {
     if (routeCounter === routeLimit) {
         alert("You have reached the limit of routes.");
     }
-    else {
-        var table = document.getElementById("route-table");
-        var tableHeight = table.rows.length;
-
-        var row = table.insertRow(tableHeight - 1);
-        var cell1 = row.insertCell(0);
-        var cell2 = row.insertCell(1);
+    else {        
         routeCounter++;
-        cell1.innerHTML = '<input type="text" id="sparroute' + routeCounter + '" name="sparroute' + routeCounter + '" size="70" />';
-        cell2.innerHTML = '<div class="view-flag">'
-                + '<input type="checkbox" id="inc' + routeCounter + '" name="viewInclusive' + routeCounter + '"/><label for="inc' + routeCounter + '">Inclusive</label>'
-                + '</div><div class="view-flag">'
-                + '<input type="checkbox" id="sub' + routeCounter + '" name="subRecursive' + routeCounter + '"/><label for="sub' + routeCounter + '">Subtree Rec.</label>'
-                + '</div><div class="view-flag">'
-                + '<input type="checkbox" id="sup' + routeCounter + '" name="supRecursive' + routeCounter + '"/><label for="sup' + routeCounter + '">Supertree Rec.</label></div>';
+        var block = document.getElementById('route-block');
+
+        block.innerHTML = block.innerHTML + 
+                '<div>' + 
+                '<input type="text" name="route' + routeCounter + '-from" placeholder="From"/>' +
+                '<input type="text" name="route' + routeCounter + '-to" placeholder="To"/>' +
+                '<input type="text" name="route' + routeCounter + '-next" placeholder="Next Hop"/>' +
+                '</div>';
     }
 
     evt.preventDefault();

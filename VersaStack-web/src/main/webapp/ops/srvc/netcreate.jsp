@@ -33,16 +33,6 @@
                        user="root"  password="root"/>
 
     <body>
-        <script>
-            $(document).ready(function () {
-                $("#custom-toggle").click(function (evt) {
-                    $("#custom-fields").toggleClass("hide");
-
-                    evt.preventDefault();
-                });
-            });
-        </script>
-
         <!-- NAV BAR -->
         <div id="nav">
         </div>
@@ -130,14 +120,13 @@
                                                             <input type="text" name="route1-to" placeholder="To"/>
                                                             <input type="text" name="route1-next" placeholder="Next Hop"/>
                                                         </div>
-                                                        <div>
-                                                            <input type="text" name="route-from" placeholder="From"/>
-                                                            <input type="text" name="route-to" placeholder="To"/>
-                                                            <input type="text" name="route-next" placeholder="Next Hop"/>
-                                                        </div>
                                                     </div>
                                                     <div>
-                                                        <input type="checkbox" name="route-prop" value="true"/>   Enable VPN Routes Propogation
+                                                        <input type="checkbox" name="route-prop" value="true"/>   Enable VPN Routes Propogation                                                       
+                                                    </div>
+                                                    <div>
+                                                         <input class="button-register" type="button" 
+                                                               value="Add Route" onClick="addRoute()">
                                                     </div>
                                                 </td>
                                             </tr>
