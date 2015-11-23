@@ -513,7 +513,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
 
             //add basic routing for the subnet
             Resource routingService = spaModel.getResource(resNetwork.toString() + "-routingService");
-            Resource routingTable = spaModel.createResource(resNetwork + "rtb-" + Integer.toString(resNetwork.hashCode()));
+            Resource routingTable = spaModel.createResource(resNetwork + "-rtb-" + Integer.toString(resNetwork.hashCode()));
             spaModel.add(routingService, Mrs.providesRoutingTable, routingTable);
             Resource route = spaModel.createResource(routingTable.toString() + "-route" + subnet + "local-route");
             spaModel.add(routingService, Mrs.providesRoute, route);
