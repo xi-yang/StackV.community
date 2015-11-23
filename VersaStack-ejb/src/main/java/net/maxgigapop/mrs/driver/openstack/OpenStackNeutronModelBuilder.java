@@ -269,17 +269,7 @@ public class OpenStackNeutronModelBuilder {
                         model.add(model.createStatement(SUBNET, hasNetworkAddress, SUBNET_NETWORK_ADDRESS));
                         model.add(model.createStatement(SUBNET_NETWORK_ADDRESS, type, "ipv4-prefix"));
                         model.add(model.createStatement(SUBNET_NETWORK_ADDRESS, value, s.getCidr()));
-                        //FOR THE GATEWAY
-                        if (s.getGateway() != null && !s.getGateway().isEmpty()) {
-                            String gatewayadd = s.getGateway();
-                            String gatewayName = SUBNET.toString() + ":subnetgateway+" + gatewayadd;
-                            Resource GATEWAY = RdfOwl.createResource(model, ResourceTool.getResourceUri(gatewayName, OpenstackPrefix.gateway, gatewayName), biPort);
-                            Resource GATEWAYADDRESS = RdfOwl.createResource(model, ResourceTool.getResourceUri(GATEWAY.toString() + ":address", OpenstackPrefix.gateway_address, GATEWAY.toString()), networkAddress);
-                            model.add(model.createStatement(SUBNET, hasBidirectionalPort, GATEWAY));
-                            model.add(model.createStatement(GATEWAY, hasNetworkAddress, GATEWAYADDRESS));//LEAVE FOR THE FUTHER DEVELOP FOR THE MANNER
-                            model.add(model.createStatement(GATEWAYADDRESS, value, gatewayadd));
-                            model.add(model.createStatement(GATEWAY, type, "gateway"));
-                        }
+                        
                         for (Port port : openstackget.getPorts()) {
                             for (String subID : openstackget.getPortSubnetID(port)) {
                                 String subName = openstackget.getResourceName(openstackget.getSubnet(subID));
@@ -392,18 +382,6 @@ public class OpenStackNeutronModelBuilder {
                         model.add(model.createStatement(SUBNET, hasNetworkAddress, SUBNET_NETWORK_ADDRESS));
                         model.add(model.createStatement(SUBNET_NETWORK_ADDRESS, type, "ipv4-prefix"));
                         model.add(model.createStatement(SUBNET_NETWORK_ADDRESS, value, s.getCidr()));
-
-                        if (s.getGateway() != null && !s.getGateway().isEmpty()) {
-                            String gatewayadd = s.getGateway();
-                            String gatewayName = SUBNET.toString() + ":subnetgateway+" + gatewayadd;
-                            Resource GATEWAY = RdfOwl.createResource(model, ResourceTool.getResourceUri(gatewayName, OpenstackPrefix.gateway, gatewayName), biPort);
-                            Resource GATEWAYADDRESS = RdfOwl.createResource(model, ResourceTool.getResourceUri(GATEWAY.toString() + ":address", OpenstackPrefix.gateway_address, GATEWAY.toString()), networkAddress);
-                            model.add(model.createStatement(SUBNET, hasBidirectionalPort, GATEWAY));
-                            model.add(model.createStatement(GATEWAY, hasNetworkAddress, GATEWAYADDRESS));//LEAVE FOR THE FUTHER DEVELOP FOR THE MANNER
-                            model.add(model.createStatement(GATEWAYADDRESS, value, gatewayadd));
-                            model.add(model.createStatement(GATEWAY, type, "gateway"));
-
-                        }
 
                         //subnet route modeling 
                         model.add(model.createStatement(NETWORK, hasService, ROUTINGSERVICE));
