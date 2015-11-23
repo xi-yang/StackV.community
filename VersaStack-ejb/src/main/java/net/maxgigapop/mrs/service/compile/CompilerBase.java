@@ -29,10 +29,9 @@ import java.util.List;
 import java.util.Map;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.bean.ServiceDelta;
-import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.service.orchestrate.ActionBase;
 import net.maxgigapop.mrs.service.orchestrate.WorkerBase;
-import net.maxgigapop.mrs.common.Spa;
+import net.maxgigapop.mrs.common.*;
 
 /**
  *
@@ -54,6 +53,7 @@ public class CompilerBase {
         throw new EJBException("CompilerBase::compile() is abstract. Use a specific implementation instead!");
     }
 
+    //@TODO: add back all the non-spa statements
     protected Map<Resource, OntModel> decomposeByPolicyActions(OntModel spaModel) {
         Map<Resource, OntModel> leafPolicyModelMap = null;
         List<Resource> spaActions = getPolicyActionList(spaModel);
@@ -236,7 +236,24 @@ public class CompilerBase {
             }
             listStmt.add(stmt);
         }
-        // add spa:type statement for res type
+        // add mrs:type statement for res type
+        its = model.listStatements(res, Mrs.type, (Resource) null);
+        while (its.hasNext()) {
+            Statement stmt = its.next();
+            if (listStmt == null) {
+                listStmt = new ArrayList<>();
+            }
+            listStmt.add(stmt);
+        }
+        // add spa:value statement for res type
+        its = model.listStatements(res, Mrs.value, (Resource) null);
+        while (its.hasNext()) {
+            Statement stmt = its.next();
+            if (listStmt == null) {
+                listStmt = new ArrayList<>();
+            }
+            listStmt.add(stmt);
+        }
         its = model.listStatements(res, Spa.type, (Resource) null);
         while (its.hasNext()) {
             Statement stmt = its.next();
