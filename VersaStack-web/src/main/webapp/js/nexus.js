@@ -237,10 +237,10 @@ function addQuery() {
         alert("You have reached the limit of querys.");
     }
     else {
-        var table = document.getElementById("query-table");
+        var table = document.getElementById("net-custom-form");
         var tableHeight = table.rows.length;
 
-        var row = table.insertRow(tableHeight - 1);
+        var row = table.insertRow(tableHeight - 2);
         var cell1 = row.insertCell(0);
         var cell2 = row.insertCell(1);
         queryCounter++;
@@ -251,6 +251,32 @@ function addQuery() {
                 + '<input type="checkbox" id="sub' + queryCounter + '" name="subRecursive' + queryCounter + '"/><label for="sub' + queryCounter + '">Subtree Rec.</label>'
                 + '</div><div class="view-flag">'
                 + '<input type="checkbox" id="sup' + queryCounter + '" name="supRecursive' + queryCounter + '"/><label for="sup' + queryCounter + '">Supertree Rec.</label></div>';
+    }
+
+    evt.preventDefault();
+}
+
+var routeCounter = 1;
+var routeLimit = 10;
+function addQuery() {
+    if (routeCounter === routeLimit) {
+        alert("You have reached the limit of routes.");
+    }
+    else {
+        var table = document.getElementById("route-table");
+        var tableHeight = table.rows.length;
+
+        var row = table.insertRow(tableHeight - 1);
+        var cell1 = row.insertCell(0);
+        var cell2 = row.insertCell(1);
+        routeCounter++;
+        cell1.innerHTML = '<input type="text" id="sparroute' + routeCounter + '" name="sparroute' + routeCounter + '" size="70" />';
+        cell2.innerHTML = '<div class="view-flag">'
+                + '<input type="checkbox" id="inc' + routeCounter + '" name="viewInclusive' + routeCounter + '"/><label for="inc' + routeCounter + '">Inclusive</label>'
+                + '</div><div class="view-flag">'
+                + '<input type="checkbox" id="sub' + routeCounter + '" name="subRecursive' + routeCounter + '"/><label for="sub' + routeCounter + '">Subtree Rec.</label>'
+                + '</div><div class="view-flag">'
+                + '<input type="checkbox" id="sup' + routeCounter + '" name="supRecursive' + routeCounter + '"/><label for="sup' + routeCounter + '">Supertree Rec.</label></div>';
     }
 
     evt.preventDefault();

@@ -27,11 +27,22 @@
         <link rel="stylesheet" href="/VersaStack-web/css/driver.css">
     </head>
 
+
     <sql:setDataSource var="rains_conn" driver="com.mysql.jdbc.Driver"
                        url="jdbc:mysql://localhost:3306/rainsdb"
                        user="root"  password="root"/>
 
     <body>
+        <script>
+            $(document).ready(function () {
+                $("#custom-toggle").click(function (evt) {
+                    $("#custom-fields").toggleClass("hide");
+
+                    evt.preventDefault();
+                });
+            });
+        </script>
+
         <!-- NAV BAR -->
         <div id="nav">
         </div>
@@ -52,13 +63,13 @@
                                     <button type="button" id="button-service-return">Cancel</button>
                                 </c:if>
                                 <table class="management-table">
-                                    
+
                                 </table>
                             </div>
                         </div>
                         <div id="service-bottom">                            
                             <div id="service-fields">                                
-                                <form id="vm-form" action="/VersaStack-web/ServiceServlet" method="post">
+                                <form id="service-template-form" action="/VersaStack-web/ServiceServlet" method="post">
                                     <input type="hidden" name="userID" value="${user.getId()}"/>
                                     <table class="management-table" id="net-template-form" style="margin-bottom: 0px;"> 
                                         <thead>
@@ -78,15 +89,18 @@
                                             </tr>
                                         </tbody>
                                     </table>    
-                                    
+                                    <input type="hidden" name="netCreate" value="true"/>
+                                </form>  
+                                <form id="service-custom-form" action="/VersaStack-web/ServiceServlet" method="post">
+                                    <input type="hidden" name="userID" value="${user.getId()}"/>    
                                     <table class="management-table" id="net-custom-form">
                                         <thead>
                                             <tr>
                                                 <th>Custom</th>
-                                                <th></th>
-                                            </tr>
+                                                <th><div id="custom-toggle">Display</div></th>
+                                        </tr>
                                         </thead>
-                                        <tbody>
+                                        <tbody id="custom-fields">
                                             <tr>
                                                 <td>Topology URI</td>
                                                 <td>
@@ -108,21 +122,35 @@
                                                 <td><input type="text" name="netCidr" /></td>
                                             </tr>
                                             <tr>
-                                                <td>Field 3</td>
+                                                <td>Route Table</td>
                                                 <td>
-                                                    <select name="field3">
-                                                        <option value="select1">Option 1</option>
-                                                        <option value="select2">Option 2</option>
-                                                    </select>
+                                                    <div id="route-block">
+                                                        <div>
+                                                            <input type="text" name="route1-from" placeholder="From"/>
+                                                            <input type="text" name="route1-to" placeholder="To"/>
+                                                            <input type="text" name="route1-next" placeholder="Next Hop"/>
+                                                        </div>
+                                                        <div>
+                                                            <input type="text" name="route-from" placeholder="From"/>
+                                                            <input type="text" name="route-to" placeholder="To"/>
+                                                            <input type="text" name="route-next" placeholder="Next Hop"/>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <input type="checkbox" name="route-prop" value="true"/>   Enable VPN Routes Propogation
+                                                    </div>
                                                 </td>
+                                            </tr>
+                                            <tr>
+                                                <td></td>
+                                                <td></td>
                                             </tr>
                                             <tr>
                                                 <td></td>
                                                 <td><input type="submit" name="custom" value="Submit" /></td>
                                             </tr>
                                         </tbody>
-                                    </table>
-                                    
+                                    </table>                                    
                                     <input type="hidden" name="netCreate" value="true"/>
                                 </form>
                             </div>

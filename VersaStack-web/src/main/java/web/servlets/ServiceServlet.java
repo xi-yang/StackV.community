@@ -239,6 +239,13 @@ public class ServiceServlet extends HttpServlet {
             } else if (driverPath.contains("Os") || driverPath.contains("os")) {
                 paramMap.put("driverType", "os");
             }
+            
+            String routeString = "";
+            routeString += "from+" + paramMap.get("route-from") + ",";
+            routeString += "to+" + paramMap.get("route-to") + ",";
+            routeString += "nextHop+" + paramMap.get("route-next") + "\r\n";
+            
+            paramMap.put("netRoutes", routeString);
 
             retCode = servBean.createNetwork(paramMap);
         }
