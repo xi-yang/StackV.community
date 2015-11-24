@@ -34,6 +34,7 @@ import org.openstack4j.model.compute.Server;
 import org.openstack4j.model.compute.ServerCreate;
 import org.openstack4j.model.compute.builder.ServerCreateBuilder;
 import org.openstack4j.model.network.*;
+import org.openstack4j.model.network.builder.RouterBuilder;
 import org.openstack4j.model.storage.block.*;
 import org.openstack4j.openstack.compute.internal.ServerServiceImpl;
 import org.openstack4j.openstack.compute.internal.ext.InterfaceServiceImpl;
@@ -584,8 +585,13 @@ public class OpenStackPush {
                                 Router r1 = client.getRouter(router_name);
                                 routerid = r1.getId();
                                 String subid = s.getId();
-
+                                if(client.getNetwork(s.getNetworkId()).isRouterExternal()){
+                                   r1.toBuilder().clearExternalGateway();
+                                   osClient.networking().router().update(r1);
+                                   
+                                }else{
                                 osClient.networking().router().detachInterface(routerid, subid, null);
+                                }
                                 j++;
                                 key_ip = "nexthop" + Integer.toString(j);
 
