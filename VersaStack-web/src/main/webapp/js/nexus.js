@@ -252,8 +252,6 @@ function addQuery() {
                 + '</div><div class="view-flag">'
                 + '<input type="checkbox" id="sup' + queryCounter + '" name="supRecursive' + queryCounter + '"/><label for="sup' + queryCounter + '">Supertree Rec.</label></div>';
     }
-
-    evt.preventDefault();
 }
 
 var routeCounter = 1;
@@ -273,8 +271,63 @@ function addRoute() {
                 '<input type="text" name="route' + routeCounter + '-next" placeholder="Next Hop"/>' +
                 '</div>';
     }
+}
 
-    evt.preventDefault();
+var subnetCounter = 1;
+var subnetLimit = 10;
+function addSubnet() {
+     if (subnetCounter === subnetLimit) {
+        alert("You have reached the limit of subnets.");
+    }
+    else {
+        var table = document.getElementById("net-custom-form");
+        var tableHeight = table.rows.length;
+        subnetCounter++;
+
+        var row = table.insertRow(tableHeight - 1);
+        row.id = 'subnet' + subnetCounter;
+        
+        var cell1 = row.insertCell(0);
+        cell1.innerHTML = 'Subnet ' + subnetCounter;
+        var cell2 = row.insertCell(1);               
+        cell2.innerHTML = '<div>' +
+                '<input type="text" name="subnet' + subnetCounter + '-name" placeholder="Name"/>' +
+                '<input type="text" name="subnet' + subnetCounter + '-cidr" placeholder="CIDR Block"/>' +
+                '<div id="subnet' + subnetCounter + '-route-block">' +
+                '<div>' +
+                '<input type="text" name="subnet' + subnetCounter + '-route1-from" placeholder="From"/>\n' +
+                '<input type="text" name="subnet' + subnetCounter + '-route1-to" placeholder="To"/>\n' +
+                '<input type="text" name="subnet' + subnetCounter + '-route1-next" placeholder="Next Hop"/>\n' +
+                '</div>' +
+                '</div>' +
+                '<div>' +
+                '<input type="checkbox" name="subnet' + subnetCounter + '-route-prop" value="true"/>   Enable VPN Routes Propogation' +
+                '</div>' +
+                '<div>' +
+                '<input class="button-register" id="subnet' + subnetCounter + '-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">' +
+                '</div>' +
+                '</div>';
+    }
+}
+
+var subRouteCounter = 1;
+var subRouteLimit = 10;
+function addSubnetRoute(subnetNum) {
+    if (subRouteCounter === subRouteLimit) {
+        alert("You have reached the limit of routes.");
+    }
+    else {        
+        subRouteCounter++;
+        var block = document.getElementById(subnetNum + '-block');
+
+        block.innerHTML = block.innerHTML + 
+                '<div>' + 
+                '<input type="text" name="' + subnetNum + subRouteCounter + '-from" placeholder="From"/>' +
+                '<input type="text" name="' + subnetNum + subRouteCounter + '-to" placeholder="To"/>' +
+                '<input type="text" name="' + subnetNum + subRouteCounter + '-next" placeholder="Next Hop"/>' +
+                '</div>';
+    }
+
 }
 
 /*
