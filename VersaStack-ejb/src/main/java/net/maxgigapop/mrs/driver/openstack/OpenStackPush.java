@@ -33,6 +33,7 @@ import org.openstack4j.model.compute.ActionResponse;
 import org.openstack4j.model.compute.Server;
 import org.openstack4j.model.compute.ServerCreate;
 import org.openstack4j.model.compute.builder.ServerCreateBuilder;
+import org.openstack4j.model.identity.Tenant;
 import org.openstack4j.model.network.*;
 import org.openstack4j.model.network.builder.RouterBuilder;
 import org.openstack4j.model.storage.block.*;
@@ -151,13 +152,16 @@ public class OpenStackPush {
                 osClient.blockStorage().volumes().delete(volume.getId());
 
             } else if (o.get("request").toString().equals("CreateNetworkRequests")) {
-
+                Tenant tenant = osClient.identity().tenants().getByName(tenantName);
+                String tenantid = tenant.getId();
                 Network network = new NeutronNetwork();
                 network.toBuilder().name(o.get("name").toString())
-                        .tenantId("3cf2d992f604479dbcb1a6c679c6697a")
+                        .tenantId(tenantid)
                         .adminStateUp(true); //hard code here
                 osClient.networking().network().create(network);
-
+                if(osClient.networking().network().list().contains(network)){
+                    System.out.println("find it");
+                }
             } else if (o.get("request").toString().equals("CreateSubnetRequest")) {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 String netid = null;
@@ -754,7 +758,7 @@ public class OpenStackPush {
                     o.put("exteral-network", client.getResourceName(n));
                 }
                 //1.4 TODO if the netwrk is external, make sure it has the route to connect
-
+                
                 if (creation == true) {
                     o.put("request", "CreateNetworkRequests");
                 } else {
