@@ -299,7 +299,7 @@ public class AwsPush {
                             Thread.currentThread().interrupt();
                         }
                         tries++;
-                        if(tries >3){
+                        if (tries > 3) {
                             break;
                         }
                         continue;
@@ -784,7 +784,7 @@ public class AwsPush {
         String query;
 
         query = "SELECT ?port WHERE {?port a  nml:BidirectionalPort ."
-                + "?port  mrs:type \"network-interface\"}";
+                + "FILTER (NOT EXISTS {?port mrs:type ?type})} ";
         ResultSet r = executeQuery(query, emptyModel, modelReduct);
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
@@ -947,10 +947,11 @@ public class AwsPush {
                 r1.next();
                 String portIdTag = ResourceTool.getResourceName(port.asResource().toString(), AwsPrefix.nic);
 
-                query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:type \"network-interface\"}";
+                query = "SELECT ?tag WHERE {<" + port.asResource() + "> a  nml:BidirectionalPort ."
+                        + "FILTER (NOT EXISTS {<" + port.asResource() + "> mrs:type ?type})} ";
                 ResultSet r2 = executeQuery(query, model, modelReduct);
                 if (!r2.hasNext()) {
-                    throw new EJBException(String.format("bidirectional port %s to be detaches is not of type network-interface", port));
+                    throw new EJBException(String.format("bidirectional port %s to be detaches is not a  network-interface", port));
                 }
 
                 String attachmentId = "";
@@ -2322,7 +2323,7 @@ public class AwsPush {
 
         //query for the port 
         query = "SELECT ?port WHERE {?port a  nml:BidirectionalPort ."
-                + "?port  mrs:type \"network-interface\"}";
+                + "FILTER (NOT EXISTS {?port mrs:type ?type})} ";
         ResultSet r = executeQuery(query, emptyModel, modelAdd);
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
@@ -2441,7 +2442,8 @@ public class AwsPush {
                 r1.next();
                 String portIdTag = ResourceTool.getResourceName(port.asResource().toString(), AwsPrefix.nic);
 
-                query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:type \"network-interface\"}";
+                query = "SELECT ?tag WHERE {<" + port.asResource() + "> a nml:BidirectionalPort ."
+                        + "FILTER (NOT EXISTS {<" + port.asResource() + ">  mrs:type ?type})}";
                 ResultSet r2 = executeQuery(query, model, modelAdd);
                 if (!r2.hasNext()) {
                     throw new EJBException(String.format("bidirectional port %s to be attached to intsnace does not specify a network interface type", port));
