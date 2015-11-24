@@ -63,13 +63,8 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, topologyURI, defaultImage, defaultFlavor);
         List<JSONObject> requests = null;
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
-        try {
-            requests = push.propagate(model, modelAdd, modelReduc);
-            driverInstance.putProperty(requestId, requests.toString());
-        } catch (Exception ex) {
-            Logger.getLogger(OpenStackDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
-        }
-
+        requests = push.propagate(model, modelAdd, modelReduc);
+        driverInstance.putProperty(requestId, requests.toString());
         DriverInstancePersistenceManager.merge(driverInstance);
         Logger.getLogger(OpenStackDriver.class.getName()).log(Level.INFO, "OpenStack driver delta models succesfully propagated");
     }
