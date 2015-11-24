@@ -116,7 +116,7 @@ public class OpenStackNeutronModelBuilder {
         //Resource OpenstackTopology = model.createResource("urn:ogf:network:dragon.maxgigapop.net:topology");
         Resource OpenstackTopology = RdfOwl.createResource(model, topologyURI, topology);
         //Resource Neutron = model.createResource("urn:ogf:network:dragon.maxgigapop.net:openstack-neutron");
-        Resource networkService = RdfOwl.createResource(model, ResourceTool.getResourceUri("", OpenstackPrefix.networkService, ""), Mrs.VirtualCloudService);
+        Resource networkService = RdfOwl.createResource(model, ResourceTool.getResourceUri(topologyURI + ":network-service", OpenstackPrefix.networkService, ""), Mrs.VirtualCloudService);
 
         Resource routingService = RdfOwl.createResource(model, topologyURI + ":routing-service", RoutingService);
         Resource cinderService = RdfOwl.createResource(model, topologyURI + ":cinder-service", blockStorageService);
