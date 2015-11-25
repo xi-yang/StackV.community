@@ -187,7 +187,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
     private OntModel filterTopologyNode(OntModel model, Resource resPlace, String placeToUri) {
         OntModel placeModel = null;
         // place VM and subnet to AWS VPC - Subnet
-        String sparqlString = "SELECT ?vpc ?hvservice ?subnet ?port WHERE {"
+        String sparqlString = "SELECT ?vpc ?hvservice ?subnet WHERE {"
                 + "?topology a nml:Topology ."
                 + "?topology nml:hasTopology ?vpc ."
                 + "?vpc a nml:Topology . "
@@ -195,8 +195,8 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
                 + "?hvservice a mrs:HypervisorService . "
                 + "?vpc nml:hasService ?vpcsw . "
                 + "?vpcsw mrs:providesSubnet ?subnet . "
-                + String.format("OPTIONAL { ?vm nml:hasBidirectionalPort ?port. FILTER (?vm = <%s>) }", resPlace.getURI())
-                + String.format("FILTER (?subnet = <%s>) ", placeToUri)
+                + "?res a nml:Node ."
+                + String.format("FILTER (?subnet = <%s> && ?res = <%s>) ", placeToUri, resPlace.getURI())
                 + "}";
         ResultSet r = ModelUtil.sparqlQuery(model, sparqlString);
         if (r.hasNext()) {
@@ -209,10 +209,6 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             }
             placeModel.add(resHostOrVpc, Nml.hasNode, resPlace);
             placeModel.add(resHvService, Mrs.providesVM, resPlace);
-            if (querySolution.contains("port")) {
-                Resource resPort = querySolution.get("port").asResource();
-                placeModel.add(resSubnet, Nml.hasBidirectionalPort, resPort);
-            }
             return placeModel;
         }
         // place vm to topology or host node that has hypervisor
@@ -220,7 +216,8 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
         sparqlString = "SELECT ?hosttopo ?hvservice WHERE {"
                 + "?hosttopo nml:hasService ?hvservice . "
                 + "?hvservice a mrs:HypervisorService . "
-                + String.format("FILTER (?hosttopo = <%s>) ", placeToUri)
+                + "?res a nml:Node ."
+                + String.format("FILTER (?hosttopo = <%s> && ?res = <%s>) ", placeToUri, resPlace.getURI())
                 + "}";
         r = ModelUtil.sparqlQuery(model, sparqlString);
         if (r.hasNext()) {
@@ -237,7 +234,8 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
         // Place interface to subnet 
         sparqlString = "SELECT ?subnet WHERE {"
                 + "?subnet a mrs:SwitchingSubnet ."
-                + String.format("FILTER (?subnet = <%s>)", placeToUri)
+                + "?res a nml:BidirectionalPort ."
+                + String.format("FILTER (?subnet = <%s> && ?res = <%s>) ", placeToUri, resPlace.getURI())
                 + "}";
         r = ModelUtil.sparqlQuery(model, sparqlString);
         if (r.hasNext()) {

@@ -831,7 +831,7 @@ public class MCETools {
         Resource resLink = spaModel.getResource(res.getURI());
         ModelUtil.listRecursiveDownTree(resLink, Spa.getURI(), listStmtsToRemove);
         if (listStmtsToRemove.isEmpty()) {
-            throw new EJBException(String.format("MCETools.removeResolvedAnnotation cannot remove SPA statements under %s", res));
+            return;
         }
 
         String sparql = "SELECT ?anyOther ?policyAction WHERE {"
