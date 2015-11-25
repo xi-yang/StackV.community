@@ -95,7 +95,7 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         String requests = driverInstance.getProperty(requestId);
 
-        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, topologyURI, defaultFlavor, defaultFlavor);
+        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, topologyURI, defaultImage, defaultFlavor);
         ObjectMapper mapper = new ObjectMapper();
         List<JSONObject> r = new ArrayList();
         try {
