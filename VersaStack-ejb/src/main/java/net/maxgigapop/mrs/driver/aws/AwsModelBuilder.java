@@ -200,13 +200,12 @@ public class AwsModelBuilder {
             String subnetId = ec2Client.getIdTag(n.getSubnetId());
             String vpcId = ec2Client.getIdTag(ec2Client.getSubnet(n.getSubnetId()).getVpcId());
             Resource PORT = RdfOwl.createResource(model, ResourceTool.getResourceUri(portId,AwsPrefix.nic,vpcId,subnetId,portId), biPort);
-            model.add(model.createStatement(PORT, Mrs.type, "network-interface"));
 
             //specify the addresses of the network interfaces 
             //put the private ip (if any) of the network interface in the model
             for (NetworkInterfacePrivateIpAddress q : n.getPrivateIpAddresses()) {
                 if (q.getPrivateIpAddress() != null) {
-                    Resource PRIVATE_ADDRESS = RdfOwl.createResource(model, ResourceTool.getResourceUri(portId,AwsPrefix.nicNetworkAddress,vpcId,subnetId,portId,q.getPrivateIpAddress()), networkAddress);
+                    Resource PRIVATE_ADDRESS = RdfOwl.createResource(model, ResourceTool.getResourceUri(PORT.toString()+":ip+"+q.getPrivateIpAddress(),AwsPrefix.nicNetworkAddress,vpcId,subnetId,portId,q.getPrivateIpAddress()), networkAddress);
                     model.add(model.createStatement(PORT, hasNetworkAddress, PRIVATE_ADDRESS));
                     model.add(model.createStatement(PRIVATE_ADDRESS, type, "ipv4:private"));
                     model.add(model.createStatement(PRIVATE_ADDRESS, value, q.getPrivateIpAddress()));

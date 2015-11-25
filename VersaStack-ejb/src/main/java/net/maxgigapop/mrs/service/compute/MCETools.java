@@ -37,6 +37,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
@@ -45,6 +47,8 @@ import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.Spa;
 import net.maxgigapop.mrs.common.TagSet;
 import org.json.simple.JSONObject;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.JsonPathException;
 
 /**
  *
@@ -827,7 +831,7 @@ public class MCETools {
         Resource resLink = spaModel.getResource(res.getURI());
         ModelUtil.listRecursiveDownTree(resLink, Spa.getURI(), listStmtsToRemove);
         if (listStmtsToRemove.isEmpty()) {
-            throw new EJBException(String.format("MCETools.removeResolvedAnnotation cannot remove SPA statements under %s", res));
+            return;
         }
 
         String sparql = "SELECT ?anyOther ?policyAction WHERE {"
@@ -847,5 +851,26 @@ public class MCETools {
             spaModel.remove(resAnyOther, Spa.dependOn, resPolicy);
         }
         //spaModel.remove(listStmtsToRemove);
+    }
+    
+    public static String formatJsonExport(String jsonExport, String formatOutput)  {
+        // get all format patterns
+        Matcher m = Pattern.compile("\\%[^\\%]+\\%").matcher(formatOutput);
+        List<String> jsonPathList = new ArrayList();
+        while (m.find()) {
+            String jsonPath = m.group();
+            jsonPathList.add(jsonPath);
+        }
+        for (String jsonPath : jsonPathList) {
+            try {
+                String formattedPattern = JsonPath.parse(jsonExport).read(jsonPath.substring(1, jsonPath.length() - 1));
+                formatOutput = formatOutput.replace(jsonPath, formattedPattern);
+            } catch (Exception ex) {
+                throw new EJBException(String.format("MCETools.formatJsonExport failed to export with JsonPath('%s') from:\n %s",
+                        jsonPath.substring(1, jsonPath.length() - 1), jsonExport));
+            }
+
+        }
+        return formatOutput;
     }
 }

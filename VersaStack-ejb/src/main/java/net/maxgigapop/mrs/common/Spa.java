@@ -53,6 +53,8 @@ public class Spa {
 
     public static final Property value = m_model.createProperty("http://schemas.ogf.org/mrs/2015/02/spa#value");
 
+    public static final Property format = m_model.createProperty("http://schemas.ogf.org/mrs/2015/02/spa#format");
+
     public static final Resource Abstraction = m_model.createResource("http://schemas.ogf.org/mrs/2015/02/spa#Abstraction");
 
     public static final Resource Condition = m_model.createResource("http://schemas.ogf.org/mrs/2015/02/spa#Condition");
