@@ -5,6 +5,7 @@
  */
 package net.maxgigapop.mrs.driver.aws;
 
+import net.maxgigapop.mrs.common.BatchResourcesTool;
 import net.maxgigapop.mrs.driver.aws.AwsDCGet;
 import net.maxgigapop.mrs.driver.aws.AwsEC2Get;
 import net.maxgigapop.mrs.driver.aws.AwsS3Get;

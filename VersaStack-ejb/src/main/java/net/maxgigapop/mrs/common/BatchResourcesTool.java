@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package net.maxgigapop.mrs.driver.aws;
+package net.maxgigapop.mrs.common;
 
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
@@ -114,7 +114,7 @@ public class BatchResourcesTool {
                         //new batch batchResource to single batchResource and new batch batchResource to batch
                         query = "SELECT ?x WHERE {<" + object.asResource().toString() + "> mrs:hasBatch ?x}";
                         ResultSet r2 = executeQuery(query, model);
-                        if (!r2.hasNext()) { //case of new batch batchResource to single batchResource
+                        if (!r2.hasNext()) { //case of new batch batchResource to single Resource
                             tmp.add(tmp.createStatement(newResource, next.getPredicate(), object.asResource()));
                         } else { //case of  new batch batchResource to batch batchResource
                             String re = object.asResource().toString() + "batch" + Integer.toString(i);
