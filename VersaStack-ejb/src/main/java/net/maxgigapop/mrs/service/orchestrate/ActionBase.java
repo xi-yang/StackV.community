@@ -7,8 +7,13 @@ package net.maxgigapop.mrs.service.orchestrate;
 
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
+import com.hp.hpl.jena.query.Query;
+import com.hp.hpl.jena.query.QueryExecution;
+import com.hp.hpl.jena.query.QueryExecutionFactory;
+import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.RDFNode;
@@ -30,6 +35,7 @@ import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.service.compute.IModelComputationElement;
@@ -269,20 +275,41 @@ public class ActionBase {
         return mergedModel;
     }
 
-    public void cleanupOutputDelta() {
+    public void sanitizeOutputDelta(ServiceDelta spaDelta) {
         if (this.outputDelta != null) {
             if (this.outputDelta.getModelAddition() != null && this.outputDelta.getModelAddition().getOntModel() != null) {
-                cleanupSpaModel(this.outputDelta.getModelAddition().getOntModel());
+                sanitizeSpaModel(this.outputDelta.getModelAddition().getOntModel(), spaDelta.getModelAddition().getOntModel());
             }
             if (this.outputDelta.getModelReduction() != null && this.outputDelta.getModelReduction().getOntModel() != null) {
-                cleanupSpaModel(this.outputDelta.getModelReduction().getOntModel());
+                sanitizeSpaModel(this.outputDelta.getModelReduction().getOntModel(), spaDelta.getModelReduction().getOntModel());
             }
         }
     }
 
-    private void cleanupSpaModel(OntModel spaModel) {
+    private void sanitizeSpaModel(OntModel spaModel, OntModel spaModelOrig) {
+        // Firstly add back all non-SPA statements in case some are missing in decomposition.
+        String sparql = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+                + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
+                + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
+                + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
+                + "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n"
+                + "CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o . "
+                + String.format("FILTER (regex(str(?p) , \"%s\", \"i\") || regex(str(?p) , \"%s\", \"i\")"
+                        + " || regex(str(?o) , \"%s\", \"i\") || regex(str(?o) , \"%s\", \"i\"))", Nml.NS, Mrs.NS, Nml.NS, Mrs.NS)
+                + "}";
+        Query query = QueryFactory.create(sparql);
+        QueryExecution qexec = QueryExecutionFactory.create(query, spaModelOrig);
+        Model spaModelBase = qexec.execConstruct();
+        spaModel.add(spaModelBase);
+        try {
+            log.log(Level.INFO, "\n>>>sanitizeSpaModel spaModelBase=\n" + ModelUtil.marshalModel(spaModelBase));
+        } catch (Exception ex) {
+            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        // Then remove all SPA policy annotations.
         List<Statement> listStmtsToRemove = new ArrayList<>();
-        String sparql = "SELECT ?policyAction ?policyData WHERE {"
+        sparql = "SELECT ?policyAction ?policyData WHERE {"
                 + "{ ?policyAction spa:exportTo ?policyData . "
                 //+ "FILTER not exists {?someRes spa:dependOn ?policyAction}"
                 + "} UNION {"
@@ -353,7 +380,7 @@ public class ActionBase {
         rs = ModelUtil.sparqlQuery(spaModel, sparql);
         while (rs.hasNext()) {
             String policyAnotation = rs.next().getResource("policyX").toString();
-            throw new EJBException(this + ".cleanupSpaModel() failed to clean up policy annotation: " + policyAnotation);
+            throw new EJBException(this + ".sanitizeSpaModel() failed to clean up policy annotation: " + policyAnotation);
         }
     }
 

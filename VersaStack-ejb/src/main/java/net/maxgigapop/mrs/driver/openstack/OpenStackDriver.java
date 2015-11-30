@@ -96,12 +96,12 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         try {
             r = mapper.readValue(requests, mapper.getTypeFactory().constructCollectionType(List.class, JSONObject.class));
         } catch (IOException ex) {
-            Logger.getLogger(OpenStackDriver.class.getName()).log(Level.SEVERE, null, ex);
+            throw new EJBException("failed to load JSON requests due to " + ex);
         }
         try {
             push.pushCommit(r, url, NATServer, username, password, tenant, topologyURI);
         } catch (InterruptedException ex) {
-            Logger.getLogger(OpenStackDriver.class.getName()).log(Level.SEVERE, null, ex);
+            throw new EJBException("failed to pushCommit due to " + ex);
         }
 
         driverInstance.getProperties().remove(requestId);
