@@ -283,10 +283,13 @@ public class HandleServiceCall {
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
             if (serviceDelta.getSystemDelta() == null) {
-                continue; // ??
+                continue; // ?? exception ??
             }
             if (serviceDelta.getStatus().equals("PROPAGATED")) {
                 SystemInstance systemInstance = SystemInstancePersistenceManager.findBySystemDelta(serviceDelta.getSystemDelta());
+                if (systemInstance.getSystemDelta().getDriverSystemDeltas() == null || systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
+                    throw new EJBException(HandleServiceCall.class.getName() + ".commitDeltas (by " + serviceInstance + ") has nothing to change (empty driver delta list).");
+                }
                 systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(systemInstance.getReferenceUUID());
                 Future<String> asynResult = systemCallHandler.commitDelta(systemInstance);
                 systemInstance.setCommitStatus(asynResult);
@@ -328,7 +331,6 @@ public class HandleServiceCall {
         return serviceInstance.getStatus();
     }
 
-    //@TODO: get recursive tree into reduction delta
     public String revertDeltas(String serviceInstanceUuid) {
         ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
         if (serviceInstance == null) {

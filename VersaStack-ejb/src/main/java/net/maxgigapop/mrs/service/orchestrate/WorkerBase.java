@@ -13,11 +13,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.ejb.EJB;
 import javax.ejb.EJBException;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -26,11 +22,7 @@ import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.SystemDelta;
 import net.maxgigapop.mrs.bean.VersionGroup;
-import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.core.SystemModelCoordinator;
-import net.maxgigapop.mrs.service.compute.IModelComputationElement;
-import net.maxgigapop.mrs.service.compute.MCE_MPVlanConnection;
-import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
  *
@@ -168,7 +160,8 @@ public class WorkerBase {
             // continue to batch execution (to exectute new action and/or wait ones in processing)            
         }
         //@TODO: throw exception if top loop times out
-        mergedRoot.cleanupOutputDelta();
+
+        mergedRoot.sanitizeOutputDelta(this.annoatedModelDelta);
         /*
         try {
             Logger.getLogger(WorkerBase.class.getName()).log(Level.INFO, "\n>>>Workflow--DeltaAddModel(after cleanup) Output=\n" + ModelUtil.marshalOntModel(mergedRoot.getOutputDelta().getModelAddition().getOntModel()));
