@@ -240,21 +240,23 @@ public class ServiceServlet extends HttpServlet {
                 paramMap.put("driverType", "os");
             }
 
-            for (int i = 0; i < 10; i++) {
+            for (int i = 1; i < 10; i++) {
                 if (paramMap.containsKey("subnet" + i + "-name")) {
                     String subnetString = "name+" + paramMap.get("subnet" + i + "-name") + "&cidr+" + paramMap.get("subnet" + i + "-cidr") + "&";
 
-                    for (int j = 0; j < 10; j++) {
-                        if (paramMap.containsKey("subnet" + i + "-route" + j + "to")) {
+                    for (int j = 1; j < 10; j++) {
+                        if (paramMap.containsKey("subnet" + i + "-route" + j + "-to")) {
                             subnetString += "routes";
-                            if (paramMap.containsKey("subnet" + i + "-route" + j + "from")) {
+                            if (paramMap.containsKey("subnet" + i + "-route" + j + "-from")) {
                                 subnetString += "from+" + paramMap.get("subnet" + i + "-route" + j + "-from") + ",";
                             }
                             subnetString += "to+" + paramMap.get("subnet" + i + "-route" + j + "-to") + ",";
                             if (paramMap.containsKey("subnet" + i + "-route" + j + "-next")) {
                                 subnetString += "nextHop+" + paramMap.get("subnet" + i + "-route" + j + "-next");
                             }
+                            
                             subnetString += "\r\n";
+                            
                         }
                     }
                     
