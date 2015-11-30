@@ -97,7 +97,7 @@ public class BatchResourcesTool {
             resourcesToDelete.add(q1.getResource("batch").asResource());
 
             //insert into the copy model all the batches identified by number
-            for (int i = 0; i < n; i++) {
+            for (int i = 1; i <= n; i++) {
                 //create a new bacth batchResource
                 String resourceName = name + "batch" + Integer.toString(i);
                 Resource newResource = tmp.getResource(resourceName);
@@ -183,7 +183,7 @@ public class BatchResourcesTool {
         List<Resource> resourcesToDelete = new ArrayList();
 
         String query = "SELECT ?r WHERE {?r rdf:type owl:NamedIndividual ."
-                + "FILTER regex(str(?r),\"batch\",'i')}";
+                + "FILTER regex(str(?r),\"(batch(?!0+$)\\\\d{1,19}$)\",'i')}";
         ResultSet r = executeQuery(query, tmp);
         while (r.hasNext()) {
             //find each of the bacthed resources 
