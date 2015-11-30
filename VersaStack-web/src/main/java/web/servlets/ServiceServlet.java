@@ -140,6 +140,19 @@ public class ServiceServlet extends HttpServlet {
     }
 
     private String createDriverInstance(HashMap<String, String> paramMap) {
+        // Handle templates 
+        
+        if (paramMap.containsKey("template1")) {
+            paramMap.put("apropname", "dummy");
+            paramMap.put("approval", "dummy");
+            paramMap.put("install", null);
+        
+        } else if (paramMap.containsKey("template2")) {
+            paramMap.put("apropname", "dummy");
+            paramMap.put("approval", "dummy");     
+            
+        }
+        
         // Connect dynamically generated elements
         for (int i = 1; i <= 5; i++) {
             if (paramMap.containsKey("apropname" + i)) {
@@ -164,6 +177,48 @@ public class ServiceServlet extends HttpServlet {
 
     private String createVMInstance(HashMap<String, String> paramMap) {
         int retCode = -1;
+        
+            // Handle templates 
+        
+        if (paramMap.containsKey("template1")) {
+            paramMap.put("aws", "dummy");
+            paramMap.put("root-size", "dummy");
+            paramMap.put("root-type", null);
+            paramMap.put("root-path", null);
+            paramMap.put("root-snapshot", null);
+            paramMap.put("volumes", null);
+            paramMap.put("vmQuantity", null);
+            paramMap.put("install", null);
+            
+            paramMap.put("1-path", null);
+            paramMap.put("1-size", null);  
+            paramMap.put("1-type", null);   
+            paramMap.put("1-snapshot", null);     
+            
+            paramMap.put("2-path", null);
+            paramMap.put("2-size", null);  
+            paramMap.put("2-type", null);   
+            paramMap.put("2-snapshot", null);   
+            
+        } else if (paramMap.containsKey("template2")) {
+            paramMap.put("aws", "dummy");
+            paramMap.put("root-size", "dummy");     
+            paramMap.put("root-type", null);
+            paramMap.put("root-path", null);
+            paramMap.put("root-snapshot", null);
+            paramMap.put("volumes", null);
+            paramMap.put("vmQuantity", null);
+            paramMap.put("graphTopo", null);
+            paramMap.put("install", null);
+           
+            paramMap.put("1-path", null);
+            paramMap.put("1-size", null);  
+            paramMap.put("1-type", null);   
+            paramMap.put("1-snapshot", null);   
+            
+            
+        }    
+        
         if (paramMap.get("driverType").equals("aws")) {
             if (!paramMap.get("graphTopo").equalsIgnoreCase("none")) {
                 paramMap.put("topologyUri", paramMap.get("graphTopo"));
