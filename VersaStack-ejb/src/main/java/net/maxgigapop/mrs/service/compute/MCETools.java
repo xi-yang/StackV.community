@@ -37,6 +37,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
@@ -44,6 +46,9 @@ import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.Spa;
 import net.maxgigapop.mrs.common.TagSet;
+import org.json.simple.JSONObject;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.JsonPathException;
 
 /**
  *
@@ -518,7 +523,7 @@ public class MCETools {
         return false;
     }
 
-    public static OntModel createL2PathVlanSubnets(Model model, Path path) {
+    public static OntModel createL2PathVlanSubnets(Model model, Path path, JSONObject portTeMap) {
         HashMap<Resource, HashMap<String, Object>> portParamMap = new HashMap<>();
         ListIterator<Statement> itS = path.listIterator();
         boolean last = false;
@@ -552,7 +557,7 @@ public class MCETools {
             }
             if (ModelUtil.isResourceOfType(model, currentHop, Nml.BidirectionalPort)) {
                 try {
-                    handleL2PathHop(model, prevHop, currentHop, nextHop, portParamMap, lastPort);
+                    handleL2PathHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap, portTeMap);
                     lastPort = currentHop;
                 } catch (TagSet.NoneVlanExeption ex) {
                     ;
@@ -571,7 +576,7 @@ public class MCETools {
                 }
                 if (ModelUtil.isResourceOfType(model, currentHop, Nml.BidirectionalPort)) {
                     try {
-                        handleL2PathHop(model, prevHop, currentHop, nextHop, portParamMap, lastPort);
+                        handleL2PathHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap, portTeMap);
                         lastPort = currentHop;
                     } catch (TagSet.NoneVlanExeption ex) {
                         ;
@@ -590,7 +595,7 @@ public class MCETools {
             prevHop = stmt.getSubject();
             currentHop = stmt.getObject().asResource();
             if (portParamMap.containsKey(currentHop)) {
-                OntModel subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, portParamMap, lastPort);
+                OntModel subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap);
                 if (subnetModel != null) {
                     l2PathModel.add(subnetModel.getBaseModel());
                 }
@@ -602,7 +607,7 @@ public class MCETools {
                 currentHop = prevHop;
                 prevHop = null;
                 if (portParamMap.containsKey(currentHop)) {
-                    OntModel subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, portParamMap, lastPort);
+                    OntModel subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap);
                     if (subnetModel != null) {
                         l2PathModel.add(subnetModel.getBaseModel());
                     }
@@ -613,13 +618,20 @@ public class MCETools {
     }
 
     //add hashMap (port, availableVlanRange + translation + ingressForSwService, egressForSwService) as params for currentHop
-    private static void handleL2PathHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, HashMap portParamMap, Resource lastPort)
+    private static void handleL2PathHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, Resource lastPort, HashMap portParamMap, JSONObject portTeMap)
             throws TagSet.NoneVlanExeption, TagSet.EmptyTagSetExeption {
         if (prevHop != null && ModelUtil.isResourceOfType(model, prevHop, Nml.BidirectionalPort)) {
             //TODO: handling adaptation?
         }
-        String vlanAny = TagSet.VlanRangeANY.toString();
+        TagSet allowedVlanRange = null;
         HashMap<String, Object> paramMap = new HashMap<>();
+        if (portTeMap != null && portTeMap.containsKey(currentHop.toString())) {
+            JSONObject jsonTe = (JSONObject) portTeMap.get(currentHop.toString());
+            if (jsonTe.containsKey("vlan_tag")) {
+                allowedVlanRange = new TagSet((String)jsonTe.get("vlan_tag"));
+                paramMap.put("allowedVlanRange", allowedVlanRange);
+            }
+        }
         HashMap<String, Object> lastParamMap = null;
         if (lastPort != null && portParamMap.containsKey(lastPort)) {
             lastParamMap = (HashMap<String, Object>) portParamMap.get(lastPort);
@@ -650,6 +662,7 @@ public class MCETools {
             if (!vlanTranslation && lastParamMap != null && lastParamMap.containsKey("vlanRange")) {
                 lastVlanRange = (TagSet) lastParamMap.get("vlanRange");
             }
+            vlanRange.intersect(allowedVlanRange);
             vlanRange.intersect(lastVlanRange);
         }
         // exception if empty        
@@ -667,7 +680,7 @@ public class MCETools {
         portParamMap.put(currentHop, paramMap);
     }
 
-    private static OntModel createVlanSubnetOnHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, HashMap portParamMap, Resource lastPort) {
+    private static OntModel createVlanSubnetOnHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, Resource lastPort, HashMap portParamMap) {
         HashMap paramMap = (HashMap) portParamMap.get(currentHop);
         if (!paramMap.containsKey("vlanRange")) {
             return null;
@@ -818,7 +831,7 @@ public class MCETools {
         Resource resLink = spaModel.getResource(res.getURI());
         ModelUtil.listRecursiveDownTree(resLink, Spa.getURI(), listStmtsToRemove);
         if (listStmtsToRemove.isEmpty()) {
-            throw new EJBException(String.format("MCETools.removeResolvedAnnotation cannot remove SPA statements under %s", res));
+            return;
         }
 
         String sparql = "SELECT ?anyOther ?policyAction WHERE {"
@@ -838,5 +851,26 @@ public class MCETools {
             spaModel.remove(resAnyOther, Spa.dependOn, resPolicy);
         }
         //spaModel.remove(listStmtsToRemove);
+    }
+    
+    public static String formatJsonExport(String jsonExport, String formatOutput)  {
+        // get all format patterns
+        Matcher m = Pattern.compile("\\%[^\\%]+\\%").matcher(formatOutput);
+        List<String> jsonPathList = new ArrayList();
+        while (m.find()) {
+            String jsonPath = m.group();
+            jsonPathList.add(jsonPath);
+        }
+        for (String jsonPath : jsonPathList) {
+            try {
+                String formattedPattern = JsonPath.parse(jsonExport).read(jsonPath.substring(1, jsonPath.length() - 1));
+                formatOutput = formatOutput.replace(jsonPath, formattedPattern);
+            } catch (Exception ex) {
+                throw new EJBException(String.format("MCETools.formatJsonExport failed to export with JsonPath('%s') from:\n %s",
+                        jsonPath.substring(1, jsonPath.length() - 1), jsonExport));
+            }
+
+        }
+        return formatOutput;
     }
 }

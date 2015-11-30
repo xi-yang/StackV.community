@@ -13,6 +13,7 @@ import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.NodeIterator;
 import com.hp.hpl.jena.rdf.model.Property;
@@ -27,19 +28,21 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.bean.ServiceDelta;
-import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.service.orchestrate.ActionBase;
 import net.maxgigapop.mrs.service.orchestrate.WorkerBase;
-import net.maxgigapop.mrs.common.Spa;
+import net.maxgigapop.mrs.common.*;
+import net.maxgigapop.mrs.service.compute.MCE_MPVlanConnection;
 
 /**
  *
  * @author xyang
  */
 public class CompilerBase {
-
+    private static final Logger log = Logger.getLogger(MCE_MPVlanConnection.class.getName());
     protected ServiceDelta spaDelta = null;
 
     public ServiceDelta getSpaDelta() {
@@ -54,6 +57,7 @@ public class CompilerBase {
         throw new EJBException("CompilerBase::compile() is abstract. Use a specific implementation instead!");
     }
 
+    //@TODO: add back all the non-spa statements
     protected Map<Resource, OntModel> decomposeByPolicyActions(OntModel spaModel) {
         Map<Resource, OntModel> leafPolicyModelMap = null;
         List<Resource> spaActions = getPolicyActionList(spaModel);
@@ -236,7 +240,27 @@ public class CompilerBase {
             }
             listStmt.add(stmt);
         }
-        // add spa:type statement for res type
+        // nml/mrs statements to be added back later
+        /*
+        // add mrs:type statement for res type
+        its = model.listStatements(res, Mrs.type, (Resource) null);
+        while (its.hasNext()) {
+            Statement stmt = its.next();
+            if (listStmt == null) {
+                listStmt = new ArrayList<>();
+            }
+            listStmt.add(stmt);
+        }
+        // add spa:value statement for res type
+        its = model.listStatements(res, Mrs.value, (Resource) null);
+        while (its.hasNext()) {
+            Statement stmt = its.next();
+            if (listStmt == null) {
+                listStmt = new ArrayList<>();
+            }
+            listStmt.add(stmt);
+        }
+        */
         its = model.listStatements(res, Spa.type, (Resource) null);
         while (its.hasNext()) {
             Statement stmt = its.next();

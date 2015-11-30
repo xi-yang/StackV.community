@@ -35,7 +35,7 @@ public class SimpleWorker extends WorkerBase {
             simpleCompiler.compile(this);
             this.runWorkflow();
         } catch (Exception ex) {
-            throw new EJBException(SimpleWorker.class.getName() + " caught exception", ex);
+            throw new EJBException(SimpleWorker.class.getName() + " caught exception: " + ex);
         }
     }
 }
