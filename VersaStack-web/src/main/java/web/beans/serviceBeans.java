@@ -460,7 +460,7 @@ public class serviceBeans {
         String driverType = null;
         String netType = null;
         String netCidr = null;
-        List<String> subnets = new ArrayList<String>();;
+        List<String> subnets = new ArrayList<>();
         String[] netRoutes = null;
         boolean gwInternet = false;
         boolean gwVpn = false;        

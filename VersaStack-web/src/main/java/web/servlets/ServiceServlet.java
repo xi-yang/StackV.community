@@ -239,17 +239,17 @@ public class ServiceServlet extends HttpServlet {
             } else if (driverPath.contains("Os") || driverPath.contains("os")) {
                 paramMap.put("driverType", "os");
             }
-            
+
             for (int i = 0; i < 10; i++) {
                 if (paramMap.containsKey("subnet" + i + "-name")) {
                     String subnetString = "name+" + paramMap.get("subnet" + i + "-name") + "&cidr+" + paramMap.get("subnet" + i + "-cidr") + "&";
-                    
+
                     for (int j = 0; j < 10; j++) {
                         if (paramMap.containsKey("subnet" + i + "-route" + j + "to")) {
                             subnetString += "routes";
                             if (paramMap.containsKey("subnet" + i + "-route" + j + "from")) {
                                 subnetString += "from+" + paramMap.get("subnet" + i + "-route" + j + "-from") + ",";
-                            }                            
+                            }
                             subnetString += "to+" + paramMap.get("subnet" + i + "-route" + j + "-to") + ",";
                             if (paramMap.containsKey("subnet" + i + "-route" + j + "-next")) {
                                 subnetString += "nextHop+" + paramMap.get("subnet" + i + "-route" + j + "-next");
@@ -258,9 +258,10 @@ public class ServiceServlet extends HttpServlet {
                         }
                     }
                     
+                    paramMap.put("subnet" + i, subnetString);
                 }
             }
-            
+
             retCode = servBean.createNetwork(paramMap);
         }
 
