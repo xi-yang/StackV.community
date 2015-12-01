@@ -94,13 +94,26 @@
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <td>Basic</td>
+                                                <td>OpenStack Driver</td>
                                                 <td><input type="submit" name="template1" value="Select" /></td>
                                             </tr>                                            
                                             <tr>
-                                                <td>Advanced</td>
+                                                <td>Stack Driver</td>
                                                 <td><input type="submit" name="template2" value="Select" /></td>
                                             </tr>
+                                             <tr>
+                                                <td>Stub Driver</td>
+                                                <td><input type="submit" name="template3" value="Select" /></td>
+                                            </tr>  
+                                              <tr>
+                                                <td>Generic Driver</td>
+                                                <td><input type="submit" name="template4" value="Select" /></td>
+                                            </tr>                                              
+                                              <tr>
+                                                <td>AWS Driver</td>
+                                                <td><input type="submit" name="template5" value="Select" /></td>
+                                            </tr>  
+                                           
                                         </tbody>
                                     </table>    
                                 </form>  

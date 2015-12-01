@@ -80,13 +80,9 @@
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <td>Basic</td>
+                                                <td>AWS</td>
                                                 <td><input type="submit" name="template1" value="Select" /></td>
                                             </tr>                                            
-                                            <tr>
-                                                <td>Advanced</td>
-                                                <td><input type="submit" name="template2" value="Select" /></td>
-                                            </tr>
                                         </tbody>
                                     </table>    
                                 </form>                               
