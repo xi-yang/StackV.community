@@ -20,6 +20,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.*;
 
 public class ServiceServlet extends HttpServlet {
 
@@ -163,7 +164,29 @@ public class ServiceServlet extends HttpServlet {
         } else if (paramMap.containsKey("template3")) {
             paramMap.put("topologyUri", "urn:ogf:network:rains.maxgigapop.net:wan:2015:topology");
             paramMap.put("driverEjbPath", "java:module/StubSystemDriver");     
-            paramMap.put("stubModelTtl", "dummy");
+            
+            
+            // Reads large stubModelTtl property from file.
+            String stubModelTTL = "", nextLine;
+            String testingPath = "/Users/max/NetBeansProjects/FrontVis/VersaStack/VersaStack-web/" + 
+                                 "src/main/webapp/tools/testing/";
+            String ttlFilename = "stub_driver_stubModelTtl";
+            try {
+                FileReader fr = new FileReader(testingPath + ttlFilename);
+                BufferedReader br = new BufferedReader(fr);
+                while ((nextLine = br.readLine()) != null) {
+                    stubModelTTL += nextLine;
+                }
+                br.close();
+            } catch (FileNotFoundException ex) {
+                System.out.println(ttlFilename + " not found.");
+                ex.printStackTrace();
+            } catch (IOException ex) {
+                System.out.println("Error reading " + ttlFilename + ".");
+                ex.printStackTrace();
+            }
+            
+            paramMap.put("stubModelTtl", stubModelTTL);
         } else if (paramMap.containsKey("template4")) {
             paramMap.put("topologyUri", "urn:ogf:network:sdn.maxgigapop.net:network");
             paramMap.put("driverEjbPath", "java:module/GenericRESTDriver");     
