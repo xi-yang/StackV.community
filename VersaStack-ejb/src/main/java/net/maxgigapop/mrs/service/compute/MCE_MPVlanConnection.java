@@ -230,8 +230,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             }
             // pick the shortest path from remaining/feasible paths in KSP
             MCETools.Path connPath = MCETools.getLeastCostPath(KSP);
-            transformedModel.add(connPath);
-            //@TODO: $$$ add labels etc.
+            transformedModel.add(connPath.getOntModel());
             mapConnPaths.put(connId, connPath);
         }
         return mapConnPaths;

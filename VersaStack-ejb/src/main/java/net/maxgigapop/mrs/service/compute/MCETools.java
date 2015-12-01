@@ -820,7 +820,7 @@ public class MCETools {
         rs = ModelUtil.sparqlQuery(model, sparql);
         while (rs.hasNext()) {
             String vlanStr = rs.next().getLiteral("?vlan").toString();
-            Integer vlan = Integer.getInteger(vlanStr);
+            Integer vlan = Integer.valueOf(vlanStr);
             vlanRange.removeTag(vlan);
         }
         return vlanRange;
