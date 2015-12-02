@@ -834,11 +834,15 @@ public class MCETools {
             return;
         }
 
-        String sparql = "SELECT ?anyOther ?policyAction WHERE {"
+        String sparql = "SELECT ?anyOther ?policyAction WHERE { {"
                 + String.format("<%s> spa:dependOn ?policyAction .", res.getURI())
                 + "?policyAction a spa:PolicyAction. "
                 + "?anyOther spa:dependOn ?policyAction . "
-                + "}";
+                + "} UNION {"
+                + "?policyAction a spa:PolicyAction. "
+                + "?anyOther spa:dependOn ?policyAction . "
+                + String.format("FILTER (?policyAction = <%s>)", res.getURI())
+                + "}}";
         ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
         List<QuerySolution> solutions = new ArrayList<>();
         while (r.hasNext()) {

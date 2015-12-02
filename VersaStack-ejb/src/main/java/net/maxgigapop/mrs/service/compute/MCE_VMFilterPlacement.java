@@ -251,17 +251,18 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
     }
 
     //@TODO: JSON export
-    private void exportPolicyData(OntModel spaModel, Resource vm) {
+    private void exportPolicyData(OntModel spaModel, Resource res) {
         // find Placement policy -> exportTo -> policyData
-        String sparql = "SELECT ?nodeorvpc ?policyAction ?policyData WHERE {"
-                + "?nodeorvpc nml:hasService ?hvservice . "
+        String sparql = "SELECT ?hostPlace ?policyData WHERE {"
+                + String.format("?hostPlace nml:hasNode <%s> .", res.getURI()) 
                 + "?hvservice a mrs:HypervisorService . "
-                + String.format("?hvservice mrs:providesVM <%s> .", vm.getURI())
-                + String.format("<%s> spa:dependOn ?policyAction .", vm.getURI())
+                + String.format("?hvservice mrs:providesVM <%s> .", res.getURI())
+                + String.format("<%s> spa:dependOn ?policyAction .", res.getURI())
                 + "?policyAction a spa:PolicyAction. "
                 + "?policyAction spa:type 'MCE_VMFilterPlacement'. "
                 + "?policyAction spa:exportTo ?policyData . "
                 + "?policyData a spa:PolicyData . "
+                + "OPTIONAL {?policyData spa:format ?format.}"
                 + "}";
         ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
         List<QuerySolution> solutions = new ArrayList<>();
@@ -269,21 +270,20 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             solutions.add(r.next());
         }
         for (QuerySolution querySolution : solutions) {
-            Resource resHost = querySolution.get("nodeorvpc").asResource();
-            Resource resPolicy = querySolution.get("policyAction").asResource();
+            Resource resHost = querySolution.get("hostPlace").asResource();
             Resource resData = querySolution.get("policyData").asResource();
+            spaModel.add(resData, Spa.type, "JSON");
             // add export data
-            /*
-             if (spaModel.listStatements(resHost, RdfOwl.type, Nml.Topology).hasNext()) {
-             spaModel.add(resData, Spa.type, Nml.Topology);
-             } else if (spaModel.listStatements(resHost, RdfOwl.type, Nml.Node).hasNext()) {
-             spaModel.add(resData, Spa.type, Nml.Node);
-             }
-             */
-            spaModel.add(resData, Spa.type, "VMFilterPlacement:HostSite");
-            spaModel.add(resData, Spa.value, resHost);
-            // remove Placement->exportTo statement so the exportData can be kept in spaModel during receurive removal
-            //spaModel.remove(resPolicy, Spa.exportTo, resData);
+            JSONObject output = new JSONObject();
+            output.put("uri", res.getURI());
+            output.put("place_into", resHost.getURI());
+            //add output as spa:value of the export resrouce
+            String exportValue = output.toJSONString();
+            if (querySolution.contains("format")) {
+                String exportFormat = querySolution.get("format").toString();
+                exportValue = MCETools.formatJsonExport(exportValue, exportFormat);
+            }
+            spaModel.add(resData, Spa.value, exportValue);
         }
     }
 

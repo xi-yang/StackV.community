@@ -13,7 +13,7 @@ import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.service.compile.CompilerBase;
 import net.maxgigapop.mrs.service.compile.CompilerFactory;
-import net.maxgigapop.mrs.service.compute.MCE_InterfaceVlanStitching;
+import net.maxgigapop.mrs.service.compute.MCE_AWSDirectConnectStitch;
 
 /**
  *
