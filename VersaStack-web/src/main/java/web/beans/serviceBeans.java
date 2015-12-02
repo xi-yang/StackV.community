@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import static java.lang.Thread.sleep;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.sql.Connection;
@@ -563,7 +564,7 @@ public class serviceBeans {
                 "    spa:dependOn &lt;x-policy-annotation:action:create-" + driverType + "-vpc&gt; .\n\n" +
                 "&lt;x-policy-annotation:action:create-" + driverType + "-vpc&gt;\n" +
                 "    a           spa:PolicyAction ;\n" +
-                "    spa:type     \"MCE_NetworkPlacement\" ;\n" +
+                "    spa:type     \"MCE_VirtualNetworkCreation\" ;\n" +
                 "    spa:importFrom &lt;x-policy-annotation:data:vpc-criteria&gt; ;\n" +
                 "    spa:exportTo &lt;x-policy-annotation:data:vpc-criteriaexport&gt; .\n" +
                 "\n" +
@@ -593,7 +594,7 @@ public class serviceBeans {
             url = new URL(String.format("%s/service/%s",host,siUuid));
             HttpURLConnection compile = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, compile, "POST", svcDelta);
-            if(!result.contains("<referenceVersion>"))
+            if(!result.contains("referenceVersion"))
                 return 2;//Error occurs when interacting with back-end system
             url = new URL(String.format("%s/service/%s/propagate",host,siUuid));
             HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
@@ -606,13 +607,14 @@ public class serviceBeans {
             if(!result.equals("COMMITTED"))
                 return 2;//Error occurs when interacting with back-end system
             url = new URL(String.format("%s/service/%s/status",host,siUuid));
-            HttpURLConnection status = (HttpURLConnection) url.openConnection();
             while(true){
+                HttpURLConnection status = (HttpURLConnection) url.openConnection();
                 result = this.executeHttpMethod(url, status, "GET", null); 
                 if(result.equals("READY"))
                     return 0;//create network successfully
-                else if(!result.equals("COMMITED"))
+                else if(!result.equals("COMMITTED"))
                     return 3;//Fail to create network
+                sleep(5000);//wait for 5 seconds and check again later
             }
         } catch (Exception e) {
             return 1;//connection error
