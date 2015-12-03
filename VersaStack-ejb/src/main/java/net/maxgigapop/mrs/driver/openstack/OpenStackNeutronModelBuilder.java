@@ -194,7 +194,7 @@ public class OpenStackNeutronModelBuilder {
                 model.add(model.createStatement(HOST, hasService, HYPERVISOR));
                 model.add(model.createStatement(HYPERVISOR, providesVM, VM));
                 model.add(model.createStatement(HOST, hasNode, VM));
-                model.add(model.createStatement(VM, type, "image:UUID+" + imageid));
+                model.add(model.createStatement(VM, type, "imageID+" + imageid));
                 model.add(model.createStatement(VM, type, "flavorID+" + flavorid));
 
                 for (Port port : openstackget.getServerPorts(server)) {
@@ -259,7 +259,13 @@ public class OpenStackNeutronModelBuilder {
                                 //= RdfOwl.createResource(model, topologyURI + ":network+" + networkID + ":subnet+" + subnetId + ":floatingip-inuse", networkAddress);
                                 = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetId, OpenstackPrefix.floating_ip_in_using, OpenstackPrefix.uri, networkID, subnetId), networkAddress);
                         Resource FLOATING_IP_POOL = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetId, OpenstackPrefix.floating_ip_pool, OpenstackPrefix.uri, networkID, subnetId), networkAddress);
-
+                        if(s.getGateway() != null){
+                            String gateway = s.getGateway();
+                            Resource GATEWAY = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetId + ":cidr", OpenstackPrefix.gateway, OpenstackPrefix.uri, networkID, subnetId, gateway), networkAddress);
+                            model.add(model.createStatement(SUBNET, hasNetworkAddress, GATEWAY));
+                            model.add(model.createStatement(GATEWAY, type, "gateway"));
+                            model.add(model.createStatement(GATEWAY, value, gateway));
+                        }
                         model.add(model.createStatement(OpenstackTopology, hasNetworkAddress, FLOATING_IP_INUSING));
                         model.add(model.createStatement(FLOATING_IP_INUSING, type, "ipv4-floatingip"));
                         model.add(model.createStatement(FLOATING_IP_INUSING, value, FLOATING_IP_INUSE));//need to modify here
@@ -368,12 +374,18 @@ public class OpenStackNeutronModelBuilder {
                         model.add(model.createStatement(SWITCHINGSERVICE, providesSubnet, SUBNET));
                         Resource SUBNET_NETWORK_ADDRESS = null;
                         SUBNET_NETWORK_ADDRESS = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetId + ":cidr", OpenstackPrefix.subnet_network_address, OpenstackPrefix.uri, networkID, subnetId), networkAddress);
-
+                        
                         Resource ROUTINGSERVICE = null;
                         ROUTINGSERVICE = RdfOwl.createResource(model, ResourceTool.getResourceUri(networkID + ":network-routingservice", OpenstackPrefix.network_routing_service, OpenstackPrefix.uri, networkID), RoutingService);
                         Resource ROUTINGTABLEPERNET = null;
                         ROUTINGTABLEPERNET = RdfOwl.createResource(model, ResourceTool.getResourceUri(networkID + ":route-routingtable", OpenstackPrefix.network_routing_table, OpenstackPrefix.uri, networkID), Mrs.RoutingTable);
-
+                        if(s.getGateway() != null){
+                            String gateway = s.getGateway();
+                            Resource GATEWAY = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetId + ":cidr", OpenstackPrefix.gateway, OpenstackPrefix.uri, networkID, subnetId, gateway), networkAddress);
+                            model.add(model.createStatement(SUBNET, hasNetworkAddress, GATEWAY));
+                            model.add(model.createStatement(GATEWAY, type, "gateway"));
+                            model.add(model.createStatement(GATEWAY, value, gateway));
+                        }
                         //Resource ROUTINGTABLEPERNET = RdfOwl.createResource(model, ResourceTool.getResourceUri(networkID, OpenstackPrefix.network_routing_table , OpenstackPrefix.uri, networkID), Mrs.RoutingTable);
                         Resource LOCAL_ROUTE = null;
                         LOCAL_ROUTE = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetId + ":local-route", OpenstackPrefix.local_route, OpenstackPrefix.uri, networkID, subnetId), Mrs.Route);

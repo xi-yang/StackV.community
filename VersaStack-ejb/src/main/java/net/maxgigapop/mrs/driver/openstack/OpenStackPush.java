@@ -559,10 +559,12 @@ public class OpenStackPush {
                             .networkId(subnet.getNetworkId());
                 }
                 osClient.networking().port().create(port);
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                PortAdditionCheck(port.getId());
             } else if (o.get("request").toString().equals("DeleteNetworkInterfaceRequest")) {
                 Port port = client.getPort(o.get("port name").toString());
                 osClient.networking().port().delete(port.getId());
-
+               
             } else if (o.get("request").toString().equals("DeleteRotingInfoRequest")) {
                 HashMap<String, HashMap<String, String>> routing_info_for_router = new HashMap<String, HashMap<String, String>>();
                 String key_routinginfo = "routing_info";
@@ -585,7 +587,7 @@ public class OpenStackPush {
                             routing_info1 = routing_info_for_router.get(client.getResourceName(r));
                             if (routing_info1.containsKey(o.get(key_ip).toString())) {
                                 String sub_router = routing_info1.get(o.get(key_ip).toString());
-
+                                String portid = null;
                                 String[] sub_route1 = sub_router.split(",");
                                 String subnet_name = sub_route1[0];
                                 String router_name = sub_route1[1];
@@ -595,11 +597,25 @@ public class OpenStackPush {
                                 routerid = r1.getId();
                                 String subid = s.getId();
                                 if (client.getNetwork(s.getNetworkId()).isRouterExternal()) {
+                                    for(Port p : client.getPorts()){
+                                        if(p.getDeviceId().equals(r1.getId())){
+                                            portid = p.getId();
+                                        }
+                                    }
                                     r1.toBuilder().clearExternalGateway();
                                     osClient.networking().router().update(r1);
+                                    OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                                    PortDeletionCheck(portid);
 
                                 } else {
+                                    for(Port p : client.getPorts()){
+                                        if(p.getDeviceId().equals(r1.getId())){
+                                            portid = p.getId();
+                                        }
+                                    }
                                     osClient.networking().router().detachInterface(routerid, subid, null);
+                                    OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                                    PortDeletionCheck(portid);
                                 }
                                 j++;
                                 key_ip = "nexthop" + Integer.toString(j);
@@ -2070,6 +2086,62 @@ public class OpenStackPush {
             return true;
         }
         return false;
+    }
+    public void PortAdditionCheck(String id) {
+        /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
+        request.withNetworkInterfaceIds(id);
+                */
+        while (true) {
+            try {
+                Port resource = client.getPort(id);
+                if (resource != null) {
+                    break;
+                }
+            } catch (Exception e) {
+            }
+        }
+    }
+    public void PortDeletionCheck(String id) {
+        /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
+        request.withNetworkInterfaceIds(id);
+                */
+        while (true) {
+            try {
+                Port resource = client.getPort(id);
+                if (resource == null) {
+                    break;
+                }
+            } catch (Exception e) {
+            }
+        }
+    }
+    public void subnetCreationCheck(String id, String status) {
+       /* DescribeSubnetsRequest request = new DescribeSubnetsRequest();
+        request.withSubnetIds(id);
+               */
+        while (true) {
+            try {
+                Subnet resource = client.getSubnet(id);
+                if (resource != null) {
+                    break;
+                }
+            } catch (Exception e) {
+            }
+        }
+    }
+    public void subnetDeletionCheck(String id, String status) {
+       /* DescribeSubnetsRequest request = new DescribeSubnetsRequest();
+        request.withSubnetIds(id);
+               */
+        while (true) {
+            try {
+                Subnet resource = client.getSubnet(id);
+                if (resource == null) {
+                    break;
+                }
+            } catch (Exception e) {
+            }
+        }
     }
 
 }
