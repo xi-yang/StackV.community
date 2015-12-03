@@ -236,13 +236,13 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
 
     private void exportPolicyData(OntModel spaModel, Resource resPolicy, String connId, MCETools.Path l2Path) {
         // find Connection policy -> exportTo -> policyData
-        String sparql = "SELECT ?policyAction ?type ?value ?format WHERE {"
+        String sparql = "SELECT ?data ?type ?value ?format WHERE {"
                 + String.format("<%s> a spa:PolicyAction. ", resPolicy.getURI())
                 + String.format("<%s> spa:type 'MCE_MPVlanConnection'. ", resPolicy.getURI())
-                + String.format("<%s> spa:exportTo ?policyData . ", resPolicy.getURI())
-                + "OPTIONAL {?policyData spa:type ?type.} "
-                + "OPTIONAL {?policyData spa:type ?value.} "
-                + "OPTIONAL {?policyData spa:format ?format.} "
+                + String.format("<%s> spa:exportTo ?data . ", resPolicy.getURI())
+                + "OPTIONAL {?data spa:type ?type.} "
+                + "OPTIONAL {?data spa:value ?value.} "
+                + "OPTIONAL {?data spa:format ?format.} "
                 + "}";
         ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
         List<QuerySolution> solutions = new ArrayList<>();
@@ -250,7 +250,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             solutions.add(r.next());
         }
         for (QuerySolution querySolution : solutions) {
-            Resource resData = querySolution.get("policyData").asResource();
+            Resource resData = querySolution.get("data").asResource();
             RDFNode dataType = querySolution.get("type");
             RDFNode dataValue = querySolution.get("value");
             // add to export data with references to (terminal (src/dst) vlan labels from l2Path
@@ -284,7 +284,9 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             }
             jsonValue.put(connId, jsonHops);
             //@TODO: common logic
-            spaModel.remove(resData, Spa.value, dataValue);
+            if (dataValue != null) {
+                spaModel.remove(resData, Spa.value, dataValue);
+            }
             //add output as spa:value of the export resrouce
             String exportValue = jsonValue.toJSONString();
             if (querySolution.contains("format")) {
