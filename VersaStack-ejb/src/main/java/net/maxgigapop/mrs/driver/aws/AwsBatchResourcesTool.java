@@ -276,6 +276,8 @@ public class AwsBatchResourcesTool {
         }
 
         //get a list of all the statements and put the batches
+        List<Statement> stmtsToRemove = new ArrayList<>();
+        List<Statement> stmtsToAdd = new ArrayList<>();
         StmtIterator statements = model.listStatements();
         while (statements.hasNext()) {
             Statement st = null;
@@ -301,8 +303,10 @@ public class AwsBatchResourcesTool {
                 if (resource != null && batches.containsKey(resource.toString())) {
                     String resourceUri = batches.get(resource.toString()).replace("batch", "");
                     resource = model.getResource(resourceUri);
-                    model.remove(st);
-                    model.add(model.createStatement(resource, property, object));
+                    //model.remove(st);
+                    //model.add(model.createStatement(resource, property, object));
+                    stmtsToRemove.add(st);
+                    stmtsToAdd.add(model.createStatement(resource, property, object));
                 }
             } catch (Exception e) {
                 e.getMessage();
@@ -313,8 +317,10 @@ public class AwsBatchResourcesTool {
                 if (object != null && object.isResource() && batches.containsKey(object.asResource().toString())) {
                     String objectUri = batches.get(object.asResource().toString()).replace("batch", "");
                     object = model.getResource(objectUri);
-                    model.remove(st);
-                    model.add(model.createStatement(resource, property, object));
+                    //model.remove(st);
+                    //model.add(model.createStatement(resource, property, object));
+                    stmtsToRemove.add(st);
+                    stmtsToAdd.add(model.createStatement(resource, property, object));
                 }
             } catch (Exception e) {
                 e.getMessage();
@@ -322,7 +328,12 @@ public class AwsBatchResourcesTool {
                 e.getLocalizedMessage();
             }
         }
-
+        if (!stmtsToRemove.isEmpty()) {
+            model.remove(stmtsToRemove);
+        }
+        if (!stmtsToAdd.isEmpty()) {
+            model.add(stmtsToAdd);
+        }
         //create batch statements and delete all explicit resources
         for (String key : batches.keySet()) {
             Resource batch = RdfOwl.createResource(model, batches.get(key), Mrs.Batch);
