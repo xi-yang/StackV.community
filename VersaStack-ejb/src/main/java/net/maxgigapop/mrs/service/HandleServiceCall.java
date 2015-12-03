@@ -403,6 +403,7 @@ public class HandleServiceCall {
             }
             List<String> includeMatches = new ArrayList<String>();
             List<String> excludeMatches = new ArrayList<String>();
+            List<String> excludeExtentials = new ArrayList<String>();
             /*
             includeMatches.add("#has");
             includeMatches.add("#provides");
@@ -412,6 +413,10 @@ public class HandleServiceCall {
             */
             excludeMatches.add("#isAlias");
             excludeMatches.add("#providedBy");
+            excludeExtentials.add("#nextHop");
+            excludeExtentials.add("#routeFrom");
+            excludeExtentials.add("#routeTo");
+            //@TODO: exclude essential Resource trees under routeTo / routeFrom / nextHop ==> excludeEssentials (include the statement but not go further)
             String sparql = "SELECT ?res WHERE {?s ?p ?res. "
                     + "FILTER(regex(str(?p), '#has|#provides'))"
                     + "}";
@@ -433,7 +438,7 @@ public class HandleServiceCall {
                         resList.add(res);
                     }
                     if (!resList.isEmpty()) {
-                        Model sysModelReductionExt = ModelUtil.getModelSubTree(refModel, resList, includeMatches, excludeMatches);
+                        Model sysModelReductionExt = ModelUtil.getModelSubTree(refModel, resList, includeMatches, excludeMatches, excludeExtentials);
                         reverseSysDelta.getModelAddition().getOntModel().add(sysModelReductionExt);
                     }
                 }
@@ -447,7 +452,7 @@ public class HandleServiceCall {
                         resList.add(res);
                     }
                     if (!resList.isEmpty()) {
-                        Model sysModelAdditionExt = ModelUtil.getModelSubTree(refModel, resList, includeMatches, excludeMatches);
+                        Model sysModelAdditionExt = ModelUtil.getModelSubTree(refModel, resList, includeMatches, excludeMatches, excludeExtentials);
                         reverseSysDelta.getModelReduction().getOntModel().add(sysModelAdditionExt);
                     }
                 }
