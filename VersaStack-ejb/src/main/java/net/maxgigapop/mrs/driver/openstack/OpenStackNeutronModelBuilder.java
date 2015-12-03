@@ -261,7 +261,7 @@ public class OpenStackNeutronModelBuilder {
                         Resource FLOATING_IP_POOL = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetId, OpenstackPrefix.floating_ip_pool, OpenstackPrefix.uri, networkID, subnetId), networkAddress);
                         if(s.getGateway() != null){
                             String gateway = s.getGateway();
-                            Resource GATEWAY = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetId + ":cidr", OpenstackPrefix.gateway, OpenstackPrefix.uri, networkID, subnetId, gateway), networkAddress);
+                            Resource GATEWAY = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetId + "gateway", OpenstackPrefix.gateway, OpenstackPrefix.uri, networkID, subnetId, gateway), networkAddress);
                             model.add(model.createStatement(SUBNET, hasNetworkAddress, GATEWAY));
                             model.add(model.createStatement(GATEWAY, type, "gateway"));
                             model.add(model.createStatement(GATEWAY, value, gateway));
@@ -381,7 +381,7 @@ public class OpenStackNeutronModelBuilder {
                         ROUTINGTABLEPERNET = RdfOwl.createResource(model, ResourceTool.getResourceUri(networkID + ":route-routingtable", OpenstackPrefix.network_routing_table, OpenstackPrefix.uri, networkID), Mrs.RoutingTable);
                         if(s.getGateway() != null){
                             String gateway = s.getGateway();
-                            Resource GATEWAY = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetId + ":cidr", OpenstackPrefix.gateway, OpenstackPrefix.uri, networkID, subnetId, gateway), networkAddress);
+                            Resource GATEWAY = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetId + ":gateway", OpenstackPrefix.gateway, OpenstackPrefix.uri, networkID, subnetId, gateway), networkAddress);
                             model.add(model.createStatement(SUBNET, hasNetworkAddress, GATEWAY));
                             model.add(model.createStatement(GATEWAY, type, "gateway"));
                             model.add(model.createStatement(GATEWAY, value, gateway));
