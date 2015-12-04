@@ -310,21 +310,35 @@ public class AwsBatchResourcesTool {
         if (!stmtsToAdd.isEmpty()) {
             model.add(stmtsToAdd);
         }
-        
 
         //create batch statements and delete all explicit resources
         for (String key : batches.keySet()) {
             //remove old resources, this will make sure deletion was succesfull
             Resource oldResource = model.getResource(key);
-            model.removeAll(oldResource, null,null);
-            model.removeAll(null,null,oldResource);
-            
+            model.removeAll(oldResource, null, null);
+            model.removeAll(null, null, oldResource);
+
             //create batch statements
             Resource baseResource = model.getResource(batches.get(key).replace("batch", ""));
             Resource batch = RdfOwl.createResource(model, batches.get(key), Mrs.Batch);
-            model.add(model.createStatement(baseResource, Mrs.hasBatch,batch));
+            model.add(model.createStatement(baseResource, Mrs.hasBatch, batch));
             model.add(model.createStatement(batch, Mrs.BatchRule, "numbered"));
             model.add(model.createStatement(batch, Mrs.value, batchNumber.get(batches.get(key)).toString()));
+        }
+
+        //temporal hack
+        //TODO improve this part
+        //eliminate the network addresses of those network interfaces that are batches
+        for (Object key : batchNumber.keySet()) {
+            Resource baseResource = model.getResource(key.toString().replace("batch", ""));
+            Statement st = model.getProperty(baseResource, Mrs.hasNetworkAddress);
+            while (st !=null){
+               Resource object = st.getObject().asResource();
+               model.removeAll(object,null,null);
+               model.removeAll(null,null,object);
+               st = model.getProperty(baseResource, Mrs.hasNetworkAddress);
+            }
+
         }
 
         //add the batch statements
