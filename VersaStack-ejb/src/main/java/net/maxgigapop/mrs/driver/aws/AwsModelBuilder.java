@@ -5,11 +5,8 @@
  */
 package net.maxgigapop.mrs.driver.aws;
 
-import net.maxgigapop.mrs.driver.aws.AwsDCGet;
-import net.maxgigapop.mrs.driver.aws.AwsEC2Get;
-import net.maxgigapop.mrs.driver.aws.AwsS3Get;
+
 import com.amazonaws.regions.Regions;
-import com.amazonaws.services.directconnect.model.Connection;
 import com.amazonaws.services.directconnect.model.VirtualInterface;
 import com.amazonaws.services.directconnect.model.VirtualInterfaceState;
 import com.amazonaws.services.ec2.model.*;
@@ -406,8 +403,8 @@ public class AwsModelBuilder {
         }
 
         //create abstraction for batch resources
-        BatchResourcesTool batchTool = new BatchResourcesTool();
-        model = batchTool.contractExplicitModel(model);
+        AwsBatchResourcesTool batchTool = new AwsBatchResourcesTool(access_key_id,secret_access_key, region);
+        model = batchTool.contractVMbatch(model);
         return model;
     }
 }
