@@ -42,7 +42,7 @@ import org.json.simple.JSONObject;
  ***********************************************
  */
 public class AwsBatchResourcesTool {
-    
+
     private static final Logger log = Logger.getLogger(AwsBatchResourcesTool.class.getName());
     private AwsEC2Get ec2Client = null;
 
@@ -280,70 +280,51 @@ public class AwsBatchResourcesTool {
         List<Statement> stmtsToAdd = new ArrayList<>();
         StmtIterator statements = model.listStatements();
         while (statements.hasNext()) {
-            Statement st = null;
-            Resource resource = null;
-            RDFNode object = null;
-            Property property = null;
-            try {
-                st = statements.next();
-                resource = st.getSubject();
-                object = st.getObject();
-                property = st.getPredicate();
-            } catch (Exception e) {
-                e.getMessage();
-                e.getCause();
-                e.getLocalizedMessage();
-            }
-            
-            if(resource == null || object == null || property == null){
-                continue;
+            Statement st = statements.next();
+            Resource resource = st.getSubject();
+            RDFNode object = st.getObject();
+            Property property = st.getPredicate();
+
+            if (resource != null && batches.containsKey(resource.toString())) {
+                String resourceUri = batches.get(resource.toString()).replace("batch", "");
+                resource = model.getResource(resourceUri);
+                //model.remove(st);
+                //model.add(model.createStatement(resource, property, object));
+                stmtsToRemove.add(st);
+                stmtsToAdd.add(model.createStatement(resource, property, object));
             }
 
-            try {
-                if (resource != null && batches.containsKey(resource.toString())) {
-                    String resourceUri = batches.get(resource.toString()).replace("batch", "");
-                    resource = model.getResource(resourceUri);
-                    //model.remove(st);
-                    //model.add(model.createStatement(resource, property, object));
-                    stmtsToRemove.add(st);
-                    stmtsToAdd.add(model.createStatement(resource, property, object));
-                }
-            } catch (Exception e) {
-                e.getMessage();
-                e.getCause();
-                e.getLocalizedMessage();
-            }
-            try {
-                if (object != null && object.isResource() && batches.containsKey(object.asResource().toString())) {
-                    String objectUri = batches.get(object.asResource().toString()).replace("batch", "");
-                    object = model.getResource(objectUri);
-                    //model.remove(st);
-                    //model.add(model.createStatement(resource, property, object));
-                    stmtsToRemove.add(st);
-                    stmtsToAdd.add(model.createStatement(resource, property, object));
-                }
-            } catch (Exception e) {
-                e.getMessage();
-                e.getCause();
-                e.getLocalizedMessage();
+            if (object != null && object.isResource() && batches.containsKey(object.asResource().toString())) {
+                String objectUri = batches.get(object.asResource().toString()).replace("batch", "");
+                object = model.getResource(objectUri);
+                //model.remove(st);
+                //model.add(model.createStatement(resource, property, object));
+                stmtsToRemove.add(st);
+                stmtsToAdd.add(model.createStatement(resource, property, object));
             }
         }
+
         if (!stmtsToRemove.isEmpty()) {
             model.remove(stmtsToRemove);
         }
         if (!stmtsToAdd.isEmpty()) {
             model.add(stmtsToAdd);
         }
+        
+
         //create batch statements and delete all explicit resources
         for (String key : batches.keySet()) {
+            //remove old resources, this will make sure deletion was succesfull
+            Resource oldResource = model.getResource(key);
+            model.removeAll(oldResource, null,null);
+            model.removeAll(null,null,oldResource);
+            
+            //create batch statements
+            Resource baseResource = model.getResource(batches.get(key).replace("batch", ""));
             Resource batch = RdfOwl.createResource(model, batches.get(key), Mrs.Batch);
+            model.add(model.createStatement(baseResource, Mrs.hasBatch,batch));
             model.add(model.createStatement(batch, Mrs.BatchRule, "numbered"));
             model.add(model.createStatement(batch, Mrs.value, batchNumber.get(batches.get(key)).toString()));
-
-            //remove old explicit resource
-            Resource oldResource = model.getAllValuesFromRestriction(key);
-            model.removeAll(oldResource, null, null);
-            model.removeAll(null, null, oldResource);
         }
 
         //add the batch statements
