@@ -459,11 +459,8 @@ public class serviceBeans {
     public int createNetwork(Map<String, String> paraMap){
         String topoUri = null;
         String driverType = null;
-        String netType = null;
         String netCidr = null;
         List<String> subnets = new ArrayList<>();
-        String[] netRoutes = null;
-        boolean gwInternet = false;
         boolean gwVpn = false;        
         
         for(Map.Entry<String, String> entry : paraMap.entrySet()){
@@ -471,18 +468,14 @@ public class serviceBeans {
                 driverType = entry.getValue();
             else if(entry.getKey().equalsIgnoreCase("topoUri"))
                 topoUri = entry.getValue();
-            else if(entry.getKey().equalsIgnoreCase("netType"))
-                netType = entry.getValue();
             else if(entry.getKey().equalsIgnoreCase("netCidr"))
                 netCidr = entry.getValue();
             else if(entry.getKey().contains("subnet"))
                 subnets.add(entry.getValue());
-            else if (entry.getKey().equalsIgnoreCase("netRoutes"))
-                netRoutes = entry.getValue().split("\r\n");
         }
         
         JSONObject network = new JSONObject();
-        network.put("type", netType);
+        network.put("type", "internal");
         network.put("cidr", netCidr);
         network.put("parent", topoUri);
         
@@ -501,8 +494,6 @@ public class serviceBeans {
                         for(String rp : routePara){
                             String[] keyValue = rp.split("\\+");
                             jsonRoute.put(keyValue[0], keyValue[1]);
-                            if(keyValue[1].contains("internet"))
-                                gwInternet = true;
                             if(keyValue[1].contains("vpn"))
                                 gwVpn = true;
                         }
@@ -519,29 +510,18 @@ public class serviceBeans {
         }
         network.put("subnets", subnetsJson);
         
-        
         JSONArray routesJson = new JSONArray();
-        for(String route : netRoutes){
-            JSONObject routesValue = new JSONObject();
-            String[] routeDetail = route.split(",");
-            for(String r : routeDetail){
-                String[] keyValue = r.split("\\+");
-                routesValue.put(keyValue[0], keyValue[1]);
-                if(keyValue[1].contains("internet"))
-                    gwInternet = true;
-                if(keyValue[1].contains("vpn"))
-                    gwVpn = true;
-            }
-            routesJson.add(routesValue);
-        }
+        JSONObject routesValue = new JSONObject();
+        routesValue.put("to", "0.0.0.0/0");
+        routesValue.put("nextHop", "internet");
+        routesJson.add(routesValue);
         network.put("routes", routesJson);
+
         
         JSONArray gatewaysJson = new JSONArray();
-        if(gwInternet){
-            JSONObject gatewayValue = new JSONObject();
-            gatewayValue.put("type", "internet");
-            gatewaysJson.add(gatewayValue);
-        }
+        JSONObject temp = new JSONObject();
+        temp.put("type", "internet");
+        gatewaysJson.add(temp);
         if(gwVpn){
             JSONObject gatewayValue = new JSONObject();
             gatewayValue.put("type", "vpn");
