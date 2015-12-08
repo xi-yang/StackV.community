@@ -165,5 +165,7 @@ public class Nml {
     public static final Resource SwitchingService = m_model.createResource("http://schemas.ogf.org/nml/2013/03/base#SwitchingService");
 
     public static final Resource Topology = m_model.createResource("http://schemas.ogf.org/nml/2013/03/base#Topology");
+    
+    public static final Resource labeltype_Ethernet_Vlan = m_model.createResource("http://schemas.ogf.org/nml/2012/10/ethernet#vlan");
 
 }

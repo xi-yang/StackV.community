@@ -144,25 +144,27 @@ public class AwsModelBuilder {
             String vlanNum = Integer.toString(vi.getVlan());
 
             Resource VLAN_LABEL_GROUP = RdfOwl.createResource(model, ResourceTool.getResourceUri(vlanNum, AwsPrefix.labelGroup,vi.getVirtualInterfaceId(),vlanNum ), Nml.LabelGroup);
-            model.add(model.createStatement(VLAN_LABEL_GROUP, value, vlanNum));
+            model.add(model.createStatement(VLAN_LABEL_GROUP, Nml.values, vlanNum));
             
             Resource VIRTUAL_INTERFACE = RdfOwl.createResource(model, ResourceTool.getResourceUri(vi.getVirtualInterfaceId(),AwsPrefix.vif,vi.getVirtualInterfaceId()), biPort);
             model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.type, "direct-connect-vif"));
             model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabelGroup, VLAN_LABEL_GROUP));
+            model.add(model.createStatement(VLAN_LABEL_GROUP, Nml.labeltype, vlan));
             model.add(model.createStatement(directConnect, hasBidirectionalPort, VIRTUAL_INTERFACE));
 
             //check if it has a gateway, meaning the virtual interface is being used
             String virtualGatewayId =  vi.getVirtualGatewayId();
             String virtualInterfaceState =  vi.getVirtualInterfaceState();
-            String[] acceptedStates = {VirtualInterfaceState.Available.toString(),VirtualInterfaceState.Confirming.toString()
-                                                      ,VirtualInterfaceState.Deleting.toString(),VirtualInterfaceState.Verifying.toString()};
+            String[] acceptedStates = {VirtualInterfaceState.Available.toString(), 
+                VirtualInterfaceState.Confirming.toString(), VirtualInterfaceState.Deleting.toString(), 
+                VirtualInterfaceState.Pending.toString(), VirtualInterfaceState.Verifying.toString(), "down"};
             if(virtualGatewayId != null && (Arrays.asList(acceptedStates).contains(virtualInterfaceState)))
             {
                 virtualGatewayId = ec2Client.getIdTag(virtualGatewayId);
                 Resource VLAN_LABEL = RdfOwl.createResource(model, ResourceTool.getResourceUri(vlanNum, AwsPrefix.vlan,vi.getVirtualInterfaceId(),vlanNum), Nml.Label);
                 Resource VPNGATEWAY = model.getResource(ResourceTool.getResourceUri(virtualGatewayId,AwsPrefix.gateway,virtualGatewayId));
                 model.add(model.createStatement(VLAN_LABEL, Nml.labeltype, vlan));
-                model.add(model.createStatement(VLAN_LABEL, value, vlanNum));
+                model.add(model.createStatement(VLAN_LABEL, Nml.value, vlanNum));
                 model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabel, VLAN_LABEL));
                 model.add(model.createStatement(VPNGATEWAY, Nml.isAlias, VIRTUAL_INTERFACE));
                 model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.isAlias, VPNGATEWAY));

@@ -151,7 +151,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
         Map<String, MCETools.Path> mapConnPaths = new HashMap<>();
-        List<Resource> connList = (List<Resource>)connDataMap.get("connections");
+        //List<Resource> connList = (List<Resource>)connDataMap.get("connections");
         List<Map> dataMapList = (List<Map>)connDataMap.get("imports");
         // get source and destination nodes (nodeA, nodeZ) -- only picks fist two terminals for now 
         JSONObject jsonConnReqs = null;
