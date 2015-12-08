@@ -279,7 +279,13 @@ public class ServiceServlet extends HttpServlet {
     }
 
     private String createFullNetwork(HashMap<String, String> paramMap) throws SQLException {
-        int retCode;
+        int retCode = -1;
+        
+        for ( String key : paramMap.keySet()) {
+            if (paramMap.get(key).isEmpty()) {
+                paramMap.remove(key);
+            }
+        }
 
         Connection rains_conn;
         Properties rains_connectionProps = new Properties();
@@ -295,9 +301,9 @@ public class ServiceServlet extends HttpServlet {
             paramMap.put("topoUri", "urn:ogf:network:aws.amazon.com:aws-cloud");
             paramMap.put("netType", "internal");
             paramMap.put("netCidr", "10.0.0.0/16");
-            paramMap.put("subnet1", "name+ &cidr+ 10.0.0.0/24&routesto+206.196.0.0/16,nextHop+internet\r\nfrom+vpn,to+0.0.0.0/0,nextHop+vpn\r\nto+72.24.24.0/24,nextHop+vpn");
-            paramMap.put("subnet2", "name+ &cidr+ 10.0.1.0/24");
-            paramMap.put("netRoutes", "to+0.0.0.0/0,nextHop+internet\r\nto+0.0.0.0/0,nextHop+internet");
+            paramMap.put("subnet1", "name+ &cidr+10.0.0.0/24&routesto+206.196.0.0/16,nextHop+internet\r\nfrom+vpn,to+0.0.0.0/0,nextHop+vpn\r\nto+72.24.24.0/24,nextHop+vpn");
+            paramMap.put("subnet2", "name+ &cidr+10.0.1.0/24");
+            paramMap.put("netRoutes", "to+0.0.0.0/0,nextHop+internet");
 
             retCode = servBean.createNetwork(paramMap);
         } else { // Custom Form Handling
@@ -313,31 +319,39 @@ public class ServiceServlet extends HttpServlet {
                 paramMap.put("driverType", "os");
             }
 
+            // Process each subnet.
             for (int i = 1; i < 10; i++) {
-                if (paramMap.containsKey("subnet" + i + "-name")) {
+                if (paramMap.containsKey("subnet" + i + "-cidr")) {
                     String subnetString = "name+" + paramMap.get("subnet" + i + "-name") + "&cidr+" + paramMap.get("subnet" + i + "-cidr") + "&";
 
-                    for (int j = 1; j < 10; j++) {
-                        if (paramMap.containsKey("subnet" + i + "-route" + j + "-to")) {
-                            subnetString += "routes";
-                            if (paramMap.containsKey("subnet" + i + "-route" + j + "-from")) {
-                                subnetString += "from+" + paramMap.get("subnet" + i + "-route" + j + "-from") + ",";
-                            }
-                            subnetString += "to+" + paramMap.get("subnet" + i + "-route" + j + "-to") + ",";
-                            if (paramMap.containsKey("subnet" + i + "-route" + j + "-next")) {
-                                subnetString += "nextHop+" + paramMap.get("subnet" + i + "-route" + j + "-next");
-                            }
-                            
-                            subnetString += "\r\n";
-                            
-                        }
+                    // Check for routes existence.
+                    if (paramMap.containsKey("subnet" + i + "-route1-to")) {
+                        subnetString += "routes";
                     }
                     
+                    for (int j = 1; j < 10; j++) {
+                        if (paramMap.containsKey("subnet" + i + "-route" + j + "-to")) {
+                            subnetString += "to+" + paramMap.get("subnet" + i + "-route" + j + "-to") + ",";
+                        }
+                        if (paramMap.containsKey("subnet" + i + "-route" + j + "-from")) {
+                            subnetString += "from+" + paramMap.get("subnet" + i + "-route" + j + "-from") + ",";
+                        }
+                        if (paramMap.containsKey("subnet" + i + "-route" + j + "-next")) {
+                            subnetString += "nextHop+" + paramMap.get("subnet" + i + "-route" + j + "-next");
+                        }
+                        subnetString += "\r\n";
+                    }
+
+                    // Apply route propagation
+                    if (paramMap.containsKey("subnet" + i + "-route-prop")) {
+                        subnetString += "from+vpn,to+0.0.0.0/0,nextHop+vpn";
+                    }
+
                     paramMap.put("subnet" + i, subnetString);
                 }
             }
 
-            retCode = servBean.createNetwork(paramMap);
+            //retCode = servBean.createNetwork(paramMap);
         }
 
         return ("/VersaStack-web/ops/srvc/netcreate.jsp?ret=" + retCode);
