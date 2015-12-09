@@ -144,6 +144,7 @@ public class ServiceServlet extends HttpServlet {
         // Handles templates, in this order:
         // OpenStack, Stack Driver, Stub Driver, Generic Driver, AWS Driver 
         if (paramMap.containsKey("template1")) { 
+            paramMap.put("driverID", "openStackDriver");
             paramMap.put("url", "http://max-vlsr2.dragon.maxgigapop.net:35357/v2.0");
             paramMap.put("NATServer", "");         
             paramMap.put("driverEjbPath", "java:module/OpenStackDriver");
@@ -151,7 +152,9 @@ public class ServiceServlet extends HttpServlet {
             paramMap.put("password", "1234");
             paramMap.put("topologyUri", "urn:ogf:network:openstack.com:openstack-cloud");
             paramMap.put("tenant", "admin");
+            paramMap.put("install", "Install");
         } else if (paramMap.containsKey("template2")) {
+            paramMap.put("driverID", "StackDriver");
             paramMap.put("topologyUri", "urn:ogf:network:aws.amazon.com:aws-cloud");
             paramMap.put("vmType", "aws");     
             paramMap.put("region", "us-east-1");
@@ -161,7 +164,12 @@ public class ServiceServlet extends HttpServlet {
             paramMap.put("vpcID", "urn:ogf:network:aws.amazon.com:aws-cloud:vpc-45143020");
             paramMap.put("subnets", "urn:ogf:network:aws.amazon.com:aws-cloud:subnet-a8a632f1,10.0.1.0");     
             paramMap.put("volumes", "8,standard,/dev/xvda,snapshot\\r\\n");
+            paramMap.put("install", "Install");
+            paramMap.put("aws_access_key_id", "AKIAJEOHXEUCCYOU6ELQ");     
+            paramMap.put("aws_secret_access_key", "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");   
+            paramMap.put("subsystemBaseUrl", "http://140.221.96.35:50100/VersaStack-web/restapi");
         } else if (paramMap.containsKey("template3")) {
+            paramMap.put("driverID", "stubdriver");
             paramMap.put("topologyUri", "urn:ogf:network:rains.maxgigapop.net:wan:2015:topology");
             paramMap.put("driverEjbPath", "java:module/StubSystemDriver");     
             
@@ -187,15 +195,20 @@ public class ServiceServlet extends HttpServlet {
             }
             
             paramMap.put("stubModelTtl", stubModelTTL);
+            paramMap.put("install", "Install");
         } else if (paramMap.containsKey("template4")) {
+            paramMap.put("driverID", "versaNSDriver");
             paramMap.put("topologyUri", "urn:ogf:network:sdn.maxgigapop.net:network");
             paramMap.put("driverEjbPath", "java:module/GenericRESTDriver");     
-            paramMap.put("subsystemBaseUrl", "http://charon.dragon.maxgigapop.net:8080/VersaNS-0.0.1-SNAPSHOT");       
+            paramMap.put("subsystemBaseUrl", "http://charon.dragon.maxgigapop.net:8080/VersaNS-0.0.1-SNAPSHOT");    
+            paramMap.put("install", "Install");
         } else if (paramMap.containsKey("template5")) {
+            paramMap.put("driverID", "awsdriver");
             paramMap.put("topologyUri", "urn:off:network:aws.amazon.com:aws-cloud");
-            paramMap.put("accessID", "AKIAJEOHXEUCCYOU6ELQ");     
-            paramMap.put("secretKey", "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");       
+            paramMap.put("aws_access_key_id", "AKIAJEOHXEUCCYOU6ELQ");     
+            paramMap.put("aws_secret_access_key", "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");       
             paramMap.put("region", "us-east-1");    
+            paramMap.put("install", "Install");
         }
         
         // Connect dynamically generated elements
@@ -234,7 +247,9 @@ public class ServiceServlet extends HttpServlet {
             paramMap.put("instanceType", "instance1");
             paramMap.put("vpcID", "urn:ogf:network:aws.amazon.com:aws-cloud:vpc-45143020");
             paramMap.put("subnets", "urn:ogf:network:aws.amazon.com:aws-cloud:subnet-a8a632f1,10.0.1.0");
-            paramMap.put("volumes", "8,standard,/dev/xvda,snapshot\\r\\n");            
+            paramMap.put("volumes", "8,standard,/dev/xvda,snapshot\\r\\n");    
+            paramMap.put("driverType", "aws");
+            paramMap.put("graphTopo", "none");
         } 
         
         if (paramMap.get("driverType").equals("aws")) {
@@ -280,12 +295,6 @@ public class ServiceServlet extends HttpServlet {
 
     private String createFullNetwork(HashMap<String, String> paramMap) throws SQLException {
         int retCode;
-        
-        for ( Object key : paramMap.keySet().toArray()) {
-            if (paramMap.get((String) key).isEmpty()) {
-                paramMap.remove((String) key);
-            }
-        }
 
         Connection rains_conn;
         Properties rains_connectionProps = new Properties();
@@ -301,9 +310,9 @@ public class ServiceServlet extends HttpServlet {
             paramMap.put("topoUri", "urn:ogf:network:aws.amazon.com:aws-cloud");
             paramMap.put("netType", "internal");
             paramMap.put("netCidr", "10.0.0.0/16");
-            paramMap.put("subnet1", "name+ &cidr+10.0.0.0/24&routesto+206.196.0.0/16,nextHop+internet\r\nfrom+vpn,to+0.0.0.0/0,nextHop+vpn\r\nto+72.24.24.0/24,nextHop+vpn");
-            paramMap.put("subnet2", "name+ &cidr+10.0.1.0/24");
-            paramMap.put("netRoutes", "to+0.0.0.0/0,nextHop+internet");
+            paramMap.put("subnet1", "name+ &cidr+ 10.0.0.0/24&routesto+206.196.0.0/16,nextHop+internet\r\nfrom+vpn,to+0.0.0.0/0,nextHop+vpn\r\nto+72.24.24.0/24,nextHop+vpn");
+            paramMap.put("subnet2", "name+ &cidr+ 10.0.1.0/24");
+            paramMap.put("netRoutes", "to+0.0.0.0/0,nextHop+internet\r\nto+0.0.0.0/0,nextHop+internet");
 
             retCode = servBean.createNetwork(paramMap);
         } else { // Custom Form Handling
@@ -319,43 +328,26 @@ public class ServiceServlet extends HttpServlet {
                 paramMap.put("driverType", "os");
             }
 
-            // Process each subnet.
             for (int i = 1; i < 10; i++) {
-                if (paramMap.containsKey("subnet" + i + "-cidr")) {
-                    if (!paramMap.containsKey("name")) {
-                        paramMap.put("subnet" + i + "-name", " ");
-                    }
-                    
+                if (paramMap.containsKey("subnet" + i + "-name")) {
                     String subnetString = "name+" + paramMap.get("subnet" + i + "-name") + "&cidr+" + paramMap.get("subnet" + i + "-cidr") + "&";
 
-                    // Check for route existence.
-                    if (paramMap.containsKey("subnet" + i + "-route1-to")) {
-                        subnetString += "routes";
-                    }
-
                     for (int j = 1; j < 10; j++) {
-                        // Check for subnet existence.
                         if (paramMap.containsKey("subnet" + i + "-route" + j + "-to")) {
-                            subnetString += "to+" + paramMap.get("subnet" + i + "-route" + j + "-to") + ",";
-
+                            subnetString += "routes";
                             if (paramMap.containsKey("subnet" + i + "-route" + j + "-from")) {
                                 subnetString += "from+" + paramMap.get("subnet" + i + "-route" + j + "-from") + ",";
                             }
+                            subnetString += "to+" + paramMap.get("subnet" + i + "-route" + j + "-to") + ",";
                             if (paramMap.containsKey("subnet" + i + "-route" + j + "-next")) {
                                 subnetString += "nextHop+" + paramMap.get("subnet" + i + "-route" + j + "-next");
                             }
+                            
                             subnetString += "\r\n";
+                            
                         }
                     }
                     
-                    // Trim trailing newline.
-                    subnetString = subnetString.substring(0, (subnetString.length() - 2));
-
-                    // Apply route propagation
-                    if (paramMap.containsKey("subnet" + i + "-route-prop")) {
-                        subnetString += "\r\nfrom+vpn,to+0.0.0.0/0,nextHop+vpn";
-                    }
-
                     paramMap.put("subnet" + i, subnetString);
                 }
             }
