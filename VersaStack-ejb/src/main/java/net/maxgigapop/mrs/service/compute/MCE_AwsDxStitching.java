@@ -61,10 +61,10 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
         // importPolicyData : Interface->Stitching->List<PolicyData>
         String sparql = "SELECT ?policy ?data ?type ?value WHERE {"
                 + "?policy a spa:PolicyAction. "
-                + "?policy spa:type 'MCE_AWSDirectConnectStitch'. "
+                + "?policy spa:type 'MCE_AwsDxStitching'. "
                 + "?policy spa:importFrom ?data. "
                 + "?data spa:type ?type. ?data spa:value ?value. "
-                //+ "FILTER not exists {?policy spa:dependOn ?other} "
+                + "FILTER not exists {?policy spa:dependOn ?other} "
                 + "}";
 
         ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);

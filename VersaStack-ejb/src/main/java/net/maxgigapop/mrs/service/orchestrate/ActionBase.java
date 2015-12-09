@@ -265,6 +265,7 @@ public class ActionBase {
             Resource resPolicy = querySolution.get("policyAction").asResource();
             mergedModel.remove(resSome, Spa.dependOn, resPolicy);
         }
+        /*
         try {
             log.log(Level.INFO, "\n>>>Merge--ModelA=\n" + ModelUtil.marshalModel(modelA.getBaseModel()));
             log.log(Level.INFO, "\n>>>Merge--ModelB=\n" + ModelUtil.marshalModel(modelB.getBaseModel()));
@@ -272,6 +273,7 @@ public class ActionBase {
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
+        */
         return mergedModel;
     }
 
@@ -302,7 +304,7 @@ public class ActionBase {
         Model spaModelBase = qexec.execConstruct();
         spaModel.add(spaModelBase);
         try {
-            log.log(Level.INFO, "\n>>>sanitizeSpaModel spaModelBase=\n" + ModelUtil.marshalModel(spaModelBase));
+            log.log(Level.FINE, "\n>>>sanitizeSpaModel spaModelBase=\n" + ModelUtil.marshalModel(spaModelBase));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }

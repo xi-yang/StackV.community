@@ -56,14 +56,13 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
     @Asynchronous
     public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
         try {
-            log.log(Level.INFO, "\n>>>MCE_MPVlanConnection--DeltaAddModel Input=\n" + ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
+            log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--DeltaAddModel Input=\n" + ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
 
         // importPolicyData : Link->Connection->List<PolicyData> of terminal Node/Topology
         String sparql = "SELECT ?conn ?policy ?data ?type ?value WHERE {"
-                //+ "?conn a nml:SwitchingSubnet ."
                 + "?conn spa:dependOn ?policy . "
                 + "?policy a spa:PolicyAction. "
                 + "?policy spa:type 'MCE_MPVlanConnection'. "
@@ -146,7 +145,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
         // filter out irrelevant statements (based on property type, label type, has switchingService etc.)
         OntModel transformedModel = MCETools.transformL2NetworkModel(systemModel);
         try {
-            log.log(Level.INFO, "\n>>>MCE_MPVlanConnection--SystemModel=\n" + ModelUtil.marshalModel(transformedModel));
+            log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--SystemModel=\n" + ModelUtil.marshalModel(transformedModel));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
