@@ -39,6 +39,20 @@
         <!-- MAIN PANEL -->
         <div id="main-pane">                                   
             <div id="service-overview">
+                
+                
+                <table class="management-table" id="status-table">
+                    <thead>
+                        <tr>
+                            <th>Service Name</th>
+                            <th>Service Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                    </tbody>
+                </table>
+
                 <sql:query dataSource="${front_conn}" sql="SELECT DISTINCT S.name, S.filename, S.description FROM service S JOIN acl A, acl_entry_group G, acl_entry_user U 
                            WHERE S.atomic = 0 AND A.service_id = S.service_id 
                            AND ((A.acl_id = G.acl_id AND G.usergroup_id = ?) OR (A.acl_id = U.acl_id AND U.user_id = ?))" var="servlist">

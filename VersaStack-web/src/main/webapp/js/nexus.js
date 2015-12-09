@@ -13,7 +13,7 @@ $(function () {
         $ref = "srvc/" + this.id.toLowerCase() + ".jsp #service-specific";
         // console.log($ref);
 
-        $("#service-table").toggleClass("hide");
+        $("#service-overview").toggleClass("hide");
         $("#button-service-cancel").toggleClass("hide");
         $("#service-specific").load($ref);
         evt.preventDefault();
@@ -22,7 +22,7 @@ $(function () {
     $("#button-service-cancel").click(function (evt) {
         $("#service-specific").empty();
         $("#button-service-cancel").toggleClass("hide");
-        $("#service-table").toggleClass("hide");
+        $("#service-overview").toggleClass("hide");
 
         clearCounters();
     });

@@ -279,11 +279,11 @@ public class ServiceServlet extends HttpServlet {
     }
 
     private String createFullNetwork(HashMap<String, String> paramMap) throws SQLException {
-        int retCode = -1;
+        int retCode;
         
-        for ( String key : paramMap.keySet()) {
-            if (paramMap.get(key).isEmpty()) {
-                paramMap.remove(key);
+        for ( Object key : paramMap.keySet().toArray()) {
+            if (paramMap.get((String) key).isEmpty()) {
+                paramMap.remove((String) key);
             }
         }
 
@@ -322,36 +322,45 @@ public class ServiceServlet extends HttpServlet {
             // Process each subnet.
             for (int i = 1; i < 10; i++) {
                 if (paramMap.containsKey("subnet" + i + "-cidr")) {
+                    if (!paramMap.containsKey("name")) {
+                        paramMap.put("subnet" + i + "-name", " ");
+                    }
+                    
                     String subnetString = "name+" + paramMap.get("subnet" + i + "-name") + "&cidr+" + paramMap.get("subnet" + i + "-cidr") + "&";
 
-                    // Check for routes existence.
+                    // Check for route existence.
                     if (paramMap.containsKey("subnet" + i + "-route1-to")) {
                         subnetString += "routes";
                     }
-                    
+
                     for (int j = 1; j < 10; j++) {
+                        // Check for subnet existence.
                         if (paramMap.containsKey("subnet" + i + "-route" + j + "-to")) {
                             subnetString += "to+" + paramMap.get("subnet" + i + "-route" + j + "-to") + ",";
+
+                            if (paramMap.containsKey("subnet" + i + "-route" + j + "-from")) {
+                                subnetString += "from+" + paramMap.get("subnet" + i + "-route" + j + "-from") + ",";
+                            }
+                            if (paramMap.containsKey("subnet" + i + "-route" + j + "-next")) {
+                                subnetString += "nextHop+" + paramMap.get("subnet" + i + "-route" + j + "-next");
+                            }
+                            subnetString += "\r\n";
                         }
-                        if (paramMap.containsKey("subnet" + i + "-route" + j + "-from")) {
-                            subnetString += "from+" + paramMap.get("subnet" + i + "-route" + j + "-from") + ",";
-                        }
-                        if (paramMap.containsKey("subnet" + i + "-route" + j + "-next")) {
-                            subnetString += "nextHop+" + paramMap.get("subnet" + i + "-route" + j + "-next");
-                        }
-                        subnetString += "\r\n";
                     }
+                    
+                    // Trim trailing newline.
+                    subnetString = subnetString.substring(0, (subnetString.length() - 2));
 
                     // Apply route propagation
                     if (paramMap.containsKey("subnet" + i + "-route-prop")) {
-                        subnetString += "from+vpn,to+0.0.0.0/0,nextHop+vpn";
+                        subnetString += "\r\nfrom+vpn,to+0.0.0.0/0,nextHop+vpn";
                     }
 
                     paramMap.put("subnet" + i, subnetString);
                 }
             }
 
-            //retCode = servBean.createNetwork(paramMap);
+            retCode = servBean.createNetwork(paramMap);
         }
 
         return ("/VersaStack-web/ops/srvc/netcreate.jsp?ret=" + retCode);
