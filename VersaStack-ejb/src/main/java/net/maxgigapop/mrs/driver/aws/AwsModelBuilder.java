@@ -143,6 +143,11 @@ public class AwsModelBuilder {
         for (VirtualInterface vi : dcClient.getVirtualInterfaces()) {
             String vlanNum = Integer.toString(vi.getVlan());
 
+            String virtualInterfaceState =  vi.getVirtualInterfaceState();
+            String[] invalidStates = {VirtualInterfaceState.Deleted.toString(), VirtualInterfaceState.Deleting.toString()};
+            if ((Arrays.asList(invalidStates).contains(virtualInterfaceState))) {
+                continue;
+            }
             Resource VLAN_LABEL_GROUP = RdfOwl.createResource(model, ResourceTool.getResourceUri(vlanNum, AwsPrefix.labelGroup,vi.getVirtualInterfaceId(),vlanNum ), Nml.LabelGroup);
             model.add(model.createStatement(VLAN_LABEL_GROUP, Nml.values, vlanNum));
             
@@ -154,7 +159,6 @@ public class AwsModelBuilder {
 
             //check if it has a gateway, meaning the virtual interface is being used
             String virtualGatewayId =  vi.getVirtualGatewayId();
-            String virtualInterfaceState =  vi.getVirtualInterfaceState();
             String[] acceptedStates = {VirtualInterfaceState.Available.toString(), 
                 VirtualInterfaceState.Confirming.toString(), VirtualInterfaceState.Deleting.toString(), 
                 VirtualInterfaceState.Pending.toString(), VirtualInterfaceState.Verifying.toString(), "down"};
