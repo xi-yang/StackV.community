@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import static java.lang.Thread.sleep;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -635,5 +636,38 @@ public class serviceBeans {
         }
         return responseStr.toString();
     }
-    
+
+    public ArrayList<ArrayList<String>> instanceStatusCheck() throws SQLException {
+        ArrayList<ArrayList<String>> retList = new ArrayList<>();
+
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", "root");
+        front_connectionProps.put("password", "root");
+
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
+                front_connectionProps);
+
+        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID FROM service S, service_instance I WHERE S.service_id = I.service_id");
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {
+            ArrayList<String> instanceList = new ArrayList<>();
+
+            String instanceName = rs1.getString("name");
+            String instanceUUID = rs1.getString("referenceUUID");
+            try {
+                URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
+                HttpURLConnection status = (HttpURLConnection) url.openConnection();
+
+                instanceList.add(instanceName);
+                instanceList.add(instanceUUID);                        
+                instanceList.add(this.executeHttpMethod(url, status, "GET", null));
+
+                retList.add(instanceList);
+            } catch (IOException ex) {
+            }
+        }
+
+        return retList;
+    }
 }

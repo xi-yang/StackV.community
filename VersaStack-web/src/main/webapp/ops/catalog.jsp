@@ -5,6 +5,8 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
 <jsp:setProperty name="user" property="*" />  
+<jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
+<jsp:setProperty name="serv" property="*" />
 <c:if test="${user.loggedIn == false}">
     <c:redirect url="/index.jsp" />
 </c:if>
@@ -38,18 +40,23 @@
         </div>
         <!-- MAIN PANEL -->
         <div id="main-pane">                                   
-            <div id="service-overview">
-                
-                
+            <div id="service-overview">                
                 <table class="management-table" id="status-table">
                     <thead>
                         <tr>
                             <th>Service Name</th>
+                            <th>Service UUID</th>
                             <th>Service Status</th>
                         </tr>
                     </thead>
                     <tbody>
-                        
+                        <c:forEach var="instance" items="${serv.instanceStatusCheck()}">
+                            <tr>
+                                <td>${instance[0]}</td>
+                                <td>${instance[1]}</td>
+                                <td>${instance[2]}</td>
+                            </tr>
+                        </c:forEach>
                     </tbody>
                 </table>
 
