@@ -462,7 +462,8 @@ public class serviceBeans {
         String driverType = null;
         String netCidr = null;
         List<String> subnets = new ArrayList<>();
-        boolean gwVpn = false;        
+        List<String> vmList = new ArrayList<>();
+        boolean gwVpn = false;
         
         for(Map.Entry<String, String> entry : paraMap.entrySet()){
             if(entry.getKey().equalsIgnoreCase("driverType"))
@@ -473,6 +474,9 @@ public class serviceBeans {
                 netCidr = entry.getValue();
             else if(entry.getKey().contains("subnet"))
                 subnets.add(entry.getValue());
+            else if(entry.getKey().contains("vm"))
+                vmList.add(entry.getValue());
+                //example for vm : 1&imageType&instanceType&volumeSize&batch
         }
         
         JSONObject network = new JSONObject();
@@ -530,6 +534,7 @@ public class serviceBeans {
         }
         network.put("gateways", gatewaysJson);
         
+        
         String svcDelta = "<serviceDelta>\n<uuid>" + UUID.randomUUID().toString()+
                 "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"+
                 "\n\n<modelAddition>\n" +
@@ -542,27 +547,67 @@ public class serviceBeans {
                 "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n" +
                 "&lt;" + topoUri + ":vpc=abstract&gt;\n" +
                 "    a                         nml:Topology ;\n" +
-                "    spa:dependOn &lt;x-policy-annotation:action:create-" + driverType + "-vpc&gt; .\n\n" +
-                "&lt;x-policy-annotation:action:create-" + driverType + "-vpc&gt;\n" +
-                "    a           spa:PolicyAction ;\n" +
-                "    spa:type     \"MCE_VirtualNetworkCreation\" ;\n" +
-                "    spa:importFrom &lt;x-policy-annotation:data:vpc-criteria&gt; ;\n" +
-                "    spa:exportTo &lt;x-policy-annotation:data:vpc-criteriaexport&gt; .\n" +
-                "\n" +
-                "\n" +
-                "&lt;x-policy-annotation:data:vpc-criteria&gt;\n" +
-                "    a            spa:PolicyData;\n" +
-                "    spa:type     nml:Topology;\n" +
-                "    spa:value    \"\"\"" + network.toString().replace("\\", "")+
-                "\"\"\".\n" +
-                "\n" +
-                "\n" +
-                "&lt;x-policy-annotation:data:vpc-criteriaexport&gt;\n" +
-                "    a            spa:PolicyData;\n" +
-                "\n" +
-                "</modelAddition>\n" +
-                "\n" +
-                "</serviceDelta>";
+                "    spa:dependOn &lt;x-policy-annotation:action:create-" + driverType + "-vpc&gt; .\n\n";
+        
+        if(vmList.isEmpty()){
+            svcDelta += "&lt;x-policy-annotation:action:create-" + driverType + "-vpc&gt;\n" +
+                    "    a           spa:PolicyAction ;\n" +
+                    "    spa:type     \"MCE_VirtualNetworkCreation\" ;\n" +
+                    "    spa:importFrom &lt;x-policy-annotation:data:vpc-criteria&gt; ;\n" +
+                    "    spa:exportTo &lt;x-policy-annotation:data:vpc-criteriaexport&gt; .\n\n" +
+                    "&lt;x-policy-annotation:data:vpc-criteria&gt;\n" +
+                    "    a            spa:PolicyData;\n" +
+                    "    spa:type     nml:Topology;\n" +
+                    "    spa:value    \"\"\"" + network.toString().replace("\\", "") +
+                    "\"\"\".\n\n&lt;x-policy-annotation:data:vpc-criteriaexport&gt;\n" +
+                    "    a            spa:PolicyData;\n\n" +
+                    "</modelAddition>\n\n" +
+                    "</serviceDelta>";
+        }
+        else{
+            String exportTo = "";
+            for (String vm : vmList){
+                String[] vmPara = vm.split("&");
+                //1:subnet #
+                //2:image Type
+                //3:instance Type
+                //4:volume size
+                //5:batch
+                svcDelta += "&lt;" + topoUri + ":vpc=abstract:vm" + vmPara[0] + "&gt;\n" +
+                        "    a                         nml:Node ;\n" +
+                        "    nml:hasBidirectionalPort   &lt;" + topoUri + ":vpc=abstract:vm" + vmPara[0] + ":eth0&gt; ;\n" +
+                        "    spa:dependOn &lt;x-policy-annotation:action:create-vm" + vmPara[0] + "&gt;.\n\n" +
+                        "&lt;" + topoUri + ":vpc=abstract:vm" + vmPara[0] + ":eth0&gt;\n" +
+                        "    a            nml:BidirectionalPort;" +
+                        "    spa:dependOn &lt;x-policy-annotation:action:create-vm" + vmPara[0] + "&gt;.\n\n" +
+                        "&lt;x-policy-annotation:action:create-vm" + vmPara[0] + "&gt;\n" +
+                        "    a            spa:PolicyAction ;\n" +
+                        "    spa:type     \"MCE_VMFilterPlacement\" ;\n" +
+                        "    spa:dependOn &lt;x-policy-annotation:action:create-" + driverType + "-vpc&gt;\n" +
+                        "    spa:importFrom ";
+                String subnetCriteria = "&lt;x-policy-annotation:data:vpc-subnet-vm"+ vmPara[0] +"-criteria&gt;";
+                exportTo += subnetCriteria + ", ";
+                int sub = Integer.valueOf(vmPara[0]) - 1;
+                svcDelta += subnetCriteria + ".\n\n" +
+                        subnetCriteria + "\n    a            spa:PolicyData;\n" +
+                        "    spa:type     \"JSON\";\n    spa:format    \"\"\"{ " +
+                        "\"place_into\": \"%%$.subnets[" + sub + "].uri%%\"}\"\"\" .\n\n";
+            }
+            svcDelta += "&lt;x-policy-annotation:action:create-" + driverType + "-vpc&gt;\n" +
+                    "    a           spa:PolicyAction ;\n" +
+                    "    spa:type     \"MCE_VirtualNetworkCreation\" ;\n" +
+                    "    spa:importFrom &lt;x-policy-annotation:data:vpc-criteria&gt; ;\n" +
+                    "    spa:exportTo " + exportTo.substring(0, (exportTo.length()-2)) + " .\n\n" +
+                    "&lt;x-policy-annotation:data:vpc-criteria&gt;\n" +
+                    "    a            spa:PolicyData;\n" +
+                    "    spa:type     nml:Topology;\n" +
+                    "    spa:value    \"\"\"" + network.toString().replace("\\", "") +
+                    "\"\"\".\n\n&lt;x-policy-annotation:data:vpc-criteriaexport&gt;\n" +
+                    "    a            spa:PolicyData;\n\n" +
+                    "</modelAddition>\n\n" +
+                    "</serviceDelta>";
+        }
+        
         
         String siUuid;
         String result;
