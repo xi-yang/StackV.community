@@ -67,7 +67,7 @@ public class OpenStackPush {
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
     private String topologyUri;
     private String defaultImage;
-    
+
     private String defaultFlavor;
 
     /*public static void main(String[] args) {
@@ -110,7 +110,7 @@ public class OpenStackPush {
         requests.addAll(networkRequests(modelRef, modelReduct, false));
         requests.addAll(networkRequests(modelRef, modelAdd, true));
         requests.addAll(subnetRequests(modelRef, modelAdd, true));
-       
+
         requests.addAll(volumeRequests(modelRef, modelAdd, true));
         requests.addAll((portRequests(modelRef, modelAdd, true)));
         requests.addAll(serverRequests(modelRef, modelAdd, true));
@@ -136,6 +136,7 @@ public class OpenStackPush {
                         .fixedIp(o.get("private address").toString(), net.getId());
 
                 osClient.networking().port().create(port);
+                PortCreationCheck(port.getId(), url, NATServer, username, password, tenantName, topologyUri);
             } else if (o.get("request").toString().equals("DeletePortRequest")) {
                 Port port = client.getPort(o.get("port name").toString());
                 osClient.networking().port().delete(port.getId());
@@ -156,10 +157,12 @@ public class OpenStackPush {
                 Tenant tenant = osClient.identity().tenants().getByName(tenantName);
                 String tenantid = tenant.getId();
                 Network network = new NeutronNetwork();
-                network.toBuilder().name(o.get("name").toString())
+                String network_name = o.get("name").toString();
+                network.toBuilder().name(network_name)
                         .tenantId(tenantid)
                         .adminStateUp(true); //hard code here
                 osClient.networking().network().create(network);
+                NetworkCreationCheck(network_name, url, NATServer, username, password, tenantName, topologyUri);
                 if (osClient.networking().network().list().contains(network)) {
                     System.out.println("find it");
                 }
@@ -167,6 +170,7 @@ public class OpenStackPush {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 String netid = null;
                 Subnet subnet = new NeutronSubnet();
+                String subnet_name = o.get("name").toString();
                 /*
                  if (client.getNetworks().) {
                  Network network = new NeutronNetwork();
@@ -183,7 +187,7 @@ public class OpenStackPush {
                 subnet.toBuilder().cidr(o.get("cidr block").toString())
                         //.network(client.getNetwork(o.get("network name").toString()))
                         .network(client.getNetwork(o.get("network name").toString()))
-                        .name(o.get("name").toString())
+                        .name(subnet_name)
                         .ipVersion(IPVersionType.V4);
                 String gatewayIp = o.get("gateway ip").toString();
                 if (!gatewayIp.isEmpty()) {
@@ -191,23 +195,27 @@ public class OpenStackPush {
                 }
 
                 osClient.networking().subnet().create(subnet);
-
+                SubnetCreationCheck(subnet_name, url, NATServer, username, password, tenantName, topologyUri);
             } else if (o.get("request").toString().equals("DeleteSubnetRequest")) {
                 Subnet net = client.getSubnet(o.get("name").toString());
-
+                String id = net.getId();
                 osClient.networking().subnet().delete(net.getId());
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                SubnetDeletionCheck(id, url, NATServer, username, password, tenantName, topologyUri);
             } else if (o.get("request").toString().equals("DeleteNetworkRequests")) {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 Network network = client.getNetwork(o.get("name").toString());
+                String id = network.getId();
                 for (Port p : client.getPorts()) {
                     if (p.getNetworkId().equals(network.getId())) {
                         throw new EJBException(("port" + p.getId() + "is still attached to the network, so network" + network.getName() + "cannot be deleted"));
                     }
                 }
                 osClient.networking().network().delete(network.getId());
+                NetworkDeletionCheck(id, url, NATServer, username, password, tenantName, topologyUri);
             } else if (o.get("request").toString().equals("RunInstanceRequest")) {
                 //@TODO: get image and flavor from mrs:type, if not available do:
-                
+
                 String imageType = defaultImage;
                 String flavorType = defaultFlavor;
                 if (imageType == null || imageType.isEmpty()) {
@@ -236,8 +244,7 @@ public class OpenStackPush {
 
                     builder.name(o.get("server name").toString())
                             .image(o.get("image").toString())
-                            .flavor(o.get("flavor").toString())
-                            ;
+                            .flavor(o.get("flavor").toString());
                 }
                 int index = 0;
                 String portid = "";
@@ -261,9 +268,11 @@ public class OpenStackPush {
                 ServerCreate server = (ServerCreate) builder.build();
                 Server s = osClient.compute().servers().boot(server);
 
+                VmCreationCheck(s.getName(), url, NATServer, username, password, tenantName, topologyUri);
             } else if (o.get("request").toString().equals("TerminateInstanceRequest")) {
                 Server server = client.getServer(o.get("server name").toString());
                 osClient.compute().servers().delete(server.getId());
+                VmDeletionCheck(server.getId(), url, NATServer, username, password, tenantName, topologyUri);
             } else if (o.get("request").toString().equals("AttachVolumeRequest")) {
                 ServerServiceImpl serverService = new ServerServiceImpl();
                 String volumeId = client.getVolume(o.get("volume name").toString()).getId();
@@ -369,15 +378,20 @@ public class OpenStackPush {
                                                             if (client.getPort(router_name + "port" + i) != null) {
                                                                 i++;
                                                             }
-                                                            port.toBuilder().networkId(netid)
-                                                                    .fixedIp(nexthop, subnetid)
-                                                                    .name(router_name + "port" + i)
-                                                                    .adminState(true);
+                                                            try {
+                                                                port.toBuilder().networkId(netid)
+                                                                        .fixedIp(nexthop, subnetid)
+                                                                        .name(router_name + "port" + i)
+                                                                        .adminState(true);
 
-                                                            osClient.networking().port().create(port);
-                                                            OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-                                                            String portid = client.getPort(router_name + "port" + i).getId();
-                                                            rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
+                                                                osClient.networking().port().create(port);
+                                                                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                                                                String portid = client.getPort(router_name + "port" + i).getId();
+                                                                rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
+                                                                PortCreationCheck(portid, url, NATServer, username, password, tenantName, topologyUri);
+                                                            } catch (Exception e) {
+                                                                e.toString();
+                                                            }
                                                         }
                                                         i++;
                                                         j++;
@@ -405,6 +419,7 @@ public class OpenStackPush {
                                                                             .fixedIp(ip, s.getId())
                                                                             .networkId(netid);
                                                                     client.getClient().networking().port().create(port);
+                                                                    PortCreationCheck(port.getName(), url, NATServer, username, password, tenantName, topologyUri);
                                                                     OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                                                                     portCreated = true;
                                                                     break;
@@ -559,12 +574,14 @@ public class OpenStackPush {
                             .networkId(subnet.getNetworkId());
                 }
                 osClient.networking().port().create(port);
-                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-                PortAdditionCheck(port.getId());
+
+                PortCreationCheck(port.getId(), url, NATServer, username, password, tenantName, topologyUri);
             } else if (o.get("request").toString().equals("DeleteNetworkInterfaceRequest")) {
                 Port port = client.getPort(o.get("port name").toString());
-                osClient.networking().port().delete(port.getId());
-               
+                if (port.getDeviceOwner().equals("")) {
+                    osClient.networking().port().delete(port.getId());
+                }
+
             } else if (o.get("request").toString().equals("DeleteRotingInfoRequest")) {
                 HashMap<String, HashMap<String, String>> routing_info_for_router = new HashMap<String, HashMap<String, String>>();
                 String key_routinginfo = "routing_info";
@@ -596,26 +613,29 @@ public class OpenStackPush {
                                 Router r1 = client.getRouter(router_name);
                                 routerid = r1.getId();
                                 String subid = s.getId();
+
                                 if (client.getNetwork(s.getNetworkId()).isRouterExternal()) {
-                                    for(Port p : client.getPorts()){
-                                        if(p.getDeviceId().equals(r1.getId())){
+                                    for (Port p : client.getPorts()) {
+                                        if (p.getDeviceId().equals(r1.getId()) && p.getNetworkId().equals(s.getNetworkId())) {
                                             portid = p.getId();
+                                            break;
                                         }
                                     }
                                     r1.toBuilder().clearExternalGateway();
                                     osClient.networking().router().update(r1);
-                                    OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-                                    PortDeletionCheck(portid);
+
+                                    PortDeletionCheck(portid, url, NATServer, username, password, tenantName, topologyUri);
 
                                 } else {
-                                    for(Port p : client.getPorts()){
-                                        if(p.getDeviceId().equals(r1.getId())){
+                                    for (Port p : client.getPorts()) {
+                                        if (p.getDeviceId().equals(r1.getId()) && p.getNetworkId().equals(s.getNetworkId())) {
                                             portid = p.getId();
+                                            break;
                                         }
                                     }
                                     osClient.networking().router().detachInterface(routerid, subid, null);
-                                    OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-                                    PortDeletionCheck(portid);
+
+                                    PortDeletionCheck(portid, url, NATServer, username, password, tenantName, topologyUri);
                                 }
                                 j++;
                                 key_ip = "nexthop" + Integer.toString(j);
@@ -2087,12 +2107,16 @@ public class OpenStackPush {
         }
         return false;
     }
-    public void PortAdditionCheck(String id) {
+
+    public void PortCreationCheck(String id, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
         /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
-        request.withNetworkInterfaceIds(id);
-                */
+         request.withNetworkInterfaceIds(id);
+         */
+        //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
         while (true) {
             try {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                //client.updateResources("Port");
                 Port resource = client.getPort(id);
                 if (resource != null) {
                     break;
@@ -2101,12 +2125,16 @@ public class OpenStackPush {
             }
         }
     }
-    public void PortDeletionCheck(String id) {
+
+    public void PortDeletionCheck(String id, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
         /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
-        request.withNetworkInterfaceIds(id);
-                */
+         request.withNetworkInterfaceIds(id);
+         */
+        //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
         while (true) {
             try {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                //client.updateResources("Port");
                 Port resource = client.getPort(id);
                 if (resource == null) {
                     break;
@@ -2115,12 +2143,34 @@ public class OpenStackPush {
             }
         }
     }
-    public void subnetCreationCheck(String id, String status) {
-       /* DescribeSubnetsRequest request = new DescribeSubnetsRequest();
-        request.withSubnetIds(id);
-               */
+
+    public void SubnetDeletionCheck(String id, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
+        /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
+         request.withNetworkInterfaceIds(id);
+         */
+        //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
         while (true) {
             try {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                //client.updateResources("Port");
+                Subnet resource = client.getSubnet(id);
+                if (resource == null) {
+                    break;
+                }
+            } catch (Exception e) {
+            }
+        }
+    }
+
+    public void SubnetCreationCheck(String id, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
+        /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
+         request.withNetworkInterfaceIds(id);
+         */
+        //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+        while (true) {
+            try {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                //client.updateResources("Port");
                 Subnet resource = client.getSubnet(id);
                 if (resource != null) {
                     break;
@@ -2129,13 +2179,107 @@ public class OpenStackPush {
             }
         }
     }
-    public void subnetDeletionCheck(String id, String status) {
-       /* DescribeSubnetsRequest request = new DescribeSubnetsRequest();
-        request.withSubnetIds(id);
-               */
+
+    public void VmCreationCheck(String id, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
+        /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
+         request.withNetworkInterfaceIds(id);
+         */
+        //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
         while (true) {
             try {
-                Subnet resource = client.getSubnet(id);
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                //client.updateResources("Port");
+                Server resource = client.getServer(id);
+                if (resource != null) {
+                    break;
+                }
+            } catch (Exception e) {
+            }
+        }
+    }
+
+    public void VmDeletionCheck(String id, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
+        /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
+         request.withNetworkInterfaceIds(id);
+         */
+        //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+        while (true) {
+            try {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                //client.updateResources("Port");
+                Server resource = client.getServer(id);
+                if (resource == null) {
+                    break;
+                }
+            } catch (Exception e) {
+            }
+        }
+    }
+
+    public void NetworkDeletionCheck(String id, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
+        /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
+         request.withNetworkInterfaceIds(id);
+         */
+        //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+        while (true) {
+            try {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                //client.updateResources("Port");
+                Network resource = client.getNetwork(id);
+                if (resource == null) {
+                    break;
+                }
+            } catch (Exception e) {
+            }
+        }
+    }
+
+    public void NetworkCreationCheck(String id, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
+        /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
+         request.withNetworkInterfaceIds(id);
+         */
+        //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+        while (true) {
+            try {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                //client.updateResources("Port");
+                Network resource = client.getNetwork(id);
+                if (resource != null) {
+                    break;
+                }
+            } catch (Exception e) {
+            }
+        }
+    }
+
+    public void RouterCreationCheck(String id, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
+        /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
+         request.withNetworkInterfaceIds(id);
+         */
+        //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+        while (true) {
+            try {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                //client.updateResources("Port");
+                Router resource = client.getRouter(id);
+                if (resource != null) {
+                    break;
+                }
+            } catch (Exception e) {
+            }
+        }
+    }
+
+    public void RouterDeletionCheck(String id, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
+        /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
+         request.withNetworkInterfaceIds(id);
+         */
+        //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+        while (true) {
+            try {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                //client.updateResources("Port");
+                Router resource = client.getRouter(id);
                 if (resource == null) {
                     break;
                 }
