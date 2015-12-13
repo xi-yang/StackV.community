@@ -316,12 +316,13 @@ public class ServiceServlet extends HttpServlet {
             paramMap.put("driverType", "aws");
             paramMap.put("topoUri", "urn:ogf:network:aws.amazon.com:aws-cloud");
             paramMap.put("netType", "internal");
-            paramMap.put("netCidr", "10.0.0.0/16");
-            paramMap.put("subnet1", "name+ &cidr+10.0.0.0/24&routesto+206.196.0.0/16,nextHop+internet\r\nfrom+vpn,to+0.0.0.0/0,nextHop+vpn\r\nto+72.24.24.0/24,nextHop+vpn");
-            paramMap.put("subnet2", "name+ &cidr+10.0.1.0/24");
-            paramMap.put("netRoutes", "to+0.0.0.0/0,nextHop+internet\r\nto+0.0.0.0/0,nextHop+internet");
+            paramMap.put("netCidr", "10.1.0.0/16");
+            paramMap.put("subnet1", "name+ &cidr+10.1.0.0/24&routesto+206.196.0.0/16,nextHop+internet\r\nfrom+vpn,to+0.0.0.0/0,nextHop+vpn\r\nto+72.24.24.0/24,nextHop+vpn");
+            paramMap.put("subnet2", "name+ &cidr+10.1.1.0/24");
+            paramMap.put("netRoutes", "to+0.0.0.0/0,nextHop+internet");
+            paramMap.put("vm1", "1&imageType&instanceType&volumeSize&batch");
+            paramMap.put("vm2", "1&imageType&instanceType&volumeSize&batch");
 
-            
             paramMap.remove("netCreate");
             paramMap.remove("template1");
 
