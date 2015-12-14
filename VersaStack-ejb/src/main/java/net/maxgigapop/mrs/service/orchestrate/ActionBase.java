@@ -361,7 +361,7 @@ public class ActionBase {
 
         // remove statements of resource of spa#Abstraction type
         sparql = "SELECT ?abstraction WHERE {"
-                + String.format("?abstraction a <%s>. ", Spa.Abstraction)
+                + String.format("?abstraction spa:type <%s>. ", Spa.Abstraction)
                 + "}";
         rs = ModelUtil.sparqlQuery(spaModel, sparql);
         while (rs.hasNext()) {

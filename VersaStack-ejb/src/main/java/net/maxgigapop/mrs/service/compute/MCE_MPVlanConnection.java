@@ -127,9 +127,11 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), policyAction);
 
             //5. mark the Link as an Abstraction
+            /*
             for (Resource resConn: (List<Resource>)((Map)connPolicyMap.get(policyAction)).get("connections")) {
-                outputDelta.getModelAddition().getOntModel().add(outputDelta.getModelAddition().getOntModel().createStatement(resConn, RdfOwl.type, Spa.Abstraction));
+                outputDelta.getModelAddition().getOntModel().add(outputDelta.getModelAddition().getOntModel().createStatement(resConn, Spa.type, Spa.Abstraction));
             }
+            */
         }
         try {
             log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--DeltaAddModel Output=\n" + ModelUtil.marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()));
