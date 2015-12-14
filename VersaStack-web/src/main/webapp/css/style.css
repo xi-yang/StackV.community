@@ -11,6 +11,10 @@ a.hover {
     color: #B20000;
 }
 
+.hide {
+    display: none;
+}
+
 body {
     background: #e9e9e9;
     font-family: 'Roboto', sans-serif;
@@ -404,6 +408,11 @@ body {
     text-align: right;
 }
 
+#service-title {
+    font-weight: bold;
+    text-align: left;
+}
+
 #service-menu {
     margin: 1% auto;
     width: 65%;
@@ -557,4 +566,8 @@ body {
 
 #model-select {
     width: 300px;
+}
+
+.service-instance-panel {
+    float: right;
 }
