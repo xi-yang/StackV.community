@@ -60,7 +60,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
             throw new EJBException(String.format("%s::process ", this.getClass().getName()));
         }
         try {
-            log.log(Level.INFO, "\n>>>MCE_NetworkPlacement--DeltaAddModel Input=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
+            log.log(Level.FINE, "\n>>>MCE_NetworkPlacement--DeltaAddModel Input=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -672,15 +672,15 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
                 + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
                 + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
                 + "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n"
-                + "SELECT ?vpc ?policyAction ?policyData ?type ?value WHERE {"
-                + "?vpc nml:hasService ?vservice . "
-                + "?vservice a mrs:VirtualCloudService . "
+                + "SELECT ?vpc ?policyAction ?policyData ?type ?value ?format WHERE {"
                 + String.format("?vservice mrs:providesVPC <%s> .", resNetwork.toString())
                 + String.format("<%s> spa:dependOn ?policyAction .", resNetwork.toString())
                 + "?policyAction a spa:PolicyAction. "
                 + "?policyAction spa:type 'MCE_VirtualNetworkCreation' ."
                 + "?policyAction spa:exportTo ?policyData . "
-                + "?policyData a spa:PolicyData}";
+                + "?policyData a spa:PolicyData ."
+                + "OPTIONAL {?policyData spa:format ?format.}"
+                + "}";
         ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
         List<QuerySolution> solutions = new ArrayList<>();
         while (r.hasNext()) {
@@ -688,7 +688,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
         }
         for (QuerySolution querySolution : solutions) {
             Resource resData = querySolution.get("policyData").asResource();
-            spaModel.add(resData, Spa.type, Nml.Topology);
+            spaModel.add(resData, Spa.type, "JSON");
 
             JSONObject output = new JSONObject();
             output.put("uri", resNetwork);
@@ -728,9 +728,13 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
             if (!subnets.isEmpty()) {
                 output.put("subnets", subnets);
             }
-
             //add output as spa:value of the export resrouce
-            spaModel.add(resData, Spa.value, output.toJSONString());
+            String exportValue = output.toJSONString();
+            if (querySolution.contains("format")) {
+                String exportFormat = querySolution.get("format").toString();
+                exportValue = MCETools.formatJsonExport(exportValue, exportFormat);
+            }
+            spaModel.add(resData, Spa.value, exportValue);
         }
         try {
             String ttl = ModelUtil.marshalOntModel(spaModel);

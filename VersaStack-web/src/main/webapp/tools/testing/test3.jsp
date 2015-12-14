@@ -1,20 +1,26 @@
- <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page errorPage = "/VersaStack-web/errorPage.jsp" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+<%-- 
+    Document   : ranjitha_test
+    Created on : Nov 16, 2015, 2:15:41 PM
+    Author     : max
+--%>
+
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page import="java.security.MessageDigest"%>
+<%@page errorPage = "errorPage.jsp" %>
+
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
-<jsp:setProperty name="user" property="*" />  
-<jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
-<jsp:setProperty name="serv" property="*" />  
+
+<jsp:setProperty name="user" property="*" /> 
+
 <c:if test="${user.loggedIn == false}">
-    <c:redirect url="/index.jsp" />
+    <c:redirect url="login.jsp" />
 </c:if>
+    
 <!DOCTYPE html>
-<html >    
-    <head>   
-        <meta charset="UTF-8">
-        <title>Example></title>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Overview</title>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
 
@@ -24,7 +30,6 @@
         <link rel="stylesheet" href="/VersaStack-web/css/bootstrap.css">
         <link rel="stylesheet" href="/VersaStack-web/css/style.css">
     </head>
-
     <body>
         <!-- NAV BAR -->
         <div id="nav">
@@ -34,31 +39,42 @@
         </div>
         <!-- MAIN PANEL -->
         <div id="main-pane">
+            <br><br>
+            Welcome ${user.firstName} ${user.lastName}.<br>
+            
             <c:choose>
                 <c:when test="${param.ret != 'sub'}">
-                    <div id="service-specific">                
-                        <form action="/VersaStack-web/ops/srvc/example.jsp" method="post">
+                    <div id="service-specific">       
+                        <form action="/VersaStack-web/tools/testing/ranjitha_test.jsp" method="post">
                             <input type="hidden" name="ret" value="sub" />
                             <table class="management-table" id="service-form">                    
                                 <thead>
                                     <tr>
-                                        <th>Form Header</th>
+                                        <th>Please Select the Security Questions</th>
                                         <th style="text-align: right"></th>                            
                                     </tr>
                                 </thead>
                                 <tbody>                    
                                     <tr>
-                                        <td>How many times do you want to print the user's name?</td>
-                                        <td><input type="number" name="count" required/></td>
-                                    </tr>
-                                    <tr>
-                                        <td>What color should it be?</td>
+                                        <td>1</td>
+                                        <td>Which city were you born ?</td>
+                                        <td><input type="text" name="city" required/></td>
                                         <td><select name="color">
-                                                <option value="red">Red</option>
-                                                <option value="green">Green</option>
-                                                <option value="blue">Blue</option>
+                                                <option value="Maryland">Maryland</option>
+                                                <option value="Virginia">Virginia</option>
+                                                <option value="NewYork">NewYork</option>
                                             </select></td>
                                     </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td>What is your pet name?</td>
+                                        <td><input type="text" name="pet" required/></td>
+                                    </tr>
+                                    <tr>
+                                        <td>3</td>
+                                        <td>What is your mothers maiden name ?</td>
+                                        <td><input type="text" name="mothername" required/></td>
+                                    </tr>    
                                     <tr>
                                         <td></td>
                                         <td><input class="button-register" name="change" type="submit" value="Submit" /></td>
@@ -69,15 +85,14 @@
                         </form>
                     </div>
                 </c:when>
-                <c:otherwise>
-                    <div id="service-result">
-                        <c:forEach begin="1" end="${param.count}" varStatus="loop">
-                            <p style="color: ${param.color}">${user.getFirstName()} ${user.getLastName()}</p>
-                        </c:forEach>
-                        <br><br><a href="/VersaStack-web/ops/catalog.jsp">Return to Services.</a>
-                    </div>
-                </c:otherwise>
+
             </c:choose>
+             
+           
+                
+                
+                
+                
         </div>        
         <!-- JS -->
         <script>
@@ -100,7 +115,8 @@
                         element.classList.remove("hide");
                     }
                 });
+                $("#nav").load("/VersaStack-web/navbar.html");
             });
-        </script>        
+        </script>          
     </body>
 </html>

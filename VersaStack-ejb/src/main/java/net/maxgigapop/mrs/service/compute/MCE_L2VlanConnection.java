@@ -206,6 +206,7 @@ public class MCE_L2VlanConnection implements IModelComputationElement {
         return MCETools.getLeastCostPath(KSP);
     }
 
+    //@TODO: JSON export
     private void exportPolicyData(OntModel spaModel, Resource resLink, MCETools.Path l2Path) {
         // find Connection policy -> exportTo -> policyData
         String sparql = "SELECT ?policyAction ?policyData WHERE {"

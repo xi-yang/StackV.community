@@ -37,6 +37,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
@@ -45,6 +47,9 @@ import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.Spa;
 import net.maxgigapop.mrs.common.TagSet;
 import org.json.simple.JSONObject;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.JsonPathException;
+import java.util.LinkedHashMap;
 
 /**
  *
@@ -658,7 +663,9 @@ public class MCETools {
             if (!vlanTranslation && lastParamMap != null && lastParamMap.containsKey("vlanRange")) {
                 lastVlanRange = (TagSet) lastParamMap.get("vlanRange");
             }
-            vlanRange.intersect(allowedVlanRange);
+            if (allowedVlanRange != null && !allowedVlanRange.isEmpty()) {
+                vlanRange.intersect(allowedVlanRange);
+            }
             vlanRange.intersect(lastVlanRange);
         }
         // exception if empty        
@@ -816,7 +823,7 @@ public class MCETools {
         rs = ModelUtil.sparqlQuery(model, sparql);
         while (rs.hasNext()) {
             String vlanStr = rs.next().getLiteral("?vlan").toString();
-            Integer vlan = Integer.getInteger(vlanStr);
+            Integer vlan = Integer.valueOf(vlanStr);
             vlanRange.removeTag(vlan);
         }
         return vlanRange;
@@ -827,14 +834,18 @@ public class MCETools {
         Resource resLink = spaModel.getResource(res.getURI());
         ModelUtil.listRecursiveDownTree(resLink, Spa.getURI(), listStmtsToRemove);
         if (listStmtsToRemove.isEmpty()) {
-            throw new EJBException(String.format("MCETools.removeResolvedAnnotation cannot remove SPA statements under %s", res));
+            return;
         }
 
-        String sparql = "SELECT ?anyOther ?policyAction WHERE {"
+        String sparql = "SELECT ?anyOther ?policyAction WHERE { {"
                 + String.format("<%s> spa:dependOn ?policyAction .", res.getURI())
                 + "?policyAction a spa:PolicyAction. "
                 + "?anyOther spa:dependOn ?policyAction . "
-                + "}";
+                + "} UNION {"
+                + "?policyAction a spa:PolicyAction. "
+                + "?anyOther spa:dependOn ?policyAction . "
+                + String.format("FILTER (?policyAction = <%s>)", res.getURI())
+                + "}}";
         ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
         List<QuerySolution> solutions = new ArrayList<>();
         while (r.hasNext()) {
@@ -847,5 +858,35 @@ public class MCETools {
             spaModel.remove(resAnyOther, Spa.dependOn, resPolicy);
         }
         //spaModel.remove(listStmtsToRemove);
+    }
+    
+    public static String formatJsonExport(String jsonExport, String formatOutput)  {
+        // get all format patterns
+        Matcher m = Pattern.compile("\\%[^\\%]+\\%").matcher(formatOutput);
+        List<String> jsonPathList = new ArrayList();
+        while (m.find()) {
+            String jsonPath = m.group();
+            jsonPathList.add(jsonPath);
+        }
+        for (String jsonPath : jsonPathList) {
+            try {
+                String jsonPattern = null;
+                Object r = JsonPath.parse(jsonExport).read(jsonPath.substring(1, jsonPath.length() - 1));
+                if (r instanceof net.minidev.json.JSONArray) {
+                    if (((net.minidev.json.JSONArray)r).size() == 1 && (((net.minidev.json.JSONArray)r).get(0) instanceof String))
+                        jsonPattern = (String)((net.minidev.json.JSONArray)r).get(0);
+                    else 
+                        jsonPattern = ((net.minidev.json.JSONArray)r).toJSONString();
+                } else {
+                    jsonPattern = r.toString();
+                }
+                formatOutput = formatOutput.replace(jsonPath, jsonPattern);
+            } catch (Exception ex) {
+                throw new EJBException(String.format("MCETools.formatJsonExport failed to export with JsonPath('%s') from:\n %s",
+                        jsonPath.substring(1, jsonPath.length() - 1), jsonExport));
+            }
+
+        }
+        return formatOutput;
     }
 }

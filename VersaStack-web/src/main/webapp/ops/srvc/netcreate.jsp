@@ -27,6 +27,7 @@
         <link rel="stylesheet" href="/VersaStack-web/css/driver.css">
     </head>
 
+
     <sql:setDataSource var="rains_conn" driver="com.mysql.jdbc.Driver"
                        url="jdbc:mysql://localhost:3306/rainsdb"
                        user="root"  password="root"/>
@@ -44,22 +45,26 @@
                 <c:when test="${empty param.ret}">  <!-- Display this section when no return value supplied -->
                     <div id="service-specific">
                         <div id="service-top">
+                            <div id="service-title">
+                                Network Creation
+                            </div>
                             <div id="service-menu">
                                 <c:if test="${not empty param.self}">
                                     <button type="button" id="button-service-return">Cancel</button>
                                 </c:if>
                                 <table class="management-table">
-                                    
+
                                 </table>
                             </div>
                         </div>
-                        <div id="service-bottom">
-                            <div id="service-fields">
-                                <form id="vm-form" action="/VersaStack-web/ServiceServlet" method="post">
+                        <div id="service-bottom">                            
+                            <div id="service-fields">                                
+                                <form id="service-template-form" action="/VersaStack-web/ServiceServlet" method="post">
+                                    <input type="hidden" name="userID" value="${user.getId()}"/>
                                     <table class="management-table" id="net-template-form" style="margin-bottom: 0px;"> 
                                         <thead>
                                             <tr>
-                                                <th>Template Name</th>
+                                                <th>Templates</th>
                                                 <th></th>
                                             </tr>
                                         </thead>
@@ -74,30 +79,85 @@
                                             </tr>
                                         </tbody>
                                     </table>    
-                                    
+                                    <input type="hidden" name="netCreate" value="true"/>
+                                </form>  
+                                <form id="service-custom-form" action="/VersaStack-web/ServiceServlet" method="post">
+                                    <input type="hidden" name="userID" value="${user.getId()}"/>    
                                     <table class="management-table" id="net-custom-form">
                                         <thead>
                                             <tr>
-                                                <th></th>
-                                                <th></th>
-                                            </tr>
+                                                <th>Custom</th>
+                                                <th><div id="custom-toggle">Display</div></th>
+                                        </tr>
                                         </thead>
-                                        <tbody>
+                                        <tbody id="custom-fields">
                                             <tr>
-                                                <td>Field 1</td>
-                                                <td></td>
+                                                <td>Topology URI</td>
+                                                <td>
+                                                    <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance" var="driverlist" />
+                                                    <select name="topoUri" >
+                                                        <option></option>
+                                                        <c:forEach var="driver" items="${driverlist.rows}">
+                                                            <option value="${driver.topologyUri}">${driver.topologyUri}</option>
+                                                        </c:forEach>
+                                                    </select>   
+                                                </td>
                                             </tr>
                                             <tr>
-                                                <td>Field 2</td>
-                                                <td></td>
+                                                <td>Network Type</td>
+                                                <td><input type="text" name="netType" /></td>
                                             </tr>
                                             <tr>
-                                                <td>Field 3</td>
+                                                <td>Network CIDR</td>
+                                                <td><input type="text" name="netCidr" /></td>
+                                            </tr>
+                                            <!-- <tr>
+                                                <td>Route Table</td>
+                                                <td>
+                                                    <div id="route-block">
+                                                        <div>
+                                                            <input type="text" name="route1-from" placeholder="From"/>
+                                                            <input type="text" name="route1-to" placeholder="To"/>
+                                                            <input type="text" name="route1-next" placeholder="Next Hop"/>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <input type="checkbox" name="route-prop" value="true"/>   Enable VPN Routes Propogation                                                       
+                                                    </div>
+                                                    <div>
+                                                         <input class="button-register" type="button" 
+                                                               value="Add Route" onClick="addRoute()">
+                                                    </div>
+                                                </td>
+                                            </tr> -->
+                                            <tr id="subnet1">
+                                                <td>Subnet 1</td>
+                                                <td>
+                                                    <div>
+                                                        <input type="text" name="subnet1-name" placeholder="Name"/>
+                                                        <input type="text" name="subnet1-cidr" placeholder="CIDR Block"/>
+                                                        <div id="subnet1-route-block">
+                                                            <div>
+                                                                <input type="text" name="subnet1-route1-from" placeholder="From"/>
+                                                                <input type="text" name="subnet1-route1-to" placeholder="To"/>
+                                                                <input type="text" name="subnet1-route1-next" placeholder="Next Hop"/>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <input type="checkbox" name="subnet1-route-prop" value="true"/>   Enable VPN Routes Propogation
+                                                        </div>
+                                                        <div>
+                                                            <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr>
                                                 <td></td>
+                                                <td><input type="submit" name="custom" value="Submit" /><input class="button-register" type="button" value="Add Subnet" onClick="addSubnet()"></td>
                                             </tr>
                                         </tbody>
-                                    </table>
-                                    
+                                    </table>                                    
                                     <input type="hidden" name="netCreate" value="true"/>
                                 </form>
                             </div>
@@ -112,17 +172,17 @@
                                 Creation Success!
                             </c:when>
                             <c:when test="${param.ret == '1'}">
-                                Error 1.
+                                Connection Error.
                             </c:when>    
                             <c:when test="${param.ret == '2'}">
-                                Error 2.
+                                Back-end Interaction Error.
                             </c:when>    
                             <c:when test="${param.ret == '3'}">
-                                Error 3.
+                                Failed to Create Network.
                             </c:when>                                      
                         </c:choose>                        
 
-                        <br><a href="/VersaStack-web/ops/srvc/netcreate.jsp?self=true">Repeat.</a>                                
+                        <br><a href="/VersaStack-web/ops/srvc/netcreate.jsp?self=true">Create Another Network.</a>                                
                         <br><a href="/VersaStack-web/ops/catalog.jsp">Return to Services.</a>
                         <br><a href="/VersaStack-web/orch/graphTest.jsp">Return to Graphic Orchestration.</a>
                     </div>

@@ -113,7 +113,19 @@ public class WebResource {
         try {
             Map<String, String> propMap = input.getProperties();
 
-            return "";
+            int retCode = serv.createNetwork(propMap);
+            switch (retCode) {
+                case 4:
+                    return "Parsing parameter error.\n";
+                case 3:
+                    return "Connection error.\n";
+                case 2:
+                    return "Plugin error.\n";
+                case 1:
+                    return "Requesting System Instance UUID error.\n";
+                default:
+                    return "Success.\n";
+            }
         } catch (EJBException e) {
             return e.getMessage();
         }

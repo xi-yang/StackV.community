@@ -63,13 +63,8 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, topologyURI, defaultImage, defaultFlavor);
         List<JSONObject> requests = null;
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
-        try {
-            requests = push.propagate(model, modelAdd, modelReduc);
-            driverInstance.putProperty(requestId, requests.toString());
-        } catch (Exception ex) {
-            Logger.getLogger(OpenStackDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
-        }
-
+        requests = push.propagate(model, modelAdd, modelReduc);
+        driverInstance.putProperty(requestId, requests.toString());
         DriverInstancePersistenceManager.merge(driverInstance);
         Logger.getLogger(OpenStackDriver.class.getName()).log(Level.INFO, "OpenStack driver delta models succesfully propagated");
     }
@@ -101,12 +96,12 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         try {
             r = mapper.readValue(requests, mapper.getTypeFactory().constructCollectionType(List.class, JSONObject.class));
         } catch (IOException ex) {
-            Logger.getLogger(OpenStackDriver.class.getName()).log(Level.SEVERE, null, ex);
+            throw new EJBException("failed to load JSON requests due to " + ex);
         }
         try {
             push.pushCommit(r, url, NATServer, username, password, tenant, topologyURI);
         } catch (InterruptedException ex) {
-            Logger.getLogger(OpenStackDriver.class.getName()).log(Level.SEVERE, null, ex);
+            throw new EJBException("failed to pushCommit due to " + ex);
         }
 
         driverInstance.getProperties().remove(requestId);
