@@ -330,6 +330,39 @@ function addSubnetRoute(subnetNum) {
 
 }
 
+function propagateInstance(uuid) {
+    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/service/' + uuid + '/propagate';
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        success: function (result) {
+            // Do something with the result
+        }
+    });
+}
+
+function commitInstance(uuid) {
+    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/service/' + uuid + '/commit';
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        success: function (result) {
+            // Do something with the result
+        }
+    });
+}
+
+function revertInstance(uuid) {
+    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/service/' + uuid + '/revert';
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        success: function (result) {
+            // Do something with the result
+        }
+    });
+}
+
 /*
  function clearView() {
  localStorage.removeItem('queryJSON');

@@ -54,7 +54,14 @@
                             <tr>
                                 <td>${instance[0]}</td>
                                 <td>${instance[1]}</td>
-                                <td>${instance[2]}</td>
+                                <td>
+                                    ${instance[2]}
+                                    <div class="service-instance-panel">
+                                        <button onClick="propagateInstance('${instance[1]}')">Propagate</button>
+                                        <button onClick="commitInstance('${instance[1]}')">Commit</button>
+                                        <button onClick="revertInstance('${instance[1]}')">Revert</button>
+                                    </div>
+                                </td>
                             </tr>
                         </c:forEach>
                     </tbody>

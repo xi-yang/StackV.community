@@ -52,6 +52,7 @@ public class ServiceServlet extends HttpServlet {
             URL url = new URL(String.format("%s/service/instance", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             String refUuid = servBean.executeHttpMethod(url, connection, "GET", null);
+            paramMap.put("instanceUUID", refUuid);
 
             Connection front_conn;
             Properties front_connectionProps = new Properties();
