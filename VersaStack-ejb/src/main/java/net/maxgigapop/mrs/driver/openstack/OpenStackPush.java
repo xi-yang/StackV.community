@@ -200,7 +200,7 @@ public class OpenStackPush {
                 Subnet net = client.getSubnet(o.get("name").toString());
                 String id = net.getId();
                 osClient.networking().subnet().delete(net.getId());
-                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                
                 SubnetDeletionCheck(id, url, NATServer, username, password, tenantName, topologyUri);
             } else if (o.get("request").toString().equals("DeleteNetworkRequests")) {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
@@ -256,6 +256,7 @@ public class OpenStackPush {
 
                             if (client.getResourceName(p).equals(o.get(key).toString())) {
                                 portid = p.getId();
+                                break;
                             }
                         }
                         builder.addNetworkPort(portid);
@@ -267,8 +268,8 @@ public class OpenStackPush {
 
                 ServerCreate server = (ServerCreate) builder.build();
                 Server s = osClient.compute().servers().boot(server);
-
-                VmCreationCheck(s.getName(), url, NATServer, username, password, tenantName, topologyUri);
+                String servername = o.get("server name").toString();
+                VmCreationCheck(servername, url, NATServer, username, password, tenantName, topologyUri);
             } else if (o.get("request").toString().equals("TerminateInstanceRequest")) {
                 Server server = client.getServer(o.get("server name").toString());
                 osClient.compute().servers().delete(server.getId());
@@ -554,11 +555,12 @@ public class OpenStackPush {
             } else if (o.get("request").toString().equals("CreateNetworkInterfaceRequest")) {
                 Port port = new NeutronPort();
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-
+                String portname = o.get("port name").toString();
                 Subnet subnet = null;
                 for (Subnet sn : client.getSubnets()) {
                     if (sn.getName().equals(o.get("subnet name").toString())) {
                         subnet = sn;
+                        break;
                     }
 
                 }
@@ -575,10 +577,10 @@ public class OpenStackPush {
                 }
                 osClient.networking().port().create(port);
 
-                PortCreationCheck(port.getId(), url, NATServer, username, password, tenantName, topologyUri);
+                PortCreationCheck(portname, url, NATServer, username, password, tenantName, topologyUri);
             } else if (o.get("request").toString().equals("DeleteNetworkInterfaceRequest")) {
                 Port port = client.getPort(o.get("port name").toString());
-                if (port.getDeviceOwner().equals("")) {
+                if (port.getDeviceOwner().equals("")) { //this is for delete port have no device owner, if the port has a device owner, it cannot delete it at here besides it will delete at elsewhere.
                     osClient.networking().port().delete(port.getId());
                 }
 
