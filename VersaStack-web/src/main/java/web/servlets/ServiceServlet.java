@@ -203,13 +203,6 @@ public class ServiceServlet extends HttpServlet {
             paramMap.put("driverEjbPath", "java:module/GenericRESTDriver");     
             paramMap.put("subsystemBaseUrl", "http://charon.dragon.maxgigapop.net:8080/VersaNS-0.0.1-SNAPSHOT");    
             paramMap.put("install", "Install");
-        } else if (paramMap.containsKey("template5")) {
-            paramMap.put("driverID", "awsdriver");
-            paramMap.put("topologyUri", "urn:off:network:aws.amazon.com:aws-cloud");
-            paramMap.put("aws_access_key_id", "AKIAJEOHXEUCCYOU6ELQ");     
-            paramMap.put("aws_secret_access_key", "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");       
-            paramMap.put("region", "us-east-1");    
-            paramMap.put("install", "Install");
         }
         
         // Connect dynamically generated elements

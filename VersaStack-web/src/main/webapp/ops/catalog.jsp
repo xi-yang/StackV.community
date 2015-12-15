@@ -60,6 +60,7 @@
                                         <button onClick="propagateInstance('${instance[1]}')">Propagate</button>
                                         <button onClick="commitInstance('${instance[1]}')">Commit</button>
                                         <button onClick="revertInstance('${instance[1]}')">Revert</button>
+                                        <button onClick="deleteInstance('${instance[1]}')">Delete</button>
                                     </div>
                                 </td>
                             </tr>
