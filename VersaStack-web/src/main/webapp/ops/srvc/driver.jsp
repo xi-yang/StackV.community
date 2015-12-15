@@ -82,6 +82,42 @@
                         </div>
                         <div id="service-bottom">
                             <div id="service-fields">
+                               <form id="service-template-form" action="/VersaStack-web/ServiceServlet" method="post">
+                                    <input type="hidden" name="userID" value="${user.getId()}"/>
+                                    <input type="hidden" name="driverID" value="${param.driver_id}"/>                                    
+                                    <table class="management-table" id="net-template-form" style="margin-bottom: 0px;"> 
+                                        <thead>
+                                            <tr>
+                                                <th>Templates</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>OpenStack Driver</td>
+                                                <td><input type="submit" name="template1" value="Select" /></td>
+                                            </tr>                                            
+                                            <tr>
+                                                <td>Stack Driver</td>
+                                                <td><input type="submit" name="template2" value="Select" /></td>
+                                            </tr>
+                                             <tr>
+                                                <td>Stub Driver</td>
+                                                <td><input type="submit" name="template3" value="Select" /></td>
+                                            </tr>  
+                                              <tr>
+                                                <td>Generic Driver</td>
+                                                <td><input type="submit" name="template4" value="Select" /></td>
+                                            </tr>                                              
+                                              <tr>
+                                                <td>AWS Driver</td>
+                                                <td><input type="submit" name="template5" value="Select" /></td>
+                                            </tr>  
+                                           
+                                        </tbody>
+                                    </table>    
+                                </form>  
+
                                 <form id="driver-form" action="/VersaStack-web/ServiceServlet" method="post">
                                     <input type="hidden" name="userID" value="${user.getId()}"/>
                                     <input type="hidden" name="driverID" value="${param.driver_id}"/>
