@@ -429,9 +429,20 @@ public class AwsPush {
 
                 String routeTableId = ec2Client.getTableId(parameters[1]);
                 String subnetId = ec2Client.getResourceId(parameters[2]);
-
+                for (int i = 10; i > 0; i--) {
+                    String resId = ec2Client.getResourceId(routeTableId);
+                    if (routeTableId != resId) {
+                        routeTableId = resId;
+                        break;
+                    }
+                    try {
+                        Thread.sleep(1000L);
+                    } catch (InterruptedException ex) {
+                        ;
+                    }
+                }
                 AssociateRouteTableRequest associateRequest = new AssociateRouteTableRequest();
-                associateRequest.withRouteTableId(ec2Client.getResourceId(routeTableId))
+                associateRequest.withRouteTableId(routeTableId)
                         .withSubnetId(ec2Client.getResourceId(subnetId));
                 AssociateRouteTableResult associateResult = ec2.associateRouteTable(associateRequest);
 
