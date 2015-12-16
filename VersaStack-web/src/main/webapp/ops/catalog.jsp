@@ -47,6 +47,7 @@
                             <th>Service Name</th>
                             <th>Service UUID</th>
                             <th>Service Status</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -54,8 +55,8 @@
                             <tr>
                                 <td>${instance[0]}</td>
                                 <td>${instance[1]}</td>
+                                <td>${instance[2]}</td>
                                 <td>
-                                    ${instance[2]}
                                     <div class="service-instance-panel">
                                         <button onClick="propagateInstance('${instance[1]}')">Propagate</button>
                                         <button onClick="commitInstance('${instance[1]}')">Commit</button>
