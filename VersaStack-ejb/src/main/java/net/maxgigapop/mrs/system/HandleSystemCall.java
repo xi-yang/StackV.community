@@ -195,7 +195,7 @@ public class HandleSystemCall {
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
-    public void propagateDelta(SystemInstance systemInstance, SystemDelta sysDelta) {
+    public void propagateDelta(SystemInstance systemInstance, SystemDelta sysDelta, boolean useUpdatedVG) {
         // refresh systemInstance into current persistence context
         if (systemInstance.getId() != 0) {
             systemInstance = SystemInstancePersistenceManager.findById(systemInstance.getId());
@@ -209,17 +209,20 @@ public class HandleSystemCall {
             sysDelta = (SystemDelta) DeltaPersistenceManager.findById(sysDelta.getId());
         }
         // Note 1: an initial VG (#1) must exist 
-        VersionGroup referenceVG = sysDelta.getReferenceVersionGroup();
-        if (referenceVG == null) {
+        VersionGroup referenceVG_cached = sysDelta.getReferenceVersionGroup();
+        if (referenceVG_cached == null) {
             throw new EJBException(String.format("%s has no reference versionGroup to work with", systemInstance));
         }
         // refresh VG into current persistence context
-        referenceVG = VersionGroupPersistenceManager.findByReferenceId(referenceVG.getRefUuid());
+        VersionGroup referenceVG = VersionGroupPersistenceManager.findByReferenceId(referenceVG_cached.getRefUuid());
         sysDelta.setReferenceVersionGroup(referenceVG);
 
         //EJBExeption may be thrown upon fault from subroutine of each step below
         //## Step 1. create reference model and target model 
-        ModelBase referenceModel = referenceVG.createUnionModel();
+        // referenceVG could have new VIs compared to referenceVG_cached. If useUpdatedVG == true, 
+        // the reference model will use the latest VIs. Otherwise stick to the original VIs.
+        ModelBase referenceModel = (useUpdatedVG ? referenceVG : referenceVG_cached)
+                .createUnionModel();
         OntModel referenceOntModel = referenceModel.getOntModel();
         OntModel targetOntModel = referenceModel.dryrunDelta(sysDelta);
 
@@ -407,13 +410,13 @@ public class HandleSystemCall {
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
-    public void propagateDelta(String sysInstanceUUID, SystemDelta sysDelta) {
+    public void propagateDelta(String sysInstanceUUID, SystemDelta sysDelta, boolean useUpdatedVG) {
         SystemInstance systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(sysInstanceUUID);
         if (systemInstance == null) {
             throw new EJBException("propagateDelta encounters unknown systemInstance with referenceUUID=" + sysInstanceUUID);
         }
 
-        this.propagateDelta(systemInstance, sysDelta);
+        this.propagateDelta(systemInstance, sysDelta, useUpdatedVG);
     }
 
     /*

@@ -126,7 +126,7 @@ public class DeltaResource {
         systemDelta.setModelReduction(dmReduction);
         
         try{
-            systemCallHandler.propagateDelta(SysInstanceRefUUID, systemDelta);
+            systemCallHandler.propagateDelta(SysInstanceRefUUID, systemDelta, true);
         }catch(Exception e){
             return e.getMessage();
         }
