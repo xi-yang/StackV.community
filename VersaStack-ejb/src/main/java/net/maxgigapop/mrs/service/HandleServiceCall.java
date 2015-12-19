@@ -577,6 +577,7 @@ public class HandleServiceCall {
                         && systemInstance.getSystemDelta().getDriverSystemDeltas() != null 
                         && !systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
                     for (DriverSystemDelta dsd: systemInstance.getSystemDelta().getDriverSystemDeltas()) {
+                        dsd = (DriverSystemDelta)DeltaPersistenceManager.findById(dsd.getId());
                         DeltaPersistenceManager.delete(dsd);
                     }
                     systemInstance.getSystemDelta().getDriverSystemDeltas().clear();
