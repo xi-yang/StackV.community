@@ -534,7 +534,7 @@ public class HandleServiceCall {
             }
         }
         if (failed) {
-            serviceInstance.setStatus("FALIED");
+            serviceInstance.setStatus("FAILED");
         } else if (ready) {
             serviceInstance.setStatus("READY");
         } else {
@@ -573,16 +573,21 @@ public class HandleServiceCall {
                 } else {
                     systemInstance = SystemInstancePersistenceManager.findById(systemInstance.getId());
                 }
-                if (systemInstance.getSystemDelta() != null 
-                        && systemInstance.getSystemDelta().getDriverSystemDeltas() != null 
+                if (systemInstance.getSystemDelta() != null
+                        && systemInstance.getSystemDelta().getDriverSystemDeltas() != null
                         && !systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
-                    for (DriverSystemDelta dsd: systemInstance.getSystemDelta().getDriverSystemDeltas()) {
-                        dsd = (DriverSystemDelta)DeltaPersistenceManager.findById(dsd.getId());
+                    for (Iterator<DriverSystemDelta> dsdIt = systemInstance.getSystemDelta().getDriverSystemDeltas().iterator(); dsdIt.hasNext();) {
+                        DriverSystemDelta dsd = dsdIt.next();
+                        DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(dsd.getDriverInstance().getTopologyUri());
+                        driverInstance.getDriverSystemDeltas().remove(dsd);
                         DeltaPersistenceManager.delete(dsd);
                     }
                     systemInstance.getSystemDelta().getDriverSystemDeltas().clear();
                     DeltaPersistenceManager.save(systemInstance.getSystemDelta());
                     SystemInstancePersistenceManager.save(systemInstance);
+                    if (serviceDelta.getSystemDelta() != null && systemInstance.getSystemDelta().getDriverSystemDeltas() != null) {
+                        systemInstance.getSystemDelta().getDriverSystemDeltas().clear();
+                    }
                 }
                 try {
                     systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta(), true);
