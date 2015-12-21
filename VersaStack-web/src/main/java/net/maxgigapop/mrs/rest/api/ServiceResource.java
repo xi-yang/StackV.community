@@ -178,7 +178,7 @@ public class ServiceResource {
     public String push(@PathParam("siUUID") String svcInstanceUUID, @PathParam("action") String action) {
         if (action.equalsIgnoreCase("propagate")) {
             return serviceCallHandler.propagateDeltas(svcInstanceUUID, true);
-       } else if (action.equalsIgnoreCase("propagate_noupdate")) {
+       } else if (action.equalsIgnoreCase("propagate_through")) {
             return serviceCallHandler.propagateDeltas(svcInstanceUUID, false);
        } else if (action.equalsIgnoreCase("propagate_retry")) {
             return serviceCallHandler.propagateRetry(svcInstanceUUID, false);

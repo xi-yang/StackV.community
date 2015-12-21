@@ -361,6 +361,9 @@ public class HandleSystemCall {
         // 2. dispatch commit to drivers
         Map<DriverSystemDelta, Future<String>> commitResultMap = new HashMap<>();
         for (DriverSystemDelta dsd : systemInstance.getSystemDelta().getDriverSystemDeltas()) {
+            if (dsd.getStatus() != null && dsd.getStatus().equalsIgnoreCase("DELETED")) {
+                continue;
+            }
             DriverInstance driverInstance = dsd.getDriverInstance();
             if (driverInstance == null) {
                 throw new EJBException(String.format("%s in %s has null driverInstance ", dsd, systemInstance));

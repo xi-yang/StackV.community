@@ -576,18 +576,21 @@ public class HandleServiceCall {
                 if (systemInstance.getSystemDelta() != null
                         && systemInstance.getSystemDelta().getDriverSystemDeltas() != null
                         && !systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
+                    //systemInstance.setSystemDelta((SystemDelta)DeltaPersistenceManager.merge(systemInstance.getSystemDelta()));
                     for (Iterator<DriverSystemDelta> dsdIt = systemInstance.getSystemDelta().getDriverSystemDeltas().iterator(); dsdIt.hasNext();) {
                         DriverSystemDelta dsd = dsdIt.next();
                         DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(dsd.getDriverInstance().getTopologyUri());
                         driverInstance.getDriverSystemDeltas().remove(dsd);
-                        DeltaPersistenceManager.delete(dsd);
+                        if (serviceDelta.getSystemDelta() != null && serviceDelta.getSystemDelta().getDriverSystemDeltas() != null
+                                && serviceDelta.getSystemDelta().getDriverSystemDeltas().contains(dsd)) {
+                            driverInstance.getDriverSystemDeltas().remove(dsd);
+                        }
+                        // a hack. we really want to delete this DSD completely but have not found a way to make it go away.
+                        dsd.setStatus("DELETED");
+                        DeltaPersistenceManager.save(dsd);
                     }
                     systemInstance.getSystemDelta().getDriverSystemDeltas().clear();
                     DeltaPersistenceManager.save(systemInstance.getSystemDelta());
-                    SystemInstancePersistenceManager.save(systemInstance);
-                    if (serviceDelta.getSystemDelta() != null && systemInstance.getSystemDelta().getDriverSystemDeltas() != null) {
-                        systemInstance.getSystemDelta().getDriverSystemDeltas().clear();
-                    }
                 }
                 try {
                     systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta(), true);
