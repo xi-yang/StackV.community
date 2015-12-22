@@ -167,7 +167,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                 //2. merge the placement satements into spaModel
                 OntModel modelAddition = ModelUtil.unmarshalOntModel(flow_model);
 
-                outputDelta.getModelAddition().setOntModel(modelAddition);
+                //outputDelta.getModelAddition().setOntModel(modelAddition);
                 outputDelta.getModelAddition().getOntModel().add(modelAddition.getBaseModel());
 
                 //TRY QUERY, ADD STATEMENTS TO FLOW   
