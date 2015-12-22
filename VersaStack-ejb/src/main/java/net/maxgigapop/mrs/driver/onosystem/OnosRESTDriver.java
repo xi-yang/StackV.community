@@ -74,6 +74,7 @@ public class OnosRESTDriver implements IHandleDriverSystemCall {
 
         } catch (Exception ex) {
             Logger.getLogger(OnosRESTDriver.class.getName()).log(Level.SEVERE, null, ex);
+            throw(new EJBException(ex));
         }
 
     }
@@ -102,6 +103,7 @@ public class OnosRESTDriver implements IHandleDriverSystemCall {
             push.pushCommit(access_key_id, secret_access_key, requests, topologyURI, subsystemBaseUrl);
         } catch (Exception ex) {
             Logger.getLogger(OnosRESTDriver.class.getName()).log(Level.SEVERE, null, ex);
+            throw(new EJBException(ex));
         }
 
         driverInstance.getProperties().remove(requestId);
@@ -155,6 +157,7 @@ public class OnosRESTDriver implements IHandleDriverSystemCall {
             throw new EJBException(String.format("pullModel on %s raised exception[%s]", driverInstance, e.getMessage()));
         } catch (Exception ex) {
             Logger.getLogger(OnosRESTDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
+            throw(new EJBException(ex));
         }
 
         return new AsyncResult<>("SUCCESS");
