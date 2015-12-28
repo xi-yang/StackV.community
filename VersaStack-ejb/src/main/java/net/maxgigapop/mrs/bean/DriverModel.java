@@ -3,7 +3,6 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package net.maxgigapop.mrs.bean;
 
 import javax.persistence.Entity;
@@ -17,8 +16,9 @@ import javax.persistence.ManyToOne;
  * @author xyang
  */
 @Entity
-@Inheritance(strategy=InheritanceType.SINGLE_TABLE)
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 public class DriverModel extends ModelBase {
+
     @ManyToOne
     @JoinColumn(name = "driverInstanceId")
     protected DriverInstance driverInstance = null;

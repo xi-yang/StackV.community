@@ -1,0 +1,186 @@
+::-webkit-scrollbar { 
+    display: none; 
+}
+
+
+#hoverdiv{
+    position: fixed;
+    visibility: hidden;
+    background-color: rgba(255,255,255,.85);
+    color: #404040;
+    border: 1px solid #999;
+    padding: 7px;
+}
+
+#displayPanel{
+    float:right;
+    background-color: #d0d0d0;    
+    min-height: calc(50%);
+    top: 37px;
+    width: 25%;
+    position: absolute;
+    right:0;
+    border-left: 5px solid rgba(0, 0, 0, .05);
+    border-bottom: 5px solid rgba(0, 0, 0, .05);
+    overflow: scroll;
+    z-index: 3;
+    
+    -webkit-transition: top 0.5s ease-in-out;
+    transition: top 0.5s ease-in-out;
+}
+
+#displayPanel.closed {
+    top: calc(-50% + 60px);
+    
+    -webkit-transition: top 0.5s ease-in-out;
+    transition: top 0.5s ease-in-out;
+}
+
+#displayPanel-contents {
+    width: 100%;
+    height: 100%;
+}
+
+
+#displayPanel-tab {
+    background-color: rgba(0, 0, 0, .05);    
+    height: 20px;
+    width: 100%;
+    position: absolute;
+    bottom: 0;
+    
+    -webkit-transition: transform 1s ease-in-out;
+    transition: transform 1s ease-in-out;
+}
+
+#displayPanel.closed #displayPanel-tab {
+    transform: rotateX(180deg);
+    
+    -webkit-transition: transform 1s ease-in-out;
+    transition: transform 1s ease-in-out;
+}
+
+#displayPanel-actions {    
+    bottom: 20px;
+    position: absolute;   
+}
+
+/* Edit loading transition timer below */
+#viz{
+    width: calc(100% - 210px);
+    height: calc(100% - 37px);
+    float: right;
+    border-left: 20px solid rgba(0, 0, 0, .05);
+    
+    -webkit-transition: opacity 2s ease-in;
+    transition: opacity 2s ease-in;
+}
+
+#viz.loading {
+    /* Make the contents of the body opaque during loading */
+    opacity: 0;
+
+    /* Ensures that the transition only runs in one direction */
+    -webkit-transition: opacity 0s;
+    transition: opacity 0s;
+}
+
+#loadingPanel {
+    /* Replace #333 with the background-color of your choice */
+    /* Replace loading.gif with the loading image of your choice */
+    background: #e9e9e9 url('/VersaStack-web/resources/loading-indicator-medium.gif') no-repeat 50% 50%;
+
+    /* Ensures that the transition only runs in one direction */
+    -webkit-transition: opacity 2s ease-in;
+    transition: opacity 2s ease-in;
+    
+    position: absolute;
+    width: calc(100% - 225px);
+    height: calc(100% - 37px);
+    left: 225px;
+    top: 37px;
+    border-left: 5px solid rgba(0, 0, 0, .05);
+}
+
+body{
+    width:100%;
+    height: 100%;
+    margin-top:0px;
+}
+
+.treeMenu{
+    margin-left:15px;
+    text-align: left;
+}
+
+#awsButton, #cancelButton {
+    float: left;
+
+}
+
+.button-filter-select {
+    background-color: rgba(0, 0, 0, .05);
+    color: black;
+    border-left: 1px solid rgba(0, 0, 0, .05);
+    border-right: 1px solid rgba(0, 0, 0, .05);
+}
+
+.current-filter {
+    color: red;
+    background-color: rgba(0, 0, 0, .10)
+}
+
+#displayName{
+    text-align: center;
+    visibility: visible;
+    padding: 7px;
+    width: content-box;
+    font-size: 150%;
+    overflow-wrap: break-word;
+}
+
+#filterPanel {
+    position: absolute;
+    top: 37px;
+    left: 225px;
+    border-left: 5px solid rgba(0, 0, 0, .05);
+    z-index: 2;
+}
+
+#filterPanel-contents {
+    background-color: rgba(0, 0, 0, .05);    
+    position: relative;
+    width: inherit;
+    left: 0;
+    height: calc(100% - 20px);
+}
+
+#jobsPanel {
+    background-color: #e9e9e9;
+    position: absolute;
+    bottom: 0;
+    left: calc(50% - 66px);   
+    z-index: 2;
+    min-width: 30%;
+    min-height: 20%;
+    border: 2px solid rgba(0, 0, 0, .05);
+    
+    -webkit-transition: bottom 0.5s ease-in-out;
+    transition: bottom 0.5s ease-in-out;
+}
+
+#jobsPanel.closed {
+    bottom: calc(-20% + 20px);
+    
+    -webkit-transition: bottom 0.5s ease-in-out;
+    transition: bottom 0.5s ease-in-out;
+}
+
+#jobsPanel-tab {
+    text-align: center;
+    background-color: #d0d0d0;
+}
+
+#jobsPanel-contents {
+    
+}

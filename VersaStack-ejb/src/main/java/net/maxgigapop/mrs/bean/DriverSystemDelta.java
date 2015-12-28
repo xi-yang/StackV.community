@@ -3,7 +3,6 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package net.maxgigapop.mrs.bean;
 
 import javax.persistence.Entity;
@@ -17,10 +16,10 @@ import javax.persistence.OneToOne;
  *
  * @author xyang
  */
-
 @Entity
-@Inheritance(strategy=InheritanceType.SINGLE_TABLE)
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 public class DriverSystemDelta extends DeltaBase {
+
     @ManyToOne
     @JoinColumn(name = "systemDeltaId")
     protected SystemDelta systemDelta = null;
@@ -32,6 +31,8 @@ public class DriverSystemDelta extends DeltaBase {
     @OneToOne
     @JoinColumn(name = "referenceVersionItemId")
     protected VersionItem referenceVersionItem = null;
+
+    private String status = null;
     
     public SystemDelta getSystemDelta() {
         return systemDelta;
@@ -57,9 +58,17 @@ public class DriverSystemDelta extends DeltaBase {
         this.referenceVersionItem = referenceVersionItem;
     }
 
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     @Override
     public String toString() {
         return "net.maxgigapop.mrs.model.DriverSystemDelta[ id=" + id + " ]";
     }
-    
- }
+
+}

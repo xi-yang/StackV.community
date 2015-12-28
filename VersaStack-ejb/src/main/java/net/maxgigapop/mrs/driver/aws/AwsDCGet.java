@@ -5,6 +5,7 @@
  */
 package net.maxgigapop.mrs.driver.aws;
 
+import net.maxgigapop.mrs.driver.aws.AwsAuthenticateService;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.directconnect.AmazonDirectConnectClient;
@@ -91,11 +92,10 @@ public class AwsDCGet {
     public List<VirtualGateway> getVirtualGateways() {
         return virtualGateways;
     }
-    
+
     //get the client  for AWS DC
-    public AmazonDirectConnectClient getClient()
-    {
+    public AmazonDirectConnectClient getClient() {
         return client;
     }
-    
+
 }

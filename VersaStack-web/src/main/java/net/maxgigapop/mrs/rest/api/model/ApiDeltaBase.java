@@ -15,23 +15,24 @@ import javax.xml.bind.annotation.XmlRootElement;
  *
  * @author max
  */
-@XmlRootElement(name="delta")
+@XmlRootElement(name = "delta")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ApiDeltaBase {
-    @XmlElement(required=true) 
+
+    @XmlElement(required = true)
     protected String id = "";
-    @XmlElement(required=true) 
-    protected Date creationTime;
-    @XmlElement(required=true)
+    @XmlElement(required = true)
+    protected String creationTime;
+    @XmlElement(required = true)
     protected String referenceVersion = "";
-    @XmlElement(required=true) 
+    @XmlElement(required = true)
     protected String modelReduction = null;
-    @XmlElement(required=true) 
+    @XmlElement(required = true)
     protected String modelAddition = null;
 //    @XmlElement(required=true) 
 //    protected String status = "";
-    
-        public String getId() {
+
+    public String getId() {
         return id;
     }
 
@@ -39,11 +40,11 @@ public class ApiDeltaBase {
         this.id = id;
     }
 
-    public Date getCreationTime() {
+    public String getCreationTime() {
         return creationTime;
     }
 
-    public void setCreationTime(Date creationTime) {
+    public void setCreationTime(String creationTime) {
         this.creationTime = creationTime;
     }
 
@@ -78,7 +79,6 @@ public class ApiDeltaBase {
 //    public void setStatus(String status) {
 //        this.status = status;
 //    }
-
     @Override
     public String toString() {
         return "net.maxgigapop.versans.model.DeltaBase[ id=" + id + " ]";

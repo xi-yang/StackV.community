@@ -1,10 +1,13 @@
-/*
+ /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
 package net.maxgigapop.mrs.driver.aws;
 
+import net.maxgigapop.mrs.driver.aws.AwsDCGet;
+import net.maxgigapop.mrs.driver.aws.AwsEC2Get;
+import net.maxgigapop.mrs.driver.aws.AwsPush;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.directconnect.AmazonDirectConnectClient;
@@ -24,22 +27,26 @@ import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
+import com.hp.hpl.jena.rdf.model.Resource;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.Mrs;
+import net.maxgigapop.mrs.common.RdfOwl;
+import net.maxgigapop.mrs.common.ResourceTool;
 
 /**
  *
  * @author muzcategui
  */
-
 //TODO availability zone problems in volumes and subnets and instancees.
 //add a property in the model to speicfy availability zone.
-
 //TODO associate and disassociate address methods do not do anything. Reason is
 //elastic IPs are not linked in any way to the root topology, find a way to do this
 //in the model to make the two methods work.
@@ -51,6 +58,7 @@ public class AwsPush {
     private AwsDCGet dcClient = null;
     private String topologyUri = null;
     private Regions region = null;
+    private AwsBatchResourcesTool batchTool = new AwsBatchResourcesTool();
     static final Logger logger = Logger.getLogger(AwsPush.class.getName());
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 
@@ -71,12 +79,24 @@ public class AwsPush {
      * function to propagate all the requests
      * ************************************************
      */
-    public String pushPropagate(String modelRefTtl, String modelAddTtl, String modelReductTtl) throws EJBException, Exception {
+    public String pushPropagate(String modelRefTtl, String modelAddTtl, String modelReductTtl) {
         String requests = "";
 
-        OntModel modelRef = ModelUtil.unmarshalOntModel(modelRefTtl);
-        OntModel modelAdd = ModelUtil.unmarshalOntModel(modelAddTtl);
-        OntModel modelReduct = ModelUtil.unmarshalOntModel(modelReductTtl);
+        OntModel modelRef;
+        OntModel modelAdd;
+        OntModel modelReduct;
+        try {
+            modelRef = ModelUtil.unmarshalOntModel(modelRefTtl);
+            modelAdd = ModelUtil.unmarshalOntModel(modelAddTtl);
+            modelReduct = ModelUtil.unmarshalOntModel(modelReductTtl);
+
+            //add the batched resources
+            modelRef = batchTool.expandBatchAbstraction(modelRef);
+            modelAdd = batchTool.expandBatchAbstraction(modelAdd);
+            modelReduct = batchTool.expandBatchAbstraction(modelReduct);
+        } catch (Exception ex) {
+            throw new EJBException(ex);
+        }
 
         //deatch volumes that need to be detached
         requests += detachVolumeRequests(modelRef, modelReduct);
@@ -92,7 +112,6 @@ public class AwsPush {
 
         //disassociate an address from a network interface
         //requests += disassociateAddressRequest(modelRef, modelReduct);
-
         //Delete the network interfaces that need to be deleted
         requests += deletePortsRequests(modelRef, modelReduct);
 
@@ -152,7 +171,6 @@ public class AwsPush {
 
         //Associate an address with a  interface
         //requests += associateAddressRequest(modelRef, modelAdd);
-
         //attach ports to existing instances
         requests += attachPortRequest(modelRef, modelAdd);
 
@@ -176,7 +194,7 @@ public class AwsPush {
             if (request.contains("TerminateInstancesRequest")) {
                 String[] parameters = request.split("\\s+");
 
-                String instanceId = getInstanceId(parameters[1]);
+                String instanceId = ec2Client.getInstanceId(parameters[1]);
                 TerminateInstancesRequest del = new TerminateInstancesRequest();
                 del.withInstanceIds(instanceId);
                 DeleteTagsRequest tagRequest = new DeleteTagsRequest();
@@ -234,8 +252,8 @@ public class AwsPush {
                 String[] parameters = request.split("\\s+");
 
                 String tableIdTag = parameters[1];
-                String target = getResourceId(parameters[3]);
-                RouteTable t = ec2Client.getRoutingTable(getTableId(tableIdTag));
+                String target = ec2Client.getResourceId(parameters[3]);
+                RouteTable t = ec2Client.getRoutingTable(ec2Client.getTableId(tableIdTag));
                 Vpc v = ec2Client.getVpc(t.getVpcId());
 
                 Route route = new Route();
@@ -269,21 +287,39 @@ public class AwsPush {
                 Vpc vpc = ec2Client.getVpc(parameters[1]);
                 DeleteVpcRequest vpcRequest = new DeleteVpcRequest();
                 vpcRequest.withVpcId(vpc.getVpcId());
-                ec2.deleteVpc(vpcRequest);
+                int tries = 0;
+
+                while (true) {
+                    try {
+                        ec2.deleteVpc(vpcRequest);
+                    } catch (AmazonServiceException e) {
+                        try {
+                            Thread.sleep(60000);                 //1000 milliseconds is one second.
+                        } catch (InterruptedException ex) {
+                            Thread.currentThread().interrupt();
+                        }
+                        tries++;
+                        if (tries > 6) {
+                            break;
+                        }
+                        continue;
+                    }
+                    break;
+                }
 
                 ec2Client.getVpcs().remove(vpc);
 
             } else if (request.contains("DeleteInternetGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
 
-                InternetGateway gateway = ec2Client.getInternetGateway(getResourceId(parameters[1]));
-                Vpc v = ec2Client.getVpc(getVpcId(parameters[2]));
+                InternetGateway gateway = ec2Client.getInternetGateway(ec2Client.getResourceId(parameters[1]));
+                Vpc v = ec2Client.getVpc(ec2Client.getVpcId(parameters[2]));
                 DetachInternetGatewayRequest gwRequest = new DetachInternetGatewayRequest();
-                gwRequest.withInternetGatewayId(getResourceId(parameters[1]))
-                        .withVpcId(getVpcId(parameters[2]));
+                gwRequest.withInternetGatewayId(ec2Client.getResourceId(parameters[1]))
+                        .withVpcId(ec2Client.getVpcId(parameters[2]));
 
                 ec2.detachInternetGateway(gwRequest);
-                ec2Client.internetGatewayDetachmentCheck(getResourceId(parameters[1]));
+                ec2Client.internetGatewayDetachmentCheck(ec2Client.getResourceId(parameters[1]));
 
                 DeleteInternetGatewayRequest gatewayRequest = new DeleteInternetGatewayRequest();
                 gatewayRequest.withInternetGatewayId(gateway.getInternetGatewayId());
@@ -301,7 +337,7 @@ public class AwsPush {
             } else if (request.contains("DeleteVpnGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
 
-                VpnGateway gateway = ec2Client.getVirtualPrivateGateway(getVpnGatewayId(parameters[1]));
+                VpnGateway gateway = ec2Client.getVirtualPrivateGateway(ec2Client.getVpnGatewayId(parameters[1]));
 
                 DeleteVpnGatewayRequest gatewayRequest = new DeleteVpnGatewayRequest();
                 gatewayRequest.withVpnGatewayId(gateway.getVpnGatewayId());
@@ -313,8 +349,8 @@ public class AwsPush {
             } else if (request.contains("detachVpnGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
 
-                VpnGateway gateway = ec2Client.getVirtualPrivateGateway(getVpnGatewayId(parameters[1]));
-                Vpc v = ec2Client.getVpc(getVpcId(parameters[2]));
+                VpnGateway gateway = ec2Client.getVirtualPrivateGateway(ec2Client.getVpnGatewayId(parameters[1]));
+                Vpc v = ec2Client.getVpc(ec2Client.getVpcId(parameters[2]));
                 DetachVpnGatewayRequest gwRequest = new DetachVpnGatewayRequest();
                 gwRequest.withVpnGatewayId(gateway.getVpnGatewayId())
                         .withVpcId(v.getVpcId());
@@ -351,20 +387,23 @@ public class AwsPush {
                 ec2Client.vpcStatusCheck(vpcId, VpcState.Available.name().toLowerCase());
 
                 //tag the routing table of the 
+                RouteTable mainTable = null;
                 DescribeRouteTablesResult tablesResult = this.ec2.describeRouteTables();
-                List<RouteTable> routeTables = tablesResult.getRouteTables();
-                routeTables.removeAll(ec2Client.getRoutingTables()); //get the new routing table
-                RouteTable mainTable = routeTables.get(0);
+                for (RouteTable tb : tablesResult.getRouteTables()) {
+                    if (tb.getVpcId().equals(vpcId)) {
+                        mainTable = tb;
+                    }
+                }
                 ec2Client.getRoutingTables().add(mainTable);
                 //create the tag for the vpc
-                tagResource(vpcId, parameters[2]);
-                tagResource(mainTable.getRouteTableId(), parameters[3]);
+                ec2Client.tagResource(vpcId, parameters[2]);
+                ec2Client.tagResource(mainTable.getRouteTableId(), parameters[3]);
 
             } else if (request.contains("CreateSubnetRequest")) {
                 String[] parameters = request.split("\\s+");
 
                 CreateSubnetRequest subnetRequest = new CreateSubnetRequest();
-                subnetRequest.withVpcId(getVpcId(parameters[1]))
+                subnetRequest.withVpcId(ec2Client.getVpcId(parameters[1]))
                         .withCidrBlock(parameters[2])
                         .withAvailabilityZone(Regions.US_EAST_1.getName() + "e");
 
@@ -372,28 +411,39 @@ public class AwsPush {
 
                 ec2Client.getSubnets().add(subnetResult.getSubnet());
                 ec2Client.subnetCreationCheck(subnetResult.getSubnet().getSubnetId(), SubnetState.Available.name().toLowerCase());
-                tagResource(subnetResult.getSubnet().getSubnetId(), parameters[3]);
+                ec2Client.tagResource(subnetResult.getSubnet().getSubnetId(), parameters[3]);
 
             } else if (request.contains("CreateRouteTableReques")) {
                 String[] parameters = request.split("\\s+");
 
                 CreateRouteTableRequest tableRequest = new CreateRouteTableRequest();
-                tableRequest.withVpcId(getVpcId(parameters[1]));
+                tableRequest.withVpcId(ec2Client.getVpcId(parameters[1]));
                 CreateRouteTableResult tableResult = ec2.createRouteTable(tableRequest);
 
                 ec2Client.getRoutingTables().add(tableResult.getRouteTable());
                 ec2Client.RouteTableCreationCheck(tableResult.getRouteTable().getRouteTableId());
-                tagResource(tableResult.getRouteTable().getRouteTableId(), parameters[2]);
+                ec2Client.tagResource(tableResult.getRouteTable().getRouteTableId(), parameters[2]);
 
             } else if (request.contains("AssociateTableRequest")) {
                 String[] parameters = request.split("\\s+");
 
-                String routeTableId = getTableId(parameters[1]);
-                String subnetId = getResourceId(parameters[2]);
-
+                String routeTableId = ec2Client.getTableId(parameters[1]);
+                String subnetId = ec2Client.getResourceId(parameters[2]);
+                for (int i = 10; i > 0; i--) {
+                    String resId = ec2Client.getResourceId(routeTableId);
+                    if (routeTableId != resId) {
+                        routeTableId = resId;
+                        break;
+                    }
+                    try {
+                        Thread.sleep(1000L);
+                    } catch (InterruptedException ex) {
+                        ;
+                    }
+                }
                 AssociateRouteTableRequest associateRequest = new AssociateRouteTableRequest();
-                associateRequest.withRouteTableId(getResourceId(routeTableId))
-                        .withSubnetId(getResourceId(subnetId));
+                associateRequest.withRouteTableId(routeTableId)
+                        .withSubnetId(ec2Client.getResourceId(subnetId));
                 AssociateRouteTableResult associateResult = ec2.associateRouteTable(associateRequest);
 
             } else if (request.contains("CreateInternetGatewayRequest")) {
@@ -404,16 +454,16 @@ public class AwsPush {
 
                 ec2Client.getInternetGateways().add(igw);
                 ec2Client.internetGatewayAdditionCheck(igw.getInternetGatewayId());
-                tagResource(igw.getInternetGatewayId(), parameters[1]);
+                ec2Client.tagResource(igw.getInternetGatewayId(), parameters[1]);
 
-                Vpc v = ec2Client.getVpc(getResourceId(parameters[2]));
+                Vpc v = ec2Client.getVpc(ec2Client.getResourceId(parameters[2]));
 
                 AttachInternetGatewayRequest gwRequest = new AttachInternetGatewayRequest();
-                gwRequest.withInternetGatewayId(getResourceId(parameters[1]))
-                        .withVpcId(getVpcId(parameters[2]));
+                gwRequest.withInternetGatewayId(ec2Client.getResourceId(parameters[1]))
+                        .withVpcId(ec2Client.getVpcId(parameters[2]));
 
                 ec2.attachInternetGateway(gwRequest);
-                ec2Client.internetGatewayAttachmentCheck(getResourceId(parameters[1]));
+                ec2Client.internetGatewayAttachmentCheck(ec2Client.getResourceId(parameters[1]));
 
             } else if (request.contains("CreateVpnGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -425,13 +475,13 @@ public class AwsPush {
 
                 ec2Client.getVirtualPrivateGateways().add(vpngw);
                 ec2Client.vpnGatewayAdditionCheck(vpngw.getVpnGatewayId());
-                tagResource(vpngw.getVpnGatewayId(), parameters[1]);
+                ec2Client.tagResource(vpngw.getVpnGatewayId(), parameters[1]);
 
             } else if (request.contains("AttachVpnGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
 
-                VpnGateway vpn = ec2Client.getVirtualPrivateGateway(getVpnGatewayId(parameters[1]));
-                Vpc v = ec2Client.getVpc(getVpcId(parameters[2]));
+                VpnGateway vpn = ec2Client.getVirtualPrivateGateway(ec2Client.getVpnGatewayId(parameters[1]));
+                Vpc v = ec2Client.getVpc(ec2Client.getVpcId(parameters[2]));
 
                 if (!vpn.equals(ec2Client.getVirtualPrivateGateway(v))) {
                     AttachVpnGatewayRequest gwRequest = new AttachVpnGatewayRequest();
@@ -441,28 +491,31 @@ public class AwsPush {
                     AttachVpnGatewayResult result = ec2.attachVpnGateway(gwRequest);
                     ec2Client.vpnGatewayAttachmentCheck(vpn.getVpnGatewayId(), v.getVpcId());
 
-                    //make the Vpn gateway to propagate in all the routing tables of the vpc
-                    for (RouteTable table : ec2Client.getRoutingTables(result.getVpcAttachment().getVpcId())) {
-
-                        EnableVgwRoutePropagationRequest propagationRequest = new EnableVgwRoutePropagationRequest();
-                        propagationRequest.withGatewayId(vpn.getVpnGatewayId())
-                                .withRouteTableId(table.getRouteTableId());
-                        ec2.enableVgwRoutePropagation(propagationRequest);
-                    }
                 }
+            } else if (request.contains("PropagateVpnRequest")) {
+                String[] parameters = request.split("\\s+");
+                String tableIdTag = parameters[1];
+                VpnGateway vpn = ec2Client.getVirtualPrivateGateway(ec2Client.getVpnGatewayId(parameters[2]));
+                RouteTable table = ec2Client.getRoutingTable(ec2Client.getTableId(tableIdTag));
+
+                EnableVgwRoutePropagationRequest propagationRequest = new EnableVgwRoutePropagationRequest();
+                propagationRequest.withGatewayId(vpn.getVpnGatewayId())
+                        .withRouteTableId(table.getRouteTableId());
+                ec2.enableVgwRoutePropagation(propagationRequest);
+
             } else if (request.contains("AcceptVirtualInterface")) {
                 String[] parameters = request.split("\\s+");
                 ConfirmPrivateVirtualInterfaceRequest interfaceRequest = new ConfirmPrivateVirtualInterfaceRequest();
                 interfaceRequest.withVirtualInterfaceId(parameters[1])
-                        .withVirtualGatewayId(getVpnGatewayId(parameters[2]));
+                        .withVirtualGatewayId(ec2Client.getVpnGatewayId(parameters[2]));
 
                 ConfirmPrivateVirtualInterfaceResult interfaceResult = dc.confirmPrivateVirtualInterface(interfaceRequest);
             } else if (request.contains("CreateRouteRequest")) {
                 String[] parameters = request.split("\\s+");
 
                 String tableIdTag = parameters[1];
-                String target = getResourceId(parameters[3]);
-                RouteTable t = ec2Client.getRoutingTable(getTableId(tableIdTag));
+                String target = ec2Client.getResourceId(parameters[3]);
+                RouteTable t = ec2Client.getRoutingTable(ec2Client.getTableId(tableIdTag));
                 Vpc v = ec2Client.getVpc(t.getVpcId());
 
                 Route route = new Route();
@@ -492,22 +545,43 @@ public class AwsPush {
 
                 Volume volume = result.getVolume();
                 ec2Client.volumeAdditionCheck(volume.getVolumeId(), "available");
-                tagResource(volume.getVolumeId(), parameters[4]);
+                ec2Client.tagResource(volume.getVolumeId(), parameters[4]);
                 ec2Client.getVolumes().clear();
                 ec2Client.getVolumes().addAll(ec2.describeVolumes().getVolumes());
 
+                //suport for batch
+                if (parameters[4].matches("(.*)(batch)(\\d{1,19}$)")) {
+                    String batchTag = parameters[4].split("batch")[0] + "batch";
+                    CreateTagsRequest tagRequest = new CreateTagsRequest();
+                    tagRequest.withTags(new Tag("batch", batchTag));
+                    tagRequest.withResources(volume.getVolumeId());
+                    ec2.createTags(tagRequest);
+                }
+
             } else if (request.contains("CreateNetworkInterfaceRequest")) {
                 String[] parameters = request.split("\\s+");
-
                 CreateNetworkInterfaceRequest portRequest = new CreateNetworkInterfaceRequest();
-                portRequest.withPrivateIpAddress(parameters[1])
-                        .withSubnetId(getResourceId(parameters[2]));
+                if (parameters[1].equalsIgnoreCase("any")) {
+                    portRequest.withSubnetId(ec2Client.getResourceId(parameters[2]));
+                } else {
+                    portRequest.withPrivateIpAddress(parameters[1])
+                            .withSubnetId(ec2Client.getResourceId(parameters[2]));
+                }
                 CreateNetworkInterfaceResult portResult = ec2.createNetworkInterface(portRequest);
 
                 NetworkInterface port = portResult.getNetworkInterface();
                 ec2Client.getNetworkInterfaces().add(port);
                 ec2Client.PortAdditionCheck(port.getNetworkInterfaceId());
-                tagResource(port.getNetworkInterfaceId(), parameters[3]);
+                ec2Client.tagResource(port.getNetworkInterfaceId(), parameters[3]);
+
+                //suport for batch
+                if (parameters[3].matches("(.*)(batch)(\\d{1,19}$)")) {
+                    String batchTag = parameters[3].split("batch")[0] + "batch";
+                    CreateTagsRequest tagRequest = new CreateTagsRequest();
+                    tagRequest.withTags(new Tag("batch", batchTag));
+                    tagRequest.withResources(port.getNetworkInterfaceId());
+                    ec2.createTags(tagRequest);
+                }
 
             } else if (request.contains("AssociateAddressRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -515,14 +589,14 @@ public class AwsPush {
                 Address publicIp = ec2Client.getElasticIp(parameters[1]);
                 AssociateAddressRequest associateAddressRequest = new AssociateAddressRequest();
                 associateAddressRequest.withAllocationId(publicIp.getAllocationId())
-                        .withNetworkInterfaceId(getResourceId(parameters[2]));
+                        .withNetworkInterfaceId(ec2Client.getResourceId(parameters[2]));
                 ec2.associateAddress(associateAddressRequest);
 
             } else if (request.contains("AttachNetworkInterfaceRequest")) {
                 String[] parameters = request.split("\\s+");
 
-                String portId = getResourceId(parameters[1]);
-                String nodeId = getInstanceId(parameters[2]);
+                String portId = ec2Client.getResourceId(parameters[1]);
+                String nodeId = ec2Client.getInstanceId(parameters[2]);
                 int index = Integer.parseInt(parameters[3]);
                 AttachNetworkInterfaceRequest portRequest = new AttachNetworkInterfaceRequest();
                 portRequest.withInstanceId(nodeId);
@@ -543,19 +617,21 @@ public class AwsPush {
                 runInstance.withMinCount(1);
 
                 //integrate the root device
-                EbsBlockDevice device = new EbsBlockDevice();
-                device.withVolumeType(parameters[4]);
-                device.withVolumeSize(Integer.parseInt(parameters[5]));
-                BlockDeviceMapping mapping = new BlockDeviceMapping();
-                mapping.withDeviceName(parameters[6]);
-                mapping.withEbs(device);
-                String volumeTag = parameters[7];
-                runInstance.withBlockDeviceMappings(mapping);
+                if (!parameters[4].equalsIgnoreCase("any")) {
+                    EbsBlockDevice device = new EbsBlockDevice();
+                    device.withVolumeType(parameters[4]);
+                    device.withVolumeSize(Integer.parseInt(parameters[5]));
+                    BlockDeviceMapping mapping = new BlockDeviceMapping();
+                    mapping.withDeviceName(parameters[6]);
+                    mapping.withEbs(device);
+                    String volumeTag = parameters[7];
+                    runInstance.withBlockDeviceMappings(mapping);
+                }
 
                 List<InstanceNetworkInterfaceSpecification> portSpecification = new ArrayList();
                 for (int i = 9; i < parameters.length; i++) {
                     InstanceNetworkInterfaceSpecification s = new InstanceNetworkInterfaceSpecification();
-                    s.withNetworkInterfaceId(getResourceId(parameters[i]));
+                    s.withNetworkInterfaceId(ec2Client.getResourceId(parameters[i]));
                     i++;
                     s.withDeviceIndex(Integer.parseInt(parameters[i]));
                     portSpecification.add(s);
@@ -568,25 +644,64 @@ public class AwsPush {
                 Instance instance = result.getReservation().getInstances().get(0);
                 ec2Client.getEc2Instances().add(instance);
                 ec2Client.instanceStatusCheck(instance.getInstanceId(), "running");
-                tagResource(instance.getInstanceId(), parameters[3]);
+                ec2Client.tagResource(instance.getInstanceId(), parameters[3]);
 
-                DescribeVolumesResult volumesResult = ec2.describeVolumes();
-                List<Volume> volumes = volumesResult.getVolumes();
-                volumes.removeAll(ec2Client.getVolumes());
-                String volumeId = volumes.get((0)).getVolumeId();
-                tagResource(volumeId, volumeTag);
-                ec2Client.getVolumes().add(volumes.get(0));
+                //suport for batch
+                if (parameters[3].matches("(.*)(batch)(\\d{1,19}$)")) {
+                    String batchTag = parameters[3].split("batch")[0] + "batch";
+                    CreateTagsRequest tagRequest = new CreateTagsRequest();
+                    tagRequest.withTags(new Tag("batch", batchTag));
+                    tagRequest.withResources(instance.getInstanceId());
+                    ec2.createTags(tagRequest);
+                }
 
+                if (!parameters[4].equalsIgnoreCase("any")) {
+                    String volumeTag = parameters[7];
+                    Volume volume = ec2Client.getInstanceRootDevice(instance);
+                    String volumeId = volume.getVolumeId();
+                    ec2Client.tagResource(volumeId, volumeTag);
+                    ec2Client.getVolumes().add(volume);
+
+                    //suport for batch
+                    if (volumeTag.matches("(.*)(batch)(\\d{1,19}$)")) {
+                        String batchTag = volumeTag.split("batch")[0] + "batch";
+                        CreateTagsRequest tagRequest = new CreateTagsRequest();
+                        tagRequest.withTags(new Tag("batch", batchTag));
+                        tagRequest.withResources(volumeId);
+                        ec2.createTags(tagRequest);
+                    }
+                } else {
+                    //there are two options here, either the volume is part of a batch or not
+                    String volumeTag = "";
+                    Volume volume = ec2Client.getInstanceRootDevice(instance);
+                    String volumeId = volume.getVolumeId();
+                    ec2Client.getVolumes().add(volume);
+
+                    //case of batch instance
+                    if (parameters[3].matches("(.*)(batch)(\\d{1,19}$)")) {
+                        String split[] = parameters[3].split("batch");
+                        volumeTag = split[0] + ":volume+rootbatch" + split[1];
+                        ec2Client.tagResource(volumeId, volumeTag);
+                        String batchTag = volumeTag.split("batch")[0] + "batch";
+                        CreateTagsRequest tagRequest = new CreateTagsRequest();
+                        tagRequest.withTags(new Tag("batch", batchTag));
+                        tagRequest.withResources(volumeId);
+                        ec2.createTags(tagRequest);
+                    } else {
+                        volumeTag = parameters[3] + ":volume+root";
+                        ec2Client.tagResource(volumeId, volumeTag);
+                    }
+                }
             } else if (request.contains("AttachVolumeRequest")) {
                 String[] parameters = request.split("\\s+");
 
                 AttachVolumeRequest volumeRequest = new AttachVolumeRequest();
-                volumeRequest.withInstanceId(getInstanceId(parameters[1]))
-                        .withVolumeId(getVolumeId(parameters[2]))
+                volumeRequest.withInstanceId(ec2Client.getInstanceId(parameters[1]))
+                        .withVolumeId(ec2Client.getVolumeId(parameters[2]))
                         .withDevice(parameters[3]);
 
                 ec2.attachVolume(volumeRequest);
-                ec2Client.volumeAttachmentCheck(getVolumeId(parameters[2]));
+                ec2Client.volumeAttachmentCheck(ec2Client.getVolumeId(parameters[2]));
             }
         }
     }
@@ -620,6 +735,28 @@ public class AwsPush {
 
     /**
      * ****************************************************************
+     * function that executes a query using a model addition/subtraction and a
+     * reference model, returns the result of the query
+     * ****************************************************************
+     */
+    private ResultSet executeQueryUnion(String queryString, OntModel refModel, OntModel model) {
+        queryString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+                + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
+                + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
+                + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
+                + queryString;
+
+        Model unionModel = ModelFactory.createUnion(refModel, model);
+
+        //get all the nodes that will be added
+        Query query = QueryFactory.create(queryString);
+        QueryExecution qexec = QueryExecutionFactory.create(query, unionModel);
+        ResultSet r = qexec.execSelect();
+        return r;
+    }
+
+    /**
+     * ****************************************************************
      * Detach a volume to an existing instance AWS
      * ****************************************************************
      */
@@ -633,10 +770,10 @@ public class AwsPush {
         while (r1.hasNext()) {
             QuerySolution querySolution1 = r1.next();
             RDFNode node = querySolution1.get("node");
-            String nodeTagId = node.asResource().toString().replace(topologyUri, "");
+            String nodeTagId = ResourceTool.getResourceName(node.asResource().toString(), AwsPrefix.instance);
             RDFNode volume = querySolution1.get("volume");
-            String volumeTagId = volume.asResource().toString().replace(topologyUri, "");
-            String volumeId = getVolumeId(volumeTagId);
+            String volumeTagId = ResourceTool.getResourceName(volume.asResource().toString(), AwsPrefix.volume);
+            String volumeId = ec2Client.getVolumeId(volumeTagId);
 
             query = "SELECT ?deviceName WHERE{<" + volume.asResource() + "> mrs:target_device ?deviceName}";
             ResultSet r2 = executeQuery(query, model, modelReduct);
@@ -650,7 +787,7 @@ public class AwsPush {
             String device = deviceName.asLiteral().toString();
 
             if (!device.equals("/dev/sda1") && !device.equals("/dev/xvda")) {
-                String nodeId = getInstanceId(nodeTagId);
+                String nodeId = ec2Client.getInstanceId(nodeTagId);
 
                 Instance ins = ec2Client.getInstance(nodeId);
                 Volume vol = ec2Client.getVolume(volumeId);
@@ -683,7 +820,7 @@ public class AwsPush {
             QuerySolution querySolution1 = r1.next();
             RDFNode address = querySolution1.get("address");
             RDFNode port = querySolution1.get(("port"));
-            String portIdTagValue = port.asResource().toString().replace(topologyUri, "");
+            String portIdTagValue = ResourceTool.getResourceName(port.asResource().toString(), AwsPrefix.nic);
             query = "SELECT  ?a WHERE {<" + address.asResource() + ">  mrs:type \"ipv4:public\"}";
             ResultSet r2 = executeQuery(query, model, modelReduct);
             if (r2.hasNext()) {
@@ -695,7 +832,7 @@ public class AwsPush {
                 }
                 QuerySolution querySolution2 = r2.next();
                 RDFNode value = querySolution2.get("value");
-                String publicAddress = value.asLiteral().toString().replace(topologyUri, "");
+                String publicAddress = ResourceTool.getResourceName(value.asLiteral().toString(), "public-ip-");
                 requests += "disassociateAddressRequest " + publicAddress + " " + portIdTagValue
                         + " \n";
             }
@@ -712,25 +849,14 @@ public class AwsPush {
         String requests = "";
         String query;
 
-        //get the tag resource from the reference model that indicates 
-        //that this is a network  interface 
-        query = "SELECT ?tag WHERE {?tag mrs:type \"interface\" ."
-                + "?tag mrs:value \"network\"}";
-        ResultSet r = executeQuery(query, model, emptyModel);
-        if (!r.hasNext()) {
-            throw new EJBException(String.format("Reference model has no tags for network"
-                    + "interfaces"));
-        }
-        QuerySolution q = r.next();
-        RDFNode tag = q.get("tag");
         query = "SELECT ?port WHERE {?port a  nml:BidirectionalPort ."
-                + "?port  mrs:hasTag <" + tag.asResource() + ">}";
-        r = executeQuery(query, emptyModel, modelReduct);
+                + "FILTER (NOT EXISTS {?port mrs:type ?type})} ";
+        ResultSet r = executeQuery(query, emptyModel, modelReduct);
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode port = querySolution.get("port");
-            String portIdTagValue = port.asResource().toString().replace(topologyUri, "");
-            String portId = getResourceId(portIdTagValue);
+            String portIdTagValue = ResourceTool.getResourceName(port.asResource().toString(), AwsPrefix.nic);
+            String portId = ec2Client.getResourceId(portIdTagValue);
 
             NetworkInterface p = ec2Client.getNetworkInterface(portId);
             if (p == null) //network interface does not exist, need to create a network interface
@@ -748,18 +874,6 @@ public class AwsPush {
                     throw new EJBException(String.format("The port %s to be deleted"
                             + " has attachments, delete dependant resource first", port));
                 }
-                //to get the private ip of the network interface
-                query = "SELECT ?address ?value WHERE {<" + port.asResource() + ">  mrs:hasNetworkAddress  ?address ."
-                        + "?address mrs:type \"ipv4:private\" ."
-                        + "?address mrs:value ?value}";
-                r1 = executeQuery(query, model, modelReduct);
-                if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model Reduction does not specify privat ip address of port: %s", port));
-                }
-                QuerySolution querySolution1 = r1.next();
-                RDFNode value = querySolution1.get("value");
-                String privateAddress = value.asLiteral().toString();
-
                 //find the subnet that has the port previously found
                 query = "SELECT ?subnet WHERE {?subnet  nml:hasBidirectionalPort <" + port.asResource() + ">}";
                 r1 = executeQuery(query, model, modelReduct);
@@ -768,14 +882,14 @@ public class AwsPush {
                 }
                 String subnetId = null;
                 while (r1.hasNext()) {
-                    querySolution1 = r1.next();
+                    QuerySolution querySolution1 = r1.next();
                     RDFNode subnet = querySolution1.get("subnet");
                     query = "SELECT ?subnet WHERE {<" + subnet.asResource() + ">  a  mrs:SwitchingSubnet}";
                     ResultSet r3 = executeQuery(query, model, modelReduct);
                     while (r3.hasNext()) //search in the model to see if subnet existed before
                     {
-                        subnetId = subnet.asResource().toString().replace(topologyUri, "");
-                        subnetId = getResourceId(subnetId);
+                        subnetId = ResourceTool.getResourceName(subnet.asResource().toString(), AwsPrefix.subnet);
+                        subnetId = ec2Client.getResourceId(subnetId);
                         break;
                     }
                 }
@@ -802,51 +916,51 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode node = querySolution.get("node");
+            /* Xi: no need to check volume 
+             query = "SELECT ?service ?volume ?port WHERE {<" + node.asResource() + "> mrs:providedByService ?service ."
+             + "<" + node.asResource() + "> mrs:hasVolume ?volume ."
+             + "<" + node.asResource() + "> nml:hasBidirectionalPort ?port}";
+             ResultSet r1 = executeQuery(query, model, modelReduct);
+             if (!r1.hasNext()) {
+             throw new EJBException(String.format("model reduction is malformed for node: %s", node));
+             }
+             QuerySolution querySolution1 = r1.next();
 
-            query = "SELECT ?service ?volume ?port WHERE {<" + node.asResource() + "> mrs:providedByService ?service ."
-                    + "<" + node.asResource() + "> mrs:hasVolume ?volume ."
-                    + "<" + node.asResource() + "> nml:hasBidirectionalPort ?port}";
-            ResultSet r1 = executeQuery(query, model, modelReduct);
-            if (!r1.hasNext()) {
-                throw new EJBException(String.format("model reduction is malformed for node: %s", node));
-            }
-            QuerySolution querySolution1 = r1.next();
-
-            RDFNode service = querySolution1.get("service");
-            RDFNode volume = querySolution1.get("volume");
-            RDFNode port = querySolution1.get("port");
-            if (service == null) {
-                throw new EJBException(String.format("node to delete does not specify service for node: %s", node));
-            }
-            if (volume == null) {
-                throw new EJBException(String.format("node to delete does not specify volume for node: %s", node));
-            }
-            if (port == null) {
-                throw new EJBException(String.format("node to delete does not specify port for node: %s", node));
-            }
-            //check that one of the volumes is the main device 
-            query = "SELECT ?volume ?deviceName WHERE {<" + node.asResource() + "> mrs:hasVolume ?volume ."
-                    + "?volume mrs:target_device ?deviceName}";
-            r1 = executeQuery(query, model, modelReduct);
-            if (!r1.hasNext()) {
-                throw new EJBException(String.format("model reduction does not specify root device name for volume"
-                        + " attached to instance: %s", node));
-            }
-            boolean found = false;
-            while (r1.hasNext()) {
-                QuerySolution q1 = r1.next();
-                RDFNode deviceName = q1.get("deviceName");
-                if (deviceName.toString().equals("/dev/sda1") || deviceName.toString().equals("/dev/xvda")) {
-                    found = true;
-                }
-            }
-            if (found == false) {
-                throw new EJBException(String.format("model reduction does not specify root volume"
-                        + " attached to instance: %s", node));
-            }
-
+             RDFNode service = querySolution1.get("service");
+             RDFNode volume = querySolution1.get("volume");
+             RDFNode port = querySolution1.get("port");
+             if (service == null) {
+             throw new EJBException(String.format("node to delete does not specify service for node: %s", node));
+             }
+             if (volume == null) {
+             throw new EJBException(String.format("node to delete does not specify volume for node: %s", node));
+             }
+             if (port == null) {
+             throw new EJBException(String.format("node to delete does not specify port for node: %s", node));
+             }
+             //check that one of the volumes is the main device 
+             query = "SELECT ?volume ?deviceName WHERE {<" + node.asResource() + "> mrs:hasVolume ?volume ."
+             + "?volume mrs:target_device ?deviceName}";
+             r1 = executeQuery(query, model, modelReduct);
+             if (!r1.hasNext()) {
+             throw new EJBException(String.format("model reduction does not specify root device name for volume"
+             + " attached to instance: %s", node));
+             }
+             boolean found = false;
+             while (r1.hasNext()) {
+             QuerySolution q1 = r1.next();
+             RDFNode deviceName = q1.get("deviceName");
+             if (deviceName.toString().equals("/dev/sda1") || deviceName.toString().equals("/dev/xvda")) {
+             found = true;
+             }
+             }
+             if (found == false) {
+             throw new EJBException(String.format("model reduction does not specify root volume"
+             + " attached to instance: %s", node));
+             }
+             */
             query = "SELECT ?vpc WHERE {?vpc nml:hasNode <" + node.asResource() + ">}";
-            r1 = executeQuery(query, model, modelReduct);
+            ResultSet r1 = executeQuery(query, model, modelReduct);
             if (!r1.hasNext()) {
                 throw new EJBException(String.format("model reduction does not specify vpc of node to be deleted: %s", node));
             }
@@ -857,8 +971,8 @@ public class AwsPush {
                 throw new EJBException(String.format("model reduction does not specify service of node: %s", node));
             }
 
-            String nodeIdTagValue = node.asResource().toString().replace(topologyUri, "");
-            String nodeId = getInstanceId(nodeIdTagValue);
+            String nodeIdTagValue = ResourceTool.getResourceName(node.asResource().toString(), AwsPrefix.instance);
+            String nodeId = ec2Client.getInstanceId(nodeIdTagValue);
 
             Instance instance = ec2Client.getInstance(nodeId);
             if (instance == null) //instance does not exists
@@ -886,37 +1000,30 @@ public class AwsPush {
             QuerySolution q = r.next();
             RDFNode port = q.get("port");
             RDFNode node = q.get("node");
-            String nodeIdTag = node.asResource().toString().replace(topologyUri, "");
+            String nodeIdTag = ResourceTool.getResourceName(node.asResource().toString(), AwsPrefix.instance);
             query = "SELECT ?node WHERE {<" + node.asResource() + "> a nml:Node}";
             ResultSet r1 = executeQuery(query, model, emptyModel);
             ResultSet r1_1 = executeQuery(query, emptyModel, modelReduct);
             Instance i = null;
             if (r1.hasNext()) {
-                String nodeId = getInstanceId(nodeIdTag);
+                String nodeId = ec2Client.getInstanceId(nodeIdTag);
                 i = ec2Client.getInstance(nodeId);
             }
             while (r1.hasNext() && !r1_1.hasNext()) {
                 r1.next();
-                String portIdTag = port.asResource().toString().replace(topologyUri, "");
+                String portIdTag = ResourceTool.getResourceName(port.asResource().toString(), AwsPrefix.nic);
 
-                query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:hasTag ?tag}";
+                query = "SELECT ?tag WHERE {<" + port.asResource() + "> a  nml:BidirectionalPort ."
+                        + "FILTER (NOT EXISTS {<" + port.asResource() + "> mrs:type ?type})} ";
                 ResultSet r2 = executeQuery(query, model, modelReduct);
                 if (!r2.hasNext()) {
-                    throw new EJBException(String.format("bidirectional port %s to be detached to intsnace does not specify a tag", port));
-                }
-                QuerySolution q2 = r2.next();
-                RDFNode tag = q2.get("tag");
-                query = "SELECT ?tag WHERE {<" + tag.asResource() + "> mrs:type \"interface\". "
-                        + "<" + tag.asResource() + "> mrs:value \"network\"}";
-                r2 = executeQuery(query, model, emptyModel);
-                if (!r2.hasNext()) {
-                    throw new EJBException(String.format("bidirectional port %s to be detached to instance is not a net"
-                            + "work interface", port));
+                    throw new EJBException(String.format("bidirectional port %s to be detaches is not a  network-interface", port));
                 }
 
                 String attachmentId = "";
+                int deviceIndex = 0;
                 for (InstanceNetworkInterface eni : i.getNetworkInterfaces()) {
-                    if (eni.getNetworkInterfaceId().equals(getResourceId(portIdTag))) {
+                    if (eni.getNetworkInterfaceId().equals(ec2Client.getResourceId(portIdTag))) {
                         attachmentId = eni.getAttachment().getAttachmentId();
                         break;
                     }
@@ -926,7 +1033,7 @@ public class AwsPush {
                     throw new EJBException(String.format("bidirectional port %s to be detached has no attachments", port));
                 }
 
-                requests += String.format("DetachNetworkInterfaceRequest %s %s\n", attachmentId, getResourceId(portIdTag));
+                requests += String.format("DetachNetworkInterfaceRequest %s %s\n", attachmentId, ec2Client.getResourceId(portIdTag));
             }
 
         }
@@ -947,8 +1054,8 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode volume = querySolution.get("volume");
-            String volumeIdTagValue = volume.asResource().toString().replace(topologyUri, "");
-            String volumeId = getVolumeId(volumeIdTagValue);
+            String volumeIdTagValue = ResourceTool.getResourceName(volume.asResource().toString(), AwsPrefix.volume);
+            String volumeId = ec2Client.getVolumeId(volumeIdTagValue);
 
             Volume v = ec2Client.getVolume(volumeId);
 
@@ -958,7 +1065,7 @@ public class AwsPush {
             {
                 //check what service is providing the volume
                 query = "SELECT ?type WHERE {?service mrs:providesVolume <" + volume.asResource() + ">}";
-                ResultSet r1 = executeQuery(query, emptyModel, modelReduct);
+                ResultSet r1 = executeQuery(query, model, modelReduct);
                 if (!r1.hasNext()) {
                     throw new EJBException(String.format("model reduction does not specify service that provides volume: %s", volume));
                 }
@@ -1000,14 +1107,14 @@ public class AwsPush {
      * Function to create a volumes from a model
      * ****************************************************************
      */
-    private String deleteRouteRequests(OntModel model, OntModel modelRedutc) {
+    private String deleteRouteRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
         String tempRequest = "";
         String query = "";
 
         query = "SELECT ?route ?table WHERE {?route a mrs:Route ."
                 + "?table mrs:hasRoute ?route}";
-        ResultSet r = executeQuery(query, emptyModel, modelRedutc);
+        ResultSet r = executeQuery(query, emptyModel, modelReduct);
         while (r.hasNext()) {
             QuerySolution q = r.next();
             RDFNode table = q.get("table");
@@ -1018,7 +1125,7 @@ public class AwsPush {
             String vpcAddress;
             String routeAddress;
             query = "SELECT ?service WHERE {?service mrs:providesRoutingTable <" + table.asResource() + "> }";
-            ResultSet r2 = executeQuery(query, model, modelRedutc);
+            ResultSet r2 = executeQuery(query, model, modelReduct);
             RDFNode service = null;
             if (r2.hasNext()) {
                 QuerySolution q1 = r2.next();
@@ -1028,7 +1135,7 @@ public class AwsPush {
                         + " table %s", table.asResource()));
             }
             query = "SELECT ?service WHERE {<" + service.asResource() + "> a  mrs:RoutingService}";
-            r2 = executeQuery(query, model, modelRedutc);
+            r2 = executeQuery(query, model, modelReduct);
             if (!r2.hasNext()) {
                 throw new EJBException(String.format("Service %s is not a "
                         + "routing service", service));
@@ -1037,7 +1144,7 @@ public class AwsPush {
             query = "SELECT ?value WHERE {?vpc nml:hasService  <" + service.asResource() + "> ."
                     + "?vpc mrs:hasNetworkAddress ?address ."
                     + "?address mrs:value ?value}";
-            r2 = executeQuery(query, model, modelRedutc);
+            r2 = executeQuery(query, model, modelReduct);
             if (r2.hasNext()) {
                 QuerySolution q1 = r2.next();
                 RDFNode val = q1.get("value");
@@ -1048,7 +1155,7 @@ public class AwsPush {
             }
             query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeTo ?routeTo ."
                     + "?routeTo mrs:value ?value}";
-            r2 = executeQuery(query, model, modelRedutc);
+            r2 = executeQuery(query, model, modelReduct);
             if (!r2.hasNext()) {
                 throw new EJBException(String.format("RouteTo statement is not defined"
                         + "for route %s", route.asResource()));
@@ -1062,7 +1169,7 @@ public class AwsPush {
                 continue;
             }
 
-            String tableIdTag = table.asResource().toString().replace(topologyUri, "");
+            String tableIdTag = ResourceTool.getResourceName(table.asResource().toString(), AwsPrefix.routingTable);
 
             //make sure the new route will have all the source subnets as the table already has
             //take as reference the main route of the route table
@@ -1070,34 +1177,32 @@ public class AwsPush {
             query = "SELECT ?route WHERE {<" + table.asResource() + "> mrs:hasRoute ?route ."
                     + "?route mrs:routeTo ?routeTo ."
                     + "?routeTo mrs:value " + vpcAddress + "}";
-            r2 = executeQuery(query, model, modelRedutc);
+            r2 = executeQuery(query, model, modelReduct);
             QuerySolution q1 = r2.next();
             RDFNode mainRoute = q1.get("route");
 
             //get the subnets of the main route, that will tell the routeTable associations
-            query = "SELECT ?value WHERE {<" + mainRoute.asResource() + "> mrs:routeFrom ?routeFrom ."
-                    + "?routeFrom mrs:value ?value}";
-            r2 = executeQuery(query, emptyModel, modelRedutc);
+            query = "SELECT ?routeFrom WHERE {<" + mainRoute.asResource() + "> mrs:routeFrom ?routeFrom ."
+                    + "?routeFrom a mrs:SwitchingSubnet}";
+            r2 = executeQuery(query, emptyModel, modelReduct);
             while (r2.hasNext()) {
                 q1 = r2.next();
-                String value = "\"" + q1.getLiteral("value").toString() + "\"";
-                query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeFrom ?routeFrom ."
-                        + "?routeFrom mrs:value " + value + "}";
-                ResultSet r3 = executeQuery(query, emptyModel, modelRedutc);
+                String routeFrom = q1.get("routeFrom").asResource().toString();
+                query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeFrom <" + routeFrom + ">}";
+                ResultSet r3 = executeQuery(query, emptyModel, modelReduct);
                 if (!r3.hasNext()) {
                     throw new EJBException(String.format("new route %s does not contain all the subnet"
                             + " associations of the route table", route.asResource()));
                 }
             }
-            query = "SELECT ?value WHERE {<" + mainRoute.asResource() + "> mrs:routeFrom ?routeFrom ."
-                    + "?routeFrom mrs:value ?value}";
+            query = "SELECT ?routeFrom WHERE {<" + mainRoute.asResource() + "> mrs:routeFrom ?routeFrom ."
+                    + "?routeFrom a mrs:SwitchingSubnet}";
             r2 = executeQuery(query, model, emptyModel);
             while (r2.hasNext()) {
                 q1 = r2.next();
-                String value = "\"" + q1.getLiteral("value").toString() + "\"";
-                query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeFrom ?routeFrom ."
-                        + "?routeFrom mrs:value " + value + "}";
-                ResultSet r3 = executeQuery(query, emptyModel, modelRedutc);
+                String routeFrom = q1.get("routeFrom").asResource().toString();
+                query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeFrom <" + routeFrom + ">}";
+                ResultSet r3 = executeQuery(query, emptyModel, modelReduct);
                 if (!r3.hasNext()) {
                     throw new EJBException(String.format("new route %s does not contain all the subnet"
                             + "associations od the route table", route.asResource()));
@@ -1107,9 +1212,8 @@ public class AwsPush {
             //find the destination and nex hop
             query = "SELECT  ?nextHop ?value WHERE {<" + route.asResource() + "> mrs:routeTo ?routeTo ."
                     + "<" + route.asResource() + "> mrs:nextHop ?nextHop ."
-                    + "?routeFrom mrs:type \"subnet\" ."
                     + "?routeTo mrs:value ?value}";
-            r2 = executeQuery(query, emptyModel, modelRedutc);
+            r2 = executeQuery(query, emptyModel, modelReduct);
             while (r2.hasNext()) {
                 QuerySolution q2 = r2.next();
                 RDFNode value = q2.get("value");
@@ -1117,12 +1221,21 @@ public class AwsPush {
                 String destination = value.asLiteral().toString();
                 String target;
                 String gatewayId;
+
+                //check next hop
                 if (nextHop.isLiteral()) {
                     target = nextHop.asLiteral().toString();
                     gatewayId = target;
                 } else {
-                    target = nextHop.asResource().toString().replace(topologyUri, "");
-                    gatewayId = getResourceId(target);
+                    String nextHopResource = nextHop.asResource().toString();
+                    target = ResourceTool.getResourceName(nextHop.asResource().toString(), AwsPrefix.gateway);
+                    query = String.format("SELECT ?gateway WHERE{<%s> a owl:NamedIndividual}", nextHopResource);
+                    ResultSet r3 = executeQuery(query, model, modelReduct);
+                    if (!r3.hasNext()) {
+                        throw new EJBException(String.format("next hop %s does not exist in delta "
+                                + "or system model", target));
+                    }
+                    gatewayId = ec2Client.getResourceId(target);
                 }
 
                 Route rou = new Route();
@@ -1152,20 +1265,26 @@ public class AwsPush {
         String tempRequests = "";
         String query;
 
-        query = "SELECT ?route ?value WHERE {?route mrs:routeFrom ?routeFrom ."
-                + "?routeFrom mrs:type \"subnet\" ."
-                + "?routeFrom mrs:value ?value}";
+        query = "SELECT ?route ?routeFrom WHERE {?route mrs:routeFrom ?routeFrom}";
         ResultSet r = executeQuery(query, emptyModel, modelReduct);
         while (r.hasNext()) {
             boolean continueFlag = false;
             boolean createRequest = true;
             QuerySolution querySolution = r.next();
-            RDFNode value = querySolution.get("value");
+            RDFNode value = querySolution.get("routeFrom");
             RDFNode route = querySolution.get("route");
+            RDFNode routeFrom = querySolution.get("routeFrom");
+
+            //routeFrom must be a subnet
+            query = "SELECT ?a WHERE {<" + value.asResource().toString() + "> a mrs:SwitchingSubnet}";
+            ResultSet r1 = executeQuery(query, model, modelReduct);
+            if (!r1.hasNext()) {
+                continue;
+            }
 
             query = "SELECT ?table WHERE {?table mrs:hasRoute <" + route.asResource() + "> ."
                     + "?service mrs:providesRoute <" + route.asResource() + ">}";
-            ResultSet r1 = executeQuery(query, model, modelReduct);
+            r1 = executeQuery(query, model, modelReduct);
             if (!r1.hasNext()) {
                 throw new EJBException(String.format("Route  %s"
                         + " does not exist in a route table or is not being provided "
@@ -1174,39 +1293,36 @@ public class AwsPush {
             QuerySolution querySolution1 = r1.next();
             RDFNode table = querySolution1.get("table");
 
-            String subnetIdTag = value.asLiteral().toString();
-            String subnetId = getResourceId(subnetIdTag);
-            String tableIdTag = table.asResource().toString().replace(topologyUri, "");
+            String subnetIdTag = ResourceTool.getResourceName(value.asResource().toString(), AwsPrefix.subnet);
+            String subnetId = ec2Client.getResourceId(subnetIdTag);
+            String tableIdTag = ResourceTool.getResourceName(table.asResource().toString(), AwsPrefix.routingTable);
 
             if (ec2Client.getSubnet(subnetId) == null) {
                 throw new EJBException(String.format("subnet %s to disassociate from"
                         + "route table %s does not exist", subnetIdTag, tableIdTag));
             }
 
-            RouteTable rt = ec2Client.getRoutingTable(getTableId(tableIdTag));
+            RouteTable rt = ec2Client.getRoutingTable(ec2Client.getTableId(tableIdTag));
             if (rt == null) {
                 throw new EJBException(String.format("Route table %s to disassociate"
                         + " does not exist", tableIdTag));
             } else {
                 for (RouteTableAssociation as : rt.getAssociations()) {
-                    if (as.getSubnetId().equals(getResourceId(subnetIdTag))) {
+                    if (as != null && as.getSubnetId() != null && as.getSubnetId().equals(ec2Client.getResourceId(subnetIdTag))) { //main routeTable may have implicit associations
                         createRequest = true;
                     }
                 }
             }
 
-            String querySubnetIdTag = "\"" + subnetIdTag + "\"";
             if (createRequest == true) {
                 //check that older routes in the table also include this  routeFrom
-                //network address
                 query = "SELECT ?route WHERE {<" + table.asResource() + "> mrs:hasRoute ?route}";
                 ResultSet r2 = executeQuery(query, model, emptyModel);
                 while (r2.hasNext()) {
                     QuerySolution q2 = r2.next();
                     RDFNode ro = q2.get("route");
-                    query = "SELECT ?routeFrom WHERE {<" + ro.asResource() + "> mrs:routeFrom ?routeFrom ."
-                            + "?routeFrom mrs:value " + querySubnetIdTag + "}";
-                    ResultSet r3 = executeQuery(query, emptyModel, modelReduct);
+                    query = "SELECT ?routeFrom WHERE {<" + routeFrom.asResource() + "> a mrs:SwitchingSubnet}";
+                    ResultSet r3 = executeQuery(query, model, modelReduct);
                     if (!r3.hasNext()) {
                         continueFlag = true;
                         break;
@@ -1220,14 +1336,24 @@ public class AwsPush {
                 //get the association id of the route table association to delete
                 String associationId = "";
                 for (RouteTableAssociation as : rt.getAssociations()) {
-                    if (as.getSubnetId().equals(subnetId)) {
+                    if (as != null && as.getSubnetId() != null && as.getSubnetId().equals(subnetId)) {
                         associationId = as.getRouteTableAssociationId();
                         break;
                     }
                 }
                 if (associationId.isEmpty()) {
-                    throw new EJBException(String.format("The route table association id for subnet %s"
-                            + " in route tabe %s does not exist", subnetIdTag, tableIdTag));
+                    boolean main = false;
+                    List<RouteTableAssociation> as = rt.getAssociations();
+                    if (!as.isEmpty()) {
+                        main = as.get(0).getMain();
+                    }
+                    if (main == true) //skip this as it is an implicit assco with the main table
+                    {
+                        continue;
+                    } else {
+                        throw new EJBException(String.format("The route table association id for subnet %s"
+                                + " in route tabe %s does not exist", subnetIdTag, tableIdTag));
+                    }
                 }
                 tempRequests = String.format("DisassociateTableRequest %s \n", associationId);
                 if (!requests.contains(tempRequests))//dont include duplicate requests
@@ -1253,26 +1379,17 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution q = r.next();
             RDFNode igw = q.get("igw");
-            String idTag = igw.asResource().toString().replace(topologyUri, "");
+            String idTag = ResourceTool.getResourceName(igw.asResource().toString(), AwsPrefix.gateway);
 
-            query = "SELECT ?tag WHERE {<" + igw.asResource() + "> mrs:hasTag ?tag}";
-            ResultSet r1 = executeQuery(query, emptyModel, modelReduct);
+            //look too see if resource is a internet gateway or not
+            query = "SELECT ?type WHERE {<" + igw.asResource() + "> mrs:type ?type ."
+                    + "FILTER(?type In (\"internet-gateway\",\"vpn-gateway\"))}";
+            ResultSet r1 = executeQuery(query, model, emptyModel);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("Tag for Internet gateway %s i"
-                        + "s not specified in model reduction", igw));
+                continue; //not a gateway
             }
             QuerySolution q1 = r1.next();
-            RDFNode tag = q1.get("tag");
-
-            //look for the lable in the reference model
-            query = "SELECT ?value WHERE {<" + tag.asResource() + "> mrs:type \"gateway\" ."
-                    + "<" + tag.asResource() + "> mrs:value ?value}";
-            r1 = executeQuery(query, model, emptyModel);
-            if (!r1.hasNext()) {
-                continue;
-            }
-            q1 = r1.next();
-            String value = q1.get("value").asLiteral().toString();
+            String type = q1.get("type").asLiteral().toString();
 
             //find the vpc of the gateway
             query = "SELECT ?vpc ?port  WHERE {?vpc nml:hasBidirectionalPort <" + igw + ">}";
@@ -1282,7 +1399,7 @@ public class AwsPush {
             }
             q = r1.next();
             RDFNode vpc = q.get("vpc");
-            String vpcIdTag = vpc.asResource().toString().replace(topologyUri, "");
+            String vpcIdTag = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.vpc);
 
             //check that the vpc is of type topology
             query = "SELECT ?vpc WHERE {<" + vpc.asResource() + "> a nml:Topology}";
@@ -1291,7 +1408,7 @@ public class AwsPush {
                 throw new EJBException(String.format("VPC %s for gateway %s is not "
                         + "of type topology", vpc, igw));
             }
-            if (value.equals("internet")) {
+            if (type.equals("internet-gateway")) {
 
                 //check that the topology for the internet gateway is not the main topology
                 //as the internet gateway should be attached to a VPC not the main topology
@@ -1299,17 +1416,19 @@ public class AwsPush {
                     throw new EJBException(String.format("Internet gateway %s"
                             + " cannot be detached from root topology", igw));
                 }
-                if (ec2Client.getInternetGateway(getResourceId(idTag)) == null) {
+                if (ec2Client.getInternetGateway(ec2Client.getResourceId(idTag)) == null) {
                     throw new EJBException(String.format("Internet gateway %s  does not exists", idTag));
                 } else {
                     requests += String.format("DeleteInternetGatewayRequest %s %s \n", idTag, vpcIdTag);
                 }
-            } else if (value.equals("vpn")) {
-                if (ec2Client.getVirtualPrivateGateway(getVpnGatewayId(idTag)) == null) {
+            } else if (type.equals("vpn-gateway")) {
+                if (ec2Client.getVirtualPrivateGateway(ec2Client.getVpnGatewayId(idTag)) == null) {
                     throw new EJBException(String.format("VPN gateway %s does not exists", idTag));
                 } else {
                     requests += String.format("DeleteVpnGatewayRequest %s \n", idTag);
                 }
+            } else {
+                throw new EJBException(String.format("Gateway %s has an invalid type", igw));
             }
         }
         return requests;
@@ -1322,44 +1441,26 @@ public class AwsPush {
      */
     private String detachVPNGatewayRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
-        String query = "";
-
-        //fin all the vpcs that have a bidirectional port
-        query = "SELECT ?vpc ?port  WHERE {?vpc nml:hasBidirectionalPort ?port}";
+        String query = "SELECT ?vpc ?port  WHERE {?vpc nml:hasBidirectionalPort ?port}";
         ResultSet r = executeQuery(query, emptyModel, modelReduct);
+        // a new port has been added to delta
         while (r.hasNext()) {
             QuerySolution q = r.next();
-            RDFNode gateway = q.get("port");
             RDFNode vpc = q.get("vpc");
-
-            //check that vpc is the correct type
-            query = "SELECT ?vpc WHERE {<" + vpc.asResource() + "> a nml:Topology ."
-                    + "<" + vpc.asResource() + "> nml:hasService ?service ."
-                    + "?service a  mrs:SwitchingService}";
-            ResultSet r1 = executeQuery(query, model, modelReduct);
-            while (r1.hasNext()) {
-                r1.next();
-                query = "SELECT ?tag WHERE {<" + gateway.asResource() + "> mrs:hasTag ?tag}";
-                ResultSet r2 = executeQuery(query, model, modelReduct);
-                if (!r2.hasNext()) {
-                    throw new EJBException(String.format("Tag for  gateway %s i"
-                            + "s not specified in model addition", gateway));
-                }
-                QuerySolution q1 = r2.next();
-                RDFNode tag = q1.get("tag");
-
-                //look for the label in the reference model
-                query = "SELECT ?value WHERE {<" + tag.asResource() + "> mrs:type \"gateway\" ."
-                        + "<" + tag.asResource() + "> mrs:value  \"vpn\"}";
-                r2 = executeQuery(query, model, emptyModel);
-                if (!r2.hasNext()) {
-                    continue;
-                }
-                String gatewayIdTag = gateway.asResource().toString().replace(topologyUri, "");
-                String vpcIdTag = vpc.asResource().toString().replace(topologyUri, "");
+            RDFNode gateway = q.get("port");
+            // check if the new port is an VGW gateway for an VPC 
+            query = "SELECT ?vpc ?port ?tag WHERE {?vpc nml:hasBidirectionalPort ?port . "
+                    + "?vpc nml:hasService ?service . "
+                    + "?service a  mrs:SwitchingService . "
+                    + "?port mrs:type \"vpn-gateway\" ."
+                    + String.format("FILTER(?vpc = <%s> && ?port = <%s>) ", vpc, gateway)
+                    + "}";
+            ResultSet r1 = executeQueryUnion(query, model, modelReduct);
+            if (r1.hasNext()) {
+                String gatewayIdTag = ResourceTool.getResourceName(gateway.asResource().toString(), AwsPrefix.gateway);
+                String vpcIdTag = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.vpc);
                 requests += String.format("detachVpnGatewayRequest %s %s \n", gatewayIdTag, vpcIdTag);
             }
-
         }
         return requests;
     }
@@ -1379,8 +1480,8 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode table = querySolution.get("table");
-            String tableIdTagValue = table.asResource().toString().replace(topologyUri, "");
-            String tableId = getTableId(tableIdTagValue);
+            String tableIdTagValue = ResourceTool.getResourceName(table.asResource().toString(), AwsPrefix.routingTable);
+            String tableId = ec2Client.getTableId(tableIdTagValue);
             if (ec2Client.getRoutingTable(tableId) != null) {
                 //check route table is modeled 
                 query = "SELECT ?type WHERE{<" + table.asResource() + "> mrs:type ?type}";
@@ -1413,7 +1514,7 @@ public class AwsPush {
                 querySolution1 = r1.next();
                 RDFNode address = querySolution1.get("address");
                 RDFNode vpc = querySolution1.get("vpc");
-                String vpcIdTagValue = vpc.asResource().toString().replace(topologyUri, "");
+                String vpcIdTagValue = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.vpc);
 
                 //if the table was a main table, it was created with
                 //the vpc
@@ -1463,8 +1564,8 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode vpc = querySolution.get("vpc");
-            String vpcIdTagValue = vpc.asResource().toString().replace(topologyUri, "");
-            String vpcId = getVpcId(vpcIdTagValue);
+            String vpcIdTagValue = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.vpc);
+            String vpcId = ec2Client.getVpcId(vpcIdTagValue);
 
             //double check vpc does not exist in the cloud
             Vpc v = ec2Client.getVpc(vpcId);
@@ -1527,7 +1628,7 @@ public class AwsPush {
 
                 querySolution1 = r1.next();
                 RDFNode routingTable = querySolution1.get("routingTable");
-                String routeTableIdTagValue = routingTable.asResource().toString().replace(topologyUri, "");
+                String routeTableIdTagValue = ResourceTool.getResourceName(routingTable.asResource().toString(), AwsPrefix.routingTable);
 
                 //add routeTable id tag to the request to tatg the main route Table later
                 String vpcIp = cidrBlock;
@@ -1564,8 +1665,8 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode subnet = querySolution.get("subnet");
-            String subnetIdTagValue = subnet.asResource().toString().replace(topologyUri, "");
-            String subnetId = getResourceId(subnetIdTagValue);
+            String subnetIdTagValue = ResourceTool.getResourceName(subnet.asResource().toString(), AwsPrefix.subnet);
+            String subnetId = ec2Client.getResourceId(subnetIdTagValue);
 
             Subnet s = ec2Client.getSubnet(subnetId);
 
@@ -1591,7 +1692,7 @@ public class AwsPush {
                 }
                 querySolution1 = r1.next();
                 RDFNode vpc = querySolution1.get("vpc");
-                String vpcIdTagValue = vpc.asResource().toString().replace(topologyUri, "");
+                String vpcIdTagValue = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.subnet);
 
                 query = "SELECT ?subnet ?address ?value WHERE {<" + subnet.asResource() + "> mrs:hasNetworkAddress ?address ."
                         + "?address a mrs:NetworkAddress ."
@@ -1623,8 +1724,8 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode vpc = querySolution.get("vpc");
-            String vpcIdTagValue = vpc.asResource().toString().replace(topologyUri, "");
-            String vpcId = getVpcId(vpcIdTagValue);
+            String vpcIdTagValue = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.vpc);
+            String vpcId = ec2Client.getVpcId(vpcIdTagValue);
 
             //double check vpc does not exist in the cloud
             Vpc v = ec2Client.getVpc(vpcId);
@@ -1686,13 +1787,13 @@ public class AwsPush {
 
                 querySolution1 = r1.next();
                 RDFNode routingTable = querySolution1.get("routingTable");
-                String routeTableIdTagValue = routingTable.asResource().toString().replace(topologyUri, "");
+                String routeTableIdTagValue = ResourceTool.getResourceName(routingTable.asResource().toString(), AwsPrefix.routingTable);
 
                 String vpcIp = cidrBlock;
                 cidrBlock = "\"" + cidrBlock + "\"";
 
                 //check for  the local route is in the route table 
-                query = "SELECT ?route ?to  WHERE {<" + routingTable.asResource() + "> mrs:hasRoute ?route ."
+                query = "SELECT ?route ?to  WHERE {<" + routingTable.asResource().toString() + "> mrs:hasRoute ?route ."
                         + "<" + routingService.asResource() + "> mrs:providesRoute ?route ."
                         + "?route mrs:nextHop \"local\" ."
                         + "?route mrs:routeTo  ?to ."
@@ -1722,8 +1823,8 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode subnet = querySolution.get("subnet");
-            String subnetIdTagValue = subnet.asResource().toString().replace(topologyUri, "");
-            String subnetId = getResourceId(subnetIdTagValue);
+            String subnetIdTagValue = ResourceTool.getResourceName(subnet.asResource().toString(), AwsPrefix.subnet);
+            String subnetId = ec2Client.getResourceId(subnetIdTagValue);
 
             Subnet s = ec2Client.getSubnet(subnetId);
 
@@ -1749,13 +1850,16 @@ public class AwsPush {
                 }
                 querySolution1 = r1.next();
                 RDFNode vpc = querySolution1.get("vpc");
-                String vpcIdTagValue = vpc.asResource().toString().replace(topologyUri, "");
+                String vpcIdTagValue = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.vpc);
 
                 query = "SELECT ?subnet ?address ?value WHERE {<" + subnet.asResource() + "> mrs:hasNetworkAddress ?address ."
                         + "?address a mrs:NetworkAddress ."
                         + "?address mrs:type \"ipv4-prefix\" ."
                         + "?address mrs:value ?value}";
                 r1 = executeQuery(query, model, modelAdd);
+                if (!r1.hasNext()) {
+                    throw new EJBException(String.format("Subnet %s does not have a valid CIDR", subnetIdTagValue));
+                }
                 querySolution1 = r1.next();
                 RDFNode value = querySolution1.get("value");
                 String cidrBlock = value.asLiteral().toString();
@@ -1782,8 +1886,8 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode table = querySolution.get("table");
-            String tableIdTagValue = table.asResource().toString().replace(topologyUri, "");
-            String tableId = getTableId(tableIdTagValue);
+            String tableIdTagValue = ResourceTool.getResourceName(table.asResource().toString(), AwsPrefix.routingTable);
+            String tableId = ec2Client.getTableId(tableIdTagValue);
             if (ec2Client.getRoutingTable(tableId) != null) //routing table already exists
             {
                 throw new EJBException(String.format("Routing Table %s already exists, does not need"
@@ -1819,7 +1923,7 @@ public class AwsPush {
                 querySolution1 = r1.next();
                 RDFNode address = querySolution1.get("address");
                 RDFNode vpc = querySolution1.get("vpc");
-                String vpcIdTagValue = vpc.asResource().toString().replace(topologyUri, "");
+                String vpcIdTagValue = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.vpc);
 
                 //if the table was a main table, it was created with
                 //the vpc
@@ -1864,19 +1968,25 @@ public class AwsPush {
         String tempRequests = "";
         String query;
 
-        query = "SELECT ?route ?value WHERE {?route mrs:routeFrom ?routeFrom ."
-                + "?routeFrom mrs:type \"subnet\" ."
-                + "?routeFrom mrs:value ?value}";
+        query = "SELECT ?route ?routeFrom WHERE {?route mrs:routeFrom ?routeFrom}";
         ResultSet r = executeQuery(query, emptyModel, modelAdd);
         while (r.hasNext()) {
             boolean createRequest = true;
             QuerySolution querySolution = r.next();
-            RDFNode value = querySolution.get("value");
+            RDFNode value = querySolution.get("routeFrom");
             RDFNode route = querySolution.get("route");
+            RDFNode routeFrom = querySolution.get("routeFrom");
+
+            //routeFrom must be a subnet
+            query = "SELECT ?a WHERE {<" + value.asResource().toString() + "> a mrs:SwitchingSubnet}";
+            ResultSet r1 = executeQuery(query, model, modelAdd);
+            if (!r1.hasNext()) {
+                continue;
+            }
 
             query = "SELECT ?table WHERE {?table mrs:hasRoute <" + route.asResource() + "> ."
                     + "?service mrs:providesRoute <" + route.asResource() + ">}";
-            ResultSet r1 = executeQuery(query, model, modelAdd);
+            r1 = executeQuery(query, model, modelAdd);
             if (!r1.hasNext()) {
                 throw new EJBException(String.format("Route  %s"
                         + "does not have a route table or is not"
@@ -1885,14 +1995,14 @@ public class AwsPush {
             QuerySolution querySolution1 = r1.next();
             RDFNode table = querySolution1.get("table");
 
-            String subnetIdTag = value.asLiteral().toString();
-            String tableIdTag = table.asResource().toString().replace(topologyUri, "");
+            String subnetIdTag = ResourceTool.getResourceName(value.asResource().toString(), AwsPrefix.subnet);
+            String tableIdTag = ResourceTool.getResourceName(table.asResource().toString(), AwsPrefix.routingTable);
 
-            RouteTable rt = ec2Client.getRoutingTable(getTableId(tableIdTag));
+            RouteTable rt = ec2Client.getRoutingTable(ec2Client.getTableId(tableIdTag));
             if (rt == null) {
             } else {
                 for (RouteTableAssociation as : rt.getAssociations()) {
-                    if (as.getSubnetId().equals(getResourceId(subnetIdTag))) {
+                    if (as.getSubnetId().equals(ec2Client.getResourceId(subnetIdTag))) {
                         createRequest = false;
                     }
                 }
@@ -1907,9 +2017,8 @@ public class AwsPush {
                 while (r2.hasNext()) {
                     QuerySolution q2 = r2.next();
                     RDFNode ro = q2.get("route");
-                    query = "SELECT ?routeFrom WHERE {<" + ro.asResource() + "> mrs:routeFrom ?routeFrom ."
-                            + "?routeFrom mrs:value " + querySubnetIdTag + "}";
-                    ResultSet r3 = executeQuery(query, emptyModel, modelAdd);
+                    query = "SELECT ?routeFrom WHERE {<" + routeFrom.asResource() + "> a mrs:SwitchingSubnet}";
+                    ResultSet r3 = executeQuery(query, model, modelAdd);
                     if (!r3.hasNext()) {
                         throw new EJBException(String.format("Route  %s does state"
                                 + "new association with subnet %s in the model addition", ro, subnetIdTag));
@@ -1939,26 +2048,17 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution q = r.next();
             RDFNode igw = q.get("igw");
-            String idTag = igw.asResource().toString().replace(topologyUri, "");
+            String idTag = ResourceTool.getResourceName(igw.asResource().toString(), AwsPrefix.gateway);
 
-            query = "SELECT ?tag WHERE {<" + igw.asResource() + "> mrs:hasTag ?tag}";
-            ResultSet r1 = executeQuery(query, emptyModel, modelAdd);
+            //look for the type in the reference model
+            query = "SELECT ?type WHERE {<" + igw.asResource() + "> mrs:type ?type ."
+                    + "FILTER(?type In (\"internet-gateway\",\"vpn-gateway\"))}";
+            ResultSet r1 = executeQuery(query, model, modelAdd);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("Label for bidirectional port %s i"
-                        + "s not specified in model addition", igw));
+                continue; //not a gateway
             }
             QuerySolution q1 = r1.next();
-            RDFNode tag = q1.get("tag");
-
-            //look for the lable in the reference model
-            query = "SELECT ?value WHERE {<" + tag.asResource() + "> mrs:type \"gateway\" ."
-                    + "<" + tag.asResource() + "> mrs:value ?value}";
-            r1 = executeQuery(query, model, emptyModel);
-            if (!r1.hasNext()) {
-                continue;
-            }
-            q1 = r1.next();
-            String value = q1.get("value").asLiteral().toString();
+            String type = q1.get("type").asLiteral().toString();
 
             //find the vpc of the gateway
             query = "SELECT ?vpc ?port  WHERE {?vpc nml:hasBidirectionalPort <" + igw + ">}";
@@ -1968,7 +2068,7 @@ public class AwsPush {
             }
             q = r1.next();
             RDFNode vpc = q.get("vpc");
-            String vpcIdTag = vpc.asResource().toString().replace(topologyUri, "");
+            String vpcIdTag = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.vpc);
 
             //check that the vpc is of type topology
             query = "SELECT ?vpc WHERE {<" + vpc.asResource() + "> a nml:Topology}";
@@ -1977,7 +2077,7 @@ public class AwsPush {
                 throw new EJBException(String.format("VPC %s for gateway %s is not "
                         + "of type topology", vpc, igw));
             }
-            if (value.equals("internet")) {
+            if (type.equals("internet-gateway")) {
 
                 //check that the topology for the internet gateway is not the main topology
                 //as the internet gateway should be attached to a VPC not the main topology
@@ -1986,17 +2086,19 @@ public class AwsPush {
                     throw new EJBException(String.format("Internet gateway %s"
                             + " cannot be attached to root topology", igw));
                 }
-                if (ec2Client.getInternetGateway(getResourceId(idTag)) != null) {
+                if (ec2Client.getInternetGateway(ec2Client.getResourceId(idTag)) != null) {
                     throw new EJBException(String.format("Internet gateway %s already exists", idTag));
                 } else {
                     requests += String.format("CreateInternetGatewayRequest %s %s \n", idTag, vpcIdTag);
                 }
-            } else if (value.equals("vpn")) {
-                if (ec2Client.getVirtualPrivateGateway(getVpnGatewayId(idTag)) != null) {
+            } else if (type.equals("vpn-gateway")) {
+                if (ec2Client.getVirtualPrivateGateway(ec2Client.getVpnGatewayId(idTag)) != null) {
                     throw new EJBException(String.format("VPN gateway %s already exists", idTag));
                 } else {
                     requests += String.format("CreateVpnGatewayRequest %s \n", idTag);
                 }
+            } else {
+                throw new EJBException(String.format("Gateway %s has an invalid type", igw));
             }
         }
         return requests;
@@ -2009,45 +2111,28 @@ public class AwsPush {
      */
     private String attachVPNGatewayRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
-        String query = "";
-
-        //fin all the vpcs that have a bidirectional port
-        query = "SELECT ?vpc ?port  WHERE {?vpc nml:hasBidirectionalPort ?port}";
+        String query = "SELECT ?vpc ?port  WHERE {?vpc nml:hasBidirectionalPort ?port}";
         ResultSet r = executeQuery(query, emptyModel, modelAdd);
+        // a new port has been added to delta
         while (r.hasNext()) {
             QuerySolution q = r.next();
-            RDFNode gateway = q.get("port");
             RDFNode vpc = q.get("vpc");
-
-            //check that vpc is the correct type
-            query = "SELECT ?vpc WHERE {<" + vpc.asResource() + "> a nml:Topology ."
-                    + "<" + vpc.asResource() + "> nml:hasService ?service ."
-                    + "?service a  mrs:SwitchingService}";
-            ResultSet r1 = executeQuery(query, model, modelAdd);
-            while (r1.hasNext()) {
-                r1.next();
-                query = "SELECT ?tag WHERE {<" + gateway.asResource() + "> mrs:hasTag ?tag}";
-                ResultSet r2 = executeQuery(query, model, modelAdd);
-                if (!r2.hasNext()) {
-                    throw new EJBException(String.format("Tag for  gateway %s i"
-                            + "s not specified in model addition", gateway));
-                }
-                QuerySolution q1 = r2.next();
-                RDFNode tag = q1.get("tag");
-
-                //look for the lable in the reference model
-                query = "SELECT ?value WHERE {<" + tag.asResource() + "> mrs:type \"gateway\" ."
-                        + "<" + tag.asResource() + "> mrs:value  \"vpn\"}";
-                r2 = executeQuery(query, model, emptyModel);
-                if (!r2.hasNext()) {
-                    continue;
-                }
-                String gatewayIdTag = gateway.asResource().toString().replace(topologyUri, "");
-                String vpcIdTag = vpc.asResource().toString().replace(topologyUri, "");
+            RDFNode gateway = q.get("port");
+            // check if the new port is an VGW gateway for an VPC 
+            query = "SELECT ?vpc ?port WHERE {?vpc nml:hasBidirectionalPort ?port . "
+                    + "?vpc nml:hasService ?service . "
+                    + "?service a  mrs:SwitchingService . "
+                    + "?port mrs:type \"vpn-gateway\" ."
+                    + String.format("FILTER(?vpc = <%s> && ?port = <%s>) ", vpc, gateway)
+                    + "}";
+            ResultSet r1 = executeQueryUnion(query, model, modelAdd);
+            if (r1.hasNext()) {
+                String gatewayIdTag = ResourceTool.getResourceName(gateway.asResource().toString(), AwsPrefix.gateway);
+                String vpcIdTag = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.vpc);
                 requests += String.format("AttachVpnGatewayRequest %s %s \n", gatewayIdTag, vpcIdTag);
             }
-
         }
+
         return requests;
     }
 
@@ -2118,7 +2203,7 @@ public class AwsPush {
                 continue;
             }
 
-            String tableIdTag = table.asResource().toString().replace(topologyUri, "");
+            String tableIdTag = ResourceTool.getResourceName(table.asResource().toString(), AwsPrefix.routingTable);
 
             //make sure the new route will have all the source subnets as the table already has
             //take as reference the main route of the route table
@@ -2130,40 +2215,54 @@ public class AwsPush {
             QuerySolution q1 = r2.next();
             RDFNode mainRoute = q1.get("route");
 
-            //get the subnets of the main route, that will tell the routeTable associations
-            query = "SELECT ?value WHERE {<" + mainRoute.asResource() + "> mrs:routeFrom ?routeFrom ."
-                    + "?routeFrom mrs:value ?value}";
-            r2 = executeQuery(query, emptyModel, modelAdd);
-            while (r2.hasNext()) {
-                q1 = r2.next();
-                String value = "\"" + q1.getLiteral("value").toString() + "\"";
-                query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeFrom ?routeFrom ."
-                        + "?routeFrom mrs:value " + value + "}";
-                ResultSet r3 = executeQuery(query, emptyModel, modelAdd);
-                if (!r3.hasNext()) {
-                    throw new EJBException(String.format("new route %s does not contain all the subnet"
-                            + "associations od the route table", route.asResource()));
+            //find if the routeFrom comes from a vpn gateway which indicates propagation
+            String fromGateway = null;
+            query = "SELECT ?routeFrom WHERE {<" + route.asResource() + "> mrs:routeFrom ?routeFrom}";
+            ResultSet r3 = executeQuery(query, emptyModel, modelAdd);
+            while (r3.hasNext()) {
+                QuerySolution q3 = r3.next();
+                String routeFrom = q3.get("routeFrom").asResource().toString();
+                query = String.format("SELECT ?gateway WHERE{<%s> a nml:BidirectionalPort .", routeFrom)
+                        + String.format("<%s> mrs:type \"vpn-gateway\"}", routeFrom);
+                ResultSet r4 = executeQueryUnion(query, model, modelAdd);
+                if (r4.hasNext()) {
+                    fromGateway = routeFrom;
                 }
             }
-            query = "SELECT ?value WHERE {<" + mainRoute.asResource() + "> mrs:routeFrom ?routeFrom ."
-                    + "?routeFrom mrs:value ?value}";
-            r2 = executeQuery(query, model, emptyModel);
-            while (r2.hasNext()) {
-                q1 = r2.next();
-                String value = "\"" + q1.getLiteral("value").toString() + "\"";
-                query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeFrom ?routeFrom ."
-                        + "?routeFrom mrs:value " + value + "}";
-                ResultSet r3 = executeQuery(query, emptyModel, modelAdd);
-                if (!r3.hasNext()) {
-                    throw new EJBException(String.format("new route %s does not contain all the subnet"
-                            + " associations of the route table", route.asResource()));
+
+            if (fromGateway == null) { //skip this step as route came from gateway
+                //get the subnets of the main route, that will tell the routeTable associations
+                query = "SELECT ?routeFrom WHERE {<" + mainRoute.asResource() + "> mrs:routeFrom ?routeFrom}"; //to avoid processing this routeFrom statement
+                r2 = executeQuery(query, emptyModel, modelAdd);
+                while (r2.hasNext()) {
+                    q1 = r2.next();
+                    String routeFrom = q1.get("routeFrom").asResource().toString();
+                    query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeFrom ?routeFrom ."
+                            + String.format("FILTER (?routeFrom = <%s>)}", routeFrom);
+                    r3 = executeQuery(query, emptyModel, modelAdd);
+                    if (!r3.hasNext()) {
+                        throw new EJBException(String.format("new route %s does not contain all the subnet"
+                                + "associations od the route table", route.asResource()));
+                    }
+                }
+                query = "SELECT ?routeFrom WHERE {<" + mainRoute.asResource() + "> mrs:routeFrom ?routeFrom}"; //to avoid processing this routeFrom statement
+                r2 = executeQuery(query, model, emptyModel);
+                while (r2.hasNext()) {
+                    q1 = r2.next();
+                    String routeFrom = q1.get("routeFrom").asResource().toString();
+                    query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeFrom ?routeFrom ."
+                            + String.format("FILTER (?routeFrom = <%s>)}", routeFrom);
+                    r3 = executeQuery(query, emptyModel, modelAdd);
+                    if (!r3.hasNext()) {
+                        throw new EJBException(String.format("new route %s does not contain all the subnet"
+                                + " associations of the route table", route.asResource()));
+                    }
                 }
             }
 
             //find the destination and nex hop
             query = "SELECT  ?nextHop ?value WHERE {<" + route.asResource() + "> mrs:routeTo ?routeTo ."
                     + "<" + route.asResource() + "> mrs:nextHop ?nextHop ."
-                    + "?routeFrom mrs:type \"subnet\" ."
                     + "?routeTo mrs:value ?value}";
             r2 = executeQuery(query, emptyModel, modelAdd);
             while (r2.hasNext()) {
@@ -2173,22 +2272,33 @@ public class AwsPush {
                 String destination = value.asLiteral().toString();
                 String target;
                 String gatewayId;
+
+                //check next Hop
                 if (nextHop.isLiteral()) {
                     target = nextHop.asLiteral().toString();
                     gatewayId = target;
+                    tempRequest = String.format("CreateRouteRequest %s %s %s \n", tableIdTag, destination, target);
                 } else {
-                    target = nextHop.asResource().toString().replace(topologyUri, "");
-                    gatewayId = getResourceId(target);
+                    String targetResource = nextHop.asResource().toString();
+                    target = ResourceTool.getResourceName(nextHop.asResource().toString(), AwsPrefix.gateway);
+                    gatewayId = ec2Client.getResourceId(target);
+                    //if the resource is a vpn gateway then just do a vpngateway propagation
+                    //instead of route addition
+                    query = String.format("SELECT ?gateway WHERE{<%s> a owl:NamedIndividual}", targetResource);
+                    r3 = executeQuery(query, model, modelAdd);
+                    if (!r3.hasNext()) {
+                        throw new EJBException(String.format("next hop %s does not exist in delta "
+                                + "or system model", targetResource));
+                    }
+                    query = String.format("SELECT ?gateway WHERE{<%s> a nml:BidirectionalPort .", targetResource)
+                            + String.format("<%s> mrs:type \"vpn-gateway\" }", targetResource);
+                    r3 = executeQuery(query, model, modelAdd);
+                    if (fromGateway != null && r3.hasNext()) {
+                        tempRequest = String.format("PropagateVpnRequest %s %s \n", tableIdTag, target);
+                    } else {
+                        tempRequest = String.format("CreateRouteRequest %s %s %s \n", tableIdTag, destination, target);
+                    }
                 }
-
-                Route rou = new Route();
-                rou.withDestinationCidrBlock(destination)
-                        .withGatewayId(gatewayId)
-                        .withState(RouteState.Active)
-                        .withOrigin(RouteOrigin.CreateRoute);
-
-                tempRequest = String.format("CreateRouteRequest %s %s %s \n", tableIdTag, destination, target);
-
                 if (!requests.contains(tempRequest)) {
                     requests += tempRequest;
                 }
@@ -2212,8 +2322,8 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode volume = querySolution.get("volume");
-            String volumeIdTagValue = volume.asResource().toString().replace(topologyUri, "");
-            String volumeId = getVolumeId(volumeIdTagValue);
+            String volumeIdTagValue = ResourceTool.getResourceName(volume.asResource().toString(), AwsPrefix.volume);
+            String volumeId = ec2Client.getVolumeId(volumeIdTagValue);
 
             Volume v = ec2Client.getVolume(volumeId);
 
@@ -2277,26 +2387,15 @@ public class AwsPush {
         String requests = "";
         String query;
 
-        //get the tag resource from the reference model that indicates 
-        //that this is a network  interface 
-        query = "SELECT ?tag WHERE {?tag mrs:type \"interface\" ."
-                + "?tag mrs:value \"network\"}";
-        ResultSet r = executeQuery(query, model, emptyModel);
-        if (!r.hasNext()) {
-            throw new EJBException(String.format("Reference model has no tags for network"
-                    + "interfaces"));
-        }
-        QuerySolution q = r.next();
-        RDFNode tag = q.get("tag");
-
+        //query for the port 
         query = "SELECT ?port WHERE {?port a  nml:BidirectionalPort ."
-                + "?port  mrs:hasTag <" + tag.asResource() + ">}";
-        r = executeQuery(query, emptyModel, modelAdd);
+                + "FILTER (NOT EXISTS {?port mrs:type ?type})} ";
+        ResultSet r = executeQuery(query, emptyModel, modelAdd);
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode port = querySolution.get("port");
-            String portIdTagValue = port.asResource().toString().replace(topologyUri, "");
-            String portId = getResourceId(portIdTagValue);
+            String portIdTagValue = ResourceTool.getResourceName(port.asResource().toString(), AwsPrefix.nic);
+            String portId = ec2Client.getResourceId(portIdTagValue);
 
             NetworkInterface p = ec2Client.getNetworkInterface(portId);
 
@@ -2309,12 +2408,12 @@ public class AwsPush {
                         + "?address mrs:type \"ipv4:private\" ."
                         + "?address mrs:value ?value }";
                 ResultSet r1 = executeQuery(query, model, modelAdd);
-                if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model addition does not specify privat ip address of port: %s", port));
+                String privateAddress = "any"; // "any" means unspecified and AWS EC2 will pick an IP from subnet
+                if (r1.hasNext()) {
+                    QuerySolution querySolution1 = r1.next();
+                    RDFNode value = querySolution1.get("value");
+                    privateAddress = value.asLiteral().toString();
                 }
-                QuerySolution querySolution1 = r1.next();
-                RDFNode value = querySolution1.get("value");
-                String privateAddress = value.asLiteral().toString();
 
                 //find the subnet that has the port previously found
                 query = "SELECT ?subnet WHERE {?subnet  nml:hasBidirectionalPort <" + port.asResource() + ">}";
@@ -2324,14 +2423,14 @@ public class AwsPush {
                 }
                 String subnetId = null;
                 while (r1.hasNext()) {
-                    querySolution1 = r1.next();
+                    QuerySolution querySolution1 = r1.next();
                     RDFNode subnet = querySolution1.get("subnet");
                     query = "SELECT ?subnet WHERE {<" + subnet.asResource() + ">  a  mrs:SwitchingSubnet}";
                     ResultSet r3 = executeQuery(query, model, modelAdd);
                     while (r3.hasNext()) //search in the model to see if subnet existed before
                     {
-                        subnetId = subnet.asResource().toString().replace(topologyUri, "");
-                        subnetId = getResourceId(subnetId);
+                        subnetId = ResourceTool.getResourceName(subnet.asResource().toString(), AwsPrefix.subnet);
+                        subnetId = ec2Client.getResourceId(subnetId);
                         break;
                     }
                 }
@@ -2360,7 +2459,7 @@ public class AwsPush {
             QuerySolution querySolution1 = r1.next();
             RDFNode address = querySolution1.get("address");
             RDFNode port = querySolution1.get("port");
-            String portIdTagValue = port.asResource().toString().replace(topologyUri, "");
+            String portIdTagValue = ResourceTool.getResourceName(port.asResource().toString(), AwsPrefix.nic);
             query = "SELECT  ?a WHERE {<" + address.asResource() + ">  mrs:type \"ipv4:public\"}";
             ResultSet r2 = executeQuery(query, model, emptyModel);
             if (r2.hasNext()) {
@@ -2372,7 +2471,7 @@ public class AwsPush {
                 }
                 QuerySolution querySolution2 = r2.next();
                 RDFNode value = querySolution2.get("value");
-                String publicAddress = value.asLiteral().toString().replace(topologyUri, "");
+                String publicAddress = ResourceTool.getResourceName(value.asLiteral().toString(), AwsPrefix.publicAddress);
                 requests += "AssociateAddressRequest " + publicAddress + " " + portIdTagValue
                         + " \n";
             }
@@ -2395,37 +2494,29 @@ public class AwsPush {
             QuerySolution q = r.next();
             RDFNode port = q.get("port");
             RDFNode node = q.get("node");
-            String nodeIdTag = node.asResource().toString().replace(topologyUri, "");
+            String nodeIdTag = ResourceTool.getResourceName(node.asResource().toString(), AwsPrefix.instance);
             query = "SELECT ?node WHERE {<" + node.asResource() + "> a nml:Node}";
             ResultSet r1 = executeQuery(query, model, emptyModel);
             Instance i = null;
             int index = 0;
             if (r1.hasNext()) {
-                String nodeId = getInstanceId(nodeIdTag);
+                String nodeId = ec2Client.getInstanceId(nodeIdTag);
                 i = ec2Client.getInstance(nodeId);
                 index = i.getNetworkInterfaces().size();
             }
             while (r1.hasNext()) {
                 r1.next();
-                String portIdTag = port.asResource().toString().replace(topologyUri, "");
+                String portIdTag = ResourceTool.getResourceName(port.asResource().toString(), AwsPrefix.nic);
 
-                query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:hasTag ?tag}";
+                query = "SELECT ?tag WHERE {<" + port.asResource() + "> a nml:BidirectionalPort ."
+                        + "FILTER (NOT EXISTS {<" + port.asResource() + ">  mrs:type ?type})}";
                 ResultSet r2 = executeQuery(query, model, modelAdd);
                 if (!r2.hasNext()) {
-                    throw new EJBException(String.format("bidirectional port %s to be attached to intsnace does not specify a tag", port));
-                }
-                QuerySolution q2 = r2.next();
-                RDFNode tag = q2.get("tag");
-                query = "SELECT ?tag WHERE {<" + tag.asResource() + "> mrs:type \"interface\". "
-                        + "<" + tag.asResource() + "> mrs:value \"network\"}";
-                r2 = executeQuery(query, model, emptyModel);
-                if (!r2.hasNext()) {
-                    throw new EJBException(String.format("bidirectional port %s to be attached to instance is not a net"
-                            + "work interface", port));
+                    throw new EJBException(String.format("bidirectional port %s to be attached to intsnace does not specify a network interface type", port));
                 }
 
                 //see if the network interface is already atatched
-                NetworkInterface eni = ec2Client.getNetworkInterface(getResourceId(portIdTag));
+                NetworkInterface eni = ec2Client.getNetworkInterface(ec2Client.getResourceId(portIdTag));
                 if (eni != null) {
                     if (eni.getAttachment() != null) {
                         throw new EJBException(String.format("bidirectional port %s to be attached to instance is already"
@@ -2454,8 +2545,8 @@ public class AwsPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode node = querySolution.get("node");
-            String nodeIdTagValue = node.asResource().toString().replace(topologyUri, "");
-            String nodeId = getInstanceId(nodeIdTagValue);
+            String nodeIdTagValue = ResourceTool.getResourceName(node.asResource().toString(), AwsPrefix.instance);
+            String nodeId = ec2Client.getInstanceId(nodeIdTagValue);
 
             Instance instance = ec2Client.getInstance(nodeId);
             List<Instance> i = ec2Client.getEc2Instances();
@@ -2478,7 +2569,7 @@ public class AwsPush {
                 }
                 QuerySolution querySolution1 = r1.next();
                 RDFNode vpc = querySolution1.get("vpc");
-                String vpcId = vpc.asResource().toString().replace(topologyUri, "");
+                String vpcId = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.vpc);
 
                 //to find the subnet the node is in first  find the port the node uses
                 query = "SELECT ?port WHERE {<" + node.asResource() + "> nml:hasBidirectionalPort ?port}";
@@ -2492,24 +2583,26 @@ public class AwsPush {
                 {
                     QuerySolution querySolution2 = r2.next();
                     RDFNode port = querySolution2.get("port");
-                    String id = port.asResource().toString().replace(topologyUri, "");
-                    portsId.add(getResourceId(id));
+                    String id = ResourceTool.getResourceName(port.asResource().toString(), AwsPrefix.nic);
+                    portsId.add(ec2Client.getResourceId(id));
                     lastPort = port;
                 }
 
                 //find the EBS volumes that the instance uses
                 query = "SELECT ?volume WHERE {<" + node.asResource() + ">  mrs:hasVolume  ?volume}";
                 ResultSet r4 = executeQuery(query, model, modelAdd);
-                if (!r4.hasNext()) {
-                    throw new EJBException(String.format("model addition does not specify the volume of the new node: %s", node));
-                }
+                /*
+                 if (!r4.hasNext()) {
+                 throw new EJBException(String.format("model addition does not specify the volume of the new node: %s", node));
+                 }
+                 */
                 List<String> volumesId = new ArrayList();
                 while (r4.hasNext())//there could be multiple volumes attached to the instance
                 {
                     QuerySolution querySolution4 = r4.next();
                     RDFNode volume = querySolution4.get("volume");
-                    String id = volume.asResource().toString().replace(topologyUri, "");
-                    volumesId.add(getVolumeId(id));
+                    String id = ResourceTool.getResourceName(volume.asResource().toString(), AwsPrefix.volume);
+                    volumesId.add(ec2Client.getVolumeId(id));
                 }
 
                 //put request for new instance
@@ -2526,7 +2619,7 @@ public class AwsPush {
                 while (r4.hasNext()) {
                     QuerySolution querySolution4 = r4.next();
                     RDFNode volume = querySolution4.get("volume");
-                    String volumeTag = volume.asResource().toString().replace(topologyUri, "");
+                    String volumeTag = ResourceTool.getResourceName(volume.asResource().toString(), AwsPrefix.volume);
                     String type = querySolution4.get("type").asLiteral().toString();
                     String size = querySolution4.get("size").asLiteral().toString();
                     String deviceName = querySolution4.get("deviceName").asLiteral().toString();
@@ -2536,9 +2629,8 @@ public class AwsPush {
                     }
                 }
                 if (hasRootVolume == false) {
-                    throw new EJBException(String.format("model addition does not specify root volume for node: %s", node));
+                    requests += "any any any any ";
                 }
-
                 int index = 0;
                 //put the networ interfaces 
                 requests += "NetworkInterfaceSpecification ";
@@ -2567,10 +2659,10 @@ public class AwsPush {
         while (r1.hasNext()) {
             QuerySolution querySolution1 = r1.next();
             RDFNode node = querySolution1.get("node");
-            String nodeTagId = node.asResource().toString().replace(topologyUri, "");
+            String nodeTagId = ResourceTool.getResourceName(node.asResource().toString(), AwsPrefix.instance);
             RDFNode volume = querySolution1.get("volume");
-            String volumeTagId = volume.asResource().toString().replace(topologyUri, "");
-            String volumeId = getVolumeId(volumeTagId);
+            String volumeTagId = ResourceTool.getResourceName(volume.asResource().toString(), AwsPrefix.volume);
+            String volumeId = ec2Client.getVolumeId(volumeTagId);
 
             query = "SELECT ?deviceName WHERE{<" + volume.asResource() + "> mrs:target_device ?deviceName}";
             ResultSet r2 = executeQuery(query, model, modelAdd);
@@ -2584,7 +2676,7 @@ public class AwsPush {
             String device = deviceName.asLiteral().toString();
 
             if (!device.equals("/dev/sda1") && !device.equals("/dev/xvda")) {
-                String nodeId = getInstanceId(nodeTagId);
+                String nodeId = ec2Client.getInstanceId(nodeTagId);
 
                 Instance ins = ec2Client.getInstance(nodeId);
                 Volume vol = ec2Client.getVolume(volumeId);
@@ -2641,10 +2733,8 @@ public class AwsPush {
 
             //check to see if x is the virtual interface
             query = "SELECT  ?tag WHERE {<" + x.asResource() + ">  a  nml:BidirectionalPort ."
-                    + "<" + x.asResource() + "> mrs:hasTag ?tag ."
-                    + "?tag mrs:type \"interface\" ."
-                    + "?tag mrs:value \"virtual\"}";
-            ResultSet r1 = executeQuery(query, model, emptyModel);
+                    + "<" + x.asResource() + "> mrs:type \"direct-connect-vif\"}";
+            ResultSet r1 = executeQueryUnion(query, model, modelAdd);
             if (r1.hasNext()) {
                 gateway = y;
                 vInterface = x;
@@ -2653,10 +2743,8 @@ public class AwsPush {
             //check to see if y is the interface
             //check to see if x is the virtual interface
             query = "SELECT  ?tag WHERE {<" + y.asResource() + ">  a  nml:BidirectionalPort ."
-                    + "<" + y.asResource() + "> mrs:hasTag ?tag ."
-                    + "?tag mrs:type \"interface\" ."
-                    + "?tag mrs:value \"virtual\"}";
-            r1 = executeQuery(query, model, emptyModel);
+                    + "<" + y.asResource() + "> mrs:type \"direct-connect-vif\"}";
+            r1 = executeQueryUnion(query, model, modelAdd);
             if (r1.hasNext()) {
                 gateway = x;
                 vInterface = y;
@@ -2666,7 +2754,7 @@ public class AwsPush {
             }
 
             //one resource is aliased to the second resource, make sure that the 
-            //reverse also happens in the elta model
+            //reverse also happens in the delta model
             query = "SELECT  ?a  WHERE {<" + y.asResource() + ">  nml:isAlias  <" + x.asResource() + ">}";
             r1 = executeQuery(query, emptyModel, modelAdd);
             if (!r1.hasNext()) {
@@ -2674,25 +2762,14 @@ public class AwsPush {
             }
 
             //make sure that the gateway is a virtual private gateway
-            query = "SELECT ?tag WHERE {<" + gateway.asResource() + "> mrs:hasTag ?tag}";
-            r1 = executeQuery(query, emptyModel, modelAdd);
+            query = "SELECT ?tag WHERE {<" + gateway.asResource() + "> mrs:type \"vpn-gateway\"}";
+            r1 = executeQueryUnion(query, model, modelAdd);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("Label for bidirectional port %s i"
-                        + "s not specified in model addition", gateway));
-            }
-            QuerySolution q1 = r1.next();
-            RDFNode tag = q1.get("tag");
-
-            //look for the lable in the reference model
-            query = "SELECT ?value WHERE {<" + tag.asResource() + "> mrs:type \"gateway\" ."
-                    + "<" + tag.asResource() + "> mrs:value \"vpn\"}";
-            r1 = executeQuery(query, model, emptyModel);
-            if (!r1.hasNext()) {
-                throw new EJBException(String.format("%s is not a VPN gateway", gateway));
+                throw new EJBException(String.format("Gateway %s is not a vpn gateway", gateway));
             }
 
-            String gatewayIdTag = gateway.asResource().toString().replace(topologyUri, "");
-            String interfaceId = vInterface.asResource().toString().replace(topologyUri, "");
+            String gatewayIdTag = ResourceTool.getResourceName(gateway.asResource().toString(), AwsPrefix.gateway);
+            String interfaceId = ResourceTool.getResourceName(vInterface.asResource().toString(), AwsPrefix.vif);
 
             requests += String.format("AcceptVirtualInterface %s %s \n", interfaceId, gatewayIdTag);
         }
@@ -2720,10 +2797,8 @@ public class AwsPush {
 
             //check to see if x is the virtual interface
             query = "SELECT  ?tag WHERE {<" + x.asResource() + ">  a  nml:BidirectionalPort ."
-                    + "<" + x.asResource() + "> mrs:hasTag ?tag ."
-                    + "?tag mrs:type \"interface\" ."
-                    + "?tag mrs:value \"virtual\"}";
-            ResultSet r1 = executeQuery(query, model, emptyModel);
+                    + "<" + x.asResource() + "> mrs:type \"direct-connect-vif\"}";
+            ResultSet r1 = executeQueryUnion(query, model, modelReduct);
             if (r1.hasNext()) {
                 gateway = y;
                 vInterface = x;
@@ -2732,10 +2807,8 @@ public class AwsPush {
             //check to see if y is the interface
             //check to see if x is the virtual interface
             query = "SELECT  ?tag WHERE {<" + y.asResource() + ">  a  nml:BidirectionalPort ."
-                    + "<" + y.asResource() + "> mrs:hasTag ?tag ."
-                    + "?tag mrs:type \"interface\" ."
-                    + "?tag mrs:value \"virtual\"}";
-            r1 = executeQuery(query, model, emptyModel);
+                    + "<" + y.asResource() + "> mrs:type \"direct-connect-vif\"}";
+            r1 = executeQueryUnion(query, model, modelReduct);
             if (r1.hasNext()) {
                 gateway = x;
                 vInterface = y;
@@ -2753,193 +2826,18 @@ public class AwsPush {
             }
 
             //make sure that the gateway is a virtual private gateway
-            query = "SELECT ?tag WHERE {<" + gateway.asResource() + "> mrs:hasTag ?tag}";
-            r1 = executeQuery(query, emptyModel, modelReduct);
+            query = "SELECT ?tag WHERE {<" + gateway.asResource() + "> mrs:type \"vpn-gateway\"}";
+            r1 = executeQueryUnion(query, model, modelReduct);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("Label for bidirectional port %s i"
-                        + "s not specified in model addition", gateway));
-            }
-            QuerySolution q1 = r1.next();
-            RDFNode tag = q1.get("tag");
-
-            //look for the lable in the reference model
-            query = "SELECT ?value WHERE {<" + tag.asResource() + "> mrs:type \"gateway\" ."
-                    + "<" + tag.asResource() + "> mrs:value \"vpn\"}";
-            r1 = executeQuery(query, model, emptyModel);
-            if (!r1.hasNext()) {
-                throw new EJBException(String.format("%s is not a VPN gateway", gateway));
+                throw new EJBException(String.format("Gateway %s is not a vpn gateway", gateway));
             }
 
-            String gatewayIdTag = gateway.asResource().toString().replace(topologyUri, "");
-            String interfaceId = vInterface.asResource().toString().replace(topologyUri, "");
+            String gatewayIdTag = ResourceTool.getResourceName(gateway.asResource().toString(), AwsPrefix.gateway);
+            String interfaceId = ResourceTool.getResourceName(vInterface.asResource().toString(), AwsPrefix.vif);
 
             requests += String.format("DeleteVirtualInterface %s %s \n", interfaceId, gatewayIdTag);
         }
         return requests;
-    }
-
-    /**
-     * ****************************************************************
-     * //function that checks if the id provided is a tag; if it is, it will
-     * return //the resource id, otherwise it will return the input parameter
-     * which is the //id of the resource //NOTE: does not work with volumes and
-     * instances because sometimes the tags // persist for a while in this
-     * resources, therefore we need to check if the // instance or volume
-     * actually exists
-     * ****************************************************************
-     */
-    private String getResourceId(String tag) {
-        Filter filter = new Filter();
-        filter.withName("value")
-                .withValues(tag);
-
-        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
-        tagRequest.withFilters(filter);
-        List<TagDescription> descriptions = ec2Client.getClient().describeTags(tagRequest).getTags();
-        if (!descriptions.isEmpty()) {
-            return descriptions.get(descriptions.size() - 1).getResourceId(); //get the last resource tagged with this id 
-        }
-
-        return tag;
-    }
-
-    /**
-     * ****************************************************************
-     * //function to get the Id from and instance tag
-     * ****************************************************************
-     */
-    private String getInstanceId(String tag) {
-        Filter filter = new Filter();
-        filter.withName("value")
-                .withValues(tag);
-
-        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
-        tagRequest.withFilters(filter);
-        List<TagDescription> descriptions = ec2Client.getClient().describeTags(tagRequest).getTags();
-        if (!descriptions.isEmpty()) {
-            for (TagDescription des : descriptions) {
-                Instance i = ec2Client.getInstance(des.getResourceId());
-                if (i != null && i.getState().getCode() != 48) //check if the instance was not deleted
-                {
-                    return des.getResourceId();
-                }
-            }
-        }
-        return tag;
-    }
-
-    /**
-     * ****************************************************************
-     * //function to get the Id from and volume tag
-     * ****************************************************************
-     */
-    private String getVolumeId(String tag) {
-        Filter filter = new Filter();
-        filter.withName("value")
-                .withValues(tag);
-
-        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
-        tagRequest.withFilters(filter);
-        List<TagDescription> descriptions = ec2Client.getClient().describeTags(tagRequest).getTags();
-        if (!descriptions.isEmpty()) {
-            for (TagDescription des : descriptions) {
-                Volume vol = ec2Client.getVolume(des.getResourceId());
-                if (vol != null && !vol.getState().equals("deleted")) {
-                    return des.getResourceId();
-                }
-            }
-        }
-        return tag;
-    }
-
-    /**
-     * ****************************************************************
-     * //function to get the Id from a volume tag
-     * ****************************************************************
-     */
-    private String getTableId(String tag) {
-        Filter filter = new Filter();
-        filter.withName("value")
-                .withValues(tag);
-
-        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
-        tagRequest.withFilters(filter);
-        List<TagDescription> descriptions = ec2Client.getClient().describeTags(tagRequest).getTags();
-        if (!descriptions.isEmpty()) {
-            for (TagDescription des : descriptions) {
-                RouteTable table = ec2Client.getRoutingTable(des.getResourceId());
-                if (table != null) {
-                    return des.getResourceId();
-                }
-            }
-        }
-        return tag;
-    }
-
-    /**
-     * ****************************************************************
-     * function to get the Id from a volume tag
-     * ****************************************************************
-     */
-    private String getVpcId(String tag) {
-        Filter filter = new Filter();
-        filter.withName("value")
-                .withValues(tag);
-
-        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
-        tagRequest.withFilters(filter);
-        List<TagDescription> descriptions = ec2Client.getClient().describeTags(tagRequest).getTags();
-        if (!descriptions.isEmpty()) {
-            for (TagDescription des : descriptions) {
-                Vpc vpc = ec2Client.getVpc(des.getResourceId());
-                if (vpc != null) {
-                    return des.getResourceId();
-                }
-            }
-        }
-        return tag;
-    }
-
-    /**
-     * ****************************************************************
-     * function to get the Id from a vpnGateway tag
-     * ****************************************************************
-     */
-    private String getVpnGatewayId(String tag) {
-        Filter filter = new Filter();
-        filter.withName("value")
-                .withValues(tag);
-
-        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
-        tagRequest.withFilters(filter);
-        List<TagDescription> descriptions = ec2Client.getClient().describeTags(tagRequest).getTags();
-        if (!descriptions.isEmpty()) {
-            for (TagDescription des : descriptions) {
-                VpnGateway vpn = ec2Client.getVirtualPrivateGateway(des.getResourceId());
-                if (vpn != null) {
-                    return des.getResourceId();
-                }
-            }
-        }
-        return tag;
-    }
-
-    /**
-     * ****************************************************************
-     * function to tag a resource
-     * ****************************************************************
-     */
-    private void tagResource(String id, String tag) {
-        CreateTagsRequest tagRequest = new CreateTagsRequest();
-        tagRequest.withTags(new Tag("id", tag));
-        tagRequest.withResources(id);
-        while (true) {
-            try {
-                ec2.createTags(tagRequest);
-                break;
-            } catch (AmazonServiceException e) {
-            }
-        }
     }
 
 }

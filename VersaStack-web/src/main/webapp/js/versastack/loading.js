@@ -1,5 +1,6 @@
+"use strict";
 define([
-], function() {
+], function () {
     var css = {
         classes: {
             indicatorDiv: 'loading-div',

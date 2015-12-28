@@ -10,24 +10,25 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlSchemaType;
 
 /**
  *
  * @author max
  */
-@XmlRootElement(name="model")
+@XmlRootElement(name = "model")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ApiModelBase {
-    
-    @XmlElement(required=true) 
+
+    @XmlElement(required = true)
     protected Long id = 0L;
-    @XmlElement(required=true) 
-    protected Date creationTime;
-    @XmlElement(required=true) 
+    @XmlElement(required = true)
+    protected String creationTime;
+    @XmlElement(required = true)
     protected String version = "";
-    @XmlElement(required=true) 
+    @XmlElement(required = true)
     protected String ttlModel = "";
-    @XmlElement(required=true) 
+    @XmlElement(required = true)
     protected String status = "";
 
     public Long getId() {
@@ -38,11 +39,11 @@ public class ApiModelBase {
         this.id = id;
     }
 
-    public Date getCreationTime() {
+    public String getCreationTime() {
         return creationTime;
     }
 
-    public void setCreationTime(Date creationTime) {
+    public void setCreationTime(String creationTime) {
         this.creationTime = creationTime;
     }
 

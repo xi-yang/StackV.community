@@ -15,6 +15,7 @@ import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
+import com.hp.hpl.jena.rdf.model.StmtIterator;
 import com.hp.hpl.jena.util.iterator.Filter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,12 +29,16 @@ import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.EJBException;
 import javax.ejb.Stateless;
-import net.maxgigapop.mrs.bean.DeltaBase;
+import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
-import net.maxgigapop.www.rains.ontmodel.Spa;
+import net.maxgigapop.mrs.common.Spa;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 /**
  *
@@ -41,174 +46,270 @@ import net.maxgigapop.www.rains.ontmodel.Spa;
  */
 @Stateless
 public class MCE_MPVlanConnection implements IModelComputationElement {
+
     private static final Logger log = Logger.getLogger(MCE_MPVlanConnection.class.getName());
     /*
-    ** Simple L2 connection will create new SwitchingSubnet on every transit switching node.
-    */
+     ** Simple L2 connection will create new SwitchingSubnet on every transit switching node.
+     */
+
     @Override
     @Asynchronous
-    public Future<DeltaBase> process(ModelBase systemModel, DeltaBase annotatedDelta) {        
-        log.log(Level.INFO, "MCE_MPVlanConnection::process {0}", annotatedDelta);
+    public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
         try {
-            log.log(Level.INFO, "\n>>>MCE_MPVlanConnection--SystemModel=\n" + ModelUtil.marshalModel(systemModel.getOntModel()));
+            log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--DeltaAddModel Input=\n" + ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
-        try {
-            log.log(Level.INFO, "\n>>>MCE_MPVlanConnection--DeltaAddModel=\n" + ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
-        } catch (Exception ex) {
-            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        
+
         // importPolicyData : Link->Connection->List<PolicyData> of terminal Node/Topology
-        String sparql =  "SELECT ?link ?policy ?data ?type ?value WHERE {"
-                + "?link a nml:Link ."
-                + "?link spa:dependOn ?policy . "
-                + "?policy a spa:Connection. "
+        String sparql = "SELECT ?conn ?policy ?data ?type ?value WHERE {"
+                + "?conn spa:dependOn ?policy . "
+                + "?policy a spa:PolicyAction. "
+                + "?policy spa:type 'MCE_MPVlanConnection'. "
                 + "?policy spa:importFrom ?data. "
                 + "?data spa:type ?type. ?data spa:value ?value. "
                 + "FILTER not exists {?policy spa:dependOn ?other} "
-                + "}";        
+                + "}";
 
         ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);
-        Map<Resource, List> connPolicyMap = new HashMap<>();
-        while(r.hasNext()) {
+        Map<Resource, Map> connPolicyMap = new HashMap<>();
+        while (r.hasNext()) {
             QuerySolution querySolution = r.next();
-            Resource resLink = querySolution.get("link").asResource();
-            if (!connPolicyMap.containsKey(resLink)) {
-                List policyList = new ArrayList<>();
-                connPolicyMap.put(resLink, policyList);
-            }
             Resource resPolicy = querySolution.get("policy").asResource();
+            if (!connPolicyMap.containsKey(resPolicy)) {
+                Map<String, List> connMap = new HashMap<>();
+                List connList = new ArrayList<>();
+                connMap.put("connections", connList);
+                List dataList = new ArrayList<>();
+                connMap.put("imports", dataList);
+                connPolicyMap.put(resPolicy, connMap);
+            }
+            Resource resConn = querySolution.get("conn").asResource();
+            if (!((List)connPolicyMap.get(resPolicy).get("connections")).contains(resConn))
+                ((List)connPolicyMap.get(resPolicy).get("connections")).add(resConn);
             Resource resData = querySolution.get("data").asResource();
             RDFNode nodeDataType = querySolution.get("type");
             RDFNode nodeDataValue = querySolution.get("value");
-            Map policyData = new HashMap<>();
-            policyData.put("policy", resPolicy);
-            policyData.put("data", resData);
-            policyData.put("type", nodeDataType.toString());
-            policyData.put("value", nodeDataValue.toString());
-            connPolicyMap.get(resLink).add(policyData);
+            boolean existed =false;
+            for (Map dataMap: (List<Map>)connPolicyMap.get(resPolicy).get("imports")) {
+                if(dataMap.get("data").equals(resData)) {
+                    existed = true;
+                    break;
+                }
+            }
+            if (!existed) {
+                Map policyData = new HashMap<>();
+                policyData.put("data", resData);
+                policyData.put("type", nodeDataType.toString());
+                policyData.put("value", nodeDataValue.toString());
+                ((List)connPolicyMap.get(resPolicy).get("imports")).add(policyData);
+            }
         }
         
-        DeltaBase outputDelta = annotatedDelta.clone();
+        ServiceDelta outputDelta = annotatedDelta.clone();
 
         // compute a List<Model> of MPVlan connections
-        for (Resource resLink : connPolicyMap.keySet()) {
-            OntModel connModel = this.doPathFinding(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), resLink, connPolicyMap.get(resLink));
-            if (connModel == null)
-                throw new EJBException(String.format("%s::process cannot find a path for %s", this.getClass().getName(), resLink));
-                        
-            //2. merge the placement satements into spaModel
-            outputDelta.getModelAddition().getOntModel().add(connModel.getBaseModel());
+        for (Resource policyAction : connPolicyMap.keySet()) {
+            Map<String, MCETools.Path> l2pathMap = this.doMultiPathFinding(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), policyAction, connPolicyMap.get(policyAction));
+            if (l2pathMap == null) {
+                throw new EJBException(String.format("%s::process cannot find paths for %s", this.getClass().getName(), policyAction));
+            }
 
+            //2. merge the placement satements into spaModel
             //3. update policyData this action exportTo 
-            this.exportPolicyData(outputDelta.getModelAddition().getOntModel(), resLink, connModel);
-            
-            //4. remove policy and all related SPA statements receursively under link from spaModel
+            for (String connId: l2pathMap.keySet()) {
+                outputDelta.getModelAddition().getOntModel().add(l2pathMap.get(connId).getOntModel().getBaseModel());
+                this.exportPolicyData(outputDelta.getModelAddition().getOntModel(), policyAction, connId, l2pathMap.get(connId));
+            }
+    
+            //4. remove policy and all related SPA statements receursively under conn from spaModel
             //   and also remove all statements that say dependOn this 'policy'
-            this.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), resLink);   
-        }        
+            MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), policyAction);
+
+            //5. mark the Link as an Abstraction
+            /*
+            for (Resource resConn: (List<Resource>)((Map)connPolicyMap.get(policyAction)).get("connections")) {
+                outputDelta.getModelAddition().getOntModel().add(outputDelta.getModelAddition().getOntModel().createStatement(resConn, Spa.type, Spa.Abstraction));
+            }
+            */
+        }
+        try {
+            log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--DeltaAddModel Output=\n" + ModelUtil.marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()));
+        } catch (Exception ex) {
+            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
         return new AsyncResult(outputDelta);
     }
-    
-    private OntModel doPathFinding(OntModel systemModel, OntModel spaModel, Resource resLink, List<Map> connTerminalData) {
+
+    private Map<String, MCETools.Path> doMultiPathFinding(OntModel systemModel, OntModel spaModel, Resource policyAction, Map connDataMap) {
         // transform network graph
         // filter out irrelevant statements (based on property type, label type, has switchingService etc.)
         OntModel transformedModel = MCETools.transformL2NetworkModel(systemModel);
-        
+        try {
+            log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--SystemModel=\n" + ModelUtil.marshalModel(transformedModel));
+        } catch (Exception ex) {
+            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        Map<String, MCETools.Path> mapConnPaths = new HashMap<>();
+        //List<Resource> connList = (List<Resource>)connDataMap.get("connections");
+        List<Map> dataMapList = (List<Map>)connDataMap.get("imports");
         // get source and destination nodes (nodeA, nodeZ) -- only picks fist two terminals for now 
-        List<Resource> terminals = new ArrayList<>();
-        for (Map entry: connTerminalData) {
-            if (!entry.containsKey("data") || !entry.containsKey("type") || !entry.containsKey("value")) 
+        JSONObject jsonConnReqs = null;
+        for (Map entry : dataMapList) {
+            if (!entry.containsKey("data") || !entry.containsKey("type") || !entry.containsKey("value")) {
                 continue;
-            Resource terminal = systemModel.getResource((String)entry.get("value"));
-            if (terminal == null){
-                throw new EJBException(String.format("%s::process doPathFinding cannot identify terminal <%s>", (String)entry.get("value")));
             }
-            terminals.add(terminal);
+            if (entry.get("type").toString().equalsIgnoreCase("JSON")) {
+                JSONParser parser = new JSONParser();
+                try {
+                    JSONObject jsonObj = (JSONObject) parser.parse((String) entry.get("value"));
+                    if (jsonConnReqs == null) {
+                        jsonConnReqs = jsonObj;
+                    } else { // merge
+                        for (Object key: jsonObj.keySet()) {
+                            jsonConnReqs.put(key, jsonObj.get(key));
+                        }
+                    }
+                } catch (ParseException e) {
+                    throw new EJBException(String.format("%s::process doMultiPathFinding cannot parse json string %s", this.getClass().getName(), (String) entry.get("value")));
+                }
+            } else {
+                throw new EJBException(String.format("%s::process doMultiPathFinding does not import policyData of %s type", entry.get("type").toString()));
+            }
         }
-        if (terminals.size() < 2) {
-            throw new EJBException(String.format("%s::process cannot doPathFinding for %s which provides fewer than 2 terminals", this.getClass().getName(), resLink));
+        if (jsonConnReqs == null || jsonConnReqs.isEmpty()) {
+            throw new EJBException(String.format("%s::process doMultiPathFinding receive none connection request for <%s>", this.getClass().getName(), policyAction));
         }
-        Resource nodeA = terminals.get(0);
-        Resource nodeZ = terminals.get(1);
-        // KSP-MP path computation on the connected graph model (point2point for now - will do MP in future)
-        Property[] filterProperties = {Nml.connectsTo};
-        Filter<Statement> connFilters = new PredicatesFilter(filterProperties);
-        List<MCETools.Path> KSP = MCETools.computeKShortestPaths(systemModel, nodeA, nodeZ, MCETools.KSP_K_DEFAULT, connFilters);
-        if (KSP == null || KSP.isEmpty()) {
-            throw new EJBException(String.format("%s::process doPathFinding cannot find feasible path for <%s>", resLink));
+        //@TODO: verify that all connList elements have been covered by jsonConnReqs
+        for (Object connReq: jsonConnReqs.keySet()) {
+            String connId = (String) connReq;
+            List<Resource> terminals = new ArrayList<>();
+            JSONObject jsonConnReq = (JSONObject)jsonConnReqs.get(connReq);
+            if (jsonConnReq.size() != 2) {
+                throw new EJBException(String.format("%s::process cannot doMultiPathFinding for connection '%s' should have exactly 2 terminals.", this.getClass().getName(), connId));
+            }
+            for (Object key : jsonConnReq.keySet()) {
+                Resource terminal = systemModel.getResource((String) key);
+                if (!systemModel.contains(terminal, null)) {
+                    throw new EJBException(String.format("%s::process doMultiPathFinding cannot identify terminal <%s> in JSON data", key));
+                }
+                terminals.add(terminal);
+            }
+            Resource nodeA = terminals.get(0);
+            Resource nodeZ = terminals.get(1);
+            // KSP-MP path computation on the connected graph model (point2point for now - will do MP in future)
+            Property[] filterProperties = {Nml.connectsTo};
+            Filter<Statement> connFilters = new PredicatesFilter(filterProperties);
+            List<MCETools.Path> KSP = MCETools.computeKShortestPaths(transformedModel, nodeA, nodeZ, MCETools.KSP_K_DEFAULT, connFilters);
+            if (KSP == null || KSP.isEmpty()) {
+                throw new EJBException(String.format("%s::process doMultiPathFinding cannot find feasible path for connection '%s'", MCE_MPVlanConnection.class.getName(), connId));
+            }
+            // Verify TE constraints (switching label and ?adaptation?), 
+            Iterator<MCETools.Path> itP = KSP.iterator();
+            while (itP.hasNext()) {
+                MCETools.Path candidatePath = itP.next();
+                // verify path
+                //@TODO: TE constraint 
+                if (!MCETools.verifyL2Path(transformedModel, candidatePath)) {
+                    itP.remove();
+                } else {
+                    // generating connection subnets (statements added to candidatePath) while verifying VLAN availability
+                    //@TODO: TE constraint
+                    OntModel l2PathModel = MCETools.createL2PathVlanSubnets(transformedModel, candidatePath, jsonConnReq);
+                    if (l2PathModel == null) {
+                        itP.remove();
+                    } else {
+                        candidatePath.setOntModel(l2PathModel);
+                    }
+                }
+            }
+            if (KSP.size() == 0) {
+                throw new EJBException(String.format("%s::process doMultiPathFinding cannot find feasible path for connection '%s'", MCE_MPVlanConnection.class.getName(), connId));
+            }
+            // pick the shortest path from remaining/feasible paths in KSP
+            MCETools.Path connPath = MCETools.getLeastCostPath(KSP);
+            transformedModel.add(connPath.getOntModel());
+            mapConnPaths.put(connId, connPath);
         }
-        // Verify TE constraints (switching label and ?adaptation?), 
-        OntModel connectionModel = null;
-        Iterator<MCETools.Path> itP = KSP.iterator();
-        while (itP.hasNext()) {
-            MCETools.Path candidatePath = itP.next();
-            //@@ doVerify
-            //$$ if(!verified)
-                // itP.remove();
-        }
-        if (KSP.size() == 0)
-            return null;
-
-        // pick the shortest path from remaining/feasible paths in KSP and add to connectionModel
-        connectionModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-        //@@ add subnet intefaces and xconn's
-            //$$ extract vlan's
-        connectionModel.add(MCETools.getLeastCostPath(KSP));
-        return connectionModel;
+        return mapConnPaths;
     }
-    
-    private void exportPolicyData(OntModel spaModel, Resource resLink, OntModel connModel) {
-        // find Placement policy -> exportTo -> policyData
-        String sparql = "SELECT ?link ?policyAction ?policyData WHERE {"
-                + String.format("<%s> spa:dependOn ?policyAction .", resLink.getURI())
-                + "?policyAction a spa:Connection."
-                + "?policyAction spa:exportTo ?policyData . "
-                + "?policyData a spa:PolicyData . "
+
+    private void exportPolicyData(OntModel spaModel, Resource resPolicy, String connId, MCETools.Path l2Path) {
+        // find Connection policy -> exportTo -> policyData
+        String sparql = "SELECT ?data ?type ?value ?format WHERE {"
+                + String.format("<%s> a spa:PolicyAction. ", resPolicy.getURI())
+                + String.format("<%s> spa:type 'MCE_MPVlanConnection'. ", resPolicy.getURI())
+                + String.format("<%s> spa:exportTo ?data . ", resPolicy.getURI())
+                + "OPTIONAL {?data spa:type ?type.} "
+                + "OPTIONAL {?data spa:value ?value.} "
+                + "OPTIONAL {?data spa:format ?format.} "
                 + "}";
         ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
         List<QuerySolution> solutions = new ArrayList<>();
-        if (r.hasNext()) {
+        while (r.hasNext()) {
             solutions.add(r.next());
         }
-        for (QuerySolution querySolution: solutions) {
-            Resource resPolicy = querySolution.get("policyAction").asResource();
-            Resource resData = querySolution.get("policyData").asResource();
-            //@@ add VLANs to export data (vlan's from connModel)
-            //
-            // remove VM->exportTo statement so the exportData can be kept in spaModel during receurive removal
-            spaModel.remove(resPolicy, Spa.exportTo, resData);
-        }
-    }
-
-    private void removeResolvedAnnotation(OntModel spaModel, Resource resLink) {
-        List<Statement> listStmtsToRemove = new ArrayList<>();
-        Resource resVm = spaModel.getResource(resLink.getURI());
-        ModelUtil.listRecursiveDownTree(resVm, Spa.getURI(), listStmtsToRemove);
-        if (listStmtsToRemove.isEmpty()) {
-            throw new EJBException(String.format("%s::process cannot remove SPA statements under %s", this.getClass().getName(), resLink));
-        }
-
-        String sparql = "SELECT ?anyOther ?policyAction WHERE {"
-                + String.format("<%s> spa:dependOn ?policyAction .", resLink.getURI())
-                + "?policyAction a spa:Connection."
-                + "?anyOther spa:dependOn ?policyAction . "
-                + "?policyData a spa:PolicyData . "
-                + "}";
-        ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
-        List<QuerySolution> solutions = new ArrayList<>();
-        if (r.hasNext()) {
-            solutions.add(r.next());
-        }
-
         for (QuerySolution querySolution : solutions) {
-            Resource resAnyOther = querySolution.get("anyOther").asResource();
-            Resource resPolicy = querySolution.get("policyAction").asResource();
-            spaModel.remove(resAnyOther, Spa.dependOn, resPolicy);
+            Resource resData = querySolution.get("data").asResource();
+            RDFNode dataType = querySolution.get("type");
+            RDFNode dataValue = querySolution.get("value");
+            // add to export data with references to (terminal (src/dst) vlan labels from l2Path
+            List<QuerySolution> terminalVlanSolutions = getTerminalVlanLabels(l2Path);
+            // require two terminal vlan ports and labels.
+            if (solutions.isEmpty()) {
+                throw new EJBException("exportPolicyData failed to find '2' terminal Vlan tags for " + l2Path);
+            }
+            if (dataType == null) {
+                spaModel.add(resData, Spa.type, "JSON");
+            } else if (!dataType.toString().equalsIgnoreCase("JSON")) {
+                continue;
+            }
+            JSONObject jsonValue = new JSONObject();
+            if (dataValue != null) {
+                JSONParser parser = new JSONParser();
+                try {
+                    jsonValue = (JSONObject)parser.parse(dataValue.toString());
+                } catch (ParseException e) {
+                    throw new EJBException(String.format("%s::exportPolicyData  cannot parse json string %s due to: %s", this.getClass().getName(), dataValue.toString(), e));
+                }
+            }
+            JSONArray jsonHops = new JSONArray();
+            for (QuerySolution aSolution : terminalVlanSolutions) {
+                JSONObject hop = new JSONObject();
+                Resource bidrPort = aSolution.getResource("bp");
+                Resource vlanTag = aSolution.getResource("vlan");
+                hop.put("uri", bidrPort.toString());
+                hop.put("vlan_tag", vlanTag.toString());
+                jsonHops.add(hop);
+            }
+            jsonValue.put(connId, jsonHops);
+            //@TODO: common logic
+            if (dataValue != null) {
+                spaModel.remove(resData, Spa.value, dataValue);
+            }
+            //add output as spa:value of the export resrouce
+            String exportValue = jsonValue.toJSONString();
+            if (querySolution.contains("format")) {
+                String exportFormat = querySolution.get("format").toString();
+                exportValue = MCETools.formatJsonExport(exportValue, exportFormat);
+            }
+            spaModel.add(resData, Spa.value, exportValue);
         }
-        spaModel.remove(listStmtsToRemove);
     }
 
+    private List<QuerySolution> getTerminalVlanLabels(MCETools.Path l2path) {
+        OntModel model = l2path.getOntModel();
+        String sparql = String.format("SELECT ?bp ?vlan ?tag WHERE {"
+                + " ?bp a nml:BidirectionalPort. "
+                + " ?bp nml:hasLabel ?vlan."
+                + " ?vlan nml:value ?tag."
+                + " ?vlan nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>}");
+        ResultSet r = ModelUtil.sparqlQuery(model, sparql);
+        List<QuerySolution> solutions = new ArrayList<>();
+        while (r.hasNext()) {
+            solutions.add(r.next());
+        }
+        return solutions;
+    }
 }

@@ -20,7 +20,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 import net.maxgigapop.mrs.bean.DriverInstance;
-import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.rest.api.model.ApiDriverInstance;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
@@ -30,76 +29,56 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
  */
 @Path("driver")
 public class DriverResource {
+
     @Context
     private UriInfo context;
 
     @EJB
     HandleSystemCall systemCallHandler;
-    
-    public DriverResource(){
+
+    public DriverResource() {
     }
-    
+
     @GET
-    @Produces({"application/xml","application/json"})
-    public String pullAll(){
+    @Produces({"application/xml", "application/json"})
+    public String pullAll() {
         Set<String> instanceSet = systemCallHandler.retrieveAllDriverInstanceMap().keySet();
         String allInstance = "";
-        for(String instance : instanceSet)
-            allInstance += instance+"\n";
+        for (String instance : instanceSet) {
+            allInstance += instance + "\n";
+        }
         return allInstance;
     }
-    
+
     @GET
-    @Produces("application/xml")
+    @Produces({"application/xml", "application/json"})
     @Path("/{topoUri}")
-    public ApiDriverInstance pull(@PathParam("topoUri")String topoUri){
+    public ApiDriverInstance pull(@PathParam("topoUri") String topoUri) {
         DriverInstance driverInstance = systemCallHandler.retrieveDriverInstance(topoUri);
         ApiDriverInstance adi = new ApiDriverInstance();
         adi.setProperties(driverInstance.getProperties());
         return adi;
     }
 
-    @GET
-    @Produces("application/json")
-    @Path("/{topoUri}")
-    public ApiDriverInstance pullJson(@PathParam("topoUri")String topoUri) throws Exception{
-        DriverInstance driverInstance = systemCallHandler.retrieveDriverInstance(topoUri);
-        Map<String, String> properties = new HashMap<String, String>(driverInstance.getProperties());
-        Set<String> keySet = properties.keySet();
-        String ttlKey = "";
-        for(String key : keySet)
-            if(key.toLowerCase().contains("ttl")){
-                ttlKey += key;
-                break;
-            }
-        if(!ttlKey.equals("")){
-            String ttl = properties.get(ttlKey);
-            properties.put(ttlKey, ModelUtil.marshalOntModelJson(ModelUtil.unmarshalOntModel(ttl)));            
-        }
-        ApiDriverInstance adi = new ApiDriverInstance();
-        adi.setProperties(properties);
-        return adi;
-    }
-    
     @DELETE
-    @Path("/{topoUri}")    
-    public String unplug(@PathParam("topoUri")String topoUri){
-        try{
+    @Path("/{topoUri}")
+    public String unplug(@PathParam("topoUri") String topoUri) {
+        try {
             systemCallHandler.unplugDriverInstance(topoUri);
-        }catch(EJBException e){
+        } catch (EJBException e) {
             return e.getMessage();
         }
         return "unplug successfully";
-    } 
-    
+    }
+
     @POST
-    @Consumes({"application/xml","application/json"})
-    public String plug(ApiDriverInstance di){
-        try{
+    @Consumes({"application/xml", "application/json"})
+    public String plug(ApiDriverInstance di) {
+        try {
             systemCallHandler.plugDriverInstance(di.getProperties());
-        }catch(EJBException e){
+        } catch (EJBException e) {
             return e.getMessage();
         }
         return "plug successfully";
-    }    
+    }
 }

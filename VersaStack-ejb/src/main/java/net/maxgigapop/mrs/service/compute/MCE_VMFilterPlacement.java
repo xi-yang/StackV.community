@@ -24,135 +24,159 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.EJBException;
 import javax.ejb.Stateless;
-import net.maxgigapop.mrs.bean.DeltaBase;
+import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
-import net.maxgigapop.www.rains.ontmodel.Spa;
+import net.maxgigapop.mrs.common.Spa;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 /**
  *
  * @author xyang
  */
-    @Stateless
+@Stateless
 public class MCE_VMFilterPlacement implements IModelComputationElement {
+
     private static final Logger log = Logger.getLogger(MCE_VMFilterPlacement.class.getName());
-    
+
     @Override
     @Asynchronous
-    public Future<DeltaBase> process(ModelBase systemModel, DeltaBase annotatedDelta) {
+    public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
         // $$ MCE_VMFilterPlacement deals with add model only for now.
         if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
             throw new EJBException(String.format("%s::process ", this.getClass().getName()));
         }
-        /*
         try {
-            log.log(Level.INFO, "\n>>>MCE_VMFilterPlacement--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
+            log.log(Level.INFO, "\n>>>MCE_VMFilterPlacement--DeltaAddModel Input=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
-        */
         // importPolicyData
-        String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
-                "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
-                "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
-                "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
-                "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n" +
-                "SELECT ?vm ?policy ?data ?type ?value WHERE {"
-                + "?vm a nml:Node ."
-                + "?vm spa:dependOn ?policy . "
-                + "?policy a spa:Placement. "
+        String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+                + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
+                + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
+                + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
+                + "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n"
+                + "SELECT ?res ?policy ?data ?dataType ?dataValue WHERE {"
+                + "?res spa:dependOn ?policy . "
+                + "?policy a spa:PolicyAction. "
+                + "?policy spa:type 'MCE_VMFilterPlacement'. "
                 + "?policy spa:importFrom ?data. "
-                + "?data spa:type ?type. ?data spa:value ?value. "
-                + "FILTER not exists {?policy spa:dependOn ?other} "
-                + "}";        
-        Map<Resource, List> vmPolicyMap = new HashMap<>();
+                + "?data spa:type ?dataType. ?data spa:value ?dataValue. "
+                + "FILTER (not exists {?policy spa:dependOn ?other}) "
+                + "}";
+        Map<Resource, List> policyMap = new HashMap<>();
         Query query = QueryFactory.create(sparqlString);
         QueryExecution qexec = QueryExecutionFactory.create(query, annotatedDelta.getModelAddition().getOntModel());
         ResultSet r = (ResultSet) qexec.execSelect();
-        while(r.hasNext()) {
+        while (r.hasNext()) {
             QuerySolution querySolution = r.next();
-            Resource resVM = querySolution.get("vm").asResource();
-            if (!vmPolicyMap.containsKey(resVM)) {
+            Resource res = querySolution.get("res").asResource();
+            if (!policyMap.containsKey(res)) {
                 List policyList = new ArrayList<>();
-                vmPolicyMap.put(resVM, policyList);
+                policyMap.put(res, policyList);
             }
             Resource resPolicy = querySolution.get("policy").asResource();
             Resource resData = querySolution.get("data").asResource();
-            RDFNode nodeDataType = querySolution.get("type");
-            RDFNode nodeDataValue = querySolution.get("value");
+            RDFNode nodeDataType = querySolution.get("dataType");
+            RDFNode nodeDataValue = querySolution.get("dataValue");
             Map policyData = new HashMap<>();
             policyData.put("policy", resPolicy);
             policyData.put("data", resData);
             policyData.put("type", nodeDataType.toString());
             policyData.put("value", nodeDataValue.toString());
-            vmPolicyMap.get(resVM).add(policyData);
+            policyMap.get(res).add(policyData);
         }
+        OntModel combinedModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        combinedModel.add(systemModel.getOntModel());
+        combinedModel.add(annotatedDelta.getModelAddition().getOntModel());
         
-        DeltaBase outputDelta = annotatedDelta.clone();
+        ServiceDelta outputDelta = annotatedDelta.clone();
         
-        for (Resource vm: vmPolicyMap.keySet()) {
-            //1. compute placement based on filter/match criteria *data*
+        for (Resource res : policyMap.keySet()) {
+            //1. compute placement based on filter/match criteria *policyData*
             // returned placementModel contains the VM as well as hosting Node/Topology and HypervisorService from systemModel
             //$$ TODO: virtual node should be named and tagged using URI and/or polocy/criteria data in spaModel  
-            OntModel placementModel = this.doPlacement(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), vm, vmPolicyMap.get(vm));
-            if (placementModel == null)
-                throw new EJBException(String.format("%s::process cannot resolve any policy to place %s", this.getClass().getName(), vm));
-                        
+            OntModel placementModel = this.doPlacement(combinedModel, res, policyMap.get(res));
+            if (placementModel == null) {
+                throw new EJBException(String.format("%s::process cannot resolve any policy to place %s", this.getClass().getName(), res));
+            }
+
             //2. merge the placement satements into spaModel
             outputDelta.getModelAddition().getOntModel().add(placementModel.getBaseModel());
             /*
-            try {
-                log.log(Level.INFO, "\n>>>MCE_VMFilterPlacement--outputDelta(stage 2)=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
-            } catch (Exception ex) {
-                Logger.getLogger(MCE_VMFilterPlacement.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            */
+             try {
+             log.log(Level.FINE, "\n>>>MCE_VMFilterPlacement--outputDelta(stage 2)=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
+             } catch (Exception ex) {
+             Logger.getLogger(MCE_VMFilterPlacement.class.getName()).log(Level.SEVERE, null, ex);
+             }
+             */
             //3. update policyData this action exportTo 
-            this.exportPolicyData(outputDelta.getModelAddition().getOntModel(), vm);
-            
-            //4. remove policy and all related SPA statements receursively under vm from spaModel
+            this.exportPolicyData(outputDelta.getModelAddition().getOntModel(), res);
+
+            //4. remove policy and all related SPA statements receursively under the res from spaModel
             //   and also remove all statements that say dependOn this 'policy'
-            this.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), vm);
-            
+            MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), res);
+
             //$$ TODO: change VM URI (and all other virtual resources) into a unique string either during compile or in stitching action
             //$$ TODO: Add dependOn->Abstraction annotation to root level spaModel and add a generic Action to remvoe that abstract nml:Topology
         }
-        /*
         try {
-            log.log(Level.INFO, "\n>>>MCE_VMFilterPlacement--outputDelta(stage 3)=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
+            log.log(Level.FINE, "\n>>>MCE_VMFilterPlacement--outputDelta Output=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_VMFilterPlacement.class.getName()).log(Level.SEVERE, null, ex);
         }
-        */
         return new AsyncResult(outputDelta);
     }
-    
+
     //?? Use current containing abstract Topology ?
     // ignore if dependOn 'Abstraction'
-    private OntModel doPlacement(OntModel systemModel, OntModel spaModel, Resource vm, List<Map> placementCriteria) {
+    private OntModel doPlacement(OntModel model, Resource vm, List<Map> placementCriteria) {
         OntModel placementModel = null;
-        for (Map filterCriterion: placementCriteria) {
-            if (!filterCriterion.containsKey("data") || !filterCriterion.containsKey("type") || !filterCriterion.containsKey("value")) 
+        for (Map filterCriterion : placementCriteria) {
+            if (!filterCriterion.containsKey("data") || !filterCriterion.containsKey("type") || !filterCriterion.containsKey("value")) {
                 continue;
-            if (((String) filterCriterion.get("type")).equalsIgnoreCase(Nml.Topology.getURI())) {
-                OntModel hostModel = filterTopologyNode(systemModel, vm, (String) filterCriterion.get("value"));
-                if (hostModel == null)
-                  throw new EJBException(String.format("%s::process cannot place %s based on polocy %s", this.getClass().getName(), vm, filterCriterion.get("policy")));
-                //$$ create VM resource and relation
-                //$$ assemble placementModel;
-                if (placementModel == null) {
-                    placementModel = hostModel;
-                } else {
-                    placementModel.add(hostModel.getBaseModel());
-                }
+            }
+            String placeToUri = null;
+            if (((String) filterCriterion.get("type")).equalsIgnoreCase(Nml.Topology.getURI())
+                    || ((String) filterCriterion.get("type")).equalsIgnoreCase(Nml.Node.getURI())) {
+                placeToUri = (String) filterCriterion.get("value");
+            } else if (((String) filterCriterion.get("type")).equalsIgnoreCase("JSON")) {
+                //$$ merge JSON for multi-filter ?
+                JSONParser parser = new JSONParser();
+                try {
+                    JSONObject jsonObj = (JSONObject) parser.parse((String) filterCriterion.get("value"));
+                    if (jsonObj.containsKey("place_into")) {
+                        placeToUri = (String) jsonObj.get("place_into");
+                    }
+                } catch (ParseException e) {
+                    throw new EJBException(String.format("%s::process  cannot parse json string %s", this.getClass().getName(), (String) filterCriterion.get("value")));
+                }  
+            } 
+            if (placeToUri == null || !model.contains(model.getResource(placeToUri), null)) {
+                throw new EJBException(String.format("%s::process  cannot import data from %s", this.getClass().getName(), (String) filterCriterion.get("data")));
+            }
+            OntModel hostModel = filterTopologyNode(model, vm, placeToUri);
+            if (hostModel == null) {
+                throw new EJBException(String.format("%s::process cannot place %s based on polocy %s", this.getClass().getName(), vm, filterCriterion.get("policy")));
+            }
+            //$$ create VM resource and relation
+            //$$ assemble placementModel;
+            if (placementModel == null) {
+                placementModel = hostModel;
+            } else {
+                placementModel.add(hostModel.getBaseModel());
             }
             // ? place to a specific Node ?
             //$$ Other types of filter methods have yet to be implemented.
@@ -160,141 +184,113 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
         return placementModel;
     }
 
-    private OntModel filterTopologyNode(OntModel systemModel, Resource resVm, String topologyUri) {
-        OntModel hostModel = null;
-        String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
-                "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
-                "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
-                "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
-                "SELECT ?topology ?nodeorvpc ?hvservice WHERE {"
+    private OntModel filterTopologyNode(OntModel model, Resource resPlace, String placeToUri) {
+        OntModel placeModel = null;
+        // place VM and subnet to AWS VPC - Subnet
+        String sparqlString = "SELECT ?vpc ?hvservice ?subnet WHERE {"
                 + "?topology a nml:Topology ."
-                + "?topology nml:hasNode ?nodeorvpc ."
-                + "?nodeorvpc a nml:Node . "
-                + "?nodeorvpc nml:hasService ?hvservice . "
+                + "?topology nml:hasTopology ?vpc ."
+                + "?vpc a nml:Topology . "
+                + "?topology nml:hasService ?hvservice . "
                 + "?hvservice a mrs:HypervisorService . "
-                + String.format("FILTER (?topology = <%s>) ", topologyUri)
-                + "}";        
-        Query query = QueryFactory.create(sparqlString);
-        QueryExecution qexec = QueryExecutionFactory.create(query, systemModel);
-        ResultSet r = (ResultSet) qexec.execSelect();
+                + "?vpc nml:hasService ?vpcsw . "
+                + "?vpcsw mrs:providesSubnet ?subnet . "
+                + "?res a nml:Node ."
+                + String.format("FILTER (?subnet = <%s> && ?res = <%s>) ", placeToUri, resPlace.getURI())
+                + "}";
+        ResultSet r = ModelUtil.sparqlQuery(model, sparqlString);
         if (r.hasNext()) {
             QuerySolution querySolution = r.next();
-            Resource resTopology = querySolution.get("topology").asResource();
-            Resource resHostOrVpc = querySolution.get("nodeorvpc").asResource();
+            Resource resHostOrVpc = querySolution.get("vpc").asResource();
             Resource resHvService = querySolution.get("hvservice").asResource();
-            //$$ for now, return the first found node/topology
-            //$$ TODO: in future, matching capability critria and (randomize or return list of candidates)
-            if (hostModel == null) {
-                hostModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+            Resource resSubnet = querySolution.get("subnet").asResource();
+            if (placeModel == null) {
+                placeModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
             }
-            hostModel.add(resTopology, RdfOwl.type, Nml.Topology);
-            hostModel.add(resTopology, Nml.hasNode, resHostOrVpc);
-            hostModel.add(resHostOrVpc, RdfOwl.type, Nml.Node);
-            hostModel.add(resHostOrVpc, Nml.hasService, resHvService);
-            hostModel.add(resHvService, RdfOwl.type, Mrs.HypervisorService);
-            hostModel.add(resHostOrVpc, Nml.hasNode, resVm);
-            hostModel.add(resHvService, Mrs.providesVM, resVm);
-            return hostModel;
+            placeModel.add(resHostOrVpc, Nml.hasNode, resPlace);
+            placeModel.add(resHvService, Mrs.providesVM, resPlace);
+            return placeModel;
         }
-        // if no host node found, try topology level hypervisor (vpc)
-        sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
-                "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
-                "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n" +
-                "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n" +
-                "SELECT ?topology ?nodeorvpc ?hvservice WHERE {"
-                + "?topology a nml:Topology ."
-                + "?topology nml:hasNode ?nodeorvpc ."
-                + "?nodeorvpc a nml:Node . "
-                + "?nodeorvpc nml:hasService ?hvservice . "
+        // place vm to topology or host node that has hypervisor
+        //@TODO: randomization for 'any'
+        sparqlString = "SELECT ?hosttopo ?hvservice WHERE {"
+                + "?hosttopo nml:hasService ?hvservice . "
                 + "?hvservice a mrs:HypervisorService . "
-                + String.format("FILTER (?topology = <%s>) ", topologyUri)
-                + "}";   
-        query = QueryFactory.create(sparqlString);
-        qexec = QueryExecutionFactory.create(query, systemModel);
-        r = (ResultSet) qexec.execSelect();
+                + "?res a nml:Node ."
+                + String.format("FILTER (?hosttopo = <%s> && ?res = <%s>) ", placeToUri, resPlace.getURI())
+                + "}";
+        r = ModelUtil.sparqlQuery(model, sparqlString);
         if (r.hasNext()) {
             QuerySolution querySolution = r.next();
-            Resource resTopology = querySolution.get("topology").asResource();
-            Resource resHostOrVpc = querySolution.get("nodeorvpc").asResource();
+            Resource resHostTopology = querySolution.get("hosttopo").asResource();
             Resource resHvService = querySolution.get("hvservice").asResource();
-            if (hostModel == null) {
-                hostModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+            if (placeModel == null) {
+                placeModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
             }
-            hostModel.add(resTopology, RdfOwl.type, Nml.Topology);
-            hostModel.add(resTopology, Nml.hasTopology, resHostOrVpc);
-            hostModel.add(resTopology, Nml.hasService, Mrs.VirtualCloudService);
-            hostModel.add(resHostOrVpc, RdfOwl.type, Nml.Topology);
-            hostModel.add(resHostOrVpc, Nml.hasService, resHvService);
-            hostModel.add(resHvService, RdfOwl.type, Mrs.HypervisorService);
-            hostModel.add(resHostOrVpc, Nml.hasNode, resVm);
-            hostModel.add(resHvService, Mrs.providesVM, resVm);
-            return hostModel;
+            placeModel.add(resHostTopology, Nml.hasNode, resPlace);
+            placeModel.add(resHvService, Mrs.providesVM, resPlace);
+            return placeModel;
+        }
+        // Place interface to subnet 
+        sparqlString = "SELECT ?subnet WHERE {"
+                + "?subnet a mrs:SwitchingSubnet ."
+                + "?res a nml:BidirectionalPort ."
+                + String.format("FILTER (?subnet = <%s> && ?res = <%s>) ", placeToUri, resPlace.getURI())
+                + "}";
+        r = ModelUtil.sparqlQuery(model, sparqlString);
+        if (r.hasNext()) {
+            QuerySolution querySolution = r.next();
+            Resource resSubnet = querySolution.get("subnet").asResource();
+            if (placeModel == null) {
+                placeModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+            }
+            placeModel.add(resSubnet, Nml.hasBidirectionalPort, resPlace);
+            return placeModel;
         }
         return null;
     }
-    
-    private void exportPolicyData(OntModel spaModel, Resource vm) {
+
+    //@TODO: JSON export
+    private void exportPolicyData(OntModel spaModel, Resource res) {
         // find Placement policy -> exportTo -> policyData
-        String sparql = "SELECT ?nodeorvpc ?policyAction ?policyData WHERE {"
-                + "?nodeorvpc nml:hasService ?hvservice . "
+        String sparql = "SELECT ?hostPlace ?policyData WHERE {"
+                + String.format("?hostPlace nml:hasNode <%s> .", res.getURI()) 
                 + "?hvservice a mrs:HypervisorService . "
-                + String.format("?hvservice mrs:providesVM <%s> .", vm.getURI())
-                + String.format("<%s> spa:dependOn ?policyAction .", vm.getURI())
-                + "?policyAction a spa:Placement."
+                + String.format("?hvservice mrs:providesVM <%s> .", res.getURI())
+                + String.format("<%s> spa:dependOn ?policyAction .", res.getURI())
+                + "?policyAction a spa:PolicyAction. "
+                + "?policyAction spa:type 'MCE_VMFilterPlacement'. "
                 + "?policyAction spa:exportTo ?policyData . "
                 + "?policyData a spa:PolicyData . "
+                + "OPTIONAL {?policyData spa:format ?format.}"
                 + "}";
         ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
         List<QuerySolution> solutions = new ArrayList<>();
-        if (r.hasNext()) {
+        while (r.hasNext()) {
             solutions.add(r.next());
         }
-        for (QuerySolution querySolution: solutions) {
-            Resource resHost = querySolution.get("nodeorvpc").asResource();
-            Resource resPolicy = querySolution.get("policyAction").asResource();
-            Resource resData = querySolution.get("policyData").asResource();
-            // add export data
-            if (spaModel.listStatements(resHost, RdfOwl.type, Nml.Topology).hasNext()) {
-                spaModel.add(resData, Spa.type, Nml.Topology);
-            } else if (spaModel.listStatements(resHost, RdfOwl.type, Nml.Node).hasNext()) {
-                spaModel.add(resData, Spa.type, Nml.Node);
-            }
-            spaModel.add(resData, Spa.value, resHost);
-            // remove VM->exportTo statement so the exportData can be kept in spaModel during receurive removal
-            spaModel.remove(resPolicy, Spa.exportTo, resData);
-        }
-    }
-
-    private void removeResolvedAnnotation(OntModel spaModel, Resource vm) {
-        List<Statement> listStmtsToRemove = new ArrayList<>();
-        Resource resVm = spaModel.getResource(vm.getURI());
-        ModelUtil.listRecursiveDownTree(resVm, Spa.getURI(), listStmtsToRemove);
-        if (listStmtsToRemove.isEmpty()) {
-            throw new EJBException(String.format("%s::process cannot remove SPA statements under %s", this.getClass().getName(), vm));
-        }
-
-        String sparql = "SELECT ?anyOther ?policyAction WHERE {"
-                + String.format("<%s> spa:dependOn ?policyAction .", vm.getURI())
-                + "?policyAction a spa:Placement."
-                + "?anyOther spa:dependOn ?policyAction . "
-                + "?policyData a spa:PolicyData . "
-                + "}";
-        ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
-        List<QuerySolution> solutions = new ArrayList<>();
-        if (r.hasNext()) {
-            solutions.add(r.next());
-        }
-
         for (QuerySolution querySolution : solutions) {
-            Resource resAnyOther = querySolution.get("anyOther").asResource();
-            Resource resPolicy = querySolution.get("policyAction").asResource();
-            spaModel.remove(resAnyOther, Spa.dependOn, resPolicy);
+            Resource resHost = querySolution.get("hostPlace").asResource();
+            Resource resData = querySolution.get("policyData").asResource();
+            spaModel.add(resData, Spa.type, "JSON");
+            // add export data
+            JSONObject output = new JSONObject();
+            output.put("uri", res.getURI());
+            output.put("place_into", resHost.getURI());
+            //add output as spa:value of the export resrouce
+            String exportValue = output.toJSONString();
+            if (querySolution.contains("format")) {
+                String exportFormat = querySolution.get("format").toString();
+                exportValue = MCETools.formatJsonExport(exportValue, exportFormat);
+            }
+            spaModel.add(resData, Spa.value, exportValue);
         }
-        spaModel.remove(listStmtsToRemove);
     }
 
-    //$$ TODO: matchingRegExURIFilter
-    //$$ TODO: hostCapabilityFilter(s)
+    //@TODO: matchingNetwork (VPC or TenantNetwork)
+    //@TODO: matchingSunbet
+    //$$ regExURIFilter
+    //$$ hostCapabilityFilter(s)
     //$$ placeMatchingRegExURI
     //$$ placeWithMultiFilter
 }

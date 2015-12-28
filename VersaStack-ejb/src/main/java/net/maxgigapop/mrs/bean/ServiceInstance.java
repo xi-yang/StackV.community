@@ -3,18 +3,27 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package net.maxgigapop.mrs.bean;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Future;
 import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.Lob;
+import javax.persistence.MapKeyColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 import net.maxgigapop.mrs.bean.persist.PersistentEntity;
 
 /**
@@ -24,16 +33,26 @@ import net.maxgigapop.mrs.bean.persist.PersistentEntity;
 @Entity
 @Table(name = "service_instance")
 public class ServiceInstance extends PersistentEntity implements Serializable {
+
     private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-    
+
     private String referenceUUID;
 
-    @OneToMany(mappedBy="serviceInstance", cascade = {CascadeType.ALL})
-    protected List<ServiceModel> serviceModels = null;    
-    
+    @OneToMany(mappedBy = "serviceInstance", cascade = {CascadeType.ALL})
+    protected List<ServiceDelta> serviceDeltas = null;
+
+    @ElementCollection
+    @JoinTable(name = "service_instance_property", joinColumns = @JoinColumn(name = "serviceInstanceId"))
+    @MapKeyColumn(name = "property")
+    @Lob
+    @Column(name = "value")
+    private Map<String, String> properties = new HashMap<String, String>();
+
+    String status = "INIT";
+
     public Long getId() {
         return id;
     }
@@ -50,12 +69,39 @@ public class ServiceInstance extends PersistentEntity implements Serializable {
         this.referenceUUID = referenceUUID;
     }
 
-    public List<ServiceModel> getServiceModels() {
-        return serviceModels;
+    public List<ServiceDelta> getServiceDeltas() {
+        return serviceDeltas;
     }
 
-    public void setServiceModels(List<ServiceModel> serviceModels) {
-        this.serviceModels = serviceModels;
+    public void setServiceDeltas(List<ServiceDelta> serviceDeltas) {
+        this.serviceDeltas = serviceDeltas;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Map<String, String> getProperties() {
+        return properties;
+    }
+
+    public void setProperties(Map<String, String> properties) {
+        this.properties = properties;
+    }
+
+    public String getProperty(String key) {
+        if (!this.properties.containsKey(key)) {
+            return null;
+        }
+        return this.properties.get(key);
+    }
+
+    public void putProperty(String key, String value) {
+        this.properties.put(key, value);
     }
 
     @Override
@@ -82,5 +128,5 @@ public class ServiceInstance extends PersistentEntity implements Serializable {
     public String toString() {
         return "net.maxgigapop.mrs.model.ServiceInstance[ id=" + id + " ]";
     }
-    
+
 }

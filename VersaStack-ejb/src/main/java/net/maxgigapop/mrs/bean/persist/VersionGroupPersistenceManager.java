@@ -3,10 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package net.maxgigapop.mrs.bean.persist;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import javax.ejb.EJBException;
@@ -54,23 +54,39 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
         for (VersionItem vi : vg.getVersionItems()) {
             DriverInstance di = vi.getDriverInstance();
             if (di != null) {
-                if (listDI.contains(di))
+                if (listDI.contains(di)) {
                     continue;
+                }
                 listDI.add(di);
                 VersionItem newVi = di.getHeadVersionItem();
                 if (!newVi.equals(vi)) {
                     needToUpdate = true;
                 }
                 newVG.addVersionItem(newVi);
-                if (!newVi.getVersionGroups().contains(vg))
+                if (!newVi.getVersionGroups().contains(vg)) {
                     newVi.addVersionGroup(vg);
+                }
             }
         }
-        if (!doUpdatePersist)
+        for (DriverInstance di : ditMap.values()) {
+            if (!listDI.contains(di)) {
+                synchronized (di) {
+                    VersionItem newVi = di.getHeadVersionItem();
+                    if (newVi == null) {
+                        throw new EJBException(String.format("refreshToHead encounters null head versionItem in %s", di));
+                    }
+                    newVi.addVersionGroup(vg);
+                    newVG.addVersionItem(newVi);
+                }
+            }
+        }
+        if (!doUpdatePersist) {
             return newVG;
+        }
         if (needToUpdate) {
             vg = findByReferenceId(vg.getRefUuid());
             vg.setVersionItems(newVG.getVersionItems());
+            vg.setUpdateTime(new java.util.Date());
             VersionGroupPersistenceManager.save(vg);
         }
         return vg;

@@ -1,6 +1,7 @@
+"use strict";
 define([
-    "d3", "local/versastack/model", "local/versastack/utils", "local/versastack/loading", "local/d3.tip.v0.6.3"
-], function(d3, model, utils, loading) {
+    "local/d3", "local/versastack/model", "local/versastack/utils", "local/versastack/loading", "local/d3.tip.v0.6.3"
+], function (d3, model, utils, loading) {
     /** Document and canvas sizes **/
     var width = document.documentElement.clientWidth;
     var height = document.documentElement.clientHeight;
@@ -62,33 +63,10 @@ define([
         /** Hull size **/
         hullOffset: 15
     };
-    // Module execution starts here
-    function main(loadingItem) {
-        // Wait for json model to finish loading before displaying graph
-        if (loadingItem == null || loading.finished(loadingItem)) {
-//            createZoomSlider();
-            initForceGraph(loadingItem);
-        } else {
-            setTimeout(function() {
-                main(loadingItem);
-            }, 100);
-        }
-    }
 
     /** FUNCTIONALITY **/
-    function initForceGraph(loadingItem) {
+    function initForceGraph() {
         console.info('Initialising force graph...');
-        data = model.data;
-        for (var i = 0, l = data.links.length; i < l; ++i) {
-            var link = data.links[i];
-            link.originalSource = link.source;
-            link.originalTarget = link.target;
-        }
-
-        for (var i = 0, l = data.nodes.length; i < l; ++i) {
-            var node = data.nodes[i];
-            expand[node.id] = 0;
-        }
 
         /**
          * k is porportional to the square root of the graph density
@@ -106,14 +84,14 @@ define([
         var gravity = settings.baseGravity;
         var distance = settings.baseDistance;
         force = d3.layout.force().size([canvasWidth, canvasHeight]).charge(charge).gravity(gravity).linkDistance(distance).friction(friction).on('tick', tick)
-                .on('start', function() {
-                    setTimeout(function() {
+                .on('start', function () {
+                    setTimeout(function () {
                         force.alpha(force.alpha() / 3);
                     }, 250);
-                    setTimeout(function() {
+                    setTimeout(function () {
                         force.alpha(force.alpha() / 3);
                     }, 500);
-                    setTimeout(function() {
+                    setTimeout(function () {
                         force.stop();
                     }, 1000);
                 });
@@ -121,7 +99,7 @@ define([
         hullg = svg.append('g');
         linkg = svg.append('g');
         nodeg = svg.append('g');
-        tip = d3.tip().attr('class', 'd3-tip').offset([-10, 0]).html(function(d) {
+        tip = d3.tip().attr('class', 'd3-tip').offset([-10, 0]).html(function (d) {
             return "<strong>" + d.name + "</strong>";
         });
         svg.call(tip);
@@ -140,93 +118,32 @@ define([
         }
 
         map = network(data, map, expand);
-        
-//        require(["dojo/_base/window", "dojo/store/Memory",
-//            "dijit/tree/ObjectStoreModel", "dijit/Tree", "dijit/Menu", "dijit/MenuItem",
-//            "dijit/registry", "dojo/domReady!"], function(win, Memory, ObjectStoreModel, Tree, Menu, MenuItem, registry) {
-//            var panel = registry.byId('networks');
-//            var nodeStore = new Memory({
-//                data: data.dictionary,
-//                getChildren: function(object) {
-//                    return this.query({parentID: object.id});
-//                }
-//            });
-//            
-//            // Create the model
-//            var nodesModel = new ObjectStoreModel({
-//                store: nodeStore,
-//                query: {hasNode: true}
-//            });
-//            
-//            // Create the Tree.
-//            var tree = new Tree({
-//                model: nodesModel,
-//                id: "nodeTree"
-//            });
-//            
-//            tree.placeAt(panel);
-//            tree.startup();
-//            
-//            var nodeMenu = new Menu({
-//                targetNodeIds:["nodeTree"]
-//            });
-//
-//            nodeMenu.addChild(new MenuItem({
-//                label:"View",
-//                iconClass:"dijitEditorIcon dijitEditorIconSelectAll",
-//                onClick: function(){
-//                }
-//            }));
-//            
-//            nodeMenu.addChild(new MenuItem({
-//                label:"Edit",
-//                iconClass:"dijitEditorIcon dijitEditorIconDelete",
-//                onClick: function(){
-//                }
-//            }));
-//            
-//            nodeMenu.addChild(new MenuItem({
-//                label:"Delete",
-//                iconClass:"dijitEditorIcon dijitEditorIconDelete",
-//                onClick: function(){
-//                }
-//            }));
-//            
-//            nodeMenu.startup();
-//        });
-        
+
         force.nodes(map.nodes).links(map.links);
-        console.info('output nodes', map.nodes);
-        console.info('output links', map.links);
         hullg.selectAll('path.hull').remove();
-        hull = hullg.selectAll('path.hull').data(convexHulls(map.nodes, settings.hullOffset, expand)).enter().append('path').attr('class', 'hull').attr('d', drawCluster).style('fill', function(d) {
+        hull = hullg.selectAll('path.hull').data(convexHulls(map.nodes, settings.hullOffset, expand)).enter().append('path').attr('class', 'hull').attr('d', drawCluster).style('fill', function (d) {
             return fill(d.id);
-        }).on('dblclick', function(d) {
+        }).on('dblclick', function (d) {
             console.log('hull click', d, arguments, this, expand[d.id]);
             cycleState(d.id);
             restart();
         }).on('mousemove', tip.show).on('mouseout', tip.hide);
         link = linkg.selectAll(css.classes.link).data(map.links, getLinkID);
         link.exit().remove();
-        link.enter().append('line').classed('link', true).style('stroke-width', function(d) {
+        link.enter().append('line').classed('link', true).style('stroke-width', function (d) {
             return d.size || 1;
         });
         node = nodeg.selectAll('g').data(map.nodes, getUID);
         node.exit().remove();
         var nodeEnter = node.enter().append('g')
                 // if (d.size) -- d.size > 0 when d is a group node.
-                .attr('class', function(d) {
+                .attr('class', function (d) {
                     return 'node' + (d.size > 0 ? '' : ' leaf');
                 }).on('dblclick', dblclick).on('click', click).call(drag).on('mousemove', tip.show).on('mouseout', tip.hide);
-//        nodeEnter.append('circle').style('fill', function(d) {
-//            return fill(d.id);
-//        }).attr('r', function(d) {
-//            return radius(d);
-//        });
 
         nodeEnter.append("svg:image")
                 .attr("class", "circle")
-                .attr("xlink:href", function(d) {
+                .attr("xlink:href", function (d) {
                     return d.icon;
                 })
                 .attr("x", "-15px")
@@ -267,7 +184,7 @@ define([
                 outputNodes = [],
                 outputLinks = [];
         if (previous) { // process nodes from previous iteration
-            previous.nodes.forEach(function(node) {
+            previous.nodes.forEach(function (node) {
                 processPrevious(node, previousGroups, previousCentroids);
             });
             console.info('Processed previous', 'previous group', previousGroups, 'previous nodes', previousCentroids);
@@ -376,23 +293,6 @@ define([
             nodes: outputNodes,
             links: outputLinks
         };
-    }
-
-    /** Slider control for graph zoom level **/
-//    function createZoomSlider() {
-//        d3.select(css.IDs.zoomSlider).call(
-//                d3.slider().value(settings.baseZoomValue).orientation("vertical").on('slide', function(evt, value) {
-//            d3.select(css.IDs.zoomValue).text(Math.round(value));
-//            resize(value);
-//        }));
-//    }
-
-    function resize(size) {
-        var scaling = size / settings.baseZoomValue;
-        svg.selectAll(css.classes.nodeText).style('font-size', settings.baseFontSize * scaling + 'px');
-        svg.selectAll(css.classes.nodeImage).attr('transform', 'scale(' + scaling + ')');
-        svg.selectAll(css.classes.link).style('stroke-width', scaling);
-        svg.selectAll(css.classes.nodeCircle).attr('transform', 'scale(' + scaling + ')');
     }
 
     function convexHulls(nodes, offset, expand) {
@@ -703,8 +603,8 @@ define([
 //        }
 
         lastClicked = d;
-        require(["dojo/on", "dijit/registry", "dojo/ready"], function(on, registry, ready) {
-            ready(function() {
+        require(["dojo/on", "dijit/registry", "dojo/ready"], function (on, registry, ready) {
+            ready(function () {
                 registry.byId('networks').set('content', html);
                 var networksButton = registry.byId("networksButton");
                 on(networksButton, 'click', callSwitchPanelsWith("Networks"));
@@ -749,16 +649,16 @@ define([
         }
 
         link = linkg.selectAll(css.classes.link);
-        link.attr('x1', function(d) {
+        link.attr('x1', function (d) {
             return d.source.x;
-        }).attr('y1', function(d) {
+        }).attr('y1', function (d) {
             return d.source.y;
-        }).attr('x2', function(d) {
+        }).attr('x2', function (d) {
             return d.target.x;
-        }).attr('y2', function(d) {
+        }).attr('y2', function (d) {
             return d.target.y;
         });
-        link.attr('opacity', function(d) {
+        link.attr('opacity', function (d) {
             if (d.visible) {
                 return 100;
             } else {
@@ -766,7 +666,7 @@ define([
             }
         });
         node = nodeg.selectAll('g');
-        node.attr('transform', function(d) {
+        node.attr('transform', function (d) {
 //            var r = radius(d),
 //                    x = Math.max(r, Math.min(canvasWidth - r, d.x)),
 //                    y = Math.max(r, Math.min(canvasHeight - r, d.y));
@@ -783,7 +683,7 @@ define([
 
     /** PUBLIC INTERFACE **/
     return {
-        display: main,
+        initForceGraph: initForceGraph,
         css: css,
         settings: settings,
         toggleLock: toggleLock,

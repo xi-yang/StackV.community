@@ -3,7 +3,6 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package net.maxgigapop.mrs.rest.api;
 
 import java.util.Set;
@@ -25,15 +24,16 @@ public class ApplicationConfig extends Application {
     }
 
     /**
-     * Do not modify addRestResourceClasses() method.
-     * It is automatically populated with
-     * all resources defined in the project.
-     * If required, comment out calling this method in getClasses().
+     * Do not modify addRestResourceClasses() method. It is automatically
+     * populated with all resources defined in the project. If required, comment
+     * out calling this method in getClasses().
      */
     private void addRestResourceClasses(Set<Class<?>> resources) {
         resources.add(net.maxgigapop.mrs.rest.api.DeltaResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.DriverResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.ModelResource.class);
+        resources.add(net.maxgigapop.mrs.rest.api.ServiceResource.class);
+        resources.add(net.maxgigapop.mrs.rest.api.WebResource.class);
     }
-    
+
 }

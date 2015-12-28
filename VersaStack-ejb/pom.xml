@@ -40,6 +40,11 @@
             <version>2.11.1</version>
         </dependency>
         <dependency>
+            <groupId>commons-net</groupId>
+            <artifactId>commons-net</artifactId>
+            <version>2.0</version>
+        </dependency>
+        <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk</artifactId>
             <version>1.9.0</version>
@@ -48,6 +53,7 @@
             <groupId>org.apache.jena</groupId>
             <artifactId>jena-arq</artifactId>
             <version>2.11.1</version>
+            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -59,17 +65,23 @@
             <groupId>com.googlecode.json-simple</groupId>
             <artifactId>json-simple</artifactId>
             <version>1.1.1</version>
+            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>org.pacesys</groupId>
             <artifactId>openstack4j-core</artifactId>
-            <version>2.0.1</version>
+            <version>2.0.9</version>
             <type>jar</type>
         </dependency>
         <dependency>
             <groupId>org.pacesys.openstack4j.connectors</groupId>
             <artifactId>openstack4j-okhttp</artifactId>
             <version>2.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.pacesys.openstack4j.connectors</groupId>
+            <artifactId>openstack4j-okhttp</artifactId>
+            <version>2.0.9</version>
         </dependency>
         <dependency>
             <groupId>javax</groupId>
@@ -110,6 +122,11 @@
             <artifactId>shrinkwrap-resolver-impl-maven</artifactId>  
             <scope>test</scope>
         </dependency>  
+        <dependency>
+            <groupId>com.jayway.jsonpath</groupId>
+            <artifactId>json-path</artifactId>
+            <version>2.0.0</version>
+        </dependency>
     </dependencies>
 
     <build>

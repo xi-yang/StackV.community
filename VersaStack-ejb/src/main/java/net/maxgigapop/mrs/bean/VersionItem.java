@@ -3,7 +3,6 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package net.maxgigapop.mrs.bean;
 
 import java.io.Serializable;
@@ -28,14 +27,14 @@ import net.maxgigapop.mrs.bean.persist.PersistentEntity;
 @Entity
 @Table(name = "version_item")
 public class VersionItem extends PersistentEntity implements Serializable {
+
     private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
-    
+
     // reference ID for the callee
     private String referenceUUID = null;
-    
 
     @ManyToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
     @JoinTable(
@@ -43,17 +42,17 @@ public class VersionItem extends PersistentEntity implements Serializable {
             joinColumns = {
                 @JoinColumn(name = "item_id", referencedColumnName = "id")},
             inverseJoinColumns = {
-                @JoinColumn(name = "group_id", referencedColumnName = "id")})    
+                @JoinColumn(name = "group_id", referencedColumnName = "id")})
     private List<VersionGroup> versionGroups = null;
 
     @OneToOne
     @JoinColumn(name = "modelRefId")
     private ModelBase modelRef = null;
-    
+
     @OneToOne
     @JoinColumn(name = "driverInstanceId")
     private DriverInstance driverInstance = null;
-    
+
     public Long getId() {
         return id;
     }
@@ -84,7 +83,9 @@ public class VersionItem extends PersistentEntity implements Serializable {
             return false;
         }
         VersionItem other = (VersionItem) object;
-        if ((this.referenceUUID != null && other.referenceUUID != null) && (this.referenceUUID.equals(other.referenceUUID))) {
+        if ((this.referenceUUID != null && other.referenceUUID != null)
+                && (this.referenceUUID.equals(other.referenceUUID))
+                && (this.id == other.id)) {
             return true;
         }
         return false;
@@ -112,7 +113,7 @@ public class VersionItem extends PersistentEntity implements Serializable {
     public void setModelRef(ModelBase modelRef) {
         this.modelRef = modelRef;
     }
-    
+
     public DriverInstance getDriverInstance() {
         return driverInstance;
     }
@@ -125,5 +126,5 @@ public class VersionItem extends PersistentEntity implements Serializable {
     public String toString() {
         return String.format("net.maxgigapop.mrs.bean.VersionItem[ id=%d uuid=%s ]", id, referenceUUID);
     }
-    
+
 }

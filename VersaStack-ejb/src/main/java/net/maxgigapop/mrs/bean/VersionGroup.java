@@ -3,13 +3,13 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package net.maxgigapop.mrs.bean;
 
 import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -36,6 +36,7 @@ import net.maxgigapop.mrs.service.compute.MCE_MPVlanConnection;
 @Entity
 @Table(name = "version_group")
 public class VersionGroup extends PersistentEntity implements Serializable {
+
     private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
@@ -43,7 +44,7 @@ public class VersionGroup extends PersistentEntity implements Serializable {
 
     //reference ID for the caller
     private String refUuid = null;
-    
+
     @ManyToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
     @JoinTable(
             name = "version_group_item",
@@ -53,11 +54,17 @@ public class VersionGroup extends PersistentEntity implements Serializable {
                 @JoinColumn(name = "item_id", referencedColumnName = "id")})
     private List<VersionItem> versionItems = null;
 
-    @Transient 
+    private Date updateTime;
+
+    @Transient
     ModelBase cachedModelBase = null;
-    
+
     private String status = "";
-    
+
+    public VersionGroup() {
+        this.updateTime = new java.util.Date();
+    }
+
     public Long getId() {
         return id;
     }
@@ -88,9 +95,7 @@ public class VersionGroup extends PersistentEntity implements Serializable {
             return false;
         }
         VersionGroup other = (VersionGroup) object;
-        if ((this.refUuid != null && other.refUuid != null) && (this.refUuid.equals(other.refUuid))) {
-            return true;
-        } else if (this.getVersionItems() == null || other.getVersionItems() == null) {
+        if (this.getVersionItems() == null || other.getVersionItems() == null) {
             return false;
         } else if (this.getVersionItems().size() != other.getVersionItems().size()) {
             return false;
@@ -117,16 +122,24 @@ public class VersionGroup extends PersistentEntity implements Serializable {
         }
         this.versionItems.add(versionItem);
     }
-    
+
     public VersionItem getVersionItemByDriverInstance(DriverInstance di) {
-        for (VersionItem vi: this.getVersionItems()) {
+        for (VersionItem vi : this.getVersionItems()) {
             if (vi.getDriverInstance().equals(di)) {
                 return vi;
             }
         }
         return null;
     }
-    
+
+    public Date getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(Date updateTime) {
+        this.updateTime = updateTime;
+    }
+
     public String getStatus() {
         return status;
     }
@@ -150,12 +163,13 @@ public class VersionGroup extends PersistentEntity implements Serializable {
         if (this.getVersionItems() == null || this.getVersionItems().isEmpty()) {
             throw new EJBException(String.format("%s is empty when calling method createUnionModel", this));
         }
-        for (VersionItem vi: this.getVersionItems()) {
+        for (VersionItem vi : this.getVersionItems()) {
             if (vi.getModelRef() == null || vi.getModelRef().getOntModel() == null) {
                 throw new EJBException(String.format("%s method createUnionModel encounters empty %s", this, vi));
             }
             newModel.getOntModel().add(vi.getModelRef().getOntModel().getBaseModel());
-       }
+        }
+        newModel.setCreationTime(this.updateTime);
         this.cachedModelBase = newModel;
         //@TBD: rebind / rerun inference for referenceModel
         return newModel;
