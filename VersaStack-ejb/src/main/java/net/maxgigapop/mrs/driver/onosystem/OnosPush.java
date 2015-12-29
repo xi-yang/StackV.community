@@ -91,10 +91,10 @@ public class OnosPush {
             for(int i=0;i<json_string.length;i++){
                 URL url = new URL(String.format(subsystemBaseUrl+"/flows/"+json_string[i]+"/"+json_string[i+1]));
                 HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-                //int status = this.executeHttpMethod(access_key_id, secret_access_key,url, conn, "DELETE",null);
-                //if (status!=204) {
-                //    throw new EJBException(String.format("Failed to delete %s from %s",json_string[i+1],json_string[i]));
-                //}
+                int status = this.executeHttpMethod(access_key_id, secret_access_key,url, conn, "DELETE",null);
+                if (status!=204) {
+                    throw new EJBException(String.format("Failed to delete %s from %s",json_string[i+1],json_string[i]));
+                }
                 i++;
             }
          }
