@@ -1,0 +1,229 @@
+<delta> 
+<id>1</id>
+<creationTime>2015-05-21T13:49:40-05:00</creationTime>
+<referenceVersion>51a507d4-6408-443f-a30c-5415b7f0581e</referenceVersion>
+<modelReduction>
+@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .
+@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .
+@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .
+@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .
+@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .
+@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .
+@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .
+@prefix sna:   &lt;http://schemas.ogf.org/mrs/2015/08/network#&gt; . 
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-1:flow-12345:rule-action-0&gt;
+        a       &lt;http://schemas.ogf.org/mrs/2013/12/topology#FlowRule&gt; , owl:NamedIndividual , rdfs:Resource , owl:Thing ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#type&gt;
+                "OUT_PORT" ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#value&gt;
+                "4" .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000007:openflow-service&gt;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#providesFlowTable&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000007:openflow-service:flow-table-1&gt; ;
+        &lt;http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000007:port-s7-eth6&gt; , &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000007:port-s7-eth3&gt; .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-1:flow-12345&gt;
+        a       &lt;http://schemas.ogf.org/mrs/2013/12/topology#Flow&gt; , owl:NamedIndividual , rdfs:Resource , owl:Thing ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#flowAction&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-1:flow-12345:rule-action-0&gt; ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#flowMatch&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-1:flow-12345:rule-match-0&gt; .
+
+rdfs:Resource  owl:equivalentClass  owl:Thing .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000004:openflow-service&gt;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#providesFlowTable&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000004:openflow-service:flow-table-1&gt; ;
+        &lt;http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000004:port-s4-eth5&gt; , &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000004:port-s4-eth1&gt; , &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000004:port-s4-eth3&gt; .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000004:openflow-service:flow-table-1:flow-12345&gt;
+        a       &lt;http://schemas.ogf.org/mrs/2013/12/topology#Flow&gt; , owl:NamedIndividual , rdfs:Resource , owl:Thing ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#flowAction&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000004:openflow-service:flow-table-1:flow-12345:rule-action-0&gt; ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#flowMatch&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000004:openflow-service:flow-table-1:flow-12345:rule-match-0&gt; .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000003:openflow-service:flow-table-1:flow-12345:rule-match-0&gt;
+        a       &lt;http://schemas.ogf.org/mrs/2013/12/topology#FlowRule&gt; , owl:NamedIndividual , rdfs:Resource , owl:Thing ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#type&gt;
+                "IN_PORT" ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#value&gt;
+                "3" .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000001:openflow-service&gt;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#providesFlowTable&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000001:openflow-service:flow-table-1&gt; ;
+        &lt;http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000001:port-s1-eth1&gt; , &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000001:port-s1-eth5&gt; , &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000001:port-s1-eth3&gt; .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000003:openflow-service:flow-table-1:flow-12345:rule-action-0&gt;
+        a       &lt;http://schemas.ogf.org/mrs/2013/12/topology#FlowRule&gt; , owl:NamedIndividual , rdfs:Resource , owl:Thing ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#type&gt;
+                "OUT_PORT" ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#value&gt;
+                "4" .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-1:flow-12345:rule-match-0&gt;
+        a       &lt;http://schemas.ogf.org/mrs/2013/12/topology#FlowRule&gt; , owl:NamedIndividual , rdfs:Resource , owl:Thing ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#type&gt;
+                "IN_PORT" ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#value&gt;
+                "3" .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000007:openflow-service:flow-table-1:flow-12345:rule-action-0&gt;
+        a       &lt;http://schemas.ogf.org/mrs/2013/12/topology#FlowRule&gt; , owl:NamedIndividual , rdfs:Resource , owl:Thing ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#type&gt;
+                "OUT_PORT" ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#value&gt;
+                "6" .
+
+owl:Thing  rdfs:subClassOf   rdfs:Resource ;
+        owl:equivalentClass  rdfs:Resource .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000004:openflow-service:flow-table-1:flow-12345:rule-action-0&gt;
+        a       &lt;http://schemas.ogf.org/mrs/2013/12/topology#FlowRule&gt; , owl:NamedIndividual , rdfs:Resource , owl:Thing ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#type&gt;
+                "OUT_PORT" ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#value&gt;
+                "1" .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000007:openflow-service:flow-table-1&gt;
+        a       &lt;http://schemas.ogf.org/mrs/2013/12/topology#FlowTable&gt; , owl:NamedIndividual , rdfs:Resource , owl:Thing ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#providesFlow&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000007:openflow-service:flow-table-1:flow-12345&gt; .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service&gt;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#providesFlowTable&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-1&gt; ;
+        &lt;http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:port-s2-eth4&gt; , &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:port-s2-eth3&gt; .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000004:openflow-service:flow-table-1&gt;
+        a       &lt;http://schemas.ogf.org/mrs/2013/12/topology#FlowTable&gt; , owl:NamedIndividual , rdfs:Resource , owl:Thing ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#providesFlow&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000004:openflow-service:flow-table-1:flow-12345&gt; .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000001:openflow-service:flow-table-1:flow-12345:rule-action-0&gt;
+        a       &lt;http://schemas.ogf.org/mrs/2013/12/topology#FlowRule&gt; , owl:NamedIndividual , rdfs:Resource , owl:Thing ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#type&gt;
+                "OUT_PORT" ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#value&gt;
+                "5" , "3" .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000001:openflow-service:flow-table-1:flow-12345:rule-match-0&gt;
+        a       &lt;http://schemas.ogf.org/mrs/2013/12/topology#FlowRule&gt; , owl:NamedIndividual , rdfs:Resource , owl:Thing ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#type&gt;
+                "IN_PORT" ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#value&gt;
+                "1" .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000003:openflow-service:flow-table-1&gt;
+        a       &lt;http://schemas.ogf.org/mrs/2013/12/topology#FlowTable&gt; , owl:NamedIndividual , rdfs:Resource , owl:Thing ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#providesFlow&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000003:openflow-service:flow-table-1:flow-12345&gt; .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000001:openflow-service:flow-table-1:flow-12345&gt;
+        a       &lt;http://schemas.ogf.org/mrs/2013/12/topology#Flow&gt; , owl:NamedIndividual , rdfs:Resource , owl:Thing ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#flowAction&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000001:openflow-service:flow-table-1:flow-12345:rule-action-0&gt; ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#flowMatch&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000001:openflow-service:flow-table-1:flow-12345:rule-match-0&gt; .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-1&gt;
+        a       &lt;http://schemas.ogf.org/mrs/2013/12/topology#FlowTable&gt; , owl:NamedIndividual , rdfs:Resource , owl:Thing ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#providesFlow&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-1:flow-12345&gt; .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000003:openflow-service:flow-table-1:flow-12345&gt;
+        a       &lt;http://schemas.ogf.org/mrs/2013/12/topology#Flow&gt; , owl:NamedIndividual , rdfs:Resource , owl:Thing ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#flowAction&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000003:openflow-service:flow-table-1:flow-12345:rule-action-0&gt; ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#flowMatch&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000003:openflow-service:flow-table-1:flow-12345:rule-match-0&gt; .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000001:openflow-service:flow-table-1&gt;
+        a       &lt;http://schemas.ogf.org/mrs/2013/12/topology#FlowTable&gt; , owl:NamedIndividual , rdfs:Resource , owl:Thing ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#providesFlow&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000001:openflow-service:flow-table-1:flow-12345&gt; .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000003:openflow-service&gt;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#providesFlowTable&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000003:openflow-service:flow-table-1&gt; ;
+        &lt;http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000003:port-s3-eth4&gt; , &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000003:port-s3-eth3&gt; .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000004:openflow-service:flow-table-1:flow-12345:rule-match-0&gt;
+        a       &lt;http://schemas.ogf.org/mrs/2013/12/topology#FlowRule&gt; , owl:NamedIndividual , rdfs:Resource , owl:Thing ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#type&gt;
+                "IN_PORT" ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#value&gt;
+                "5" , "3" .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000007:openflow-service:flow-table-1:flow-12345:rule-match-0&gt;
+        a       &lt;http://schemas.ogf.org/mrs/2013/12/topology#FlowRule&gt; , owl:NamedIndividual , rdfs:Resource , owl:Thing ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#type&gt;
+                "IN_PORT" ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#value&gt;
+                "3" .
+
+owl:Nothing  rdfs:subClassOf  &lt;http://schemas.ogf.org/sna/2015/08/network#SRRG&gt; , &lt;http://schemas.ogf.org/mrs/2013/12/topology#Flow&gt; , owl:NamedIndividual , &lt;http://schemas.ogf.org/nml/2013/03/base#Topology&gt; , &lt;http://schemas.ogf.org/mrs/2013/12/topology#FlowTable&gt; , &lt;http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort&gt; , &lt;http://schemas.ogf.org/nml/2013/03/base#Node&gt; , &lt;http://schemas.ogf.org/mrs/2013/12/topology#FlowRule&gt; , &lt;http://schemas.ogf.org/mrs/2013/12/topology#OpenflowService&gt; .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000007:openflow-service:flow-table-1:flow-12345&gt;
+        a       &lt;http://schemas.ogf.org/mrs/2013/12/topology#Flow&gt; , owl:NamedIndividual , rdfs:Resource , owl:Thing ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#flowAction&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000007:openflow-service:flow-table-1:flow-12345:rule-action-0&gt; ;
+        &lt;http://schemas.ogf.org/mrs/2013/12/topology#flowMatch&gt;
+                &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000007:openflow-service:flow-table-1:flow-12345:rule-match-0&gt; .
+</modelReduction>
+<modelAddition>
+@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .
+@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .
+@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .
+@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .
+@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .
+@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .
+@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .
+@prefix sna:   &lt;http://schemas.ogf.org/mrs/2015/08/network#&gt; . 
+#&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0&gt;
+#	a		owl:NamedIndividual , mrs:FlowTable ;
+#	mrs:providesFlow &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417&gt; .
+#
+#&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417&gt;
+#        a               owl:NamedIndividual , mrs:Flow ;
+#        mrs:flowAction  &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-action-0&gt; ;
+#        mrs:flowMatch   &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-match-4&gt; , &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-match-3&gt; , &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-match-2&gt; , &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-match-1&gt; , &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-match-0&gt; .
+#
+#&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-match-0&gt;
+#        a          mrs:FlowRule , owl:NamedIndividual ;
+#        mrs:type   "IN_PORT" ;
+#        mrs:value  "2" .
+#
+#&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-match-1&gt;
+#        a          mrs:FlowRule , owl:NamedIndividual ;
+#        mrs:type   "ETH_SRC_MAC" ;
+#        mrs:value  "" .
+#
+#&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-match-2&gt;
+#        a          mrs:FlowRule , owl:NamedIndividual ;
+#        mrs:type   "ETH_DST_MAC" ;
+#        mrs:value  "" .
+#
+#&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-match-3&gt;
+#        a          mrs:FlowRule , owl:NamedIndividual ;
+#        mrs:type   "ETH_SRC_VLAN" ;
+#        mrs:value  "-1" .
+#
+#&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-match-4&gt;
+#        a          mrs:FlowRule , owl:NamedIndividual ;
+#        mrs:type   "ETH_DST_VLAN" ;
+#        mrs:value  "-1" .
+#
+#&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-action-0&gt;
+#        a          mrs:FlowRule , owl:NamedIndividual ;
+#        mrs:type   "OUT_PORT" ;
+#        mrs:value  "3" .
+</modelAddition>
+</delta>
