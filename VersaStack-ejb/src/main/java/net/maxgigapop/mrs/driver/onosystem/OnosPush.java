@@ -91,8 +91,9 @@ public class OnosPush {
             for(int i=0;i<json_string.length;i++){
                 URL url = new URL(String.format(subsystemBaseUrl+"/flows/"+json_string[i]+"/"+json_string[i+1]));
                 HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-                int status = this.executeHttpMethod(access_key_id, secret_access_key,url, conn, "DELETE",null);
-                if (status!=204) {
+                String status[]=new String[2];
+                status = this.executeHttpMethod(access_key_id, secret_access_key,url, conn, "DELETE",null);
+                if (Integer.parseInt(status[0])!=204) {
                     throw new EJBException(String.format("Failed to delete %s from %s",json_string[i+1],json_string[i]));
                 }
                 i++;
@@ -103,8 +104,9 @@ public class OnosPush {
             for(int i=0;i<json_string.length;i++){
                 URL url = new URL(String.format(subsystemBaseUrl+"/flows/"+json_string[i]));
                 HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-                int status = this.executeHttpMethod(access_key_id, secret_access_key,url, conn, "POST", json_string[i+1]);
-                if (status!=201) {
+                String status[] = new String[2];
+                status = this.executeHttpMethod(access_key_id, secret_access_key,url, conn, "POST", json_string[i+1]);
+                if (Integer.parseInt(status[0])!=201) {
                     throw new EJBException(String.format("Failed to push %s into %s",json_string[i+1],json_string[i]));
                 }
                 i++;
@@ -135,7 +137,7 @@ public class OnosPush {
         }
         return r;
     }
-private int executeHttpMethod(String access_key_id,String secret_access_key,URL url, HttpURLConnection conn, String method, String body) throws IOException {
+private String[] executeHttpMethod(String access_key_id,String secret_access_key,URL url, HttpURLConnection conn, String method, String body) throws IOException {
         conn.setRequestMethod(method);
         String username=access_key_id;
         String password=secret_access_key;
@@ -153,18 +155,13 @@ private int executeHttpMethod(String access_key_id,String secret_access_key,URL 
             }
         }
         logger.log(Level.INFO, "Sending {0} request to URL : {1}", new Object[]{method, url});
-        int responseCode = conn.getResponseCode();
-        logger.log(Level.INFO, "Response Code : {0}", responseCode);
+        String responseCode[] = new String[2];
+        responseCode[1]=null;
+        responseCode[1] = conn.getHeaderField("Location");
+        responseCode[0] = Integer.toString(conn.getResponseCode());
+        System.out.println(responseCode[0]+"    "+responseCode[1]);
+        logger.log(Level.INFO, "Response Code : {0}", responseCode[0]);
 
-        /*StringBuilder responseStr;
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-            String inputLine;
-            responseStr = new StringBuilder();
-            while ((inputLine = in.readLine()) != null) {
-                responseStr.append(inputLine);
-            }
-        }
-        //return responseStr.toString();*/
         return responseCode;
     }
 

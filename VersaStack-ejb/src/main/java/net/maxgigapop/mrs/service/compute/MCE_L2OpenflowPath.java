@@ -48,9 +48,9 @@ import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.Spa;
-
 import net.maxgigapop.mrs.common.Sna;
 import static net.maxgigapop.mrs.service.compute.MCETools.evaluateStatement_AnyTrue;
+import java.lang.Math;
 
 /**
  *
@@ -929,7 +929,8 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
     }
 
     String createFlowModel(String topologyURI, String device_flow, String src_port, String src_port_name, String dst_port, String dst_port_name) {
-
+        int rn = (int)(Math.random()*1000000000);
+        String flowIdn=Integer.toString(rn);
         String flowModelString = ""
                 + /*String flowModelString="/<delta> \n" +
                  "<id>1</id>\n" +
@@ -954,23 +955,23 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                 + "\n"
                 + "<" + topologyURI + ":" + device_flow + ":openflow-service:flow-table-1>\n"
                 + "       a                        mrs:FlowTable , owl:NamedIndividual ;\n"
-                + "       mrs:providesFlow <" + topologyURI + ":" + device_flow + ":openflow-service:flow-table-1:flow-12345> .\n"
+                + "       mrs:providesFlow <" + topologyURI + ":" + device_flow + ":openflow-service:flow-table-1:flow-"+flowIdn+"> .\n"
                 + "\n"
-                + "<" + topologyURI + ":" + device_flow + ":openflow-service:flow-table-1:flow-12345>\n"
+                + "<" + topologyURI + ":" + device_flow + ":openflow-service:flow-table-1:flow-"+flowIdn+">\n"
                 + "       a                        mrs:Flow , owl:NamedIndividual ;\n"
-                + "                mrs:flowMatch <" + topologyURI + ":" + device_flow + ":openflow-service:flow-table-1:flow-12345:rule-match-0> ;\n"
-                + //"                mrs:flowMatch <"+topologyURI+":"+device_flow+":openflow-service:flow-table-1:flow-12345:rule-match-1> ;\n" +
-                //"                mrs:flowMatch <"+topologyURI+":"+device_flow +":openflow-service:flow-table-1:flow-12345:rule-match-2> ;\n" +
-                //"                mrs:flowMatch <"+topologyURI+":"+device_flow +":openflow-service:flow-table-1:flow-12345:rule-match-3> ;\n" +
-                //"                mrs:flowMatch <"+topologyURI+":"+device_flow +":openflow-service:flow-table-1:flow-12345:rule-match-4> ;\n" +
-                "                mrs:flowAction <" + topologyURI + ":" + device_flow + ":openflow-service:flow-table-1:flow-12345:rule-action-0> .\n"
+                + "                mrs:flowMatch <" + topologyURI + ":" + device_flow + ":openflow-service:flow-table-1:flow-"+flowIdn+":rule-match-0> ;\n"
+                + //"                mrs:flowMatch <"+topologyURI+":"+device_flow+":openflow-service:flow-table-1:flow-"+flowIdn+":rule-match-1> ;\n" +
+                //"                mrs:flowMatch <"+topologyURI+":"+device_flow +":openflow-service:flow-table-1:flow-"+flowIdn+":rule-match-2> ;\n" +
+                //"                mrs:flowMatch <"+topologyURI+":"+device_flow +":openflow-service:flow-table-1:flow-"+flowIdn+":rule-match-3> ;\n" +
+                //"                mrs:flowMatch <"+topologyURI+":"+device_flow +":openflow-service:flow-table-1:flow-"+flowIdn+":rule-match-4> ;\n" +
+                "                mrs:flowAction <" + topologyURI + ":" + device_flow + ":openflow-service:flow-table-1:flow-"+flowIdn+":rule-action-0> .\n"
                 + "\n"
-                + "<" + topologyURI + ":" + device_flow + ":openflow-service:flow-table-1:flow-12345:rule-match-0>\n"
+                + "<" + topologyURI + ":" + device_flow + ":openflow-service:flow-table-1:flow-"+flowIdn+":rule-match-0>\n"
                 + "          a             mrs:FlowRule , owl:NamedIndividual ;\n"
                 + "                mrs:type \"IN_PORT\" ;\n"
                 + "                mrs:value \"" + src_port + "\" .\n"
                 + "\n"
-                + "<" + topologyURI + ":" + device_flow + ":openflow-service:flow-table-1:flow-12345:rule-action-0>\n"
+                + "<" + topologyURI + ":" + device_flow + ":openflow-service:flow-table-1:flow-"+flowIdn+":rule-action-0>\n"
                 + "          a             mrs:FlowRule , owl:NamedIndividual ;\n"
                 + "                mrs:type \"OUT_PORT\" ;\n"
                 + "                mrs:value \"" + dst_port + "\" .\n"; /*+
