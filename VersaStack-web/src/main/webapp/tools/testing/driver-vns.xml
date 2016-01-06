@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <driverInstance>
     <properties>
         <entry>
@@ -14,3 +15,21 @@
         </entry>
     </properties>
 </driverInstance>
+=======
+<driverInstance>
+    <properties>
+        <entry>
+            <key>topologyUri</key>
+            <value>urn:ogf:network:sdn.maxgigapop.net:network</value>
+        </entry>
+        <entry>
+            <key>driverEjbPath</key>
+            <value>java:module/GenericRESTDriver</value>
+        </entry>
+        <entry>
+            <key>subsystemBaseUrl</key>
+            <value>http://charon.dragon.maxgigapop.net:8080/VersaNS-0.0.1-SNAPSHOT</value>
+        </entry>
+    </properties>
+</driverInstance>
+>>>>>>> 16f82bb2f38eac7e1b2df8be7e4dddd8a8dbbd9e

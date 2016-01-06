@@ -226,7 +226,6 @@ public class HandleSystemCall {
                 .createUnionModel();
         OntModel referenceOntModel = referenceModel.getOntModel();
         OntModel targetOntModel = referenceModel.dryrunDelta(sysDelta);
-
         //## Step 2. verify model change
         // 2.1. get head/lastest VG based on the current versionGroup (no update / persist)
         VersionGroup headVG = VersionGroupPersistenceManager.refreshToHead(referenceVG, false);
@@ -278,13 +277,14 @@ public class HandleSystemCall {
             DeltaBase delta = referenceDSM.diffToModel(tom);
             if (ModelUtil.isEmptyModel(delta.getModelAddition().getOntModel()) && ModelUtil.isEmptyModel(delta.getModelReduction().getOntModel())) {
                 // no diff, use existing verionItem
-                continue;
+                //continue;
             }
             // create targetDSM and targetDSD only if there is a change. 
             ModelBase targetDSM = new ModelBase();
             targetDSM.setOntModel(tom);
             // create targetDSD 
             DriverSystemDelta targetDSD = new DriverSystemDelta();
+            
             // do not save delta as it is transient but delta.modelA and delta.modelR must be saved
             targetDSD.setModelAddition(delta.getModelAddition());
             targetDSD.setModelReduction(delta.getModelReduction());
@@ -310,6 +310,7 @@ public class HandleSystemCall {
 
         //## Step 4. propagate driverSystemDeltas 
         Context ejbCxt = null;
+        
         for (DriverSystemDelta targetDSD : targetDriverSystemDeltas) {
             // save targetDSD
             DeltaPersistenceManager.save(targetDSD);
@@ -336,12 +337,13 @@ public class HandleSystemCall {
                 if (ejbCxt == null) {
                     ejbCxt = new InitialContext();
                 }
-                IHandleDriverSystemCall driverSystemHandler = (IHandleDriverSystemCall) ejbCxt.lookup(driverEjbPath);
+                    IHandleDriverSystemCall driverSystemHandler = (IHandleDriverSystemCall) ejbCxt.lookup(driverEjbPath);
                 driverSystemHandler.propagateDelta(driverInstance, targetDSD);
             } catch (NamingException e) {
                 throw new EJBException(e);
             }
         }
+        
         // save systemInstance
         systemInstance.setSystemDelta(sysDelta);
         SystemInstancePersistenceManager.save(systemInstance);

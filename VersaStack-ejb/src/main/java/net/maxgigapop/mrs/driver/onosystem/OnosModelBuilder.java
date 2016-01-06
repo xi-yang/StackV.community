@@ -122,6 +122,9 @@ public class OnosModelBuilder {
             //add device to model
             Resource resNode = RdfOwl.createResource(model, topologyURI + ":" + device[i][0], node);
             model.add(model.createStatement(onosTopology, hasNode, resNode));
+            
+            Resource resOpenFlow = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":openflow-service", openflowService);
+            model.add(model.createStatement(resNode, hasService, resOpenFlow));
 
             //get all devicePorts and add to model
             if (device[i][1].equals("SWITCH") && device[i][2].equals("true")) {
@@ -133,6 +136,8 @@ public class OnosModelBuilder {
 
                         Resource resPort = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":port-" + devicePorts[j][4], biPort);
                         model.add(model.createStatement(resNode, hasBidirectionalPort, resPort));
+                        
+                        model.add(model.createStatement(resOpenFlow, hasBidirectionalPort, resPort));
 
                         //write src_portName and dst_portName into links[][6] and links[][7]
                         for (int k = 0; k < qtyLinks; k++) {
@@ -149,11 +154,14 @@ public class OnosModelBuilder {
                 //add flow per device into model
                 String deviceFlows[][] = onos.getOnosDeviceFlows(subsystemBaseUrl, device[i][0], access_key_id, secret_access_key);
                 int qtyFlows = deviceFlows.length;
+                
+                /*
                 Resource resOpenFlow = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":openflow-service", openflowService);
                 if (qtyFlows > 0) {
                     model.add(model.createStatement(resNode, hasService, resOpenFlow));
                 }
-
+                */
+                
                 for (int j = 0; j < qtyFlows; j++) {
 
                     //add a flow table for each groupId

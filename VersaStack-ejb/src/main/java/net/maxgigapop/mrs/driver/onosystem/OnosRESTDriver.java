@@ -10,6 +10,7 @@ import static java.lang.Thread.sleep;
 import com.hp.hpl.jena.ontology.OntModel;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.UUID;
@@ -44,6 +45,7 @@ import org.apache.commons.codec.binary.Base64;
 public class OnosRESTDriver implements IHandleDriverSystemCall{       
     Logger logger = Logger.getLogger(OnosRESTDriver.class.getName());
     //String requests="";
+    OnosPush push=new OnosPush();
     @Override
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     
@@ -59,7 +61,15 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
             String model = driverInstance.getHeadVersionItem().getModelRef().getTtlModel();
             String modelAdd = aDelta.getModelAddition().getTtlModel();
             String modelReduc = aDelta.getModelReduction().getTtlModel();
-            OnosPush push = new OnosPush(access_key_id, secret_access_key, subsystemBaseUrl, topologyURI);
+            PrintWriter out=new PrintWriter("/Users/diogonunes/Downloads/add.txt");
+            out.println(modelAdd);
+            out.close();
+            out=new PrintWriter("/Users/diogonunes/Downloads/reduc.txt");
+            out.println(modelReduc);
+            out.close();
+        
+
+            //OnosPush push = new OnosPush(access_key_id, secret_access_key, subsystemBaseUrl, topologyURI);
             String requests = null;
             try {
                 requests = push.pushPropagate(access_key_id, secret_access_key, model, modelAdd, modelReduc, topologyURI, subsystemBaseUrl);
@@ -102,7 +112,7 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         String requests = driverInstance.getProperty(requestId);
         
-        OnosPush push=new OnosPush(access_key_id, secret_access_key, subsystemBaseUrl,topologyURI);
+        //OnosPush push=new OnosPush(access_key_id, secret_access_key, subsystemBaseUrl,topologyURI);
         try {
             push.pushCommit( access_key_id,  secret_access_key,requests, topologyURI,  subsystemBaseUrl);
         } catch (Exception ex) {
@@ -111,7 +121,7 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
 
         driverInstance.getProperties().remove(requestId);
         DriverInstancePersistenceManager.merge(driverInstance);
-
+        
         Logger.getLogger(OnosRESTDriver.class.getName()).log(Level.INFO, "ONOS driver delta models succesfully commited");
         return new AsyncResult<String>("SUCCESS");
     }

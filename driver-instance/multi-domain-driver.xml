@@ -1,0 +1,17 @@
+<driverInstance><properties>
+<entry><key>topologyUri</key><value>urn:ogf:network:onos.maxgigapop.net:network3</value></entry>
+<entry><key>driverEjbPath</key><value>java:module/OnosRESTDriver</value></entry>
+<entry><key>subsystemBaseUrl</key><value>http://206.196.179.140:8181/onos/v1</value></entry>
+<entry><key>onos_access_key_id</key><value>karaf</value></entry>
+<entry><key>onos_secret_access_key</key><value>karaf</value></entry>
+<entry><key>srrg</key><value>{
+	"SRRG": [{
+		"id": "SRRG_id1",
+		"severity": 5,
+		"occurenceProbability": 0.5,
+		"devices": "",
+		"bidirectionalPorts": "of:0000000000000002:port-s2,of:0000000000000002:port-s2-eth2",
+	}]
+}</value></entry>
+</properties></driverInstance>
+

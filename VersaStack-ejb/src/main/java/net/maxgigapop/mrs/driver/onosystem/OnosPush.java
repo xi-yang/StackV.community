@@ -21,6 +21,7 @@ import net.maxgigapop.mrs.common.ModelUtil;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.logging.Level;
@@ -47,8 +48,8 @@ public class OnosPush {
     static final Logger logger = Logger.getLogger(OnosPush.class.getName());
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 
-    public OnosPush(String access_key_id,String secret_access_key,String subsystemBaseUrl,String topologyURI){
-        
+    //public OnosPush(String access_key_id,String secret_access_key,String subsystemBaseUrl,String topologyURI){
+    public OnosPush(){    
     }
 
    
@@ -60,10 +61,20 @@ public class OnosPush {
         OntModel modelAdd = ModelUtil.unmarshalOntModel(modelAddTtl);
         OntModel modelReduct = ModelUtil.unmarshalOntModel(modelReductTtl);
         reduction_string=parseFlowsReduct(modelReduct,topologyURI);
+        PrintWriter out=new PrintWriter("/Users/diogonunes/Downloads/modeladd.txt");
+        out.println(modelAdd.getBaseModel().toString());
+        out.close();
+        out=new PrintWriter("/Users/diogonunes/Downloads/modelreduc.txt");
+        out.println(modelReduct.getBaseModel().toString());
+        out.close();
+        
         if(reduction_string.length()>1){
+            System.out.println("checkpoint");
             requests="Reduction\n"+reduction_string+"end_Reduct";
         }
         addition_string=parseFlows(modelAdd,topologyURI);
+        
+        System.out.format("pushString: %s\n", addition_string);
         if(addition_string.length()>1){
             requests=requests+"Addition\n"+addition_string+"end_Add";
         }
@@ -84,6 +95,7 @@ public class OnosPush {
          if(model.contains("Addition")){
              addition=model.split("Addition\n")[1].split("\nend_Add")[0];
              System.out.println(addition);
+
          }
          String[] json_string;
          if(!reduction.isEmpty()){
@@ -225,10 +237,10 @@ private String parseFlows(OntModel modelAdd,String topologyURI){
         json_string[0]=flow.toString().split(topologyURI+":")[1].split(":openflow-service")[0]+"\n";
         json_string[1]="{\"isPermanent\": true,\"priority\": 100,"
                 + "\"selector\": {\"criteria\": [{\"port\": "+flowdata[0]+",\"type\":"
-                + " \"IN_PORT\"}]},"
-                //+ "{\"mac\": \""+flowdata[1]+"\","
-                //+ "\"type\": \"ETH_SRC\"},{\"mac\": \""+flowdata[2]+"\","
-                //+ "\"type\": \"ETH_DST\"}]},"
+                + " \"IN_PORT\"},"
+                + "{\"mac\": \""+flowdata[1]+"\","
+                + "\"type\": \"ETH_SRC\"},{\"mac\": \""+flowdata[2]+"\","
+                + "\"type\": \"ETH_DST\"}]},"
                 + "\"treatment\": {"
                 + "\"instructions\": [{\"port\": "+flowdata[5]+",\"type\": \"OUTPUT\"}]}}\n";
 
@@ -236,14 +248,16 @@ private String parseFlows(OntModel modelAdd,String topologyURI){
         if(reversible.equals("1")){
             json_string[1]="{\"isPermanent\": true,\"priority\": 100,"
                 + "\"selector\": {\"criteria\": [{\"port\": "+flowdata[5]+",\"type\":"
-                + " \"IN_PORT\"}]},"
-                //+ "{\"mac\": \""+flowdata[1]+"\","
-                //+ "\"type\": \"ETH_SRC\"},{\"mac\": \""+flowdata[2]+"\","
-                //+ "\"type\": \"ETH_DST\"}]},"
+                + " \"IN_PORT\"},"
+                + "{\"mac\": \""+flowdata[1]+"\","
+                + "\"type\": \"ETH_SRC\"},{\"mac\": \""+flowdata[2]+"\","
+                + "\"type\": \"ETH_DST\"}]},"
                 + "\"treatment\": {"
                 + "\"instructions\": [{\"port\": "+flowdata[0]+",\"type\": \"OUTPUT\"}]}}\n";
+            
+            requests=requests+json_string[0]+json_string[1];
         } 
-        requests=requests+json_string[0]+json_string[1];
+        
         
       }
       return requests;

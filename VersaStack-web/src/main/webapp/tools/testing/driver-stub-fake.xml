@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <driverInstance>
     <properties>
         <entry>
@@ -153,3 +154,160 @@
         </entry>
     </properties>
 </driverInstance>
+=======
+<driverInstance>
+    <properties>
+        <entry>
+            <key>topologyUri</key>
+            <value>urn:ogf:network:rains.maxgigapop.net:max:2015:topology</value>
+        </entry>
+        <entry>
+            <key>driverEjbPath</key>
+            <value>java:module/StubSystemDriver</value>
+        </entry>
+        <entry>
+            <key>stubModelTtl</key>
+            <value>
+                @prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .
+                @prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .
+                @prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .
+                @prefix rdf:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .
+                @prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .
+                @prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .
+
+&lt;urn:ogf:network:aws.amazon.com:aws-cloud:directconnect&gt;
+                nml:hasLabelGroup &lt;urn:ogf:network:aws.amazon.com:aws-cloud:directconnect:vlan-range&gt; ;
+                nml:isAlias &lt;urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&gt; .
+
+&lt;urn:ogf:network:aws.amazon.com:aws-cloud:directconnect:vlan-range&gt;
+                a nml:LabelGroup, owl:NamedIndividual ;
+                nml:labeltype &lt;http://schemas.ogf.org/nml/2012/10/ethernet#vlan&gt; ;
+                nml:values "2-4094" .
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud&gt;
+                nml:hasNode &lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch&gt; .
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch&gt;
+                a nml:Node, owl:NamedIndividual ;
+                nml:hasBidirectionalPort &lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-ext&gt; ,
+	&lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int1&gt; ,
+	&lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int2&gt; ,
+	&lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int3&gt; ,
+	&lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int4&gt; ;
+                nml:hasService &lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:l2switching&gt; .
+
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:l2switching&gt;
+                a owl:NamedIndividual , nml:SwitchingService ;
+                nml:encoding &lt;http://schemas.ogf.org/nml/2012/10/ethernet#vlan&gt; ;
+                nml:labelSwapping "false" ;
+                nml:hasBidirectionalPort &lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-ext&gt; ,
+	&lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int1&gt; ,
+	&lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int2&gt; ,
+	&lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int3&gt; ,
+	&lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int4&gt; .
+
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-ext&gt;
+                a nml:BidirectionalPort, owl:NamedIndividual ;
+                nml:hasLabelGroup &lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-ext:vlan-range&gt; .
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-ext:vlan-range&gt;
+                a nml:LabelGroup, owl:NamedIndividual ;
+                nml:labeltype &lt;http://schemas.ogf.org/nml/2012/10/ethernet#vlan&gt; ;
+                nml:values "2-4094" .
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int1&gt;
+                a nml:BidirectionalPort, owl:NamedIndividual ;
+                nml:hasLabelGroup &lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int1:vlan-range&gt; .
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int1:vlan-range&gt;
+                a nml:LabelGroup, owl:NamedIndividual ;
+                nml:labeltype &lt;http://schemas.ogf.org/nml/2012/10/ethernet#vlan&gt; ;
+                nml:values "2-4094" .
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int2&gt;
+                a nml:BidirectionalPort, owl:NamedIndividual ;
+                nml:hasLabelGroup &lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int2:vlan-range&gt; .
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int2:vlan-range&gt;
+                a nml:LabelGroup, owl:NamedIndividual ;
+                nml:labeltype &lt;http://schemas.ogf.org/nml/2012/10/ethernet#vlan&gt; ;
+                nml:values "2-4094" .
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int3&gt;
+                a nml:BidirectionalPort, owl:NamedIndividual ;
+                nml:hasLabelGroup &lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int3:vlan-range&gt; .
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int3:vlan-range&gt;
+                a nml:LabelGroup, owl:NamedIndividual ;
+                nml:labeltype &lt;http://schemas.ogf.org/nml/2012/10/ethernet#vlan&gt; ;
+                nml:values "2-4094" .
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int4&gt;
+                a nml:BidirectionalPort, owl:NamedIndividual ;
+                nml:hasLabelGroup &lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int4:vlan-range&gt; .
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int4:vlan-range&gt;
+                a nml:LabelGroup, owl:NamedIndividual ;
+                nml:labeltype &lt;http://schemas.ogf.org/nml/2012/10/ethernet#vlan&gt; ;
+                nml:values "2-4094" .
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:hostID+compute1&gt;
+                nml:hasBidirectionalPort &lt;urn:ogf:network:openstack.com:openstack-cloud:hostID+compute1:port+eth2&gt; .
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:hostID+compute1:port+eth2&gt;
+                a nml:BidirectionalPort, owl:NamedIndividual ;
+                nml:hasLabelGroup &lt;urn:ogf:network:openstack.com:openstack-cloud:hostID+compute1:port+eth2:vlan-range&gt; ;
+                nml:isAlias &lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int1&gt; .
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:hostID+compute1:port+eth2:vlan-range&gt;
+                a nml:LabelGroup, owl:NamedIndividual ;
+                nml:labeltype &lt;http://schemas.ogf.org/nml/2012/10/ethernet#vlan&gt; ;
+                nml:values "2-4094" .
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:hostID+compute2&gt;
+                nml:hasBidirectionalPort &lt;urn:ogf:network:openstack.com:openstack-cloud:hostID+compute2:port+eth2&gt; .
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:hostID+compute2:port+eth2&gt;
+                a nml:BidirectionalPort, owl:NamedIndividual ;
+                nml:hasLabelGroup &lt;urn:ogf:network:openstack.com:openstack-cloud:hostID+compute2:port+eth2:vlan-range&gt; ;
+                nml:isAlias &lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int2&gt; .
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:hostID+compute2:port+eth2:vlan-range&gt;
+                a nml:LabelGroup, owl:NamedIndividual ;
+                nml:labeltype &lt;http://schemas.ogf.org/nml/2012/10/ethernet#vlan&gt; ;
+                nml:values "2-4094" .
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:hostID+compute3&gt;
+                nml:hasBidirectionalPort &lt;urn:ogf:network:openstack.com:openstack-cloud:hostID+compute3:port+eth2&gt; .
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:hostID+compute3:port+eth2&gt;
+                a nml:BidirectionalPort, owl:NamedIndividual ;
+                nml:hasLabelGroup &lt;urn:ogf:network:openstack.com:openstack-cloud:hostID+compute3:port+eth2:vlan-range&gt; ;
+                nml:isAlias &lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int3&gt; .
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:hostID+compute3:port+eth2:vlan-range&gt;
+                a nml:LabelGroup, owl:NamedIndividual ;
+                nml:labeltype &lt;http://schemas.ogf.org/nml/2012/10/ethernet#vlan&gt; ;
+                nml:values "2-4094" .
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:hostID+compute4&gt;
+                nml:hasBidirectionalPort &lt;urn:ogf:network:openstack.com:openstack-cloud:hostID+compute4:port+eth2&gt; .
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:hostID+compute4:port+eth2&gt;
+                a nml:BidirectionalPort, owl:NamedIndividual ;
+                nml:hasLabelGroup &lt;urn:ogf:network:openstack.com:openstack-cloud:hostID+compute4:port+eth2:vlan-range&gt; ;
+                nml:isAlias &lt;urn:ogf:network:openstack.com:openstack-cloud:fake-l2switch:port-int4&gt; .
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:hostID+compute4:port+eth2:vlan-range&gt;
+                a nml:LabelGroup, owl:NamedIndividual ;
+                nml:labeltype &lt;http://schemas.ogf.org/nml/2012/10/ethernet#vlan&gt; ;
+                nml:values "2-4094" .
+
+
+            </value>
+        </entry>
+    </properties>
+</driverInstance>
+>>>>>>> 16f82bb2f38eac7e1b2df8be7e4dddd8a8dbbd9e

@@ -18,7 +18,13 @@
         </div>        
         <!-- JS -->
         <script>
+<<<<<<< HEAD
+        </script>        
+    </body>
+</html>
+=======
 
         </script>        
     </body>
 </html>
+>>>>>>> 16f82bb2f38eac7e1b2df8be7e4dddd8a8dbbd9e
