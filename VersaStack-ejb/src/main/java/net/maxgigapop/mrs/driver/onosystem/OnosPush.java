@@ -20,11 +20,14 @@ import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ModelUtil;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.io.DataOutputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.logging.Level;
+import net.maxgigapop.mrs.bean.DriverSystemDelta;
+import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import org.apache.commons.codec.binary.Base64;
 
 /**
@@ -39,7 +42,8 @@ import org.apache.commons.codec.binary.Base64;
 //elastic IPs are not linked in any way to the root topology, find a way to do this
 //in the model to make the two methods work.
 public class OnosPush {
-
+    public String fakeMap="";
+    public String realMap="";
     //private AmazonEC2Client ec2 = null;
     //private AmazonDirectConnectClient dc = null;
     private OnosServer ec2Client = null;
@@ -48,8 +52,8 @@ public class OnosPush {
     static final Logger logger = Logger.getLogger(OnosPush.class.getName());
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 
-    //public OnosPush(String access_key_id,String secret_access_key,String subsystemBaseUrl,String topologyURI){
-    public OnosPush(){    
+    public OnosPush(){
+        
     }
 
    
@@ -61,15 +65,7 @@ public class OnosPush {
         OntModel modelAdd = ModelUtil.unmarshalOntModel(modelAddTtl);
         OntModel modelReduct = ModelUtil.unmarshalOntModel(modelReductTtl);
         reduction_string=parseFlowsReduct(modelReduct,topologyURI);
-        PrintWriter out=new PrintWriter("/Users/diogonunes/Downloads/modeladd.txt");
-        out.println(modelAdd.getBaseModel().toString());
-        out.close();
-        out=new PrintWriter("/Users/diogonunes/Downloads/modelreduc.txt");
-        out.println(modelReduct.getBaseModel().toString());
-        out.close();
-        
         if(reduction_string.length()>1){
-            System.out.println("checkpoint");
             requests="Reduction\n"+reduction_string+"end_Reduct";
         }
         addition_string=parseFlows(modelAdd,topologyURI);
@@ -84,7 +80,19 @@ public class OnosPush {
     }
     
     
-     public void pushCommit(String access_key_id, String secret_access_key,String model,String topologyURI, String subsystemBaseUrl) throws EJBException, Exception   {
+     public void pushCommit(String access_key_id, String secret_access_key,String model,String topologyURI, String subsystemBaseUrl, DriverSystemDelta aDelta) throws EJBException, Exception   {
+         aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId()); // refresh
+         String stringModelAdd = aDelta.getSystemDelta().getModelAddition().getTtlModel();
+         String newStringModelAdd = stringModelAdd;
+         
+         String stringDriverModelAdd = aDelta.getModelAddition().getTtlModel();
+         String newStringDriverModelAdd = stringDriverModelAdd;
+         
+         String servicedelta=aDelta.getSystemDelta().getServiceDelta().getModelAddition().toString();
+         PrintWriter out=new PrintWriter("/Users/diogonunes/Downloads/servicedelta.txt");
+         out.println(servicedelta);
+         out.close();
+        
          String reduction="";
          String addition="";
          if(model.contains("Reduction")){
@@ -104,10 +112,11 @@ public class OnosPush {
                 URL url = new URL(String.format(subsystemBaseUrl+"/flows/"+json_string[i]+"/"+json_string[i+1]));
                 HttpURLConnection conn = (HttpURLConnection)url.openConnection();
                 String status[]=new String[2];
-                status = this.executeHttpMethod(access_key_id, secret_access_key,url, conn, "DELETE",null);
-                if (Integer.parseInt(status[0])!=204) {
-                    throw new EJBException(String.format("Failed to delete %s from %s",json_string[i+1],json_string[i]));
-                }
+                System.out.println("checkpoint");
+                //status = this.executeHttpMethod(access_key_id, secret_access_key,url, conn, "DELETE",null);
+                //if (Integer.parseInt(status[0])!=204) {
+                //    throw new EJBException(String.format("Failed to delete %s from %s",json_string[i+1],json_string[i]));
+                //}
                 i++;
             }
          }
@@ -117,12 +126,33 @@ public class OnosPush {
                 URL url = new URL(String.format(subsystemBaseUrl+"/flows/"+json_string[i]));
                 HttpURLConnection conn = (HttpURLConnection)url.openConnection();
                 String status[] = new String[2];
-                status = this.executeHttpMethod(access_key_id, secret_access_key,url, conn, "POST", json_string[i+1]);
+                status = this.executeHttpMethod(access_key_id, secret_access_key,url, conn, "POST", json_string[i+2]);
                 if (Integer.parseInt(status[0])!=201) {
-                    throw new EJBException(String.format("Failed to push %s into %s",json_string[i+1],json_string[i]));
+                    throw new EJBException(String.format("Failed to push %s into %s",json_string[i+2],json_string[i]));
                 }
-                i++;
+                String realFlowId=status[1].split(json_string[i]+"/")[1];
+                String fakeFlowId=json_string[i+1];
+                if(newStringModelAdd.contains(fakeFlowId)){
+                    newStringModelAdd=newStringModelAdd.replace(fakeFlowId, realFlowId);
+                    fakeMap=fakeMap+fakeFlowId+"\n";
+                    realMap=realMap+realFlowId+"\n";
+                    
+        
+                }
+                if(newStringDriverModelAdd.contains(fakeFlowId)){
+                    newStringDriverModelAdd=newStringDriverModelAdd.replace(fakeFlowId, realFlowId);
+                }
+                i=i+2;
             }
+            OntModel newModelAdd =  ModelUtil.unmarshalOntModel(newStringModelAdd);
+            aDelta.getSystemDelta().getModelAddition().setOntModel(newModelAdd);
+         
+            OntModel newDriverModelAdd =  ModelUtil.unmarshalOntModel(newStringDriverModelAdd);
+            aDelta.getModelAddition().setOntModel(newDriverModelAdd);
+         
+            aDelta.getModelAddition().saveOrUpdate();
+            aDelta.getSystemDelta().getModelAddition().saveOrUpdate();
+            
          }
      }
    
@@ -179,7 +209,7 @@ private String[] executeHttpMethod(String access_key_id,String secret_access_key
 
 private String parseFlows(OntModel modelAdd,String topologyURI){
         String requests = "";
-        String reversible="";
+//        String reversible="";
         
        String query = "SELECT ?flow  WHERE {"
                + "?flow a mrs:Flow. "
@@ -205,35 +235,36 @@ private String parseFlows(OntModel modelAdd,String topologyURI){
                 RDFNode rulematch = querySolution2.get("rulematch");
                 if(flow2.toString().equals(flow.toString()+":rule-match-0")){
                     flowdata[0]=rulematch.toString();
-                    
+                    //IN_PORT
                 }
                 if(flow2.toString().equals(flow.toString()+":rule-match-1")){
                     flowdata[1]=rulematch.toString();
-                    
+                    //ETH_SRC_MAC
                 }
                 if(flow2.toString().equals(flow.toString()+":rule-match-2")){
                     flowdata[2]=rulematch.toString();
-                    
+                    //ETH_DST_MAC
                 }
                 if(flow2.toString().equals(flow.toString()+":rule-match-3")){
                     flowdata[3]=rulematch.toString();
-                    
+                    //ETH_SRC_VLAN
                 }
                 if(flow2.toString().equals(flow.toString()+":rule-match-4")){
                     flowdata[4]=rulematch.toString();
-                    
+                    //ETH_DST_VLAN
                 }
                 if(flow2.toString().equals(flow.toString()+":rule-action-0")){
                     flowdata[5]=rulematch.toString();
-                    
+                    //OUT_PORT
                 }
-                if(flow2.toString().equals(flow.toString()+":reversible")){
-                    reversible=rulematch.toString();
-                    
-                }
+//                if(flow2.toString().equals(flow.toString()+":reversible")){
+//                    reversible=rulematch.toString();                   
+//                }
              }
+        
              
-        String[] json_string=new String[2];
+        String[] json_string=new String[3];
+        json_string[2]=flow.toString().split("table-0:flow-")[1]+"\n";
         json_string[0]=flow.toString().split(topologyURI+":")[1].split(":openflow-service")[0]+"\n";
         json_string[1]="{\"isPermanent\": true,\"priority\": 100,"
                 + "\"selector\": {\"criteria\": [{\"port\": "+flowdata[0]+",\"type\":"
@@ -244,19 +275,20 @@ private String parseFlows(OntModel modelAdd,String topologyURI){
                 + "\"treatment\": {"
                 + "\"instructions\": [{\"port\": "+flowdata[5]+",\"type\": \"OUTPUT\"}]}}\n";
 
-        requests=requests+json_string[0]+json_string[1];
-        if(reversible.equals("1")){
+        requests=requests+json_string[0]+json_string[2]+json_string[1];
+/*        if(reversible.equals("1")){
+            json_string[2]=flow.toString().split("table-0:flow-")[1]+"r\n";
             json_string[1]="{\"isPermanent\": true,\"priority\": 100,"
                 + "\"selector\": {\"criteria\": [{\"port\": "+flowdata[5]+",\"type\":"
                 + " \"IN_PORT\"},"
-                + "{\"mac\": \""+flowdata[1]+"\","
-                + "\"type\": \"ETH_SRC\"},{\"mac\": \""+flowdata[2]+"\","
+                + "{\"mac\": \""+flowdata[2]+"\","
+                + "\"type\": \"ETH_SRC\"},{\"mac\": \""+flowdata[1]+"\","
                 + "\"type\": \"ETH_DST\"}]},"
                 + "\"treatment\": {"
                 + "\"instructions\": [{\"port\": "+flowdata[0]+",\"type\": \"OUTPUT\"}]}}\n";
             
-            requests=requests+json_string[0]+json_string[1];
-        } 
+            requests=requests+json_string[0]+json_string[2]+json_string[1];*/
+ //       } 
         
         
       }
@@ -264,8 +296,11 @@ private String parseFlows(OntModel modelAdd,String topologyURI){
 }
 
 
-private String parseFlowsReduct(OntModel modelReduct,String topologyURI){
+private String parseFlowsReduct(OntModel modelReduct,String topologyURI) throws FileNotFoundException{
         String requests = "";
+        PrintWriter out = new PrintWriter("/Users/diogonunes/Downloads/reductFlowsReduct.txt");
+            out.println(modelReduct);
+            out.close();
         
        String query = "SELECT ?flow WHERE {"
                + "?flow a mrs:Flow . "
@@ -291,6 +326,14 @@ private String parseFlowsReduct(OntModel modelReduct,String topologyURI){
       return requests;
 }
 
+public String getFakeFlowId(){
+    
+    return fakeMap;
+}
+public String getRealFlowId(){
+    
+    return realMap;
+}
 
 
 }

@@ -51,6 +51,7 @@ import net.maxgigapop.mrs.common.Spa;
 import net.maxgigapop.mrs.common.Sna;
 import static net.maxgigapop.mrs.service.compute.MCETools.evaluateStatement_AnyTrue;
 import java.lang.Math;
+import net.maxgigapop.mrs.driver.onosystem.*;
 
 /**
  *
@@ -136,11 +137,8 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
             String flow_model = "";
             String flow_model_back = "";
             
-            String flow_model_new = "";
-            
-            String ETH_SRC_MAC = "";
-            String ETH_DST_MAC = "";
-            for (Map entry : connTerminalData){
+            String[] macAddress = new String[2];
+/*            for (Map entry : connTerminalData){
                 if (!entry.containsKey("policyData") || !entry.containsKey("type") || !entry.containsKey("protection")){
                     continue;
                 }
@@ -151,7 +149,11 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                     ETH_DST_MAC = entry.get("dataValue").toString();
                 }
             }
+*/            
+            macAddress = this.getMacAddress(systemModel.getOntModel(), resLink, connTerminalData);
             
+            String ETH_SRC_MAC = macAddress[0];
+            String ETH_DST_MAC = macAddress[1];
             System.out.format("ETH_SRC_MAC: %s\n", ETH_SRC_MAC);
             System.out.format("ETH_DST_MAC: %s\n", ETH_DST_MAC);
             //TO-DO: modify SRRG, no port in Map anymore, replaced by dataValue and specified by dataType
@@ -250,7 +252,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
             Logger.getLogger(MCE_L2OpenflowPath.class.getName()).log(Level.SEVERE, null, ex);
         }
         
-        System.out.println("\n\nDone with MCE");
+//        System.out.println("\n\nDone with MCE");
         return new AsyncResult(outputDelta);
     }
 
@@ -289,6 +291,82 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         }
 
         return srrgMap;
+    }
+    
+    private String[] getMacAddress (OntModel systemModel, Resource resLink, List<Map> connTerminalData ){
+        
+        String macAddress[] = new String[2];
+        
+        //first get the terminal data, as in doSrrgPathFinding
+        OntModel transformedModel = MCETools.transformL2OpenflowPathModel(systemModel);
+        
+        if (!verifyConnectsToModel(transformedModel)){
+            throw new EJBException(String.valueOf("transformedModel is not fully bidirectional\n"));
+        }
+        
+        List<Resource> terminals = new ArrayList<>();
+        Resource terminal = null;
+        for (Map entry : connTerminalData) {
+            if (!entry.containsKey("policyData") || !entry.containsKey("type") || !entry.containsKey("protection")) {
+                continue;
+            }
+            if(entry.get("dataType").toString().equals("port")){
+                terminal = systemModel.getResource(entry.get("dataValue").toString());
+                if (terminal == null) {
+                    throw new EJBException(String.format("%s::process doSrrgPathFinding cannot identify terminal <%s>", MCE_L2OpenflowPath.class.getName(), (String) entry.get("port")));
+                }
+                terminals.add(terminal);
+            }
+        }
+
+        if (terminals.size() != 2) {
+            throw new EJBException(String.format("%s::process cannot doSrrgPathFinding for %s which provides not 2 terminals", this.getClass().getName(), resLink));
+        }
+
+        Resource nodeA = terminals.get(0);
+        Resource nodeZ = terminals.get(1);
+        
+        System.out.format("nodeA : %s\nnodeZ : %s\n", nodeA.toString(), nodeZ.toString());
+                
+        //after get nodeA and nodeZ, try to find locatedAt property in baseModel to find the src_mac and dest_mac
+        String sparql = "SELECT ?hostId ?address ?location ?addressType ?addressValue WHERE{"
+                + "?hostId a nml:Node. "
+                + "?hostId mrs:hasNetworkAddress ?address. "
+                + "?hostId nml:locatedAt ?location. "
+                + "?address mrs:type ?addressType . ?address mrs:value ?addressValue . "
+                + "}";
+        
+        ResultSet r = ModelUtil.sparqlQuery(systemModel, sparql);
+//        Map<Resource, List> hostMap = new HashMap<>();
+        while (r.hasNext()){
+            QuerySolution querySolution = r.next();
+            Resource resHost = querySolution.get("hostId").asResource();
+//            if(!hostMap.containsKey(resHost)){
+//                List hostList = new ArrayList<>();
+//                hostMap.put(resHost, hostList);
+//            }
+            
+            Resource resAddress = querySolution.get("address").asResource();
+            Resource resLocation = querySolution.get("location").asResource();
+            
+            RDFNode resType = querySolution.get("addressType");
+            RDFNode resValue = querySolution.get("addressValue");
+            
+            if (resType.toString().equals("macAddresses")){
+                if (resLocation.equals(nodeA)){
+                    macAddress[0] = resValue.toString();
+                }
+            }
+            
+            if (resType.toString().equals("macAddresses")){
+                if (resLocation.equals(nodeZ)){
+                    macAddress[1] = resValue.toString();
+                }
+            }
+            
+        }
+     
+        return macAddress;
     }
 
     private MCETools.Path doSrrgPathFinding(OntModel systemModel, OntModel spaModel, Resource resLink, List<Map> connTerminalData, Map<Resource, List> srrgMap) {
@@ -862,19 +940,29 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         for (j=0; j< (l2path.size()/3 + 1); j++){
             
             int rn = (int)(Math.random()*1000000000);
+            int rnreverse = (int)(Math.random()*1000000000);
             String flowIdn=Integer.toString(rn);
+            String flowIdnreverse=Integer.toString(rnreverse);
+            
             
             //System.out.format("Device: %s, inport: %s, outport: %s\n", device[j], inport[j], outport[j]);
             String flowTable = String.format("%s:openflow-service:flow-table-0", device[j]);
             String flowID = String.format("%s:flow-%s", flowTable, flowIdn);
+            String flowIDr = String.format("%s:flow-%s", flowTable, flowIdnreverse);
             String flowMatch0 = String.format("%s:rule-match-0", flowID);
             String flowMatch1 = String.format("%s:rule-match-1", flowID);
             String flowMatch2 = String.format("%s:rule-match-2", flowID);
             String flowAction = String.format("%s:rule-action-0", flowID);
+            String flowMatch0r = String.format("%s:rule-match-0", flowIDr);
+            String flowMatch1r = String.format("%s:rule-match-1", flowIDr);
+            String flowMatch2r = String.format("%s:rule-match-2", flowIDr);
+            String flowActionr = String.format("%s:rule-action-0", flowIDr);
         
             flowModelString += 
                       "<" + flowTable + ">\n"
-                    + "       mrs:providesFlow <" + flowID + "> .\n"
+                    //+ "       mrs:providesFlow <" + flowID + "> .\n"
+                    +"       mrs:providesFlow <" + flowID + "> ;\n"
+                    +"       mrs:providesFlow <" + flowIDr + "> .\n"
                     + "\n"
                     
                     + "<" + flowID + ">\n"
@@ -885,10 +973,24 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                     + "                mrs:flowAction <" + flowAction + "> .\n"
                     + "\n"
                     
+                    + "<" + flowIDr + ">\n"
+                    + "       a                        mrs:Flow , owl:NamedIndividual ;\n"
+                    + "                mrs:flowMatch <" + flowMatch0r + "> ;\n"
+                    + "                mrs:flowMatch <" + flowMatch1r + "> ;\n"
+                    + "                mrs:flowMatch <" + flowMatch2r + "> ;\n"
+                    + "                mrs:flowAction <" + flowActionr + "> .\n"
+                    + "\n"
+                    
                     + "<" + flowMatch0 + ">\n"
                     + "          a             mrs:FlowRule , owl:NamedIndividual ;\n"
                     + "                mrs:type \"IN_PORT\" ;\n"
                     + "                mrs:value \"" + inport[j] + "\" .\n"
+                    + "\n"
+                    
+                    + "<" + flowMatch0r + ">\n"
+                    + "          a             mrs:FlowRule , owl:NamedIndividual ;\n"
+                    + "                mrs:type \"IN_PORT\" ;\n"
+                    + "                mrs:value \"" + outport[j] + "\" .\n"
                     + "\n"
                     
                     + "<" + flowAction + ">\n"
@@ -897,10 +999,22 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                     + "                mrs:value \"" + outport[j] + "\" .\n"
                     + "\n"
                     
+                    + "<" + flowActionr + ">\n"
+                    + "          a             mrs:FlowRule , owl:NamedIndividual ;\n"
+                    + "                mrs:type \"OUT_PORT\" ;\n"
+                    + "                mrs:value \"" + inport[j] + "\" .\n"
+                    + "\n"
+                    
                     + "<" + flowMatch1 + ">\n"
                     + "          a             mrs:FlowRule , owl:NamedIndividual ;\n"
                     + "                mrs:type \"ETH_SRC_MAC\" ;\n"
                     + "                mrs:value \"" + ETH_SRC_MAC + "\" .\n"
+                    + "\n"
+                    
+                    + "<" + flowMatch1r + ">\n"
+                    + "          a             mrs:FlowRule , owl:NamedIndividual ;\n"
+                    + "                mrs:type \"ETH_SRC_MAC\" ;\n"
+                    + "                mrs:value \"" + ETH_DST_MAC + "\" .\n"
                     + "\n"
                     
                     + "<" + flowMatch2 + ">\n"
@@ -908,6 +1022,13 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                     + "                mrs:type \"ETH_DST_MAC\" ;\n"
                     + "                mrs:value \"" + ETH_DST_MAC + "\" .\n"
                     + "\n"
+                    
+                    + "<" + flowMatch2r + ">\n"
+                    + "          a             mrs:FlowRule , owl:NamedIndividual ;\n"
+                    + "                mrs:type \"ETH_DST_MAC\" ;\n"
+                    + "                mrs:value \"" + ETH_SRC_MAC + "\" .\n"
+                    + "\n"
+                    
                     ;
         }
         return flowModelString;
@@ -1123,29 +1244,29 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                  "</modelReduction>\n" +
                  "\n" +
                  "<modelAddition>\n" +*/ "@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .@prefix owl:   <http://www.w3.org/2002/07/owl#> .@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .\n"
-//                + "<" + topologyURI + ":" + device_flow + ">\n"
-//                + "        a      nml:Node , owl:NamedIndividual ;\n"
-//                + "        nml:hasService <" + topologyURI + ":" + device_flow + ":openflow-service> .\n"
-//                + "\n"
-//                + "<" + topologyURI + ":" + device_flow + ":openflow-service>\n"
-//                + "        a                       mrs:OpenflowService , owl:NamedIndividual ;\n"
-//                + "        nml:hasBidirectionalPort <" + topologyURI + ":" + device_flow + ":port" + src_port_name + "> , <" + topologyURI + ":" + device_flow + ":port" + dst_port_name + "> ;\n"
-//                + "        mrs:providesFlowTable <" + topologyURI + ":" + device_flow + ":openflow-service:flow-table-0> .\n"
-//                + "\n"
-//                + "<" + topologyURI + ":" + device_flow + ":openflow-service:flow-table-0>\n"
-//                + "       a                        mrs:FlowTable , owl:NamedIndividual .\n"
-//                + "\n"
+                + "<" + topologyURI + ":" + device_flow + ">\n"
+                + "        a      nml:Node , owl:NamedIndividual ;\n"
+                + "        nml:hasService <" + topologyURI + ":" + device_flow + ":openflow-service> .\n"
+                + "\n"
+                + "<" + topologyURI + ":" + device_flow + ":openflow-service>\n"
+                + "        a                       mrs:OpenflowService , owl:NamedIndividual ;\n"
+                + "        nml:hasBidirectionalPort <" + topologyURI + ":" + device_flow + ":port" + src_port_name + "> , <" + topologyURI + ":" + device_flow + ":port" + dst_port_name + "> ;\n"
+                + "        mrs:providesFlowTable <" + topologyURI + ":" + device_flow + ":openflow-service:flow-table-0> .\n"
+                + "\n"
                 + "<" + topologyURI + ":" + device_flow + ":openflow-service:flow-table-0>\n"
-//                + "       a                        mrs:FlowTable , owl:NamedIndividual ;\n"
+                + "       a                        mrs:FlowTable , owl:NamedIndividual .\n"
+                + "\n"
+                + "<" + topologyURI + ":" + device_flow + ":openflow-service:flow-table-0>\n"
+                + "       a                        mrs:FlowTable , owl:NamedIndividual ;\n"
                 + "       mrs:providesFlow <" + topologyURI + ":" + device_flow + ":openflow-service:flow-table-0:flow-"+flowIdn+"> .\n"
                 + "\n"
                 + "<" + topologyURI + ":" + device_flow + ":openflow-service:flow-table-0:flow-"+flowIdn+">\n"
                 + "       a                        mrs:Flow , owl:NamedIndividual ;\n"
                 + "                mrs:flowMatch <" + topologyURI + ":" + device_flow + ":openflow-service:flow-table-0:flow-"+flowIdn+":rule-match-0> ;\n"
-                + "                mrs:flowMatch <"+topologyURI+":"+device_flow+":openflow-service:flow-table-0:flow-"+flowIdn+":rule-match-1> ;\n"
-                + "                mrs:flowMatch <"+topologyURI+":"+device_flow +":openflow-service:flow-table-0:flow-"+flowIdn+":rule-match-2> ;\n" 
-//                +"                mrs:flowMatch <"+topologyURI+":"+device_flow +":openflow-service:flow-table-0:flow-"+flowIdn+":rule-match-3> ;\n" +
-//                +"                mrs:flowMatch <"+topologyURI+":"+device_flow +":openflow-service:flow-table-0:flow-"+flowIdn+":rule-match-4> ;\n" +
+                //+ "                mrs:flowMatch <"+topologyURI+":"+device_flow+":openflow-service:flow-table-0:flow-"+flowIdn+":rule-match-1> ;\n"
+                //+ "                mrs:flowMatch <"+topologyURI+":"+device_flow +":openflow-service:flow-table-0:flow-"+flowIdn+":rule-match-2> ;\n" 
+                //+"                mrs:flowMatch <"+topologyURI+":"+device_flow +":openflow-service:flow-table-0:flow-"+flowIdn+":rule-match-3> ;\n" +
+                //+"                mrs:flowMatch <"+topologyURI+":"+device_flow +":openflow-service:flow-table-0:flow-"+flowIdn+":rule-match-4> ;\n" +
                 + "                mrs:flowAction <" + topologyURI + ":" + device_flow + ":openflow-service:flow-table-0:flow-"+flowIdn+":rule-action-0> .\n"
                 + "\n"
                 + "<" + topologyURI + ":" + device_flow + ":openflow-service:flow-table-0:flow-"+flowIdn+":rule-match-0>\n"
