@@ -8,7 +8,7 @@ import javax.servlet.AsyncListener;
 import javax.servlet.ServletResponse;
 import javax.servlet.annotation.WebListener;
 
-@WebListener
+
 public class AppAsyncListener implements AsyncListener {
 	@Override
 	public void onComplete(AsyncEvent asyncEvent) throws IOException {

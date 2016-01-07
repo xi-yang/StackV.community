@@ -156,21 +156,6 @@ public class ServiceServlet extends HttpServlet {
             paramMap.put("topologyUri", "urn:ogf:network:openstack.com:openstack-cloud");
             paramMap.put("tenant", "admin");
             paramMap.put("install", "Install");
-        } else if (paramMap.containsKey("template2")) {
-            paramMap.put("driverID", "StackDriver");
-            paramMap.put("topologyUri", "urn:ogf:network:aws.amazon.com:aws-cloud");
-            paramMap.put("vmType", "aws");     
-            paramMap.put("region", "us-east-1");
-            paramMap.put("ostype", "windows");     
-            paramMap.put("vmQuantity", "1");
-            paramMap.put("instanceType", "instance1");     
-            paramMap.put("vpcID", "urn:ogf:network:aws.amazon.com:aws-cloud:vpc-45143020");
-            paramMap.put("subnets", "urn:ogf:network:aws.amazon.com:aws-cloud:subnet-a8a632f1,10.0.1.0");     
-            paramMap.put("volumes", "8,standard,/dev/xvda,snapshot\\r\\n");
-            paramMap.put("install", "Install");
-            paramMap.put("aws_access_key_id", "AKIAJEOHXEUCCYOU6ELQ");     
-            paramMap.put("aws_secret_access_key", "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");   
-            paramMap.put("subsystemBaseUrl", "http://140.221.96.35:50100/VersaStack-web/restapi");
         } else if (paramMap.containsKey("template3")) {
             paramMap.put("driverID", "stubdriver");
             paramMap.put("topologyUri", "urn:ogf:network:rains.maxgigapop.net:wan:2015:topology");

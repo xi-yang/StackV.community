@@ -10,7 +10,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-//@WebServlet(urlPatterns = "/AsyncLongRunningServlet", asyncSupported = true)
+@WebServlet(urlPatterns = "/AsyncLongRunningServlet", asyncSupported = true)
 public class AsyncLongRunningServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 

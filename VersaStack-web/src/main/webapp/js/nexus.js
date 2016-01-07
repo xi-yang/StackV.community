@@ -364,6 +364,8 @@ function revertInstance(uuid) {
 }
 
 function revertInstance(uuid) {
+    
+    
     var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/service/' + uuid;
     $.ajax({
         url: apiUrl,
