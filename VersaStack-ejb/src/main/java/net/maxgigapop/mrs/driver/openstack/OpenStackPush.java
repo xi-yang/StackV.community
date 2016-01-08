@@ -200,10 +200,14 @@ public class OpenStackPush {
                  }
                  */
                 //System.out.println(openstackget.getNetwork(o.get("network name").toString()).toString());
-
+                Network network1 = client.getNetwork(o.get("network name").toString());
+                if (network1 == null) {
+                    subnet = null;
+                    continue;
+                }
                 subnet.toBuilder().cidr(o.get("cidr block").toString())
                         //.network(client.getNetwork(o.get("network name").toString()))
-                        .network(client.getNetwork(o.get("network name").toString()))
+                        .network(network1)
                         .name(subnet_name)
                         .ipVersion(IPVersionType.V4);
                 String gatewayIp = o.get("gateway ip").toString();
@@ -620,8 +624,11 @@ public class OpenStackPush {
                         key_ip = "nexthop" + Integer.toString(j);
                         while (o.containsKey(key_ip)) {
                             Router r = client.getRouter(o.get(key_router).toString());
-                            HashMap<String, String> routing_info1 = new HashMap<String, String>();
-                            routing_info1 = routing_info_for_router.get(client.getResourceName(r));
+                            if (r == null) {
+                                x++;
+                                break;
+                            }
+                            HashMap<String, String> routing_info1 = routing_info_for_router.get(client.getResourceName(r));
                             if (routing_info1.containsKey(o.get(key_ip).toString())) {
                                 String sub_router = routing_info1.get(o.get(key_ip).toString());
                                 String portid = null;
@@ -2136,7 +2143,8 @@ public class OpenStackPush {
          request.withNetworkInterfaceIds(id);
          */
         //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-        while (true) {
+        int maxTries = 30;
+        while ((maxTries--) > 0) {
             try {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 //client.updateResources("Port");
@@ -2154,7 +2162,8 @@ public class OpenStackPush {
          request.withNetworkInterfaceIds(id);
          */
         //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-        while (true) {
+        int maxTries = 30;
+        while ((maxTries--) > 0) {
             try {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 //client.updateResources("Port");
@@ -2172,7 +2181,8 @@ public class OpenStackPush {
          request.withNetworkInterfaceIds(id);
          */
         //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-        while (true) {
+        int maxTries = 30;
+        while ((maxTries--) > 0) {
             try {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 //client.updateResources("Port");
@@ -2190,7 +2200,8 @@ public class OpenStackPush {
          request.withNetworkInterfaceIds(id);
          */
         //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-        while (true) {
+        int maxTries = 30;
+        while ((maxTries--) > 0) {
             try {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 //client.updateResources("Port");
@@ -2208,7 +2219,8 @@ public class OpenStackPush {
          request.withNetworkInterfaceIds(id);
          */
         //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-        while (true) {
+        int maxTries = 30;
+        while ((maxTries--) > 0) {
             try {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 //client.updateResources("Port");
@@ -2226,7 +2238,8 @@ public class OpenStackPush {
          request.withNetworkInterfaceIds(id);
          */
         //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-        while (true) {
+        int maxTries = 30;
+        while ((maxTries--) > 0) {
             try {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 //client.updateResources("Port");
@@ -2244,7 +2257,8 @@ public class OpenStackPush {
          request.withNetworkInterfaceIds(id);
          */
         //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-        while (true) {
+        int maxTries = 30;
+        while ((maxTries--) > 0) {
             try {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 //client.updateResources("Port");
@@ -2262,7 +2276,8 @@ public class OpenStackPush {
          request.withNetworkInterfaceIds(id);
          */
         //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-        while (true) {
+        int maxTries = 30;
+        while ((maxTries--) > 0) {
             try {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 //client.updateResources("Port");
@@ -2280,7 +2295,8 @@ public class OpenStackPush {
          request.withNetworkInterfaceIds(id);
          */
         //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-        while (true) {
+        int maxTries = 30;
+        while ((maxTries--) > 0) {
             try {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 //client.updateResources("Port");
@@ -2298,7 +2314,8 @@ public class OpenStackPush {
          request.withNetworkInterfaceIds(id);
          */
         //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-        while (true) {
+        int maxTries = 30;
+        while ((maxTries--) > 0) {
             try {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 //client.updateResources("Port");
