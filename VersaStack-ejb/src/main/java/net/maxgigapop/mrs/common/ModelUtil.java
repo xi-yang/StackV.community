@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
+import net.maxgigapop.mrs.common.*;
 
 /**
  *
@@ -124,7 +125,7 @@ public class ModelUtil {
         while (stmts.hasNext()) {
             Statement stmt = stmts.next();
             // check subject will be enough
-            if (stmt.getSubject().isResource() && stmt.getPredicate().toString().contains("ogf.org")) {
+            if (stmt.getSubject().isResource() && stmt.getPredicate().toString().contains("ogf")) {
                 return false;
             }
         }

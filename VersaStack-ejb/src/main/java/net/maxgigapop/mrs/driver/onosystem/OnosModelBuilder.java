@@ -35,7 +35,7 @@ import java.util.List;
 public class OnosModelBuilder {
 
     //public static OntModel createOntology(String access_key_id, String secret_access_key, Regions region, String topologyURI) throws IOException {
-    public static OntModel createOntology(String topologyURI, String subsystemBaseUrl, String srrgFile, String access_key_id, String secret_access_key)
+    public static OntModel createOntology(String topologyURI, String subsystemBaseUrl, String srrgFile, String mappingId, String access_key_id, String secret_access_key)
             throws IOException, ParseException {
 
         //create model object
@@ -81,6 +81,8 @@ public class OnosModelBuilder {
         Property providesFlow = Mrs.providesFlow;
         Property flowMatch = Mrs.flowMatch;
         Property flowAction = Mrs.flowAction;
+        
+        Property locatedAt = Nml.locatedAt;
 
         //set the global resources
         Resource route = Mrs.Route;
@@ -104,24 +106,32 @@ public class OnosModelBuilder {
         Resource flowTable = Mrs.FlowTable;
         Resource flow = Mrs.Flow;
         Resource flowRule = Mrs.FlowRule;
+        
+        Resource location = Nml.Location;
 
         //SRRG declare, only SRRG is included here currently
         Resource SRRG = Sna.SRRG;
         Property severity = Sna.severity;
         Property occurenceProbability = Sna.occurenceProbability;
 
+        String mappingIdMatrix[]=mappingId.split("\n");
+        int mappingIdSize=mappingIdMatrix.length;
+        
         OnosServer onos = new OnosServer();
         String device[][] = onos.getOnosDevices(subsystemBaseUrl, access_key_id, secret_access_key);
-        //String hosts[][] = onos.getOnosHosts(subsystemBaseUrl, access_key_id, secret_access_key);
+        String hosts[][] = onos.getOnosHosts(subsystemBaseUrl, access_key_id, secret_access_key);
         String links[][] = onos.getOnosLinks(subsystemBaseUrl, access_key_id, secret_access_key);
         int qtyLinks = onos.qtyLinks;
-        //int qtyHosts = onos.qtyHosts;
+        int qtyHosts = onos.qtyHosts;
         int qtyDevices = onos.qtyDevices;
 
         for (int i = 0; i < qtyDevices; i++) {
             //add device to model
             Resource resNode = RdfOwl.createResource(model, topologyURI + ":" + device[i][0], node);
             model.add(model.createStatement(onosTopology, hasNode, resNode));
+            
+            Resource resOpenFlow = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":openflow-service", openflowService);
+            model.add(model.createStatement(resNode, hasService, resOpenFlow));
 
             //get all devicePorts and add to model
             if (device[i][1].equals("SWITCH") && device[i][2].equals("true")) {
@@ -133,6 +143,8 @@ public class OnosModelBuilder {
 
                         Resource resPort = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":port-" + devicePorts[j][4], biPort);
                         model.add(model.createStatement(resNode, hasBidirectionalPort, resPort));
+                        
+                        model.add(model.createStatement(resOpenFlow, hasBidirectionalPort, resPort));
 
                         //write src_portName and dst_portName into links[][6] and links[][7]
                         for (int k = 0; k < qtyLinks; k++) {
@@ -147,13 +159,16 @@ public class OnosModelBuilder {
                 }
 
                 //add flow per device into model
-                String deviceFlows[][] = onos.getOnosDeviceFlows(subsystemBaseUrl, device[i][0], access_key_id, secret_access_key);
+                String deviceFlows[][] = onos.getOnosDeviceFlows(topologyURI, subsystemBaseUrl, device[i][0], mappingIdMatrix, mappingIdSize, access_key_id, secret_access_key);
                 int qtyFlows = deviceFlows.length;
+                
+                /*
                 Resource resOpenFlow = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":openflow-service", openflowService);
                 if (qtyFlows > 0) {
                     model.add(model.createStatement(resNode, hasService, resOpenFlow));
                 }
-
+                */
+                
                 for (int j = 0; j < qtyFlows; j++) {
 
                     //add a flow table for each groupId
@@ -205,13 +220,42 @@ public class OnosModelBuilder {
 
             }
         }
-        /*
-         for (int i=0; i< qtyHosts; i++){
-         //add hosts mac to model
-         Resource resNode = RdfOwl.createResource(model, topologyURI + ":" + hosts[i][1], node);
-         model.add(model.createStatement(onosTopology, hasNode, resNode));           
-         }
-         */
+        
+        for (int i = 0; i < qtyHosts; i++) {
+            //add hosts mac to model
+            Resource resNode = RdfOwl.createResource(model, topologyURI + ":" + hosts[i][0], node);
+            model.add(model.createStatement(onosTopology, hasNode, resNode));
+
+            Resource resMac = RdfOwl.createResource(model, topologyURI + ":" + hosts[i][0] + ":macAddress", networkAddress);
+            Resource resIP = RdfOwl.createResource(model, topologyURI + ":" + hosts[i][0] + ":ipAddress", networkAddress);
+         //Resource resLocation = RdfOwl.createResource(model, topologyURI + ":" + hosts[i][0] + ":location", location);
+
+            model.add(model.createStatement(resNode, hasNetworkAddress, resMac));
+            model.add(model.createStatement(resNode, hasNetworkAddress, resIP));
+         //model.add(model.createStatement(resNode, locatedAt, resLocation));
+
+            model.add(model.createStatement(resMac, type, "macAddresses"));
+            model.add(model.createStatement(resMac, value, hosts[i][1]));
+            model.add(model.createStatement(resIP, type, "ipAddresses"));
+            model.add(model.createStatement(resIP, value, hosts[i][3]));
+
+            for (int j = 0; j < qtyDevices; j++) {
+                if (device[j][0].equals(hosts[i][4]) && device[j][2].equals("true")) {
+                    String checkPort[][] = onos.getOnosDevicePorts(subsystemBaseUrl, device[j][0], access_key_id, secret_access_key);
+                    int portNum = checkPort.length;
+                    for (int k = 0; k < portNum; k++) {
+                        if (checkPort[k][0].equals(hosts[i][5]) && checkPort[k][1].equals("true")) {
+                            Resource resPort = RdfOwl.createResource(model, topologyURI + ":" + device[j][0] + ":port-" + checkPort[k][4], biPort);
+                        //model.add(model.createStatement(resLocation, type, "port"));
+                            //model.add(model.createStatement(resLocation, value, resPort));
+                            model.add(model.createStatement(resNode, locatedAt, resPort));
+                        }
+                    }
+                }
+            }
+
+        }
+         
 
         for (int i = 0; i < qtyLinks; i++) {
             if (links[i][5].equals("ACTIVE")) {

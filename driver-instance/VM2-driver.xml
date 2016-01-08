@@ -1,0 +1,37 @@
+<driverInstance><properties>
+<entry><key>onos_access_key_id</key><value>karaf</value></entry>
+<entry><key>onos_secret_access_key</key><value>karaf</value></entry>
+<entry><key>topologyUri</key><value>urn:ogf:network:onos.maxgigapop.net:network2</value></entry>
+<entry><key>driverEjbPath</key><value>java:module/OnosRESTDriver</value></entry>
+<entry><key>subsystemBaseUrl</key><value>http://206.196.179.135:8181/onos/v1</value></entry>
+<entry><key>srrg</key><value>{
+	"SRRG": [{
+		"id": "SRRG_id1",
+		"severity": 5,
+		"occurenceProbability": 0.25,
+		"devices": "of:000000000000001f,of:000000000000003c,of:0000000000000022",
+		"bidirectionalPorts": "of:000000000000001f:port-s31,of:000000000000001f:port-s31-eth1,of:000000000000001f:port-s31-eth2,of:000000000000001f:port-s31-eth3,of:000000000000001f:port-s31-eth4,of:000000000000003c:port-s60,of:000000000000003c:port-s60-eth1,of:000000000000003c:port-s60-eth2,of:000000000000003c:port-s60-eth3,of:0000000000000022:port-s34,of:0000000000000022:port-s34-eth1,of:0000000000000022:port-s34-eth2,of:0000000000000022:port-s34-eth3",
+	},
+	{
+		"id": "SRRG_id2",
+		"severity": 5,
+		"occurenceProbability": 0.25,
+		"devices": "of:000000000000004B,of:0000000000000012",
+		"bidirectionalPorts": "of:000000000000004B:port-s75,of:000000000000004B:port-s75-eth1,of:000000000000004B:port-s75-eth2,of:000000000000004B:port-s75-eth3,of:0000000000000012:port-s18,of:0000000000000012:port-s18-eth1,of:0000000000000012:port-s18-eth2,of:0000000000000012:port-s18-eth3,of:0000000000000012:port-s18-eth4,of:0000000000000012:port-s18-eth5,of:0000000000000012:port-s18-eth6",	
+	},
+	{
+		"id": "SRRG_id3",
+		"severity": 5,
+		"occurenceProbability": 0.25,
+		"devices": "of:000000000000001B,of:0000000000000041,of:0000000000000040",
+		"bidirectionalPorts": "of:000000000000001B:port-s27,of:000000000000001B:port-s27-eth1,of:000000000000001B:port-s27-eth2,of:000000000000001B:port-s27-eth3,of:000000000000001B:port-s27-eth4,of:0000000000000041:port-s65,of:0000000000000041:port-s65-eth1,of:0000000000000041:port-s65-eth2,of:0000000000000041:port-s65-eth3,of:0000000000000041:port-s65-eth4,of:0000000000000040:port-s64,of:0000000000000040:port-s64-eth1,of:0000000000000040:port-s64-eth2,of:0000000000000040:port-s64-eth3",	
+	},
+	{
+		"id": "SRRG_id4",
+		"severity": 5,
+		"occurenceProbability": 0.25,
+		"devices": "of:0000000000000014,of:0000000000000045,of:0000000000000010,of:0000000000000011,of:0000000000000030",
+		"bidirectionalPorts": "of:0000000000000014:port-s20,of:0000000000000014:port-s20-eth1,of:0000000000000014:port-s20-eth2,of:0000000000000014:port-s20-eth3,of:0000000000000045:port-s69,of:0000000000000045:port-s69-eth1,of:0000000000000045:port-s69-eth2,of:0000000000000045:port-s69-eth3,of:0000000000000010:port-s16,of:0000000000000010:port-s16-eth1,of:0000000000000010:port-s16-eth2,of:0000000000000010:port-s16-eth3,of:0000000000000010:port-s16-eth4,of:0000000000000011:port-s17,of:0000000000000011:port-s17-eth1,of:0000000000000011:port-s17-eth2,of:0000000000000011:port-s17-eth3,of:0000000000000011:port-s17-eth4,of:0000000000000030:port-s48,of:0000000000000030:port-s48-eth1,of:0000000000000030:port-s48-eth2,of:0000000000000030:port-s48-eth3,of:0000000000000030:port-s48-eth4",	
+	}]
+}</value></entry></properties></driverInstance>
+
