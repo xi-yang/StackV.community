@@ -1,0 +1,73 @@
+<delta> 
+<id>1</id>
+<creationTime>2015-05-21T13:49:40-05:00</creationTime>
+<referenceVersion>2ad4303f-5233-4789-a245-981744e90885</referenceVersion>
+<modelReduction>
+@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .
+@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .
+@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .
+@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .
+@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .
+@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .
+@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .
+@prefix sna:   &lt;http://schemas.ogf.org/mrs/2015/08/network#&gt; . 
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0&gt;
+	a		owl:NamedIndividual , mrs:FlowTable ;
+	mrs:providesFlow &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417&gt; .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417&gt;
+        a               owl:NamedIndividual , mrs:Flow ;
+        mrs:flowAction  &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-action-0&gt; ;
+        mrs:flowMatch   &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-match-4&gt; , &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-match-3&gt; , &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-match-2&gt; , &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-match-1&gt; , &lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-match-0&gt; .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-match-0&gt;
+        a          mrs:FlowRule , owl:NamedIndividual ;
+        mrs:type   "IN_PORT" ;
+        mrs:value  "2" .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-match-1&gt;
+        a          mrs:FlowRule , owl:NamedIndividual ;
+        mrs:type   "ETH_SRC_MAC" ;
+        mrs:value  "" .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-match-2&gt;
+        a          mrs:FlowRule , owl:NamedIndividual ;
+        mrs:type   "ETH_DST_MAC" ;
+        mrs:value  "" .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-match-3&gt;
+        a          mrs:FlowRule , owl:NamedIndividual ;
+        mrs:type   "ETH_SRC_VLAN" ;
+        mrs:value  "-1" .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-match-4&gt;
+        a          mrs:FlowRule , owl:NamedIndividual ;
+        mrs:type   "ETH_DST_VLAN" ;
+        mrs:value  "-1" .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000002:openflow-service:flow-table-0:flow-11540474046060417:rule-action-0&gt;
+        a          mrs:FlowRule , owl:NamedIndividual ;
+        mrs:type   "OUT_PORT" ;
+        mrs:value  "3" .
+</modelReduction>
+<modelAddition>
+@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .
+@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .
+@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .
+@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .
+@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .
+@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .
+@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .
+@prefix sna:   &lt;http://schemas.ogf.org/mrs/2015/08/network#&gt; . 
+</modelAddition>
+</delta>
+@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .
+</modelAddition>
+</delta>
+@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .
+</modelAddition>
+</delta>
+@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .
+</modelAddition>
+</delta>
