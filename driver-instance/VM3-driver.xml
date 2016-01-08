@@ -9,8 +9,15 @@
 		"id": "SRRG_id1",
 		"severity": 5,
 		"occurenceProbability": 0.5,
-		"devices": "",
-		"bidirectionalPorts": "of:0000000000000002:port-s2,of:0000000000000002:port-s2-eth2",
+		"devices": "of:0000000000000002",
+		"bidirectionalPorts": "of:0000000000000002:port-s2,of:0000000000000002:port-s2-eth1,of:0000000000000002:port-s2-eth2,of:0000000000000002:port-s2-eth3,of:0000000000000002:port-s2-eth4",
+	},
+	{
+		"id": "SRRG_id2",
+		"severity": 8,
+		"occurenceProbability": 0.2,
+		"devices": "of:0000000000000005",
+		"bidirectionalPorts": "of:0000000000000005:port-s5,of:0000000000000005:port-s5-eth1,of:0000000000000005:port-s5-eth2,of:0000000000000005:port-s5-eth3,of:0000000000000005:port-s5-eth4",	
 	}]
 }</value></entry>
 </properties></driverInstance>

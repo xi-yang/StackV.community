@@ -9,9 +9,9 @@
 		"id": "SRRG_id1",
 		"severity": 5,
 		"occurenceProbability": 0.5,
-		"devices": "",
-		"bidirectionalPorts": "of:0000000000000002:port-s2,of:0000000000000002:port-s2-eth2",
+		"devices": "of:0000000000000002",
+		"bidirectionalPorts": "of:0000000000000002:port-s2,of:0000000000000002:port-s2-eth1,of:0000000000000002:port-s2-eth2,of:0000000000000002:port-s2-eth3,of:0000000000000002:port-s2-eth4,of:0000000000000002:port-s2-eth5",
 	}]
 }</value></entry>
+<entry><key>mappingId</key><value></value></entry>
 </properties></driverInstance>
-

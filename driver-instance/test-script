@@ -9,7 +9,7 @@ domain2_driver=VM2-driver.xml		#domain2 driver file, 75-node coronet
 domain3_driver=VM3-driver.xml		#domain3 driver file, 7-node metro2 
 stub_driver=driver-stub-3nets.xml	#virtual links that connects 3 domains
 
-workflow_file=onos-workflow.xml		#workflow file
+workflow_file=onos-workflow-new.xml		#workflow file
 
 
 
@@ -257,13 +257,13 @@ if [ -z "$driver_instance" ]; then
     echo -n "plugging in metro1 network driver..."
     curl -X POST -d @$domain1_driver --header "Content-Type:application/xml" http://localhost:8080/VersaStack-web/restapi/driver; echo
     echo -n "plugging in coronet network driver..."
-    curl -X POST -d @$domain2_driver --header "Content-Type:application/xml" http://localhost:8080/VersaStack-web/restapi/driver; echo
+    #curl -X POST -d @$domain2_driver --header "Content-Type:application/xml" http://localhost:8080/VersaStack-web/restapi/driver; echo
     echo -n "plugging in metro2 network driver..."
-    curl -X POST -d @$domain3_driver --header "Content-Type:application/xml" http://localhost:8080/VersaStack-web/restapi/driver; echo
+    #curl -X POST -d @$domain3_driver --header "Content-Type:application/xml" http://localhost:8080/VersaStack-web/restapi/driver; echo
     echo -n "plugging in virtual links connecting 3 domains..."
-    curl -X POST -d @$stub_driver --header "Content-Type:application/xml" http://localhost:8080/VersaStack-web/restapi/driver; echo
+    #curl -X POST -d @$stub_driver --header "Content-Type:application/xml" http://localhost:8080/VersaStack-web/restapi/driver; echo
     echo "Waiting VersaStack to get ready to accept workflow..."
-    sleep 120
+    sleep 60
 else
     echo "A driverInstance has existed for topologyUri=$driver_instance"
 fi
@@ -435,41 +435,6 @@ case $type in
 	    esac
 	done
 
-	#specify source MAC_address and destination MAC_address
-	while true; do
-	    echo -n "Enter ETH_SRC_MAC:"
-	    read ETH_SRC_MAC
-	    case $ETH_SRC_MAC in
-		[A-Fa-f0-9][A-Fa-f0-9]:[A-Fa-f0-9][A-Fa-f0-9]:[A-Fa-f0-9][A-Fa-f0-9]:[A-Fa-f0-9][A-Fa-f0-9]:[A-Fa-f0-9][A-Fa-f0-9]:[A-Fa-f0-9][A-Fa-f0-9] )
-		    #echo -e "\nSetting up ETH_SRC_MAC as $ETH_SRC_MAC"
-		    left_mac_address="        spa:value    \&lt;$ETH_SRC_MAC\&gt; ."
-		    break;;
-		* )
-		    echo -e "\aNot a valid ETH_SRC_MAC";;
-	    esac
-	done
-
-	#specify source MAC_address and destination MAC_address
-	while true; do
-	    echo -n "Enter ETH_DST_MAC:"
-	    read ETH_DST_MAC
-	    case $ETH_DST_MAC in
-		[A-Fa-f0-9][A-Fa-f0-9]:[A-Fa-f0-9][A-Fa-f0-9]:[A-Fa-f0-9][A-Fa-f0-9]:[A-Fa-f0-9][A-Fa-f0-9]:[A-Fa-f0-9][A-Fa-f0-9]:[A-Fa-f0-9][A-Fa-f0-9] )
-		    #echo -e "\nSetting up ETH_DST_MAC as $ETH_DST_MAC"
-		    right_mac_address="        spa:value    \&lt;$ETH_DST_MAC\&gt; ."
-		    if [ "$left_mac_address" == "$right_mac_address" ]; then
-			echo -e "\aEnter a different ETH_DST_MAC"
-		    else
-			break
-		    fi
-		    ;;
-		* )
-		    echo -e "\aNot a valid ETH_DST_MAC";;
-	    esac
-	done
-	
-	echo -e "\nSetting up ETH_SRC_MAC as $ETH_SRC_MAC, ETH_DST_MAC as $ETH_DST_MAC\n"
-
 	#compute path
 
 	if [ "$src_port" == "Error" ] || [ "$dest_port" == "Error" ]; then
@@ -487,17 +452,15 @@ case $type in
 	uuid=$(curl -s -X GET $service_instance)
 	new_uuid="<uuid>$uuid</uuid>"
 
-	    sed -i "2s|.*|$new_uuid|" $workflow_file
+	sed -i "2s|.*|$new_uuid|" $workflow_file
 
-	    sed -i "24s|.*|$protection_value|" $workflow_file
+	sed -i "24s|.*|$protection_value|" $workflow_file
 	
-	    src_value="        spa:value    \&lt;$src_port\&gt; ."
-	    dst_value="        spa:value    \&lt;$dest_port\&gt; ."
-	    sed -i "32s|.*|$src_value|" $workflow_file
-	    sed -i "37s|.*|$dst_value|" $workflow_file
+	src_value="        spa:value    \&lt;$src_port\&gt; ."
+	dst_value="        spa:value    \&lt;$dest_port\&gt; ."
+	sed -i "32s|.*|$src_value|" $workflow_file
+	sed -i "37s|.*|$dst_value|" $workflow_file
 
-	    sed -i "42s|.*|$left_mac_address|" $workflow_file
-	    sed -i "47s|.*|$right_mac_address|" $workflow_file
 
 
 	#Post the abstract model to service instance
@@ -512,6 +475,22 @@ case $type in
 	curl -X PUT http://localhost:8080/VersaStack-web/restapi/service/$uuid/commit; echo ; echo
 
 	#could delete service instance when bug fixed
+	echo -e "Now you can try testing the connectivity between the two hosts setup as above\n"
+	sleep 20
+	echo -e "Now try taking down some links in mininet\n"
+	#taking down links in mininet : link s1 s2 down/up
+	sleep 20
+	echo -e "Now test if the connection is still valid after some links down\n"
+	sleep 20
+
+	echo -e "Now we can switch to protection path\n"
+	#curl -X PUT http://localhost:8080/VersaStack-web/restapi/service/$uuid/revert; echo
+	#curl -X PUT http://localhost:8080/VersaStack-web/restapi/service/$uuid/propagate; echo
+	#curl -X PUT http://localhost:8080/VersaStack-web/restapi/service/$uuid/commit; echo
+
+	echo -e "Now try again to test the connectivity between the two hosts setup as above\n"
+	sleep 20
+
 
 	break;;
   
@@ -605,65 +584,6 @@ case $type in
 	    #hard code only SRRG path
 	    protection=1;
 
-	    #randomly generate src and dst mac address
-	    ETH_SRC_MAC=""
-	    ETH_DST_MAC=""
-	    for ((j=1; j<=12; j++)); do
-		random_num=$(( RANDOM%16 ))
-		if [ "$random_num" == 10 ]; then
-		    ETH_SRC_MAC+="A"
-		elif [ "$random_num" -eq 11 ]; then
-		    ETH_SRC_MAC+="B"
-		elif [ "$random_num" -eq 12 ]; then
-		    ETH_SRC_MAC+="C"
-		elif [ "$random_num" -eq 13 ]; then
-		    ETH_SRC_MAC+="D"
-		elif [ "$random_num" -eq 14 ]; then
-		    ETH_SRC_MAC+="E"
-		elif [ "$random_num" -eq 15 ]; then
-		    ETH_SRC_MAC+="F"
-		else
-		    ETH_SRC_MAC+=$random_num
-		fi
-
-		if [ "$((j%2))" == 0 ] && [ "$j" -lt 12 ]; then
-		    ETH_SRC_MAC+=":"
-		fi
-	    done
-	    while true; do
-	    	for ((j=1; j<=12; j++)); do
-		    random_num=$(( RANDOM%16 ))
-		    if [ "$random_num" == 10 ]; then
-		        ETH_DST_MAC+="A"
-		    elif [ "$random_num" -eq 11 ]; then
-		        ETH_DST_MAC+="B"
-		    elif [ "$random_num" -eq 12 ]; then
-		        ETH_DST_MAC+="C"
-		    elif [ "$random_num" -eq 13 ]; then
-		        ETH_DST_MAC+="D"
-		    elif [ "$random_num" -eq 14 ]; then
-		        ETH_DST_MAC+="E"
-		    elif [ "$random_num" -eq 15 ]; then
-		        ETH_DST_MAC+="F"
-		    else
-		        ETH_DST_MAC+=$random_num
-		    fi
-
-		    if [ "$((j%2))" == 0 ] && [ "$j" -lt 12 ]; then
-		        ETH_DST_MAC+=":"
-		    fi
-		done
-		if [ "$ETH_SRC_MAC" != "$ETH_DST_MAC" ]; then
-		    break
-		fi
-	    done
-	    
-	    #echo "SRC_MAC: $ETH_SRC_MAC"
-	    #echo "DST_MAC: $ETH_DST_MAC"
-
-	    left_mac_address="        spa:value    \&lt;$ETH_SRC_MAC\&gt; ."
-	    right_mac_address="        spa:value    \&lt;$ETH_DST_MAC\&gt; ."
-	
 	    #sleep 10
 	    #echo "src: src_domain=$src_domain, src=$src"	
 	    #echo "dest: dest_domain=$dest_domain, dest=$dest"
@@ -688,10 +608,10 @@ case $type in
 	    fi	 
    
 	    if [ "$protection" == 1 ]; then
-		echo -e "\nSetting up SRRG path $i \nfrom $src_port with MAC address $ETH_SRC_MAC \nto $dest_port with MAC address $ETH_DST_MAC"
+		echo -e "\nSetting up SRRG path $i \nfrom $src_port \nto $dest_port"
 		protection_value='    spa:value    "SRRG Path" ;'
 	    elif [ "$protection" == 2 ]; then
-		echo -e "\nSetting up SRRG path pair $i from $src_port with MAC address $ETH_SRC_MAC \nto $dest_port with MAC address $ETH_DST_MAC"
+		echo -e "\nSetting up SRRG path pair $i from $src_port \nto $dest_port"
 		protection_value='    spa:value    \"SRRG Path Pair\" ;'
 	    else
 		echo "Wrong protection type"
@@ -713,8 +633,6 @@ case $type in
 	    sed -i "32s|.*|$src_value|" $workflow_file
 	    sed -i "37s|.*|$dst_value|" $workflow_file
 
-	    sed -i "42s|.*|$left_mac_address|" $workflow_file
-	    sed -i "47s|.*|$right_mac_address|" $workflow_file
 
 	    #Post the abstract model to service instance
 	    echo "Computing path..."
@@ -728,7 +646,6 @@ case $type in
 	    curl -X PUT http://localhost:8080/VersaStack-web/restapi/service/$uuid/commit; echo ; echo
 
 	    #could delete service instance when bug fixed
-
 	    
 	done
 

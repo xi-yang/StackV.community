@@ -1,0 +1,35 @@
+<driverInstance><properties><entry><key>topologyUri</key><value>urn:ogf:network:stub:2015:topology</value></entry><entry><key>driverEjbPath</key><value>java:module/StubSystemDriver</value></entry><entry><key>stubModelTtl</key>
+<value>
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .
+@prefix owl: &lt;http://www.w3.org/2002/07/owl#&gt; .
+@prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt; .
+@prefix rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .
+@prefix nml: &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .
+@prefix mrs: &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000007:port-s7-eth2&gt;
+	nml:isAlias  &lt;urn:ogf:network:onos.maxgigapop.net:network2:of:000000000000003e:port-s62-eth1&gt;.
+	
+&lt;urn:ogf:network:onos.maxgigapop.net:network2:of:000000000000003e:port-s62-eth1&gt;
+	nml:isAlias  &lt;urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000007:port-s7-eth2&gt;.
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000006:port-s6-eth2&gt;
+	nml:isAlias  &lt;urn:ogf:network:onos.maxgigapop.net:network2:of:0000000000000031:port-s49-eth1&gt;.
+	
+&lt;urn:ogf:network:onos.maxgigapop.net:network2:of:0000000000000031:port-s49-eth1&gt;
+	nml:isAlias  &lt;urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000006:port-s6-eth2&gt;.
+
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network3:of:0000000000000003:port-s3-eth2&gt;
+	nml:isAlias  &lt;urn:ogf:network:onos.maxgigapop.net:network2:of:000000000000003c:port-s60-eth1&gt;.
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network2:of:000000000000003c:port-s60-eth1&gt;
+	nml:isAlias  &lt;urn:ogf:network:onos.maxgigapop.net:network3:of:0000000000000003:port-s3-eth2&gt;.
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network3:of:0000000000000002:port-s2-eth2&gt;
+	nml:isAlias  &lt;urn:ogf:network:onos.maxgigapop.net:network2:of:000000000000001f:port-s31-eth1&gt;.
+
+&lt;urn:ogf:network:onos.maxgigapop.net:network2:of:000000000000001f:port-s31-eth1&gt;
+	nml:isAlias  &lt;urn:ogf:network:onos.maxgigapop.net:network3:of:0000000000000002:port-s2-eth2&gt;.
+</value>
+</entry></properties></driverInstance>

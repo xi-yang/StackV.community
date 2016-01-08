@@ -1,5 +1,5 @@
 <serviceDelta>
-<uuid>1f0e88af-59b7-45cb-b330-c7a0c220d70a</uuid>
+<uuid>77ab1b05-aead-45bd-b58c-91562095b0a5</uuid>
 <workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>
 <modelAddition>
 @prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .
@@ -23,28 +23,18 @@
     spa:type     "MCE_L2OpenflowPath" ;
     spa:value    "SRRG Path" ;
     spa:reversible "1" ;
-    spa:importFrom &lt;x-policy-annotation:data:left-location&gt;, &lt;x-policy-annotation:data:right-location&gt;, &lt;x-policy-annotation:data:left-mac&gt;, &lt;x-policy-annotation:data:right-mac&gt; ;
+    spa:importFrom &lt;x-policy-annotation:data:left-location&gt;, &lt;x-policy-annotation:data:right-location&gt; ;
     spa:exportTo &lt;x-policy-annotation:data:path1-vlan&gt; .
 
 &lt;x-policy-annotation:data:left-location&gt;
         a            spa:PolicyData ;
 	spa:type     "port";
-        spa:value    &lt;urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000001:port-s1-eth1&gt; .
+        spa:value    &lt;urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000005:port-s5-eth1&gt; .
 
 &lt;x-policy-annotation:data:right-location&gt;
         a            spa:PolicyData ;
 	spa:type     "port";
-        spa:value    &lt;urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000004:port-s4-eth1&gt; .
-
-&lt;x-policy-annotation:data:left-mac&gt;
-        a            spa:PolicyData ;
-	spa:type     "ETH_SRC_MAC";
-        spa:value    &lt;33:33:33:33:33:33&gt; .
-
-&lt;x-policy-annotation:data:right-mac&gt;
-        a            spa:PolicyData ;
-	spa:type     "ETH_DST_MAC";
-        spa:value    &lt;44:44:44:44:44:44&gt; .
+        spa:value    &lt;urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000002:port-s2-eth1&gt; .
 
 &lt;x-policy-annotation:data:path1-vlan&gt;
     a            spa:PolicyData.

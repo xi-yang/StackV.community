@@ -149,8 +149,12 @@ public class OnosServer {
         qtyHosts = hostArray.size();
 
         String hosts[][] = new String[qtyHosts][6];
-        //hosts[][0]:id; hosts[][1]:mac; hosts[][2]:vlan; hosts[][3]:ipAddresses
-        //hosts[][4]:elementid; hosts[][5]:port
+        //hosts[][0]:id;  "mac/-1"
+        //hosts[][1]:mac; 
+        //hosts[][2]:vlan; "-1"
+        //hosts[][3]:ipAddresses    local IP: "10.0.0.x"
+        //hosts[][4]:elementid;     device ID "of:0000000000000002"
+        //hosts[][5]:port           host connecting which port of device
 
         for (int i = 0; i < qtyHosts; i++) {
             JSONObject hostObj = (JSONObject) hostArray.get(i);
@@ -160,7 +164,7 @@ public class OnosServer {
             hosts[i][2] = (String) hostObj.get("vlan");
 
             JSONArray ipArray = (JSONArray) hostObj.get("ipAddresses");
-            //hosts[i][3] = String.valueOf(ipObj);
+            hosts[i][3] = String.valueOf(ipArray.get(0));
 
             JSONObject locObj = (JSONObject) hostObj.get("location");
             hosts[i][4] = (String) locObj.get("elementId");
@@ -171,7 +175,7 @@ public class OnosServer {
     }
 
     //pull Device Ports Data
-    public String[][] getOnosDeviceFlows(String subsystemBaseUrl, String devId, String access_key_id, String secret_access_key)
+    public String[][] getOnosDeviceFlows(String topologyURI, String subsystemBaseUrl, String devId, String mappingIdMatrix[], int mappingIdSize, String access_key_id, String secret_access_key)
             throws MalformedURLException, IOException, ParseException {
 
         URL urlDevFlow = new URL(subsystemBaseUrl + "/flows/" + devId);
@@ -193,7 +197,16 @@ public class OnosServer {
         for (int i = 0; i < qtyFlows; i++) {
             JSONObject flowObj = (JSONObject) flowArray.get(i);
 
+            String uri=String.format("%s:%s:openflow-service:flow-table-0:flow-", topologyURI,devId);
             flows[i][0] = (String) flowObj.get("id");
+            if(mappingIdSize>0){
+                for (int counter=0;counter<mappingIdSize;counter++){
+                    if(mappingIdMatrix[counter].contains(uri+flows[i][0])){
+                    flows[i][0]=mappingIdMatrix[counter].split("-->>")[0].split(uri)[1];
+                    }
+                }
+                
+            }
             flows[i][1] = String.valueOf(flowObj.get("groupId"));
             flows[i][2] = (String) flowObj.get("deviceId");
 
