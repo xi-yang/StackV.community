@@ -51,45 +51,36 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
         driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
         aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId()); // refresh
+        String access_key_id = driverInstance.getProperty("onos_access_key_id");
+        String secret_access_key = driverInstance.getProperty("onos_secret_access_key");
+        String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
+        String topologyURI = driverInstance.getProperty("topologyUri");
+        String mappingId = driverInstance.getProperty("mappingId");
+
+        String model = driverInstance.getHeadVersionItem().getModelRef().getTtlModel();
+        
+        String modelAdd = aDelta.getModelAddition().getTtlModel();
+        String modelReduc = aDelta.getModelReduction().getTtlModel();
+        OnosPush push = new OnosPush();
+        
+        String requests = null;
         try {
-            String access_key_id = driverInstance.getProperty("onos_access_key_id");
-            String secret_access_key = driverInstance.getProperty("onos_secret_access_key");
-            String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
-            String topologyURI = driverInstance.getProperty("topologyUri");
-            String mappingId = driverInstance.getProperty("mappingId");
-
-            String model = driverInstance.getHeadVersionItem().getModelRef().getTtlModel();
+            requests = push.pushPropagate(access_key_id, secret_access_key, mappingId, model, modelAdd, modelReduc, topologyURI, subsystemBaseUrl);
             
-            String modelAdd = aDelta.getModelAddition().getTtlModel();
-            String modelReduc = aDelta.getModelReduction().getTtlModel();
-            OnosPush push = new OnosPush();
-            
-            String requests = null;
-            try {
-                requests = push.pushPropagate(access_key_id, secret_access_key, mappingId, model, modelAdd, modelReduc, topologyURI, subsystemBaseUrl);
-                
-            } catch (Exception ex) {
-                Logger.getLogger(OnosRESTDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
-            }
-
+        } catch (Exception ex) {
+            Logger.getLogger(OnosRESTDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
+            throw (new EJBException(ex));
+        }
 
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         driverInstance.putProperty(requestId, requests);
         DriverInstancePersistenceManager.merge(driverInstance);
-        
         Logger.getLogger(OnosRESTDriver.class.getName()).log(Level.INFO, "ONOS REST driver delta models succesfully propagated");
-   
-       
-        } catch (Exception ex) {
-            Logger.getLogger(OnosRESTDriver.class.getName()).log(Level.SEVERE, null, ex);
-        }
-          
        }
 
     @Override
     @Asynchronous
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
-        
         DriverInstance driverInstance = aDelta.getDriverInstance();
         if (driverInstance == null) {
             throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
@@ -116,6 +107,7 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
             push.pushCommit( access_key_id,  secret_access_key,requests, mappingId, topologyURI,  subsystemBaseUrl, aDelta);
         } catch (Exception ex) {
             Logger.getLogger(OnosRESTDriver.class.getName()).log(Level.SEVERE, null, ex);
+            throw(new EJBException(ex));
         }
 
         driverInstance.getProperties().remove(requestId);
@@ -173,6 +165,7 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
             throw new EJBException(String.format("pullModel on %s raised exception[%s]", driverInstance, e.getMessage()));
         } catch (Exception ex) {
             Logger.getLogger(OnosRESTDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
+            throw(new EJBException(ex));
         }
         
         return new AsyncResult<>("SUCCESS");
