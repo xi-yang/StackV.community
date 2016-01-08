@@ -40,7 +40,6 @@ import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
-import net.maxgigapop.mrs.common.*;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 
 /**
@@ -197,7 +196,6 @@ public class HandleSystemCall {
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(SystemInstance systemInstance, SystemDelta sysDelta, boolean useUpdatedVG) {
-        
         // refresh systemInstance into current persistence context
         if (systemInstance.getId() != 0) {
             systemInstance = SystemInstancePersistenceManager.findById(systemInstance.getId());
@@ -227,6 +225,7 @@ public class HandleSystemCall {
                 .createUnionModel();
         OntModel referenceOntModel = referenceModel.getOntModel();
         OntModel targetOntModel = referenceModel.dryrunDelta(sysDelta);
+
         //## Step 2. verify model change
         // 2.1. get head/lastest VG based on the current versionGroup (no update / persist)
         VersionGroup headVG = VersionGroupPersistenceManager.refreshToHead(referenceVG, false);
@@ -276,7 +275,6 @@ public class HandleSystemCall {
             referenceDSM.setOntModel(rom);
             // check diff from refrence model (tom) to target model (rom)
             DeltaBase delta = referenceDSM.diffToModel(tom);
-            
             if (ModelUtil.isEmptyModel(delta.getModelAddition().getOntModel()) && ModelUtil.isEmptyModel(delta.getModelReduction().getOntModel())) {
                 // no diff, use existing verionItem
                 continue;
@@ -286,7 +284,6 @@ public class HandleSystemCall {
             targetDSM.setOntModel(tom);
             // create targetDSD 
             DriverSystemDelta targetDSD = new DriverSystemDelta();
-            
             // do not save delta as it is transient but delta.modelA and delta.modelR must be saved
             targetDSD.setModelAddition(delta.getModelAddition());
             targetDSD.setModelReduction(delta.getModelReduction());
@@ -323,7 +320,6 @@ public class HandleSystemCall {
             DriverInstance driverInstance = targetDSD.getDriverInstance();
             // remove other driverInstance.driverSystemDeltas that are not by the current systemDelta
             if (driverInstance.getDriverSystemDeltas() != null) {
-                
                 Iterator<DriverSystemDelta> itOtherDSD = driverInstance.getDriverSystemDeltas().iterator();
                 while (itOtherDSD.hasNext()) {
                     DriverSystemDelta otherDSD = itOtherDSD.next();
@@ -357,7 +353,6 @@ public class HandleSystemCall {
         if (systemInstance.getId() != 0) {
             systemInstance = SystemInstancePersistenceManager.findById(systemInstance.getId());
         }
-        
         if (systemInstance.getSystemDelta() == null || systemInstance.getSystemDelta().getDriverSystemDeltas() == null
                 || systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
             throw new EJBException(String.format("%s has no systemDelta or driverSystemDeltas to commit", systemInstance));

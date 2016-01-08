@@ -29,6 +29,7 @@ import org.apache.commons.net.util.SubnetUtils.SubnetInfo;
 import org.json.simple.JSONObject;
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient;
+import org.openstack4j.api.identity.TenantService;
 import org.openstack4j.model.compute.ActionResponse;
 import org.openstack4j.model.compute.Server;
 import org.openstack4j.model.compute.ServerCreate;
@@ -64,6 +65,11 @@ public class OpenStackPush {
     //global variables
     private OpenStackGet client = null;
     private OSClient osClient = null;
+    private OpenStackGet adminClient = null;
+    private OSClient osAdminClient = null;
+    private String adminUsername = null;
+    private String adminPassword = null;
+    private String adminTenant = null;
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
     private String topologyUri;
     private String defaultImage;
@@ -74,10 +80,15 @@ public class OpenStackPush {
      OpenStackPush test = new OpenStackPush();
 
      }*/
-    public OpenStackPush(String url, String NATServer, String username, String password, String tenantName, String topologyUri,
-            String defaultImage, String defaultFlavor) {
+    public OpenStackPush(String url, String NATServer, String username, String password, String tenantName, 
+        String adminUsername, String adminPassword, String adminTenant, String topologyUri, String defaultImage, String defaultFlavor) {
         client = new OpenStackGet(url, NATServer, username, password, tenantName);
         osClient = client.getClient();
+        adminClient = new OpenStackGet(url, NATServer, adminUsername, adminPassword, adminTenant);
+        osAdminClient = adminClient.getClient();
+        this.adminUsername = adminUsername;
+        this.adminPassword = adminPassword;
+        this.adminTenant = adminTenant;
         this.defaultImage = defaultImage;
         this.defaultFlavor = defaultFlavor;
         //do an adjustment to the topologyUri
@@ -86,12 +97,17 @@ public class OpenStackPush {
     }
 
     private void OpenStackGetUpdate(String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
-        client = new OpenStackGet(url, NATServer, username, password, tenantName);
-        osClient = client.getClient();
+        if (adminUsername != null && adminUsername.equals(username)) {
+            adminClient = new OpenStackGet(url, NATServer, adminUsername, adminPassword, adminTenant);
+            osAdminClient = adminClient.getClient();
+        } else {
+            client = new OpenStackGet(url, NATServer, username, password, tenantName);
+            osClient = client.getClient();            
+        }
     }
 
     /**
-     * ***********************************************
+     * ***********************************************6
      * Method to get the requests provided in the model addition and model
      * reduction ************************************************
      */
@@ -154,6 +170,7 @@ public class OpenStackPush {
                 osClient.blockStorage().volumes().delete(volume.getId());
 
             } else if (o.get("request").toString().equals("CreateNetworkRequests")) {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 Tenant tenant = osClient.identity().tenants().getByName(tenantName);
                 String tenantid = tenant.getId();
                 Network network = new NeutronNetwork();
@@ -200,7 +217,6 @@ public class OpenStackPush {
                 Subnet net = client.getSubnet(o.get("name").toString());
                 String id = net.getId();
                 osClient.networking().subnet().delete(net.getId());
-                
                 SubnetDeletionCheck(id, url, NATServer, username, password, tenantName, topologyUri);
             } else if (o.get("request").toString().equals("DeleteNetworkRequests")) {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
@@ -215,7 +231,6 @@ public class OpenStackPush {
                 NetworkDeletionCheck(id, url, NATServer, username, password, tenantName, topologyUri);
             } else if (o.get("request").toString().equals("RunInstanceRequest")) {
                 //@TODO: get image and flavor from mrs:type, if not available do:
-
                 String imageType = defaultImage;
                 String flavorType = defaultFlavor;
                 if (imageType == null || imageType.isEmpty()) {
@@ -362,6 +377,9 @@ public class OpenStackPush {
                                                 router_name = sub_route1[1];
                                                 if (router_name.equals(router1.getName())) {
                                                     Subnet s = client.getSubnet(subnet_name);
+                                                    if (s == null && adminClient != null) {
+                                                        s = adminClient.getSubnet(subnet_name);
+                                                    }
                                                     Router r = client.getRouter(router_name);
 
                                                     if (!o.get(key_ip).toString().contains("any")) {
@@ -612,6 +630,9 @@ public class OpenStackPush {
                                 String router_name = sub_route1[1];
 
                                 Subnet s = client.getSubnet(subnet_name);
+                                if (s == null && adminClient != null) {
+                                    s = adminClient.getSubnet(subnet_name);
+                                }
                                 Router r1 = client.getRouter(router_name);
                                 routerid = r1.getId();
                                 String subid = s.getId();
