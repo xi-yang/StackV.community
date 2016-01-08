@@ -83,6 +83,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                 + "?link spa:value ?value . "
                 + "?link spa:importFrom ?data . "
                 + "?link spa:exportTo ?policyData . "
+                + "?data spa:type ?spaType . ?data spa:value ?spaValue . "
                 + "}";
 
         ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);
@@ -99,20 +100,26 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
             Resource resPolicyData = querySolution.getResource("policyData").asResource();
             RDFNode resType = querySolution.get("type");
             RDFNode resValue = querySolution.get("value");
-            String sqlValue = String.format("SELECT ?value WHERE {<%s> a spa:PolicyData. <%s> spa:value ?value.}", resData.toString(), resData.toString());
-            ResultSet portValueResult = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sqlValue);
-            Resource resPort = portValueResult.next().get("value").asResource();
+
+            RDFNode resDataType = querySolution.get("spaType");
+            RDFNode resDataValue = querySolution.get("spaValue");
+
+            System.out.format("data: %s, type: %s, protection: %s, policyData: %s, spaType: %s, spaValue: %s\n",
+                    resData.toString(), resType.toString(), resValue.toString(), resPolicyData.toString(), resDataType.toString(), resDataValue.toString());
+
 
             if (resType.toString().equals("MCE_L2OpenflowPath")) {
                 Map linkData = new HashMap<>();
-                linkData.put("port", resPort);
+                //linkData.put("port", resPort);
+                linkData.put("dataValue", resDataValue.toString());
+                linkData.put("dataType", resDataType.toString());
                 linkData.put("policyData", resPolicyData);
                 linkData.put("type", resType.toString());
-                linkData.put("protection", resValue);
+                linkData.put("protection", resValue.toString());
                 linkMap.get(resLink).add(linkData);
             }
         }
-        
+
         Map<Resource, List> srrgMap = this.getSrrgInfo(systemModel.getOntModel());
 
         //test printout

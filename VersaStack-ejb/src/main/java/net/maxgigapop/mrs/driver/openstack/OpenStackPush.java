@@ -202,8 +202,7 @@ public class OpenStackPush {
                 //System.out.println(openstackget.getNetwork(o.get("network name").toString()).toString());
                 Network network1 = client.getNetwork(o.get("network name").toString());
                 if (network1 == null) {
-                    subnet = null;
-                    continue;
+                    throw new EJBException("CreateSubnetRequest for" + subnet_name + "failed without network =" + o.get("network name"));
                 }
                 subnet.toBuilder().cidr(o.get("cidr block").toString())
                         //.network(client.getNetwork(o.get("network name").toString()))
