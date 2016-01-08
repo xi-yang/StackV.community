@@ -259,7 +259,7 @@ public class HandleServiceCall {
         return serviceInstance.getStatus();
     }
 
-    public String commitDeltas(String serviceInstanceUuid) {
+    public String commitDeltas(String serviceInstanceUuid, boolean forced) {
         ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
         if (serviceInstance == null) {
             throw new EJBException(HandleServiceCall.class.getName() + ".commitDeltas cannot find serviceInstance with uuid=" + serviceInstanceUuid);
@@ -299,7 +299,7 @@ public class HandleServiceCall {
                 if (!canMultiCommit) {
                     break;
                 }
-            } else if (!canMultiCommit && !serviceDelta.getStatus().equals("COMMITTED") && !serviceDelta.getStatus().equals("READY")) {
+            } else if (!forced && !canMultiCommit && !serviceDelta.getStatus().equals("COMMITTED") && !serviceDelta.getStatus().equals("READY")) {
                 throw new EJBException(HandleServiceCall.class.getName() + ".commitDeltas (by " + serviceInstance + ") encounters " + serviceDelta + " in status=" + serviceDelta.getStatus());
             }
         }
