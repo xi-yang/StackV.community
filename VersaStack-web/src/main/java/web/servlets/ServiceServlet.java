@@ -25,8 +25,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import javax.servlet.AsyncContext;
 import javax.servlet.annotation.WebServlet;
 import web.async.AppAsyncListener;
-import web.async.AsyncRequestProcessor;
 import web.async.DriverWorker;
+import web.async.NetCreateWorker;
 
 @WebServlet(asyncSupported = true, value = "/ServiceServlet")
 public class ServiceServlet extends HttpServlet {
@@ -49,6 +49,11 @@ public class ServiceServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        long startTime = System.currentTimeMillis();
+        System.out.println("Service Servlet Start::Name="
+                + Thread.currentThread().getName() + "::ID="
+                + Thread.currentThread().getId());
+
         try {
             // Instance Creation
             String serviceString = "";
@@ -129,13 +134,19 @@ public class ServiceServlet extends HttpServlet {
             } else if (serviceString.equals("vmadd")) { // VM
                 response.sendRedirect(createVMInstance(paramMap));
             } else if (serviceString.equals("netcreate")) { // Network Creation
-                response.sendRedirect(createFullNetwork(paramMap));
+                response.sendRedirect(createFullNetwork(request, paramMap));
             } else {
                 response.sendRedirect("/VersaStack-web/errorPage.jsp");
             }
         } catch (SQLException ex) {
             Logger.getLogger(ServiceServlet.class.getName()).log(Level.SEVERE, null, ex);
         }
+
+        long endTime = System.currentTimeMillis();
+        System.out.println("Service Servlet End::Name="
+                + Thread.currentThread().getName() + "::ID="
+                + Thread.currentThread().getId() + "::Time Taken="
+                + (endTime - startTime) + " ms.");
     }
 
     /**
@@ -150,20 +161,6 @@ public class ServiceServlet extends HttpServlet {
 
     private String createDriverInstance(HttpServletRequest request, HashMap<String, String> paramMap) {
 
-        
-        
-        
-        
-        
-        long startTime = System.currentTimeMillis();
-        System.out.println("Servlet Start::Name="
-                + Thread.currentThread().getName() + "::ID="
-                + Thread.currentThread().getId());
-
-        
-        
-        
-        
         // Handles templates, in this order:
         // OpenStack, Stack Driver, Stub Driver, Generic Driver, AWS Driver 
         if (paramMap.containsKey("template1")) {
@@ -240,19 +237,6 @@ public class ServiceServlet extends HttpServlet {
 
         executor.execute(new DriverWorker(asyncCtx, paramMap));
 
-        
-        
-        
-        long endTime = System.currentTimeMillis();
-        System.out.println("Servlet End::Name="
-                + Thread.currentThread().getName() + "::ID="
-                + Thread.currentThread().getId() + "::Time Taken="
-                + (endTime - startTime) + " ms.");
-
-        
-        
-        
-        
         return ("/VersaStack-web/ops/srvc/driver.jsp?ret=0");
     }
 
@@ -316,7 +300,7 @@ public class ServiceServlet extends HttpServlet {
         return ("/VersaStack-web/ops/srvc/vmadd.jsp?ret=" + retCode);
     }
 
-    private String createFullNetwork(HashMap<String, String> paramMap) throws SQLException {
+    private String createFullNetwork(HttpServletRequest request, HashMap<String, String> paramMap) throws SQLException {
         int retCode;
 
         for (Object key : paramMap.keySet().toArray()) {
@@ -348,7 +332,15 @@ public class ServiceServlet extends HttpServlet {
             paramMap.remove("netCreate");
             paramMap.remove("template1");
 
-            retCode = servBean.createNetwork(paramMap);
+            // Async setup
+            request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
+            AsyncContext asyncCtx = request.startAsync();
+            asyncCtx.addListener(new AppAsyncListener());
+            asyncCtx.setTimeout(60000);
+
+            ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
+
+            executor.execute(new NetCreateWorker(asyncCtx, paramMap));
         } else { // Custom Form Handling
             PreparedStatement prep = rains_conn.prepareStatement("SELECT driverEjbPath"
                     + " FROM driver_instance WHERE topologyUri = ?");
@@ -420,10 +412,18 @@ public class ServiceServlet extends HttpServlet {
             paramMap.remove("custom");
             paramMap.remove("netCreate");
 
-            retCode = servBean.createNetwork(paramMap);
+            // Async setup
+            request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
+            AsyncContext asyncCtx = request.startAsync();
+            asyncCtx.addListener(new AppAsyncListener());
+            asyncCtx.setTimeout(60000);
+
+            ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
+
+            executor.execute(new NetCreateWorker(asyncCtx, paramMap));
         }
 
-        return ("/VersaStack-web/ops/srvc/netcreate.jsp?ret=" + retCode);
+        return ("/VersaStack-web/ops/srvc/netcreate.jsp?ret=0");
 
     }
 }

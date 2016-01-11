@@ -16,7 +16,7 @@ public class DriverWorker implements Runnable {
 
     private AsyncContext asyncContext;
     private HashMap<String, String> paramMap;
-    private String host = "http://localhost:8080/VersaStack-web/restapi";
+    private final String host = "http://localhost:8080/VersaStack-web/restapi";
 
     public DriverWorker() {
     }
@@ -28,41 +28,40 @@ public class DriverWorker implements Runnable {
 
     @Override
     public void run() {
-                    		long startTime = System.currentTimeMillis();
-		System.out.println("Worker Start::Name="
-				+ Thread.currentThread().getName() + "::ID="
-				+ Thread.currentThread().getId());
-                
-        
-        
+        long startTime = System.currentTimeMillis();
+        System.out.println("Driver Worker Start::Name="
+                + Thread.currentThread().getName() + "::ID="
+                + Thread.currentThread().getId());
+
         System.out.println("Async Supported? " + asyncContext.getRequest().isAsyncSupported());
-        try {                           
+        try {
             PrintWriter out = asyncContext.getResponse().getWriter();
             out.write("!");
-            
+
             if (paramMap.containsKey("install")) {
                 driverInstall(paramMap);
             } else {
                 driverUninstall(paramMap.get("topologyUri"));
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Driver Worker IO Exception!");
         }
 
-        		long endTime = System.currentTimeMillis();
-		System.out.println("Worker End::Name="
-				+ Thread.currentThread().getName() + "::ID="
-				+ Thread.currentThread().getId() + "::Time Taken="
-				+ (endTime - startTime) + " ms.");
-        
+        long endTime = System.currentTimeMillis();
+        System.out.println("Driver Worker End::Name="
+                + Thread.currentThread().getName() + "::ID="
+                + Thread.currentThread().getId() + "::Time Taken="
+                + (endTime - startTime) + " ms.");
+
         // Complete the processing.
         asyncContext.complete();
     }
-    
+
     /**
-     * Installs driver with the user defined properties via the system API 
-     * @param paraMap a key-value pair contains all the properties defined by user.
-     * It should contains at least the driver ID and the topology uri. 
+     * Installs driver with the user defined properties via the system API
+     *
+     * @param paraMap a key-value pair contains all the properties defined by
+     * user. It should contains at least the driver ID and the topology uri.
      * @return error code:<br />
      * 0 - success.<br />
      * 2 - plugin error.<br />
@@ -70,11 +69,11 @@ public class DriverWorker implements Runnable {
      */
     private int driverInstall(Map<String, String> paraMap) {
         String driver = "<driverInstance><properties>";
-        for(Map.Entry<String, String> entry : paraMap.entrySet()){
+        for (Map.Entry<String, String> entry : paraMap.entrySet()) {
             //if the key indicates what kind of driver it is, put the corresponding ejb path
-            if(entry.getKey().equalsIgnoreCase("driverID")){
+            if (entry.getKey().equalsIgnoreCase("driverID")) {
                 driver += "<entry><key>driverEjbPath</key>";
-                switch(entry.getValue()){
+                switch (entry.getValue()) {
                     case "stubdriver":
                         driver += "<value>java:module/StubSystemDriver</value></entry>";
                         break;
@@ -83,7 +82,7 @@ public class DriverWorker implements Runnable {
                         break;
                     case "versaNSDriver":
                         driver += "<value>java:module/GenericRESTDriver</value></entry>";
-                        break;                    
+                        break;
                     case "openStackDriver":
                         driver += "<value>java:module/OpenStackDriver</value></entry>";
                         break;
@@ -93,29 +92,23 @@ public class DriverWorker implements Runnable {
                     default:
                         break;
                 }
-            }
-            
-            //if it is ttl model, modify the format so that the system can recognize the brackets
-            else if(entry.getKey().equalsIgnoreCase("ttlmodel")){
+            } //if it is ttl model, modify the format so that the system can recognize the brackets
+            else if (entry.getKey().equalsIgnoreCase("ttlmodel")) {
                 String ttlModel = entry.getValue().replaceAll("<", "&lt;");
                 ttlModel = ttlModel.replaceAll(">", "&gt;");
-                driver += "<entry><key>stubModelTtl</key><value>" + ttlModel +"</value></entry>";
-                
-            }
-            
-            //if it indicates it's a natserver in openstack, add this entry
-            else if(entry.getKey().equalsIgnoreCase("NATServer") && entry.getValue().equalsIgnoreCase("yes")){
+                driver += "<entry><key>stubModelTtl</key><value>" + ttlModel + "</value></entry>";
+
+            } //if it indicates it's a natserver in openstack, add this entry
+            else if (entry.getKey().equalsIgnoreCase("NATServer") && entry.getValue().equalsIgnoreCase("yes")) {
                 driver += "<entry><key>NATServer</key><value></value></entry>";
-            }
-            
-            //simply put the key value pair into the string
-            else{
-                driver += "<entry><key>" + entry.getKey() + "</key><value>" 
+            } //simply put the key value pair into the string
+            else {
+                driver += "<entry><key>" + entry.getKey() + "</key><value>"
                         + entry.getValue() + "</value></entry>";
             }
         }
         driver += "</properties></driverInstance>";
-                
+
         //push to the system api and get response
         try {
             URL url = new URL(String.format("%s/driver", host));
@@ -134,6 +127,7 @@ public class DriverWorker implements Runnable {
 
     /**
      * Uninstalls driver via the system API
+     *
      * @param topoUri an unique string represents each driver topology
      * @return error code:<br />
      * 0 - success.<br />
@@ -154,15 +148,16 @@ public class DriverWorker implements Runnable {
         }
         return 0;
     }
-    
-     /**
+
+    /**
      * Executes HTTP Request.
+     *
      * @param url destination url
      * @param conn connection object
      * @param method request method
      * @param body request body
      * @return response string.
-     * @throws IOException 
+     * @throws IOException
      */
     public String executeHttpMethod(URL url, HttpURLConnection conn, String method, String body) throws IOException {
         conn.setRequestMethod(method);
