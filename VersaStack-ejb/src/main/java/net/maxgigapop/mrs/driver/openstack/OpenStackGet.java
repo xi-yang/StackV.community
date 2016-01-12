@@ -441,6 +441,26 @@ public class OpenStackGet {
     public String getInterfaceRouterID(NeutronRouterInterface i){
         return i.getId();
     }
-     
-   
+
+    public Map<Server, Map<String, String>> getMetadata() {
+        return metadata;
+    }
+
+    public Map<String, String> getMetadata(Server server) {
+        if (!metadata.containsKey(server)) {
+            return null;
+        }
+        return metadata.get(server);
+    }
+    
+    public String getMetadata(Server server, String key){
+        if (!metadata.containsKey(server)) {
+            return null;
+        }
+        Map<String, String> data = metadata.get(server);
+        if (data.containsKey(key)) {            
+            return null;
+        }
+        return data.get(key);
+    }
 }

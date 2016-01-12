@@ -118,22 +118,27 @@ public class OpenStackPush {
         requests.addAll(portAttachmentRequests(modelRef, modelReduct, false));
         requests.addAll(volumesAttachmentRequests(modelRef, modelReduct, false));
         requests.addAll(volumeRequests(modelRef, modelReduct, false));
-        requests.addAll((portRequests(modelRef, modelReduct, false)));
+        requests.addAll(portRequests(modelRef, modelReduct, false));
         requests.addAll(serverRequests(modelRef, modelReduct, false));
         requests.addAll(layer3Requests(modelRef, modelReduct, false));
         requests.addAll(isAliasRequest(modelRef, modelReduct, false));
         requests.addAll(subnetRequests(modelRef, modelReduct, false));
         requests.addAll(networkRequests(modelRef, modelReduct, false));
+        
         requests.addAll(networkRequests(modelRef, modelAdd, true));
         requests.addAll(subnetRequests(modelRef, modelAdd, true));
-
         requests.addAll(volumeRequests(modelRef, modelAdd, true));
-        requests.addAll((portRequests(modelRef, modelAdd, true)));
+        requests.addAll(portRequests(modelRef, modelAdd, true));
         requests.addAll(serverRequests(modelRef, modelAdd, true));
         requests.addAll(volumesAttachmentRequests(modelRef, modelAdd, true));
         requests.addAll(portAttachmentRequests(modelRef, modelAdd, true));
         requests.addAll(layer3Requests(modelRef, modelAdd, true));
         requests.addAll(isAliasRequest(modelRef, modelAdd, true));
+        
+        //@TODO: appended floatingIp in portRequests (in addition to isAliasRequest)
+        
+        //@TODO: sriovRequests
+
         return requests;
     }
 

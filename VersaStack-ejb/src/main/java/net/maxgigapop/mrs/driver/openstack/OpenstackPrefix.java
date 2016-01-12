@@ -25,6 +25,10 @@ public class OpenstackPrefix {
 
     public static String private_address = "%s:port+%s:private-ip-address+%s";
     
+    public static String mac_address = "%s:port+%s:mac-address+%s";
+
+    public static String ucs_port_profile = "%s:port-profile+%s";
+
     public static String host = "%s:host+%s";
     
     public static String hypervisor = "%s:hypervisor+%s";
@@ -83,6 +87,7 @@ public class OpenstackPrefix {
     
     public static String host_route_routing_table  = "%s:network+%s:dest_ip+%s:subnet+%s:hostroutingtable";
     
+    public static String hypervisorBypassSvc = "%s:host+%s:hypervisor-bypass-svc+%s";
     
     public static String nic = "%s:vpc+%s:subnet+%s:nic+%s";
     
