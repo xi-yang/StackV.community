@@ -15,7 +15,9 @@ import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -54,7 +56,7 @@ public class DTNPush {
         OntModel modelReduct = ModelUtil.unmarshalOntModel(modelReductTtl);
         
         //delete a data transfer
-        requests += deleteDataTransfer(modelRef, modelReduct);
+        requests += cancelDataTransfer(modelRef, modelReduct);
         
         //start a data transfer
         requests += createDataTransfer(modelRef, modelAdd);
@@ -64,33 +66,35 @@ public class DTNPush {
     
     public void pushCommit(String r) {
         String[] requests = r.split("[\\n]");
-        
+            
         for (String request : requests) {
             if (request.contains("CreateDataTransfer")) {
                 String[] parameters = request.split("\\s+");
-                String source = parameters[1];
-                String destination = parameters[2];
+                String taskid = parameters[1];
+                String source = parameters[2];
+                String destination = parameters[3];
                 
                 //start transfer using globus online
                 //todo: get credential automatically
                 //activate credential beforehand
                 
-                String cmd = "gsissh cli.globusonline.org transfer -- "+ source + destination;
-                runcommand(cmd);
+                String cmd = "gsissh cli.globusonline.org transfer --taskid '" + taskid + "' -- "+ source + " " + destination;
+//                String cmd = "globus-url-copy " + source + " "+ destination;
+                String output = runcommand(cmd);
+                logger.info("Request '"+request+"' successful committed: " + output);
+            }   
 
-            }
-            else if (request.contains("DeleteDataTransfer")){
+            else if (request.contains("CancelDataTransfer")){
                 String[] parameters = request.split("\\s+");
-                String task_id = parameters[1];
-                String cmd = "gsissh cli.globusonline.org cancel "+ task_id;
-                runcommand(cmd);
+                String taskid = parameters[1];
+                String cmd = "gsissh cli.globusonline.org cancel "+ taskid;
+                String output = runcommand(cmd);
+                logger.info("Request '"+request+"' successful committed: " + output);
             }
         }   
-                
-
     }
     
-    private String deleteDataTransfer(OntModel model, OntModel modelReduct){
+    private String cancelDataTransfer(OntModel model, OntModel modelReduct){
         String requests = "";
         String query;
         query = "SELECT ?transfer WHERE {?transfer a nml:DataTransfer}";
@@ -101,15 +105,15 @@ public class DTNPush {
             String transferTagValue = transfer.asResource().toString().replace(topologyUri, "");
         
             //find out the id of transfer
-            query = "SELECT ?task_id WHERE {<" + transfer.asResource() + "> mrs:task_id ?task_id}";
+            query = "SELECT ?taskid WHERE {<" + transfer.asResource() + "> mrs:taskid ?taskid}";
             ResultSet r1 = executeQuery(query, emptyModel, modelReduct);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("model addition does not specify id of data transfer: %s", transfer));
+                throw new EJBException(String.format("model reduction does not specified taskid for data transfer: %s", transfer));
             }
             QuerySolution querySolution1 = r1.next();
-            RDFNode task_id = querySolution1.get("source");       
+            RDFNode taskid = querySolution1.get("taskid");       
             
-            requests += String.format("DeleteDataTransfer %s \n", task_id);
+            requests += String.format("CancelDataTransfer %s \n", taskid);
         }        
 
         return requests;
@@ -119,7 +123,7 @@ public class DTNPush {
     private String createDataTransfer(OntModel model, OntModel modelAdd){
         String requests = "";
         String query;
-        query = "SELECT ?transfer WHERE {?transfer a nml:DataTransfer}";
+        query = "SELECT ?transfer WHERE {?transfer a mrs:DataTransfer}";
         ResultSet r = executeQuery(query, emptyModel, modelAdd);
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
@@ -145,7 +149,16 @@ public class DTNPush {
             querySolution1 = r1.next();
             RDFNode destination = querySolution1.get("destination");
              
-            requests += String.format("CreateDataTransfer %s %s  \n", source.asLiteral().getString(), destination.asLiteral().getString());
+            //generate taskid for data transfer
+            String cmd = "gsissh cli.globusonline.org transfer --generate-id";
+            String out = runcommand(cmd);
+            String taskid = null;
+            if(out!=null){
+                String[] tokens = out.split("\n");
+                taskid = tokens[0];
+                requests += String.format("CreateDataTransfer %s %s %s  \n", taskid, source.asLiteral().getString(), 
+                                            destination.asLiteral().getString());
+            }
         }
         return requests;
     }
@@ -178,35 +191,36 @@ public class DTNPush {
         return r;
     }
     
-    private int runcommand(String cmd){
-//        String s = null;
+    private String runcommand(String cmd){
+        String s = null,  output = "";
         int exitVal = -1;
         try {
             // using the Runtime exec method:
             Process p = Runtime.getRuntime().exec(cmd);
 //             
-//            BufferedReader stdInput = new BufferedReader(new
-//                 InputStreamReader(p.getInputStream()));
+            BufferedReader stdInput = new BufferedReader(new
+                 InputStreamReader(p.getInputStream()));
 // 
 //            BufferedReader stdError = new BufferedReader(new
 //                 InputStreamReader(p.getErrorStream()));
 // 
-//            // read the output from the command
-//            while ((s = stdInput.readLine()) != null) {
-//                System.out.println(s);
-//            }
+            // read the output from the command
+            while ((s = stdInput.readLine()) != null) {
+                 output += s+"\n";
+            }
 //             
 //            // read any errors from the attempted command
 //            while ((s = stdError.readLine()) != null) {
 //                System.out.println(s);
 //            }
             exitVal = p.waitFor();
+            if (exitVal !=0) return null;
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException ex) {
             Logger.getLogger(DTNGet.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return exitVal;
+        return output;
     }
     
 }

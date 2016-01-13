@@ -59,14 +59,26 @@ public class DTNGet {
         
         Node tmpNode; Element tmpEle;
         try {
+            //check credential validation information
+//            String check = runcommand("grid-proxy-info");
+//            
+//            String[] tokens = check.split("\n");
+//            tokens = tokens[tokens.length-1].split(" ");
+//            String valid_time = tokens[tokens.length-1];
+//            System.out.println(valid_time);
+//            if (valid_time.equals("0:00:00"))
+//                Logger.getLogger(DTNGet.class.getName()).log(Level.SEVERE, "Credential has expired" );
+            
             String filename = "dtn-"+address+".xml";
             //Get config file from DTN
             //todo: getting file to memory
-            String cmd = "globus-url-copy gsiftp://"+address+"/tmp/"+filename+" /tmp/";
-            int exitVal = runcommand(cmd);
-            System.out.println("Exit Val: "+exitVal);
-            if (exitVal >= 0){
-                System.out.println(exitVal+";File: "+"/tmp/"+filename);
+            
+//            String cmd = "globus-url-copy gsiftp://"+address+"/tmp/"+filename+" /tmp/";
+//            String out = runcommand(cmd);
+            //System.out.println("Exit Val: "+exitVal);
+//            if (out != null){
+            if(true){
+                //System.out.println(exitVal+";File: "+"/tmp/"+filename);
                 //Parse xml file
                 //todo: parse from memory
                 File inputFile = new File("/tmp/"+filename);
@@ -218,35 +230,36 @@ public class DTNGet {
         return this.cpu_usage;
     }
     
-    private int runcommand(String cmd){
-//        String s = null;
+    private String runcommand(String cmd){
+        String s = null, output = "";
         int exitVal = -1;
         try {
             // using the Runtime exec method:
             Process p = Runtime.getRuntime().exec(cmd);
 //             
-//            BufferedReader stdInput = new BufferedReader(new
-//                 InputStreamReader(p.getInputStream()));
+            BufferedReader stdInput = new BufferedReader(new
+                 InputStreamReader(p.getInputStream()));
 // 
 //            BufferedReader stdError = new BufferedReader(new
 //                 InputStreamReader(p.getErrorStream()));
 // 
 //            // read the output from the command
-//            while ((s = stdInput.readLine()) != null) {
-//                System.out.println(s);
-//            }
+            while ((s = stdInput.readLine()) != null) {
+               output += s+"\n";
+            }
 //             
 //            // read any errors from the attempted command
 //            while ((s = stdError.readLine()) != null) {
 //                System.out.println(s);
 //            }
             exitVal = p.waitFor();
+            if (exitVal !=0) return null;
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException ex) {
             Logger.getLogger(DTNGet.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return exitVal;
+        return output;
     }
 }
  
