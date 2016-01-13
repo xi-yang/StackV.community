@@ -73,12 +73,10 @@ public class DTNGet {
             //Get config file from DTN
             //todo: getting file to memory
             
-//            String cmd = "globus-url-copy gsiftp://"+address+"/tmp/"+filename+" /tmp/";
-//            String out = runcommand(cmd);
-            //System.out.println("Exit Val: "+exitVal);
-//            if (out != null){
-            if(true){
-                //System.out.println(exitVal+";File: "+"/tmp/"+filename);
+            String cmd = "globus-url-copy gsiftp://"+address+"/tmp/"+filename+" /tmp/";
+            String out = runcommand(cmd);
+            System.out.println(out);
+            if (out != null){
                 //Parse xml file
                 //todo: parse from memory
                 File inputFile = new File("/tmp/"+filename);
