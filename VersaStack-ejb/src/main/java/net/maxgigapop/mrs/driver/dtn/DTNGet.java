@@ -75,7 +75,6 @@ public class DTNGet {
             
             String cmd = "globus-url-copy gsiftp://"+address+"/tmp/"+filename+" /tmp/";
             String out = runcommand(cmd);
-            System.out.println(out);
             if (out != null){
                 //Parse xml file
                 //todo: parse from memory

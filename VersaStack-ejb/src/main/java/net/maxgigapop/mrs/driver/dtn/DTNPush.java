@@ -60,28 +60,35 @@ public class DTNPush {
         
         //start a data transfer
         requests += createDataTransfer(modelRef, modelAdd);
-        
+        logger.info(requests);
         return requests;
     }
     
     public void pushCommit(String r) {
         String[] requests = r.split("[\\n]");
-            
+        
         for (String request : requests) {
             if (request.contains("CreateDataTransfer")) {
                 String[] parameters = request.split("\\s+");
-                String taskid = parameters[1];
-                String source = parameters[2];
-                String destination = parameters[3];
+                String option = parameters[1];
+                String taskid = parameters[2];
+                String source = parameters[3];
+                String destination = parameters[4];
                 
-                //start transfer using globus online
-                //todo: get credential automatically
-                //activate credential beforehand
-                
-                String cmd = "gsissh cli.globusonline.org transfer --taskid '" + taskid + "' -- "+ source + " " + destination;
-//                String cmd = "globus-url-copy " + source + " "+ destination;
-                String output = runcommand(cmd);
-                logger.info("Request '"+request+"' successful committed: " + output);
+                if (option.compareTo("globus-cli")==0 ){
+                    //start transfer using globus online
+                    //todo: get credential automatically
+                    //activate credential beforehand
+                    String cmd = "gsissh cli.globusonline.org transfer --taskid '" + taskid + "' -- "+ source + " " + destination;
+                    String output = runcommand(cmd);
+                    logger.info("Request '"+request+"' successful committed: " + output);
+                }
+                else if (option.compareTo("globus-url-copy")==0 ){
+                    //start transfer using globus-url-copy
+                    String cmd = "globus-url-copy gsiftp://"+source+" gsiftp://"+destination;
+                    String output = runcommand(cmd);
+                    logger.info("Request '"+request+"' successful committed: " + output);
+                }
             }   
 
             else if (request.contains("CancelDataTransfer")){
@@ -148,15 +155,21 @@ public class DTNPush {
             }
             querySolution1 = r1.next();
             RDFNode destination = querySolution1.get("destination");
-             
-            //generate taskid for data transfer
-            String cmd = "gsissh cli.globusonline.org transfer --generate-id";
-            String out = runcommand(cmd);
-            String taskid = null;
-            if(out!=null){
-                String[] tokens = out.split("\n");
-                taskid = tokens[0];
-                requests += String.format("CreateDataTransfer %s %s %s  \n", taskid, source.asLiteral().getString(), 
+            String s_addr = source.asLiteral().getString().split("/")[0];
+            String d_addr = destination.asLiteral().getString().split("/")[0];            
+            if(s_addr.contains("#") || d_addr.contains("#")){
+                //generate taskid for data transfer
+                String cmd = "gsissh cli.globusonline.org transfer --generate-id";
+                String out = runcommand(cmd);
+                if(out!=null){
+                    String[] tokens = out.split("\n");
+                    String taskid = tokens[0];
+                    requests += String.format("CreateDataTransfer globus-cli %s %s %s  \n", taskid, source.asLiteral().getString(), 
+                                                destination.asLiteral().getString());
+                }   
+            }
+            else{
+                requests += String.format("CreateDataTransfer globus-url-copy %s %s %s  \n", transferTagValue, source.asLiteral().getString(), 
                                             destination.asLiteral().getString());
             }
         }
@@ -218,7 +231,7 @@ public class DTNPush {
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException ex) {
-            Logger.getLogger(DTNGet.class.getName()).log(Level.SEVERE, null, ex);
+            logger.log(Level.SEVERE, null, ex);
         }
         return output;
     }
