@@ -239,15 +239,7 @@ public class OpenStackPush {
                 osClient.networking().network().delete(network.getId());
                 NetworkDeletionCheck(id, url, NATServer, username, password, tenantName, topologyUri);
             } else if (o.get("request").toString().equals("RunInstanceRequest")) {
-                //@TODO: get image and flavor from mrs:type, if not available do:
-                String imageType = defaultImage;
-                String flavorType = defaultFlavor;
-                if (imageType == null || imageType.isEmpty()) {
-                    throw new EJBException(String.format("Cannot determine server image type."));
-                }
-                if (flavorType == null || flavorType.isEmpty()) {
-                    throw new EJBException(String.format("Cannot determine server image type."));
-                }
+                //@TODO: keypair and secgroup
                 ServerCreateBuilder builder = Builders.server();
                 if (o.get("image").toString().equals("any") && o.get("image").toString().equals("any")) {
 
@@ -1303,7 +1295,7 @@ public class OpenStackPush {
                 o.put("floating ip", floatingIp);
                 requests.add(o);
             } else {
-
+                //@xyang: these are not handled for now as terminating VM will deassociate floating ip automatically
                 o.put("request", "DeassociateFloatingIpRequest");
                 o.put("server name", serverName);
                 o.put("port name", portName);
