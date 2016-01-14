@@ -237,7 +237,7 @@ public class OpenStackNeutronModelBuilder {
                     // ipaddr
                     if (jsonObj.containsKey("ipaddr") && !((String) jsonObj.get("ipaddr")).isEmpty()) {
                         Resource vnicIP = RdfOwl.createResource(model, ResourceTool.getResourceUri((String) jsonObj.get("ipaddr"), OpenstackPrefix.public_address, OpenstackPrefix.uri, server_name + ":" + vnicName, (String) jsonObj.get("ipaddr")), Mrs.NetworkAddress);
-                        model.add(model.createStatement(vnicIP, Mrs.type, "ipv4-network-address"));
+                        model.add(model.createStatement(vnicIP, Mrs.type, "ipv4-address"));
                         model.add(model.createStatement(sriovPort, Mrs.hasNetworkAddress, vnicIP));
                     }
                     // macaddr
@@ -264,7 +264,7 @@ public class OpenStackNeutronModelBuilder {
                             model.add(model.createStatement(vnicRouteTo, Mrs.value, strRouteTo));
                             model.add(model.createStatement(vnicRoute, Mrs.routeTo, vnicRouteTo));
                             Resource vnicRouteVia = RdfOwl.createResource(model, sriovPort.getURI() + ":next+" + strRouteVia, Mrs.NetworkAddress);
-                            model.add(model.createStatement(vnicRouteVia, Mrs.type, "ipv4-netwrk-address"));
+                            model.add(model.createStatement(vnicRouteVia, Mrs.type, "ipv4-address"));
                             model.add(model.createStatement(vnicRouteVia, Mrs.value, strRouteVia));
                             model.add(model.createStatement(vnicRoute, Mrs.nextHop, vnicRouteVia));
                         }
@@ -387,7 +387,7 @@ public class OpenStackNeutronModelBuilder {
                         model.add(model.createStatement(DEST_EXTERNAL, value, dest));
 
                         model.add(model.createStatement(EXROUTE, nextHop, EXNEXTHOP));
-                        model.add(model.createStatement(EXNEXTHOP, type, "ipv4-network-address"));
+                        model.add(model.createStatement(EXNEXTHOP, type, "ipv4-address"));
                         model.add(model.createStatement(EXNEXTHOP, value, nextHOP));
 
                         model.add(model.createStatement(LOCAL_ROUTE, routeFrom, SUBNET));
@@ -504,7 +504,7 @@ public class OpenStackNeutronModelBuilder {
                             model.add(model.createStatement(INROUTEFROM, type, "subnet"));
                             model.add(model.createStatement(INROUTEFROM, value, subnetId));
 
-                            model.add(model.createStatement(INNEXTHOP, type, "ipv4-network-address"));
+                            model.add(model.createStatement(INNEXTHOP, type, "ipv4-address"));
                             model.add(model.createStatement(INNEXTHOP, value, nextHOP));
 
                             model.add(model.createStatement(INROUTETO, type, "ipv4-prefix"));
@@ -559,7 +559,7 @@ public class OpenStackNeutronModelBuilder {
                             model.add(model.createStatement(ROUTER_INTERFACE_ROUTE, routeTo, SUBNET));
                             model.add(model.createStatement(ROUTER_INTERFACE_ROUTE, nextHop, ROUTER_INTERFACE_ROUTE_NEXTHOP));
 
-                            model.add(model.createStatement(ROUTER_INTERFACE_ROUTE_NEXTHOP, type, "ipv4-network-address"));
+                            model.add(model.createStatement(ROUTER_INTERFACE_ROUTE_NEXTHOP, type, "ipv4-address"));
                             model.add(model.createStatement(ROUTER_INTERFACE_ROUTE_NEXTHOP, value, INTERFACE_IP));
                         }
                         /*
@@ -600,7 +600,7 @@ public class OpenStackNeutronModelBuilder {
                 model.add(model.createStatement(RHOSTROUTETO, type, "subnet"));
                 model.add(model.createStatement(RHOSTROUTETO, value, RHOSTTO));
 
-                model.add(model.createStatement(RHOSTROUTENEXTHOP, type, "ipv4-network-address"));
+                model.add(model.createStatement(RHOSTROUTENEXTHOP, type, "ipv4-address"));
                 model.add(model.createStatement(RHOSTROUTENEXTHOP, value, RHOSTNEXTHOP));
             }
 

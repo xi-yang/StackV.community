@@ -463,4 +463,12 @@ public class OpenStackGet {
         }
         return data.get(key);
     }
+    
+    public void setMetadata(String serverId, String key, String value){ 
+        Map<String, String> data = this.getMetadata(this.getServer(serverId));
+        if (data == null)
+            return;
+        data.put(key, value);
+        client.compute().servers().updateMetadata(serverId, data);
+    }
 }

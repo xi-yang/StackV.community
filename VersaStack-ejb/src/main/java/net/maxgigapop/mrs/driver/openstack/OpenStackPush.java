@@ -16,6 +16,7 @@ import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
+import com.hp.hpl.jena.rdf.model.Resource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -26,6 +27,7 @@ import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ResourceTool;
 import org.apache.commons.net.util.SubnetUtils;
 import org.apache.commons.net.util.SubnetUtils.SubnetInfo;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient;
@@ -115,6 +117,7 @@ public class OpenStackPush {
         List<JSONObject> requests = new ArrayList();
 
         //get all the requests
+        requests.addAll(sriovRequests(modelRef, modelReduct, false));
         requests.addAll(portAttachmentRequests(modelRef, modelReduct, false));
         requests.addAll(volumesAttachmentRequests(modelRef, modelReduct, false));
         requests.addAll(volumeRequests(modelRef, modelReduct, false));
@@ -135,10 +138,7 @@ public class OpenStackPush {
         requests.addAll(layer3Requests(modelRef, modelAdd, true));
         requests.addAll(floatingIpRequests(modelRef, modelAdd, true));
         requests.addAll(isAliasRequest(modelRef, modelAdd, true));
-        
-        //@TODO: appended floatingIp in portRequests (in addition to isAliasRequest)
-        
-        //@TODO: sriovRequests
+        requests.addAll(sriovRequests(modelRef, modelAdd, true));
 
         return requests;
     }
@@ -745,10 +745,72 @@ public class OpenStackPush {
                 String floatip = o.get("float ip").toString();
                 Server s = client.getServer(servername);
                 ActionResponse ar = osClient.compute().floatingIps().removeFloatingIP(s, floatip);
+            } else if (o.get("request").toString().equals("AttachSriovRequest")) {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                int sriovNum = 1;
+                JSONObject allMetaObj = new JSONObject();
+                while (o.containsKey(String.format("sriov_vnic:%d", sriovNum))) {
+                    JSONObject o2 = (JSONObject)o.get(String.format("sriov_vnic:%d", sriovNum));
+                    String servername = o2.get("server name").toString();
+                    JSONArray metaObjArray = null; 
+                    if (allMetaObj.containsKey(servername)) {
+                        metaObjArray = (JSONArray)allMetaObj.get(servername);
+                    } else {
+                        metaObjArray = new JSONArray();
+                        allMetaObj.put(servername, metaObjArray);
+                    }
+                    JSONObject metaObj = new JSONObject();
+                    metaObjArray.add(metaObj);
+                    metaObj.put("interface", o2.get("vnic name").toString());
+                    metaObj.put("profile", o2.get("port profile").toString());                
+                    if (o2.containsKey("mac address")) {
+                        metaObj.put("macaddr", o2.get("mac address").toString());
+                    }
+                    if (o2.containsKey("ip address")) {
+                        metaObj.put("ipaddr", o2.get("ip address").toString());
+                    }
+                    JSONArray routes = new JSONArray();
+                    int routeNum = 0;
+                    while (o2.containsKey(String.format("routeto %d", routeNum)) && o2.containsKey(String.format("nexthop %d", routeNum))) {
+                        JSONObject route = new JSONObject();
+                        String routeTo = o2.get(String.format("routeto %d", routeNum)).toString();
+                        String nextHop = o2.get(String.format("nexthop %d", routeNum)).toString();
+                        route.put("to", routeTo);
+                        route.put("via", nextHop);
+                        routes.add(route);
+                        routeNum++;
+                    }
+                    if (!routes.isEmpty()) {
+                        metaObj.put("routes", routes);
+                    }
+                    String data = metaObj.toJSONString().replaceAll("\"", "'");
+                    // set metadata: "sriov_vnic:#": data
+                    client.setMetadata(servername, String.format("sriov_vnic:%d", metaObjArray.size()), data);
+                    sriovNum++;
+                }
+                for  (Object obj: allMetaObj.keySet()) {
+                    // set metadata: "sriov_vnic:status": "do_attach"
+                    String servername = (String)obj;
+                    client.setMetadata(servername, "sriov_vnic:status", "do_attach");
+                }
+            } else if (o.get("request").toString().equals("DetachSriovRequest")) {
+                int sriovNum = 1;
+                List<String> serversToDetachSriov = new ArrayList();
+                while (o.containsKey(String.format("sriov_vnic:%d", sriovNum))) {
+                    JSONObject o2 = (JSONObject)o.get(String.format("sriov_vnic:%d", sriovNum));
+                    String servername = o2.get("server name").toString();
+                    if (!serversToDetachSriov.contains(servername)) {
+                        serversToDetachSriov.add(servername);
+                    }
+                    //@TODO: Add per VNic detach logic here once underlying detach supports finer control
+                    sriovNum++;
+                }
+                for  (String servername: serversToDetachSriov) {
+                    // set metadata: "sriov_vnic:status": "do_detach"
+                    client.setMetadata(servername, "sriov_vnic:status", "do_detach");
+                }
             }
-
         }
-
     }
 
     /**
@@ -1295,7 +1357,8 @@ public class OpenStackPush {
                 o.put("floating ip", floatingIp);
                 requests.add(o);
             } else {
-                //@xyang: these are not handled for now as terminating VM will deassociate floating ip automatically
+                //@TODO: Add handling for DeassociateFloatingIpRequest in commit. 
+                // Note that these are not handled for now as terminating VM will deassociate floating ip automatically
                 o.put("request", "DeassociateFloatingIpRequest");
                 o.put("server name", serverName);
                 o.put("port name", portName);
@@ -2023,6 +2086,98 @@ public class OpenStackPush {
             requests.add(o);
         }
 
+        return requests;
+    }
+
+    private List<JSONObject> sriovRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+        List<JSONObject> requests = new ArrayList();
+        JSONObject JO = new JSONObject();
+        String query = "";
+        query = "SELECT ?vm ?profile ?vnic ?routing WHERE {"
+                + "?vm a nml:Node ."
+                + "?vm nml:hasBidirectionalPort ?vnic ."
+                + "?vm nml:hasService ?vmfex . "
+                + "?vmfex a mrs:HypervisorBypassInterfaceService ."
+                + "?pp a nml:SwitchingSubnet ."
+                + "?pp nml:hasBidirectionalPort ?vnic ."
+                + "?pp mrs:type \"Cisco_UCS_Port_Profile\" ."
+                + "?pp mrs:value $profile ."
+                + "OPTIONAL {"
+                + " ?vm nml:hasService ?routing . "
+                + " ?routing a mrs:RoutingService. }"
+                + "}";
+        ResultSet r = executeQuery(query, emptyModel, modelDelta);
+        QuerySolution q = r.next();
+        int sriovNum = 1;
+        while (r.hasNext()) {
+            JSONObject o = new JSONObject();
+            Resource VM = q.getResource("vm");
+            Resource vNic = q.getResource("vnic");
+            String portProfile = q.get("profile").toString();
+            query = "SELECT ?ip WHERE {"
+                    + "?vnic nml:hasNetworkAddress ?ipAddr . "
+                    + "?ipAddr a mrs:NetworkAddress . "
+                    + "?ipAddr mrs:type \"ipv4-address\" . "
+                    + "?ipAddr mrs:value ?ip . "
+                    + "}";
+            ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
+            String ip = null;
+            if (r1.hasNext()) {
+                ip = r1.next().get("ip").toString();
+            }
+            query = "SELECT ?mac WHERE {"
+                    + "?vnic nml:hasNetworkAddress ?macAddr . "
+                    + "?macAddr a mrs:NetworkAddress . "
+                    + "?macAddr mrs:type \"mac-address\" . "
+                    + "?macAddr mrs:value ?mac . "
+                    + "}";
+            ResultSet r2 = executeQuery(query, emptyModel, modelDelta);
+            String mac = null;
+            if (r2.hasNext()) {
+                mac = r2.next().get("mac").toString();
+            }
+            String serverName = ResourceTool.getResourceName(VM.toString(), OpenstackPrefix.vm);
+            String vnicName = ResourceTool.getResourceName(vNic.toString(), OpenstackPrefix.PORT);
+            o.put("server name", serverName);
+            o.put("port profile", portProfile);
+            o.put("vnic name", vnicName);
+            if (ip != null) {
+                o.put("ip address", ip);
+            }
+            if (mac != null) {
+                o.put("mac address", mac);
+            }
+            if (q.contains("routing")) {
+                Resource routingSvc = q.getResource("routing");
+                query = "SELECT ?routeto ?nexthop WHERE {"
+                        + String.format("<%s> mrs:hasRoute ?route . ", routingSvc)
+                        + "?route mrs:routeTo ?toAddr . "
+                        + "?route mrs:nextHop ?viaAddr . "
+                        + "?toAddr mrs:type \"ipv4-prefix\" . "
+                        + "?toAddr mrs:value ?routeto . "
+                        + "?viaAddr mrs:type \"ipv4-address\" . "
+                        + "?viaAddr mrs:value ?nexthop . "
+                        + "}";
+                ResultSet r3 = executeQuery(query, emptyModel, modelDelta);
+                int routeNum = 0;
+                while (r3.hasNext()) {
+                    QuerySolution q3 = r3.next();
+                    String routeTo = q3.get("routeto").toString();
+                    String nextHop = q3.get("nexthop").toString();
+                    o.put(String.format("routeto %d", routeNum), routeTo);
+                    o.put(String.format("nexthop %d", routeNum), nextHop);
+                    routeNum++;
+                }
+            }
+            JO.put(String.format("sriov_vnic:%s", sriovNum), o);
+            sriovNum++;
+        }
+        if (creation == true) {
+            JO.put("request", "AttachSriovRequest");
+        } else {
+            JO.put("request", "DetachSriovRequest");
+        }
+        requests.add(JO);
         return requests;
     }
 
