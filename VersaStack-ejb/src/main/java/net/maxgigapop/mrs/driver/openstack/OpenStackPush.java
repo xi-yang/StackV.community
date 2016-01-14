@@ -133,6 +133,7 @@ public class OpenStackPush {
         requests.addAll(volumesAttachmentRequests(modelRef, modelAdd, true));
         requests.addAll(portAttachmentRequests(modelRef, modelAdd, true));
         requests.addAll(layer3Requests(modelRef, modelAdd, true));
+        requests.addAll(floatingIpRequests(modelRef, modelAdd, true));
         requests.addAll(isAliasRequest(modelRef, modelAdd, true));
         
         //@TODO: appended floatingIp in portRequests (in addition to isAliasRequest)
@@ -594,6 +595,7 @@ public class OpenStackPush {
                     throw new EJBException("unknown subnet:" + o.get("subnet name"));
                 }
                 if (o.get("private address").toString().equals("any")) {
+                    //@BUG: without explicit private ip, port is not created into the Subnet as told by the "subnet name" parameter.
                     port.toBuilder().name(o.get("port name").toString())
                             .networkId(subnet.getNetworkId());
                 } else {
@@ -719,6 +721,14 @@ public class OpenStackPush {
                 String routeto = o.get("routeto").toString();
                 Subnet s = client.getSubnet(subnetname);
                 System.out.println("There is currently no way to delete the host route through api");
+            } else if (o.get("request").toString().equals("AssociateFloatingIpRequest")) {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                String servername = o.get("server name").toString();
+                String portname = o.get("port name").toString();
+                String floatip = o.get("floating ip").toString();
+                Server s = client.getServer(servername);
+                Port p = client.getPort(portname);
+                ActionResponse ar = osClient.compute().floatingIps().addFloatingIP(s, ((IP)p.getFixedIps().toArray()[0]).getIpAddress(), floatip);
             } else if (o.get("request").toString().equals("CreateisAliaseRequest")) {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 /*
@@ -1257,6 +1267,56 @@ public class OpenStackPush {
 
     /**
      * ****************************************************************
+     * Function to allocate floating ip to an interface that is attached to server
+     * server ****************************************************************
+     */
+    private List<JSONObject> floatingIpRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+        List<JSONObject> requests = new ArrayList();
+        String query;
+
+        //1 check for any addition of a port into a device or subnet
+        //some error here
+        query = "SELECT ?node ?port ?fip WHERE {"
+                + "?node nml:hasBidirectionalPort ?port ."
+                + "?node a nml:Node. "
+                + "?port mrs:hasNetworkAddress ?addr. "
+                + "?addr mrs:type \"floating-ip\". "
+                + "?addr mrs:value ?fip. "
+                + "}";
+        ResultSet r = executeQuery(query, emptyModel, modelDelta);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            RDFNode server = q.get("node");
+            RDFNode port = q.get("port");
+            RDFNode fip = q.get("fip");
+            String servername = server.asResource().toString();
+            String serverName = ResourceTool.getResourceName(servername, OpenstackPrefix.vm);
+            String portname = port.asResource().toString();
+            String portName = ResourceTool.getResourceName(portname, OpenstackPrefix.PORT);
+            String floatingIp = fip.toString();
+            JSONObject o = new JSONObject();
+
+            if (creation == true) {
+                o.put("request", "AssociateFloatingIpRequest");
+                o.put("server name", serverName);
+                o.put("port name", portName);
+                o.put("floating ip", floatingIp);
+                requests.add(o);
+            } else {
+
+                o.put("request", "DeassociateFloatingIpRequest");
+                o.put("server name", serverName);
+                o.put("port name", portName);
+                o.put("floating ip", floatingIp);
+                requests.add(o);
+            }
+
+        }
+        return requests;
+    }    
+    
+    /**
+     * ****************************************************************
      * Function to request or delete an instance
      * ****************************************************************
      */
@@ -1321,6 +1381,7 @@ public class OpenStackPush {
                     throw new EJBException(String.format("Host %s to host node %s is not of type nml:Node", host, vm));
                 }
 
+                //?? unused ?
                 //1.6 find the network that the server will be in
                 //query = "SELECT ?node WHERE {?node a nml:Node. FILTER(?node = <" + server.asResource() + ">)}";
                 query = "SELECT ?subnet ?port WHERE {?subnet a mrs:SwitchingSubnet ."
@@ -1368,72 +1429,7 @@ public class OpenStackPush {
                     String name = ResourceTool.getResourceName(Name, OpenstackPrefix.PORT);
                     portNames.add(name);
                 }
-                /*
-                 //1.8 find the EBS volumes that the instance uses
-                 query = "SELECT ?volume WHERE {<" + vm.asResource() + ">  mrs:hasVolume  ?volume}";
-                 ResultSet r4 = executeQuery(query, emptyModel, modelDelta);
-                 if (!r4.hasNext()) {
-                 throw new EJBException(String.format("Delta model does not specify the volume of the new vm: %s", vm));
-                 }
-                 List<String> volumeNames = new ArrayList();
-                 while (r4.hasNext())//there could be multiple volumes attached to the instance
-                 {
-                 QuerySolution q4 = r4.next();
-                 RDFNode volume = q4.get("volume");
-                 String name = volume.asResource().toString().replace(topologyUri, "");
-                 volumeNames.add(name);
-                 }
-
-
-                 o.put("server name", serverName);
-                 String imageType = defaultImage;
-                 String flavorType = defaultFlavor;
-                 if ((imageType == null || imageType.isEmpty()) && imageID.equals("any")) {
-                 throw new EJBException(String.format("Cannot determine server image type."));
-                 }
-                 if ((flavorType == null || flavorType.isEmpty()) && flavorID.equals("any")) {
-                 throw new EJBException(String.format("Cannot determine server image type."));
-                 }
-                 if (imageID.equals("any"))
-                 o.put("image", imageType);
-                 else 
-                 o.put("image", imageID);
-                 if (flavorID.equals("any"))
-                 o.put("flavor", flavorType);
-                 else 
-                 o.put("flavor", flavorID);
-
-                 //1.10.1 put all the ports in the request
-                 int index = 0;
-                 for (String port : portNames) {
-                 String key = "port" + Integer.toString(index);
-                 o.put(key, port);
-                 index++; //increment the device index
-
-                 //1.9 put the root device of the instance
-                 query = "SELECT ?volume ?deviceName ?size ?type  WHERE {"
-                 + "<" + vm.asResource() + ">  mrs:hasVolume  ?volume ."
-                 + "?volume mrs:target_device ?deviceName ."
-                 + "?volume mrs:disk_gb ?size ."
-                 + "?volume mrs:value ?type}";
-                 r4 = executeQuery(query, modelRef, modelDelta);
-                 boolean hasRootVolume = false;
-                 String volumeName = "";
-                 String volumename = "";
-                 while (r4.hasNext()) {
-                 QuerySolution q4 = r4.next();
-                 RDFNode volume = q4.get("volume");
-                 volumename = volume.asResource().toString();
-                 volumeName = getresourcename(volumename, "+", "");
-                 String deviceName = q4.get("deviceName").asLiteral().toString();
-                 if (deviceName.equals("/dev/")) {
-                 hasRootVolume = true;
-                 }
-                 }
-                 if (hasRootVolume == false) {
-                 throw new EJBException(String.format("model addition does not specify root volume for node: %s", vm));
-                 }
-                 */
+                
                 //1.10 create the request
                 JSONObject o = new JSONObject();
                 if (creation == true) {
@@ -1964,9 +1960,7 @@ public class OpenStackPush {
                     + "?subnet mrs:hasNetworkAddress <" + fixip.asResource() + "> }";
             r1 = executeQuery(query, emptyModel, modelDelta);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("routeTo %s  is "
-                        + "malformed", fixip));
-
+                return requests; //? throw new EJBException
             }
             QuerySolution q1 = r1.next();
 
@@ -1978,10 +1972,8 @@ public class OpenStackPush {
             query = "SELECT ?subnet WHERE{?subnet a mrs:SwitchingSubnet ."
                     + "?subnet mrs:hasNetworkAddress <" + floatingip.asResource() + "> }";
             r1 = executeQuery(query, emptyModel, modelDelta);
-            while (!r1.hasNext()) {
-                throw new EJBException(String.format("routeTo %s  is "
-                        + "malformed", fixip));
-
+            if (!r1.hasNext()) {
+                return requests; //? throw new EJBException
             }
             QuerySolution q2 = r1.next();
 
@@ -1993,10 +1985,8 @@ public class OpenStackPush {
             query = "SELECT ?server WHERE{?server a nml:Node ."
                     + "?server  mrs:hasNetworkAddress <" + fixip.asResource() + ">}";
             r1 = executeQuery(query, emptyModel, modelDelta);
-            while (!r1.hasNext()) {
-                throw new EJBException(String.format("routeTo %s  is "
-                        + "malformed", fixip));
-
+            if (!r1.hasNext()) {
+                return requests; //? throw new EJBException
             }
             QuerySolution q3 = r1.next();
             RDFNode serVer = q3.get("server");
@@ -2008,10 +1998,8 @@ public class OpenStackPush {
                     + "<" + fixip.asResource() + "> mrs:value ?value}";
 
             r1 = executeQuery(query, emptyModel, modelDelta);
-            while (!r1.hasNext()) {
-                throw new EJBException(String.format("fixip  %s  is "
-                        + "malformed", fixip));
-
+            if (!r1.hasNext()) {
+                return requests; //? throw new EJBException
             }
             QuerySolution q4 = r1.next();
             RDFNode valUe = q4.get("value");
@@ -2022,10 +2010,8 @@ public class OpenStackPush {
                     + "<" + floatingip.asResource() + "> mrs:value ?value}";
 
             r1 = executeQuery(query, emptyModel, modelDelta);
-            while (!r1.hasNext()) {
-                throw new EJBException(String.format("floatingip  %s  is "
-                        + "malformed", floatingip));
-
+            if (!r1.hasNext()) {
+                return requests; //? throw new EJBException
             }
             QuerySolution q5 = r1.next();
             RDFNode floatvalUe = q5.get("value");

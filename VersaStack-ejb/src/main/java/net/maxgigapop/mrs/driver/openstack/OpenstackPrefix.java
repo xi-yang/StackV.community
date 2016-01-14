@@ -41,6 +41,8 @@ public class OpenstackPrefix {
     
     public static String subnet_network_address = "%s:network+%s:subnet+%s:subnetnetworkaddress";
     
+    public static String floating_ip  = "%s:floatingip+%s";
+
     public static String floating_ip_in_using  = "%s:network+%s:subnet+%s:floatingip-inuse";
     
     public static String floating_ip_pool  = "%s:network+%s:subnet+%s:floatingip-pool";

@@ -144,156 +144,139 @@ public class OpenStackNeutronModelBuilder {
         //Left part
         for (Port p : openstackget.getPorts()) {
             String PortID = openstackget.getResourceName(p);
-            //Resource PORT = RdfOwl.createResource(model, topologyURI + ":" + "port+" + openstackget.getResourceName(p), biPort);
-            /*
-             Resource PORT = null;
-             if(!PortID.startsWith("urn:ogf:network")){
-                
-             }else{
-                
-             }
-             */
             Resource PORT = RdfOwl.createResource(model, ResourceTool.getResourceUri(PortID, OpenstackPrefix.PORT, OpenstackPrefix.uri, PortID), biPort);
             for (IP q : p.getFixedIps()) {
                 if (q.getIpAddress() != null || !q.getIpAddress().isEmpty()) {
+                    String s = q.getSubnetId();
+                    Subnet sub = openstackget.getSubnet(s);
+                    Resource FIXEDIP = RdfOwl.createResource(model, topologyURI + ":subnet+" + openstackget.getResourceName(sub) + ":fixedip+" + q.getIpAddress(), networkAddress);
+                    model.add(model.createStatement(PORT, hasNetworkAddress, FIXEDIP));
+                    model.add(model.createStatement(FIXEDIP, value, q.getIpAddress()));
                     if (openstackget.getNetwork(p.getNetworkId()).isRouterExternal()) {
-
-                        //Resource PUBLIC_ADDRESS = RdfOwl.createResource(model, topologyURI + ":port+" + PortID + ":" + "public-ip-address+" + q.getIpAddress(), networkAddress);
-                        String public_address = q.getIpAddress();
-                        Resource PUBLIC_ADDRESS = RdfOwl.createResource(model, ResourceTool.getResourceUri(public_address, OpenstackPrefix.public_address, OpenstackPrefix.uri, PortID, public_address), networkAddress);
-                        model.add(model.createStatement(PORT, hasNetworkAddress, PUBLIC_ADDRESS));
-                        model.add(model.createStatement(PUBLIC_ADDRESS, type, "ipv4:public"));
-                        model.add(model.createStatement(PUBLIC_ADDRESS, value, q.getIpAddress()));
-
+                        model.add(model.createStatement(FIXEDIP, type, "ipv4:public"));
                     } else {
-                        //Resource PRIVATE_ADDRESS = RdfOwl.createResource(model, topologyURI + ":port+" + PortID + ":" + "private-ip-address+" + q.getIpAddress(), networkAddress);
-                        String private_address = q.getIpAddress();
-                        Resource PRIVATE_ADDRESS = RdfOwl.createResource(model, ResourceTool.getResourceUri(PORT.toString() + ":private-ip-address+" + private_address, OpenstackPrefix.private_address, OpenstackPrefix.uri, PortID, private_address), networkAddress);
-                        model.add(model.createStatement(PORT, hasNetworkAddress, PRIVATE_ADDRESS));
-                        model.add(model.createStatement(PRIVATE_ADDRESS, type, "ipv4:private"));
-                        model.add(model.createStatement(PRIVATE_ADDRESS, value, q.getIpAddress()));
-
+                        model.add(model.createStatement(FIXEDIP, type, "ipv4:private"));
                     }
-                }
-
-            }
-
-            for (Server server : openstackget.getServers()) {
-
-                String hostID = server.getHost();
-                if (hostID == null || hostID.isEmpty()) {
-                    hostID = server.getHostId();
-                }
-
-                String hypervisorname = server.getHypervisorHostname();
-                String imageid = server.getImageId();
-                String flavorid = server.getFlavorId();
-                String server_name = openstackget.getServereName(server);
-
-                Resource HOST = RdfOwl.createResource(model, topologyURI + ":" + "host+" + hostID, node);
-
-                Resource HYPERVISOR = RdfOwl.createResource(model, topologyURI + ":" + "hypervisor+" + hypervisorname, hypervisorService);//need to update here
-                Resource VM = RdfOwl.createResource(model, ResourceTool.getResourceUri(server_name, OpenstackPrefix.vm, OpenstackPrefix.uri, server_name), node);
-
-                model.add(model.createStatement(OpenstackTopology, hasNode, HOST));
-
-                model.add(model.createStatement(HOST, hasService, HYPERVISOR));
-                model.add(model.createStatement(HYPERVISOR, providesVM, VM));
-                model.add(model.createStatement(HOST, hasNode, VM));
-                model.add(model.createStatement(VM, type, "imageID+" + imageid));
-                model.add(model.createStatement(VM, type, "flavorID+" + flavorid));
-
-                for (Port port : openstackget.getServerPorts(server)) {
-                    String PortName = openstackget.getResourceName(port);
-                    Resource Port = RdfOwl.createResource(model, ResourceTool.getResourceUri(PortName, OpenstackPrefix.PORT, OpenstackPrefix.uri, PortName), biPort);
-
-                    model.add(model.createStatement(VM, hasBidirectionalPort, Port));
-                    //model.add(model.createStatement(Port, hasTag, PORT_TAG));
-                }
-                
-                Map<String, String> metadata = openstackget.getMetadata(server);
-                if (metadata == null || !metadata.containsKey("sriov_vnic:status") || !metadata.get("sriov_vnic:status").equals("attached")) {
-                    continue;
-                }
-                Resource vmfexSvc = RdfOwl.createResource(model, ResourceTool.getResourceUri(server_name, OpenstackPrefix.hypervisorBypassSvc, OpenstackPrefix.uri, server_name, "vmfex"), Mrs.HypervisorBypassInterfaceService);
-                model.add(model.createStatement(VM, Nml.hasService, vmfexSvc));
-                Resource vmRoutingSvc = RdfOwl.createResource(model, ResourceTool.getResourceUri(server_name, OpenstackPrefix.routingService, OpenstackPrefix.uri, server_name+":linuxrouting"), Mrs.RoutingService);
-                model.add(model.createStatement(VM, Nml.hasService, vmRoutingSvc));
-                int sriovVnicNum = 1;
-                while (true) {
-                    String sriovVnicKey = String.format("sriov_vnic:%d", sriovVnicNum);
-                    if (!metadata.containsKey(sriovVnicKey))
-                        break;
-                    String sriovVnicJson = metadata.get(sriovVnicKey);
-                    JSONParser parser = new JSONParser();
-                    try {
-                        sriovVnicJson = sriovVnicJson.replaceAll("'", "\""); // tolerate single quotes
-                        JSONObject jsonObj = (JSONObject) parser.parse(sriovVnicJson);
-                        // interface
-                        if (!jsonObj.containsKey("interface") || !jsonObj.containsKey("profile")) {
-                            Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING, 
-                                String.format("OpenStack driver model server '%s' SRIOV interface without both 'interface' and 'profile' parameters in metadata ''%s'", server_name, sriovVnicKey));
-                            sriovVnicNum++;
-                            continue;
-                        }
-                        String vnicName = (String) jsonObj.get("interface");
-                        Resource sriovPort = RdfOwl.createResource(model, (VM.getURI()+":port+"+vnicName), Nml.BidirectionalPort);
-                        model.add(model.createStatement(VM, Nml.hasBidirectionalPort, sriovPort));
-                        model.add(model.createStatement(vmfexSvc, Mrs.providesVNic, sriovPort));
-                        // profile
-                        String portProfile = (String) jsonObj.get("profile");
-                        Resource profileSwSubnet = RdfOwl.createResource(model, ResourceTool.getResourceUri(portProfile, OpenstackPrefix.ucs_port_profile, OpenstackPrefix.uri, portProfile), Mrs.SwitchingSubnet);
-                        if (modelExt.getBaseModel() == null || !modelExt.contains(profileSwSubnet, Mrs.type, "Cisco_UCS_Port_Profile")) {
-                            Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING, 
-                                String.format("OpenStack driver model server '%s' SRIOV interface without 'profile'='%s' already being defined in modelExtention", server_name, portProfile));
-                            sriovVnicNum++;
-                            continue;
-                        }
-                        model.add(model.createStatement(profileSwSubnet, Nml.hasBidirectionalPort, sriovPort));
-                        // ipaddr
-                        if (jsonObj.containsKey("ipaddr") && !((String)jsonObj.get("ipaddr")).isEmpty()) {
-                            Resource vnicIP = RdfOwl.createResource(model, ResourceTool.getResourceUri((String)jsonObj.get("ipaddr"), OpenstackPrefix.public_address, OpenstackPrefix.uri, server_name+":"+vnicName, (String)jsonObj.get("ipaddr")), Mrs.NetworkAddress);
-                            model.add(model.createStatement(vnicIP, Mrs.type, "ipv4-network-address"));
-                            model.add(model.createStatement(sriovPort, Mrs.hasNetworkAddress, vnicIP));
-                        }
-                        // macaddr
-                        if (jsonObj.containsKey("macaddr") && !((String)jsonObj.get("macaddr")).isEmpty()) {
-                            Resource vnicMAC = RdfOwl.createResource(model, ResourceTool.getResourceUri((String)jsonObj.get("macaddr"), OpenstackPrefix.mac_address, OpenstackPrefix.uri, server_name+":"+vnicName, (String)jsonObj.get("macaddr")), Mrs.NetworkAddress);
-                            model.add(model.createStatement(vnicMAC, Mrs.type, "mac-address"));
-                            model.add(model.createStatement(sriovPort, Mrs.hasNetworkAddress, vnicMAC));                            
-                        }
-                        
-                        // routes from RoutingService for VM
-                        if (jsonObj.containsKey("routes")) {
-                            JSONArray jsonRoutes = (JSONArray)jsonObj.get("routes");
-                            for (Object obj : jsonRoutes) {
-                                JSONObject jsonRoute = (JSONObject)obj;
-                                if (!jsonRoute.containsKey("to") || !jsonRoute.containsKey("via")) {
-                                    continue;
-                                }
-                                String strRouteTo = (String)jsonRoute.get("to");
-                                String strRouteVia = (String)jsonRoute.get("via");
-                                Resource vnicRoute = RdfOwl.createResource(model, sriovPort.getURI()+":route+to-"+strRouteTo+"-via-"+strRouteVia, Mrs.Route);
-                                model.add(model.createStatement(vmRoutingSvc, Mrs.providesRoute, vnicRoute));
-                                Resource vnicRouteTo = RdfOwl.createResource(model, sriovPort.getURI()+":routeto+"+strRouteTo, Mrs.NetworkAddress);
-                                model.add(model.createStatement(vnicRouteTo, Mrs.type, "ipv4-prefix"));
-                                model.add(model.createStatement(vnicRouteTo, Mrs.value, strRouteTo));
-                                model.add(model.createStatement(vnicRoute, Mrs.routeTo, vnicRouteTo));
-                                Resource vnicRouteVia = RdfOwl.createResource(model, sriovPort.getURI()+":next+"+strRouteVia, Mrs.NetworkAddress);
-                                model.add(model.createStatement(vnicRouteVia, Mrs.type, "ipv4-netwrk-address"));
-                                model.add(model.createStatement(vnicRouteVia, Mrs.value, strRouteVia));
-                                model.add(model.createStatement(vnicRoute, Mrs.nextHop, vnicRouteVia));
-                            }
-                        }
-                    } catch (ParseException e) {
-                        Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING, 
-                                String.format("OpenStack driver cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), sriovVnicJson, sriovVnicKey));
-                    }
-                    sriovVnicNum++;
                 }
             }
         }
-        //@xyang
+        
+        for (Server server : openstackget.getServers()) {
+
+            String hostID = server.getHost();
+            if (hostID == null || hostID.isEmpty()) {
+                hostID = server.getHostId();
+            }
+
+            String hypervisorname = server.getHypervisorHostname();
+            String imageid = server.getImageId();
+            String flavorid = server.getFlavorId();
+            String server_name = openstackget.getServereName(server);
+
+            Resource HOST = RdfOwl.createResource(model, topologyURI + ":" + "host+" + hostID, node);
+
+            Resource HYPERVISOR = RdfOwl.createResource(model, topologyURI + ":" + "hypervisor+" + hypervisorname, hypervisorService);//need to update here
+            Resource VM = RdfOwl.createResource(model, ResourceTool.getResourceUri(server_name, OpenstackPrefix.vm, OpenstackPrefix.uri, server_name), node);
+
+            model.add(model.createStatement(OpenstackTopology, hasNode, HOST));
+
+            model.add(model.createStatement(HOST, hasService, HYPERVISOR));
+            model.add(model.createStatement(HYPERVISOR, providesVM, VM));
+            model.add(model.createStatement(HOST, hasNode, VM));
+            model.add(model.createStatement(VM, type, "imageID+" + imageid));
+            model.add(model.createStatement(VM, type, "flavorID+" + flavorid));
+
+            for (Port port : openstackget.getServerPorts(server)) {
+                String PortName = openstackget.getResourceName(port);
+                Resource Port = RdfOwl.createResource(model, ResourceTool.getResourceUri(PortName, OpenstackPrefix.PORT, OpenstackPrefix.uri, PortName), biPort);
+
+                model.add(model.createStatement(VM, hasBidirectionalPort, Port));
+                //model.add(model.createStatement(Port, hasTag, PORT_TAG));
+            }
+            // UCS STIOV sp;ecial handling
+            Map<String, String> metadata = openstackget.getMetadata(server);
+            if (metadata == null || !metadata.containsKey("sriov_vnic:status") || metadata.get("sriov_vnic:status").equals("detached")) {
+                continue;
+            }
+            Resource vmfexSvc = RdfOwl.createResource(model, ResourceTool.getResourceUri(server_name, OpenstackPrefix.hypervisorBypassSvc, OpenstackPrefix.uri, server_name, "vmfex"), Mrs.HypervisorBypassInterfaceService);
+            model.add(model.createStatement(VM, Nml.hasService, vmfexSvc));
+            Resource vmRoutingSvc = RdfOwl.createResource(model, ResourceTool.getResourceUri(server_name, OpenstackPrefix.routingService, OpenstackPrefix.uri, server_name + ":linuxrouting"), Mrs.RoutingService);
+            model.add(model.createStatement(VM, Nml.hasService, vmRoutingSvc));
+            int sriovVnicNum = 1;
+            while (true) {
+                String sriovVnicKey = String.format("sriov_vnic:%d", sriovVnicNum);
+                if (!metadata.containsKey(sriovVnicKey)) {
+                    break;
+                }
+                String sriovVnicJson = metadata.get(sriovVnicKey);
+                JSONParser parser = new JSONParser();
+                try {
+                    sriovVnicJson = sriovVnicJson.replaceAll("'", "\""); // tolerate single quotes
+                    JSONObject jsonObj = (JSONObject) parser.parse(sriovVnicJson);
+                    // interface
+                    if (!jsonObj.containsKey("interface") || !jsonObj.containsKey("profile")) {
+                        Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING,
+                                String.format("OpenStack driver model server '%s' SRIOV interface without both 'interface' and 'profile' parameters in metadata ''%s'", server_name, sriovVnicKey));
+                        sriovVnicNum++;
+                        continue;
+                    }
+                    String vnicName = (String) jsonObj.get("interface");
+                    Resource sriovPort = RdfOwl.createResource(model, (VM.getURI() + ":port+" + vnicName), Nml.BidirectionalPort);
+                    model.add(model.createStatement(VM, Nml.hasBidirectionalPort, sriovPort));
+                    model.add(model.createStatement(vmfexSvc, Mrs.providesVNic, sriovPort));
+                    // profile
+                    String portProfile = (String) jsonObj.get("profile");
+                    Resource profileSwSubnet = RdfOwl.createResource(model, ResourceTool.getResourceUri(portProfile, OpenstackPrefix.ucs_port_profile, OpenstackPrefix.uri, portProfile), Mrs.SwitchingSubnet);
+                    if (modelExt.getBaseModel() == null || !modelExt.contains(profileSwSubnet, Mrs.type, "Cisco_UCS_Port_Profile")) {
+                        Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING,
+                                String.format("OpenStack driver model server '%s' SRIOV interface without 'profile'='%s' already being defined in modelExtention", server_name, portProfile));
+                        sriovVnicNum++;
+                        continue;
+                    }
+                    model.add(model.createStatement(profileSwSubnet, Nml.hasBidirectionalPort, sriovPort));
+                    // ipaddr
+                    if (jsonObj.containsKey("ipaddr") && !((String) jsonObj.get("ipaddr")).isEmpty()) {
+                        Resource vnicIP = RdfOwl.createResource(model, ResourceTool.getResourceUri((String) jsonObj.get("ipaddr"), OpenstackPrefix.public_address, OpenstackPrefix.uri, server_name + ":" + vnicName, (String) jsonObj.get("ipaddr")), Mrs.NetworkAddress);
+                        model.add(model.createStatement(vnicIP, Mrs.type, "ipv4-network-address"));
+                        model.add(model.createStatement(sriovPort, Mrs.hasNetworkAddress, vnicIP));
+                    }
+                    // macaddr
+                    if (jsonObj.containsKey("macaddr") && !((String) jsonObj.get("macaddr")).isEmpty()) {
+                        Resource vnicMAC = RdfOwl.createResource(model, ResourceTool.getResourceUri((String) jsonObj.get("macaddr"), OpenstackPrefix.mac_address, OpenstackPrefix.uri, server_name + ":" + vnicName, (String) jsonObj.get("macaddr")), Mrs.NetworkAddress);
+                        model.add(model.createStatement(vnicMAC, Mrs.type, "mac-address"));
+                        model.add(model.createStatement(sriovPort, Mrs.hasNetworkAddress, vnicMAC));
+                    }
+
+                    // routes from RoutingService for VM
+                    if (jsonObj.containsKey("routes")) {
+                        JSONArray jsonRoutes = (JSONArray) jsonObj.get("routes");
+                        for (Object obj : jsonRoutes) {
+                            JSONObject jsonRoute = (JSONObject) obj;
+                            if (!jsonRoute.containsKey("to") || !jsonRoute.containsKey("via")) {
+                                continue;
+                            }
+                            String strRouteTo = ((String) jsonRoute.get("to")).replaceAll("/", "");
+                            String strRouteVia = ((String) jsonRoute.get("via")).replaceAll("/", "");
+                            Resource vnicRoute = RdfOwl.createResource(model, sriovPort.getURI() + ":route+to-" + strRouteTo + "-via-" + strRouteVia, Mrs.Route);
+                            model.add(model.createStatement(vmRoutingSvc, Mrs.providesRoute, vnicRoute));
+                            Resource vnicRouteTo = RdfOwl.createResource(model, sriovPort.getURI() + ":routeto+" + strRouteTo, Mrs.NetworkAddress);
+                            model.add(model.createStatement(vnicRouteTo, Mrs.type, "ipv4-prefix"));
+                            model.add(model.createStatement(vnicRouteTo, Mrs.value, strRouteTo));
+                            model.add(model.createStatement(vnicRoute, Mrs.routeTo, vnicRouteTo));
+                            Resource vnicRouteVia = RdfOwl.createResource(model, sriovPort.getURI() + ":next+" + strRouteVia, Mrs.NetworkAddress);
+                            model.add(model.createStatement(vnicRouteVia, Mrs.type, "ipv4-netwrk-address"));
+                            model.add(model.createStatement(vnicRouteVia, Mrs.value, strRouteVia));
+                            model.add(model.createStatement(vnicRoute, Mrs.nextHop, vnicRouteVia));
+                        }
+                    }
+                } catch (ParseException e) {
+                    Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING,
+                            String.format("OpenStack driver cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), sriovVnicJson, sriovVnicKey));
+                }
+                sriovVnicNum++;
+            }
+        }
+
         for (NetFloatingIP f : openstackget.getFloatingIp()) {
             fip.add(f.getFloatingIpAddress());
         }
@@ -648,13 +631,16 @@ public class OpenStackNeutronModelBuilder {
                             model.add(model.createStatement(FLOATADD, type, "floating-ip"));
                             model.add(model.createStatement(FLOATADD, value, f.getFloatingIpAddress()));
                         } else if (ips.getIpAddress().equals(f.getFixedIpAddress())) {
-
                             String s = ips.getSubnetId();
                             Subnet sub = openstackget.getSubnet(s);
-                            Resource Subnet = model.getResource(topologyURI + ":network+" + openstackget.getResourceName(openstackget.getNetwork(sub.getNetworkId())) + ":subnet+" + openstackget.getResourceName(sub));
+                            String subnetId = openstackget.getResourceName(sub);
+                            String n = sub.getNetworkId();
+                            Network net = openstackget.getNetwork(n);
+                            String networkId = openstackget.getResourceName(net);
+                            Resource SUBNET = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetId, OpenstackPrefix.subnet, OpenstackPrefix.uri, networkId, subnetId), switchingSubnet);
 
                             FIXEDADD = RdfOwl.createResource(model, topologyURI + ":subnet+" + openstackget.getResourceName(sub) + ":fixedip+" + f.getFixedIpAddress(), networkAddress);
-
+                            /*
                             for (Server servers : openstackget.getServers()) {
                                 Port pt = openstackget.getPort(f.getPortId());
                                 if (servers.getId().equals(pt.getDeviceId())) {
@@ -662,7 +648,8 @@ public class OpenStackNeutronModelBuilder {
                                     model.add(model.createStatement(VM, hasNetworkAddress, FIXEDADD));
                                 }
                             }
-                            model.add(model.createStatement(Subnet, hasNetworkAddress, FIXEDADD));
+                            */
+                            model.add(model.createStatement(SUBNET, hasNetworkAddress, FIXEDADD));
 
                             model.add(model.createStatement(FIXEDADD, type, "fixed-ip"));
                             model.add(model.createStatement(FIXEDADD, value, f.getFixedIpAddress()));
@@ -675,6 +662,15 @@ public class OpenStackNeutronModelBuilder {
                 try {
                     if (FLOATADD != null && FIXEDADD != null) {
                         model.add(model.createStatement(FIXEDADD, isAlias, FLOATADD));
+                        // add assocaited floating ip to VM
+                        for (Server server : openstackget.getServers()) {
+                            Port pt = openstackget.getPort(f.getPortId());
+                            if (server.getId().equals(pt.getDeviceId())) {
+                                String PortID = openstackget.getResourceName(pt);
+                                Resource PORT = RdfOwl.createResource(model, ResourceTool.getResourceUri(PortID, OpenstackPrefix.PORT, OpenstackPrefix.uri, PortID), biPort);
+                                model.add(model.createStatement(PORT, hasNetworkAddress, FLOATADD));
+                            }
+                        }
                     }
                 } catch (Exception e) {
                     throw new Exception(e.toString());
