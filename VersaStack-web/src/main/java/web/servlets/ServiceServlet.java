@@ -333,14 +333,15 @@ public class ServiceServlet extends HttpServlet {
             paramMap.remove("template1");
 
             // Async setup
-            request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
+            /*request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
             AsyncContext asyncCtx = request.startAsync();
             asyncCtx.addListener(new AppAsyncListener());
             asyncCtx.setTimeout(60000);
 
             ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
 
-            executor.execute(new NetCreateWorker(asyncCtx, paramMap));
+            executor.execute(new NetCreateWorker(asyncCtx, paramMap));*/
+            servBean.createNetwork(paramMap);
         } else { // Custom Form Handling
             PreparedStatement prep = rains_conn.prepareStatement("SELECT driverEjbPath"
                     + " FROM driver_instance WHERE topologyUri = ?");

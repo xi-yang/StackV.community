@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import static java.lang.Thread.sleep;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -609,11 +610,19 @@ public class serviceBeans {
                     "    spa:type     nml:Topology;\n" +
                     "    spa:value    \"\"\"" + network.toString().replace("\\", "") +
                     "\"\"\".\n\n&lt;x-policy-annotation:data:vpc-criteriaexport&gt;\n" +
-                    "    a            spa:PolicyData;\n\n" +
+                    "    a            spa:PolicyData.\n\n" +
                     "</modelAddition>\n\n" +
                     "</serviceDelta>";
         }
         
+        try {
+        PrintWriter out = new PrintWriter("/Users/rikenavadur/test.ttl");
+        out.println(svcDelta);
+        out.close();
+        } catch (Exception e) {
+            
+        }
+        //System.out.println(svcDelta);
         
 //        String siUuid;
         String result;
