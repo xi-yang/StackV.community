@@ -74,7 +74,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
                 + "?policy spa:type 'MCE_VMFilterPlacement'. "
                 + "?policy spa:importFrom ?data. "
                 + "?data spa:type ?dataType. ?data spa:value ?dataValue. "
-                + "FILTER (not exists {?policy spa:dependOn ?other}) "
+                + "FILTER (not exists {?policy spa:dependOn ?other} && not exists {?res a spa:PolicyAction}) "
                 + "}";
         Map<Resource, List> policyMap = new HashMap<>();
         Query query = QueryFactory.create(sparqlString);

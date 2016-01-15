@@ -263,19 +263,16 @@ public class OpenStackPush {
                             .flavor(o.get("flavor").toString());
                 }
                 int index = 0;
-                String portid = "";
                 while (true) {
                     String key = "port" + Integer.toString(index);
                     if (o.containsKey(key)) {
                         OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                         for (Port p : client.getPorts()) {  //here need to be careful
-
                             if (client.getResourceName(p).equals(o.get(key).toString())) {
-                                portid = p.getId();
+                                builder.addNetworkPort(p.getId());
                                 break;
                             }
                         }
-                        builder.addNetworkPort(portid);
                         index++;
                     } else {
                         break;
@@ -750,7 +747,7 @@ public class OpenStackPush {
                 int sriovNum = 1;
                 JSONObject allMetaObj = new JSONObject();
                 while (o.containsKey(String.format("sriov_vnic:%d", sriovNum))) {
-                    JSONObject o2 = (JSONObject)o.get(String.format("sriov_vnic:%d", sriovNum));
+                    Map o2 = (Map)o.get(String.format("sriov_vnic:%d", sriovNum));
                     String servername = o2.get("server name").toString();
                     JSONArray metaObjArray = null; 
                     if (allMetaObj.containsKey(servername)) {
@@ -1157,7 +1154,8 @@ public class OpenStackPush {
                 if (creation == true) {
                     throw new EJBException(String.format("Network interface %s already exists", portName));
                 } else {
-                    throw new EJBException(String.format("Network interface %s does not exist, cannot be deleted", portName));
+                    //throw new EJBException(String.format("Network interface %s does not exist, cannot be deleted", portName));
+                    continue;
                 }
             } else {
                 //2.2to get the private ip of the network interface
@@ -1227,8 +1225,11 @@ public class OpenStackPush {
 
         //1 check for any addition of a port into a device or subnet
         //some error here
-        query = "SELECT ?node ?port WHERE {?node nml:hasBidirectionalPort ?port ."
-                + "?node a nml:Node}";
+        query = "SELECT ?node ?port WHERE {"
+                + "?node nml:hasBidirectionalPort ?port ."
+                + "?node a nml:Node. "
+                + "FILTER (not exists {?vmfex mrs:providesVNic ?port})"
+                + "}";
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
         while (r.hasNext()) {
             QuerySolution q = r.next();
@@ -1381,8 +1382,9 @@ public class OpenStackPush {
         String query;
 
         //1 check for any operation involving a server
-        query = "SELECT ?server ?port WHERE {?server nml:hasBidirectionalPort ?port ."
-                + "?server a nml:Node}";
+        query = "SELECT ?server ?port WHERE {"
+                + "?server a nml:Node"
+                + "}";
         ResultSet r = executeQuery(query, modelDelta, emptyModel);//here modified 
 
         while (r.hasNext()) {
@@ -2092,49 +2094,57 @@ public class OpenStackPush {
     private List<JSONObject> sriovRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
         List<JSONObject> requests = new ArrayList();
         JSONObject JO = new JSONObject();
-        String query = "";
-        query = "SELECT ?vm ?profile ?vnic ?routing WHERE {"
-                + "?vm a nml:Node ."
-                + "?vm nml:hasBidirectionalPort ?vnic ."
-                + "?vm nml:hasService ?vmfex . "
-                + "?vmfex a mrs:HypervisorBypassInterfaceService ."
-                + "?pp a nml:SwitchingSubnet ."
-                + "?pp nml:hasBidirectionalPort ?vnic ."
-                + "?pp mrs:type \"Cisco_UCS_Port_Profile\" ."
-                + "?pp mrs:value $profile ."
-                + "OPTIONAL {"
-                + " ?vm nml:hasService ?routing . "
-                + " ?routing a mrs:RoutingService. }"
+        String query = "SELECT ?vmfex ?vnic WHERE {"
+                + "?vmfex mrs:providesVNic ?vnic ."
                 + "}";
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
-        QuerySolution q = r.next();
         int sriovNum = 1;
         while (r.hasNext()) {
+            QuerySolution q = r.next();
             JSONObject o = new JSONObject();
-            Resource VM = q.getResource("vm");
             Resource vNic = q.getResource("vnic");
-            String portProfile = q.get("profile").toString();
+            query = "SELECT ?vm ?profile ?routing WHERE {"
+                    + "?vm a nml:Node ."
+                    + String.format("?vm nml:hasBidirectionalPort <%s> .", vNic.getURI())
+                    + "?pp a mrs:SwitchingSubnet ."
+                    + String.format("?pp nml:hasBidirectionalPort <%s>  .", vNic.getURI())
+                    + "?pp mrs:type \"Cisco_UCS_Port_Profile\" ."
+                    + "?pp mrs:value $profile ."
+                    + "OPTIONAL {"
+                    + " ?vm nml:hasService ?routing . "
+                    + " ?routing a mrs:RoutingService. }"
+                    + "}";
+            Resource VM = null;
+            String portProfile = null;
+            ResultSet r1 = executeQueryUnion(query, modelRef, modelDelta);
+            if (r1.hasNext()) {
+                QuerySolution q1 = r1.next();
+                VM = q1.getResource("vm");
+                portProfile = q1.get("profile").toString();
+            } else {
+                throw new EJBException("sriovRequests related resoruces for vNic='" + vNic.getURI() + "' cannot be resolved");
+            }
             query = "SELECT ?ip WHERE {"
-                    + "?vnic nml:hasNetworkAddress ?ipAddr . "
+                    + String.format("<%s> mrs:hasNetworkAddress ?ipAddr . ", vNic)
                     + "?ipAddr a mrs:NetworkAddress . "
                     + "?ipAddr mrs:type \"ipv4-address\" . "
                     + "?ipAddr mrs:value ?ip . "
                     + "}";
-            ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
+            ResultSet r2 = executeQuery(query, emptyModel, modelDelta);
             String ip = null;
-            if (r1.hasNext()) {
-                ip = r1.next().get("ip").toString();
+            if (r2.hasNext()) {
+                ip = r2.next().get("ip").toString();
             }
             query = "SELECT ?mac WHERE {"
-                    + "?vnic nml:hasNetworkAddress ?macAddr . "
+                    + String.format("<%s> mrs:hasNetworkAddress ?macAddr . ", vNic)
                     + "?macAddr a mrs:NetworkAddress . "
                     + "?macAddr mrs:type \"mac-address\" . "
                     + "?macAddr mrs:value ?mac . "
                     + "}";
-            ResultSet r2 = executeQuery(query, emptyModel, modelDelta);
+            ResultSet r3 = executeQuery(query, emptyModel, modelDelta);
             String mac = null;
-            if (r2.hasNext()) {
-                mac = r2.next().get("mac").toString();
+            if (r3.hasNext()) {
+                mac = r3.next().get("mac").toString();
             }
             String serverName = ResourceTool.getResourceName(VM.toString(), OpenstackPrefix.vm);
             String vnicName = ResourceTool.getResourceName(vNic.toString(), OpenstackPrefix.PORT);
@@ -2158,10 +2168,10 @@ public class OpenStackPush {
                         + "?viaAddr mrs:type \"ipv4-address\" . "
                         + "?viaAddr mrs:value ?nexthop . "
                         + "}";
-                ResultSet r3 = executeQuery(query, emptyModel, modelDelta);
+                ResultSet r4 = executeQuery(query, emptyModel, modelDelta);
                 int routeNum = 0;
-                while (r3.hasNext()) {
-                    QuerySolution q3 = r3.next();
+                while (r4.hasNext()) {
+                    QuerySolution q3 = r4.next();
                     String routeTo = q3.get("routeto").toString();
                     String nextHop = q3.get("nexthop").toString();
                     o.put(String.format("routeto %d", routeNum), routeTo);
@@ -2169,7 +2179,7 @@ public class OpenStackPush {
                     routeNum++;
                 }
             }
-            JO.put(String.format("sriov_vnic:%s", sriovNum), o);
+            JO.put(String.format("sriov_vnic:%d", sriovNum), o);
             sriovNum++;
         }
         if (creation == true) {

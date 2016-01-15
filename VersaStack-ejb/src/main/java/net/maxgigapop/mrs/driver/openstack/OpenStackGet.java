@@ -447,28 +447,33 @@ public class OpenStackGet {
     }
 
     public Map<String, String> getMetadata(Server server) {
-        if (!metadata.containsKey(server)) {
+        Map<String, String> data = client.compute().servers().getMetadata(server.getId());
+        if (data == null)
             return null;
-        }
-        return metadata.get(server);
+        metadata.put(server, data);        
+        return data;
     }
     
     public String getMetadata(Server server, String key){
-        if (!metadata.containsKey(server)) {
+        Map<String, String> data = this.getMetadata(server);
+        if (data == null)
             return null;
-        }
-        Map<String, String> data = metadata.get(server);
-        if (data.containsKey(key)) {            
+        if (!data.containsKey(key)) {            
             return null;
         }
         return data.get(key);
     }
     
     public void setMetadata(String serverId, String key, String value){ 
-        Map<String, String> data = this.getMetadata(this.getServer(serverId));
-        if (data == null)
+        Server server = this.getServer(serverId);
+        if (server == null)
             return;
+        Map<String, String> data = client.compute().servers().getMetadata(server.getId());
+        if (data == null) {
+            data = new HashMap();
+        }
         data.put(key, value);
-        client.compute().servers().updateMetadata(serverId, data);
+        metadata.put(server, data);
+        client.compute().servers().updateMetadata(server.getId(), data);
     }
 }
