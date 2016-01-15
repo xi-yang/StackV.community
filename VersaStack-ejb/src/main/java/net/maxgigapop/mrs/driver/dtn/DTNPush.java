@@ -70,24 +70,35 @@ public class DTNPush {
         for (String request : requests) {
             if (request.contains("CreateDataTransfer")) {
                 String[] parameters = request.split("\\s+");
-                String option = parameters[1];
-                String taskid = parameters[2];
-                String source = parameters[3];
-                String destination = parameters[4];
+                String method = parameters[1];
+                String type;
+                if (parameters[2].compareTo("file")==0)
+                    type = "";
+                else
+                    type = " -r";
+                String taskid = parameters[3];
+                String source = parameters[4];
+                String destination = parameters[5];
+                String options = " ";
+                for (int i=6; i<parameters.length; i++){
+                    options += parameters[i]+" ";
+                }
                 
-                if (option.compareTo("globus-cli")==0 ){
+                if (method.compareTo("globus-cli")==0 ){
                     //start transfer using globus online
                     //todo: get credential automatically
                     //activate credential beforehand
-                    String cmd = "gsissh cli.globusonline.org transfer --taskid '" + taskid + "' -- "+ source + " " + destination;
+                    
+                    String cmd = "gsissh cli.globusonline.org transfer --taskid=" + taskid + options +
+                            "-- "+ source + " " + destination + type;
                     String output = runcommand(cmd);
-                    logger.info("Request '"+request+"' successful committed: " + output);
+                    logger.info("Request '"+cmd+"' successful committed: " + output);
                 }
-                else if (option.compareTo("globus-url-copy")==0 ){
+                else if (method.compareTo("globus-url-copy")==0 ){
                     //start transfer using globus-url-copy
-                    String cmd = "globus-url-copy gsiftp://"+source+" gsiftp://"+destination;
+                    String cmd = "globus-url-copy" + options + "gsiftp://" + source + " gsiftp://" + destination + type;
                     String output = runcommand(cmd);
-                    logger.info("Request '"+request+"' successful committed: " + output);
+                    logger.info("Request '"+cmd+"' successful committed: " + output);
                 }
             }   
 
@@ -155,6 +166,26 @@ public class DTNPush {
             }
             querySolution1 = r1.next();
             RDFNode destination = querySolution1.get("destination");
+            
+            //find out the parameters of transfer
+            query = "SELECT ?parameter WHERE {<" + transfer.asResource() + "> nml:parameter ?parameter}";
+            r1 = executeQuery(query, emptyModel, modelAdd);
+            String parameters = "";
+            if (r1.hasNext()) {
+                querySolution1 = r1.next();
+                RDFNode parameter = querySolution1.get("parameter");
+                parameters = parameter.asLiteral().getString();
+            }
+            
+            //find out the type of transfer, either file or directory
+            query = "SELECT ?type WHERE {<" + transfer.asResource() + "> mrs:type ?type}";
+            r1 = executeQuery(query, emptyModel, modelAdd);
+            if (!r1.hasNext()) {
+                throw new EJBException(String.format("model addition does not specify type of data transfer: %s", transfer));
+            }
+            querySolution1 = r1.next();
+            RDFNode type = querySolution1.get("type");
+            
             String s_addr = source.asLiteral().getString().split("/")[0];
             String d_addr = destination.asLiteral().getString().split("/")[0];            
             if(s_addr.contains("#") || d_addr.contains("#")){
@@ -164,13 +195,13 @@ public class DTNPush {
                 if(out!=null){
                     String[] tokens = out.split("\n");
                     String taskid = tokens[0];
-                    requests += String.format("CreateDataTransfer globus-cli %s %s %s  \n", taskid, source.asLiteral().getString(), 
-                                                destination.asLiteral().getString());
+                    requests += String.format("CreateDataTransfer globus-cli %s %s %s %s %s \n", type.asLiteral().getString(),
+                            taskid, source.asLiteral().getString(), destination.asLiteral().getString(), parameters);
                 }   
             }
             else{
-                requests += String.format("CreateDataTransfer globus-url-copy %s %s %s  \n", transferTagValue, source.asLiteral().getString(), 
-                                            destination.asLiteral().getString());
+                requests += String.format("CreateDataTransfer globus-url-copy %s %s %s %s %s \n", type.asLiteral().getString(), 
+                        transferTagValue, source.asLiteral().getString(), destination.asLiteral().getString(), parameters);
             }
         }
         return requests;

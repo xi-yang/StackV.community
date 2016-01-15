@@ -184,7 +184,7 @@ public class DTNModelBuilder {
                             if (entries.containsKey("Port")){
                                 Resource TCPPORT = RdfOwl.createResource(model, TRANSFERSERVICE.getURI() + ":port", Nml.Label);
                                 model.add(model.createStatement(TCPPORT, Nml.labeltype, tcpport));
-                                model.add(model.createStatement(TCPPORT, value, entries.get("Service_type")));
+                                model.add(model.createStatement(TCPPORT, value, entries.get("Port")));
                                 model.add(model.createStatement(TRANSFERSERVICE, Nml.hasLabel, TCPPORT));
                             }
                             if (entries.containsKey("Port_range")){

@@ -72,10 +72,30 @@ public class DTNGet {
             String filename = "dtn-"+address+".xml";
             //Get config file from DTN
             //todo: getting file to memory
-            
-            String cmd = "globus-url-copy gsiftp://"+address+"/tmp/"+filename+" /tmp/";
-            String out = runcommand(cmd);
+            String cmd, src_cred, dst_cred;
+            if(!access_key.isEmpty()){
+                String[] creds = access_key.split(" ");
+                src_cred = creds[0];
+                dst_cred = creds[1];
+                cmd = "globus-url-copy -sc "+src_cred+" -dc "+dst_cred+ " gsiftp://"+address+"/~/"+filename+" /tmp/";
+            }
+            else{    
+                cmd = "scp "+user_account+"@"+address+":/home/"+user_account+"/"+filename+" /tmp/";
+            }
+//            String my_endpoint = "fillall#thinkpad";
+//            String cmd = "gsissh cli.globusonline.org transfer -- "+ endpoint + "/~/" + filename +" "+ my_endpoint +"/tmp/"+filename;
+            String out = runcommand(cmd); 
             if (out != null){
+//                //wait until file is transfered
+//                Boolean done = false;
+//                String taskid = out.split(":")[1].trim();
+//                cmd = "gsissh cli.globusonline.org status -f status "+taskid;
+//                while (!done){
+//                    String status = runcommand(cmd).split((":"))[1].trim();
+//                    if (status.compareTo("SUCCEEDED")==0)
+//                        done  = true;
+//                }
+                
                 //Parse xml file
                 //todo: parse from memory
                 File inputFile = new File("/tmp/"+filename);
@@ -242,9 +262,9 @@ public class DTNGet {
 // 
 //            // read the output from the command
             while ((s = stdInput.readLine()) != null) {
-               output += s+"\n";
+               output += s;
             }
-//             
+//          
 //            // read any errors from the attempted command
 //            while ((s = stdError.readLine()) != null) {
 //                System.out.println(s);
