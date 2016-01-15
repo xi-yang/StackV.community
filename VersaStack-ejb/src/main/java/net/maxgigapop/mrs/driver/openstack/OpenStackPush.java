@@ -794,7 +794,7 @@ public class OpenStackPush {
                 int sriovNum = 1;
                 List<String> serversToDetachSriov = new ArrayList();
                 while (o.containsKey(String.format("sriov_vnic:%d", sriovNum))) {
-                    JSONObject o2 = (JSONObject)o.get(String.format("sriov_vnic:%d", sriovNum));
+                    Map o2 = (Map)o.get(String.format("sriov_vnic:%d", sriovNum));
                     String servername = o2.get("server name").toString();
                     if (!serversToDetachSriov.contains(servername)) {
                         serversToDetachSriov.add(servername);
