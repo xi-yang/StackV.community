@@ -239,10 +239,9 @@ public class OpenStackPush {
                 osClient.networking().network().delete(network.getId());
                 NetworkDeletionCheck(id, url, NATServer, username, password, tenantName, topologyUri);
             } else if (o.get("request").toString().equals("RunInstanceRequest")) {
-                //@TODO: keypair and secgroup
                 ServerCreateBuilder builder = Builders.server();
+                // determine image and flavor
                 if (o.get("image").toString().equals("any") && o.get("image").toString().equals("any")) {
-
                     builder.name(o.get("server name").toString())
                             .image(client.getImages().get(0).getId())
                             .flavor(client.getFlavors().get(0).getId());
@@ -257,11 +256,22 @@ public class OpenStackPush {
                             .image(o.get("image").toString())
                             .flavor(client.getFlavors().get(0).getId());
                 } else {
-
                     builder.name(o.get("server name").toString())
                             .image(o.get("image").toString())
                             .flavor(o.get("flavor").toString());
                 }
+                // optional keypair 
+                if (o.containsKey("keypair") && !o.get("keypair").toString().isEmpty()) {
+                    builder.keypairName(o.get("keypair").toString());
+                } 
+                // optional secgroups 
+                if (o.containsKey("secgroup") && !o.get("secgroup").toString().isEmpty()) {
+                    String[] sgs = o.get("secgroup").toString().split(",|;|:");
+                    for (String secgroup: sgs) {
+                        builder.addSecurityGroup(secgroup);
+                    }
+                }
+                
                 int index = 0;
                 while (true) {
                     String key = "port" + Integer.toString(index);
@@ -1456,18 +1466,24 @@ public class OpenStackPush {
                 if (!r5.hasNext()) {
                     throw new EJBException(String.format("Vm %s does not specify the attached network interface", vm));
                 }
-                query = "SELECT ?type WHERE {<" + vm.asResource() + "> mrs:Type ?type}";
+                query = "SELECT ?type WHERE {<" + vm.asResource() + "> mrs:type ?type}";
                 r5 = executeQuery(query, emptyModel, modelDelta);
                 String imageID = "any";
                 String flavorID = "any";
+                String keypairName = null;
+                String secgroupName = null;
                 while (r5.hasNext()) {
                     QuerySolution q2 = r5.next();
                     RDFNode type = q2.get("type");
-                    String typename = type.asResource().toString();
-                    if (typename.contains("image:UUID")) {
+                    String typename = type.toString();
+                    if (typename.contains("imageUUID")) {
                         imageID = getresourcename(typename, "+", "");
                     } else if (typename.contains("flavorID")) {
                         flavorID = getresourcename(typename, "+", "");
+                    } else if (typename.contains("keypairName")) {
+                        keypairName = getresourcename(typename, "+", "");
+                    } else if (typename.contains("secgroupName")) {
+                        secgroupName = getresourcename(typename, "+", "");
                     }
                 }
 
@@ -1514,6 +1530,12 @@ public class OpenStackPush {
                     o.put("flavor", flavorType);
                 } else {
                     o.put("flavor", flavorID);
+                }
+                if (keypairName != null) {
+                    o.put("keypair", keypairName);
+                }
+                if (secgroupName != null) {
+                    o.put("secgroup", secgroupName);
                 }
 
                 //1.10.1 put all the ports in the request
