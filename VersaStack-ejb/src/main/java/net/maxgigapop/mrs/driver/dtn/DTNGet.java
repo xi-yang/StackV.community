@@ -79,9 +79,8 @@ public class DTNGet {
             String src_cred="", dst_cred="";
             ArrayList<String> cmdarray = new ArrayList<String>();
             if(!access_key.isEmpty()){
-                String[] creds = access_key.split(" ");
-                src_cred = creds[0];
-                dst_cred = creds[1];
+                src_cred = access_key;
+                dst_cred = access_key;
                 cmdarray.add("globus-url-copy"); 
                 cmdarray.add("-sc");  cmdarray.add(src_cred);
                 cmdarray.add("-dc");  cmdarray.add(dst_cred);
