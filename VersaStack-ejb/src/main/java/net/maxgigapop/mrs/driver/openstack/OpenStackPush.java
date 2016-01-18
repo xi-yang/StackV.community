@@ -264,13 +264,6 @@ public class OpenStackPush {
                 if (o.containsKey("keypair") && !o.get("keypair").toString().isEmpty()) {
                     builder.keypairName(o.get("keypair").toString());
                 } 
-                // optional secgroups 
-                if (o.containsKey("secgroup") && !o.get("secgroup").toString().isEmpty()) {
-                    String[] sgs = o.get("secgroup").toString().split(",|;|:");
-                    for (String secgroup: sgs) {
-                        builder.addSecurityGroup(secgroup);
-                    }
-                }
                 
                 int index = 0;
                 while (true) {
@@ -293,6 +286,13 @@ public class OpenStackPush {
                 Server s = osClient.compute().servers().boot(server);
                 String servername = o.get("server name").toString();
                 VmCreationCheck(servername, url, NATServer, username, password, tenantName, topologyUri);
+                // optional secgroups 
+                if (o.containsKey("secgroup") && !o.get("secgroup").toString().isEmpty()) {
+                    String[] sgs = o.get("secgroup").toString().split(",|;|:");
+                    for (String secgroup : sgs) {
+                        osClient.compute().servers().addSecurityGroup(s.getId(), secgroup);
+                    }
+                }
             } else if (o.get("request").toString().equals("TerminateInstanceRequest")) {
                 Server server = client.getServer(o.get("server name").toString());
                 osClient.compute().servers().delete(server.getId());
