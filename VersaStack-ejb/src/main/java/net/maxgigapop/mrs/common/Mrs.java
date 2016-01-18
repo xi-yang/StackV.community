@@ -32,6 +32,10 @@ public class Mrs {
     
     public static final Property capacity = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#capacity" );
     
+    public static final Property credential = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#credential" );
+    
+    public static final Property destination = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#destination" );
+    
     public static final Property disk_gb = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#disk_gb" );
     
     public static final Property hasBenchmark = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#hasBenchmark" );
@@ -100,7 +104,11 @@ public class Mrs {
     
     public static final Property target_device = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#target_device" );
     
+    public static final Property taskid = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#taskid" );
+    
     public static final Property type = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#type" );
+
+    public static final Property source = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#source" );
     
     public static final Property value = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#value" );
     
