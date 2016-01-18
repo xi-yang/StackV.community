@@ -62,7 +62,7 @@ public class DTNPush {
         
         //start a data transfer
         requests += createDataTransfer(modelRef, modelAdd);
-        logger.log(Level.INFO, requests);
+//        logger.log(Level.INFO, requests);
         return requests;
     }
     
@@ -97,6 +97,7 @@ public class DTNPush {
                     cmdarray.add("--"); cmdarray.add(source); cmdarray.add(destination);
                     if(parameters[2].compareTo("file")!=0)
                         cmdarray.add("-r");
+                    cmdarray.add("&");
                     String cmd[] = new String[cmdarray.size()];
                     cmd = cmdarray.toArray(cmd);
                     int exit = runcommand(cmd);
