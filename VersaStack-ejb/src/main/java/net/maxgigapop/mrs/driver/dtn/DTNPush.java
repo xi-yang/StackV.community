@@ -19,6 +19,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -34,7 +35,8 @@ public class DTNPush {
     private String topologyUri = null;
     static final Logger logger = Logger.getLogger(DTNPush.class.getName());
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-
+    private String output;
+    private String error;
     
     //todo: push dynamic infomation 
     public DTNPush(String user_account, String access_key, String address, String topologyUri) {
@@ -60,7 +62,7 @@ public class DTNPush {
         
         //start a data transfer
         requests += createDataTransfer(modelRef, modelAdd);
-        logger.info(requests);
+        logger.log(Level.INFO, requests);
         return requests;
     }
     
@@ -69,47 +71,96 @@ public class DTNPush {
         
         for (String request : requests) {
             if (request.contains("CreateDataTransfer")) {
-                String[] parameters = request.split("\\s+");
+//                String[] parameters = request.split("\\s+");
+                String[] parameters = request.split(";");
                 String method = parameters[1];
                 String type;
                 if (parameters[2].compareTo("file")==0)
                     type = "";
                 else
-                    type = " -r";
+                    type = "-r";
+                ArrayList<String> cmdarray = new ArrayList<String>();
                 String taskid = parameters[3];
                 String source = parameters[4];
                 String destination = parameters[5];
-                String options = " ";
-                for (int i=6; i<parameters.length; i++){
-                    options += parameters[i]+" ";
-                }
-                
+                String[] options = null;
                 if (method.compareTo("globus-cli")==0 ){
                     //start transfer using globus online
                     //todo: get credential automatically
                     //activate credential beforehand
-                    
-                    String cmd = "gsissh cli.globusonline.org transfer --taskid=" + taskid + options +
-                            "-- "+ source + " " + destination + type;
-                    String output = runcommand(cmd);
-                    logger.info("Request '"+cmd+"' successful committed: " + output);
+                    cmdarray.add("gsissh"); cmdarray.add("cli.globusonline.org"); cmdarray.add("transfer");
+                    cmdarray.add("--taskid="+taskid);
+                    if(parameters.length == 7) {
+                        options = parameters[6].split("\\s+");
+                        cmdarray.addAll(Arrays.asList(options));
+                    }
+                    cmdarray.add("--"); cmdarray.add(source); cmdarray.add(destination);
+                    if(parameters[2].compareTo("file")!=0)
+                        cmdarray.add("-r");
+                    String cmd[] = new String[cmdarray.size()];
+                    cmd = cmdarray.toArray(cmd);
+                    int exit = runcommand(cmd);
+                    if (exit==0)
+                        logger.info("Request 'CreateDataTransfer' successful committed " + this.output);
                 }
                 else if (method.compareTo("globus-url-copy")==0 ){
                     //start transfer using globus-url-copy
-                    String cmd = "globus-url-copy" + options + "gsiftp://" + source + " gsiftp://" + destination + type;
-                    String output = runcommand(cmd);
-                    logger.info("Request '"+cmd+"' successful committed: " + output);
+                    String credential = parameters[6];
+                    String[] temp = credential.split("\\s+");
+                    String src_cred = temp[1];
+                    String dst_cred = temp[3];
+                    String src_dn = getDN(src_cred);
+                    String dst_dn = getDN(dst_cred);
+                    cmdarray.add("globus-url-copy");
+                    cmdarray.add("-sc"); cmdarray.add(src_cred);
+                    cmdarray.add("-dc"); cmdarray.add(dst_cred);
+                    cmdarray.add("-data-cred"); cmdarray.add("auto");
+                    cmdarray.add("-ss"); cmdarray.add(src_dn);
+                    cmdarray.add("-ds"); cmdarray.add(dst_dn);
+                    if(parameters.length == 8) {
+                        options = parameters[7].split("\\s+");
+                        cmdarray.addAll(Arrays.asList(options));
+                    }
+                    cmdarray.add("gsiftp://" + source);
+                    cmdarray.add("gsiftp://" + destination);                  
+                    String cmd[] = new String[cmdarray.size()];
+                    cmd = cmdarray.toArray(cmd);
+                    int exit = runcommand(cmd);
+                    //domain name resolve
+                    for(int i=0; i<2; i++){
+                        if(exit != 0){
+                            //error happens, possibly domain name unsolved
+                            if(this.error.contains("Authorization denied: The name of the remote entity")) {
+                                int first1 = this.error.indexOf("("); 
+                                int first2 = this.error.indexOf(")"); 
+                                int second1 = this.error.indexOf("(", first1+1); 
+                                int second2 = this.error.indexOf(")", first2+1);
+                                String newdn = this.error.substring(first1+1, first2);
+                                String olddn = this.error.substring(second1+1, second2);
+                                if(olddn.compareTo(src_dn)==0)
+                                    cmdarray.set(8, newdn);
+                                else if(olddn.compareTo(dst_dn)==0)
+                                    cmdarray.set(10,newdn);
+                                cmd = new String[cmdarray.size()];
+                                cmd = cmdarray.toArray(cmd);
+                                exit = runcommand(cmd);
+                            }
+                        }
+                    }
+                    if(exit==0)
+                        logger.info("Request 'CreateDataTransfer' successful committed " + this.output);
                 }
             }   
 
             else if (request.contains("CancelDataTransfer")){
-                String[] parameters = request.split("\\s+");
+                String[] parameters = request.split(";");
                 String taskid = parameters[1];
-                String cmd = "gsissh cli.globusonline.org cancel "+ taskid;
-                String output = runcommand(cmd);
-                logger.info("Request '"+request+"' successful committed: " + output);
+                String[] cmd = {"gsissh", "cli.globusonline.org", "cancel", taskid};
+                int exit = runcommand(cmd);
+                if (exit==0)
+                    logger.info("Request 'CancelDataTransfer' successful committed " + this.output);
             }
-        }   
+        }
     }
     
     private String cancelDataTransfer(OntModel model, OntModel modelReduct){
@@ -131,7 +182,7 @@ public class DTNPush {
             QuerySolution querySolution1 = r1.next();
             RDFNode taskid = querySolution1.get("taskid");       
             
-            requests += String.format("CancelDataTransfer %s \n", taskid);
+            requests += String.format("CancelDataTransfer;%s;\n", taskid);
         }        
 
         return requests;
@@ -176,6 +227,16 @@ public class DTNPush {
                 RDFNode parameter = querySolution1.get("parameter");
                 parameters = parameter.asLiteral().getString();
             }
+ 
+            //find out the credential paths of transfer
+            query = "SELECT ?credential WHERE {<" + transfer.asResource() + "> mrs:credential ?credential}";
+            r1 = executeQuery(query, emptyModel, modelAdd);
+            String credentials = "";
+            if (r1.hasNext()) {
+                querySolution1 = r1.next();
+                RDFNode credential = querySolution1.get("credential");
+                credentials = credential.asLiteral().getString();
+            }            
             
             //find out the type of transfer, either file or directory
             query = "SELECT ?type WHERE {<" + transfer.asResource() + "> mrs:type ?type}";
@@ -190,18 +251,19 @@ public class DTNPush {
             String d_addr = destination.asLiteral().getString().split("/")[0];            
             if(s_addr.contains("#") || d_addr.contains("#")){
                 //generate taskid for data transfer
-                String cmd = "gsissh cli.globusonline.org transfer --generate-id";
-                String out = runcommand(cmd);
-                if(out!=null){
-                    String[] tokens = out.split("\n");
+                String[] cmd = {"gsissh", "cli.globusonline.org", "transfer", "--generate-id"};
+                int exit = runcommand(cmd);
+                if(exit==0){
+                    String[] tokens = this.output.split("\n");
                     String taskid = tokens[0];
-                    requests += String.format("CreateDataTransfer globus-cli %s %s %s %s %s \n", type.asLiteral().getString(),
+                    requests += String.format("CreateDataTransfer;globus-cli;%s;%s;%s;%s;%s;\n", type.asLiteral().getString(),
                             taskid, source.asLiteral().getString(), destination.asLiteral().getString(), parameters);
                 }   
             }
             else{
-                requests += String.format("CreateDataTransfer globus-url-copy %s %s %s %s %s \n", type.asLiteral().getString(), 
-                        transferTagValue, source.asLiteral().getString(), destination.asLiteral().getString(), parameters);
+                //globus-url-copy transfer
+                requests += String.format("CreateDataTransfer;globus-url-copy;%s;%s;%s;%s;%s;%s;\n", type.asLiteral().getString(), 
+                        transferTagValue, source.asLiteral().getString(), destination.asLiteral().getString(), credentials, parameters);
             }
         }
         return requests;
@@ -234,37 +296,49 @@ public class DTNPush {
         }
         return r;
     }
+        
+    private String getDN(String cred_file) {
+        String dn="";
+        String[] cmd = {"grid-proxy-info", "-file", cred_file,"-issuer"};
+        int exit = runcommand(cmd);
+        if(exit==0){
+            dn= this.output.split("\n")[0];
+        }
+        return dn;
+    }
     
-    private String runcommand(String cmd){
-        String s = null,  output = "";
+    private int runcommand(String[] cmd){
+        String s = null, output = "", error="";
         int exitVal = -1;
         try {
-            // using the Runtime exec method:
+            // using the Runtime exec method:            
             Process p = Runtime.getRuntime().exec(cmd);
-//             
+             
             BufferedReader stdInput = new BufferedReader(new
                  InputStreamReader(p.getInputStream()));
-// 
-//            BufferedReader stdError = new BufferedReader(new
-//                 InputStreamReader(p.getErrorStream()));
-// 
+ 
+            BufferedReader stdError = new BufferedReader(new
+                 InputStreamReader(p.getErrorStream()));
+ 
             // read the output from the command
             while ((s = stdInput.readLine()) != null) {
-                 output += s+"\n";
+               output += s+"\n";
             }
-//             
-//            // read any errors from the attempted command
-//            while ((s = stdError.readLine()) != null) {
-//                System.out.println(s);
-//            }
+          
+            // read any errors from the attempted command
+            while ((s = stdError.readLine()) != null) {
+                error += s+"\n";
+            }
             exitVal = p.waitFor();
-            if (exitVal !=0) return null;
+            this.error = error;
+            this.output = output;
+//            System.out.println("Exit: "+exitVal+"\nOut: " + this.output+ "Error: "+this.error);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException ex) {
-            logger.log(Level.SEVERE, null, ex);
+            Logger.getLogger(DTNGet.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return output;
+        return exitVal;
     }
     
 }

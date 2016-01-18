@@ -32,6 +32,8 @@ public class Mrs {
     
     public static final Property capacity = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#capacity" );
     
+    public static final Property credential = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#credential" );
+    
     public static final Property destination = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#destination" );
     
     public static final Property disk_gb = m_model.createProperty( "http://schemas.ogf.org/mrs/2013/12/topology#disk_gb" );

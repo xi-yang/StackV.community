@@ -200,10 +200,7 @@ public class DTNModelBuilder {
                         if (endpoint.length() > 0){
                             model.add(model.createStatement(TRANSFERSERVICE, hasService, CLUSTERSERVICE));
                         }
-                    }
-                    
-                    
-                    
+                    }  
                 }
             }
         }

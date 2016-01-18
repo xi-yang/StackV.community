@@ -10,9 +10,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilder;
@@ -48,6 +50,8 @@ public class DTNGet {
     private Map<String, String> transfer_service_conf = new HashMap<String, String>();
     private long active_transfers;
     private double cpu_usage;
+    private String error;
+    private String output;
     
     public DTNGet(String user_account, String access_key, String address){
         this.dtn = null;
@@ -72,30 +76,36 @@ public class DTNGet {
             String filename = "dtn-"+address+".xml";
             //Get config file from DTN
             //todo: getting file to memory
-            String cmd, src_cred, dst_cred;
+            String src_cred="", dst_cred="";
+            ArrayList<String> cmdarray = new ArrayList<String>();
             if(!access_key.isEmpty()){
                 String[] creds = access_key.split(" ");
                 src_cred = creds[0];
                 dst_cred = creds[1];
-                cmd = "globus-url-copy -sc "+src_cred+" -dc "+dst_cred+ " gsiftp://"+address+"/~/"+filename+" /tmp/";
+                cmdarray.add("globus-url-copy"); 
+                cmdarray.add("-sc");  cmdarray.add(src_cred);
+                cmdarray.add("-dc");  cmdarray.add(dst_cred);
+                cmdarray.add("gsiftp://"+address+"/~/"+filename);
+                cmdarray.add("file:///tmp/");
             }
-            else{    
-                cmd = "scp "+user_account+"@"+address+":/home/"+user_account+"/"+filename+" /tmp/";
-            }
+            
 //            String my_endpoint = "fillall#thinkpad";
 //            String cmd = "gsissh cli.globusonline.org transfer -- "+ endpoint + "/~/" + filename +" "+ my_endpoint +"/tmp/"+filename;
-            String out = runcommand(cmd); 
-            if (out != null){
-//                //wait until file is transfered
-//                Boolean done = false;
-//                String taskid = out.split(":")[1].trim();
-//                cmd = "gsissh cli.globusonline.org status -f status "+taskid;
-//                while (!done){
-//                    String status = runcommand(cmd).split((":"))[1].trim();
-//                    if (status.compareTo("SUCCEEDED")==0)
-//                        done  = true;
-//                }
-                
+            String cmd[] = new String[cmdarray.size()];
+            cmd = cmdarray.toArray(cmd);
+            int exit = runcommand(cmd); 
+            if (exit != 0){
+                //error happens, possibly domain name unsolved
+                if(this.error.contains("Authorization denied: The name of the remote entity")) {
+                    String dn = this.error.substring(this.error.indexOf("(")+1, this.error.indexOf(")"));
+                    cmdarray.add(5, "-ss");  
+                    cmdarray.add(6, dn);
+                    cmd = new String[cmdarray.size()];
+                    cmd = cmdarray.toArray(cmd);
+                    exit = runcommand(cmd);
+                }
+            }
+            if (exit == 0){
                 //Parse xml file
                 //todo: parse from memory
                 File inputFile = new File("/tmp/"+filename);
@@ -103,12 +113,12 @@ public class DTNGet {
                 DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
                 Document doc = dBuilder.parse(inputFile);
                 doc.getDocumentElement().normalize();
-
+                
                 //Timestamp
                 if ( doc.getElementsByTagName("Timestamp_UTC").getLength()!=0 ){
                     this.timestamp = doc.getElementsByTagName("Timestamp_UTC").item(0).getTextContent();
                 }    
-
+                
                 //DTN node information
                 if ( doc.getElementsByTagName("dtnNode").getLength()!=0 ){
                     tmpNode = doc.getElementsByTagName("dtnNode").item(0);
@@ -246,37 +256,39 @@ public class DTNGet {
     public double getCPUload(){
         return this.cpu_usage;
     }
-    
-    private String runcommand(String cmd){
-        String s = null, output = "";
+        
+    private int runcommand(String[] cmd){
+        String s = null, output = "", error="";
         int exitVal = -1;
         try {
-            // using the Runtime exec method:
+            // using the Runtime exec method:            
             Process p = Runtime.getRuntime().exec(cmd);
-//             
+             
             BufferedReader stdInput = new BufferedReader(new
                  InputStreamReader(p.getInputStream()));
-// 
-//            BufferedReader stdError = new BufferedReader(new
-//                 InputStreamReader(p.getErrorStream()));
-// 
-//            // read the output from the command
+ 
+            BufferedReader stdError = new BufferedReader(new
+                 InputStreamReader(p.getErrorStream()));
+ 
+            // read the output from the command
             while ((s = stdInput.readLine()) != null) {
-               output += s;
+               output += s+"\n";
             }
-//          
-//            // read any errors from the attempted command
-//            while ((s = stdError.readLine()) != null) {
-//                System.out.println(s);
-//            }
+          
+            // read any errors from the attempted command
+            while ((s = stdError.readLine()) != null) {
+                error += s+"\n";
+            }
             exitVal = p.waitFor();
-            if (exitVal !=0) return null;
+            this.error = error;
+            this.output = output;
+//            System.out.println("Exit: "+exitVal+"out: " + this.output+ "error: "+this.error);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException ex) {
             Logger.getLogger(DTNGet.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return output;
+        return exitVal;
     }
 }
  
