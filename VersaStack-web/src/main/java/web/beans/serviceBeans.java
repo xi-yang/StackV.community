@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import static java.lang.Thread.sleep;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -461,22 +462,26 @@ public class serviceBeans {
         String topoUri = null;
         String driverType = null;
         String netCidr = null;
+        String refUuid = null;
         List<String> subnets = new ArrayList<>();
         List<String> vmList = new ArrayList<>();
         boolean gwVpn = false;
-        
-        for(Map.Entry<String, String> entry : paraMap.entrySet()){
-            if(entry.getKey().equalsIgnoreCase("driverType"))
+
+        for (Map.Entry<String, String> entry : paraMap.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase("driverType")) {
                 driverType = entry.getValue();
-            else if(entry.getKey().equalsIgnoreCase("topoUri"))
+            } else if (entry.getKey().equalsIgnoreCase("topoUri")) {
                 topoUri = entry.getValue();
-            else if(entry.getKey().equalsIgnoreCase("netCidr"))
+            } else if (entry.getKey().equalsIgnoreCase("netCidr")) {
                 netCidr = entry.getValue();
-            else if(entry.getKey().contains("subnet"))
+            } else if (entry.getKey().equalsIgnoreCase("instanceUUID")) {
+                refUuid = entry.getValue();
+            } else if (entry.getKey().contains("subnet")) {
                 subnets.add(entry.getValue());
-            else if(entry.getKey().contains("vm"))
+            } else if (entry.getKey().contains("vm")) {
                 vmList.add(entry.getValue());
-                //example for vm : 1&imageType&instanceType&volumeSize&batch
+            }
+            //example for vm : 1&imageType&instanceType&volumeSize&batch
         }
         
         JSONObject network = new JSONObject();
@@ -566,6 +571,7 @@ public class serviceBeans {
         }
         else{
             String exportTo = "";
+            int vmNumber = 1;
             for (String vm : vmList){
                 String[] vmPara = vm.split("&");
                 //1:subnet #
@@ -573,25 +579,26 @@ public class serviceBeans {
                 //3:instance Type
                 //4:volume size
                 //5:batch
-                svcDelta += "&lt;" + topoUri + ":vpc=abstract:vm" + vmPara[0] + "&gt;\n" +
+                svcDelta += "&lt;" + topoUri + ":vpc=abstract:vm" + vmNumber + "&gt;\n" +
                         "    a                         nml:Node ;\n" +
-                        "    nml:hasBidirectionalPort   &lt;" + topoUri + ":vpc=abstract:vm" + vmPara[0] + ":eth0&gt; ;\n" +
-                        "    spa:dependOn &lt;x-policy-annotation:action:create-vm" + vmPara[0] + "&gt;.\n\n" +
-                        "&lt;" + topoUri + ":vpc=abstract:vm" + vmPara[0] + ":eth0&gt;\n" +
-                        "    a            nml:BidirectionalPort;" +
-                        "    spa:dependOn &lt;x-policy-annotation:action:create-vm" + vmPara[0] + "&gt;.\n\n" +
-                        "&lt;x-policy-annotation:action:create-vm" + vmPara[0] + "&gt;\n" +
+                        "    nml:hasBidirectionalPort   &lt;" + topoUri + ":vpc=abstract:vm" + vmNumber + ":eth0&gt; ;\n" +
+                        "    spa:dependOn &lt;x-policy-annotation:action:create-vm" + vmNumber + "&gt;.\n\n" +
+                        "&lt;" + topoUri + ":vpc=abstract:vm" + vmNumber + ":eth0&gt;\n" +
+                        "    a            nml:BidirectionalPort;\n" +
+                        "    spa:dependOn &lt;x-policy-annotation:action:create-vm" + vmNumber + "&gt;.\n\n" +
+                        "&lt;x-policy-annotation:action:create-vm" + vmNumber + "&gt;\n" +
                         "    a            spa:PolicyAction ;\n" +
                         "    spa:type     \"MCE_VMFilterPlacement\" ;\n" +
-                        "    spa:dependOn &lt;x-policy-annotation:action:create-" + driverType + "-vpc&gt;\n" +
+                        "    spa:dependOn &lt;x-policy-annotation:action:create-" + driverType + "-vpc&gt; ;\n" +
                         "    spa:importFrom ";
-                String subnetCriteria = "&lt;x-policy-annotation:data:vpc-subnet-vm"+ vmPara[0] +"-criteria&gt;";
+                String subnetCriteria = "&lt;x-policy-annotation:data:vpc-subnet-vm"+ vmNumber +"-criteria&gt;";
                 exportTo += subnetCriteria + ", ";
                 int sub = Integer.valueOf(vmPara[0]) - 1;
                 svcDelta += subnetCriteria + ".\n\n" +
                         subnetCriteria + "\n    a            spa:PolicyData;\n" +
                         "    spa:type     \"JSON\";\n    spa:format    \"\"\"{ " +
                         "\"place_into\": \"%%$.subnets[" + sub + "].uri%%\"}\"\"\" .\n\n";
+                vmNumber++;                
             }
             svcDelta += "&lt;x-policy-annotation:action:create-" + driverType + "-vpc&gt;\n" +
                     "    a           spa:PolicyAction ;\n" +
@@ -603,36 +610,48 @@ public class serviceBeans {
                     "    spa:type     nml:Topology;\n" +
                     "    spa:value    \"\"\"" + network.toString().replace("\\", "") +
                     "\"\"\".\n\n&lt;x-policy-annotation:data:vpc-criteriaexport&gt;\n" +
-                    "    a            spa:PolicyData;\n\n" +
+                    "    a            spa:PolicyData.\n\n" +
                     "</modelAddition>\n\n" +
                     "</serviceDelta>";
         }
         
+        try {
+        PrintWriter out = new PrintWriter("/Users/rikenavadur/test.ttl");
+        out.println(svcDelta);
+        out.close();
+        } catch (Exception e) {
+            
+        }
+        //System.out.println(svcDelta);
         
-        String siUuid;
+//        String siUuid;
         String result;
         try {
-            URL url = new URL(String.format("%s/service/instance", host));
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            siUuid = this.executeHttpMethod(url, connection, "GET", null);
-            if (siUuid.length() != 36)
-                return 2;//Error occurs when interacting with back-end system
-            url = new URL(String.format("%s/service/%s",host,siUuid));
+//            URL url = new URL(String.format("%s/service/instance", host));
+//            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+//            siUuid = this.executeHttpMethod(url, connection, "GET", null);
+//            if (siUuid.length() != 36) {
+//                return 2;//Error occurs when interacting with back-end system
+//            }
+            URL url = new URL(String.format("%s/service/%s", host, refUuid));
             HttpURLConnection compile = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, compile, "POST", svcDelta);
-            if(!result.contains("referenceVersion"))
+            if (!result.contains("referenceVersion")) {
                 return 2;//Error occurs when interacting with back-end system
-            url = new URL(String.format("%s/service/%s/propagate",host,siUuid));
+            }
+            url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
             HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, propagate, "PUT", null);
-            if(!result.equals("PROPAGATED"))
+            if (!result.equals("PROPAGATED")) {
                 return 2;//Error occurs when interacting with back-end system
-            url = new URL(String.format("%s/service/%s/commit",host,siUuid));
+            }
+            url = new URL(String.format("%s/service/%s/commit", host, refUuid));
             HttpURLConnection commit = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, commit, "PUT", null);
-            if(!result.equals("COMMITTED"))
+            if (!result.equals("COMMITTED")) {
                 return 2;//Error occurs when interacting with back-end system
-            url = new URL(String.format("%s/service/%s/status",host,siUuid));
+            }
+            url = new URL(String.format("%s/service/%s/status", host, refUuid));
             while(true){
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
                 result = this.executeHttpMethod(url, status, "GET", null); 

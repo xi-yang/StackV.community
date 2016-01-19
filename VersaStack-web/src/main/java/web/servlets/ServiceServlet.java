@@ -21,7 +21,14 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.util.concurrent.ThreadPoolExecutor;
+import javax.servlet.AsyncContext;
+import javax.servlet.annotation.WebServlet;
+import web.async.AppAsyncListener;
+import web.async.DriverWorker;
+import web.async.NetCreateWorker;
 
+@WebServlet(asyncSupported = true, value = "/ServiceServlet")
 public class ServiceServlet extends HttpServlet {
 
     serviceBeans servBean = new serviceBeans();
@@ -42,6 +49,11 @@ public class ServiceServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        long startTime = System.currentTimeMillis();
+        System.out.println("Service Servlet Start::Name="
+                + Thread.currentThread().getName() + "::ID="
+                + Thread.currentThread().getId());
+
         try {
             // Instance Creation
             String serviceString = "";
@@ -118,17 +130,23 @@ public class ServiceServlet extends HttpServlet {
 
             // Execute service Creation.
             if (serviceString.equals("driver")) { // Driver
-                response.sendRedirect(createDriverInstance(paramMap));
+                response.sendRedirect(createDriverInstance(request, paramMap));
             } else if (serviceString.equals("vmadd")) { // VM
                 response.sendRedirect(createVMInstance(paramMap));
             } else if (serviceString.equals("netcreate")) { // Network Creation
-                response.sendRedirect(createFullNetwork(paramMap));
+                response.sendRedirect(createFullNetwork(request, paramMap));
             } else {
                 response.sendRedirect("/VersaStack-web/errorPage.jsp");
             }
         } catch (SQLException ex) {
             Logger.getLogger(ServiceServlet.class.getName()).log(Level.SEVERE, null, ex);
         }
+
+        long endTime = System.currentTimeMillis();
+        System.out.println("Service Servlet End::Name="
+                + Thread.currentThread().getName() + "::ID="
+                + Thread.currentThread().getId() + "::Time Taken="
+                + (endTime - startTime) + " ms.");
     }
 
     /**
@@ -141,44 +159,29 @@ public class ServiceServlet extends HttpServlet {
         return "";
     }
 
-    private String createDriverInstance(HashMap<String, String> paramMap) {     
+    private String createDriverInstance(HttpServletRequest request, HashMap<String, String> paramMap) {
+
         // Handles templates, in this order:
         // OpenStack, Stack Driver, Stub Driver, Generic Driver, AWS Driver 
-        if (paramMap.containsKey("template1")) { 
+        if (paramMap.containsKey("template1")) {
             paramMap.put("driverID", "openStackDriver");
             paramMap.put("url", "http://max-vlsr2.dragon.maxgigapop.net:35357/v2.0");
-            paramMap.put("NATServer", "");         
+            paramMap.put("NATServer", "");
             paramMap.put("driverEjbPath", "java:module/OpenStackDriver");
             paramMap.put("username", "admin");
             paramMap.put("password", "1234");
             paramMap.put("topologyUri", "urn:ogf:network:openstack.com:openstack-cloud");
             paramMap.put("tenant", "admin");
             paramMap.put("install", "Install");
-        } else if (paramMap.containsKey("template2")) {
-            paramMap.put("driverID", "StackDriver");
-            paramMap.put("topologyUri", "urn:ogf:network:aws.amazon.com:aws-cloud");
-            paramMap.put("vmType", "aws");     
-            paramMap.put("region", "us-east-1");
-            paramMap.put("ostype", "windows");     
-            paramMap.put("vmQuantity", "1");
-            paramMap.put("instanceType", "instance1");     
-            paramMap.put("vpcID", "urn:ogf:network:aws.amazon.com:aws-cloud:vpc-45143020");
-            paramMap.put("subnets", "urn:ogf:network:aws.amazon.com:aws-cloud:subnet-a8a632f1,10.0.1.0");     
-            paramMap.put("volumes", "8,standard,/dev/xvda,snapshot\\r\\n");
-            paramMap.put("install", "Install");
-            paramMap.put("aws_access_key_id", "AKIAJEOHXEUCCYOU6ELQ");     
-            paramMap.put("aws_secret_access_key", "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");   
-            paramMap.put("subsystemBaseUrl", "http://140.221.96.35:50100/VersaStack-web/restapi");
         } else if (paramMap.containsKey("template3")) {
             paramMap.put("driverID", "stubdriver");
             paramMap.put("topologyUri", "urn:ogf:network:rains.maxgigapop.net:wan:2015:topology");
-            paramMap.put("driverEjbPath", "java:module/StubSystemDriver");     
-            
-            
+            paramMap.put("driverEjbPath", "java:module/StubSystemDriver");
+
             // Reads large stubModelTtl property from file.
             String stubModelTTL = "", nextLine;
-            String testingPath = "/Users/max/NetBeansProjects/FrontVis/VersaStack/VersaStack-web/" + 
-                                 "src/main/webapp/tools/testing/";
+            String testingPath = "/Users/max/NetBeansProjects/FrontVis/VersaStack/VersaStack-web/"
+                    + "src/main/webapp/tools/testing/";
             String ttlFilename = "stub_driver_stubModelTtl";
             try {
                 FileReader fr = new FileReader(testingPath + ttlFilename);
@@ -194,24 +197,17 @@ public class ServiceServlet extends HttpServlet {
                 System.out.println("Error reading " + ttlFilename + ".");
                 ex.printStackTrace();
             }
-            
+
             paramMap.put("stubModelTtl", stubModelTTL);
             paramMap.put("install", "Install");
         } else if (paramMap.containsKey("template4")) {
             paramMap.put("driverID", "versaNSDriver");
             paramMap.put("topologyUri", "urn:ogf:network:sdn.maxgigapop.net:network");
-            paramMap.put("driverEjbPath", "java:module/GenericRESTDriver");     
-            paramMap.put("subsystemBaseUrl", "http://charon.dragon.maxgigapop.net:8080/VersaNS-0.0.1-SNAPSHOT");    
-            paramMap.put("install", "Install");
-        } else if (paramMap.containsKey("template5")) {
-            paramMap.put("driverID", "awsdriver");
-            paramMap.put("topologyUri", "urn:off:network:aws.amazon.com:aws-cloud");
-            paramMap.put("aws_access_key_id", "AKIAJEOHXEUCCYOU6ELQ");     
-            paramMap.put("aws_secret_access_key", "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");       
-            paramMap.put("region", "us-east-1");    
+            paramMap.put("driverEjbPath", "java:module/GenericRESTDriver");
+            paramMap.put("subsystemBaseUrl", "http://charon.dragon.maxgigapop.net:8080/VersaNS-0.0.1-SNAPSHOT");
             paramMap.put("install", "Install");
         }
-        
+
         // Connect dynamically generated elements
         for (int i = 1; i <= 5; i++) {
             if (paramMap.containsKey("apropname" + i)) {
@@ -222,21 +218,31 @@ public class ServiceServlet extends HttpServlet {
             }
         }
 
-        int retCode = -1;
-        // Call appropriate driver control method
-        if (paramMap.containsKey("install")) {
-            paramMap.remove("install");
-            retCode = servBean.driverInstall(paramMap);
-        } else if (paramMap.containsKey("uninstall")) {
-            retCode = servBean.driverUninstall(paramMap.get("topologyUri"));
-        }
+        /*
+         int retCode = -1;
+         // Call appropriate driver control method
+         if (paramMap.containsKey("install")) {
+         paramMap.remove("install");
+         retCode = servBean.driverInstall(paramMap);
+         } else if (paramMap.containsKey("uninstall")) {
+         retCode = servBean.driverUninstall(paramMap.get("topologyUri"));
+         }*/
+        // Async setup
+        request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
+        AsyncContext asyncCtx = request.startAsync();
+        asyncCtx.addListener(new AppAsyncListener());
+        asyncCtx.setTimeout(60000);
 
-        return ("/VersaStack-web/ops/srvc/driver.jsp?ret=" + retCode);
+        ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
+
+        executor.execute(new DriverWorker(asyncCtx, paramMap));
+
+        return ("/VersaStack-web/ops/srvc/driver.jsp?ret=0");
     }
 
     private String createVMInstance(HashMap<String, String> paramMap) {
         int retCode = -1;
-        
+
         // Handle templates 
         // AWS
         if (paramMap.containsKey("template1")) {
@@ -248,11 +254,11 @@ public class ServiceServlet extends HttpServlet {
             paramMap.put("instanceType", "instance1");
             paramMap.put("vpcID", "urn:ogf:network:aws.amazon.com:aws-cloud:vpc-45143020");
             paramMap.put("subnets", "urn:ogf:network:aws.amazon.com:aws-cloud:subnet-a8a632f1,10.0.1.0");
-            paramMap.put("volumes", "8,standard,/dev/xvda,snapshot\\r\\n");    
+            paramMap.put("volumes", "8,standard,/dev/xvda,snapshot\\r\\n");
             paramMap.put("driverType", "aws");
             paramMap.put("graphTopo", "none");
-        } 
-        
+        }
+
         if (paramMap.get("driverType").equals("aws")) {
             if (!paramMap.get("graphTopo").equalsIgnoreCase("none")) {
                 paramMap.put("topologyUri", paramMap.get("graphTopo"));
@@ -294,11 +300,10 @@ public class ServiceServlet extends HttpServlet {
         return ("/VersaStack-web/ops/srvc/vmadd.jsp?ret=" + retCode);
     }
 
-
-    private String createFullNetwork(HashMap<String, String> paramMap) throws SQLException {
+    private String createFullNetwork(HttpServletRequest request, HashMap<String, String> paramMap) throws SQLException {
         int retCode;
-        
-        for ( Object key : paramMap.keySet().toArray()) {
+
+        for (Object key : paramMap.keySet().toArray()) {
             if (paramMap.get((String) key).isEmpty()) {
                 paramMap.remove((String) key);
             }
@@ -327,7 +332,16 @@ public class ServiceServlet extends HttpServlet {
             paramMap.remove("netCreate");
             paramMap.remove("template1");
 
-            retCode = servBean.createNetwork(paramMap);
+            // Async setup
+            /*request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
+            AsyncContext asyncCtx = request.startAsync();
+            asyncCtx.addListener(new AppAsyncListener());
+            asyncCtx.setTimeout(60000);
+
+            ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
+
+            executor.execute(new NetCreateWorker(asyncCtx, paramMap));*/
+            servBean.createNetwork(paramMap);
         } else { // Custom Form Handling
             PreparedStatement prep = rains_conn.prepareStatement("SELECT driverEjbPath"
                     + " FROM driver_instance WHERE topologyUri = ?");
@@ -347,7 +361,7 @@ public class ServiceServlet extends HttpServlet {
                     if (!paramMap.containsKey("name")) {
                         paramMap.put("subnet" + i + "-name", " ");
                     }
-                    
+
                     String subnetString = "name+" + paramMap.get("subnet" + i + "-name") + "&cidr+" + paramMap.get("subnet" + i + "-cidr") + "&";
 
                     // Check for route existence.
@@ -369,11 +383,11 @@ public class ServiceServlet extends HttpServlet {
                             }
                             subnetString += "\r\n";
                         }
-                        
+
                         paramMap.remove("subnet" + i + "-route" + j + "-to");
                         paramMap.remove("subnet" + i + "-route" + j + "-from");
                         paramMap.remove("subnet" + i + "-route" + j + "-next");
-                    }                    
+                    }
 
                     // Apply route propagation
                     if (paramMap.containsKey("subnet" + i + "-route-prop")) {
@@ -382,27 +396,35 @@ public class ServiceServlet extends HttpServlet {
                         }
                         subnetString += "from+vpn,to+0.0.0.0/0,nextHop+vpn";
                     } else {
-                        if (subnetString.contains("routes"))  {
+                        if (subnetString.contains("routes")) {
                             subnetString = subnetString.substring(0, (subnetString.length() - 2));
                         }
                     }
                     paramMap.remove("subnet" + i + "-route-prop");
-                    
+
                     paramMap.remove("subnet" + i + "-cidr");
                     paramMap.remove("subnet" + i + "-name");
-                    
+
                     paramMap.put("subnet" + i, subnetString);
                 }
             }
 
-            paramMap.remove("userID");                                              
+            paramMap.remove("userID");
             paramMap.remove("custom");
             paramMap.remove("netCreate");
 
-            retCode = servBean.createNetwork(paramMap);
+            // Async setup
+            request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
+            AsyncContext asyncCtx = request.startAsync();
+            asyncCtx.addListener(new AppAsyncListener());
+            asyncCtx.setTimeout(60000);
+
+            ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
+
+            executor.execute(new NetCreateWorker(asyncCtx, paramMap));
         }
 
-        return ("/VersaStack-web/ops/srvc/netcreate.jsp?ret=" + retCode);
+        return ("/VersaStack-web/ops/srvc/netcreate.jsp?ret=0");
 
     }
 }
