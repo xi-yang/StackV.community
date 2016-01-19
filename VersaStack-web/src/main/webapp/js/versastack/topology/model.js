@@ -26,14 +26,16 @@ define([
     "local/versastack/topology/Port",
     "local/versastack/topology/Service",
     "local/versastack/topology/modelConstants",
-    "local/versastack/topology/Subnet"
-], function (utils, Node, Port, Service, values, Subnet) {
+    "local/versastack/topology/Subnet",
+    "local/versastack/topology/Volume"    
+], function (utils, Node, Port, Service, values, Subnet, Volume) {
 
     function Model(oldModel) {
         var map_ = utils.map_;
         var rootNodes = [];
         var versionID;
-
+//        var others = [];
+        
         //Associates a name with the corresponding backing
         var map = {};
         var that = this;
@@ -95,6 +97,7 @@ define([
                 that.portMap = {};
                 that.serviceMap = {};
                 that.subnetMap = {};
+                that.volumeMap = {};
                 for (var key in map) {
                     var val = map[key];
                     val.name = key;
@@ -108,7 +111,6 @@ define([
                                 case values.topology:
                                 case values.node:
                                 case values.FileSystem:
-
                                     var toAdd;
                                     if (oldModel && oldModel.nodeMap[key]) {
                                         toAdd = oldModel.nodeMap[key];
@@ -135,6 +137,15 @@ define([
                                 case values.routingService:
                                 case values.virtualCloudService:
                                 case values.blockStorageService:
+                                    var toAdd;
+                                    if (oldModel && oldModel.serviceMap[key]) {
+                                        toAdd = oldModel.serviceMap[key];
+                                        toAdd.reload(val, map);
+                                    } else {
+                                        toAdd = new Service(val, map);
+                                    }
+                                    that.serviceMap[key] = toAdd;
+                                    break;
                                 case values.objectStorageService:
                                 case values.virtualSwitchingService:
                                 case values.hypervisorBypassInterfaceService:
@@ -171,6 +182,25 @@ define([
                                 case values.tag:
                                 case values.route:
                                 case values.volume:
+//                                    var toAdd;
+//                                    if (oldModel && oldModel.volumeMap[key]) {
+//                                        toAdd = oldModel.volumeMap[key];
+//                                        toAdd.reload(val, map);
+//                                    } else {
+//                                        toAdd = new Node(val, map);
+//                                    }
+//                                    that.volumeMap[key] = toAdd;
+//                                    break;
+                                    var toAdd;
+                                    if (oldModel && oldModel.volumeMap[key]) {
+                                        toAdd = oldModel.volumeMap[key];
+                                        toAdd.reload(val, map);
+                                    } else {
+                                        toAdd = new Volume(val, map);
+                                    }
+                                    toAdd.isTopology = type === values.topology;
+                                    that.volumeMap[key] = toAdd;
+                                    break;
                                 case values.routingTable:
                                 case values.ontology:
                                 case values.POSIX_IOBenchmark:
@@ -292,6 +322,7 @@ define([
                     }
 
                 }
+
                 //Associate ports and subnodes with their parent node
                 //Create services
                 for (var key in that.nodeMap) {
@@ -354,7 +385,24 @@ define([
                             case values.hasBucket:
                             case values.belongsTo:
                             case values.name:
+                            case values.volume:
+//                                console.log("I AM A VOLUME: \n");
+//                                others.push(key);
+//                                break;
                             case values.hasVolume:
+                                var volumes = node_[key];
+                                map_(volumes, function (volume) {
+                                    var errorVal = volume.value;
+                                    volume = that.volumeMap[volume.value];
+                                    if (!volume) {
+                                        //service is undefined
+                                        console.log("No service: " + errorVal);
+                                    } else {
+                                        node.volumes.push(volume);
+                                        volume.parentNode = node;
+                                    }
+                                });
+                                break;
                             case values.num_core:
                             case values.memory_mb:
                             case values.mount_point:
@@ -367,7 +415,8 @@ define([
                         }
                     }
                 }
-
+                
+    
                 for (var key in that.nodeMap) {
                     var node = that.nodeMap[key];
                     if (node.isRoot) {
@@ -382,11 +431,14 @@ define([
         this.getVersion = function () {
             return versionID;
         }
+        
+
 
         this.listNodes = function () {
             var ans = [];
             map_(rootNodes, /**@param {Node} node**/function (node) {
-                ans = ans.concat(node._getNodes());
+
+                    ans = ans.concat(node._getNodes());
             });
             return ans;
         };

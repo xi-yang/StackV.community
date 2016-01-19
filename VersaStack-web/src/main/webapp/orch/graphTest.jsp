@@ -577,10 +577,12 @@
     <g id="anchor"/>
     <g id="node"/>
     <g id="dialogBox"/>
+    <g id="volumeDialogBox"/>
     <g id="switchPopup"/>
     <g id="parentPort"/>
     <g id="edge2" />
     <g id="port"/>
+    <g id="volume"/>
 
     </g>
     </svg>

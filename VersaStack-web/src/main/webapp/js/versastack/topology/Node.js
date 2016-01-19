@@ -38,6 +38,10 @@ define(["local/versastack/topology/modelConstants"],
                 this.ports = [];
                 /**@type PortDisplayPopup**/
                 this.portPopup = null;
+                /**@type Array.Volume**/
+                this.volumes = [];
+                /**@type VolumeDisplayPopup**/
+                this.volumePopup = null;                
                 this.x = 0;
                 this.y = 0;
                 this.dx = 0;
