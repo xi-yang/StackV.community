@@ -5,6 +5,8 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
 <jsp:setProperty name="user" property="*" />  
+<jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
+<jsp:setProperty name="serv" property="*" />
 <c:if test="${user.loggedIn == false}">
     <c:redirect url="/index.jsp" />
 </c:if>
@@ -38,18 +40,32 @@
         </div>
         <!-- MAIN PANEL -->
         <div id="main-pane">                                   
-            <div id="service-overview">
-                
-                
+            <div id="service-overview">                
                 <table class="management-table" id="status-table">
                     <thead>
                         <tr>
                             <th>Service Name</th>
+                            <th>Service UUID</th>
                             <th>Service Status</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
-                        
+                        <c:forEach var="instance" items="${serv.instanceStatusCheck()}">
+                            <tr>
+                                <td>${instance[0]}</td>
+                                <td>${instance[1]}</td>
+                                <td>${instance[2]}</td>
+                                <td>
+                                    <div class="service-instance-panel">
+                                        <button onClick="propagateInstance('${instance[1]}')">Propagate</button>
+                                        <button onClick="commitInstance('${instance[1]}')">Commit</button>
+                                        <button onClick="revertInstance('${instance[1]}')">Revert</button>
+                                        <button onClick="deleteInstance('${instance[1]}')">Delete</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </c:forEach>
                     </tbody>
                 </table>
 

@@ -567,3 +567,7 @@ body {
 #model-select {
     width: 300px;
 }
+
+.service-instance-panel {
+    float: right;
+}
