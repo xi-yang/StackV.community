@@ -64,8 +64,6 @@ define([
                 } else
                     var data = model;
 
-                console.log("Data: " + data);
-
                 if (data.charAt(0) === '<') {
                     window.alert("Empty Topology.");
                     return;
@@ -76,9 +74,7 @@ define([
                 } else {
                     data = JSON.parse(data);
                     versionID = data.version;
-                    console.log("Data TTL:\n" + data.ttlModel);
                     map = JSON.parse(data.ttlModel);
-                    console.log("Map:\n" + map);
                 }
 
                 if (INJECT) {
@@ -125,7 +121,7 @@ define([
                                     toAdd.isTopology = type === values.topology;
                                     that.nodeMap[key] = toAdd;
                                     break;
-                                /* case values.bidirectionalPort:
+                                case values.bidirectionalPort:
                                     var toAdd;
                                     if (oldModel && oldModel.portMap[key]) {
                                         toAdd = oldModel.portMap[key];
@@ -134,7 +130,7 @@ define([
                                         toAdd = new Port(val, map);
                                     }
                                     that.portMap[key] = toAdd;
-                                    break; */
+                                    break;
                                 case values.switchingService:
                                 case values.topopolgySwitchingService:
                                 case values.hypervisorService:
@@ -231,9 +227,6 @@ define([
                         if (aliasPort) {
                             port.alias = aliasPort;
                             aliasPort.alias = port;
-                        } else {
-                            console.log("Alias Port Non-Existent!");
-                            break;
                         }
                     } else {
                         port.alias = null;
@@ -243,8 +236,13 @@ define([
                     if (childrenKeys) {
                         map_(childrenKeys, function (childKey) {
                             var child = that.portMap[childKey.value];
+                            try {
                             port.childrenPorts.push(child);
                             child.parentPort = port;
+                            }
+                            catch (err) {
+                                console.log("Port Children Error!");
+                            }
                         });
                     }
                 }
