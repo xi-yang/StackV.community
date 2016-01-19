@@ -299,7 +299,7 @@ public class AwsPush {
                             Thread.currentThread().interrupt();
                         }
                         tries++;
-                        if (tries > 6) {
+                        if (tries > 10) {
                             break;
                         }
                         continue;
