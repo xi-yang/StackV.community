@@ -54,15 +54,17 @@ define([
                 request.open("GET", "/VersaStack-web/restapi/model/");
             }
 
-            //console.log("Mode: " + mode);
+            console.log("Mode: " + mode);
+            
             request.setRequestHeader("Accept", "application/json");
+            request.setRequestHeader("Content-type", "application/json");
             request.onload = function () {
                 if (model === null) {
                     var data = request.responseText;
                 } else
                     var data = model;
 
-                //console.log("Data: " + data);
+                console.log("Data: " + data);
 
                 if (data.charAt(0) === '<') {
                     window.alert("Empty Topology.");
@@ -74,7 +76,9 @@ define([
                 } else {
                     data = JSON.parse(data);
                     versionID = data.version;
+                    console.log("Data TTL:\n" + data.ttlModel);
                     map = JSON.parse(data.ttlModel);
+                    console.log("Map:\n" + map);
                 }
 
                 if (INJECT) {
@@ -110,7 +114,7 @@ define([
                             switch (type) {
                                 case values.topology:
                                 case values.node:
-                                case values.FileSystem:
+                                
                                     var toAdd;
                                     if (oldModel && oldModel.nodeMap[key]) {
                                         toAdd = oldModel.nodeMap[key];
@@ -121,7 +125,7 @@ define([
                                     toAdd.isTopology = type === values.topology;
                                     that.nodeMap[key] = toAdd;
                                     break;
-                                case values.bidirectionalPort:
+                                /* case values.bidirectionalPort:
                                     var toAdd;
                                     if (oldModel && oldModel.portMap[key]) {
                                         toAdd = oldModel.portMap[key];
@@ -130,7 +134,7 @@ define([
                                         toAdd = new Port(val, map);
                                     }
                                     that.portMap[key] = toAdd;
-                                    break;
+                                    break; */
                                 case values.switchingService:
                                 case values.topopolgySwitchingService:
                                 case values.hypervisorService:
