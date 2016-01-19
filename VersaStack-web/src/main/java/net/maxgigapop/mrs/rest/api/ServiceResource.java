@@ -177,11 +177,21 @@ public class ServiceResource {
     @Path("/{siUUID}/{action}")
     public String push(@PathParam("siUUID") String svcInstanceUUID, @PathParam("action") String action) {
         if (action.equalsIgnoreCase("propagate")) {
-            return serviceCallHandler.propagateDeltas(svcInstanceUUID);
-       } else if (action.equalsIgnoreCase("commit")) {
-            return serviceCallHandler.commitDeltas(svcInstanceUUID);
+            return serviceCallHandler.propagateDeltas(svcInstanceUUID, true);
+        } else if (action.equalsIgnoreCase("propagate_through")) {
+            return serviceCallHandler.propagateDeltas(svcInstanceUUID, false);
+        } else if (action.equalsIgnoreCase("propagate_retry")) {
+            return serviceCallHandler.propagateRetry(svcInstanceUUID, false);
+        } else if (action.equalsIgnoreCase("propagate_forcedretry")) {
+            return serviceCallHandler.propagateRetry(svcInstanceUUID, true);
+        } else if (action.equalsIgnoreCase("commit")) {
+            return serviceCallHandler.commitDeltas(svcInstanceUUID, false);
+        } else if (action.equalsIgnoreCase("commit_forced")) {
+            return serviceCallHandler.commitDeltas(svcInstanceUUID, true);
         } else if (action.equalsIgnoreCase("revert")) {
-            return serviceCallHandler.revertDeltas(svcInstanceUUID);
+            return serviceCallHandler.revertDeltas(svcInstanceUUID, false);
+        } else if (action.equalsIgnoreCase("revert_forced")) {
+            return serviceCallHandler.revertDeltas(svcInstanceUUID, true);
         } else {
             throw new EJBException("Unrecognized action=" + action);
         }

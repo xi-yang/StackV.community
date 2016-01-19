@@ -27,6 +27,8 @@ import net.maxgigapop.mrs.bean.persist.PersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
 
+import net.maxgigapop.mrs.common.Nml;
+
 /**
  *
  * @author xyang

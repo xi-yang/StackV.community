@@ -49,7 +49,7 @@ public class AwsPrefix {
 
     public static String switchingService = "aws.amazon.cloud:vpc+%s:switchingservice";
 
-    public static String vif = "aws.amazon.cloud:vif%s";
+    public static String vif = "aws.amazon.cloud:vif+%s";
 
     public static String vlan = "aws.amazon.cloud:vif+%s:vlan+%s";
 

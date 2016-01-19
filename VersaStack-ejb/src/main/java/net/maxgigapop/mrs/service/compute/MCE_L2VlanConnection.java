@@ -112,7 +112,7 @@ public class MCE_L2VlanConnection implements IModelComputationElement {
             MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), resLink);
 
             //5. mark the Link as an Abstraction
-            outputDelta.getModelAddition().getOntModel().add(outputDelta.getModelAddition().getOntModel().createStatement(resLink, RdfOwl.type, Spa.Abstraction));
+            //outputDelta.getModelAddition().getOntModel().add(outputDelta.getModelAddition().getOntModel().createStatement(resLink, Spa.type, Spa.Abstraction));
         }
         try {
             log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--DeltaAddModel Output=\n" + ModelUtil.marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()));
