@@ -94,7 +94,7 @@ public class ModelResource {
         apiModelBase.setVersion(refUUID);
         apiModelBase.setCreationTime(ModelUtil.modelDateToString(modelBase.getCreationTime()));
         apiModelBase.setStatus(vg.getStatus());
-        apiModelBase.setTtlModel(ModelUtil.marshalOntModel(modelBase.getOntModel()));
+        apiModelBase.setTtlModel(ModelUtil.marshalOntModelJson(modelBase.getOntModel()));
         return apiModelBase;
     }
 
