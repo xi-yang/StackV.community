@@ -56,14 +56,13 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
     @Asynchronous
     public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
         try {
-            log.log(Level.INFO, "\n>>>MCE_MPVlanConnection--DeltaAddModel Input=\n" + ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
+            log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--DeltaAddModel Input=\n" + ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
 
         // importPolicyData : Link->Connection->List<PolicyData> of terminal Node/Topology
         String sparql = "SELECT ?conn ?policy ?data ?type ?value WHERE {"
-                //+ "?conn a nml:SwitchingSubnet ."
                 + "?conn spa:dependOn ?policy . "
                 + "?policy a spa:PolicyAction. "
                 + "?policy spa:type 'MCE_MPVlanConnection'. "
@@ -106,8 +105,6 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
                 ((List)connPolicyMap.get(resPolicy).get("imports")).add(policyData);
             }
         }
-
-        //@TODO: use SwitchingSubnet properties as alternative to JSON string to model the data imports
         
         ServiceDelta outputDelta = annotatedDelta.clone();
 
@@ -130,9 +127,11 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), policyAction);
 
             //5. mark the Link as an Abstraction
+            /*
             for (Resource resConn: (List<Resource>)((Map)connPolicyMap.get(policyAction)).get("connections")) {
-                outputDelta.getModelAddition().getOntModel().add(outputDelta.getModelAddition().getOntModel().createStatement(resConn, RdfOwl.type, Spa.Abstraction));
+                outputDelta.getModelAddition().getOntModel().add(outputDelta.getModelAddition().getOntModel().createStatement(resConn, Spa.type, Spa.Abstraction));
             }
+            */
         }
         try {
             log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--DeltaAddModel Output=\n" + ModelUtil.marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()));
@@ -148,12 +147,12 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
         // filter out irrelevant statements (based on property type, label type, has switchingService etc.)
         OntModel transformedModel = MCETools.transformL2NetworkModel(systemModel);
         try {
-            log.log(Level.INFO, "\n>>>MCE_MPVlanConnection--SystemModel=\n" + ModelUtil.marshalModel(transformedModel));
+            log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--SystemModel=\n" + ModelUtil.marshalModel(transformedModel));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
         Map<String, MCETools.Path> mapConnPaths = new HashMap<>();
-        List<Resource> connList = (List<Resource>)connDataMap.get("connections");
+        //List<Resource> connList = (List<Resource>)connDataMap.get("connections");
         List<Map> dataMapList = (List<Map>)connDataMap.get("imports");
         // get source and destination nodes (nodeA, nodeZ) -- only picks fist two terminals for now 
         JSONObject jsonConnReqs = null;
@@ -173,14 +172,14 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
                         }
                     }
                 } catch (ParseException e) {
-                    throw new EJBException(String.format("%s::process  cannot parse json string %s", this.getClass().getName(), (String) entry.get("value")));
+                    throw new EJBException(String.format("%s::process doMultiPathFinding cannot parse json string %s", this.getClass().getName(), (String) entry.get("value")));
                 }
             } else {
                 throw new EJBException(String.format("%s::process doMultiPathFinding does not import policyData of %s type", entry.get("type").toString()));
             }
         }
         if (jsonConnReqs == null || jsonConnReqs.isEmpty()) {
-            throw new EJBException(String.format("%s::process cannot doMultiPathFinding receive none connection request for <%s>", this.getClass().getName(), policyAction));
+            throw new EJBException(String.format("%s::process doMultiPathFinding receive none connection request for <%s>", this.getClass().getName(), policyAction));
         }
         //@TODO: verify that all connList elements have been covered by jsonConnReqs
         for (Object connReq: jsonConnReqs.keySet()) {
@@ -230,8 +229,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             }
             // pick the shortest path from remaining/feasible paths in KSP
             MCETools.Path connPath = MCETools.getLeastCostPath(KSP);
-            transformedModel.add(connPath);
-            //@TODO: $$$ add labels etc.
+            transformedModel.add(connPath.getOntModel());
             mapConnPaths.put(connId, connPath);
         }
         return mapConnPaths;
@@ -239,12 +237,13 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
 
     private void exportPolicyData(OntModel spaModel, Resource resPolicy, String connId, MCETools.Path l2Path) {
         // find Connection policy -> exportTo -> policyData
-        String sparql = "SELECT ?policyAction ?policyData WHERE {"
+        String sparql = "SELECT ?data ?type ?value ?format WHERE {"
                 + String.format("<%s> a spa:PolicyAction. ", resPolicy.getURI())
                 + String.format("<%s> spa:type 'MCE_MPVlanConnection'. ", resPolicy.getURI())
-                + String.format("<%s> spa:exportTo ?policyData . ", resPolicy.getURI())
-                + "OPTIONAL { ?policyData spa:type ?policyDataType. "
-                + "  ?policyData spa:value ?policyDataValue } "
+                + String.format("<%s> spa:exportTo ?data . ", resPolicy.getURI())
+                + "OPTIONAL {?data spa:type ?type.} "
+                + "OPTIONAL {?data spa:value ?value.} "
+                + "OPTIONAL {?data spa:format ?format.} "
                 + "}";
         ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
         List<QuerySolution> solutions = new ArrayList<>();
@@ -252,9 +251,9 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             solutions.add(r.next());
         }
         for (QuerySolution querySolution : solutions) {
-            Resource resData = querySolution.get("policyData").asResource();
-            RDFNode dataType = querySolution.get("policyDataType");
-            RDFNode dataValue = querySolution.get("policyDataValue");
+            Resource resData = querySolution.get("data").asResource();
+            RDFNode dataType = querySolution.get("type");
+            RDFNode dataValue = querySolution.get("value");
             // add to export data with references to (terminal (src/dst) vlan labels from l2Path
             List<QuerySolution> terminalVlanSolutions = getTerminalVlanLabels(l2Path);
             // require two terminal vlan ports and labels.
@@ -280,12 +279,22 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
                 JSONObject hop = new JSONObject();
                 Resource bidrPort = aSolution.getResource("bp");
                 Resource vlanTag = aSolution.getResource("vlan");
-                hop.put("hop", bidrPort.toString());
+                hop.put("uri", bidrPort.toString());
                 hop.put("vlan_tag", vlanTag.toString());
                 jsonHops.add(hop);
             }
             jsonValue.put(connId, jsonHops);
-            spaModel.add(resData, Spa.value, jsonValue.toJSONString());
+            //@TODO: common logic
+            if (dataValue != null) {
+                spaModel.remove(resData, Spa.value, dataValue);
+            }
+            //add output as spa:value of the export resrouce
+            String exportValue = jsonValue.toJSONString();
+            if (querySolution.contains("format")) {
+                String exportFormat = querySolution.get("format").toString();
+                exportValue = MCETools.formatJsonExport(exportValue, exportFormat);
+            }
+            spaModel.add(resData, Spa.value, exportValue);
         }
     }
 

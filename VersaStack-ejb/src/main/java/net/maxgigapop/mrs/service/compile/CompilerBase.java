@@ -100,9 +100,7 @@ public class CompilerBase {
         NodeIterator nodeIter = spaModel.listObjectsOfProperty(res, RdfOwl.type);
         while (nodeIter.hasNext()) {
             RDFNode node = nodeIter.next();
-            if (node.isResource()
-                    && (node.asResource().getURI().contains("spa#PolicyAction")
-                    || node.asResource().getURI().contains("spa#Abstraction"))) {
+            if (node.isResource() && node.asResource().getURI().contains("spa#PolicyAction")) {
                 return true;
             }
         }

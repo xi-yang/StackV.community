@@ -5,11 +5,8 @@
  */
 package net.maxgigapop.mrs.driver.aws;
 
-import net.maxgigapop.mrs.driver.aws.AwsDCGet;
-import net.maxgigapop.mrs.driver.aws.AwsEC2Get;
-import net.maxgigapop.mrs.driver.aws.AwsS3Get;
+
 import com.amazonaws.regions.Regions;
-import com.amazonaws.services.directconnect.model.Connection;
 import com.amazonaws.services.directconnect.model.VirtualInterface;
 import com.amazonaws.services.directconnect.model.VirtualInterfaceState;
 import com.amazonaws.services.ec2.model.*;
@@ -146,26 +143,32 @@ public class AwsModelBuilder {
         for (VirtualInterface vi : dcClient.getVirtualInterfaces()) {
             String vlanNum = Integer.toString(vi.getVlan());
 
+            String virtualInterfaceState =  vi.getVirtualInterfaceState();
+            String[] invalidStates = {VirtualInterfaceState.Deleted.toString(), VirtualInterfaceState.Deleting.toString()};
+            if ((Arrays.asList(invalidStates).contains(virtualInterfaceState))) {
+                continue;
+            }
             Resource VLAN_LABEL_GROUP = RdfOwl.createResource(model, ResourceTool.getResourceUri(vlanNum, AwsPrefix.labelGroup,vi.getVirtualInterfaceId(),vlanNum ), Nml.LabelGroup);
-            model.add(model.createStatement(VLAN_LABEL_GROUP, value, vlanNum));
+            model.add(model.createStatement(VLAN_LABEL_GROUP, Nml.values, vlanNum));
             
-            Resource VIRTUAL_INTERFACE = RdfOwl.createResource(model, ResourceTool.getResourceUri(vi.getVirtualInterfaceId(),AwsPrefix.vif,vi.getVirtualGatewayId()), biPort);
+            Resource VIRTUAL_INTERFACE = RdfOwl.createResource(model, ResourceTool.getResourceUri(vi.getVirtualInterfaceId(),AwsPrefix.vif,vi.getVirtualInterfaceId()), biPort);
             model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.type, "direct-connect-vif"));
             model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabelGroup, VLAN_LABEL_GROUP));
+            model.add(model.createStatement(VLAN_LABEL_GROUP, Nml.labeltype, vlan));
             model.add(model.createStatement(directConnect, hasBidirectionalPort, VIRTUAL_INTERFACE));
 
             //check if it has a gateway, meaning the virtual interface is being used
             String virtualGatewayId =  vi.getVirtualGatewayId();
-            String virtualInterfaceState =  vi.getVirtualInterfaceState();
-            String[] acceptedStates = {VirtualInterfaceState.Available.toString(),VirtualInterfaceState.Confirming.toString()
-                                                      ,VirtualInterfaceState.Deleting.toString(),VirtualInterfaceState.Verifying.toString()};
+            String[] acceptedStates = {VirtualInterfaceState.Available.toString(), 
+                VirtualInterfaceState.Confirming.toString(), VirtualInterfaceState.Deleting.toString(), 
+                VirtualInterfaceState.Pending.toString(), VirtualInterfaceState.Verifying.toString(), "down"};
             if(virtualGatewayId != null && (Arrays.asList(acceptedStates).contains(virtualInterfaceState)))
             {
                 virtualGatewayId = ec2Client.getIdTag(virtualGatewayId);
                 Resource VLAN_LABEL = RdfOwl.createResource(model, ResourceTool.getResourceUri(vlanNum, AwsPrefix.vlan,vi.getVirtualInterfaceId(),vlanNum), Nml.Label);
                 Resource VPNGATEWAY = model.getResource(ResourceTool.getResourceUri(virtualGatewayId,AwsPrefix.gateway,virtualGatewayId));
                 model.add(model.createStatement(VLAN_LABEL, Nml.labeltype, vlan));
-                model.add(model.createStatement(VLAN_LABEL, value, vlanNum));
+                model.add(model.createStatement(VLAN_LABEL, Nml.value, vlanNum));
                 model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabel, VLAN_LABEL));
                 model.add(model.createStatement(VPNGATEWAY, Nml.isAlias, VIRTUAL_INTERFACE));
                 model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.isAlias, VPNGATEWAY));
@@ -406,8 +409,8 @@ public class AwsModelBuilder {
         }
 
         //create abstraction for batch resources
-        BatchResourcesTool batchTool = new BatchResourcesTool();
-        model = batchTool.contractExplicitModel(model);
+        AwsBatchResourcesTool batchTool = new AwsBatchResourcesTool(access_key_id,secret_access_key, region);
+        model = batchTool.contractVMbatch(model);
         return model;
     }
 }

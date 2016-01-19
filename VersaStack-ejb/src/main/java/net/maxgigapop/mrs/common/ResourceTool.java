@@ -26,7 +26,7 @@ public class ResourceTool {
 
         } else {
             //name does not start with prefix
-            //check if it at least matches pattern           
+            //check if it at least matches pattern 
             if (patternMatch(name,pattern) == true) {
                 //just append prefix
                 name = versaStackPrefix + name;

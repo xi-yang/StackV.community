@@ -50,6 +50,9 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         String username = driverInstance.getProperty("username");
         String password = driverInstance.getProperty("password");
         String tenant = driverInstance.getProperty("tenant");
+        String adminUsername = driverInstance.getProperty("adminUsername");
+        String adminPassword = driverInstance.getProperty("adminPassword");
+        String adminTenant = driverInstance.getProperty("adminTenant");
         String topologyURI = driverInstance.getProperty("topologyUri");
         String url = driverInstance.getProperty("url");
         String NATServer = driverInstance.getProperty("NATServer");
@@ -60,7 +63,7 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         OntModel modelAdd = aDelta.getModelAddition().getOntModel();
         OntModel modelReduc = aDelta.getModelReduction().getOntModel();
 
-        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, topologyURI, defaultImage, defaultFlavor);
+        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, adminUsername, adminPassword, adminTenant, topologyURI, defaultImage, defaultFlavor);
         List<JSONObject> requests = null;
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         requests = push.propagate(model, modelAdd, modelReduc);
@@ -82,6 +85,9 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         String username = driverInstance.getProperty("username");
         String password = driverInstance.getProperty("password");
         String tenant = driverInstance.getProperty("tenant");
+        String adminUsername = driverInstance.getProperty("adminUsername");
+        String adminPassword = driverInstance.getProperty("adminPassword");
+        String adminTenant = driverInstance.getProperty("adminTenant");
         String topologyURI = driverInstance.getProperty("topologyUri");
         String url = driverInstance.getProperty("url");
         String NATServer = driverInstance.getProperty("NATServer");
@@ -90,7 +96,7 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         String requests = driverInstance.getProperty(requestId);
 
-        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, topologyURI, defaultImage, defaultFlavor);
+        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, adminUsername, adminPassword, adminTenant, topologyURI, defaultImage, defaultFlavor);
         ObjectMapper mapper = new ObjectMapper();
         List<JSONObject> r = new ArrayList();
         try {

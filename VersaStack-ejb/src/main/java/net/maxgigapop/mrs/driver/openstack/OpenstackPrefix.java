@@ -25,6 +25,10 @@ public class OpenstackPrefix {
 
     public static String private_address = "%s:port+%s:private-ip-address+%s";
     
+    public static String mac_address = "%s:port+%s:mac-address+%s";
+
+    public static String ucs_port_profile = "%s:port-profile+%s";
+
     public static String host = "%s:host+%s";
     
     public static String hypervisor = "%s:hypervisor+%s";
@@ -37,13 +41,15 @@ public class OpenstackPrefix {
     
     public static String subnet_network_address = "%s:network+%s:subnet+%s:subnetnetworkaddress";
     
+    public static String floating_ip  = "%s:floatingip+%s";
+
     public static String floating_ip_in_using  = "%s:network+%s:subnet+%s:floatingip-inuse";
     
     public static String floating_ip_pool  = "%s:network+%s:subnet+%s:floatingip-pool";
     
-    public static String gateway  = "%s:subnetgateway+%s";
+    public static String gateway  = "%s:network+%s:subnet+%s:subnetgateway+%s";
     
-    public static String gateway_address  = "%s:address";
+    public static String gateway_address  = "%s:network+%s:subnet+%s:subnetgateway+%s:address";
     
     public static String network_routing_service  = "%s:network+%s:network-routingservice";
     
@@ -83,6 +89,7 @@ public class OpenstackPrefix {
     
     public static String host_route_routing_table  = "%s:network+%s:dest_ip+%s:subnet+%s:hostroutingtable";
     
+    public static String hypervisorBypassSvc = "%s:host+%s:hypervisor-bypass-svc+%s";
     
     public static String nic = "%s:vpc+%s:subnet+%s:nic+%s";
     

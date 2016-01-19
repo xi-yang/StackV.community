@@ -16,6 +16,7 @@ import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
+import com.hp.hpl.jena.rdf.model.Resource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -26,9 +27,11 @@ import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ResourceTool;
 import org.apache.commons.net.util.SubnetUtils;
 import org.apache.commons.net.util.SubnetUtils.SubnetInfo;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient;
+import org.openstack4j.api.identity.TenantService;
 import org.openstack4j.model.compute.ActionResponse;
 import org.openstack4j.model.compute.Server;
 import org.openstack4j.model.compute.ServerCreate;
@@ -64,20 +67,30 @@ public class OpenStackPush {
     //global variables
     private OpenStackGet client = null;
     private OSClient osClient = null;
+    private OpenStackGet adminClient = null;
+    private OSClient osAdminClient = null;
+    private String adminUsername = null;
+    private String adminPassword = null;
+    private String adminTenant = null;
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
     private String topologyUri;
     private String defaultImage;
-    
+
     private String defaultFlavor;
 
     /*public static void main(String[] args) {
      OpenStackPush test = new OpenStackPush();
 
      }*/
-    public OpenStackPush(String url, String NATServer, String username, String password, String tenantName, String topologyUri,
-            String defaultImage, String defaultFlavor) {
+    public OpenStackPush(String url, String NATServer, String username, String password, String tenantName, 
+        String adminUsername, String adminPassword, String adminTenant, String topologyUri, String defaultImage, String defaultFlavor) {
         client = new OpenStackGet(url, NATServer, username, password, tenantName);
         osClient = client.getClient();
+        adminClient = new OpenStackGet(url, NATServer, adminUsername, adminPassword, adminTenant);
+        osAdminClient = adminClient.getClient();
+        this.adminUsername = adminUsername;
+        this.adminPassword = adminPassword;
+        this.adminTenant = adminTenant;
         this.defaultImage = defaultImage;
         this.defaultFlavor = defaultFlavor;
         //do an adjustment to the topologyUri
@@ -86,12 +99,17 @@ public class OpenStackPush {
     }
 
     private void OpenStackGetUpdate(String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
-        client = new OpenStackGet(url, NATServer, username, password, tenantName);
-        osClient = client.getClient();
+        if (adminUsername != null && adminUsername.equals(username)) {
+            adminClient = new OpenStackGet(url, NATServer, adminUsername, adminPassword, adminTenant);
+            osAdminClient = adminClient.getClient();
+        } else {
+            client = new OpenStackGet(url, NATServer, username, password, tenantName);
+            osClient = client.getClient();            
+        }
     }
 
     /**
-     * ***********************************************
+     * ***********************************************6
      * Method to get the requests provided in the model addition and model
      * reduction ************************************************
      */
@@ -99,25 +117,29 @@ public class OpenStackPush {
         List<JSONObject> requests = new ArrayList();
 
         //get all the requests
+        requests.addAll(sriovRequests(modelRef, modelReduct, false));
         requests.addAll(portAttachmentRequests(modelRef, modelReduct, false));
         requests.addAll(volumesAttachmentRequests(modelRef, modelReduct, false));
         requests.addAll(volumeRequests(modelRef, modelReduct, false));
-        requests.addAll((portRequests(modelRef, modelReduct, false)));
+        requests.addAll(portRequests(modelRef, modelReduct, false));
         requests.addAll(serverRequests(modelRef, modelReduct, false));
         requests.addAll(layer3Requests(modelRef, modelReduct, false));
         requests.addAll(isAliasRequest(modelRef, modelReduct, false));
         requests.addAll(subnetRequests(modelRef, modelReduct, false));
         requests.addAll(networkRequests(modelRef, modelReduct, false));
+        
         requests.addAll(networkRequests(modelRef, modelAdd, true));
         requests.addAll(subnetRequests(modelRef, modelAdd, true));
-       
         requests.addAll(volumeRequests(modelRef, modelAdd, true));
-        requests.addAll((portRequests(modelRef, modelAdd, true)));
+        requests.addAll(portRequests(modelRef, modelAdd, true));
         requests.addAll(serverRequests(modelRef, modelAdd, true));
         requests.addAll(volumesAttachmentRequests(modelRef, modelAdd, true));
         requests.addAll(portAttachmentRequests(modelRef, modelAdd, true));
         requests.addAll(layer3Requests(modelRef, modelAdd, true));
+        requests.addAll(floatingIpRequests(modelRef, modelAdd, true));
         requests.addAll(isAliasRequest(modelRef, modelAdd, true));
+        requests.addAll(sriovRequests(modelRef, modelAdd, true));
+
         return requests;
     }
 
@@ -136,6 +158,7 @@ public class OpenStackPush {
                         .fixedIp(o.get("private address").toString(), net.getId());
 
                 osClient.networking().port().create(port);
+                PortCreationCheck(port.getId(), url, NATServer, username, password, tenantName, topologyUri);
             } else if (o.get("request").toString().equals("DeletePortRequest")) {
                 Port port = client.getPort(o.get("port name").toString());
                 osClient.networking().port().delete(port.getId());
@@ -153,13 +176,16 @@ public class OpenStackPush {
                 osClient.blockStorage().volumes().delete(volume.getId());
 
             } else if (o.get("request").toString().equals("CreateNetworkRequests")) {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 Tenant tenant = osClient.identity().tenants().getByName(tenantName);
                 String tenantid = tenant.getId();
                 Network network = new NeutronNetwork();
-                network.toBuilder().name(o.get("name").toString())
+                String network_name = o.get("name").toString();
+                network.toBuilder().name(network_name)
                         .tenantId(tenantid)
                         .adminStateUp(true); //hard code here
                 osClient.networking().network().create(network);
+                NetworkCreationCheck(network_name, url, NATServer, username, password, tenantName, topologyUri);
                 if (osClient.networking().network().list().contains(network)) {
                     System.out.println("find it");
                 }
@@ -167,6 +193,7 @@ public class OpenStackPush {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 String netid = null;
                 Subnet subnet = new NeutronSubnet();
+                String subnet_name = o.get("name").toString();
                 /*
                  if (client.getNetworks().) {
                  Network network = new NeutronNetwork();
@@ -179,11 +206,14 @@ public class OpenStackPush {
                  }
                  */
                 //System.out.println(openstackget.getNetwork(o.get("network name").toString()).toString());
-
+                Network network1 = client.getNetwork(o.get("network name").toString());
+                if (network1 == null) {
+                    throw new EJBException("CreateSubnetRequest for" + subnet_name + "failed without network =" + o.get("network name"));
+                }
                 subnet.toBuilder().cidr(o.get("cidr block").toString())
                         //.network(client.getNetwork(o.get("network name").toString()))
-                        .network(client.getNetwork(o.get("network name").toString()))
-                        .name(o.get("name").toString())
+                        .network(network1)
+                        .name(subnet_name)
                         .ipVersion(IPVersionType.V4);
                 String gatewayIp = o.get("gateway ip").toString();
                 if (!gatewayIp.isEmpty()) {
@@ -191,34 +221,27 @@ public class OpenStackPush {
                 }
 
                 osClient.networking().subnet().create(subnet);
-
+                SubnetCreationCheck(subnet_name, url, NATServer, username, password, tenantName, topologyUri);
             } else if (o.get("request").toString().equals("DeleteSubnetRequest")) {
                 Subnet net = client.getSubnet(o.get("name").toString());
-
+                String id = net.getId();
                 osClient.networking().subnet().delete(net.getId());
+                SubnetDeletionCheck(id, url, NATServer, username, password, tenantName, topologyUri);
             } else if (o.get("request").toString().equals("DeleteNetworkRequests")) {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 Network network = client.getNetwork(o.get("name").toString());
+                String id = network.getId();
                 for (Port p : client.getPorts()) {
                     if (p.getNetworkId().equals(network.getId())) {
                         throw new EJBException(("port" + p.getId() + "is still attached to the network, so network" + network.getName() + "cannot be deleted"));
                     }
                 }
                 osClient.networking().network().delete(network.getId());
+                NetworkDeletionCheck(id, url, NATServer, username, password, tenantName, topologyUri);
             } else if (o.get("request").toString().equals("RunInstanceRequest")) {
-                //@TODO: get image and flavor from mrs:type, if not available do:
-                
-                String imageType = defaultImage;
-                String flavorType = defaultFlavor;
-                if (imageType == null || imageType.isEmpty()) {
-                    throw new EJBException(String.format("Cannot determine server image type."));
-                }
-                if (flavorType == null || flavorType.isEmpty()) {
-                    throw new EJBException(String.format("Cannot determine server image type."));
-                }
                 ServerCreateBuilder builder = Builders.server();
+                // determine image and flavor
                 if (o.get("image").toString().equals("any") && o.get("image").toString().equals("any")) {
-
                     builder.name(o.get("server name").toString())
                             .image(client.getImages().get(0).getId())
                             .flavor(client.getFlavors().get(0).getId());
@@ -233,25 +256,26 @@ public class OpenStackPush {
                             .image(o.get("image").toString())
                             .flavor(client.getFlavors().get(0).getId());
                 } else {
-
                     builder.name(o.get("server name").toString())
                             .image(o.get("image").toString())
-                            .flavor(o.get("flavor").toString())
-                            ;
+                            .flavor(o.get("flavor").toString());
                 }
+                // optional keypair 
+                if (o.containsKey("keypair") && !o.get("keypair").toString().isEmpty()) {
+                    builder.keypairName(o.get("keypair").toString());
+                } 
+                
                 int index = 0;
-                String portid = "";
                 while (true) {
                     String key = "port" + Integer.toString(index);
                     if (o.containsKey(key)) {
                         OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                         for (Port p : client.getPorts()) {  //here need to be careful
-
                             if (client.getResourceName(p).equals(o.get(key).toString())) {
-                                portid = p.getId();
+                                builder.addNetworkPort(p.getId());
+                                break;
                             }
                         }
-                        builder.addNetworkPort(portid);
                         index++;
                     } else {
                         break;
@@ -260,10 +284,19 @@ public class OpenStackPush {
 
                 ServerCreate server = (ServerCreate) builder.build();
                 Server s = osClient.compute().servers().boot(server);
-
+                String servername = o.get("server name").toString();
+                VmCreationCheck(servername, url, NATServer, username, password, tenantName, topologyUri);
+                // optional secgroups 
+                if (o.containsKey("secgroup") && !o.get("secgroup").toString().isEmpty()) {
+                    String[] sgs = o.get("secgroup").toString().split(",|;|:");
+                    for (String secgroup : sgs) {
+                        osClient.compute().servers().addSecurityGroup(s.getId(), secgroup);
+                    }
+                }
             } else if (o.get("request").toString().equals("TerminateInstanceRequest")) {
                 Server server = client.getServer(o.get("server name").toString());
                 osClient.compute().servers().delete(server.getId());
+                VmDeletionCheck(server.getId(), url, NATServer, username, password, tenantName, topologyUri);
             } else if (o.get("request").toString().equals("AttachVolumeRequest")) {
                 ServerServiceImpl serverService = new ServerServiceImpl();
                 String volumeId = client.getVolume(o.get("volume name").toString()).getId();
@@ -352,6 +385,9 @@ public class OpenStackPush {
                                                 router_name = sub_route1[1];
                                                 if (router_name.equals(router1.getName())) {
                                                     Subnet s = client.getSubnet(subnet_name);
+                                                    if (s == null && adminClient != null) {
+                                                        s = adminClient.getSubnet(subnet_name);
+                                                    }
                                                     Router r = client.getRouter(router_name);
 
                                                     if (!o.get(key_ip).toString().contains("any")) {
@@ -369,15 +405,20 @@ public class OpenStackPush {
                                                             if (client.getPort(router_name + "port" + i) != null) {
                                                                 i++;
                                                             }
-                                                            port.toBuilder().networkId(netid)
-                                                                    .fixedIp(nexthop, subnetid)
-                                                                    .name(router_name + "port" + i)
-                                                                    .adminState(true);
+                                                            try {
+                                                                port.toBuilder().networkId(netid)
+                                                                        .fixedIp(nexthop, subnetid)
+                                                                        .name(router_name + "port" + i)
+                                                                        .adminState(true);
 
-                                                            osClient.networking().port().create(port);
-                                                            OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-                                                            String portid = client.getPort(router_name + "port" + i).getId();
-                                                            rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
+                                                                osClient.networking().port().create(port);
+                                                                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                                                                String portid = client.getPort(router_name + "port" + i).getId();
+                                                                rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
+                                                                PortCreationCheck(portid, url, NATServer, username, password, tenantName, topologyUri);
+                                                            } catch (Exception e) {
+                                                                e.toString();
+                                                            }
                                                         }
                                                         i++;
                                                         j++;
@@ -405,6 +446,7 @@ public class OpenStackPush {
                                                                             .fixedIp(ip, s.getId())
                                                                             .networkId(netid);
                                                                     client.getClient().networking().port().create(port);
+                                                                    PortCreationCheck(port.getName(), url, NATServer, username, password, tenantName, topologyUri);
                                                                     OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                                                                     portCreated = true;
                                                                     break;
@@ -539,11 +581,12 @@ public class OpenStackPush {
             } else if (o.get("request").toString().equals("CreateNetworkInterfaceRequest")) {
                 Port port = new NeutronPort();
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-
+                String portname = o.get("port name").toString();
                 Subnet subnet = null;
                 for (Subnet sn : client.getSubnets()) {
                     if (sn.getName().equals(o.get("subnet name").toString())) {
                         subnet = sn;
+                        break;
                     }
 
                 }
@@ -551,6 +594,7 @@ public class OpenStackPush {
                     throw new EJBException("unknown subnet:" + o.get("subnet name"));
                 }
                 if (o.get("private address").toString().equals("any")) {
+                    //@BUG: without explicit private ip, port is not created into the Subnet as told by the "subnet name" parameter.
                     port.toBuilder().name(o.get("port name").toString())
                             .networkId(subnet.getNetworkId());
                 } else {
@@ -559,9 +603,13 @@ public class OpenStackPush {
                             .networkId(subnet.getNetworkId());
                 }
                 osClient.networking().port().create(port);
+
+                PortCreationCheck(portname, url, NATServer, username, password, tenantName, topologyUri);
             } else if (o.get("request").toString().equals("DeleteNetworkInterfaceRequest")) {
                 Port port = client.getPort(o.get("port name").toString());
-                osClient.networking().port().delete(port.getId());
+                if (port.getDeviceOwner().equals("")) { //this is for delete port have no device owner, if the port has a device owner, it cannot delete it at here besides it will delete at elsewhere.
+                    osClient.networking().port().delete(port.getId());
+                }
 
             } else if (o.get("request").toString().equals("DeleteRotingInfoRequest")) {
                 HashMap<String, HashMap<String, String>> routing_info_for_router = new HashMap<String, HashMap<String, String>>();
@@ -581,25 +629,48 @@ public class OpenStackPush {
                         key_ip = "nexthop" + Integer.toString(j);
                         while (o.containsKey(key_ip)) {
                             Router r = client.getRouter(o.get(key_router).toString());
-                            HashMap<String, String> routing_info1 = new HashMap<String, String>();
-                            routing_info1 = routing_info_for_router.get(client.getResourceName(r));
+                            if (r == null) {
+                                x++;
+                                break;
+                            }
+                            HashMap<String, String> routing_info1 = routing_info_for_router.get(client.getResourceName(r));
                             if (routing_info1.containsKey(o.get(key_ip).toString())) {
                                 String sub_router = routing_info1.get(o.get(key_ip).toString());
-
+                                String portid = null;
                                 String[] sub_route1 = sub_router.split(",");
                                 String subnet_name = sub_route1[0];
                                 String router_name = sub_route1[1];
 
                                 Subnet s = client.getSubnet(subnet_name);
+                                if (s == null && adminClient != null) {
+                                    s = adminClient.getSubnet(subnet_name);
+                                }
                                 Router r1 = client.getRouter(router_name);
                                 routerid = r1.getId();
                                 String subid = s.getId();
+
                                 if (client.getNetwork(s.getNetworkId()).isRouterExternal()) {
+                                    for (Port p : client.getPorts()) {
+                                        if (p.getDeviceId().equals(r1.getId()) && p.getNetworkId().equals(s.getNetworkId())) {
+                                            portid = p.getId();
+                                            break;
+                                        }
+                                    }
                                     r1.toBuilder().clearExternalGateway();
                                     osClient.networking().router().update(r1);
 
+                                    PortDeletionCheck(portid, url, NATServer, username, password, tenantName, topologyUri);
+
                                 } else {
+                                    for (Port p : client.getPorts()) {
+                                        if (p.getDeviceId().equals(r1.getId()) && p.getNetworkId().equals(s.getNetworkId())) {
+                                            portid = p.getId();
+                                            break;
+                                        }
+                                    }
                                     osClient.networking().router().detachInterface(routerid, subid, null);
+
+                                    PortDeletionCheck(portid, url, NATServer, username, password, tenantName, topologyUri);
                                 }
                                 j++;
                                 key_ip = "nexthop" + Integer.toString(j);
@@ -649,6 +720,14 @@ public class OpenStackPush {
                 String routeto = o.get("routeto").toString();
                 Subnet s = client.getSubnet(subnetname);
                 System.out.println("There is currently no way to delete the host route through api");
+            } else if (o.get("request").toString().equals("AssociateFloatingIpRequest")) {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                String servername = o.get("server name").toString();
+                String portname = o.get("port name").toString();
+                String floatip = o.get("floating ip").toString();
+                Server s = client.getServer(servername);
+                Port p = client.getPort(portname);
+                ActionResponse ar = osClient.compute().floatingIps().addFloatingIP(s, ((IP)p.getFixedIps().toArray()[0]).getIpAddress(), floatip);
             } else if (o.get("request").toString().equals("CreateisAliaseRequest")) {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 /*
@@ -673,10 +752,72 @@ public class OpenStackPush {
                 String floatip = o.get("float ip").toString();
                 Server s = client.getServer(servername);
                 ActionResponse ar = osClient.compute().floatingIps().removeFloatingIP(s, floatip);
+            } else if (o.get("request").toString().equals("AttachSriovRequest")) {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                int sriovNum = 1;
+                JSONObject allMetaObj = new JSONObject();
+                while (o.containsKey(String.format("sriov_vnic:%d", sriovNum))) {
+                    Map o2 = (Map)o.get(String.format("sriov_vnic:%d", sriovNum));
+                    String servername = o2.get("server name").toString();
+                    JSONArray metaObjArray = null; 
+                    if (allMetaObj.containsKey(servername)) {
+                        metaObjArray = (JSONArray)allMetaObj.get(servername);
+                    } else {
+                        metaObjArray = new JSONArray();
+                        allMetaObj.put(servername, metaObjArray);
+                    }
+                    JSONObject metaObj = new JSONObject();
+                    metaObjArray.add(metaObj);
+                    metaObj.put("interface", o2.get("vnic name").toString());
+                    metaObj.put("profile", o2.get("port profile").toString());                
+                    if (o2.containsKey("mac address")) {
+                        metaObj.put("macaddr", o2.get("mac address").toString());
+                    }
+                    if (o2.containsKey("ip address")) {
+                        metaObj.put("ipaddr", o2.get("ip address").toString());
+                    }
+                    JSONArray routes = new JSONArray();
+                    int routeNum = 0;
+                    while (o2.containsKey(String.format("routeto %d", routeNum)) && o2.containsKey(String.format("nexthop %d", routeNum))) {
+                        JSONObject route = new JSONObject();
+                        String routeTo = o2.get(String.format("routeto %d", routeNum)).toString();
+                        String nextHop = o2.get(String.format("nexthop %d", routeNum)).toString();
+                        route.put("to", routeTo);
+                        route.put("via", nextHop);
+                        routes.add(route);
+                        routeNum++;
+                    }
+                    if (!routes.isEmpty()) {
+                        metaObj.put("routes", routes);
+                    }
+                    String data = metaObj.toJSONString().replaceAll("\"", "'");
+                    // set metadata: "sriov_vnic:#": data
+                    client.setMetadata(servername, String.format("sriov_vnic:%d", metaObjArray.size()), data);
+                    sriovNum++;
+                }
+                for  (Object obj: allMetaObj.keySet()) {
+                    // set metadata: "sriov_vnic:status": "do_attach"
+                    String servername = (String)obj;
+                    client.setMetadata(servername, "sriov_vnic:status", "do_attach");
+                }
+            } else if (o.get("request").toString().equals("DetachSriovRequest")) {
+                int sriovNum = 1;
+                List<String> serversToDetachSriov = new ArrayList();
+                while (o.containsKey(String.format("sriov_vnic:%d", sriovNum))) {
+                    Map o2 = (Map)o.get(String.format("sriov_vnic:%d", sriovNum));
+                    String servername = o2.get("server name").toString();
+                    if (!serversToDetachSriov.contains(servername)) {
+                        serversToDetachSriov.add(servername);
+                    }
+                    //@TODO: Add per VNic detach logic here once underlying detach supports finer control
+                    sriovNum++;
+                }
+                for  (String servername: serversToDetachSriov) {
+                    // set metadata: "sriov_vnic:status": "do_detach"
+                    client.setMetadata(servername, "sriov_vnic:status", "do_detach");
+                }
             }
-
         }
-
     }
 
     /**
@@ -1023,7 +1164,8 @@ public class OpenStackPush {
                 if (creation == true) {
                     throw new EJBException(String.format("Network interface %s already exists", portName));
                 } else {
-                    throw new EJBException(String.format("Network interface %s does not exist, cannot be deleted", portName));
+                    //throw new EJBException(String.format("Network interface %s does not exist, cannot be deleted", portName));
+                    continue;
                 }
             } else {
                 //2.2to get the private ip of the network interface
@@ -1093,8 +1235,11 @@ public class OpenStackPush {
 
         //1 check for any addition of a port into a device or subnet
         //some error here
-        query = "SELECT ?node ?port WHERE {?node nml:hasBidirectionalPort ?port ."
-                + "?node a nml:Node}";
+        query = "SELECT ?node ?port WHERE {"
+                + "?node nml:hasBidirectionalPort ?port ."
+                + "?node a nml:Node. "
+                + "FILTER (not exists {?vmfex mrs:providesVNic ?port})"
+                + "}";
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
         while (r.hasNext()) {
             QuerySolution q = r.next();
@@ -1187,6 +1332,57 @@ public class OpenStackPush {
 
     /**
      * ****************************************************************
+     * Function to allocate floating ip to an interface that is attached to server
+     * server ****************************************************************
+     */
+    private List<JSONObject> floatingIpRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+        List<JSONObject> requests = new ArrayList();
+        String query;
+
+        //1 check for any addition of a port into a device or subnet
+        //some error here
+        query = "SELECT ?node ?port ?fip WHERE {"
+                + "?node nml:hasBidirectionalPort ?port ."
+                + "?node a nml:Node. "
+                + "?port mrs:hasNetworkAddress ?addr. "
+                + "?addr mrs:type \"floating-ip\". "
+                + "?addr mrs:value ?fip. "
+                + "}";
+        ResultSet r = executeQuery(query, emptyModel, modelDelta);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            RDFNode server = q.get("node");
+            RDFNode port = q.get("port");
+            RDFNode fip = q.get("fip");
+            String servername = server.asResource().toString();
+            String serverName = ResourceTool.getResourceName(servername, OpenstackPrefix.vm);
+            String portname = port.asResource().toString();
+            String portName = ResourceTool.getResourceName(portname, OpenstackPrefix.PORT);
+            String floatingIp = fip.toString();
+            JSONObject o = new JSONObject();
+
+            if (creation == true) {
+                o.put("request", "AssociateFloatingIpRequest");
+                o.put("server name", serverName);
+                o.put("port name", portName);
+                o.put("floating ip", floatingIp);
+                requests.add(o);
+            } else {
+                //@TODO: Add handling for DeassociateFloatingIpRequest in commit. 
+                // Note that these are not handled for now as terminating VM will deassociate floating ip automatically
+                o.put("request", "DeassociateFloatingIpRequest");
+                o.put("server name", serverName);
+                o.put("port name", portName);
+                o.put("floating ip", floatingIp);
+                requests.add(o);
+            }
+
+        }
+        return requests;
+    }    
+    
+    /**
+     * ****************************************************************
      * Function to request or delete an instance
      * ****************************************************************
      */
@@ -1196,8 +1392,9 @@ public class OpenStackPush {
         String query;
 
         //1 check for any operation involving a server
-        query = "SELECT ?server ?port WHERE {?server nml:hasBidirectionalPort ?port ."
-                + "?server a nml:Node}";
+        query = "SELECT ?server ?port WHERE {"
+                + "?server a nml:Node"
+                + "}";
         ResultSet r = executeQuery(query, modelDelta, emptyModel);//here modified 
 
         while (r.hasNext()) {
@@ -1251,6 +1448,7 @@ public class OpenStackPush {
                     throw new EJBException(String.format("Host %s to host node %s is not of type nml:Node", host, vm));
                 }
 
+                //?? unused ?
                 //1.6 find the network that the server will be in
                 //query = "SELECT ?node WHERE {?node a nml:Node. FILTER(?node = <" + server.asResource() + ">)}";
                 query = "SELECT ?subnet ?port WHERE {?subnet a mrs:SwitchingSubnet ."
@@ -1268,18 +1466,24 @@ public class OpenStackPush {
                 if (!r5.hasNext()) {
                     throw new EJBException(String.format("Vm %s does not specify the attached network interface", vm));
                 }
-                query = "SELECT ?type WHERE {<" + vm.asResource() + "> mrs:Type ?type}";
+                query = "SELECT ?type WHERE {<" + vm.asResource() + "> mrs:type ?type}";
                 r5 = executeQuery(query, emptyModel, modelDelta);
                 String imageID = "any";
                 String flavorID = "any";
+                String keypairName = null;
+                String secgroupName = null;
                 while (r5.hasNext()) {
                     QuerySolution q2 = r5.next();
                     RDFNode type = q2.get("type");
-                    String typename = type.asResource().toString();
-                    if (typename.contains("image:UUID")) {
+                    String typename = type.toString();
+                    if (typename.contains("imageUUID")) {
                         imageID = getresourcename(typename, "+", "");
                     } else if (typename.contains("flavorID")) {
                         flavorID = getresourcename(typename, "+", "");
+                    } else if (typename.contains("keypairName")) {
+                        keypairName = getresourcename(typename, "+", "");
+                    } else if (typename.contains("secgroupName")) {
+                        secgroupName = getresourcename(typename, "+", "");
                     }
                 }
 
@@ -1298,72 +1502,7 @@ public class OpenStackPush {
                     String name = ResourceTool.getResourceName(Name, OpenstackPrefix.PORT);
                     portNames.add(name);
                 }
-                /*
-                 //1.8 find the EBS volumes that the instance uses
-                 query = "SELECT ?volume WHERE {<" + vm.asResource() + ">  mrs:hasVolume  ?volume}";
-                 ResultSet r4 = executeQuery(query, emptyModel, modelDelta);
-                 if (!r4.hasNext()) {
-                 throw new EJBException(String.format("Delta model does not specify the volume of the new vm: %s", vm));
-                 }
-                 List<String> volumeNames = new ArrayList();
-                 while (r4.hasNext())//there could be multiple volumes attached to the instance
-                 {
-                 QuerySolution q4 = r4.next();
-                 RDFNode volume = q4.get("volume");
-                 String name = volume.asResource().toString().replace(topologyUri, "");
-                 volumeNames.add(name);
-                 }
-
-
-                 o.put("server name", serverName);
-                 String imageType = defaultImage;
-                 String flavorType = defaultFlavor;
-                 if ((imageType == null || imageType.isEmpty()) && imageID.equals("any")) {
-                 throw new EJBException(String.format("Cannot determine server image type."));
-                 }
-                 if ((flavorType == null || flavorType.isEmpty()) && flavorID.equals("any")) {
-                 throw new EJBException(String.format("Cannot determine server image type."));
-                 }
-                 if (imageID.equals("any"))
-                 o.put("image", imageType);
-                 else 
-                 o.put("image", imageID);
-                 if (flavorID.equals("any"))
-                 o.put("flavor", flavorType);
-                 else 
-                 o.put("flavor", flavorID);
-
-                 //1.10.1 put all the ports in the request
-                 int index = 0;
-                 for (String port : portNames) {
-                 String key = "port" + Integer.toString(index);
-                 o.put(key, port);
-                 index++; //increment the device index
-
-                 //1.9 put the root device of the instance
-                 query = "SELECT ?volume ?deviceName ?size ?type  WHERE {"
-                 + "<" + vm.asResource() + ">  mrs:hasVolume  ?volume ."
-                 + "?volume mrs:target_device ?deviceName ."
-                 + "?volume mrs:disk_gb ?size ."
-                 + "?volume mrs:value ?type}";
-                 r4 = executeQuery(query, modelRef, modelDelta);
-                 boolean hasRootVolume = false;
-                 String volumeName = "";
-                 String volumename = "";
-                 while (r4.hasNext()) {
-                 QuerySolution q4 = r4.next();
-                 RDFNode volume = q4.get("volume");
-                 volumename = volume.asResource().toString();
-                 volumeName = getresourcename(volumename, "+", "");
-                 String deviceName = q4.get("deviceName").asLiteral().toString();
-                 if (deviceName.equals("/dev/")) {
-                 hasRootVolume = true;
-                 }
-                 }
-                 if (hasRootVolume == false) {
-                 throw new EJBException(String.format("model addition does not specify root volume for node: %s", vm));
-                 }
-                 */
+                
                 //1.10 create the request
                 JSONObject o = new JSONObject();
                 if (creation == true) {
@@ -1391,6 +1530,12 @@ public class OpenStackPush {
                     o.put("flavor", flavorType);
                 } else {
                     o.put("flavor", flavorID);
+                }
+                if (keypairName != null) {
+                    o.put("keypair", keypairName);
+                }
+                if (secgroupName != null) {
+                    o.put("secgroup", secgroupName);
                 }
 
                 //1.10.1 put all the ports in the request
@@ -1894,9 +2039,7 @@ public class OpenStackPush {
                     + "?subnet mrs:hasNetworkAddress <" + fixip.asResource() + "> }";
             r1 = executeQuery(query, emptyModel, modelDelta);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("routeTo %s  is "
-                        + "malformed", fixip));
-
+                return requests; //? throw new EJBException
             }
             QuerySolution q1 = r1.next();
 
@@ -1908,10 +2051,8 @@ public class OpenStackPush {
             query = "SELECT ?subnet WHERE{?subnet a mrs:SwitchingSubnet ."
                     + "?subnet mrs:hasNetworkAddress <" + floatingip.asResource() + "> }";
             r1 = executeQuery(query, emptyModel, modelDelta);
-            while (!r1.hasNext()) {
-                throw new EJBException(String.format("routeTo %s  is "
-                        + "malformed", fixip));
-
+            if (!r1.hasNext()) {
+                return requests; //? throw new EJBException
             }
             QuerySolution q2 = r1.next();
 
@@ -1923,10 +2064,8 @@ public class OpenStackPush {
             query = "SELECT ?server WHERE{?server a nml:Node ."
                     + "?server  mrs:hasNetworkAddress <" + fixip.asResource() + ">}";
             r1 = executeQuery(query, emptyModel, modelDelta);
-            while (!r1.hasNext()) {
-                throw new EJBException(String.format("routeTo %s  is "
-                        + "malformed", fixip));
-
+            if (!r1.hasNext()) {
+                return requests; //? throw new EJBException
             }
             QuerySolution q3 = r1.next();
             RDFNode serVer = q3.get("server");
@@ -1938,10 +2077,8 @@ public class OpenStackPush {
                     + "<" + fixip.asResource() + "> mrs:value ?value}";
 
             r1 = executeQuery(query, emptyModel, modelDelta);
-            while (!r1.hasNext()) {
-                throw new EJBException(String.format("fixip  %s  is "
-                        + "malformed", fixip));
-
+            if (!r1.hasNext()) {
+                return requests; //? throw new EJBException
             }
             QuerySolution q4 = r1.next();
             RDFNode valUe = q4.get("value");
@@ -1952,10 +2089,8 @@ public class OpenStackPush {
                     + "<" + floatingip.asResource() + "> mrs:value ?value}";
 
             r1 = executeQuery(query, emptyModel, modelDelta);
-            while (!r1.hasNext()) {
-                throw new EJBException(String.format("floatingip  %s  is "
-                        + "malformed", floatingip));
-
+            if (!r1.hasNext()) {
+                return requests; //? throw new EJBException
             }
             QuerySolution q5 = r1.next();
             RDFNode floatvalUe = q5.get("value");
@@ -1975,6 +2110,106 @@ public class OpenStackPush {
             requests.add(o);
         }
 
+        return requests;
+    }
+
+    private List<JSONObject> sriovRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+        List<JSONObject> requests = new ArrayList();
+        JSONObject JO = new JSONObject();
+        String query = "SELECT ?vmfex ?vnic WHERE {"
+                + "?vmfex mrs:providesVNic ?vnic ."
+                + "}";
+        ResultSet r = executeQuery(query, emptyModel, modelDelta);
+        int sriovNum = 1;
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            JSONObject o = new JSONObject();
+            Resource vNic = q.getResource("vnic");
+            query = "SELECT ?vm ?profile ?routing WHERE {"
+                    + "?vm a nml:Node ."
+                    + String.format("?vm nml:hasBidirectionalPort <%s> .", vNic.getURI())
+                    + "?pp a mrs:SwitchingSubnet ."
+                    + String.format("?pp nml:hasBidirectionalPort <%s>  .", vNic.getURI())
+                    + "?pp mrs:type \"Cisco_UCS_Port_Profile\" ."
+                    + "?pp mrs:value $profile ."
+                    + "OPTIONAL {"
+                    + " ?vm nml:hasService ?routing . "
+                    + " ?routing a mrs:RoutingService. }"
+                    + "}";
+            Resource VM = null;
+            String portProfile = null;
+            ResultSet r1 = executeQueryUnion(query, modelRef, modelDelta);
+            if (r1.hasNext()) {
+                QuerySolution q1 = r1.next();
+                VM = q1.getResource("vm");
+                portProfile = q1.get("profile").toString();
+            } else {
+                throw new EJBException("sriovRequests related resoruces for vNic='" + vNic.getURI() + "' cannot be resolved");
+            }
+            query = "SELECT ?ip WHERE {"
+                    + String.format("<%s> mrs:hasNetworkAddress ?ipAddr . ", vNic)
+                    + "?ipAddr a mrs:NetworkAddress . "
+                    + "?ipAddr mrs:type \"ipv4-address\" . "
+                    + "?ipAddr mrs:value ?ip . "
+                    + "}";
+            ResultSet r2 = executeQuery(query, emptyModel, modelDelta);
+            String ip = null;
+            if (r2.hasNext()) {
+                ip = r2.next().get("ip").toString();
+            }
+            query = "SELECT ?mac WHERE {"
+                    + String.format("<%s> mrs:hasNetworkAddress ?macAddr . ", vNic)
+                    + "?macAddr a mrs:NetworkAddress . "
+                    + "?macAddr mrs:type \"mac-address\" . "
+                    + "?macAddr mrs:value ?mac . "
+                    + "}";
+            ResultSet r3 = executeQuery(query, emptyModel, modelDelta);
+            String mac = null;
+            if (r3.hasNext()) {
+                mac = r3.next().get("mac").toString();
+            }
+            String serverName = ResourceTool.getResourceName(VM.toString(), OpenstackPrefix.vm);
+            String vnicName = ResourceTool.getResourceName(vNic.toString(), OpenstackPrefix.PORT);
+            o.put("server name", serverName);
+            o.put("port profile", portProfile);
+            o.put("vnic name", vnicName);
+            if (ip != null) {
+                o.put("ip address", ip);
+            }
+            if (mac != null) {
+                o.put("mac address", mac);
+            }
+            if (q.contains("routing")) {
+                Resource routingSvc = q.getResource("routing");
+                query = "SELECT ?routeto ?nexthop WHERE {"
+                        + String.format("<%s> mrs:hasRoute ?route . ", routingSvc)
+                        + "?route mrs:routeTo ?toAddr . "
+                        + "?route mrs:nextHop ?viaAddr . "
+                        + "?toAddr mrs:type \"ipv4-prefix\" . "
+                        + "?toAddr mrs:value ?routeto . "
+                        + "?viaAddr mrs:type \"ipv4-address\" . "
+                        + "?viaAddr mrs:value ?nexthop . "
+                        + "}";
+                ResultSet r4 = executeQuery(query, emptyModel, modelDelta);
+                int routeNum = 0;
+                while (r4.hasNext()) {
+                    QuerySolution q3 = r4.next();
+                    String routeTo = q3.get("routeto").toString();
+                    String nextHop = q3.get("nexthop").toString();
+                    o.put(String.format("routeto %d", routeNum), routeTo);
+                    o.put(String.format("nexthop %d", routeNum), nextHop);
+                    routeNum++;
+                }
+            }
+            JO.put(String.format("sriov_vnic:%d", sriovNum), o);
+            sriovNum++;
+        }
+        if (creation == true) {
+            JO.put("request", "AttachSriovRequest");
+        } else {
+            JO.put("request", "DetachSriovRequest");
+        }
+        requests.add(JO);
         return requests;
     }
 
@@ -2070,6 +2305,196 @@ public class OpenStackPush {
             return true;
         }
         return false;
+    }
+
+    public void PortCreationCheck(String id, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
+        /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
+         request.withNetworkInterfaceIds(id);
+         */
+        //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+        int maxTries = 30;
+        while ((maxTries--) > 0) {
+            try {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                //client.updateResources("Port");
+                Port resource = client.getPort(id);
+                if (resource != null) {
+                    break;
+                }
+            } catch (Exception e) {
+            }
+        }
+    }
+
+    public void PortDeletionCheck(String id, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
+        /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
+         request.withNetworkInterfaceIds(id);
+         */
+        //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+        int maxTries = 30;
+        while ((maxTries--) > 0) {
+            try {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                //client.updateResources("Port");
+                Port resource = client.getPort(id);
+                if (resource == null) {
+                    break;
+                }
+            } catch (Exception e) {
+            }
+        }
+    }
+
+    public void SubnetDeletionCheck(String id, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
+        /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
+         request.withNetworkInterfaceIds(id);
+         */
+        //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+        int maxTries = 30;
+        while ((maxTries--) > 0) {
+            try {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                //client.updateResources("Port");
+                Subnet resource = client.getSubnet(id);
+                if (resource == null) {
+                    break;
+                }
+            } catch (Exception e) {
+            }
+        }
+    }
+
+    public void SubnetCreationCheck(String id, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
+        /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
+         request.withNetworkInterfaceIds(id);
+         */
+        //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+        int maxTries = 30;
+        while ((maxTries--) > 0) {
+            try {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                //client.updateResources("Port");
+                Subnet resource = client.getSubnet(id);
+                if (resource != null) {
+                    break;
+                }
+            } catch (Exception e) {
+            }
+        }
+    }
+
+    public void VmCreationCheck(String id, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
+        /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
+         request.withNetworkInterfaceIds(id);
+         */
+        //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+        int maxTries = 30;
+        while ((maxTries--) > 0) {
+            try {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                //client.updateResources("Port");
+                Server resource = client.getServer(id);
+                if (resource != null) {
+                    break;
+                }
+            } catch (Exception e) {
+            }
+        }
+    }
+
+    public void VmDeletionCheck(String id, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
+        /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
+         request.withNetworkInterfaceIds(id);
+         */
+        //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+        int maxTries = 30;
+        while ((maxTries--) > 0) {
+            try {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                //client.updateResources("Port");
+                Server resource = client.getServer(id);
+                if (resource == null) {
+                    break;
+                }
+            } catch (Exception e) {
+            }
+        }
+    }
+
+    public void NetworkDeletionCheck(String id, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
+        /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
+         request.withNetworkInterfaceIds(id);
+         */
+        //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+        int maxTries = 30;
+        while ((maxTries--) > 0) {
+            try {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                //client.updateResources("Port");
+                Network resource = client.getNetwork(id);
+                if (resource == null) {
+                    break;
+                }
+            } catch (Exception e) {
+            }
+        }
+    }
+
+    public void NetworkCreationCheck(String id, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
+        /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
+         request.withNetworkInterfaceIds(id);
+         */
+        //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+        int maxTries = 30;
+        while ((maxTries--) > 0) {
+            try {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                //client.updateResources("Port");
+                Network resource = client.getNetwork(id);
+                if (resource != null) {
+                    break;
+                }
+            } catch (Exception e) {
+            }
+        }
+    }
+
+    public void RouterCreationCheck(String id, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
+        /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
+         request.withNetworkInterfaceIds(id);
+         */
+        //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+        int maxTries = 30;
+        while ((maxTries--) > 0) {
+            try {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                //client.updateResources("Port");
+                Router resource = client.getRouter(id);
+                if (resource != null) {
+                    break;
+                }
+            } catch (Exception e) {
+            }
+        }
+    }
+
+    public void RouterDeletionCheck(String id, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
+        /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
+         request.withNetworkInterfaceIds(id);
+         */
+        //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+        int maxTries = 30;
+        while ((maxTries--) > 0) {
+            try {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                //client.updateResources("Port");
+                Router resource = client.getRouter(id);
+                if (resource == null) {
+                    break;
+                }
+            } catch (Exception e) {
+            }
+        }
     }
 
 }
