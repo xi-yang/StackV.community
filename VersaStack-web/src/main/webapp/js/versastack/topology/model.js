@@ -54,15 +54,15 @@ define([
                 request.open("GET", "/VersaStack-web/restapi/model/");
             }
 
-            //console.log("Mode: " + mode);
+            console.log("Mode: " + mode);
+            
             request.setRequestHeader("Accept", "application/json");
+            request.setRequestHeader("Content-type", "application/json");
             request.onload = function () {
                 if (model === null) {
                     var data = request.responseText;
                 } else
                     var data = model;
-
-                //console.log("Data: " + data);
 
                 if (data.charAt(0) === '<') {
                     window.alert("Empty Topology.");
@@ -111,7 +111,7 @@ define([
                                 // Fallthrough group 
                                 case values.topology:
                                 case values.node:
-                                case values.FileSystem:
+                                
                                     var toAdd;
                                     if (oldModel && oldModel.nodeMap[key]) {
                                         toAdd = oldModel.nodeMap[key];
@@ -232,9 +232,6 @@ define([
                         if (aliasPort) {
                             port.alias = aliasPort;
                             aliasPort.alias = port;
-                        } else {
-                            console.log("Alias Port Non-Existent!");
-                            break;
                         }
                     } else {
                         port.alias = null;
@@ -244,8 +241,13 @@ define([
                     if (childrenKeys) {
                         map_(childrenKeys, function (childKey) {
                             var child = that.portMap[childKey.value];
+                            try {
                             port.childrenPorts.push(child);
                             child.parentPort = port;
+                            }
+                            catch (err) {
+                                console.log("Port Children Error!");
+                            }
                         });
                     }
                 }

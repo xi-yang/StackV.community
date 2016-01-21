@@ -441,6 +441,39 @@ public class OpenStackGet {
     public String getInterfaceRouterID(NeutronRouterInterface i){
         return i.getId();
     }
+
+    public Map<Server, Map<String, String>> getMetadata() {
+        return metadata;
+    }
+
+    public Map<String, String> getMetadata(Server server) {
+        Map<String, String> data = client.compute().servers().getMetadata(server.getId());
+        if (data == null)
+            return null;
+        metadata.put(server, data);        
+        return data;
+    }
     
-   
+    public String getMetadata(Server server, String key){
+        Map<String, String> data = this.getMetadata(server);
+        if (data == null)
+            return null;
+        if (!data.containsKey(key)) {            
+            return null;
+        }
+        return data.get(key);
+    }
+    
+    public void setMetadata(String serverId, String key, String value){ 
+        Server server = this.getServer(serverId);
+        if (server == null)
+            return;
+        Map<String, String> data = client.compute().servers().getMetadata(server.getId());
+        if (data == null) {
+            data = new HashMap();
+        }
+        data.put(key, value);
+        metadata.put(server, data);
+        client.compute().servers().updateMetadata(server.getId(), data);
+    }
 }

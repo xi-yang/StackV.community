@@ -60,8 +60,12 @@ define([
         if (children) {
             map_(children, function (child) {
                 child = map[child.value];
+                try {
                 child = new Port(child, map);
                 that.childrenPorts.push(child);
+                } catch (err) {
+                    console.log("Child Port Not Correct!");
+                }
             });
         }
 

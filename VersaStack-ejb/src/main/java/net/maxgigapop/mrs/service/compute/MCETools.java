@@ -49,6 +49,7 @@ import net.maxgigapop.mrs.common.TagSet;
 import org.json.simple.JSONObject;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.JsonPathException;
+import java.util.LinkedHashMap;
 
 /**
  *
@@ -662,7 +663,9 @@ public class MCETools {
             if (!vlanTranslation && lastParamMap != null && lastParamMap.containsKey("vlanRange")) {
                 lastVlanRange = (TagSet) lastParamMap.get("vlanRange");
             }
-            vlanRange.intersect(allowedVlanRange);
+            if (allowedVlanRange != null && !allowedVlanRange.isEmpty()) {
+                vlanRange.intersect(allowedVlanRange);
+            }
             vlanRange.intersect(lastVlanRange);
         }
         // exception if empty        
@@ -820,7 +823,7 @@ public class MCETools {
         rs = ModelUtil.sparqlQuery(model, sparql);
         while (rs.hasNext()) {
             String vlanStr = rs.next().getLiteral("?vlan").toString();
-            Integer vlan = Integer.getInteger(vlanStr);
+            Integer vlan = Integer.valueOf(vlanStr);
             vlanRange.removeTag(vlan);
         }
         return vlanRange;
@@ -834,11 +837,15 @@ public class MCETools {
             return;
         }
 
-        String sparql = "SELECT ?anyOther ?policyAction WHERE {"
+        String sparql = "SELECT ?anyOther ?policyAction WHERE { {"
                 + String.format("<%s> spa:dependOn ?policyAction .", res.getURI())
                 + "?policyAction a spa:PolicyAction. "
                 + "?anyOther spa:dependOn ?policyAction . "
-                + "}";
+                + "} UNION {"
+                + "?policyAction a spa:PolicyAction. "
+                + "?anyOther spa:dependOn ?policyAction . "
+                + String.format("FILTER (?policyAction = <%s>)", res.getURI())
+                + "}}";
         ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
         List<QuerySolution> solutions = new ArrayList<>();
         while (r.hasNext()) {
@@ -863,8 +870,17 @@ public class MCETools {
         }
         for (String jsonPath : jsonPathList) {
             try {
-                String formattedPattern = JsonPath.parse(jsonExport).read(jsonPath.substring(1, jsonPath.length() - 1));
-                formatOutput = formatOutput.replace(jsonPath, formattedPattern);
+                String jsonPattern = null;
+                Object r = JsonPath.parse(jsonExport).read(jsonPath.substring(1, jsonPath.length() - 1));
+                if (r instanceof net.minidev.json.JSONArray) {
+                    if (((net.minidev.json.JSONArray)r).size() == 1 && (((net.minidev.json.JSONArray)r).get(0) instanceof String))
+                        jsonPattern = (String)((net.minidev.json.JSONArray)r).get(0);
+                    else 
+                        jsonPattern = ((net.minidev.json.JSONArray)r).toJSONString();
+                } else {
+                    jsonPattern = r.toString();
+                }
+                formatOutput = formatOutput.replace(jsonPath, jsonPattern);
             } catch (Exception ex) {
                 throw new EJBException(String.format("MCETools.formatJsonExport failed to export with JsonPath('%s') from:\n %s",
                         jsonPath.substring(1, jsonPath.length() - 1), jsonExport));

@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
+import net.maxgigapop.mrs.common.*;
 
 /**
  *
@@ -124,7 +125,7 @@ public class ModelUtil {
         while (stmts.hasNext()) {
             Statement stmt = stmts.next();
             // check subject will be enough
-            if (stmt.getSubject().isResource() && stmt.getPredicate().toString().contains("ogf.org")) {
+            if (stmt.getSubject().isResource() && stmt.getPredicate().toString().contains("ogf")) {
                 return false;
             }
         }
@@ -218,7 +219,7 @@ public class ModelUtil {
             throw new EJBException("ModelUtil.splitOntModelByTopology getTopologyList returns on " + model);
         }
         for (RDFNode topoNode : listTopo) {
-            OntModel modelTopology = getTopology(topoNode);
+            OntModel modelTopology = getTopology(model, topoNode);
             model.remove(modelTopology);
             topoModelMap.put(topoNode.asResource().getURI(), modelTopology);
         }
@@ -258,17 +259,28 @@ public class ModelUtil {
         return listRes;
     }
 
-    private static OntModel getTopology(RDFNode node) {
+    private static OntModel getTopology(Model refModel, RDFNode node) {
         OntModel subModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         Set<RDFNode> visited = new HashSet<RDFNode>();
         List<String> includeMatches = new ArrayList<String>();
         List<String> excludeMatches = new ArrayList<String>();
+        List<String> excludeEssentials = new ArrayList<String>();
         excludeMatches.add("#isAlias");
-        rdfDFS(node, visited, subModel, includeMatches, excludeMatches);
+        rdfDFS(refModel, node, visited, subModel, includeMatches, excludeMatches, excludeEssentials);
         return subModel;
     }
 
-    private static void rdfDFS(RDFNode node, Set<RDFNode> visited, Model subModel, List<String> propMatchIncludes, List<String> propMatchExcludes) {
+    private static boolean isEssentialResource(Model model, Resource res) {
+        String sparql = "SELECT ?res WHERE {?s ?p ?res. "
+                + String.format("FILTER(regex(str(?p), '#has|#provides') && (?res = <%s>))", res.getURI())
+                + "}";
+        ResultSet r = ModelUtil.sparqlQuery(model, sparql);
+        if (r.hasNext()) {
+            return true;
+        }
+        return false;
+    }
+    private static void rdfDFS(Model refModel, RDFNode node, Set<RDFNode> visited, Model subModel, List<String> propMatchIncludes, List<String> propMatchExcludes, List<String> propExcludeEssentials) {
         if (visited.contains(node)) {
             return;
         } else {
@@ -286,7 +298,7 @@ public class ModelUtil {
                             break;
                         }
                     }
-                    // included==true only if matched pattern
+                    // excluded==true only if matched pattern
                     boolean excluded = false;
                     for (String matchStr : propMatchExcludes) {
                         if (stmt.getPredicate().toString().contains(matchStr)) {
@@ -294,8 +306,15 @@ public class ModelUtil {
                             break;
                         }
                     }
+                    for (String matchStr : propExcludeEssentials) {
+                        if (stmt.getPredicate().toString().contains(matchStr) && stmt.getObject().isResource()
+                                && ModelUtil.isEssentialResource(refModel, stmt.getObject().asResource())) {
+                            excluded = true;
+                            break;
+                        }
+                    }
                     if (included && !excluded) {
-                        rdfDFS(stmt.getObject(), visited, subModel, propMatchIncludes, propMatchExcludes);
+                        rdfDFS(refModel, stmt.getObject(), visited, subModel, propMatchIncludes, propMatchExcludes, propExcludeEssentials);
                     }
                 }
             }
@@ -439,6 +458,7 @@ public class ModelUtil {
         ResIterator resIter = modelConstructed.listResourcesWithProperty(Nml.hasService);
         List<String> includeMatches = new ArrayList<String>();
         List<String> excludeMatches = new ArrayList<String>();
+        List<String> excludeEssentials = new ArrayList<String>();
         includeMatches.add("#has");
         includeMatches.add("#provide");
         includeMatches.add("#type");
@@ -450,7 +470,7 @@ public class ModelUtil {
             if (mvf.isSubtreeRecursive()) {
                 Model subModel = ModelFactory.createDefaultModel();
                 node = model.getResource(node.toString());
-                rdfDFS(node, visited, subModel, includeMatches, excludeMatches);
+                rdfDFS(model, node, visited, subModel, includeMatches, excludeMatches, excludeEssentials);
                 modelConstructed.add(subModel);
                 ModelUtil.logDumpModel("queryViewFilter add subtreeModel", subModel);
             }
@@ -471,7 +491,7 @@ public class ModelUtil {
         return ontModel;
     }
 
-    public static Model getModelSubTree(Model refModel, List<Resource> resList, List<String> includeMatches, List<String> excludeMatches) {
+    public static Model getModelSubTree(Model refModel, List<Resource> resList, List<String> includeMatches, List<String> excludeMatches, List<String> excludeExtentials) {
         Model retModel = ModelFactory.createDefaultModel();
         Set<RDFNode> visited = new HashSet<RDFNode>();
         Iterator<Resource> resIter = resList.iterator();
@@ -480,7 +500,7 @@ public class ModelUtil {
             //visited.clear();
             Model subModel = ModelFactory.createDefaultModel();
             node = refModel.getResource(node.toString());
-            rdfDFS(node, visited, subModel, includeMatches, excludeMatches);
+            rdfDFS(refModel, node, visited, subModel, includeMatches, excludeMatches, excludeExtentials);
             retModel.add(subModel);
         }
         return retModel;

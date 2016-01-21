@@ -60,7 +60,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
             throw new EJBException(String.format("%s::process ", this.getClass().getName()));
         }
         try {
-            log.log(Level.INFO, "\n>>>MCE_NetworkPlacement--DeltaAddModel Input=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
+            log.log(Level.FINE, "\n>>>MCE_NetworkPlacement--DeltaAddModel Input=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -728,7 +728,6 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
             if (!subnets.isEmpty()) {
                 output.put("subnets", subnets);
             }
-
             //add output as spa:value of the export resrouce
             String exportValue = output.toJSONString();
             if (querySolution.contains("format")) {
