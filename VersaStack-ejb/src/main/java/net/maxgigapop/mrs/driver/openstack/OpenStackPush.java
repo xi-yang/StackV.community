@@ -214,7 +214,8 @@ public class OpenStackPush {
                         //.network(client.getNetwork(o.get("network name").toString()))
                         .network(network1)
                         .name(subnet_name)
-                        .ipVersion(IPVersionType.V4);
+                        .ipVersion(IPVersionType.V4)
+                        .enableDHCP(true);
                 String gatewayIp = o.get("gateway ip").toString();
                 if (!gatewayIp.isEmpty()) {
                     subnet.toBuilder().gateway(gatewayIp);
@@ -594,8 +595,8 @@ public class OpenStackPush {
                     throw new EJBException("unknown subnet:" + o.get("subnet name"));
                 }
                 if (o.get("private address").toString().equals("any")) {
-                    //@BUG: without explicit private ip, port is not created into the Subnet as told by the "subnet name" parameter.
                     port.toBuilder().name(o.get("port name").toString())
+                            .fixedIp(null, subnet.getId())
                             .networkId(subnet.getNetworkId());
                 } else {
                     port.toBuilder().name(o.get("port name").toString())
