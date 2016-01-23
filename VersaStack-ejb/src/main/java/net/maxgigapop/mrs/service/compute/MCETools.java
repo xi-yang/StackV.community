@@ -858,7 +858,7 @@ public class MCETools {
                 + "?vlan_port nml:hasLabel ?l. ?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
                 + "?l nml:value ?vlan."
                 + "FILTER not exists {"
-                + "?subnet nml:hasBidirectionalPort ?sub_port. "
+                + "?subnet nml:hasBidirectionalPort ?vlan_port. "
                 + "?subnet a mrs:SwitchingSubnet. "
                 + "?subnet mrs:type \"shared\". "
                 + "} }", port);
