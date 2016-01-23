@@ -729,6 +729,11 @@ public class MCETools {
             QuerySolution solution = rs.next();
             Resource resVlanPort = solution.getResource("vlan_port");
             Resource resSubnet = solution.getResource("subnet");
+            String vlanLabelUrn = resVlanPort + ":label";
+            Resource resVlanPortLabel = RdfOwl.createResource(vlanSubnetModel, vlanLabelUrn, Nml.Label);
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.hasLabel, resVlanPortLabel));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPortLabel, Nml.labeltype, RdfOwl.labelTypeVLAN));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPortLabel, Nml.value, suggestedVlan.toString()));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resSubnet, Nml.hasBidirectionalPort, resVlanPort));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.belongsTo, resSubnet));
             return vlanSubnetModel;
