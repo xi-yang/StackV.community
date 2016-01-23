@@ -710,17 +710,37 @@ public class MCETools {
             suggestedVlan = vlanRange.getRandom();
         }
         paramMap.put("suggestedVlan", suggestedVlan);
-
-        // create port and subnet statements
+        
+        // create port and subnet statements into vlanSubnetModel
         OntModel vlanSubnetModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-
+        
+        // special handling for port with subport which both has the suggestedVlan and belongs to a shared subnet
+        String sparql = String.format("SELECT ?vlan_port ?subnet WHERE {"
+                + "<%s> nml:hasBidirectionalPort ?vlan_port. "
+                + "?vlan_port nml:hasLabel ?l. "
+                + "?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
+                + "?l nml:value \"%d\". "
+                + "?subnet nml:hasBidirectionalPort ?vlan_port. "
+                + "?subnet a mrs:SwitchingSubnet. "
+                + "?subnet mrs:type \"shared\". "
+                + "}", currentHop, suggestedVlan);
+        ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
+        if (rs.hasNext()) {
+            QuerySolution solution = rs.next();
+            Resource resVlanPort = solution.getResource("vlan_port");
+            Resource resSubnet = solution.getResource("subnet");
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resSubnet, Nml.hasBidirectionalPort, resVlanPort));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.belongsTo, resSubnet));
+            return vlanSubnetModel;
+        }
+        
         // special handling for non-VLAN port with VLAN capable subports
         // find a in-range sub port and use that to temporarily replace currentHop
-        String sparql = String.format("SELECT ?range WHERE {"
+        sparql = String.format("SELECT ?range WHERE {"
                 + "<%s> nml:hasLabelGroup ?lg. ?lg nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. ?lg nml:values ?range."
                 + "}", currentHop);
         Resource subPort = null;
-        ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
+        rs = ModelUtil.sparqlQuery(model, sparql);
         if (!rs.hasNext()) {
             sparql = String.format("SELECT ?sub_port ?range WHERE {"
                     + "<%s> nml:hasBidirectionalPort ?sub_port. ?sub_port nml:hasLabelGroup ?lg. ?lg nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. ?lg nml:values ?range."
@@ -801,9 +821,20 @@ public class MCETools {
         if (rs.hasNext()) {
             vlanRange = new TagSet(rs.next().getLiteral("range").toString());
         } else {
-            sparql = String.format("SELECT ?range WHERE {"
-                    + "<%s> nml:hasBidirectionalPort ?sub_port. ?sub_port nml:hasLabelGroup ?lg. ?lg nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. ?lg nml:values ?range."
-                    + "}", port);
+            sparql = String.format("SELECT ?range WHERE {{"
+                    + "<%s> nml:hasBidirectionalPort ?vlan_port. "
+                    + "?vlan_port nml:hasLabelGroup ?lg. "
+                    + "?lg nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
+                    + "?lg nml:values ?range."
+                    + "} UNION {"
+                    + "<%s> nml:hasBidirectionalPort ?vlan_port. "
+                    + "?subnet nml:hasBidirectionalPort ?vlan_port. "
+                    + "?subnet a mrs:SwitchingSubnet. "
+                    + "?subnet mrs:type \"shared\". "
+                    + "?vlan_port nml:hasLabel ?l. "
+                    + "?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
+                    + "?l nml:value ?range."
+                    + "}}", port, port);
             rs = ModelUtil.sparqlQuery(model, sparql);
             while (rs.hasNext()) {
                 TagSet vlanRangeAdd = new TagSet(rs.next().getLiteral("range").toString());
@@ -818,8 +849,14 @@ public class MCETools {
             return null;
         }
         sparql = String.format("SELECT ?vlan WHERE {"
-                + "<%s> nml:hasBidirectionalPort ?vlan_port. ?vlan_port nml:hasLabel ?l. ?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. ?l nml:value ?vlan."
-                + "}", port);
+                + "<%s> nml:hasBidirectionalPort ?vlan_port. "
+                + "?vlan_port nml:hasLabel ?l. ?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
+                + "?l nml:value ?vlan."
+                + "FILTER not exists {"
+                + "?subnet nml:hasBidirectionalPort ?sub_port. "
+                + "?subnet a mrs:SwitchingSubnet. "
+                + "?subnet mrs:type \"shared\". "
+                + "} }", port);
         rs = ModelUtil.sparqlQuery(model, sparql);
         while (rs.hasNext()) {
             String vlanStr = rs.next().getLiteral("?vlan").toString();

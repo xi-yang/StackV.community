@@ -9,6 +9,7 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ec2.model.Instance;
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
+import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
@@ -20,6 +21,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
+import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import static net.maxgigapop.mrs.common.Mrs.hasNetworkAddress;
 import net.maxgigapop.mrs.common.Nml;
@@ -203,7 +205,7 @@ public class OpenStackNeutronModelBuilder {
             Resource vmRoutingSvc = RdfOwl.createResource(model, ResourceTool.getResourceUri(server_name, OpenstackPrefix.routingService, OpenstackPrefix.uri, server_name + ":linuxrouting"), Mrs.RoutingService);
             model.add(model.createStatement(VM, Nml.hasService, vmRoutingSvc));
             int sriovVnicNum = 1;
-            while (true) {
+            while (modelExt != null) {
                 String sriovVnicKey = String.format("sriov_vnic:%d", sriovVnicNum);
                 if (!metadata.containsKey(sriovVnicKey)) {
                     break;
@@ -226,13 +228,19 @@ public class OpenStackNeutronModelBuilder {
                     model.add(model.createStatement(vmfexSvc, Mrs.providesVNic, sriovPort));
                     // profile
                     String portProfile = (String) jsonObj.get("profile");
-                    Resource profileSwSubnet = RdfOwl.createResource(model, ResourceTool.getResourceUri(portProfile, OpenstackPrefix.ucs_port_profile, OpenstackPrefix.uri, portProfile), Mrs.SwitchingSubnet);
-                    if (modelExt.getBaseModel() == null || !modelExt.contains(profileSwSubnet, Mrs.type, "Cisco_UCS_Port_Profile")) {
+                    String sparql = "SELECT ?port_profile WHERE {"
+                            + "?port_profile a mrs:SwitchingSubnet . "
+                            + "?port_profile mrs:type \"Cisco_UCS_Port_Profile\" . "
+                            + String.format("?port_profile mrs:value \"Cisco_UCS_Port_Profile+%s\". ", portProfile)
+                            + "}";
+                    ResultSet r = ModelUtil.sparqlQuery(modelExt, sparql);
+                    if (!r.hasNext()) {
                         Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING,
                                 String.format("OpenStack driver model server '%s' SRIOV interface without 'profile'='%s' already being defined in modelExtention", server_name, portProfile));
                         sriovVnicNum++;
                         continue;
                     }
+                    Resource profileSwSubnet = r.next().getResource("port_profile");
                     model.add(model.createStatement(profileSwSubnet, Nml.hasBidirectionalPort, sriovPort));
                     // ipaddr
                     if (jsonObj.containsKey("ipaddr") && !((String) jsonObj.get("ipaddr")).isEmpty()) {
