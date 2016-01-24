@@ -2144,6 +2144,9 @@ public class OpenStackPush {
                 QuerySolution q1 = r1.next();
                 VM = q1.getResource("vm");
                 portProfile = q1.get("profile").toString();
+                if (portProfile.contains("Cisco_UCS_Port_Profile+")) {
+                    portProfile = this.getresourcename(portProfile, "+", "");
+                }
             } else {
                 throw new EJBException("sriovRequests related resoruces for vNic='" + vNic.getURI() + "' cannot be resolved");
             }
