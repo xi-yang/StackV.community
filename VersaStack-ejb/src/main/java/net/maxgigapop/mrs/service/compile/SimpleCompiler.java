@@ -52,6 +52,7 @@ public class SimpleCompiler extends CompilerBase {
         // assemble workflow parts for addition
         if (spaOntModelAddition != null && !ModelUtil.isEmptyModel(spaOntModelAddition)) {
             Queue<Resource> policyQueue = new LinkedBlockingQueue<>();
+            // start with leaf policies
             Map<Resource, OntModel> addParts = this.decomposeByPolicyActions(spaOntModelAddition);
             if (addParts == null) {
                 throw new EJBException(SimpleCompiler.class.getName() + " found none terminal / leaf policy action.");
@@ -85,11 +86,12 @@ public class SimpleCompiler extends CompilerBase {
                         worker.addDependency(action, child);
                     }
                     // check if the parent (action) has got all dependencies (children)
-                    //$$ TODO: cache <policy, childPolicies> for better performance                    
                     List<Resource> childPolicies = this.listChildPolicies(spaOntModelAddition, policy);
                     // If not, re-enqueue
                     if (childPolicies.size() > childActions.size()) {
                         policyQueue.add(policy);
+                        // skip now, retry this policy in queue later
+                        continue;
                     }
                 }
                 // traverse upwards to get parent actions
