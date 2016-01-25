@@ -151,7 +151,7 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
         OntModel stitchModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         Model unionSysModel = spaModel.union(systemModel);
         try {
-            log.log(Level.INFO, "\n>>>MCE_UcsSriovStitching--unionSysModel=\n" + ModelUtil.marshalModel(unionSysModel));
+            log.log(Level.FINE, "\n>>>MCE_UcsSriovStitching--unionSysModel=\n" + ModelUtil.marshalModel(unionSysModel));
         } catch (Exception ex) {
             Logger.getLogger(MCE_UcsSriovStitching.class.getName()).log(Level.SEVERE, null, ex);
         }

@@ -788,9 +788,8 @@ public class OpenStackPush {
                         routes.add(route);
                         routeNum++;
                     }
-                    if (!routes.isEmpty()) {
-                        metaObj.put("routes", routes);
-                    }
+                    // add routes even is empty
+                    metaObj.put("routes", routes);
                     String data = metaObj.toJSONString().replaceAll("\"", "'");
                     // set metadata: "sriov_vnic:#": data
                     client.setMetadata(servername, String.format("sriov_vnic:%d", metaObjArray.size()), data);
