@@ -1676,7 +1676,10 @@ public class OpenStackPush {
         HashMap<String, String> routinginfo = new HashMap<String, String>();
         JSONObject o = new JSONObject();
         //1 find out if any new routes are being add to the model
-        query = "SELECT ?route ?nextHop ?routeTo WHERE {?route a mrs:Route ."
+        query = "SELECT ?rtservice ?rttable ?route ?nextHop ?routeTo WHERE {"
+                + "?rtservice mrs:providesRoutingTable ?rttable. "
+                + "?rttable mrs:hasRoute ?route. "
+                + "?route a mrs:Route ."
                 + "?route mrs:nextHop ?nextHop ."
                 + "?route mrs:routeTo ?routeTo}";
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
@@ -1685,37 +1688,12 @@ public class OpenStackPush {
             RDFNode routeResource = q.get("route");
             RDFNode nextHopResource = q.get("nextHop");
             RDFNode routeToResource = q.get("routeTo");
+            RDFNode routingtable = q.get("rttable");
             if (!nextHopResource.toString().equals("local")) {
-
-                //1.1 check that the route was model correctly
-                //1.1.1 make sure that service provides the route
-                query = "SELECT ?routingtable WHERE {?routingtable mrs:hasRoute <" + routeResource.asResource() + ">}";
-                ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
-
-                if (!r1.hasNext()) {
-                    throw new EJBException(String.format("route %s is not provided"
-                            + "by any routingtable", routeResource));
-                }
-
-                QuerySolution q1 = r1.next();
-
-                RDFNode routingtable = q1.get("routingtable");
                 String routingtablename = routingtable.asResource().toString();
                 routername = getroutername(topologyUri, routingtablename);
-
                 Router.add(routername);
-
-                query = "SELECT ?service WHERE {?service mrs:providesRoutingTable <" + routingtable.asResource() + ">}";
-                ResultSet r2 = executeQueryUnion(query, modelRef, modelDelta);
-                if (!r2.hasNext()) {
-                    throw new EJBException(String.format("routingtalbe %s is not provided"
-                            + "by any service", routingtable));
-                }
-                QuerySolution q2 = r2.next();
-                RDFNode service = q2.get("service");
-
                 String routename = routeResource.toString();
-
                 lr.add(routename);
 
                 Map<String, List<String>> hp;
@@ -1724,25 +1702,17 @@ public class OpenStackPush {
 
                 String subnet = getresourcename(routeToResource.toString(), "+", "");
                 String subnet_routername = subnet + "," + routername;
-                /*
-                 query = "SELECT ?service WHERE {?service mrs:providesRoute <" + routeResource.asResource() + ">}";
-                 r2 = executeQuery(query, emptyModel, modelDelta);
-                 if (!r2.hasNext()) {
-                 throw new EJBException(String.format("route %s is not provided"
-                 + "by any service", routeResource));
-                 }
-                 */
                 query = "SELECT ?type ?value WHERE {<" + nextHopResource.asResource() + "> a mrs:NetworkAddress ."
                         + "<" + nextHopResource.asResource() + "> mrs:type ?type ."
                         + "<" + nextHopResource.asResource() + "> mrs:value ?value}";
 
-                r1 = executeQuery(query, emptyModel, modelDelta);
+                ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
                 if (!r1.hasNext()) {
                     throw new EJBException(String.format("nexthop %s for route %s is "
                             + "malformed", nextHopResource, routeResource));
                 }
 
-                q1 = r1.next();
+                QuerySolution q1 = r1.next();
                 RDFNode nextHoptype = q1.get("type");
                 String nextHopvalue = q1.get("value").toString();
 
@@ -1844,19 +1814,7 @@ public class OpenStackPush {
 
                     String key1 = "router" + Integer.toString(index2);
                     String key2 = "routing_info" + Integer.toString(index2);
-                    //routing_info_for_router.put(router, routing_info);
-                    /*
-                     for(HashMap<String,String> rm :routing_info_for_router.get(router)){
-                     for(String nexth : nextHopV){
-                     String rou_name = rm.get(nexth).split(",")[1];
-                     if(rou_name.equals(router)){
-                     ....
-                     }
-                     }
-                     }
-                     */
                     o.put(key1, router);
-
                     index2++;
 
                 }
@@ -1866,30 +1824,6 @@ public class OpenStackPush {
         if (Router.size() != 0) {
             LinkedHashSet<String> routers = new LinkedHashSet<String>(Router);
             ArrayList<String> Routers = new ArrayList<String>(routers);
-            /*
-             for (String rou : Routers) {
-             ArrayList<HashMap<String, String>> routing_info1 = new ArrayList<HashMap<String, String>>();
-             ArrayList<HashMap<String, String>> routing_info2 = new ArrayList<HashMap<String, String>>();
-             routing_info1 = routing_info_for_router.get(rou);
-             for (HashMap<String, String> hp3 : routing_info1) {
-             for (String n : nextHopV) {
-             if (hp3.containsKey(n)) {
-             String router_name_1 = hp3.get(n).split(",")[1];
-             if (!router_name_1.equals(rou)) {
-             //routing_info_for_router.remove(rou, routing_info1);
-             hp3.remove(n);
-             }
-             } else {
-             break;
-             }
-             }
-             routing_info2.add(hp3);
-
-             }
-             routing_info_for_router.put(rou, routing_info2);
-
-             }
-             */
 
             HashMap<String, HashMap<String, String>> routing_info_for_router2 = new HashMap<String, HashMap<String, String>>();
             for (String rou : Routers) {
@@ -1908,8 +1842,6 @@ public class OpenStackPush {
                         break;
                     }
                 }
-                //routing_info2.add(hp3);
-
                 routing_info_for_router2.put(rou, routing_info2);
 
             }
