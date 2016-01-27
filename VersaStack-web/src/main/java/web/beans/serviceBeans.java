@@ -416,48 +416,7 @@ public class serviceBeans {
         
         return result;
     }       
-
-    
-    // Utility Functions
-    
-    public HashMap<String, String> getJobStatuses() throws SQLException {
-        HashMap<String, String> retMap = new HashMap<>();
         
-        Connection front_conn;
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                front_connectionProps);
-
-        ArrayList<String> service_list = new ArrayList<>();
-        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID FROM service S, service_instance I WHERE I.service_id = S.service_id");
-        ResultSet rs1 = prep.executeQuery();
-        while (rs1.next()) {
-            String name = rs1.getString("name");
-            String refId = rs1.getString("referenceUUID");
-
-            String status;
-            try {
-                URL url = new URL(String.format("%s/service/%s/status", host, refId));
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                status = this.executeHttpMethod(url, connection, "GET", null);
-                
-                retMap.put(name, status);
-            } catch (Exception e) {
-                System.out.println(e.toString());//query error
-            }
-        }
-
-        return retMap;
-    }      
-    
-    private HashMap<String,ArrayList<String>> getJobProperties() throws SQLException {
-        HashMap<String, ArrayList<String>> retMap = new HashMap<>();
-        
-        return retMap;
-    }
-    
     public int createNetwork(Map<String, String> paraMap){
         String topoUri = null;
         String driverType = null;
@@ -665,7 +624,67 @@ public class serviceBeans {
             return 1;//connection error
         }
     }
+
+//@TODO Fill out javadoc.
+    /**
+     *
+     * 
+     * @param paraMap standard parameter map
+     * @return error code:
+     *      
+     *      
+     *      
+     */
+    public int createConnection(Map<String, String> paraMap) {
+        
+        
+        return 1;
+    }
+
     
+    
+    
+    
+// UTILITY FUNCTIONS -----------------------------------------------------------
+    
+    public HashMap<String, String> getJobStatuses() throws SQLException {
+        HashMap<String, String> retMap = new HashMap<>();
+        
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        ArrayList<String> service_list = new ArrayList<>();
+        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID FROM service S, service_instance I WHERE I.service_id = S.service_id");
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {
+            String name = rs1.getString("name");
+            String refId = rs1.getString("referenceUUID");
+
+            String status;
+            try {
+                URL url = new URL(String.format("%s/service/%s/status", host, refId));
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                status = this.executeHttpMethod(url, connection, "GET", null);
+                
+                retMap.put(name, status);
+            } catch (Exception e) {
+                System.out.println(e.toString());//query error
+            }
+        }
+
+        return retMap;
+    }      
+    
+    private HashMap<String,ArrayList<String>> getJobProperties() throws SQLException {
+        HashMap<String, ArrayList<String>> retMap = new HashMap<>();
+        
+        return retMap;
+    }
+
     /**
      * Executes HTTP Request.
      * @param url destination url
@@ -703,7 +722,9 @@ public class serviceBeans {
 
     public ArrayList<ArrayList<String>> instanceStatusCheck() throws SQLException {
         ArrayList<ArrayList<String>> retList = new ArrayList<>();
-
+        ArrayList<String> banList = new ArrayList<>();
+        banList.add("Driver Management");
+        
         Connection front_conn;
         Properties front_connectionProps = new Properties();
         front_connectionProps.put("user", "root");
@@ -719,16 +740,18 @@ public class serviceBeans {
 
             String instanceName = rs1.getString("name");
             String instanceUUID = rs1.getString("referenceUUID");
-            try {
-                URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
-                HttpURLConnection status = (HttpURLConnection) url.openConnection();
+            if (!banList.contains(instanceName)) {
+                try {
+                    URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
+                    HttpURLConnection status = (HttpURLConnection) url.openConnection();
 
-                instanceList.add(instanceName);
-                instanceList.add(instanceUUID);                        
-                instanceList.add(this.executeHttpMethod(url, status, "GET", null));
+                    instanceList.add(instanceName);
+                    instanceList.add(instanceUUID);                        
+                    instanceList.add(this.executeHttpMethod(url, status, "GET", null));
 
-                retList.add(instanceList);
-            } catch (IOException ex) {
+                    retList.add(instanceList);
+                } catch (IOException ex) {
+                }
             }
         }
 
