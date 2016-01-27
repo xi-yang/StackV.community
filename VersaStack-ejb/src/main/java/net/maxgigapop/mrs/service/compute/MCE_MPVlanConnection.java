@@ -292,7 +292,12 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             String exportValue = jsonValue.toJSONString();
             if (querySolution.contains("format")) {
                 String exportFormat = querySolution.get("format").toString();
-                exportValue = MCETools.formatJsonExport(exportValue, exportFormat);
+                try {
+                    exportValue = MCETools.formatJsonExport(exportValue, exportFormat);
+                } catch (EJBException ex) {
+                    log.log(Level.WARNING, ex.getMessage());
+                    continue;
+                }
             }
             spaModel.add(resData, Spa.value, exportValue);
         }

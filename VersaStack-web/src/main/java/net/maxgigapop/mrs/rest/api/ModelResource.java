@@ -113,8 +113,15 @@ public class ModelResource {
     }
 
     @GET
-    @Produces({"application/xml", "application/json"})
+    @Produces({"application/xml"})
     public ApiModelBase creatHeadVersionGroup() throws Exception {
+        VersionGroup vg = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
+        return this.pullXml(vg.getRefUuid());
+    }
+
+    @GET
+    @Produces({"application/json"})
+    public ApiModelBase creatHeadVersionGroupJson() throws Exception {
         VersionGroup vg = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
         return this.pull(vg.getRefUuid());
     }

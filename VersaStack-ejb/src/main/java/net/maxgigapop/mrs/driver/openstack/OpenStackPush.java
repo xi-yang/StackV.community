@@ -214,7 +214,8 @@ public class OpenStackPush {
                         //.network(client.getNetwork(o.get("network name").toString()))
                         .network(network1)
                         .name(subnet_name)
-                        .ipVersion(IPVersionType.V4);
+                        .ipVersion(IPVersionType.V4)
+                        .enableDHCP(true);
                 String gatewayIp = o.get("gateway ip").toString();
                 if (!gatewayIp.isEmpty()) {
                     subnet.toBuilder().gateway(gatewayIp);
@@ -594,8 +595,8 @@ public class OpenStackPush {
                     throw new EJBException("unknown subnet:" + o.get("subnet name"));
                 }
                 if (o.get("private address").toString().equals("any")) {
-                    //@BUG: without explicit private ip, port is not created into the Subnet as told by the "subnet name" parameter.
                     port.toBuilder().name(o.get("port name").toString())
+                            .fixedIp(null, subnet.getId())
                             .networkId(subnet.getNetworkId());
                 } else {
                     port.toBuilder().name(o.get("port name").toString())
@@ -616,9 +617,8 @@ public class OpenStackPush {
                 String key_routinginfo = "routing_info";
                 routing_info_for_router = (HashMap<String, HashMap<String, String>>) o.get(key_routinginfo);
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-                int i = 0;
-                int j = 0;
                 int x = 0;
+                int j = 0;
                 String routerid = "";
 
                 while (true) {
@@ -630,7 +630,6 @@ public class OpenStackPush {
                         while (o.containsKey(key_ip)) {
                             Router r = client.getRouter(o.get(key_router).toString());
                             if (r == null) {
-                                x++;
                                 break;
                             }
                             HashMap<String, String> routing_info1 = routing_info_for_router.get(client.getResourceName(r));
@@ -672,13 +671,11 @@ public class OpenStackPush {
 
                                     PortDeletionCheck(portid, url, NATServer, username, password, tenantName, topologyUri);
                                 }
-                                j++;
-                                key_ip = "nexthop" + Integer.toString(j);
 
                                 ArrayList<Boolean> arr = new ArrayList<Boolean>();
                                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                                //@TODO: should getPorts from adminClient
                                 for (Port p : client.getPorts()) {
-
                                     if (p.getDeviceId().equals(routerid)) {
                                         arr.add(Boolean.TRUE);
                                     } else {
@@ -687,24 +684,16 @@ public class OpenStackPush {
                                 }
                                 if (!arr.contains(Boolean.TRUE)) {
                                     osClient.networking().router().delete(routerid);
-
                                 }
-                            } else {
-                                j++;
-                                key_ip = "nexthop" + Integer.toString(j);
-                            }
-
-                            //os.networking().router()
-                            //.detachInterface("routerId", "subnetId", null);
+                            } 
+                            j++;
+                            key_ip = "nexthop" + Integer.toString(j);
                         }
                         x++;
-
                     } else {
                         break;
                     }
-
                 }
-
             } else if (o.get("request").toString().equals("CreateHostInfoRequest")) {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 String subnetname = o.get("subnetname").toString();
@@ -787,9 +776,8 @@ public class OpenStackPush {
                         routes.add(route);
                         routeNum++;
                     }
-                    if (!routes.isEmpty()) {
-                        metaObj.put("routes", routes);
-                    }
+                    // add routes even is empty
+                    metaObj.put("routes", routes);
                     String data = metaObj.toJSONString().replaceAll("\"", "'");
                     // set metadata: "sriov_vnic:#": data
                     client.setMetadata(servername, String.format("sriov_vnic:%d", metaObjArray.size()), data);
@@ -2143,6 +2131,9 @@ public class OpenStackPush {
                 QuerySolution q1 = r1.next();
                 VM = q1.getResource("vm");
                 portProfile = q1.get("profile").toString();
+                if (portProfile.contains("Cisco_UCS_Port_Profile+")) {
+                    portProfile = this.getresourcename(portProfile, "+", "");
+                }
             } else {
                 throw new EJBException("sriovRequests related resoruces for vNic='" + vNic.getURI() + "' cannot be resolved");
             }

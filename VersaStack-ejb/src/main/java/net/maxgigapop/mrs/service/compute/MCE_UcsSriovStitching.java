@@ -204,14 +204,17 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
                     throw new EJBException(String.format("%s::process cannot parse JSON data 'to_l2path': %s - invalid hop: %s", this.getClass().getName(), stitchToPath, jsonObj.toJSONString()));
                 }
                 String hopUri = (String) jsonObj.get("uri");
-                //@TODO: find a port profile that the hop connects to via a VLAN
-                sparql = "SELECT ??? WHERE {"
-                        + "???"
+                // find a port profile that the hop connects to via a VLAN
+                sparql = "SELECT ?profile WHERE {"
+                        + "?profile a mrs:SwitchingSubnet. "
+                        + "?profile mrs:type \"Cisco_UCS_Port_Profile\". "
+                        + String.format("?profile nml:hasBidirectionalPort <%s>. ", hopUri)
                         + "}";
                 r = ModelUtil.sparqlQuery(unionSysModel, sparql);
                 if (r.hasNext()) {
                     QuerySolution solution = r.nextSolution();
-                    resPortProfile = solution.getResource("???");
+                    resPortProfile = solution.getResource("profile");
+                    break;
                 }
             }
         }
