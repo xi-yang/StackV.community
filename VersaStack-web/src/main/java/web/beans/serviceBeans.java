@@ -353,6 +353,7 @@ public class serviceBeans {
          
      
         String topoUri = null;
+        String refUuid = null;
         List<String> connection = new ArrayList<>();
         int i=1;String connPara;
         String vgUuid = null;int x =1;
@@ -479,9 +480,54 @@ public class serviceBeans {
     "</serviceDelta>";
     
     System.out.println("The delta is"+ delta);
+    
+    
         
     
-        return 0;
+       // return 0;
+    
+     String result;
+        try {
+//            URL url = new URL(String.format("%s/service/instance", host));
+//            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+//            siUuid = this.executeHttpMethod(url, connection, "GET", null);
+//            if (siUuid.length() != 36) {
+//                return 2;//Error occurs when interacting with back-end system
+//            }
+            URL url = new URL(String.format("%s/service/%s", host, refUuid));
+            HttpURLConnection compile = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, compile, "POST",delta);
+            if (!result.contains("referenceVersion")) {
+                return 2;//Error occurs when interacting with back-end system
+            }
+            url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
+            HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, propagate, "PUT", null);
+            if (!result.equals("PROPAGATED")) {
+                return 2;//Error occurs when interacting with back-end system
+            }
+            url = new URL(String.format("%s/service/%s/commit", host, refUuid));
+            HttpURLConnection commit = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, commit, "PUT", null);
+            if (!result.equals("COMMITTED")) {
+                return 2;//Error occurs when interacting with back-end system
+            }
+            url = new URL(String.format("%s/service/%s/status", host, refUuid));
+            while(true){
+                HttpURLConnection status = (HttpURLConnection) url.openConnection();
+                result = this.executeHttpMethod(url, status, "GET", null); 
+                if(result.equals("READY"))
+                    return 0;//create network successfully
+                else if(!result.equals("COMMITTED"))
+                    return 3;//Fail to create network
+                sleep(5000);//wait for 5 seconds and check again later
+            }
+        } catch (Exception e) {
+            return 1;//connection error
+        }
+    
+    
+    
 }
 
     /**
