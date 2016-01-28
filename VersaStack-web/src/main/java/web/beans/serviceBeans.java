@@ -347,6 +347,142 @@ public class serviceBeans {
         return 0;
 
     }
+    
+    
+    public  int createConnection(Map<String, String> paraMap){
+         
+     
+        String topoUri = null;
+        List<String> connection = new ArrayList<>();
+        int i=1;String connPara;
+        String vgUuid = null;int x =1;
+                
+        for(Map.Entry<String, String> entry : paraMap.entrySet())
+        {
+                    
+            //System.out.println(entry.getKey());
+
+            //tring entryKey = 
+            
+            if(entry.getKey().equalsIgnoreCase("topoUri"))
+            {
+                topoUri = entry.getValue();
+                //System.out.println("topoUri"+topoUri);
+            }
+            if(entry.getKey().contains("conn"))
+            {
+                //System.out.println("I'm inside conn");
+                connection.add(entry.getValue());
+                
+            }
+            
+        }
+       //for(String d : connection)
+               // System.out.println("conn"+d );
+            
+        /*paraMap.put(“topoUri”, “urn:ogf:network:vo1.maxgigapop.net:link”);
+          paraMap.put(“conn1”, “urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&
+          vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029”);
+          paraMap.put(“conn2”,“urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&
+          vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029”);*/
+            
+        JSONObject jsonConnect = new JSONObject();   
+       // JSONArray jsonLink = new JSONArray();
+        //
+            for(String link : connection){
+                JSONArray jsonLink = new JSONArray();
+                connPara = topoUri+"=conn"+i;
+                // <<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&vlan_tag+3021-3029>>>>>\r\n<<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029>>>>>”
+                //JSONObject jsonPort = new JSONObject();
+                String[] linkPara = link.split("\r\n");
+                //System.out.println("linkPara");
+                /*for(int o=0;o<linkPara.length;o++)
+                {
+                    System.out.println(o+linkPara[o]);
+                }
+                System.out.println("");*/
+                    for(String port : linkPara){
+                        JSONObject jsonPort = new JSONObject();
+                        //<<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*>>>>>>&<<<<<vlan_tag+3021-3029>>>>>>
+                        String[] portPara = port.split("&");
+                        //System.out.println("portPara");
+                        /*for(int o=0;o<portPara.length;o++)
+                         {
+                           System.out.println(o+portPara[o]);
+                          }*/
+                        JSONObject jsonVlan = new JSONObject();
+                            for(String vlan : portPara){
+                                if(vlan.contains("vlan"))
+                                {
+                                    //vlan_tag+3021-3029
+                                    String[] vlanPara = vlan.split("\\+");
+                                    //System.out.println("vlanPara");
+                                    /* for(int o=0;o<vlanPara.length;o++)
+                                    {
+                                        System.out.println(o+vlanPara[o]);
+                                    }*/
+                                    jsonVlan.put(vlanPara[0], vlanPara[1]);
+                                    //System.out.println("jsonVlan");
+                                    //System.out.println(jsonVlan.toString()); 
+                                }
+                           // jsonPort.put(portPara[0], jsonVlan);  
+                           
+                            }
+                            jsonPort.put(portPara[0], jsonVlan); 
+                            // System.out.println("jsonPort");
+                            //System.out.println(jsonPort.toString());
+                            //System.out.println("LinkPort");
+                    //System.out.println(jsonLink.toString());
+                    jsonLink.add(jsonPort);        
+                    }
+                    //System.out.println("LinkPort");
+                    //System.out.println(jsonLink.toString());
+                    //jsonLink.add(jsonPort);  
+                    i++;
+            jsonConnect.put(connPara, jsonLink);
+            
+            }
+            
+      System.out.println(jsonConnect.toString());     
+      
+      
+    String delta = "<serviceDelta>\n<uuid>" + UUID.randomUUID().toString()+
+                "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"+
+                "\n\n<modelAddition>\n" 
+                + "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
+                + "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n"
+                + "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n"
+                + "@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .\n"
+                + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
+                + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n\n";
+    
+    for(String link : connection){
+        
+        delta += "&lt;urn:ogf:network:vo1.maxgigapop.net:link=conn" + x + "&gt;\n" +
+                 "a            mrs:SwitchingSubnet ;\n" +
+                 "spa:dependOn &lt;x-policy-annotation:action:create-path&gt;.\n\n";
+        x++;
+    }
+    
+    delta += "&lt;x-policy-annotation:action:create-path&gt;\n"+
+    "a            spa:PolicyAction ;\n"+
+    "spa:type     \"MCE_MPVlanConnection\" ;\n"+
+    "spa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt ;\n"+
+    "spa:exportTo &lt;x-policy-annotation:data:conn-criteriaexport&gt; .\n\n"+
+    "&lt;x-policy-annotation:data:conn-criteria&gt;\n"+
+    "a            spa:PolicyData;\n"+
+    "spa:type     \"JSON\";"+
+    "spa:value    \"\"\""+ jsonConnect.toString().replace("\\", "") +
+    "\"\"\".\n\n&lt;x-policy-annotation:data:vpc-criteriaexport&gt;\n" +
+    "    a            spa:PolicyData;\n\n" + 
+    "</modelAddition>\n\n" +
+    "</serviceDelta>";
+    
+    System.out.println("The delta is"+ delta);
+        
+    
+        return 0;
+}
 
     /**
      * Create a customize model view based on the criteria user specifies.
