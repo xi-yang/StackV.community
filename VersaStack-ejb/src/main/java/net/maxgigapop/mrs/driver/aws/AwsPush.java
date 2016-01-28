@@ -334,7 +334,8 @@ public class AwsPush {
                 interfaceRequest.withVirtualInterfaceId(parameters[1]);
 
                 DeleteVirtualInterfaceResult interfaceResult = dc.deleteVirtualInterface(interfaceRequest);
-                //@TODO: verify deletion of dxvif
+                dcClient.dxvifDeletionCheck(interfaceRequest.getVirtualInterfaceId());
+                
             } else if (request.contains("DeleteVpnGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
 
