@@ -330,6 +330,33 @@ function addSubnetRoute(subnetNum) {
 
 }
 
+var linkCounter =1;
+var linkLimit = 10;
+function addLink(){
+    if(linkCounter === linkLimit){
+        alert("You have reached the limit of connections");
+    }
+    else{
+        var table = document.getElementById("net-custom-form");
+        var tableHeight = table.rows.length;
+        linkCounter++;
+        
+        var row = table.insertRow(tableHeight - 1);
+        row.id = 'link' + linkCounter;
+        
+        var cell1 = row.insertCell(0);
+        cell1.innerHTML = 'Link ' + linkCounter;
+        var cell2 = row.insertCell(1);
+        cell2.innerHTML = '<div>' +
+                '<input type="text" name="link' + linkCounter +'-src" placeholder="Source">' +
+                '<input type="text" name="link' + linkCounter +'-src-vlan" placeholder="Vlan-tag">' +
+                '</div>' +
+                '<input type="text" name="link' + linkCounter +'-des" placeholder="Destination">' +
+                '<input type="text" name="link' + linkCounter +'-des-vlan" placeholder="Vlan-tag">' +
+                '</div>' ;
+    }
+}
+
 function propagateInstance(uuid) {
     var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/service/' + uuid + '/propagate';
     $.ajax({

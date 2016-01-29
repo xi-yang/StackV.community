@@ -98,12 +98,12 @@
                                                 <td>Link 1</td>
                                                 <td>
                                                     <div>
-                                                        <input type="text" name="link1-src1" placeholder="Source">
-                                                        <input type="text" name="link1-src1-vlan1" placeholder="Vlan-tag">
+                                                        <input type="text" name="link1-src" placeholder="Source">
+                                                        <input type="text" name="link1-src-vlan" placeholder="Vlan-tag">
                                                     </div>
                                                     <div>
-                                                        <input type="text" name="link1-des1" placeholder="Destination">
-                                                        <input type="text" name="link1-des1-vlan1" placeholder="Vlan-tag">
+                                                        <input type="text" name="link1-des" placeholder="Destination">
+                                                        <input type="text" name="link1-des-vlan" placeholder="Vlan-tag">
                                                     </div>
                                                 </td>
                                             </tr>
