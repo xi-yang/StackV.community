@@ -2058,6 +2058,7 @@ public class OpenStackPush {
                     + "}";
             Resource VM = null;
             String portProfile = null;
+            Resource routingSvc = null;
             ResultSet r1 = executeQueryUnion(query, modelRef, modelDelta);
             if (r1.hasNext()) {
                 QuerySolution q1 = r1.next();
@@ -2065,6 +2066,9 @@ public class OpenStackPush {
                 portProfile = q1.get("profile").toString();
                 if (portProfile.contains("Cisco_UCS_Port_Profile+")) {
                     portProfile = this.getresourcename(portProfile, "+", "");
+                }
+                if (q1.contains("routing")) {
+                    routingSvc = q1.getResource("routing");
                 }
             } else {
                 throw new EJBException("sriovRequests related resoruces for vNic='" + vNic.getURI() + "' cannot be resolved");
@@ -2102,10 +2106,9 @@ public class OpenStackPush {
             if (mac != null) {
                 o.put("mac address", mac);
             }
-            if (q.contains("routing")) {
-                Resource routingSvc = q.getResource("routing");
+            if (routingSvc != null) {
                 query = "SELECT ?routeto ?nexthop WHERE {"
-                        + String.format("<%s> mrs:hasRoute ?route . ", routingSvc)
+                        + String.format("<%s> mrs:providesRoute ?route . ", routingSvc)
                         + "?route mrs:routeTo ?toAddr . "
                         + "?route mrs:nextHop ?viaAddr . "
                         + "?toAddr mrs:type \"ipv4-prefix\" . "
