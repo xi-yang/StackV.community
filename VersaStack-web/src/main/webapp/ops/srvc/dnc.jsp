@@ -45,7 +45,7 @@
                     <div id="service-specific">                        
                         <div id="service-top">
                             <div id="service-title">
-
+                                Dynamic Network Connection
                             </div>
                             <div id="service-menu">
                                 <c:if test="${not empty param.self}">
@@ -61,8 +61,59 @@
                                 <form id="template-form" action="/VersaStack-web/ServiceServlet" method="post">
                                     <input type="hidden" name="userID" value="${user.getId()}"/>
                                     <table class="management-table" id="service-form" style="margin-bottom: 0px;"> 
-
+                                        <thead>
+                                            <tr>
+                                                <th>Templates</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Basic</td>
+                                                <td><input type="submit" name ="template1" value="Select" /></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Advanced</td>
+                                                <td><input type="submit" name ="template2" value="Select" /></td>
+                                            </tr>
+                                        </tbody>
                                     </table>
+                                    <input type="hidden" name ="dncCreate" value="true"/>
+                                </form>
+                                <form id="custom-form" action="/VersaStack-web/ServiceServlet" method="post">
+                                    <input type="hidden" name="userID" value="${user.getId()}"/>
+                                    <table class="management-table" id="net-custom-form">
+                                        <thead>
+                                            <tr>
+                                                <th>Custom</th>
+                                                <th><div id="custom-toggle">Display</div></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="custom-fields">
+                                            <tr>
+                                                <td>Connection URI</td>
+                                                <td><input type="text" name="connUri">
+                                            </tr>
+                                            <tr id="link1">
+                                                <td>Link 1</td>
+                                                <td>
+                                                    <div>
+                                                        <input type="text" name="link1-src1" placeholder="Source">
+                                                        <input type="text" name="link1-src1-vlan1" placeholder="Vlan-tag">
+                                                    </div>
+                                                    <div>
+                                                        <input type="text" name="link1-des1" placeholder="Destination">
+                                                        <input type="text" name="link1-des1-vlan1" placeholder="Vlan-tag">
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td></td>
+                                                <td><input type="submit" name="custom" value="Submit" /><input class="button-register" type="button" value="Add Link" onclick="addLink()"></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <input type="hidden" name="dncCreate" value="true">
                                 </form>
                             </div>
                         </div>

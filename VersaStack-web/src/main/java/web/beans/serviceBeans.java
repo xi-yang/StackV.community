@@ -817,11 +817,11 @@ public class serviceBeans {
      *      
      *      
      */
-    public int createConnection(Map<String, String> paraMap) {
+    /*public int createConnection(Map<String, String> paraMap) {
         
         
         return 1;
-    }
+    }*/
 
     
     
