@@ -108,6 +108,7 @@ define([
                         map_(types, function (type) {
                             type = type.value;
                             switch (type) {
+                                // Fallthrough group 
                                 case values.topology:
                                 case values.node:
                                 
@@ -121,6 +122,7 @@ define([
                                     toAdd.isTopology = type === values.topology;
                                     that.nodeMap[key] = toAdd;
                                     break;
+                                    
                                 case values.bidirectionalPort:
                                     var toAdd;
                                     if (oldModel && oldModel.portMap[key]) {
@@ -131,6 +133,8 @@ define([
                                     }
                                     that.portMap[key] = toAdd;
                                     break;
+                                    
+                                // Fallthrough group     
                                 case values.switchingService:
                                 case values.topopolgySwitchingService:
                                 case values.hypervisorService:
@@ -146,6 +150,8 @@ define([
                                     }
                                     that.serviceMap[key] = toAdd;
                                     break;
+                                
+                                // Fallthrough group 
                                 case values.objectStorageService:
                                 case values.virtualSwitchingService:
                                 case values.hypervisorBypassInterfaceService:
@@ -175,22 +181,20 @@ define([
                                     that.subnetMap[key] = toAdd;
                                     break;
                                 case values.namedIndividual://All elements have this
+                                    break;                                
                                 case values.labelGroup:
+                                    break;
                                 case values.label:
+                                    break;
                                 case values.networkAdress:
+                                    break;
                                 case values.bucket:
+                                    break;
                                 case values.tag:
+                                    break;
                                 case values.route:
+                                    break;
                                 case values.volume:
-//                                    var toAdd;
-//                                    if (oldModel && oldModel.volumeMap[key]) {
-//                                        toAdd = oldModel.volumeMap[key];
-//                                        toAdd.reload(val, map);
-//                                    } else {
-//                                        toAdd = new Node(val, map);
-//                                    }
-//                                    that.volumeMap[key] = toAdd;
-//                                    break;
                                     var toAdd;
                                     if (oldModel && oldModel.volumeMap[key]) {
                                         toAdd = oldModel.volumeMap[key];
@@ -198,6 +202,7 @@ define([
                                     } else {
                                         toAdd = new Volume(val, map);
                                     }
+
                                     toAdd.isTopology = type === values.topology;
                                     that.volumeMap[key] = toAdd;
                                     break;
@@ -263,7 +268,7 @@ define([
 
                             case values.encoding:
                             case values.labelSwapping:
-                            case values.providesVolume:
+                            case values.providesVolume:    
                             case values.providesRoutingTable:
                             case values.providesRoute:
                             case values.providesVM:

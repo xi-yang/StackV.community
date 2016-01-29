@@ -617,9 +617,8 @@ public class OpenStackPush {
                 String key_routinginfo = "routing_info";
                 routing_info_for_router = (HashMap<String, HashMap<String, String>>) o.get(key_routinginfo);
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-                int i = 0;
-                int j = 0;
                 int x = 0;
+                int j = 0;
                 String routerid = "";
 
                 while (true) {
@@ -631,7 +630,6 @@ public class OpenStackPush {
                         while (o.containsKey(key_ip)) {
                             Router r = client.getRouter(o.get(key_router).toString());
                             if (r == null) {
-                                x++;
                                 break;
                             }
                             HashMap<String, String> routing_info1 = routing_info_for_router.get(client.getResourceName(r));
@@ -673,13 +671,11 @@ public class OpenStackPush {
 
                                     PortDeletionCheck(portid, url, NATServer, username, password, tenantName, topologyUri);
                                 }
-                                j++;
-                                key_ip = "nexthop" + Integer.toString(j);
 
                                 ArrayList<Boolean> arr = new ArrayList<Boolean>();
                                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                                //@TODO: should getPorts from adminClient
                                 for (Port p : client.getPorts()) {
-
                                     if (p.getDeviceId().equals(routerid)) {
                                         arr.add(Boolean.TRUE);
                                     } else {
@@ -688,24 +684,16 @@ public class OpenStackPush {
                                 }
                                 if (!arr.contains(Boolean.TRUE)) {
                                     osClient.networking().router().delete(routerid);
-
                                 }
-                            } else {
-                                j++;
-                                key_ip = "nexthop" + Integer.toString(j);
-                            }
-
-                            //os.networking().router()
-                            //.detachInterface("routerId", "subnetId", null);
+                            } 
+                            j++;
+                            key_ip = "nexthop" + Integer.toString(j);
                         }
                         x++;
-
                     } else {
                         break;
                     }
-
                 }
-
             } else if (o.get("request").toString().equals("CreateHostInfoRequest")) {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 String subnetname = o.get("subnetname").toString();
