@@ -365,7 +365,7 @@ public class serviceBeans {
 
             //tring entryKey = 
             
-            if(entry.getKey().equalsIgnoreCase("topoUri"))
+            if(entry.getKey().equalsIgnoreCase("connUri"))
             {
                 topoUri = entry.getValue();
                 //System.out.println("topoUri"+topoUri);
