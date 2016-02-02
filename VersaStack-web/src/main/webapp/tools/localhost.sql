@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost:3306
--- Generation Time: Nov 02, 2015 at 06:01 PM
+-- Generation Time: Feb 01, 2016 at 06:55 PM
 -- Server version: 5.5.42
 -- PHP Version: 5.6.7
 
@@ -16,6 +16,33 @@ SET time_zone = "+00:00";
 DROP DATABASE `frontend`;
 CREATE DATABASE IF NOT EXISTS `frontend` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 USE `frontend`;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `acl`
+--
+
+DROP TABLE IF EXISTS `acl`;
+CREATE TABLE `acl` (
+  `acl_id` int(11) NOT NULL,
+  `service_id` int(11) NOT NULL
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Dumping data for table `acl`
+--
+
+INSERT INTO `acl` (`acl_id`, `service_id`) VALUES
+(1, 1),
+(2, 2),
+(3, 3),
+(4, 4),
+(7, 7),
+(8, 8),
+(9, 9),
+(10, 10),
+(11, 11);
 
 -- --------------------------------------------------------
 
@@ -42,8 +69,10 @@ INSERT INTO `acl_entry_group` (`acl_id`, `usergroup_id`) VALUES
 (8, 1),
 (9, 1),
 (10, 1),
+(11, 1),
 (2, 2),
-(3, 2);
+(3, 2),
+(11, 2);
 
 -- --------------------------------------------------------
 
@@ -71,32 +100,6 @@ INSERT INTO `acl_entry_user` (`acl_id`, `user_id`) VALUES
 -- --------------------------------------------------------
 
 --
--- Table structure for table `acl`
---
-
-DROP TABLE IF EXISTS `acl`;
-CREATE TABLE `acl` (
-  `acl_id` int(11) NOT NULL,
-  `service_id` int(11) NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
---
--- Dumping data for table `acl`
---
-
-INSERT INTO `acl` (`acl_id`, `service_id`) VALUES
-(1, 1),
-(2, 2),
-(3, 3),
-(4, 4),
-(7, 7),
-(8, 8),
-(9, 9),
-(10, 10);
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `service`
 --
 
@@ -107,7 +110,7 @@ CREATE TABLE `service` (
   `filename` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
   `description` varchar(140) COLLATE utf8_unicode_ci NOT NULL,
   `atomic` tinyint(1) NOT NULL DEFAULT '0'
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Dumping data for table `service`
@@ -121,7 +124,8 @@ INSERT INTO `service` (`service_id`, `name`, `filename`, `description`, `atomic`
 (7, 'Driver Management', 'driver', 'Installation and Uninstallation of Driver Instances.', 0),
 (8, 'Virtual Machine Management', 'vmadd', 'Management, Instantiation, and Setup of Virtual Machine Topologies.', 0),
 (9, 'View Filter Management', 'viewcreate', 'Management and Creation of graphical view filters.', 0),
-(10, 'Network Creation', 'netcreate', 'Network Creation Pilot Testbed', 0);
+(10, 'Network Creation', 'netcreate', 'Network Creation Pilot Testbed', 0),
+(11, 'Dynamic Network Connection', 'dnc', 'Creation of new network connections.', 0);
 
 -- --------------------------------------------------------
 
@@ -136,7 +140,15 @@ CREATE TABLE `service_instance` (
   `user_id` int(11) NOT NULL,
   `creation_time` datetime DEFAULT NULL,
   `referenceUUID` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=138 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Dumping data for table `service_instance`
+--
+
+INSERT INTO `service_instance` (`service_instance_id`, `service_id`, `user_id`, `creation_time`, `referenceUUID`) VALUES
+(136, 7, 1, '2016-01-27 10:06:57', '514cd2ac-2028-4644-9d57-cbf9e5dd8a27'),
+(137, 7, 1, '2016-01-27 13:46:26', 'd2b5a228-852a-42fc-8d70-242d2290980e');
 
 -- --------------------------------------------------------
 
@@ -281,17 +293,17 @@ ALTER TABLE `usergroup`
 -- AUTO_INCREMENT for table `acl`
 --
 ALTER TABLE `acl`
-  MODIFY `acl_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=11;
+  MODIFY `acl_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=12;
 --
 -- AUTO_INCREMENT for table `service`
 --
 ALTER TABLE `service`
-  MODIFY `service_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=11;
+  MODIFY `service_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=12;
 --
 -- AUTO_INCREMENT for table `service_instance`
 --
 ALTER TABLE `service_instance`
-  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=23;
+  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=138;
 --
 -- AUTO_INCREMENT for table `user_info`
 --

@@ -809,21 +809,6 @@ public class serviceBeans {
         }
     }
 
-//@TODO Fill out javadoc.
-    /**
-     *
-     * 
-     * @param paraMap standard parameter map
-     * @return error code:
-     *      
-     *      
-     *      
-     */
-    /*public int createConnection(Map<String, String> paraMap) {
-        
-        
-        return 1;
-    }*/
 
     
     

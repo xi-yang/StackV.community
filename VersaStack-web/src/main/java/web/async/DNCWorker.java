@@ -14,8 +14,9 @@ public class DNCWorker implements Runnable {
     public DNCWorker() {
     }
 
-    public DNCWorker(AsyncContext asyncCtx) {
+    public DNCWorker(AsyncContext asyncCtx, HashMap<String, String> paraMap) {
         this.asyncContext = asyncCtx;
+        this.paraMap = paraMap;
     }
 
     @Override
