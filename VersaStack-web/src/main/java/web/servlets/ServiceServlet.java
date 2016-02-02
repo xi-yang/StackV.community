@@ -82,9 +82,9 @@ public class ServiceServlet extends HttpServlet {
                 serviceString = "vmadd";
             } else if (request.getParameter("netCreate") != null) { // Network Creation
                 serviceString = "netcreate";
-            } else if (request.getParameter("dncCreate") != null){
-                serviceString = "dncCreate";
-            }else {
+            } else if (request.getParameter("dncCreate") != null) {
+                serviceString = "dnc";
+            } else {
                 response.sendRedirect("/VersaStack-web/errorPage.jsp");
             }
 
@@ -140,7 +140,7 @@ public class ServiceServlet extends HttpServlet {
                 response.sendRedirect(createFullNetwork(request, paraMap));
             } else if (serviceString.equals("dnccreate")) {
                 response.sendRedirect(createConnection(request, paraMap));
-            }else {
+            } else {
                 response.sendRedirect("/VersaStack-web/errorPage.jsp");
             }
         } catch (SQLException ex) {
@@ -339,13 +339,13 @@ public class ServiceServlet extends HttpServlet {
 
             // Async setup
             /*request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
-            AsyncContext asyncCtx = request.startAsync();
-            asyncCtx.addListener(new AppAsyncListener());
-            asyncCtx.setTimeout(60000);
+             AsyncContext asyncCtx = request.startAsync();
+             asyncCtx.addListener(new AppAsyncListener());
+             asyncCtx.setTimeout(60000);
 
-            ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
+             ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
 
-            executor.execute(new NetCreateWorker(asyncCtx, paraMap));*/
+             executor.execute(new NetCreateWorker(asyncCtx, paraMap));*/
             servBean.createNetwork(paraMap);
         } else { // Custom Form Handling
             PreparedStatement prep = rains_conn.prepareStatement("SELECT driverEjbPath"
@@ -432,76 +432,59 @@ public class ServiceServlet extends HttpServlet {
         return ("/VersaStack-web/ops/srvc/netcreate.jsp?ret=0");
 
     }
-    
-    private String createConnection(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {        
+
+    private String createConnection(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {
         for (Object key : paraMap.keySet().toArray()) {
             if (paraMap.get((String) key).isEmpty()) {
                 paraMap.remove((String) key);
             }
         }
-        
-        Connection rains_conn;
-        Properties rains_connectionProps = new Properties();
-        rains_connectionProps.put("user","root");
-        rains_connectionProps.put("password","root");
-        
-        rains_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/rainsdb",
-                rains_connectionProps);
-        
-        if(paraMap.containsKey("template1")){
-            
-            
+
+        if (paraMap.containsKey("template1")) {
             paraMap.put("driverType", "aws");
             paraMap.put("topoUri", "urn:ogf:network:vo1.maxgigapop.net:link");
             paraMap.put("conn1", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*& vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029");
-            
-            paraMap.remove("dncCreate");
+
             paraMap.remove("template1");
-            
-            servBean.createConnection(paraMap);
-        } else if(paraMap.containsKey("template2")){
-            
+
+        } else if (paraMap.containsKey("template2")) {
             paraMap.put("driverType", "aws");
             paraMap.put("topoUri", "urn:ogf:network:vo1.maxgigapop.net:link");
             paraMap.put("conn1", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*& vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029");
             paraMap.put("conn2", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*& vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029");
-            
-            paraMap.remove("dncCreate");
-            paraMap.remove("template1");
-            
-            servBean.createConnection(paraMap);
-            
-        }else{
-            
+
+            paraMap.remove("template2");
+
+        } else {
             //Process each link
-            for(int i=1; i<10;i++){
-                String linkString ="" ;
-                if(paraMap.containsKey("link" +i + "-src")){
-                    linkString = paraMap.get("link" + i + "-src") + "&";   
+            for (int i = 1; i < 10; i++) {
+                String linkString = "";
+                if (paraMap.containsKey("link" + i + "-src")) {
+                    linkString = paraMap.get("link" + i + "-src") + "&";
                 }
-                if(paraMap.containsKey("link" +i + "-src-vlan")){
-                    linkString += paraMap.get("link" + i + "-src-vlan") ;
+                if (paraMap.containsKey("link" + i + "-src-vlan")) {
+                    linkString += paraMap.get("link" + i + "-src-vlan");
                 }
-                if(paraMap.containsKey("link" +i + "-des")){
-                    linkString += "/r/n" + paraMap.get("link" + i + "-des") + "&";   
+                if (paraMap.containsKey("link" + i + "-des")) {
+                    linkString += "/r/n" + paraMap.get("link" + i + "-des") + "&";
                 }
-                if(paraMap.containsKey("link" +i + "-des-vlan")){
-                    linkString += paraMap.get("link" + i + "-des-vlan") ;
+                if (paraMap.containsKey("link" + i + "-des-vlan")) {
+                    linkString += paraMap.get("link" + i + "-des-vlan");
                 }
-                
-                paraMap.remove("link" +i + "-src");
-                paraMap.remove("link" +i + "-src-vlan");
-                paraMap.remove("link" +i + "-des");
-                paraMap.remove("link" +i + "-des-vlan");
-                
+
+                paraMap.remove("link" + i + "-src");
+                paraMap.remove("link" + i + "-src-vlan");
+                paraMap.remove("link" + i + "-des");
+                paraMap.remove("link" + i + "-des-vlan");
+
                 paraMap.put("conn" + i, linkString);
             }
         }
-        
+
         paraMap.remove("userID");
         paraMap.remove("custom");
         paraMap.remove("dncCreate");
-        // ParaMap processing
+
         // Async setup 
         request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
         AsyncContext asyncCtx = request.startAsync();
@@ -510,8 +493,7 @@ public class ServiceServlet extends HttpServlet {
 
         ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
 
-        executor.execute(new DNCWorker(asyncCtx, paraMap)); 
-        
+        executor.execute(new DNCWorker(asyncCtx, paraMap));
 
         return ("/VersaStack-web/ops/srvc/dnc.jsp?ret=0");
     }
