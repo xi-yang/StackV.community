@@ -33,6 +33,7 @@ import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.api.identity.TenantService;
 import org.openstack4j.model.compute.ActionResponse;
+import org.openstack4j.model.compute.SecGroupExtension;
 import org.openstack4j.model.compute.Server;
 import org.openstack4j.model.compute.ServerCreate;
 import org.openstack4j.model.compute.builder.ServerCreateBuilder;
@@ -291,7 +292,7 @@ public class OpenStackPush {
                 if (o.containsKey("secgroup") && !o.get("secgroup").toString().isEmpty()) {
                     String[] sgs = o.get("secgroup").toString().split(",|;|:");
                     for (String secgroup : sgs) {
-                        osClient.compute().servers().addSecurityGroup(s.getId(), secgroup);
+                        SecurityGroupAddCheck(s.getId(), secgroup);
                     }
                 }
             } else if (o.get("request").toString().equals("TerminateInstanceRequest")) {
@@ -2419,6 +2420,34 @@ public class OpenStackPush {
                     break;
                 }
             } catch (Exception e) {
+            }
+        }
+    }
+    
+    public void SecurityGroupAddCheck(String serverId, String secgroupId) {
+        int maxTries = 30;
+        while ((maxTries--) > 0) {
+            try {
+                Server server = client.getServer(serverId);
+                if (server != null && server.getStatus().equals(server.getStatus().ACTIVE)) {
+                    // add
+                    osClient.compute().servers().addSecurityGroup(serverId, secgroupId);
+                    // check
+                    List<? extends SecGroupExtension> listServerGroups = osClient.compute().securityGroups().listServerGroups(serverId);
+                    if (listServerGroups != null && !listServerGroups.isEmpty()) {
+                        for (SecGroupExtension secgroup : listServerGroups) {
+                            if (secgroup.getName().equals(secgroupId)) {
+                                return;
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+            }
+            try {
+                Thread.sleep(10000);  // sleep 10 secs
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
             }
         }
     }
