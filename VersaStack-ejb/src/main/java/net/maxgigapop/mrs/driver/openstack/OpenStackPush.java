@@ -2428,7 +2428,7 @@ public class OpenStackPush {
         int maxTries = 30;
         while ((maxTries--) > 0) {
             try {
-                Server server = client.getServer(serverId);
+                Server server = osClient.compute().servers().get(serverId);
                 if (server != null && server.getStatus().equals(server.getStatus().ACTIVE)) {
                     // add
                     osClient.compute().servers().addSecurityGroup(serverId, secgroupId);
