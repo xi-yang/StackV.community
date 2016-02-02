@@ -2,13 +2,15 @@ package web.async;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-
+import java.util.HashMap;
 import javax.servlet.AsyncContext;
+import web.beans.serviceBeans;
 
 public class WorkerTemplate implements Runnable {
 
     private AsyncContext asyncContext;
-    
+    private serviceBeans servBean = new serviceBeans();
+    private HashMap<String, String> paraMap;
     private final String host = "http://localhost:8080/VersaStack-web/restapi";
 
     public WorkerTemplate() {
