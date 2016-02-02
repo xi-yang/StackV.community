@@ -391,7 +391,8 @@ public class serviceBeans {
        // JSONArray jsonLink = new JSONArray();
         //
             for(String link : connection){
-                JSONArray jsonLink = new JSONArray();
+                //JSONArray jsonLink = new JSONArray();
+                JSONObject jsonPort = new JSONObject();
                 connPara = topoUri+"=conn"+i;
                 // <<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&vlan_tag+3021-3029>>>>>\r\n<<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029>>>>>”
                 //JSONObject jsonPort = new JSONObject();
@@ -403,7 +404,7 @@ public class serviceBeans {
                 }
                 System.out.println("");*/
                     for(String port : linkPara){
-                        JSONObject jsonPort = new JSONObject();
+                        //JSONObject jsonPort = new JSONObject();
                         //<<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*>>>>>>&<<<<<vlan_tag+3021-3029>>>>>>
                         String[] portPara = port.split("&");
                         //System.out.println("portPara");
@@ -434,13 +435,13 @@ public class serviceBeans {
                             //System.out.println(jsonPort.toString());
                             //System.out.println("LinkPort");
                     //System.out.println(jsonLink.toString());
-                    jsonLink.add(jsonPort);        
+                    //jsonLink.add(jsonPort);        
                     }
                     //System.out.println("LinkPort");
                     //System.out.println(jsonLink.toString());
                     //jsonLink.add(jsonPort);  
                     i++;
-            jsonConnect.put(connPara, jsonLink);
+            jsonConnect.put(connPara, jsonPort);
             
             }
             
@@ -455,7 +456,8 @@ public class serviceBeans {
                 + "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n"
                 + "@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .\n"
                 + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
-                + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n\n";
+                + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n\n"
+                + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n" ;
     
     for(String link : connection){
         
@@ -468,7 +470,7 @@ public class serviceBeans {
     delta += "&lt;x-policy-annotation:action:create-path&gt;\n"+
     "a            spa:PolicyAction ;\n"+
     "spa:type     \"MCE_MPVlanConnection\" ;\n"+
-    "spa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt ;\n"+
+    "spa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;\n"+
     "spa:exportTo &lt;x-policy-annotation:data:conn-criteriaexport&gt; .\n\n"+
     "&lt;x-policy-annotation:data:conn-criteria&gt;\n"+
     "a            spa:PolicyData;\n"+
