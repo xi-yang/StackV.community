@@ -16,31 +16,31 @@ import javax.xml.bind.annotation.XmlRootElement;
  *
  * @author max
  */
-
-@XmlRootElement(name="driverInstance")
+@XmlRootElement(name = "driverInstance")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ApiDriverInstance {
-    @XmlElement(required=true)    
+
+    @XmlElement(required = true)
     protected Map<String, String> properties = new HashMap<String, String>();
 
     public Map<String, String> getProperties() {
         return properties;
     }
-    
+
     public void setProperties(Map<String, String> properties) {
         this.properties = properties;
     }
-    
-    public String getTopologyUri() throws Exception{
-        if (!properties.containsKey("topologyUri"))
+
+    public String getTopologyUri() throws Exception {
+        if (!properties.containsKey("topologyUri")) {
             throw new Exception("Can't find topologyUri");
-        else
+        } else {
             return properties.get("topologyUri");
+        }
     }
 //    @Override
 //    public String toString() {
 //        return "net.maxgigapop.mrs.model.DriverInstance[ topologyUri=" + topologyUri + " ]";
 //    }
-
 
 }

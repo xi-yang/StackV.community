@@ -3,6 +3,8 @@ package web.servlets;
 import web.beans.serviceBeans;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -37,12 +39,17 @@ public class VMServlet extends HttpServlet {
             throws ServletException, IOException {
         serviceBeans servBean = new serviceBeans();
         int retCode = -1;
+        String host = "http://localhost:8080/VersaStack-web/restapi";
 
         // Bi-directional search function
         if (request.getParameter("search") != null) {
 
         } // VM installation
         else if (request.getParameter("install") != null) {
+            URL url = new URL(String.format("%s/service/instance", host));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            String refUuid = servBean.executeHttpMethod(url, connection, "GET", null);
+            
             Connection front_conn;
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", "root");
@@ -59,16 +66,16 @@ public class VMServlet extends HttpServlet {
                 int serviceID = rs1.getInt(1);
 
                 Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
-                
+
                 prep = front_conn.prepareStatement("INSERT INTO Frontend.service_instance "
-                        + "(`service_id`, `user_id`, `status`, `creation_time`) VALUES (?, ?, ?, ?)");
+                        + "(`service_id`, `user_id`, `creation_time`, `referenceUUID`) VALUES (?, ?, ?, ?)");
                 prep.setInt(1, serviceID);
                 prep.setString(2, request.getParameter("userID"));
-                prep.setString(3, "creation");
-                prep.setTimestamp(4, timeStamp);
+                prep.setTimestamp(3, timeStamp);
+                prep.setString(4, refUuid);
                 prep.executeUpdate();
 
-                if (request.getParameter("vmType").equals("aws")) {
+                if (request.getParameter("driverType").equals("aws")) {
                     HashMap<String, String> paramMap = new HashMap<>();
                     Enumeration paramNames = request.getParameterNames();
 
@@ -122,10 +129,13 @@ public class VMServlet extends HttpServlet {
 
                     paramMap.remove("install");
 
-                    prep = front_conn.prepareStatement("UPDATE Frontend.service_instance SET `status` = ? WHERE `creation_time` = ?");
-                    prep.setString(1, "instantiation");
-                    prep.setTimestamp(2, timeStamp);
-                    prep.executeUpdate();
+                    for (String key : paramMap.keySet()) {
+                        if (!paramMap.get(key).isEmpty()) {
+                            url = new URL(String.format("%s/service/property/%s/%s/", host, refUuid, key));
+                            connection = (HttpURLConnection) url.openConnection();
+                            servBean.executeHttpMethod(url, connection, "POST", paramMap.get(key));
+                        }
+                    }
 
                     for (int i = 0; i < Integer.parseInt(paramMap.get("vmQuantity")); i++) {
                         retCode = servBean.vmInstall(paramMap);

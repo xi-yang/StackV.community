@@ -20,12 +20,11 @@ import javax.ejb.EJBException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.Consumes;
-import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Produces;
-import net.maxgigapop.mrs.rest.api.model.ApiDriverInstance;
+import net.maxgigapop.mrs.rest.api.model.ApiNetCreation;
 import net.maxgigapop.mrs.rest.api.model.ApiVMInstall;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 import web.beans.serviceBeans;
@@ -37,11 +36,12 @@ import web.beans.serviceBeans;
  */
 @Path("web")
 public class WebResource {
+
     protected serviceBeans serv = new serviceBeans();
-    
+
     @Context
     private UriInfo context;
-    
+
     @EJB
     HandleSystemCall systemCallHandler;
 
@@ -77,27 +77,57 @@ public class WebResource {
         while (rs1.next()) {
             retList.add(rs1.getString(1));
         }
-        
+
         return retList;
+    }
+
+    @POST
+    @Path("/installVM")
+    @Consumes({"application/xml", "application/json"})
+    public String installVM(ApiVMInstall input) {
+        try {
+            Map<String, String> propMap = input.getProperties();
+
+            int retCode = serv.vmInstall(propMap);
+            switch (retCode) {
+                case 4:
+                    return "Parsing parameter error.\n";
+                case 3:
+                    return "Connection error.\n";
+                case 2:
+                    return "Plugin error.\n";
+                case 1:
+                    return "Requesting System Instance UUID error.\n";
+                default:
+                    return "Success.\n";
+            }
+        } catch (EJBException e) {
+            return e.getMessage();
+        }
     }
     
     @POST
-    @Path("/installVM")
-    @Consumes({"application/xml","application/json"})
-    public String installVM(ApiVMInstall input){
-        try{
+    @Path("/createNetwork")
+    @Consumes({"application/xml", "application/json"})
+    public String createNet(ApiNetCreation input) {
+        try {
             Map<String, String> propMap = input.getProperties();
-            
-            int retCode = serv.vmInstall(propMap);
+
+            int retCode = serv.createNetwork(propMap);
             switch (retCode) {
-                case 4: return "Parsing parameter error.\n";
-                case 3: return "Connection error.\n";
-                case 2: return "Plugin error.\n";
-                case 1: return "Requesting System Instance UUID error.\n";
-                default: return "Success.\n";
+                case 4:
+                    return "Parsing parameter error.\n";
+                case 3:
+                    return "Connection error.\n";
+                case 2:
+                    return "Plugin error.\n";
+                case 1:
+                    return "Requesting System Instance UUID error.\n";
+                default:
+                    return "Success.\n";
             }
-        }catch(EJBException e){
+        } catch (EJBException e) {
             return e.getMessage();
-        }        
-    } 
+        }
+    }
 }

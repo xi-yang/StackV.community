@@ -24,7 +24,7 @@
         <script>
             $(document).ready(function () {
                 $("#nav").load("/VersaStack-web/navbar.html");
-                                
+
                 $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
                     if (${user.isAllowed(1)}) {
                         var element = document.getElementById("service1");
@@ -107,30 +107,30 @@
                             DropDownTree = tree;
 
                             outputApi = new outputApi_();
-                });                    
-        
+                        });
+
                 var request = new XMLHttpRequest();
                 request.open("GET", "/VersaStack-web/data/json/umd-anl-all.json");
 
                 request.setRequestHeader("Accept", "application/json");
                 request.onload = function () {
                     var modelData = request.responseText;
-                    
+
                     if (modelData.charAt(0) === '<') {
                         return;
                     }
 
-                    modelData = JSON.parse(modelData);                     
-                    $.post("/VersaStack-web/ViewServlet", {newModel: modelData.ttlModel}, function(response) {
+                    modelData = JSON.parse(modelData);
+                    $.post("/VersaStack-web/ViewServlet", {newModel: modelData.ttlModel}, function (response) {
                         // handle response from your servlet.
                     });
                 };
                 request.send();
-                
+
                 $("#loadingPanel").addClass("hide");
-                $("#hoverdiv").removeClass("hide");                    
+                $("#hoverdiv").removeClass("hide");
                 $("#viz").attr("class", "");
-                        
+
                 buttonInit();
             }
             function drawGraph() {
@@ -147,9 +147,9 @@
             }
             function reload() {
                 $("#loadingPanel").removeClass("hide");
-                $("#hoverdiv").addClass("hide");                    
+                $("#hoverdiv").addClass("hide");
                 $("#viz").attr("class", "loading");
-                
+
                 var lockNodes = model.listNodes();
                 //var posistionLocks = {};
                 model = new ModelConstructor(model);
@@ -175,23 +175,23 @@
                         return;
                     }
 
-                    modelData = JSON.parse(modelData);                     
-                    $.post("/VersaStack-web/ViewServlet", {newModel: modelData.ttlModel}, function(response) {
+                    modelData = JSON.parse(modelData);
+                    $.post("/VersaStack-web/ViewServlet", {newModel: modelData.ttlModel}, function (response) {
                         // handle response from your servlet.
                     });
                 };
                 request.send();
-                
+
                 $("#loadingPanel").addClass("hide");
-                $("#hoverdiv").removeClass("hide");                    
+                $("#hoverdiv").removeClass("hide");
                 $("#viz").attr("class", "");
             }
 
             function filter(viewName, viewModel) {
                 $("#loadingPanel").removeClass("hide");
-                $("#hoverdiv").addClass("hide");                    
+                $("#hoverdiv").addClass("hide");
                 $("#viz").attr("class", "loading");
-                
+
                 var lockNodes = model.listNodes();
                 //var posistionLocks = {};
                 model = new ModelConstructor(model);
@@ -205,13 +205,13 @@
 
                     render.doRender(outputApi, model);
                 }, viewModel);
-                
-                $.post("/VersaStack-web/ViewServlet", {filterName: viewName, filterModel: viewModel.ttlModel}, function(response) {
-                        // handle response from your servlet.
+
+                $.post("/VersaStack-web/ViewServlet", {filterName: viewName, filterModel: viewModel.ttlModel}, function (response) {
+                    // handle response from your servlet.
                 });
-                
+
                 $("#loadingPanel").addClass("hide");
-                $("#hoverdiv").removeClass("hide");                    
+                $("#hoverdiv").removeClass("hide");
                 $("#viz").attr("class", "");
             }
 
@@ -226,7 +226,9 @@
                     }
                     else if (document.getElementById("displayName").innerText.indexOf("versa") > -1) {
                         formUrl = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=vs&graphTopo=" + document.getElementById("displayName").innerText + "";
-                    } else { return; }
+                    } else {
+                        return;
+                    }
 
                     window.open(formUrl);
                     evt.preventDefault();
@@ -251,7 +253,7 @@
 
                 $(".button-filter-select").click(function (evt) {
                     $(".current-filter").removeClass("current-filter");
-                    
+
                     var viewModels = ${user.getModels()};
                     if (this.id === "nofilter") {
                         reload();
@@ -263,15 +265,23 @@
 
                     evt.preventDefault();
                 });
-                
-                
-                
-                
-                $("#loadButton").click(function (evt) {
-                    $("#loadingPanel").toggleClass("hide");
-                    $("#hoverdiv").toggleClass("hide");
-                    
-                    $("#viz").attr("class", "");
+
+                $("#loadingButton").click(function (evt) {
+                    $("#loadingPanel").removeClass("hide");
+                    $("#hoverdiv").addClass("hide");
+                    $("#viz").attr("class", "loading");
+
+                    evt.preventDefault();
+                });
+
+                $("#displayPanel-tab").click(function (evt) {
+                    $("#displayPanel").toggleClass("closed");
+
+                    evt.preventDefault();
+                });
+
+                $("#jobsPanel-tab").click(function (evt) {
+                    $("#jobsPanel").toggleClass("closed");
 
                     evt.preventDefault();
                 });
@@ -480,23 +490,51 @@
                         <button class="button-filter-select" id="${filterName}">${filterName}</button>
                     </c:if>
                 </c:forEach>
+                ${jobs}
             </div>
         </div>
-                
+
+        <div class="closed" id="jobsPanel">
+            <div id="jobsPanel-tab">
+                Jobs
+            </div>
+            <div id ="jobsPanel-contents">
+                <table class="management-table" id="jobs-table">
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <c:forEach items="${serv.getJobStatuses()}" var="job">
+                            <tr>
+                                <td>${job.key}</td>
+                                <td>${job.value}</td>
+                            </tr>
+                        </c:forEach>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <div id="loadingPanel"></div>
-        <div id="displayPanel">
-            <button id="refreshButton">Refresh</button>
-            <button id="modelButton">Display Model</button>
-            <div id="displayName"></div>
-            <div id="treeMenu"></div>
-            <div id="actionMenu">
+        <div class="closed" id="displayPanel">
+            <div id="displayPanel-contents">
+                <button id="refreshButton">Refresh</button>
+                <button id="modelButton">Display Model</button>
+                <div id="displayName"></div>
+                <div id="treeMenu"></div>                
+            </div>
+            <div id="displayPanel-actions">
                 <button id="awsButton">Install AWS</button>
-                
+                <button id="loadingButton">Toggle Loading</button>
                 <div id="actionForm"></div>
             </div>
+            <div id="displayPanel-tab">^^^^^</div>
         </div>
         <div class="hide" id="hoverdiv"></div>        
-        
+
         <svg class="loading" id="viz">
         <defs>
         <!--When we highlight topologies without specifiyng a width and length, the get clipped
@@ -539,10 +577,12 @@
     <g id="anchor"/>
     <g id="node"/>
     <g id="dialogBox"/>
+    <g id="volumeDialogBox"/>
     <g id="switchPopup"/>
     <g id="parentPort"/>
     <g id="edge2" />
     <g id="port"/>
+    <g id="volume"/>
 
     </g>
     </svg>

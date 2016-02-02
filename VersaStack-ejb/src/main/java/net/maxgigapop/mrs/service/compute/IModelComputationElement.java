@@ -18,6 +18,7 @@ import net.maxgigapop.mrs.bean.ModelBase;
  */
 @Local
 public interface IModelComputationElement {
+
     @Asynchronous
     public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta);
 }

@@ -5,6 +5,7 @@
  */
 package net.maxgigapop.mrs.driver.aws;
 
+import com.amazonaws.AmazonServiceException;
 import net.maxgigapop.mrs.driver.aws.AwsAuthenticateService;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
@@ -92,11 +93,31 @@ public class AwsDCGet {
     public List<VirtualGateway> getVirtualGateways() {
         return virtualGateways;
     }
-    
+
     //get the client  for AWS DC
-    public AmazonDirectConnectClient getClient()
-    {
+    public AmazonDirectConnectClient getClient() {
         return client;
     }
-    
+
+    /**
+     * ****************************************************************
+     * function to wait for directconnect virtual interface deletion
+     * ****************************************************************
+     */
+    public void dxvifDeletionCheck(String id) {
+        DescribeVirtualInterfacesRequest request = new DescribeVirtualInterfacesRequest();
+        request.withVirtualInterfaceId(id);
+
+        while (true) {
+            try {
+                VirtualInterface resource = client.describeVirtualInterfaces(request).getVirtualInterfaces().get(0);
+                if (resource.getVirtualInterfaceState().equals(VirtualInterfaceState.Deleted.toString())) {
+                    break;
+                }
+            } catch (AmazonServiceException | NullPointerException e) {
+                break;
+            }
+        }
+    }
+  
 }

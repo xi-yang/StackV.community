@@ -21,7 +21,7 @@ define(["local/versastack/topology/modelConstants"],
                 this._map = map;
                 /**@type Array.Node**/
                 this.children = [];
-                this.isTopology=false;
+                this.isTopology = false;
                 this.isRoot = true;
                 this.uid = i++;
                 this.isFolded = false;
@@ -38,6 +38,10 @@ define(["local/versastack/topology/modelConstants"],
                 this.ports = [];
                 /**@type PortDisplayPopup**/
                 this.portPopup = null;
+                /**@type Array.Volume**/
+                this.volumes = [];
+                /**@type VolumeDisplayPopup**/
+                this.volumePopup = null;                
                 this.x = 0;
                 this.y = 0;
                 this.dx = 0;
@@ -111,10 +115,10 @@ define(["local/versastack/topology/modelConstants"],
                     }
                     return ans;
                 };
-                this.getTopologies = function(){
-                    var ans=[];
-                    map_(this.children,function(child){
-                        if(child.isTopology){
+                this.getTopologies = function () {
+                    var ans = [];
+                    map_(this.children, function (child) {
+                        if (child.isTopology) {
                             ans.push(child);
                         }
                     });

@@ -7,6 +7,7 @@ package net.maxgigapop.mrs.driver.aws;
 
 import net.maxgigapop.mrs.driver.aws.AwsAuthenticateService;
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.auth.policy.Resource;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ec2.model.*;
@@ -48,7 +49,11 @@ public class AwsEC2Get {
         instances = new ArrayList();
         if (reservation.size() >= 1) {
             for (Reservation t : reservation) {
-                instances.add(t.getInstances().get(0));
+                for (Instance i : t.getInstances()) {
+                    if (i.getState().getCode() != 48) { //do not add terminated instances
+                        instances.add(i);
+                    }
+                }
             }
         }
 
@@ -466,8 +471,7 @@ public class AwsEC2Get {
         while (true) {
             try {
                 Subnet resource = client.describeSubnets(request).getSubnets().get(0);
-                if (resource.getState().toLowerCase().equals(status.toLowerCase())) {
-                }
+                break;
             } catch (AmazonServiceException | NullPointerException e) {
                 break;
             }
@@ -612,8 +616,9 @@ public class AwsEC2Get {
         while (true) {
             try {
                 VpnGateway resource = client.describeVpnGateways(request).getVpnGateways().get(0);
-                if(resource.getState().toLowerCase().equals("deleted"))
+                if (resource.getState().toLowerCase().equals("deleted")) {
                     break;
+                }
             } catch (AmazonServiceException | NullPointerException e) {
                 break;
             }
@@ -625,7 +630,7 @@ public class AwsEC2Get {
      * function to wait for Vpn gateway attachment
      * ****************************************************************
      */
-    public void vpnGatewayAttachmentCheck(String id,String vpcId) {
+    public void vpnGatewayAttachmentCheck(String id, String vpcId) {
         DescribeVpnGatewaysRequest request = new DescribeVpnGatewaysRequest();
         request.withVpnGatewayIds(id);
 
@@ -847,5 +852,206 @@ public class AwsEC2Get {
             } catch (AmazonServiceException | NullPointerException e) {
             }
         }
+    }
+
+    /*
+     *******************************************************************
+     * Method to find root volume of instance 
+     * Note: This method should only be used after instance init
+     *******************************************************************
+     */
+    public Volume getInstanceRootDevice(Instance i) {
+        List<Volume> vols = this.client.describeVolumes().getVolumes();
+        for (Volume vol : vols) {
+            if (!vol.getAttachments().isEmpty()  && vol.getAttachments().get(0).getInstanceId().equalsIgnoreCase(i.getInstanceId())) {
+                return vol;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * ****************************************************************
+     * //function that checks if the id provided is a tag; if it is, it will
+     * return //the resource id, otherwise it will return the input parameter
+     * which is the //id of the resource //NOTE: does not work with volumes and
+     * instances because sometimes the tags // persist for a while in this
+     * resources, therefore we need to check if the // instance or volume
+     * actually exists
+     * ****************************************************************
+     */
+    public String getResourceId(String tag) {
+        Filter filter = new Filter();
+        filter.withName("value")
+                .withValues(tag);
+
+        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
+        tagRequest.withFilters(filter);
+        List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
+        if (!descriptions.isEmpty()) {
+            return descriptions.get(descriptions.size() - 1).getResourceId(); //get the last resource tagged with this id 
+        }
+
+        return tag;
+    }
+
+    /**
+     * ****************************************************************
+     * //function to get the Id from and instance tag
+     * ****************************************************************
+     */
+    public String getInstanceId(String tag) {
+        Filter filter = new Filter();
+        filter.withName("value")
+                .withValues(tag);
+
+        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
+        tagRequest.withFilters(filter);
+        List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
+        if (!descriptions.isEmpty()) {
+            for (TagDescription des : descriptions) {
+                Instance i = getInstance(des.getResourceId());
+                if (i != null && i.getState().getCode() != 48) //check if the instance was not deleted
+                {
+                    return des.getResourceId();
+                }
+            }
+        }
+        return tag;
+    }
+
+    /**
+     * ****************************************************************
+     * //function to get the Id from and volume tag
+     * ****************************************************************
+     */
+    public String getVolumeId(String tag) {
+        Filter filter = new Filter();
+        filter.withName("value")
+                .withValues(tag);
+
+        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
+        tagRequest.withFilters(filter);
+        List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
+        if (!descriptions.isEmpty()) {
+            for (TagDescription des : descriptions) {
+                Volume vol = getVolume(des.getResourceId());
+                if (vol != null && !vol.getState().equals("deleted")) {
+                    return des.getResourceId();
+                }
+            }
+        }
+        return tag;
+    }
+
+    /**
+     * ****************************************************************
+     * //function to get the Id from a volume tag
+     * ****************************************************************
+     */
+    public String getTableId(String tag) {
+        Filter filter = new Filter();
+        filter.withName("value")
+                .withValues(tag);
+
+        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
+        tagRequest.withFilters(filter);
+        List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
+        if (!descriptions.isEmpty()) {
+            for (TagDescription des : descriptions) {
+                RouteTable table = getRoutingTable(des.getResourceId());
+                if (table != null) {
+                    return des.getResourceId();
+                }
+            }
+        }
+        return tag;
+    }
+
+    /**
+     * ****************************************************************
+     * function to get the Id from a volume tag
+     * ****************************************************************
+     */
+    public String getVpcId(String tag) {
+        Filter filter = new Filter();
+        filter.withName("value")
+                .withValues(tag);
+
+        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
+        tagRequest.withFilters(filter);
+        List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
+        if (!descriptions.isEmpty()) {
+            for (TagDescription des : descriptions) {
+                Vpc vpc = getVpc(des.getResourceId());
+                if (vpc != null) {
+                    return des.getResourceId();
+                }
+            }
+        }
+        return tag;
+    }
+
+    /**
+     * ****************************************************************
+     * function to get the Id from a vpnGateway tag
+     * ****************************************************************
+     */
+    public String getVpnGatewayId(String tag) {
+        Filter filter = new Filter();
+        filter.withName("value")
+                .withValues(tag);
+
+        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
+        tagRequest.withFilters(filter);
+        List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
+        if (!descriptions.isEmpty()) {
+            for (TagDescription des : descriptions) {
+                VpnGateway vpn = getVirtualPrivateGateway(des.getResourceId());
+                if (vpn != null) {
+                    return des.getResourceId();
+                }
+            }
+        }
+        return tag;
+    }
+
+    /**
+     * ****************************************************************
+     * function to tag a resource
+     * ****************************************************************
+     */
+    public void tagResource(String id, String tag) {
+        CreateTagsRequest tagRequest = new CreateTagsRequest();
+        tagRequest.withTags(new Tag("id", tag));
+        tagRequest.withResources(id);
+        while (true) {
+            try {
+                client.createTags(tagRequest);
+                break;
+            } catch (AmazonServiceException e) {
+            }
+        }
+    }
+
+    /**
+     * ************************************************************
+     * Method to find a tag form a resource given the resource id
+     *
+     * ************************************************************ @param tag
+     * @param tagName
+     * @param tags
+     * @return String
+     */
+    public String getTagValue(String tagName, List<Tag> tags) {
+        if (tags == null) {
+            return null;
+        }
+        for (Tag tag : tags) {
+            if (tag.getKey().equalsIgnoreCase(tagName)) {
+                return tag.getValue();
+            }
+        }
+        return null;
     }
 }

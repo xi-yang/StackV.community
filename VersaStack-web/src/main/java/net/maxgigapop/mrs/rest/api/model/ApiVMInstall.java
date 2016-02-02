@@ -16,41 +16,31 @@ import javax.xml.bind.annotation.XmlRootElement;
  *
  * @author max
  */
-
-@XmlRootElement(name="vm-install")
+@XmlRootElement(name = "vm-install")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ApiVMInstall {
-    @XmlElement(required=true)    
+
+    @XmlElement(required = true)
     protected Map<String, String> properties = new HashMap<>();
-    protected Map<String, String> subnets = new HashMap<>();
-    protected Map<String, String> volumes = new HashMap<>();
 
     public Map<String, String> getProperties() {
         return properties;
     }
-    
-    public Map<String, String> getSubnets() {
-        return subnets;
-    }
-    
-    public Map<String, String> getVolumes() {
-        return volumes;
-    }
-    
+
     public void setProperties(Map<String, String> properties) {
         this.properties = properties;
     }
-    
-    public String getTopologyUri() throws Exception{
-        if (!properties.containsKey("topologyUri"))
+
+    public String getTopologyUri() throws Exception {
+        if (!properties.containsKey("topologyUri")) {
             throw new Exception("Can't find topologyUri");
-        else
+        } else {
             return properties.get("topologyUri");
+        }
     }
 //    @Override
 //    public String toString() {
 //        return "net.maxgigapop.mrs.model.DriverInstance[ topologyUri=" + topologyUri + " ]";
 //    }
-
 
 }

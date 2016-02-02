@@ -4,19 +4,26 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import static java.lang.Thread.sleep;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Random;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
 
 public class serviceBeans {
@@ -150,6 +157,8 @@ public class serviceBeans {
      */
     public int vmInstall(Map<String, String> paraMap){
         String vgUuid = null;
+        String driverType = null;
+        String hypervisor = null;
         String topoUri = null;
         String region = null;
         String vpcUri = null;
@@ -159,10 +168,13 @@ public class serviceBeans {
         String[] subnets = null;
         String[] volumes = null;
         int quantity;
+
         //Map the parsing parameters into each variable
         for(Map.Entry<String, String> entry : paraMap.entrySet()){
-            if(entry.getKey().equalsIgnoreCase("versionGroup"))
-                vgUuid = entry.getValue();
+            if(entry.getKey().equalsIgnoreCase("driverType"))
+                driverType = entry.getValue();
+            else if(entry.getKey().equalsIgnoreCase("hypervisor"))
+                hypervisor = entry.getValue();
             else if(entry.getKey().equalsIgnoreCase("topologyUri"))
                 topoUri = entry.getValue();
             else if(entry.getKey().equalsIgnoreCase("region"))
@@ -182,7 +194,7 @@ public class serviceBeans {
             else if(entry.getKey().equalsIgnoreCase("volumes"))
                 volumes = entry.getValue().split("\r\n");            
         }
-        
+
         try {
             URL url = new URL(String.format("%s/model/", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -214,6 +226,7 @@ public class serviceBeans {
 
         //create a system instance and get an UUID for this system instance from the API
         String siUuid;
+
         try {
             URL url = new URL(String.format("%s/model/systeminstance", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -224,7 +237,6 @@ public class serviceBeans {
         } catch (Exception e) {
             return 3;//connection error
         }
-
         //building ttl model
         String delta = "<delta>\n<id>1</id>\n"
                 + "<creationTime>2015-03-11T13:07:23.116-04:00</creationTime>\n"
@@ -237,59 +249,76 @@ public class serviceBeans {
                 + "@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .\n"
                 + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
                 + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n\n";
-
-        String nodeTag = "&lt;" + topoUri + ":i-" + UUID.randomUUID().toString() + "&gt;";
-        String model = "&lt;" + vpcUri + "&gt;\n"
-                + "        nml:hasNode        " + nodeTag + ".\n\n"
-                + "&lt;" + topoUri + ":ec2service-" + region + "&gt;\n"
-                + "        mrs:providesVM  " + nodeTag + ".\n\n";
         
-        //building all the volumes 
-        String allVolUri = "";
-        for(String vol : volumes){
-            String volUri = "&lt;" + topoUri + ":vol-" + UUID.randomUUID().toString() + "&gt;";
-            String[] parameters = vol.split(",");
-            model += volUri +"\n        a                  mrs:Volume , owl:NamedIndividual ;\n"
+        //check if driver the client choose is of AWS
+        if(driverType.equalsIgnoreCase("awsdriver")){
+            String nodeTag = "&lt;" + topoUri + ":i-" + UUID.randomUUID().toString() + "&gt;";
+            String model = "&lt;" + vpcUri + "&gt;\n"
+                    + "        nml:hasNode        " + nodeTag + ".\n\n"
+                    + "&lt;" + topoUri + ":ec2service-" + region + "&gt;\n"
+                    + "        mrs:providesVM  " + nodeTag + ".\n\n";
+        
+            //building all the volumes 
+            String allVolUri = "";
+            for(String vol : volumes){
+               String volUri = "&lt;" + topoUri + ":vol-" + UUID.randomUUID().toString() + "&gt;";
+               String[] parameters = vol.split(",");
+               model += volUri +"\n        a                  mrs:Volume , owl:NamedIndividual ;\n"
                     + "        mrs:disk_gb        \"" + parameters[0] + "\" ;\n" 
                     + "        mrs:target_device  \"" + parameters[2] + "\" ;\n"
                     + "        mrs:value          \"" + parameters[1] + "\" .\n\n";
-            allVolUri += volUri + " , ";
-        }        
-        model += "&lt;" + topoUri + ":ebsservice-" + region + "&gt;\n"
-                + "        mrs:providesVolume  " + allVolUri.substring(0, (allVolUri.length()-2)) + ".\n\n";
+                allVolUri += volUri + " , ";
+            }        
+            model += "&lt;" + topoUri + ":ebsservice-" + region + "&gt;\n"
+                   + "        mrs:providesVolume  " + allVolUri.substring(0, (allVolUri.length()-2)) + ".\n\n";
 
-        //building all the network interfaces
-        String allSubnets = "";
-        for(String net : subnets){
-            //temporary code for assign IP
-            String[] parameter = net.split(",");
-            String assignedIp = parameter[1].substring(0, parameter[1].length()-1);
-            Random rand = new Random();
-            int i = rand.nextInt(251) + 4;
+            //building all the network interfaces
+            String allSubnets = "";
+            for(String net : subnets){
+                String portUri = "&lt;" + topoUri + ":eni-" + UUID.randomUUID().toString() + "&gt;";
+                model += "&lt;" + net + "&gt;\n        nml:hasBidirectionalPort " + portUri + " .\n\n"
+                       + portUri + "\n        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n"
+                        + "        mrs:hasTag            &lt;" + topoUri + ":portTag&gt; .\n\n";
             
-            //codes for assigning IP should be cleaned after AWS driver code being fixed
-            String portUri = "&lt;" + topoUri + ":eni-" + UUID.randomUUID().toString() + "&gt;";
-            model += "&lt;" + parameter[0] + "&gt;\n        nml:hasBidirectionalPort " + portUri + " .\n\n"
-                    + portUri + "\n        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n"
-                    + "        mrs:hasTag            &lt;" + topoUri + ":portTag&gt; ;\n"
-                    + "        mrs:hasNetworkAddress  &lt;"+ topoUri + ":" + assignedIp + i +"&gt; .\n\n"
-                    + "&lt;"+ topoUri + ":" + assignedIp + i +"&gt;\n        "
-                    + "a      mrs:NetworkAddress , owl:NamedIndividual ;\n"
-                    + "        mrs:type  \"ipv4:private\" ;\n"
-                    + "        mrs:value \""+ assignedIp + i +"\" .\n\n";
-            
-            allSubnets += portUri + " , "; 
+                allSubnets += portUri + " , "; 
+            }
+        
+            //building the node
+            model += nodeTag +"\n        a                         nml:Node , owl:NamedIndividual ;\n"
+                    + "        mrs:providedByService     &lt;" + topoUri + ":ec2service-" + region + "&gt; ;\n"
+                    + "        mrs:hasVolume             " 
+                    + allVolUri.substring(0, (allVolUri.length()-2)) + ";\n"
+                    + "        nml:hasBidirectionalPort  "
+                    + allSubnets.substring(0, (allSubnets.length()-2)) + ".\n\n";
+        
+            delta += model + "</modelAddition>\n</delta>";
         }
-        
-        //building the node
-        model += nodeTag +"\n        a                         nml:Node , owl:NamedIndividual ;\n"
-                + "        mrs:providedByService     &lt;" + topoUri + ":ec2service-" + region + "&gt; ;\n"
-                + "        mrs:hasVolume             " 
-                + allVolUri.substring(0, (allVolUri.length()-2)) + ";\n"
-                + "        nml:hasBidirectionalPort  "
-                + allSubnets.substring(0, (allSubnets.length()-2)) + ".\n\n";
-        
-        delta += model + "</modelAddition>\n</delta>";
+        //
+        else if (driverType.equalsIgnoreCase("openStackDriver")){
+            String nodeTag = "&lt;" + topoUri + ":server-name+" + UUID.randomUUID().toString() + "&gt;";
+            String model = "&lt;" + vpcUri + "&gt;\n"
+                    + "        nml:hasNode        " + nodeTag + ".\n\n"
+                    + "&lt;" + hypervisor + "&gt;\n"
+                    + "        mrs:providesVM  " + nodeTag + ".\n\n";
+            //building all the subnets connected
+            String allSubnets = "";
+            for(String net : subnets){
+                String portUri = "&lt;" + topoUri + ":port+" + UUID.randomUUID().toString() + "&gt;";
+                model += "&lt;" + net + "&gt;\n       a       mrs:SwitchingSubnet , owl:NamedIndividual ;\n"
+                        + "        nml:hasBidirectionalPort " + portUri + " .\n\n"
+                        + portUri + "\n        a       nml:BidirectionalPort , owl:NamedIndividual ;\n"
+                        + "        mrs:hasTag             &lt;" + topoUri + ":portTag&gt; .\n\n";
+                allSubnets += portUri + " , ";
+            }
+            //building the node
+            model += nodeTag + "\n        a       nml:Node , owl:NamedIndividual ;\n"
+                    + "        nml:hasBidirectionalPort                "
+                    + allSubnets.substring(0, (allSubnets.length()-2)) + ".\n\n";
+            
+            delta += model + "</modelAddition>\n</delta>";
+        }
+
+
         
         //push to the system api and get response
         try {
@@ -316,7 +345,192 @@ public class serviceBeans {
         
         
         return 0;
+
     }
+    
+    
+    public  int createConnection(Map<String, String> paraMap){
+         
+     
+        String topoUri = null;
+        String refUuid = null;
+        List<String> connection = new ArrayList<>();
+        int i=1;String connPara;
+        String vgUuid = null;int x =1;
+                
+        for(Map.Entry<String, String> entry : paraMap.entrySet())
+        {
+                    
+            //System.out.println(entry.getKey());
+
+            //tring entryKey = 
+            
+            if(entry.getKey().equalsIgnoreCase("connUri"))
+            {
+                topoUri = entry.getValue();
+                //System.out.println("topoUri"+topoUri);
+            }
+            if(entry.getKey().contains("conn"))
+            {
+                //System.out.println("I'm inside conn");
+                connection.add(entry.getValue());
+                
+            }
+            
+        }
+       //for(String d : connection)
+               // System.out.println("conn"+d );
+            
+        /*paraMap.put(“topoUri”, “urn:ogf:network:vo1.maxgigapop.net:link”);
+          paraMap.put(“conn1”, “urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&
+          vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029”);
+          paraMap.put(“conn2”,“urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&
+          vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029”);*/
+            
+        JSONObject jsonConnect = new JSONObject();   
+       // JSONArray jsonLink = new JSONArray();
+        //
+            for(String link : connection){
+                //JSONArray jsonLink = new JSONArray();
+                JSONObject jsonPort = new JSONObject();
+                connPara = topoUri+"=conn"+i;
+                // <<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&vlan_tag+3021-3029>>>>>\r\n<<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029>>>>>”
+                //JSONObject jsonPort = new JSONObject();
+                String[] linkPara = link.split("\r\n");
+                //System.out.println("linkPara");
+                /*for(int o=0;o<linkPara.length;o++)
+                {
+                    System.out.println(o+linkPara[o]);
+                }
+                System.out.println("");*/
+                    for(String port : linkPara){
+                        //JSONObject jsonPort = new JSONObject();
+                        //<<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*>>>>>>&<<<<<vlan_tag+3021-3029>>>>>>
+                        String[] portPara = port.split("&");
+                        //System.out.println("portPara");
+                        /*for(int o=0;o<portPara.length;o++)
+                         {
+                           System.out.println(o+portPara[o]);
+                          }*/
+                        JSONObject jsonVlan = new JSONObject();
+                            for(String vlan : portPara){
+                                if(vlan.contains("vlan"))
+                                {
+                                    //vlan_tag+3021-3029
+                                    String[] vlanPara = vlan.split("\\+");
+                                    //System.out.println("vlanPara");
+                                    /* for(int o=0;o<vlanPara.length;o++)
+                                    {
+                                        System.out.println(o+vlanPara[o]);
+                                    }*/
+                                    jsonVlan.put(vlanPara[0], vlanPara[1]);
+                                    //System.out.println("jsonVlan");
+                                    //System.out.println(jsonVlan.toString()); 
+                                }
+                           // jsonPort.put(portPara[0], jsonVlan);  
+                           
+                            }
+                            jsonPort.put(portPara[0], jsonVlan); 
+                            // System.out.println("jsonPort");
+                            //System.out.println(jsonPort.toString());
+                            //System.out.println("LinkPort");
+                    //System.out.println(jsonLink.toString());
+                    //jsonLink.add(jsonPort);        
+                    }
+                    //System.out.println("LinkPort");
+                    //System.out.println(jsonLink.toString());
+                    //jsonLink.add(jsonPort);  
+                    i++;
+            jsonConnect.put(connPara, jsonPort);
+            
+            }
+            
+      System.out.println(jsonConnect.toString());     
+      
+      
+    String delta = "<serviceDelta>\n<uuid>" + UUID.randomUUID().toString()+
+                "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"+
+                "\n\n<modelAddition>\n" 
+                + "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
+                + "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n"
+                + "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n"
+                + "@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .\n"
+                + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
+                + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n\n"
+                + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n" ;
+    
+    for(String link : connection){
+        
+        delta += "&lt;urn:ogf:network:vo1.maxgigapop.net:link=conn" + x + "&gt;\n" +
+                 "a            mrs:SwitchingSubnet ;\n" +
+                 "spa:dependOn &lt;x-policy-annotation:action:create-path&gt;.\n\n";
+        x++;
+    }
+    
+    delta += "&lt;x-policy-annotation:action:create-path&gt;\n"+
+    "a            spa:PolicyAction ;\n"+
+    "spa:type     \"MCE_MPVlanConnection\" ;\n"+
+    "spa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;\n"+
+    "spa:exportTo &lt;x-policy-annotation:data:conn-criteriaexport&gt; .\n\n"+
+    "&lt;x-policy-annotation:data:conn-criteria&gt;\n"+
+    "a            spa:PolicyData;\n"+
+    "spa:type     \"JSON\";"+
+    "spa:value    \"\"\""+ jsonConnect.toString().replace("\\", "") +
+    "\"\"\".\n\n&lt;x-policy-annotation:data:vpc-criteriaexport&gt;\n" +
+    "    a            spa:PolicyData;\n\n" + 
+    "</modelAddition>\n\n" +
+    "</serviceDelta>";
+    
+    System.out.println("The delta is"+ delta);
+    
+    
+        
+    
+       // return 0;
+    
+     String result;
+        try {
+//            URL url = new URL(String.format("%s/service/instance", host));
+//            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+//            siUuid = this.executeHttpMethod(url, connection, "GET", null);
+//            if (siUuid.length() != 36) {
+//                return 2;//Error occurs when interacting with back-end system
+//            }
+            URL url = new URL(String.format("%s/service/%s", host, refUuid));
+            HttpURLConnection compile = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, compile, "POST",delta);
+            if (!result.contains("referenceVersion")) {
+                return 2;//Error occurs when interacting with back-end system
+            }
+            url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
+            HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, propagate, "PUT", null);
+            if (!result.equals("PROPAGATED")) {
+                return 2;//Error occurs when interacting with back-end system
+            }
+            url = new URL(String.format("%s/service/%s/commit", host, refUuid));
+            HttpURLConnection commit = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, commit, "PUT", null);
+            if (!result.equals("COMMITTED")) {
+                return 2;//Error occurs when interacting with back-end system
+            }
+            url = new URL(String.format("%s/service/%s/status", host, refUuid));
+            while(true){
+                HttpURLConnection status = (HttpURLConnection) url.openConnection();
+                result = this.executeHttpMethod(url, status, "GET", null); 
+                if(result.equals("READY"))
+                    return 0;//create network successfully
+                else if(!result.equals("COMMITTED"))
+                    return 3;//Fail to create network
+                sleep(5000);//wait for 5 seconds and check again later
+            }
+        } catch (Exception e) {
+            return 1;//connection error
+        }
+    
+    
+    
+}
 
     /**
      * Create a customize model view based on the criteria user specifies.
@@ -386,10 +600,260 @@ public class serviceBeans {
         
         return result;
     }       
+        
+    public int createNetwork(Map<String, String> paraMap){
+        String topoUri = null;
+        String driverType = null;
+        String netCidr = null;
+        String refUuid = null;
+        List<String> subnets = new ArrayList<>();
+        List<String> vmList = new ArrayList<>();
+        boolean gwVpn = false;
+
+        for (Map.Entry<String, String> entry : paraMap.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase("driverType")) {
+                driverType = entry.getValue();
+            } else if (entry.getKey().equalsIgnoreCase("topoUri")) {
+                topoUri = entry.getValue();
+            } else if (entry.getKey().equalsIgnoreCase("netCidr")) {
+                netCidr = entry.getValue();
+            } else if (entry.getKey().equalsIgnoreCase("instanceUUID")) {
+                refUuid = entry.getValue();
+            } else if (entry.getKey().contains("subnet")) {
+                subnets.add(entry.getValue());
+            } else if (entry.getKey().contains("vm")) {
+                vmList.add(entry.getValue());
+            }
+            //example for vm : 1&imageType&instanceType&volumeSize&batch
+        }
+        
+        JSONObject network = new JSONObject();
+        network.put("type", "internal");
+        network.put("cidr", netCidr);
+        network.put("parent", topoUri);
+        
+        JSONArray subnetsJson = new JSONArray();
+        //routing problem solved. need testing.
+        for(String net : subnets){
+            String[] netPara = net.split("&");
+            JSONObject subnetValue = new JSONObject();
+            for(String para : netPara){
+                if(para.startsWith("routes")){
+                    String[] route = para.substring(6).split("\r\n");
+                    JSONArray routesArray = new JSONArray();
+                    for(String r : route){
+                        String[] routePara = r.split(",");
+                        JSONObject jsonRoute = new JSONObject();
+                        for(String rp : routePara){
+                            String[] keyValue = rp.split("\\+");
+                            jsonRoute.put(keyValue[0], keyValue[1]);
+                            if(keyValue[1].contains("vpn"))
+                                gwVpn = true;
+                        }
+                        routesArray.add(jsonRoute);
+                    }
+                    subnetValue.put("routes",routesArray);
+                }
+                else{
+                    String[] keyValue = para.split("\\+");
+                    subnetValue.put(keyValue[0], keyValue[1]);
+                }
+            }
+            subnetsJson.add(subnetValue);
+        }
+        network.put("subnets", subnetsJson);
+        
+        JSONArray routesJson = new JSONArray();
+        JSONObject routesValue = new JSONObject();
+        routesValue.put("to", "0.0.0.0/0");
+        routesValue.put("nextHop", "internet");
+        routesJson.add(routesValue);
+        network.put("routes", routesJson);
+
+        
+        JSONArray gatewaysJson = new JSONArray();
+        JSONObject temp = new JSONObject();
+        temp.put("type", "internet");
+        gatewaysJson.add(temp);
+        if(gwVpn){
+            JSONObject gatewayValue = new JSONObject();
+            gatewayValue.put("type", "vpn");
+            gatewaysJson.add(gatewayValue);
+        }
+        network.put("gateways", gatewaysJson);
+        
+        
+        String svcDelta = "<serviceDelta>\n<uuid>" + UUID.randomUUID().toString()+
+                "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"+
+                "\n\n<modelAddition>\n" +
+                "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n" +
+                "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n" +
+                "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n" +
+                "@prefix rdf:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n" +
+                "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n" +
+                "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n" +
+                "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n" +
+                "&lt;" + topoUri + ":vpc=abstract&gt;\n" +
+                "    a                         nml:Topology ;\n" +
+                "    spa:dependOn &lt;x-policy-annotation:action:create-" + driverType + "-vpc&gt; .\n\n";
+        
+        if(vmList.isEmpty()){
+            svcDelta += "&lt;x-policy-annotation:action:create-" + driverType + "-vpc&gt;\n" +
+                    "    a           spa:PolicyAction ;\n" +
+                    "    spa:type     \"MCE_VirtualNetworkCreation\" ;\n" +
+                    "    spa:importFrom &lt;x-policy-annotation:data:vpc-criteria&gt; ;\n" +
+                    "    spa:exportTo &lt;x-policy-annotation:data:vpc-criteriaexport&gt; .\n\n" +
+                    "&lt;x-policy-annotation:data:vpc-criteria&gt;\n" +
+                    "    a            spa:PolicyData;\n" +
+                    "    spa:type     nml:Topology;\n" +
+                    "    spa:value    \"\"\"" + network.toString().replace("\\", "") +
+                    "\"\"\".\n\n&lt;x-policy-annotation:data:vpc-criteriaexport&gt;\n" +
+                    "    a            spa:PolicyData;\n\n" +
+                    "</modelAddition>\n\n" +
+                    "</serviceDelta>";
+        }
+        else{
+            String exportTo = "";
+            int vmNumber = 1;
+            for (String vm : vmList){
+                String[] vmPara = vm.split("&");
+                //1:subnet #
+                //2:image Type
+                //3:instance Type
+                //4:volume size
+                //5:batch
+                svcDelta += "&lt;" + topoUri + ":vpc=abstract:vm" + vmNumber + "&gt;\n" +
+                        "    a                         nml:Node ;\n" +
+                        "    nml:hasBidirectionalPort   &lt;" + topoUri + ":vpc=abstract:vm" + vmNumber + ":eth0&gt; ;\n" +
+                        "    spa:dependOn &lt;x-policy-annotation:action:create-vm" + vmNumber + "&gt;.\n\n" +
+                        "&lt;" + topoUri + ":vpc=abstract:vm" + vmNumber + ":eth0&gt;\n" +
+                        "    a            nml:BidirectionalPort;\n" +
+                        "    spa:dependOn &lt;x-policy-annotation:action:create-vm" + vmNumber + "&gt;.\n\n" +
+                        "&lt;x-policy-annotation:action:create-vm" + vmNumber + "&gt;\n" +
+                        "    a            spa:PolicyAction ;\n" +
+                        "    spa:type     \"MCE_VMFilterPlacement\" ;\n" +
+                        "    spa:dependOn &lt;x-policy-annotation:action:create-" + driverType + "-vpc&gt; ;\n" +
+                        "    spa:importFrom ";
+                String subnetCriteria = "&lt;x-policy-annotation:data:vpc-subnet-vm"+ vmNumber +"-criteria&gt;";
+                exportTo += subnetCriteria + ", ";
+                int sub = Integer.valueOf(vmPara[0]) - 1;
+                svcDelta += subnetCriteria + ".\n\n" +
+                        subnetCriteria + "\n    a            spa:PolicyData;\n" +
+                        "    spa:type     \"JSON\";\n    spa:format    \"\"\"{ " +
+                        "\"place_into\": \"%%$.subnets[" + sub + "].uri%%\"}\"\"\" .\n\n";
+                vmNumber++;                
+            }
+            svcDelta += "&lt;x-policy-annotation:action:create-" + driverType + "-vpc&gt;\n" +
+                    "    a           spa:PolicyAction ;\n" +
+                    "    spa:type     \"MCE_VirtualNetworkCreation\" ;\n" +
+                    "    spa:importFrom &lt;x-policy-annotation:data:vpc-criteria&gt; ;\n" +
+                    "    spa:exportTo " + exportTo.substring(0, (exportTo.length()-2)) + " .\n\n" +
+                    "&lt;x-policy-annotation:data:vpc-criteria&gt;\n" +
+                    "    a            spa:PolicyData;\n" +
+                    "    spa:type     nml:Topology;\n" +
+                    "    spa:value    \"\"\"" + network.toString().replace("\\", "") +
+                    "\"\"\".\n\n&lt;x-policy-annotation:data:vpc-criteriaexport&gt;\n" +
+                    "    a            spa:PolicyData.\n\n" +
+                    "</modelAddition>\n\n" +
+                    "</serviceDelta>";
+        }
+        
+        try {
+        PrintWriter out = new PrintWriter("/Users/rikenavadur/test.ttl");
+        out.println(svcDelta);
+        out.close();
+        } catch (Exception e) {
+            
+        }
+        //System.out.println(svcDelta);
+        
+//        String siUuid;
+        String result;
+        try {
+//            URL url = new URL(String.format("%s/service/instance", host));
+//            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+//            siUuid = this.executeHttpMethod(url, connection, "GET", null);
+//            if (siUuid.length() != 36) {
+//                return 2;//Error occurs when interacting with back-end system
+//            }
+            URL url = new URL(String.format("%s/service/%s", host, refUuid));
+            HttpURLConnection compile = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, compile, "POST", svcDelta);
+            if (!result.contains("referenceVersion")) {
+                return 2;//Error occurs when interacting with back-end system
+            }
+            url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
+            HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, propagate, "PUT", null);
+            if (!result.equals("PROPAGATED")) {
+                return 2;//Error occurs when interacting with back-end system
+            }
+            url = new URL(String.format("%s/service/%s/commit", host, refUuid));
+            HttpURLConnection commit = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, commit, "PUT", null);
+            if (!result.equals("COMMITTED")) {
+                return 2;//Error occurs when interacting with back-end system
+            }
+            url = new URL(String.format("%s/service/%s/status", host, refUuid));
+            while(true){
+                HttpURLConnection status = (HttpURLConnection) url.openConnection();
+                result = this.executeHttpMethod(url, status, "GET", null); 
+                if(result.equals("READY"))
+                    return 0;//create network successfully
+                else if(!result.equals("COMMITTED"))
+                    return 3;//Fail to create network
+                sleep(5000);//wait for 5 seconds and check again later
+            }
+        } catch (Exception e) {
+            return 1;//connection error
+        }
+    }
+
 
     
-    // Utility Functions
     
+    
+    
+// UTILITY FUNCTIONS -----------------------------------------------------------
+    
+    public HashMap<String, String> getJobStatuses() throws SQLException {
+        HashMap<String, String> retMap = new HashMap<>();
+        
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        ArrayList<String> service_list = new ArrayList<>();
+        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID FROM service S, service_instance I WHERE I.service_id = S.service_id");
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {
+            String name = rs1.getString("name");
+            String refId = rs1.getString("referenceUUID");
+
+            String status;
+            try {
+                URL url = new URL(String.format("%s/service/%s/status", host, refId));
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                status = this.executeHttpMethod(url, connection, "GET", null);
+                
+                retMap.put(name, status);
+            } catch (Exception e) {
+                System.out.println(e.toString());//query error
+            }
+        }
+
+        return retMap;
+    }      
+    
+    private HashMap<String,ArrayList<String>> getJobProperties() throws SQLException {
+        HashMap<String, ArrayList<String>> retMap = new HashMap<>();
+        
+        return retMap;
+    }
+
     /**
      * Executes HTTP Request.
      * @param url destination url
@@ -399,7 +863,7 @@ public class serviceBeans {
      * @return response string.
      * @throws IOException 
      */
-    private String executeHttpMethod(URL url, HttpURLConnection conn, String method, String body) throws IOException {
+    public String executeHttpMethod(URL url, HttpURLConnection conn, String method, String body) throws IOException {
         conn.setRequestMethod(method);
         conn.setRequestProperty("Content-type", "application/xml");
         conn.setRequestProperty("Accept", "application/json");
@@ -424,5 +888,42 @@ public class serviceBeans {
         }
         return responseStr.toString();
     }
-    
+
+    public ArrayList<ArrayList<String>> instanceStatusCheck() throws SQLException {
+        ArrayList<ArrayList<String>> retList = new ArrayList<>();
+        ArrayList<String> banList = new ArrayList<>();
+        banList.add("Driver Management");
+        
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", "root");
+        front_connectionProps.put("password", "root");
+
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
+                front_connectionProps);
+
+        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID FROM service S, service_instance I WHERE S.service_id = I.service_id");
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {
+            ArrayList<String> instanceList = new ArrayList<>();
+
+            String instanceName = rs1.getString("name");
+            String instanceUUID = rs1.getString("referenceUUID");
+            if (!banList.contains(instanceName)) {
+                try {
+                    URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
+                    HttpURLConnection status = (HttpURLConnection) url.openConnection();
+
+                    instanceList.add(instanceName);
+                    instanceList.add(instanceUUID);                        
+                    instanceList.add(this.executeHttpMethod(url, status, "GET", null));
+
+                    retList.add(instanceList);
+                } catch (IOException ex) {
+                }
+            }
+        }
+
+        return retList;
+    }
 }

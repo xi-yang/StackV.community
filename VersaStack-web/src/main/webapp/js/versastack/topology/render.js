@@ -7,8 +7,11 @@ define([
     "local/d3",
     "local/versastack/utils",
     "local/versastack/topology/PortDisplayPopup",
-    "local/versastack/topology/switchServicePopup"
-], function (d3, utils, PortDisplayPopup, SwitchPopup) {
+    "local/versastack/topology/switchServicePopup",
+    "local/versastack/topology/VolumeDisplayPopup",
+    "local/versastack/topology/modelConstants"
+
+], function (d3, utils, PortDisplayPopup, SwitchPopup, VolumeDisplayPopup, values) {
 
     var map_ = utils.map_;
     var settings = {
@@ -40,6 +43,36 @@ define([
         DIALOG_OFFSET_X: 0,
         DIALOG_OFFSET_Y: -20
     };
+    var volumeSettings = {
+        NODE_SIZE: 30,
+        SERVICE_SIZE: 10,
+        TOPOLOGY_SIZE: 15,
+        TOPOLOGY_BUFFER: 30,
+        TOPOLOGY_ANCHOR_SIZE: 8,
+        TOPOLOGY_ANCHOR_STROKE: 2,
+        ENLARGE_FACTOR: .2,
+        HULL_COLORS: ["rgb(0,100,255)", "rgb(255,0,255)"],
+        HULL_OPACITY: .2,
+        EDGE_COLOR: "rgb(0,0,0)",
+        EDGE_WIDTH: 2,
+        DIALOG_NECK_WIDTH: 3,
+        DIALOG_NECK_HEIGHT: 40,
+        DIALOG_MIN_WIDTH: 15,
+        DIALOG_MIN_HEIGHT: 10,
+        DIALOG_BEVEL: 5,
+        DIALOG_COLOR: "rgb(94,209,98)",
+        DIALOG_OPACITY: "0.7",
+        DIALOG_PORT_EMPTY_COLOR: "rgb(128,128,0)",
+        DIALOG_PORT_COLORS: ["rgb(64,64,64)", "rgb(128,128,128)"],
+        DIALOG_PORT_HEIGHT: 6,
+        DIALOG_PORT_WIDTH: 8,
+        DIALOG_PORT_LEAD: 8,
+        DIALOG_PORT_BUFFER_VERT: 2,
+        DIALOG_PORT_BUFFER_HORZ: 3,
+        DIALOG_OFFSET_X: -20,
+        DIALOG_OFFSET_Y: -20      
+    };
+    
     var switchSettings = {
         NODE_SIZE: 30,
         SERVICE_SIZE: 10,
@@ -157,6 +190,8 @@ define([
             svgContainer.select("#anchor").selectAll("*").remove(); //Clear the previous drawing
             svgContainer.select("#parentPort").selectAll("*").remove();
             svgContainer.select("#switchPopup").selectAll("*").remove();
+            svgContainer.select("#volume").selectAll("*").remove();
+            
             nodeList = model.listNodes();
             edgeList = model.listEdges();
             //Recall that topologies are also considered nodes
@@ -169,21 +204,26 @@ define([
         redraw_ = redraw;
         /**@param {Node} n**/
         function drawNode(n) {
-            if (n.isLeaf()) {
-                if (!n.portPopup) {
-                    n.portPopup = buildPortDisplayPopup(n);
+
+                if (n.isLeaf()) {
+                    if (!n.portPopup) {
+                        n.portPopup = buildPortDisplayPopup(n);
+                    }
+                    if (!n.volumePopup) {
+                        n.volumePopup = buildVolumeDisplayPopup(n);
+                    }
+
+                    n.svgNode = svgContainer.select("#node").append("image")
+                            .attr("xlink:href", n.getIconPath())
+                            .on("click", onNodeClick.bind(undefined, n))
+                            .on("dblclick", onNodeDblClick.bind(undefined, n))
+                            .on("mousemove", onNodeMouseMove.bind(undefined, n))
+                            .on("mouseleave", onNodeMouseLeave.bind(undefined, n))
+                            .call(makeDragBehaviour(n));
+                    setElementSize(n, false);
+                    drawServices(n);
+                    updateSvgChoordsNode(n);
                 }
-                n.svgNode = svgContainer.select("#node").append("image")
-                        .attr("xlink:href", n.getIconPath())
-                        .on("click", onNodeClick.bind(undefined, n))
-                        .on("dblclick", onNodeDblClick.bind(undefined, n))
-                        .on("mousemove", onNodeMouseMove.bind(undefined, n))
-                        .on("mouseleave", onNodeMouseLeave.bind(undefined, n))
-                        .call(makeDragBehaviour(n));
-                setElementSize(n, false);
-                drawServices(n);
-                updateSvgChoordsNode(n);
-            }
         }
         /**@param {Node} n**/
         function drawTopology(n) {
@@ -191,6 +231,10 @@ define([
                 if (!n.portPopup) {
                     n.portPopup = buildPortDisplayPopup(n);
                 }
+                if (!n.volumePopup) {
+                    n.volumePopup = buildVolumeDisplayPopup(n);
+                }
+                
                 //render the convex hull surounding the decendents of n
                 var path = getTopolgyPath(n);
                 var color = settings.HULL_COLORS[n.getDepth() % settings.HULL_COLORS.length];
@@ -254,8 +298,13 @@ define([
             svgContainer.select("#dialogBox").selectAll("*").remove();
             svgContainer.select("#port").selectAll("*").remove();
             svgContainer.select("#parentPort").selectAll("*").remove();
+
+            svgContainer.select("#volumeDialogBox").selectAll("*").remove();
+            svgContainer.select("#volume").selectAll("*").remove();
+    
             map_(nodeList, function (n) {
                 n.portPopup.render();
+                n.volumePopup.render();
             });
             switchPopup.render();
         }
@@ -404,6 +453,7 @@ define([
             }
             updateSvgChoordsService(n);
             n.portPopup.updateSvgChoords();
+            n.volumePopup.updateSvgChoords();
         }
 
         function updateSvgChoordsService(n) {
@@ -562,7 +612,11 @@ define([
             displayTree.clear();
             n.populateTreeMenu(displayTree);
             displayTree.draw();
-            n.portPopup.toggleVisible();
+            // Only show these popups if there are acutally ports and volumes 
+            if (n.ports.length !== 0) 
+                n.portPopup.toggleVisible();
+            if (n.volumes.length !== 0)
+                 n.volumePopup.toggleVisible();
             drawPopups();
             map_(edgeList, updateSvgChoordsEdge);
             selectElement(n);
@@ -737,7 +791,21 @@ define([
             });
             updateSvgChoordsNode(n);
         }
-
+        
+        function buildVolumeDisplayPopup(n) {
+             return new VolumeDisplayPopup(outputApi, API)
+                    .setHostNode(n)
+                    .setOffset(volumeSettings.DIALOG_OFFSET_X, volumeSettings.DIALOG_OFFSET_Y)
+                    .setContainer(svgContainer)
+                    .setDimensions(volumeSettings.DIALOG_MIN_WIDTH, volumeSettings.DIALOG_MIN_HEIGHT)
+                    .setBevel(volumeSettings.DIALOG_BEVEL)
+                    .setColor(volumeSettings.DIALOG_COLOR)
+                    .setVolumeDimensions(volumeSettings.DIALOG_PORT_WIDTH, volumeSettings.DIALOG_PORT_HEIGHT)
+                    .setVolumeBuffer(volumeSettings.DIALOG_PORT_BUFFER_VERT, volumeSettings.DIALOG_PORT_BUFFER_HORZ)
+                    .setEnlargeFactor(volumeSettings.ENLARGE_FACTOR)
+                    .setOpacity(volumeSettings.DIALOG_OPACITY);           
+        }
+        
         function buildPortDisplayPopup(n) {
             return new PortDisplayPopup(outputApi, API)
                     .setHostNode(n)

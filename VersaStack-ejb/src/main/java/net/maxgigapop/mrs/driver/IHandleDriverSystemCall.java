@@ -3,7 +3,6 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package net.maxgigapop.mrs.driver;
 
 import java.util.concurrent.Future;
@@ -30,5 +29,5 @@ public interface IHandleDriverSystemCall {
 
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
     @Asynchronous
-    public Future<String> pullModel(Long driverInstanceId);    
+    public Future<String> pullModel(Long driverInstanceId);
 }

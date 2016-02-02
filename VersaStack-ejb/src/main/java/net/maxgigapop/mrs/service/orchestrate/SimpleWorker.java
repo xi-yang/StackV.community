@@ -13,13 +13,14 @@ import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.service.compile.CompilerBase;
 import net.maxgigapop.mrs.service.compile.CompilerFactory;
-import net.maxgigapop.mrs.service.compute.MCE_InterfaceVlanStitching;
+import net.maxgigapop.mrs.service.compute.MCE_AwsDxStitching;
 
 /**
  *
  * @author xyang
  */
 public class SimpleWorker extends WorkerBase {
+
     private static final Logger log = Logger.getLogger(SimpleWorker.class.getName());
 
     @Override
@@ -34,7 +35,7 @@ public class SimpleWorker extends WorkerBase {
             simpleCompiler.compile(this);
             this.runWorkflow();
         } catch (Exception ex) {
-            throw new EJBException(SimpleWorker.class.getName() + " caught exception", ex);
+            throw new EJBException(SimpleWorker.class.getName() + " caught exception: " + ex);
         }
     }
 }

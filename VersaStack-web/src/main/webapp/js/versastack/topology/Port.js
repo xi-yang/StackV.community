@@ -27,30 +27,30 @@ define([
         //We are reloading this port from a new model
         //Model.js will handle most of the reparsing, but we need to
         //clear out some old data
-        this.reload=function(backing,map){
-            this._backing=backing;
-            this._map=map;
-            this.childrenPorts=[];
-            this.parentPort=null;
-            this.ancestorNode=null;
-            this.alias=null;
+        this.reload = function (backing, map) {
+            this._backing = backing;
+            this._map = map;
+            this.childrenPorts = [];
+            this.parentPort = null;
+            this.ancestorNode = null;
+            this.alias = null;
         };
 
         this.getCenterOfMass = function () {
-            if(this.getVisible()){
+            if (this.getVisible()) {
                 return {x: this.x, y: this.y};
             }
-            if(this.parentPort){
+            if (this.parentPort) {
                 return this.parentPort.getCenterOfMass();
             }
             return this.ancestorNode.getCenterOfMass();
         };
-        
-        this.getFirstVisibleParent=function(){
-            if(this.getVisible()){
+
+        this.getFirstVisibleParent = function () {
+            if (this.getVisible()) {
                 return this;
             }
-            if(this.parentPort){
+            if (this.parentPort) {
                 return this.parentPort.getFirstVisibleParent();
             }
             return this.ancestorNode.getFirstVisibleParent();
@@ -60,8 +60,12 @@ define([
         if (children) {
             map_(children, function (child) {
                 child = map[child.value];
+                try {
                 child = new Port(child, map);
                 that.childrenPorts.push(child);
+                } catch (err) {
+                    console.log("Child Port Not Correct!");
+                }
             });
         }
 
@@ -179,7 +183,7 @@ define([
             }
             return "/VersaStack-web/resources/bidirectional_port.png";
         };
-        this.getType=function(){
+        this.getType = function () {
             return "Port"
         }
     }

@@ -45,7 +45,7 @@ public class SystemInstance extends PersistentEntity implements Serializable {
 
     @Transient 
     Future<String> commitStatus = null;
-    
+      
     public Long getId() {
         return id;
     }
@@ -102,5 +102,4 @@ public class SystemInstance extends PersistentEntity implements Serializable {
     public void setCommitStatus(Future<String> commitStatus) {
         this.commitStatus = commitStatus;
     }
-    
 }
