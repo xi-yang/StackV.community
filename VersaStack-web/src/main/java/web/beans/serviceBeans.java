@@ -892,6 +892,7 @@ public class serviceBeans {
     public ArrayList<ArrayList<String>> instanceStatusCheck() throws SQLException {
         ArrayList<ArrayList<String>> retList = new ArrayList<>();
         ArrayList<String> banList = new ArrayList<>();
+        
         banList.add("Driver Management");
         
         Connection front_conn;
@@ -902,21 +903,25 @@ public class serviceBeans {
         front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
                 front_connectionProps);
 
-        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID FROM service S, service_instance I WHERE S.service_id = I.service_id");
+        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID, X.superState FROM"
+                + " service S, service_instance I, service_state X WHERE S.service_id = I.service_id AND I.service_state_id = X.service_state_id");
         ResultSet rs1 = prep.executeQuery();
         while (rs1.next()) {
             ArrayList<String> instanceList = new ArrayList<>();
 
             String instanceName = rs1.getString("name");
             String instanceUUID = rs1.getString("referenceUUID");
+            String instanceSuperState = rs1.getString("superState");
             if (!banList.contains(instanceName)) {
                 try {
                     URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
                     HttpURLConnection status = (HttpURLConnection) url.openConnection();
 
+                    String instanceState = instanceSuperState + " - " + this.executeHttpMethod(url, status, "GET", null);
+                    
                     instanceList.add(instanceName);
                     instanceList.add(instanceUUID);                        
-                    instanceList.add(this.executeHttpMethod(url, status, "GET", null));
+                    instanceList.add(instanceState);
 
                     retList.add(instanceList);
                 } catch (IOException ex) {

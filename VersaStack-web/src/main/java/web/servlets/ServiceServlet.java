@@ -98,12 +98,15 @@ public class ServiceServlet extends HttpServlet {
 
             // Install Instance into DB.
             prep = front_conn.prepareStatement("INSERT INTO Frontend.service_instance "
-                    + "(`service_id`, `user_id`, `creation_time`, `referenceUUID`) VALUES (?, ?, ?, ?)");
+                    + "(`service_id`, `user_id`, `creation_time`, `referenceUUID`, `service_state_id`) VALUES (?, ?, ?, ?, ?)");
             prep.setInt(1, serviceID);
             prep.setString(2, request.getParameter("userID"));
             prep.setTimestamp(3, timeStamp);
             prep.setString(4, refUuid);
+            prep.setInt(5, 1);
             prep.executeUpdate();
+            
+            
 
             // Create paraMap.
             while (paramNames.hasMoreElements()) {
