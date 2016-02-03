@@ -49,6 +49,10 @@ define([
                 //request.open("GET", "/VersaStack-web/data/json/max-aws.json");
                 //request.open("GET", "/VersaStack-web/data/json/model-all-hybrid.json");
                 request.open("GET", "/VersaStack-web/data/json/umd-anl-all-2.json");
+                //request.open("GET", "/VersaStack-web/data/json/ops-vns-model-complete.json");
+                //request.open("GET", "/VersaStack-web/data/json/ops-vns-model-incomplete.json");
+                //request.open("GET", "/VersaStack-web/data/json/hybrid-cloud-dtn-model-all.json");
+                
             }
             else if (mode === 2) {
                 request.open("GET", "/VersaStack-web/restapi/model/");
@@ -218,40 +222,7 @@ define([
                         });
                     }
                 }
-
-                //Complete the ports
-                //  Create aliases between our Port objects
-                //  Associate a port with its children
-                for (var key in that.portMap) {
-                    /**@type Port**/
-                    var port = that.portMap[key];
-                    var port_ = port._backing;
-                    var aliasKey = port_[values.isAlias];
-                    if (aliasKey) {
-                        var aliasPort = that.portMap[aliasKey[0].value];
-                        if (aliasPort) {
-                            port.alias = aliasPort;
-                            aliasPort.alias = port;
-                        }
-                    } else {
-                        port.alias = null;
-                    }
-                    port.childrenPorts = [];
-                    var childrenKeys = port_[values.hasBidirectionalPort];
-                    if (childrenKeys) {
-                        map_(childrenKeys, function (childKey) {
-                            var child = that.portMap[childKey.value];
-                            try {
-                            port.childrenPorts.push(child);
-                            child.parentPort = port;
-                            }
-                            catch (err) {
-                                console.log("Port Children Error!");
-                            }
-                        });
-                    }
-                }
-
+                
                 for (var key in that.serviceMap) {
                     var service = that.serviceMap[key];
                     var service_ = service._backing;
@@ -265,7 +236,8 @@ define([
                             case values.providesRoutingTable:
                             case values.providesRoute:
                             case values.VirtualCloudService:
-
+                            break;
+                           
                             case values.encoding:
                             case values.labelSwapping:
                             case values.providesVolume:    
@@ -297,6 +269,48 @@ define([
                         }
                     }
 
+                }
+                
+                //Complete the ports
+                //  Create aliases between our Port objects
+                //  Associate a port with its children
+                for (var key in that.portMap) {
+                    /**@type Port**/
+                    var port = that.portMap[key];
+                    var port_ = port._backing;
+                    var aliasKey = port_[values.isAlias];
+                    if (aliasKey) {
+                        var aliasPort = that.portMap[aliasKey[0].value];
+                        if (aliasPort) {
+                            // Asymmetrical aliases
+                            port.alias = aliasPort;
+                            // The alias' alias key 
+                            var otherAliasKey = that.portMap[aliasKey[0].value]._backing[values.isAlias];
+                            // If the alias has the current port as an alias in the model, represent that
+                            // in the object. Otherwise set its alias to null. 
+                            if (otherAliasKey && (otherAliasKey[0].value === key)) {
+                                aliasPort.alias = port;
+                            } else {
+                                aliasPort.alias = null;
+                            }
+                        }
+                    } else {
+                        port.alias = null;
+                    }
+                    port.childrenPorts = [];
+                    var childrenKeys = port_[values.hasBidirectionalPort];
+                    if (childrenKeys) {
+                        map_(childrenKeys, function (childKey) {
+                            var child = that.portMap[childKey.value];
+                            try {
+                            port.childrenPorts.push(child);
+                            child.parentPort = port;
+                            }
+                            catch (err) {
+                                console.log("Port Children Error!");
+                            }
+                        });
+                    }
                 }
 
                 for (var key in that.subnetMap) {
@@ -355,14 +369,14 @@ define([
                                 break;
                             case values.hasNode:
                             case values.hasTopology:
-                            case values.hasFileSystem:
+                            case values.hasFileSystem:      
                                 var subNodes = node_[key];
                                 map_(subNodes, function (subNodeKey) {
                                     var errorVal = subNodeKey.value;
                                     var subNode = that.nodeMap[subNodeKey.value];
                                     if (!subNode) {
                                         //subnode is undefined
-                                        console.log("No subnode: " + errorVal)
+                                        console.log("No subnode: " + errorVal);
                                     } else {
                                         subNode.isRoot = false;
                                         node.children.push(subNode);
@@ -393,9 +407,7 @@ define([
                             case values.belongsTo:
                             case values.name:
                             case values.volume:
-//                                console.log("I AM A VOLUME: \n");
-//                                others.push(key);
-//                                break;
+                            
                             case values.hasVolume:
                                 var volumes = node_[key];
                                 map_(volumes, function (volume) {
@@ -403,7 +415,7 @@ define([
                                     volume = that.volumeMap[volume.value];
                                     if (!volume) {
                                         //service is undefined
-                                        console.log("No service: " + errorVal);
+                                        console.log("No volume: " + errorVal);
                                     } else {
                                         node.volumes.push(volume);
                                         volume.parentNode = node;
@@ -423,7 +435,31 @@ define([
                     }
                 }
                 
-    
+                // Goes through all of the nodes and if they have a switching service 
+                // that has ports that the node doesn't, adds the ports to the node
+                for (var key in that.nodeMap) {
+                        var node = that.nodeMap[key];
+                        map_(node.services, function(service){
+                            var service_ = service._backing;
+                            var types = service_[values.type];
+                            map_(types, function (type) {
+                                type = type.value;
+                                if (type === values.switchingService) {
+                                    var switchingServicePorts = service._backing[values.hasBidirectionalPort];
+                                    if (switchingServicePorts !== undefined) {
+                                        map_(switchingServicePorts, function(port) {
+                                             var portObj = that.portMap[port.value];
+                                             if (portObj !== undefined && node.ports.indexOf(portObj) === -1) {
+                                                node.ports.push(portObj);
+                                                portObj.setNode(node);                            
+                                             }                                                                                              
+                                        });
+                                    }
+                            }});
+                        });
+                   }
+               
+               
                 for (var key in that.nodeMap) {
                     var node = that.nodeMap[key];
                     if (node.isRoot) {
