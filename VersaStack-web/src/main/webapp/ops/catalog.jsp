@@ -47,23 +47,14 @@
                             <th>Service Name</th>
                             <th>Service UUID</th>
                             <th>Service Status</th>
-                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
                         <c:forEach var="instance" items="${serv.instanceStatusCheck()}">
-                            <tr>
+                            <tr class="clickable-row" data-href='/VersaStack-web/ops/details.jsp?uuid=${instance[1]}'>
                                 <td>${instance[0]}</td>
                                 <td>${instance[1]}</td>
                                 <td>${instance[2]}</td>
-                                <td>
-                                    <div class="service-instance-panel">
-                                        <button onClick="propagateInstance('${instance[1]}')">Propagate</button>
-                                        <button onClick="commitInstance('${instance[1]}')">Commit</button>
-                                        <button onClick="revertInstance('${instance[1]}')">Revert</button>
-                                        <button onClick="deleteInstance('${instance[1]}')">Delete</button>
-                                    </div>
-                                </td>
                             </tr>
                         </c:forEach>
                     </tbody>

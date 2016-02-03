@@ -931,4 +931,42 @@ public class serviceBeans {
 
         return retList;
     }
+    
+    public ArrayList<ArrayList<String>> instanceStatusCheck(String instanceUUID) throws SQLException {
+        ArrayList<ArrayList<String>> retList = new ArrayList<>();
+        
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", "root");
+        front_connectionProps.put("password", "root");
+
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
+                front_connectionProps);
+
+        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, X.superState FROM"
+                + " service S, service_instance I, service_state X WHERE I.referenceUUID = ? AND S.service_id = I.service_id AND I.service_state_id = X.service_state_id");
+        prep.setString(0, instanceUUID);
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {
+            ArrayList<String> instanceList = new ArrayList<>();
+
+            String instanceName = rs1.getString("name");
+            String instanceSuperState = rs1.getString("superState");
+                try {
+                    URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
+                    HttpURLConnection status = (HttpURLConnection) url.openConnection();
+
+                    String instanceState = instanceSuperState + " - " + this.executeHttpMethod(url, status, "GET", null);
+                    
+                    instanceList.add(instanceName);
+                    instanceList.add(instanceUUID);                        
+                    instanceList.add(instanceState);
+
+                    retList.add(instanceList);
+                } catch (IOException ex) {
+                }
+        }
+
+        return retList;
+    }
 }
