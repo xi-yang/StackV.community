@@ -626,11 +626,27 @@ public class MCETools {
         }
         TagSet allowedVlanRange = null;
         HashMap<String, Object> paramMap = new HashMap<>();
-        if (portTeMap != null && portTeMap.containsKey(currentHop.toString())) {
-            JSONObject jsonTe = (JSONObject) portTeMap.get(currentHop.toString());
-            if (jsonTe.containsKey("vlan_tag")) {
-                allowedVlanRange = new TagSet((String)jsonTe.get("vlan_tag"));
-                paramMap.put("allowedVlanRange", allowedVlanRange);
+        if (portTeMap != null) {
+            if (portTeMap.containsKey(currentHop.toString())) {
+                JSONObject jsonTe = (JSONObject) portTeMap.get(currentHop.toString());
+                if (jsonTe.containsKey("vlan_tag")) {
+                    allowedVlanRange = new TagSet((String) jsonTe.get("vlan_tag"));
+                    paramMap.put("allowedVlanRange", allowedVlanRange);
+                }
+            }
+            if (allowedVlanRange == null && portTeMap.containsKey(prevHop.toString())) {
+                JSONObject jsonTe = (JSONObject) portTeMap.get(prevHop.toString());
+                if (jsonTe.containsKey("vlan_tag")) {
+                    allowedVlanRange = new TagSet((String) jsonTe.get("vlan_tag"));
+                    paramMap.put("allowedVlanRange", allowedVlanRange);
+                }
+            }
+            if (allowedVlanRange == null && portTeMap.containsKey(nextHop.toString())) {
+                JSONObject jsonTe = (JSONObject) portTeMap.get(nextHop.toString());
+                if (jsonTe.containsKey("vlan_tag")) {
+                    allowedVlanRange = new TagSet((String) jsonTe.get("vlan_tag"));
+                    paramMap.put("allowedVlanRange", allowedVlanRange);
+                }
             }
         }
         HashMap<String, Object> lastParamMap = null;
