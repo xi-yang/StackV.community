@@ -634,14 +634,14 @@ public class MCETools {
                     paramMap.put("allowedVlanRange", allowedVlanRange);
                 }
             }
-            if (allowedVlanRange == null && portTeMap.containsKey(prevHop.toString())) {
+            if (allowedVlanRange == null && prevHop != null && portTeMap.containsKey(prevHop.toString())) {
                 JSONObject jsonTe = (JSONObject) portTeMap.get(prevHop.toString());
                 if (jsonTe.containsKey("vlan_tag")) {
                     allowedVlanRange = new TagSet((String) jsonTe.get("vlan_tag"));
                     paramMap.put("allowedVlanRange", allowedVlanRange);
                 }
             }
-            if (allowedVlanRange == null && portTeMap.containsKey(nextHop.toString())) {
+            if (allowedVlanRange == null && nextHop != null && portTeMap.containsKey(nextHop.toString())) {
                 JSONObject jsonTe = (JSONObject) portTeMap.get(nextHop.toString());
                 if (jsonTe.containsKey("vlan_tag")) {
                     allowedVlanRange = new TagSet((String) jsonTe.get("vlan_tag"));
