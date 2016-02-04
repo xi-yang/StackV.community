@@ -192,7 +192,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             for (Object key : jsonConnReq.keySet()) {
                 Resource terminal = systemModel.getResource((String) key);
                 if (!systemModel.contains(terminal, null)) {
-                    throw new EJBException(String.format("%s::process doMultiPathFinding cannot identify terminal <%s> in JSON data", key));
+                    throw new EJBException(String.format("%s::process doMultiPathFinding cannot identify terminal <%s> in JSON data", this.getClass().getName(), key));
                 }
                 terminals.add(terminal);
             }

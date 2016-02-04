@@ -253,16 +253,16 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
                     + "}";
             r = ModelUtil.sparqlQuery(unionSysModel, sparql);
             Resource resRoutingSvc = null;
-        if (r.hasNext()) {
-            QuerySolution solution = r.nextSolution();
-            resRoutingSvc = solution.getResource("routing");
-        }
-        if (resRoutingSvc == null) {
-            resRoutingSvc = RdfOwl.createResource(spaModel, resVm.getURI()+":linuxrouting", Mrs.RoutingService);
-            spaModel.add(spaModel.createStatement(resVm, Nml.hasService, resRoutingSvc));
-        }
-        JSONArray routes = (JSONArray) jsonStitchReq.get("routes");
-            for (Object obj: routes) {
+            if (r.hasNext()) {
+                QuerySolution solution = r.nextSolution();
+                resRoutingSvc = solution.getResource("routing");
+            }
+            if (resRoutingSvc == null) {
+                resRoutingSvc = RdfOwl.createResource(stitchModel, resVm.getURI() + ":linuxrouting", Mrs.RoutingService);
+                stitchModel.add(spaModel.createStatement(resVm, Nml.hasService, resRoutingSvc));
+            }
+            JSONArray routes = (JSONArray) jsonStitchReq.get("routes");
+            for (Object obj : routes) {
                 JSONObject route = (JSONObject) obj;
                 String strRouteTo = (String) route.get("to");
                 String strRouteVia = (String) route.get("next_hop");

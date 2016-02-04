@@ -294,7 +294,7 @@ public class AwsPush {
                         ec2.deleteVpc(vpcRequest);
                     } catch (AmazonServiceException e) {
                         try {
-                            Thread.sleep(60000);                 //1000 milliseconds is one second.
+                            Thread.sleep(60000);  // sleep 60 secs
                         } catch (InterruptedException ex) {
                             Thread.currentThread().interrupt();
                         }
@@ -334,6 +334,8 @@ public class AwsPush {
                 interfaceRequest.withVirtualInterfaceId(parameters[1]);
 
                 DeleteVirtualInterfaceResult interfaceResult = dc.deleteVirtualInterface(interfaceRequest);
+                dcClient.dxvifDeletionCheck(interfaceRequest.getVirtualInterfaceId());
+                
             } else if (request.contains("DeleteVpnGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
 
@@ -341,10 +343,25 @@ public class AwsPush {
 
                 DeleteVpnGatewayRequest gatewayRequest = new DeleteVpnGatewayRequest();
                 gatewayRequest.withVpnGatewayId(gateway.getVpnGatewayId());
-                ec2.deleteVpnGateway(gatewayRequest);
-
-                ec2Client.getVirtualPrivateGateways().remove(gateway);
-                ec2Client.vpnGatewayDeletionCheck(gateway.getVpnGatewayId());
+                boolean deleteExecuted = false;
+                for (int i = 0; i < 10; i++) {
+                    try {
+                        ec2.deleteVpnGateway(gatewayRequest);
+                        deleteExecuted = true;
+                        break;
+                    } catch (AmazonServiceException | NullPointerException e) {
+                        try {
+                            Thread.sleep(30000L); // sleep 30 secs
+                        } catch (InterruptedException ex) {
+                            ;
+                        }
+                        continue;
+                    }
+                }
+                if (deleteExecuted) {
+                    ec2Client.getVirtualPrivateGateways().remove(gateway);
+                    ec2Client.vpnGatewayDeletionCheck(gateway.getVpnGatewayId());
+                }
 
             } else if (request.contains("detachVpnGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -354,10 +371,26 @@ public class AwsPush {
                 DetachVpnGatewayRequest gwRequest = new DetachVpnGatewayRequest();
                 gwRequest.withVpnGatewayId(gateway.getVpnGatewayId())
                         .withVpcId(v.getVpcId());
-
-                ec2.detachVpnGateway(gwRequest);
-                ec2Client.vpnGatewayDetachmentCheck(gateway.getVpnGatewayId(), v.getVpcId());
-
+                
+                // Somehow VGW may disappear from the API for a while after deleting dxvif. Trick is to detach a few more times.
+                boolean detachExecuted = false;
+                for (int i = 0; i < 10; i++) {
+                    try {
+                        ec2.detachVpnGateway(gwRequest);
+                        detachExecuted = true;
+                        break;
+                    } catch (AmazonServiceException | NullPointerException e) {
+                        try {
+                            Thread.sleep(30000L); // sleep 30 secs
+                        } catch (InterruptedException ex) {
+                            ;
+                        }
+                        continue;
+                    }
+                }
+                if (detachExecuted) {
+                    ec2Client.vpnGatewayDetachmentCheck(gateway.getVpnGatewayId(), v.getVpcId());
+                }
             } else if (request.contains("DisassociateTableRequest")) {
                 String[] parameters = request.split("\\s+");
 

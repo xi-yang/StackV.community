@@ -41,6 +41,9 @@ $(function () {
         evt.preventDefault();
     });
 
+    $(".clickable-row").click(function() {
+        window.document.location = $(this).data("href");
+    });
 });
 
 //Select Function
@@ -357,6 +360,18 @@ function addLink(){
     }
 }
 
+function checkInstance(uuid) {
+    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/service/' + uuid + '/status';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        success: function (result) {
+            var statusElement = document.getElementById("instance-status");
+            statusElement.innerHTML = result;
+        }
+    });
+}
+
 function propagateInstance(uuid) {
     var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/service/' + uuid + '/propagate';
     $.ajax({
@@ -390,7 +405,7 @@ function revertInstance(uuid) {
     });
 }
 
-function revertInstance(uuid) {
+function deleteInstance(uuid) {
     
     
     var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/service/' + uuid;
@@ -440,3 +455,18 @@ function clearCounters() {
     volumeCounter = 0;
     fieldCounter = 0;
 }
+
+var getUrlParameter = function getUrlParameter(sParam) {
+    var sPageURL = decodeURIComponent(window.location.search.substring(1)),
+        sURLVariables = sPageURL.split('&'),
+        sParameterName,
+        i;
+
+    for (i = 0; i < sURLVariables.length; i++) {
+        sParameterName = sURLVariables[i].split('=');
+
+        if (sParameterName[0] === sParam) {
+            return sParameterName[1] === undefined ? true : sParameterName[1];
+        }
+    }
+};
