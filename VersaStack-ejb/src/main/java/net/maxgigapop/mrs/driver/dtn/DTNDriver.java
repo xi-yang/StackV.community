@@ -62,7 +62,7 @@ public class DTNDriver implements IHandleDriverSystemCall {
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         driverInstance.putProperty(requestId, requests);
         DriverInstancePersistenceManager.merge(driverInstance);
-        Logger.getLogger(DTNDriver.class.getName()).log(Level.INFO, "DTN driver delta models succesfully propagated");
+        logger.log(Level.INFO, "DTN driver delta models succesfully propagated");
     }
 
     @Asynchronous
@@ -86,7 +86,7 @@ public class DTNDriver implements IHandleDriverSystemCall {
         driverInstance.getProperties().remove(requestId);
         DriverInstancePersistenceManager.merge(driverInstance);
 
-        Logger.getLogger(DTNPush.class.getName()).log(Level.INFO, "DTN driver delta models succesfully commited");
+        logger.log(Level.INFO, "DTN driver delta models succesfully commited");
         return new AsyncResult<>("SUCCESS");
     }
 
@@ -104,8 +104,7 @@ public class DTNDriver implements IHandleDriverSystemCall {
             String topologyURI = driverInstance.getProperty("topologyUri");
             String addresses = driverInstance.getProperty("addresses");
             String endpoint = driverInstance.getProperty("endpoint");
-
-//            System.out.println("Start creating dtn model.endpoint: "+endpoint);
+            
             OntModel ontModel = DTNModelBuilder.createOntology(user_account, access_key, addresses, topologyURI, endpoint);
 
             if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
@@ -122,10 +121,10 @@ public class DTNDriver implements IHandleDriverSystemCall {
                 driverInstance.setHeadVersionItem(vi);
             }
         } catch (Exception ex) {
-            Logger.getLogger(DTNDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
+            logger.log(Level.SEVERE, ex.getMessage());
         }
 
-        //Logger.getLogger(DTNDriver.class.getName()).log(Level.INFO, "DTN driver ontology model succesfully pulled");
+//        logger.log(Level.INFO, "DTN driver ontology model succesfully pulled");
         return new AsyncResult<>("SUCCESS");
     }
 
