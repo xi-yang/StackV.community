@@ -84,7 +84,7 @@ public class ServiceServlet extends HttpServlet {
                 serviceString = "netcreate";
             } else if (request.getParameter("dncCreate") != null) {
                 //System.out.println("Im inside dnc");
-                serviceString = "dncCreate";
+                serviceString = "dnc";
                 //System.out.println("Im inside dnc");
             } else {
                 response.sendRedirect("/VersaStack-web/errorPage.jsp");
@@ -143,8 +143,8 @@ public class ServiceServlet extends HttpServlet {
                 response.sendRedirect(createVMInstance(paraMap));
             } else if (serviceString.equals("netcreate")) { // Network Creation
                 response.sendRedirect(createFullNetwork(request, paraMap));
-            } else if (serviceString.equals("dncCreate")) {
-                System.out.println("Im inside dnc");
+            } else if (serviceString.equals("dnc")) {
+                //System.out.println("Im inside dnc");
                 response.sendRedirect(createConnection(request, paraMap));
             } else {
                 response.sendRedirect("/VersaStack-web/errorPage.jsp");
