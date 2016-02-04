@@ -544,7 +544,7 @@ body {
 
 }
 
-#button-service-cancel, #button-service-return {
+#button-service-cancel, #button-service-return, #button-service-exit {
     color: #B60000;    
     margin-left: 75%;
     position: relative;
