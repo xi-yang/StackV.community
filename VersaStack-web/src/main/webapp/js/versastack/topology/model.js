@@ -358,7 +358,7 @@ define([
                                     portKey = portKey.value;
                                     var errorVal = portKey;
                                     var port = that.portMap[portKey];
-                                    if (!port) {
+                                    if (!port ||  node.ports.indexOf(port) !== -1) {
                                         //port is undefined
                                         console.log("No port: " + errorVal);
                                     } else {
@@ -407,13 +407,14 @@ define([
                             case values.belongsTo:
                             case values.name:
                             case values.volume:
-                            
+                            break;
                             case values.hasVolume:
                                 var volumes = node_[key];
                                 map_(volumes, function (volume) {
                                     var errorVal = volume.value;
                                     volume = that.volumeMap[volume.value];
-                                    if (!volume) {
+                                    // bandaid fix
+                                    if (!volume || node.volumes.indexOf(volume) !== -1) {
                                         //service is undefined
                                         console.log("No volume: " + errorVal);
                                     } else {
