@@ -356,7 +356,8 @@ public class serviceBeans {
         String refUuid = null;
         List<String> connection = new ArrayList<>();
         int i=1;String connPara;
-        String vgUuid = null;int x =1;
+        //String vgUuid = null;
+        int x =1;
                 
         for(Map.Entry<String, String> entry : paraMap.entrySet())
         {
@@ -365,16 +366,20 @@ public class serviceBeans {
 
             //tring entryKey = 
             
-            if(entry.getKey().equalsIgnoreCase("connUri"))
+            if(entry.getKey().equalsIgnoreCase("topoUri"))
             {
                 topoUri = entry.getValue();
                 //System.out.println("topoUri"+topoUri);
             }
-            if(entry.getKey().contains("conn"))
+            else if(entry.getKey().contains("conn"))
             {
                 //System.out.println("I'm inside conn");
                 connection.add(entry.getValue());
                 
+            }
+            else if (entry.getKey().equalsIgnoreCase("instanceUUID"))
+            {
+                refUuid = entry.getValue();
             }
             
         }
@@ -456,32 +461,57 @@ public class serviceBeans {
                 + "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n"
                 + "@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .\n"
                 + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
-                + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n\n"
+                + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n"
                 + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n" ;
     
     for(String link : connection){
         
         delta += "&lt;urn:ogf:network:vo1.maxgigapop.net:link=conn" + x + "&gt;\n" +
-                 "a            mrs:SwitchingSubnet ;\n" +
+                 "      a            mrs:SwitchingSubnet ;\n" +
                  "spa:dependOn &lt;x-policy-annotation:action:create-path&gt;.\n\n";
         x++;
     }
     
-    delta += "&lt;x-policy-annotation:action:create-path&gt;\n"+
-    "a            spa:PolicyAction ;\n"+
-    "spa:type     \"MCE_MPVlanConnection\" ;\n"+
-    "spa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;\n"+
-    "spa:exportTo &lt;x-policy-annotation:data:conn-criteriaexport&gt; .\n\n"+
+
+delta += "&lt;x-policy-annotation:action:create-path&gt;\n"+
+    "    a            spa:PolicyAction ;\n"+
+    "    spa:type     \"MCE_MPVlanConnection\" ;\n"+
+    "    spa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;\n"+
+    "    spa:exportTo &lt;x-policy-annotation:data:conn-criteriaexport&gt; .\n\n"+
     "&lt;x-policy-annotation:data:conn-criteria&gt;\n"+
-    "a            spa:PolicyData;\n"+
-    "spa:type     \"JSON\";"+
-    "spa:value    \"\"\""+ jsonConnect.toString().replace("\\", "") +
+    "    a            spa:PolicyData;\n"+
+    "    spa:type     \"JSON\";\n"+
+    "    spa:value    \"\"\""+jsonConnect.toString().replace("\\", "") +
+    "    \"\"\".\n\n&lt;x-policy-annotation:data:conn-criteriaexport&gt;\n" +
+    "    a            spa:PolicyData;\n"+
+    "    spa:type     \"JSON\" .\n\n"+
+    "</modelAddition>\n\n" +
+    "</serviceDelta>";
+
+   /* delta += "&lt;x-policy-annotation:action:create-path&gt;\n"+
+    "    a            spa:PolicyAction ;\n"+
+    "    spa:type     \"MCE_MPVlanConnection\" ;\n"+
+    "    spa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;\n"+
+    "    spa:exportTo &lt;x-policy-annotation:data:conn-criteriaexport&gt; .\n\n"+
+    "&lt;x-policy-annotation:data:conn-criteria&gt;\n"+
+    "    a            spa:PolicyData;\n"+
+    "    spa:type     \"JSON\";\n"+
+    "    spa:value    \"\"\""+ jsonConnect.toString().replace("\\", "") +
     "\"\"\".\n\n&lt;x-policy-annotation:data:vpc-criteriaexport&gt;\n" +
-    "    a            spa:PolicyData;\n\n" + 
+    "    a            spa:PolicyData;\n" +"spa:type     \"JSON\" .\n\n"+ 
     "</modelAddition>\n\n" +
     "</serviceDelta>";
     
-    System.out.println("The delta is"+ delta);
+    System.out.println("The delta is"+ delta);*/
+    
+    try{
+    
+        PrintWriter out = new PrintWriter("/Users/ranjitha/Desktop/test.ttl");
+        out.println(delta);
+        out.close();
+    } catch(Exception e){
+        
+    }
     
     
         
@@ -489,6 +519,7 @@ public class serviceBeans {
        // return 0;
     
      String result;
+     
         try {
 //            URL url = new URL(String.format("%s/service/instance", host));
 //            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -514,7 +545,7 @@ public class serviceBeans {
             if (!result.equals("COMMITTED")) {
                 return 2;//Error occurs when interacting with back-end system
             }
-            url = new URL(String.format("%s/service/%s/status", host, refUuid));
+            url = new URL(String.format("%s//%s/status", host, refUuid));
             while(true){
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
                 result = this.executeHttpMethod(url, status, "GET", null); 
