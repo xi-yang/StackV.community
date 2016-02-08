@@ -21,6 +21,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 import javax.servlet.AsyncContext;
 import javax.servlet.annotation.WebServlet;
@@ -491,7 +492,7 @@ public class ServiceServlet extends HttpServlet {
         } else if (paraMap.containsKey("template2")) {
             //paraMap.put("driverType", "aws");
             paraMap.put("topoUri", "urn:ogf:network:vo1.maxgigapop.net:link");
-            paraMap.put("conn1", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*& vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029");
+            paraMap.put("conn1", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*& vlan_tag+3021-3029\r\nc&vlan_tag+3021-3029");
             paraMap.put("conn2", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*& vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029");
 
             paraMap.remove("template2");
@@ -503,18 +504,19 @@ public class ServiceServlet extends HttpServlet {
         else {
             //Process each link
                 for (int i = 1; i < 10; i++) {
+                    if(paraMap.containsKey("link"+ i +"-src")){
                     String linkString = "";
                     if (paraMap.containsKey("link" + i + "-src")) {
                         linkString = paraMap.get("link" + i + "-src") + "&";
                      }
                     if (paraMap.containsKey("link" + i + "-src-vlan")) {
-                        linkString += paraMap.get("link" + i + "-src-vlan");
+                        linkString += "vlan_tag+"+paraMap.get("link" + i + "-src-vlan");
                     }
                     if (paraMap.containsKey("link" + i + "-des")) {
-                        linkString += "/r/n" + paraMap.get("link" + i + "-des") + "&";
+                        linkString += "\r\n" + paraMap.get("link" + i + "-des") + "&";
                     }
                     if (paraMap.containsKey("link" + i + "-des-vlan")) {
-                        linkString += paraMap.get("link" + i + "-des-vlan");
+                        linkString += "vlan_tag+"+paraMap.get("link" + i + "-des-vlan");
                     }
 
                     paraMap.remove("link" + i + "-src");
@@ -524,10 +526,16 @@ public class ServiceServlet extends HttpServlet {
 
                     paraMap.put("conn" + i, linkString);
                 }
+                }
         
                 paraMap.remove("userID");
                 paraMap.remove("custom");
                 paraMap.remove("dncCreate");
+                
+                for(Map.Entry<String,String>entry : paraMap.entrySet())
+                {
+                    System.out.println(entry.getKey()+entry.getValue());
+                }
 
         // Async setup 
                 request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);

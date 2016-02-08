@@ -92,7 +92,7 @@
                                         <tbody id="custom-fields">
                                             <tr>
                                                 <td>Connection URI</td>
-                                                <td><input type="text" name="connUri">
+                                                <td><input type="text" name="topoUri">
                                             </tr>
                                             <tr id="link1">
                                                 <td>Link 1</td>
