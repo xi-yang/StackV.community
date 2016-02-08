@@ -641,7 +641,7 @@ public class MCETools {
                     paramMap.put("allowedVlanRange", allowedVlanRange);
                 }
             }
-            if (allowedVlanRange == null &&nextHop != null && portTeMap.containsKey(nextHop.toString())) {
+            if (allowedVlanRange == null && nextHop != null && portTeMap.containsKey(nextHop.toString())) {
                 JSONObject jsonTe = (JSONObject) portTeMap.get(nextHop.toString());
                 if (jsonTe.containsKey("vlan_tag")) {
                     allowedVlanRange = new TagSet((String) jsonTe.get("vlan_tag"));

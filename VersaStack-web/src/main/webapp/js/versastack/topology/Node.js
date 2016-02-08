@@ -172,15 +172,36 @@ define(["local/versastack/topology/modelConstants"],
                     }
                     var ans = {x: 0, y: 0};
                     var leaves = this.getLeaves();
+                    leaves.forEach(function(leave) {
+                        if (isNaN(leave.x) || isNaN(leave.y)) {
+                            console.log("THE LEAVES HAVE NAN X OR Y")
+                            console.log("x: " + leave.x + " y: " + leave.y);
+                        }
+                        if (leave === undefined) {
+                            console.log("its undefined LEAVEEEEE");
+                        }
+                    });
                     var num = leaves.length;
                     map_(leaves, function (leaf) {
-                        ans.x += leaf.x / num;
-                        ans.y += leaf.y / num;
+                        if(leaf !== undefined) {
+                            // do a before and after x and y check here 
+                            ans.x += leaf.x / num;
+                            ans.y += leaf.y / num;
+                        }
+                        if (leaf === undefined) console.log("they're (leaf) null \n");                                           
+                        //if (isNaN(leaf.x) || isNaN(leaf.y)) console.log("they're (leaf coords) null \n");                   
+
                     });
-                    if (num === 0) {
+                        if (isNaN(ans.x) || isNaN(ans.y)) console.log("they're (ans) null \n");                   
+                    if (num === 0 || (isNaN(ans.x) || isNaN(ans.y))) {
                         ans.x = this.x;
                         ans.y = this.y;
+                        if (isNaN(this.x) || isNaN(this.y)) {
+                            console.log("they're (this) null \n");
+                            console.log("my name is: " + this.getName());
+                        }
                     }
+                    if (isNaN(this.x) || isNaN(this.y)) return {x: 0, y: 0};
                     return ans;
                 };
                 this.getVisible = function () {

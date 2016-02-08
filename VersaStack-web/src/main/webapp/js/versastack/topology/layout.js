@@ -50,6 +50,7 @@ define([
                 var choords = node.getCenterOfMass();
                 node.x = choords.x;
                 node.y = choords.y;
+                if (isNaN(choords.x) || isNaN(choords.y)) console.log("It's NAN in doLayout\n");
             });
         });
         force.start();

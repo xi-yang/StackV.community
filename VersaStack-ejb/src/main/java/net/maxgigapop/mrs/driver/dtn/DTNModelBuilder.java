@@ -79,6 +79,7 @@ public class DTNModelBuilder {
         Resource bucket = Mrs.Bucket;
         Resource volume = Mrs.Volume;
         Resource topology = Nml.Topology;
+        Resource switchingService = Mrs.SwitchingService;
         Resource clusterService = Mrs.DataTransferClusterService;
         Resource dataTransferService = Mrs.DataTransferService;
         Resource dataTransfer = Mrs.DataTransfer;
@@ -92,11 +93,13 @@ public class DTNModelBuilder {
         Resource dtnTopology = RdfOwl.createResource(model, topologyURI, topology);
 
         Resource CLUSTERSERVICE = null;
-        if (endpoint.length() > 0) {
-            CLUSTERSERVICE = RdfOwl.createResource(model, topologyURI + ":clusterservice-" + endpoint, clusterService);
+        if (endpoint.length() > 0){
+            CLUSTERSERVICE = RdfOwl.createResource(model, topologyURI+":clusterservice-"+endpoint, clusterService);
+            model.add(model.createStatement(dtnTopology, hasService, CLUSTERSERVICE));
         }
-        Resource INTERCONNECTION = RdfOwl.createResource(model, topologyURI + ":interconnection", topology);
-
+        Resource INTERCONNECTION = RdfOwl.createResource(model,topologyURI+":interconnection", switchingService);
+        model.add(model.createStatement(dtnTopology, hasService, INTERCONNECTION));
+        
         String[] ips = addresses.split("[\\(\\)]");
         List<FileSystem> pfslist = new ArrayList<>();
         for (String ip : ips) {
@@ -175,22 +178,22 @@ public class DTNModelBuilder {
                         model.add(model.createStatement(DTN_NODE, hasService, TRANSFERSERVICE));
                         Map<String, String> entries = conf.getTransferConf();
 //                        for(Map.Entry<String, String> entry : conf.getTransferConf().entrySet()){
-                        if (entries.containsKey("Service_type")) {
-                            model.addLiteral(TRANSFERSERVICE, type, ResourceFactory.createTypedLiteral(entries.get("Service_type"), XSDDatatype.XSDstring));
-                        }
-                        if (entries.containsKey("Port")) {
-                            Resource TCPPORT = RdfOwl.createResource(model, TRANSFERSERVICE.getURI() + ":port", Nml.Label);
-                            model.add(model.createStatement(TCPPORT, Nml.labeltype, tcpport));
-                            model.add(model.createStatement(TCPPORT, value, entries.get("Service_type")));
-                            model.add(model.createStatement(TRANSFERSERVICE, Nml.hasLabel, TCPPORT));
-                        }
-                        if (entries.containsKey("Port_range")) {
-                            Resource PORT_RANGE = RdfOwl.createResource(model, TRANSFERSERVICE.getURI() + ":portrange", Nml.LabelGroup);
-                            model.add(model.createStatement(PORT_RANGE, Nml.labeltype, tcpport));
-                            model.add(model.createStatement(PORT_RANGE, values, entries.get("Port_range")));
-                            model.add(model.createStatement(TRANSFERSERVICE, Nml.hasLabel, PORT_RANGE));
-                        }
-
+                            if (entries.containsKey("Service_type")){
+                                model.addLiteral(TRANSFERSERVICE, type, ResourceFactory.createTypedLiteral(entries.get("Service_type"),XSDDatatype.XSDstring));
+                            }
+                            if (entries.containsKey("Port")){
+                                Resource TCPPORT = RdfOwl.createResource(model, TRANSFERSERVICE.getURI() + ":port", Nml.Label);
+                                model.add(model.createStatement(TCPPORT, Nml.labeltype, tcpport));
+                                model.add(model.createStatement(TCPPORT, value, entries.get("Port")));
+                                model.add(model.createStatement(TRANSFERSERVICE, Nml.hasLabel, TCPPORT));
+                            }
+                            if (entries.containsKey("Port_range")){
+                                Resource PORT_RANGE = RdfOwl.createResource(model, TRANSFERSERVICE.getURI() + ":portrange", Nml.LabelGroup);
+                                model.add(model.createStatement(PORT_RANGE, Nml.labeltype, tcpport));
+                                model.add(model.createStatement(PORT_RANGE, values, entries.get("Port_range")));
+                                model.add(model.createStatement(TRANSFERSERVICE, Nml.hasLabelGroup, PORT_RANGE));
+                            }
+                        
                         //add dynamic information
                         model.addLiteral(TRANSFERSERVICE, active_transfers, conf.getActiveTransfers());
 
@@ -198,7 +201,6 @@ public class DTNModelBuilder {
                             model.add(model.createStatement(TRANSFERSERVICE, hasService, CLUSTERSERVICE));
                         }
                     }
-
                 }
             }
         }
