@@ -740,6 +740,10 @@ define([
                     svg = n.svgNode;
                     x = n.x - settings.NODE_SIZE / 2;
                     y = n.y - settings.NODE_SIZE / 2;
+                    if (isNaN(n)) console.log("NAN N");                    
+                    if (isNaN(settings.NODE_SIZE)) alert("NAN SETTINGS");
+                    if (isNaN(x) || isNaN(y)) alert("NAN NODE" + "\n" + settings.NODE_SIZE
+                            + "\nx: " + n.x + "\ny: " + n.y);
                     break;
                 case "Topology":
                     var size = settings.TOPOLOGY_ANCHOR_SIZE;
@@ -748,12 +752,16 @@ define([
                     x = choords.x - settings.TOPOLOGY_ANCHOR_SIZE / 2;
                     y = choords.y - settings.TOPOLOGY_ANCHOR_SIZE / 2;
                     enlarge = false; //Enlarging the topology does not look good
+                    if (isNaN(x) || isNaN(y)) alert("NAN TOPO" + "\n" + settings.TOPOLOGY_ANCHOR_SIZE
+                            + "\nx: " + choords.x + "\ny: " + choords.y);
                     break;
                 case "Service":
                     var size = settings.SERVICE_SIZE;
                     svg = n.svgNode;
                     x = n.x - settings.SERVICE_SIZE / 2;
                     y = n.y - settings.SERVICE_SIZE / 2;
+                    if (isNaN(x) || isNaN(y)) alert("NAN SERVICE" + "\n" + settings.SERVICE_SIZE
+                            + "\nx: " + n.x + "\ny: " + n.y);
                     break;
                 default:
                     console.log("Unknown Type: " + n.getType());
