@@ -31,11 +31,6 @@
                        url="jdbc:mysql://localhost:3306/Frontend"
                        user="front_view"  password="frontuser"/>
 
-    <sql:query dataSource="${front_conn}" sql="SELECT S.name, X.superState FROM service S, service_instance I, service_state X
-               WHERE referenceUUID = ? AND S.service_id = I.service_id AND X.service_state_id = I.service_state_id" var="instancelist">
-        <sql:param value="${param.uuid}" />
-    </sql:query>
-
     <body>        
         <!-- NAV BAR -->
         <div id="nav">
@@ -46,6 +41,11 @@
         <!-- MAIN PANEL -->
         <div id="main-pane">      
             <button type="button" id="button-service-return">Back to Catalog</button>
+            <sql:query dataSource="${front_conn}" sql="SELECT S.name, X.superState FROM service S, service_instance I, service_state X
+                       WHERE referenceUUID = ? AND S.service_id = I.service_id AND X.service_state_id = I.service_state_id" var="instancelist">
+                <sql:param value="${param.uuid}" />
+            </sql:query>
+
             <c:forEach var="instance" items="${instancelist.rows}">
                 <table class="management-table" id="details-table">
                     <thead>
@@ -78,6 +78,33 @@
                                 </div>
                             </td>
                         </tr>
+                    </tbody>
+                </table>
+            </c:forEach>
+            
+            <sql:query dataSource="${front_conn}" sql="SELECT D.delta, S.superState 
+                       FROM service_delta D, service_instance I, service_state S 
+                       WHERE I.referenceUUID = ? AND I.service_instance_id = D.service_instance_id AND I.service_state_id = S.service_state_id" var="deltalist">
+                <sql:param value="${param.uuid}" />
+            </sql:query>
+
+            <c:forEach var="delta" items="${deltalist.rows}">
+                <table class="management-table" id="delta-table">
+                    <thead>
+                        <tr>
+                            <th>Delta Details</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Delta State</td>
+                            <td>${delta.superState}</td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td>${delta.delta}</td>
+                        </tr>                        
                     </tbody>
                 </table>
             </c:forEach>
