@@ -44,6 +44,8 @@ $(function () {
     $(".clickable-row").click(function() {
         window.document.location = $(this).data("href");
     });
+    
+    clearCounters();
 });
 
 //Select Function
@@ -351,10 +353,10 @@ function addLink(){
         cell1.innerHTML = 'Link ' + linkCounter;
         var cell2 = row.insertCell(1);
         cell2.innerHTML = '<div>' +
-                '<input type="text" name="link' + linkCounter +'-src" placeholder="Source">' +
+                '<input type="text" name="link' + linkCounter +'-src" size="60" placeholder="Source">' +
                 '<input type="text" name="link' + linkCounter +'-src-vlan" placeholder="Vlan-tag">' +
                 '</div>' +
-                '<input type="text" name="link' + linkCounter +'-des" placeholder="Destination">' +
+                '<input type="text" name="link' + linkCounter +'-des" size="60" placeholder="Destination">' +
                 '<input type="text" name="link' + linkCounter +'-des-vlan" placeholder="Vlan-tag">' +
                 '</div>' ;
     }
@@ -429,7 +431,7 @@ function deleteInstance(uuid) {
 function applyDNCTemplate(code) {
     switch(code) {
         case 1: 
-            var form = document.getElementById('net-custom-form');
+            var form = document.getElementById('custom-form');
             
             form.elements['topoUri'].value = 'urn:ogf:network:vo1.maxgigapop.net:link';
             form.elements['link1-src'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
@@ -442,7 +444,7 @@ function applyDNCTemplate(code) {
             if (linkCounter < 2) {
                 addLink();
             }
-            var form = document.getElementById('net-custom-form');
+            var form = document.getElementById('custom-form');
             
             form.elements['topoUri'].value = 'urn:ogf:network:vo1.maxgigapop.net:link';
             form.elements['link1-src'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';

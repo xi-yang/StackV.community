@@ -171,7 +171,7 @@ public class ServiceServlet extends HttpServlet {
         return "";
     }
 
-    private String createDriverInstance(HttpServletRequest request, HashMap<String, String> paraMap) {
+    public String createDriverInstance(HttpServletRequest request, HashMap<String, String> paraMap) {
 
         // Handles templates, in this order:
         // OpenStack, Stack Driver, Stub Driver, Generic Driver, AWS Driver 
@@ -252,7 +252,7 @@ public class ServiceServlet extends HttpServlet {
         return ("/VersaStack-web/ops/srvc/driver.jsp?ret=0");
     }
 
-    private String createVMInstance(HashMap<String, String> paraMap) {
+    public String createVMInstance(HashMap<String, String> paraMap) {
         int retCode = -1;
 
         // Handle templates 
@@ -312,7 +312,7 @@ public class ServiceServlet extends HttpServlet {
         return ("/VersaStack-web/ops/srvc/vmadd.jsp?ret=" + retCode);
     }
 
-    private String createFullNetwork(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {
+    public String createFullNetwork(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {
         int retCode;
 
         for (Object key : paraMap.keySet().toArray()) {
@@ -464,7 +464,7 @@ public class ServiceServlet extends HttpServlet {
 
     }
 
-    private String createConnection(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {
+    public String createConnection(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {
         for (Object key : paraMap.keySet().toArray()) {
             if (paraMap.get((String) key).isEmpty()) {
                 paraMap.remove((String) key);
@@ -482,7 +482,7 @@ public class ServiceServlet extends HttpServlet {
         if (paraMap.containsKey("template1")) {
             //paraMap.put("driverType", "aws");
             paraMap.put("topoUri", "urn:ogf:network:vo1.maxgigapop.net:link");
-            paraMap.put("conn1", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*& vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029");
+            paraMap.put("conn1", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029");
 
             paraMap.remove("template1");
             paraMap.remove("dncCreate");

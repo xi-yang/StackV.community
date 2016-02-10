@@ -1,0 +1,5 @@
+{
+  "user": "admin",
+  "serviceType": "dnc",
+  "serviceData": "topoUri#urn:ogf:network:vo1.maxgigapop.net:link,conn1#urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029"
+}
