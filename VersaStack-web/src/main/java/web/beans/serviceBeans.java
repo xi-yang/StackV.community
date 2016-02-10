@@ -774,7 +774,7 @@ public class serviceBeans {
                 svcDelta += subnetCriteria + ".\n\n"
                         + subnetCriteria + "\n    a            spa:PolicyData;\n"
                         + "    spa:type     \"JSON\";\n    spa:format    \"\"\"{ "
-                        + "\"place_into\": \"%%$.subnets[" + sub + "].uri%%\"}\"\"\" .\n\n";
+                        + "\"place_into\": \"%$.subnets[" + sub + "].uri%\"}\"\"\" .\n\n";
                 vmNumber++;
             }
             svcDelta += "&lt;x-policy-annotation:action:create-" + driverType + "-vpc&gt;\n"
