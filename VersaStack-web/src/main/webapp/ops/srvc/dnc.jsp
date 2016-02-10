@@ -69,12 +69,12 @@
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <td>Basic</td>
-                                                <td><input type="submit" name ="template1" value="Select" /></td>
+                                                <td>1 Link</td>
+                                                <td><button onclick="applyDNCTemplate('1')">Apply</button></td>
                                             </tr>
                                             <tr>
-                                                <td>Advanced</td>
-                                                <td><input type="submit" name ="template2" value="Select" /></td>
+                                                <td>2 Links</td>
+                                                <td><button onclick="applyDNCTemplate('2')">Apply</button></td>
                                             </tr>
                                         </tbody>
                                     </table>

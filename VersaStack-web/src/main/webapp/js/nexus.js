@@ -381,6 +381,8 @@ function propagateInstance(uuid) {
             // Do something with the result
         }
     });
+    
+    location.reload(true);    
 }
 
 function commitInstance(uuid) {
@@ -392,6 +394,8 @@ function commitInstance(uuid) {
             // Do something with the result
         }
     });
+    
+    location.reload(true);
 }
 
 function revertInstance(uuid) {
@@ -403,6 +407,8 @@ function revertInstance(uuid) {
             // Do something with the result
         }
     });
+    
+    location.reload(true);
 }
 
 function deleteInstance(uuid) {
@@ -416,9 +422,63 @@ function deleteInstance(uuid) {
             // Do something with the result
         }
     });
+    
+    window.location.replace('/VersaStack-web/ops/catalog.jsp');
+}
+
+function applyDNCTemplate(code) {
+    switch(code) {
+        case 1: 
+            var form = document.getElementById('net-custom-form');
+            
+            form.elements['topoUri'].value = 'urn:ogf:network:vo1.maxgigapop.net:link';
+            form.elements['link1-src'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
+            form.elements['link1-src-vlan'].value = '3021-3029';
+            form.elements['link1-des'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*';
+            form.elements['link1-des-vlan'].value = '3021-3029';
+            
+            break;
+        case 2:
+            if (linkCounter < 2) {
+                addLink();
+            }
+            var form = document.getElementById('net-custom-form');
+            
+            form.elements['topoUri'].value = 'urn:ogf:network:vo1.maxgigapop.net:link';
+            form.elements['link1-src'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
+            form.elements['link1-src-vlan'].value = '3021-3029';
+            form.elements['link1-des'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*';
+            form.elements['link1-des-vlan'].value = '3021-3029';
+            form.elements['link2-src'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
+            form.elements['link2-src-vlan'].value = '3021-3029';
+            form.elements['link2-des'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*';
+            form.elements['link2-des-vlan'].value = '3021-3029';
+            
+            break;
+        default:
+            
+    }
 }
 
 /*
+
+function applyTemplate(code) {
+    switch(code) {
+        case 1: 
+            var form = document.getElementById('');
+            
+            form.elements[''] = '';
+            
+            break;
+        case 2:
+            
+            break;
+        default:
+            
+    }
+} 
+ 
+ 
  function clearView() {
  localStorage.removeItem('queryJSON');
  
@@ -454,6 +514,11 @@ function deleteInstance(uuid) {
 function clearCounters() {
     volumeCounter = 0;
     fieldCounter = 0;
+    queryCounter = 0;
+    routeCounter = 0;
+    subnetCounter = 0;
+    subRouteCounter = 0;
+    linkCounter = 0;
 }
 
 var getUrlParameter = function getUrlParameter(sParam) {
