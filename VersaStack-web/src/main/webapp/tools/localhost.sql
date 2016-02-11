@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost:3306
--- Generation Time: Feb 03, 2016 at 04:57 PM
+-- Generation Time: Feb 11, 2016 at 06:01 PM
 -- Server version: 5.5.42
 -- PHP Version: 5.6.7
 
@@ -139,7 +139,7 @@ CREATE TABLE `service_delta` (
   `service_instance_id` int(11) NOT NULL,
   `service_state_id` int(11) NOT NULL,
   `delta` longtext COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -154,8 +154,8 @@ CREATE TABLE `service_instance` (
   `user_id` int(11) NOT NULL,
   `creation_time` datetime DEFAULT NULL,
   `referenceUUID` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `service_state_id` int(11) DEFAULT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=141 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `service_state_id` int(11) NOT NULL DEFAULT '1'
+) ENGINE=InnoDB AUTO_INCREMENT=165 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -167,13 +167,14 @@ DROP TABLE IF EXISTS `service_state`;
 CREATE TABLE `service_state` (
   `service_state_id` int(11) NOT NULL COMMENT '	',
   `superState` varchar(45) COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Dumping data for table `service_state`
 --
 
 INSERT INTO `service_state` (`service_state_id`, `superState`) VALUES
+(2, 'Cancellation'),
 (1, 'Creation');
 
 -- --------------------------------------------------------
@@ -345,17 +346,17 @@ ALTER TABLE `service`
 -- AUTO_INCREMENT for table `service_delta`
 --
 ALTER TABLE `service_delta`
-  MODIFY `service_delta_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `service_delta_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=8;
 --
 -- AUTO_INCREMENT for table `service_instance`
 --
 ALTER TABLE `service_instance`
-  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=141;
+  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=165;
 --
 -- AUTO_INCREMENT for table `service_state`
 --
 ALTER TABLE `service_state`
-  MODIFY `service_state_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '	',AUTO_INCREMENT=2;
+  MODIFY `service_state_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '	',AUTO_INCREMENT=3;
 --
 -- AUTO_INCREMENT for table `user_info`
 --
@@ -401,8 +402,8 @@ ALTER TABLE `service_delta`
 -- Constraints for table `service_instance`
 --
 ALTER TABLE `service_instance`
-  ADD CONSTRAINT `service_instance-service_state` FOREIGN KEY (`service_state_id`) REFERENCES `service_state` (`service_state_id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   ADD CONSTRAINT `service_instance-service` FOREIGN KEY (`service_id`) REFERENCES `service` (`service_id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT `service_instance-service_state` FOREIGN KEY (`service_state_id`) REFERENCES `service_state` (`service_state_id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   ADD CONSTRAINT `service_instance-user_info` FOREIGN KEY (`user_id`) REFERENCES `user_info` (`user_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 --

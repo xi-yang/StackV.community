@@ -516,12 +516,14 @@ function applyTemplate(code) {
 function clearCounters() {
     volumeCounter = 0;
     fieldCounter = 0;
-    queryCounter = 0;
-    routeCounter = 0;
-    subnetCounter = 0;
-    subRouteCounter = 0;
-    linkCounter = 0;
+    queryCounter = 1;
+    routeCounter = 1;
+    subnetCounter = 1;
+    subRouteCounter = 1;
+    linkCounter = 1;
 }
+
+
 
 var getUrlParameter = function getUrlParameter(sParam) {
     var sPageURL = decodeURIComponent(window.location.search.substring(1)),

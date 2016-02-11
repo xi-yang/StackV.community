@@ -29,6 +29,8 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.Path;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import net.maxgigapop.mrs.rest.api.model.WebServiceBase;
 import net.maxgigapop.mrs.system.HandleSystemCall;
@@ -129,15 +131,22 @@ public class WebResource {
             HashMap<String, String> paraMap = new HashMap<>();
             paraMap.put("userID", userID);
             
+            List<String> stage1Arr;
             switch(serviceType) {
                 case "dnc":
-                    List<String> stage1Arr = Arrays.asList(rawServiceData.split("\\s*,\\s*"));
+                    stage1Arr = Arrays.asList(rawServiceData.split("\\s*,\\s*"));
                     for (String ele : stage1Arr) {
                         String[] stage2Arr = ele.split("#");
                         paraMap.put(stage2Arr[0], stage2Arr[1]);
                     }                    
                     break;
-                    
+                case "netcreate":
+                    stage1Arr = Arrays.asList(rawServiceData.split("\\s*,\\s*"));
+                    for (String ele : stage1Arr) {
+                        String[] stage2Arr = ele.split("#");
+                        paraMap.put(stage2Arr[0], stage2Arr[1].replaceAll("!", ","));
+                    }          
+                    break;
                 default:
             }       
 
@@ -180,7 +189,9 @@ public class WebResource {
                 case "dnc":
                     servBean.createConnection(paraMap);
                     break;
-                    
+                case "netcreate":
+                    servBean.createNetwork(paraMap);
+                    break;
                 default:
             }              
 
@@ -196,5 +207,17 @@ public class WebResource {
         } catch (EJBException | SQLException | IOException e) {
             return e.getMessage();
         }
+    }
+    
+    @PUT
+    @Path("/service/{siUUID}/{action}")
+    public String push(@PathParam("siUUID") String svcInstanceUUID, @PathParam("action") String action) {
+        if (action.equalsIgnoreCase("revert")) {
+            
+        } else if (action.equalsIgnoreCase("terminate")) {
+            
+        }
+        
+        return "Error! Invalid Action\n";
     }
 }
