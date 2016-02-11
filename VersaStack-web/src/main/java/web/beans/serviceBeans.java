@@ -365,7 +365,7 @@ public class serviceBeans {
             }
 
         }
-       //for(String d : connection)
+        //for(String d : connection)
         // System.out.println("conn"+d );
 
         /*paraMap.put(“topoUri”, “urn:ogf:network:vo1.maxgigapop.net:link”);
@@ -380,20 +380,20 @@ public class serviceBeans {
             //JSONArray jsonLink = new JSONArray();
             JSONObject jsonPort = new JSONObject();
             connPara = topoUri + "=conn" + i;
-                // <<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&vlan_tag+3021-3029>>>>>\r\n<<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029>>>>>”
+            // <<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&vlan_tag+3021-3029>>>>>\r\n<<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029>>>>>”
             //JSONObject jsonPort = new JSONObject();
             String[] linkPara = link.split("\r\n");
-                //System.out.println("linkPara");
+            //System.out.println("linkPara");
                 /*for(int o=0;o<linkPara.length;o++)
              {
              System.out.println(o+linkPara[o]);
              }
              System.out.println("");*/
             for (String port : linkPara) {
-                        //JSONObject jsonPort = new JSONObject();
+                //JSONObject jsonPort = new JSONObject();
                 //<<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*>>>>>>&<<<<<vlan_tag+3021-3029>>>>>>
                 String[] portPara = port.split("&");
-                        //System.out.println("portPara");
+                //System.out.println("portPara");
                         /*for(int o=0;o<portPara.length;o++)
                  {
                  System.out.println(o+portPara[o]);
@@ -403,26 +403,26 @@ public class serviceBeans {
                     if (vlan.contains("vlan")) {
                         //vlan_tag+3021-3029
                         String[] vlanPara = vlan.split("\\+");
-                                    //System.out.println("vlanPara");
+                        //System.out.println("vlanPara");
                                     /* for(int o=0;o<vlanPara.length;o++)
                          {
                          System.out.println(o+vlanPara[o]);
                          }*/
                         jsonVlan.put(vlanPara[0], vlanPara[1]);
-                                    //System.out.println("jsonVlan");
+                        //System.out.println("jsonVlan");
                         //System.out.println(jsonVlan.toString()); 
                     }
-                           // jsonPort.put(portPara[0], jsonVlan);  
+                    // jsonPort.put(portPara[0], jsonVlan);  
 
                 }
                 jsonPort.put(portPara[0], jsonVlan);
-                            // System.out.println("jsonPort");
+                // System.out.println("jsonPort");
                 //System.out.println(jsonPort.toString());
                 //System.out.println("LinkPort");
                 //System.out.println(jsonLink.toString());
                 //jsonLink.add(jsonPort);        
             }
-                    //System.out.println("LinkPort");
+            //System.out.println("LinkPort");
             //System.out.println(jsonLink.toString());
             //jsonLink.add(jsonPort);  
             i++;
@@ -513,7 +513,7 @@ public class serviceBeans {
 
             String formatDelta = delta.replaceAll("<", "&lt;");
             formatDelta = formatDelta.replaceAll(">", "&gt;");
-            
+
             prep = front_conn.prepareStatement("INSERT INTO Frontend.service_delta "
                     + "(`service_instance_id`, `service_state_id`, `delta`) "
                     + "VALUES (?, ?, ?)");
@@ -801,7 +801,7 @@ public class serviceBeans {
         }
         //System.out.println(svcDelta);
 
-                // Cache serviceDelta.
+        // Cache serviceDelta.
         try {
             Connection front_conn;
             Properties front_connectionProps = new Properties();
@@ -821,7 +821,7 @@ public class serviceBeans {
 
             String formatDelta = svcDelta.replaceAll("<", "&lt;");
             formatDelta = formatDelta.replaceAll(">", "&gt;");
-            
+
             prep = front_conn.prepareStatement("INSERT INTO Frontend.service_delta "
                     + "(`service_instance_id`, `service_state_id`, `delta`) "
                     + "VALUES (?, ?, ?)");
@@ -833,7 +833,7 @@ public class serviceBeans {
         } catch (SQLException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
+
 //        String siUuid;
         String result;
         try {
@@ -1031,5 +1031,21 @@ public class serviceBeans {
         }
 
         return retList;
+    }
+
+    public void cleanInstances() throws SQLException {
+
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", "root");
+        front_connectionProps.put("password", "root");
+
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
+                front_connectionProps);
+
+        PreparedStatement prep = front_conn.prepareStatement("DELETE FROM Frontend.service_delta");
+        prep.executeUpdate();
+        prep = front_conn.prepareStatement("DELETE FROM Frontend.service_instance");
+        prep.executeUpdate();
     }
 }
