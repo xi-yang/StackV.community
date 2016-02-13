@@ -1179,6 +1179,7 @@ public class OpenStackPush {
                 query = "SELECT ?subnet WHERE {?subnet a mrs:SwitchingSubnet. ?subnet  nml:hasBidirectionalPort <" + port.asResource() + ">"
                         + " FILTER (not exists {$subnet mrs:type \"Cisco_UCS_Port_Profile\"})"
                         + "}";
+                r1 = executeQueryUnion(query, modelDelta, modelRef);//
                 if (!r1.hasNext()) {
                     continue;
                 }
