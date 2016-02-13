@@ -51,18 +51,19 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
     public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
         log.log(Level.FINE, "MCE_UcsSriovStitching::process {0}", annotatedDelta);
         try {
-            log.log(Level.INFO, "\n>>>MCE_UcsSriovStitching--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
+            log.log(Level.FINE, "\n>>>MCE_UcsSriovStitching--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_UcsSriovStitching.class.getName()).log(Level.SEVERE, null, ex);
         }
         //@TODO: make the initial data imports a common function
         // importPolicyData : Interface->Stitching->List<PolicyData>
         String sparql = "SELECT ?policy ?data ?type ?value WHERE {"
+                + "?res spa:dependOn ?policy . "
                 + "?policy a spa:PolicyAction. "
                 + "?policy spa:type 'MCE_UcsSriovStitching'. "
                 + "?policy spa:importFrom ?data. "
                 + "?data spa:type ?type. ?data spa:value ?value. "
-                + "FILTER not exists {?policy spa:dependOn ?other} "
+                + "FILTER (not exists {?policy spa:dependOn ?other} && not exists {?res a spa:PolicyAction}) "
                 + "}";
 
         ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);
