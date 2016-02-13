@@ -51,7 +51,7 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
     public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
         log.log(Level.FINE, "MCE_UcsSriovStitching::process {0}", annotatedDelta);
         try {
-            log.log(Level.FINE, "\n>>>MCE_UcsSriovStitching--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
+            log.log(Level.INFO, "\n>>>MCE_UcsSriovStitching--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_UcsSriovStitching.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -185,7 +185,7 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
             sparql = "SELECT ?profile WHERE {"
                     + "?profile a mrs:SwitchingSubnet. "
                     + "?profile mrs:type \"Cisco_UCS_Port_Profile\" . "
-                    + String.format("?profile mrs:value \"%s\" . ", stitchToProfile)
+                    + String.format("?profile mrs:value \"%s\" . ", "Cisco_UCS_Port_Profile+"+stitchToProfile)
                     + "}";
 
             r = ModelUtil.sparqlQuery(unionSysModel, sparql);

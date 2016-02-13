@@ -1170,14 +1170,19 @@ public class OpenStackPush {
                     privateAddress = value.asLiteral().toString();
                 }
                 //2.3 find the subnet that has the port previously found
-                //query = "SELECT ?port WHERE {?port a  nml:BidirectionalPort ."
-                // + "?port  mrs:hasTag <" + tag.asResource() + ">}";
-                query = "SELECT ?subnet WHERE {?subnet a mrs:SwitchingSubnet. ?subnet  nml:hasBidirectionalPort <" + port.asResource() + ">}";
+                query = "SELECT ?subnet WHERE {?subnet a mrs:SwitchingSubnet. ?subnet  nml:hasBidirectionalPort <" + port.asResource() + ">"
+                        + "}";
                 r1 = executeQueryUnion(query, modelDelta, modelRef);//
-                //System.out.println(modelDelta.toString());
                 if (!r1.hasNext()) {
                     throw new EJBException(String.format("Delta model does not specify network interface subnet of port: %s", port));
                 }
+                query = "SELECT ?subnet WHERE {?subnet a mrs:SwitchingSubnet. ?subnet  nml:hasBidirectionalPort <" + port.asResource() + ">"
+                        + " FILTER (not exists {$subnet mrs:type \"Cisco_UCS_Port_Profile\"})"
+                        + "}";
+                if (!r1.hasNext()) {
+                    continue;
+                }
+                r1 = executeQueryUnion(query, modelDelta, modelRef);//
                 String subnetName = "";
                 String subnetname = "";
                 while (r1.hasNext()) {
