@@ -428,10 +428,23 @@ function deleteInstance(uuid) {
     window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
+function applyNetTemplate(code) {
+    switch(code) {
+        case 1:
+            
+            
+            break;
+        
+        case 2:
+            break;
+    }
+}
+
 function applyDNCTemplate(code) {
+    var form = document.getElementById('custom-form');
     switch(code) {
         case 1: 
-            var form = document.getElementById('custom-form');
+            
             
             form.elements['topoUri'].value = 'urn:ogf:network:vo1.maxgigapop.net:link';
             form.elements['link1-src'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
@@ -444,7 +457,6 @@ function applyDNCTemplate(code) {
             if (linkCounter < 2) {
                 addLink();
             }
-            var form = document.getElementById('custom-form');
             
             form.elements['topoUri'].value = 'urn:ogf:network:vo1.maxgigapop.net:link';
             form.elements['link1-src'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
