@@ -283,7 +283,13 @@ public class ActionBase {
                 sanitizeSpaModel(this.outputDelta.getModelAddition().getOntModel(), spaDelta.getModelAddition().getOntModel());
             }
             if (this.outputDelta.getModelReduction() != null && this.outputDelta.getModelReduction().getOntModel() != null) {
-                sanitizeSpaModel(this.outputDelta.getModelReduction().getOntModel(), spaDelta.getModelReduction().getOntModel());
+                if (spaDelta.getModelReduction() != null && spaDelta.getModelReduction().getOntModel() != null) {
+                    sanitizeSpaModel(this.outputDelta.getModelReduction().getOntModel(), spaDelta.getModelReduction().getOntModel());
+                } else if (spaDelta.getModelAddition() != null && spaDelta.getModelAddition().getOntModel() != null) {
+                    sanitizeSpaModel(this.outputDelta.getModelReduction().getOntModel(), spaDelta.getModelAddition().getOntModel());
+                } else {
+                    throw new EJBException(this + ".sanitizeOutputDelta() failed to clean up outputDelta.modelReduction");
+                }
             }
         }
     }
@@ -375,14 +381,17 @@ public class ActionBase {
 
         // sanity check
         spaModel.remove(listStmtsToRemove);
-        sparql = "SELECT ?policyX WHERE {"
-                + "?policyX ?p ?o. "
-                + String.format("FILTER(regex(str(?policyX), '^%s'))", Spa.NS)
+        sparql = "SELECT ?s ?p ?o WHERE {"
+                + "?s ?p ?o. "
+                + String.format("FILTER(regex(str(?o), '^%s'))", Spa.NS)
                 + "}";
         rs = ModelUtil.sparqlQuery(spaModel, sparql);
         while (rs.hasNext()) {
-            String policyAnotation = rs.next().getResource("policyX").toString();
-            throw new EJBException(this + ".sanitizeSpaModel() failed to clean up policy annotation: " + policyAnotation);
+            QuerySolution solution = rs.next();
+            String s = solution.getResource("s").toString();
+            String p = solution.getResource("p").toString();
+            String o = solution.getResource("p").toString();
+            throw new EJBException(this + String.format(".sanitizeSpaModel() failed to clean up policy annotation: (%s, %s, %s)", s, p, o));
         }
     }
 

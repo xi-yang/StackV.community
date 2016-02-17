@@ -2061,7 +2061,8 @@ public class OpenStackPush {
                     + "?pp mrs:value $profile ."
                     + "OPTIONAL {"
                     + " ?vm nml:hasService ?routing . "
-                    + " ?routing a mrs:RoutingService. }"
+                    + " ?routing a mrs:RoutingService. "
+                    + " ?routing mrs:providesRoute ?route. }"
                     + "}";
             Resource VM = null;
             String portProfile = null;
