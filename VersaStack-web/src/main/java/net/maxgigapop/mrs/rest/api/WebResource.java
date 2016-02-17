@@ -34,6 +34,11 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import net.maxgigapop.mrs.rest.api.model.WebServiceBase;
 import net.maxgigapop.mrs.system.HandleSystemCall;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import web.beans.serviceBeans;
 
 /**
@@ -48,6 +53,7 @@ public class WebResource {
     private final String front_db_pass = "frontuser";
     String host = "http://localhost:8080/VersaStack-web/restapi";
     private final serviceBeans servBean = new serviceBeans();
+    JSONParser parser = new JSONParser();
 
     @Context
     private UriInfo context;
@@ -93,7 +99,7 @@ public class WebResource {
     @POST
     @Path("/service")
     @Consumes({"application/json", "application/xml"})
-    public String createService(WebServiceBase input) {
+    public String createService(String inputString) {
         try {
             long startTime = System.currentTimeMillis();
             System.out.println("Service API Start::Name="
@@ -101,11 +107,20 @@ public class WebResource {
                     + Thread.currentThread().getId());
 
             // Pull data from JSON.
-            String serviceType = input.getServiceType();
-            String user = input.getUser();
+            JSONObject inputJSON = new JSONObject();
+            try {
+                Object obj = parser.parse(inputString);
+                inputJSON = (JSONObject) obj;
+
+            } catch (ParseException ex) {
+                Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+            }
+
+            String serviceType = (String) inputJSON.get("type");
+            JSONObject dataJSON = (JSONObject) inputJSON.get("data");
+            String user = (String) inputJSON.get("user");
             String userID = "";
-            String rawServiceData= input.getServiceData();
-          
+
             // Find user ID.
             Connection front_conn;
             try {
@@ -127,34 +142,22 @@ public class WebResource {
                 userID = rs1.getString("user_id");
             }
 
-            // Create Parameter Map
-            HashMap<String, String> paraMap = new HashMap<>();
-            paraMap.put("userID", userID);
-            
-            List<String> stage1Arr;
-            switch(serviceType) {
-                case "dnc":
-                    stage1Arr = Arrays.asList(rawServiceData.split("\\s*,\\s*"));
-                    for (String ele : stage1Arr) {
-                        String[] stage2Arr = ele.split("#");
-                        paraMap.put(stage2Arr[0], stage2Arr[1]);
-                    }                    
-                    break;
-                case "netcreate":
-                    stage1Arr = Arrays.asList(rawServiceData.split("\\s*,\\s*"));
-                    for (String ele : stage1Arr) {
-                        String[] stage2Arr = ele.split("#");
-                        paraMap.put(stage2Arr[0], stage2Arr[1].replaceAll("!", ","));
-                    }          
-                    break;
-                default:
-            }       
-
             // Instance Creation
             URL url = new URL(String.format("%s/service/instance", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             String refUuid = servBean.executeHttpMethod(url, connection, "GET", null);
-            paraMap.put("instanceUUID", refUuid);
+
+            // Create Parameter Map
+            HashMap<String, String> paraMap = new HashMap<>();
+            switch (serviceType) {
+                case "dnc":
+                    paraMap = parseDNC(dataJSON, refUuid);
+                    break;
+                case "netcreate":
+                    paraMap = parseNet(dataJSON, refUuid);
+                    break;
+                default:
+            }
 
             // Initialize service parameters.
             prep = front_conn.prepareStatement("SELECT service_id"
@@ -185,7 +188,7 @@ public class WebResource {
             }
 
             // Execute service Creation.
-            switch(serviceType) {
+            switch (serviceType) {
                 case "dnc":
                     servBean.createConnection(paraMap);
                     break;
@@ -193,7 +196,7 @@ public class WebResource {
                     servBean.createNetwork(paraMap);
                     break;
                 default:
-            }              
+            }
 
             long endTime = System.currentTimeMillis();
             System.out.println("Service API End::Name="
@@ -207,17 +210,56 @@ public class WebResource {
         } catch (EJBException | SQLException | IOException e) {
             return e.getMessage();
         }
+
     }
-    
+
     @PUT
     @Path("/service/{siUUID}/{action}")
     public String push(@PathParam("siUUID") String svcInstanceUUID, @PathParam("action") String action) {
         if (action.equalsIgnoreCase("revert")) {
-            
+
         } else if (action.equalsIgnoreCase("terminate")) {
-            
+
         }
-        
+
         return "Error! Invalid Action\n";
+    }
+
+    private HashMap<String, String> parseNet(JSONObject dataJSON, String refUuid) {
+        HashMap<String, String> paraMap = new HashMap<>();
+
+        JSONArray linksJSON = (JSONArray) ((JSONObject) dataJSON.get("data")).get("links");
+        for (int i = 0; i < linksJSON.size(); i++) {
+            JSONObject entryJSON = (JSONObject) linksJSON.get(i);
+            String name = (String) entryJSON.get("name");
+            String src = (String) entryJSON.get("src");
+            String srcVlan = (String) entryJSON.get("src-vlan");
+            String des = (String) entryJSON.get("des");
+            String desVlan = (String) entryJSON.get("des-vlan");
+            
+            String linkUrn = urnBuilder("dnc", name, refUuid);
+            String connString = src + "&vlan_tag+" + srcVlan + "\r\n" + des + "&vlan_tag" + desVlan;
+            paraMap.put("conn" + i, connString);
+        }
+
+        return paraMap;
+    }
+
+    private HashMap<String, String> parseDNC(JSONObject dataJSON, String refUuid) {
+        return null;
+    }
+
+    
+    // UTILITY METHODS
+    
+    private String urnBuilder(String serviceType, String name, String refUuid) {
+        switch (serviceType) {
+            case "dnc":
+                return "urn:ogf:network:service+" + refUuid + ":resource+links:tag+" + name;
+            case "netCreate":
+                return "urn:ogf:network:service+" + refUuid + ":resource+virtual_clouds:tag+" + name;
+            default:
+                return "ERROR";
+        }
     }
 }
