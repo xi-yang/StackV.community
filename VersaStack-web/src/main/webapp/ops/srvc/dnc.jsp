@@ -86,13 +86,12 @@
                                         </tr>
                                         </thead>
                                         <tbody id="custom-fields">
-                                            <tr>
-                                                <td>Connection URI</td>
-                                                <td><input type="text" size="60" name="topoUri">
-                                            </tr>
                                             <tr id="link1">
                                                 <td>Link 1</td>
                                                 <td>
+                                                    <div>
+                                                        <input type="text" name="linkUri1" size="60" placeholder="Link-URI">
+                                                    </div>
                                                     <div>
                                                         <input type="text" name="link1-src" size="60" placeholder="Source">
                                                         <input type="text" name="link1-src-vlan" placeholder="Vlan-tag">

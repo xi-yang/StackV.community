@@ -344,20 +344,15 @@ public class serviceBeans {
         String topoUri = null;
         String refUuid = null;
         List<String> connection = new ArrayList<>();
-        int i = 1;
+        List<String> linkUri = new ArrayList<>();
         String connPara;
-        //String vgUuid = null;
-        int x = 1;
 
         for (Map.Entry<String, String> entry : paraMap.entrySet()) {
 
-            //System.out.println(entry.getKey());
-            //tring entryKey = 
-            if (entry.getKey().equalsIgnoreCase("topoUri")) {
-                topoUri = entry.getValue();
-                //System.out.println("topoUri"+topoUri);
+            
+            if (entry.getKey().contains("linkUri")) {
+                linkUri.add(entry.getValue());
             } else if (entry.getKey().contains("conn")) {
-                //System.out.println("I'm inside conn");
                 connection.add(entry.getValue());
 
             } else if (entry.getKey().equalsIgnoreCase("instanceUUID")) {
@@ -365,69 +360,30 @@ public class serviceBeans {
             }
 
         }
-       //for(String d : connection)
-        // System.out.println("conn"+d );
-
-        /*paraMap.put(“topoUri”, “urn:ogf:network:vo1.maxgigapop.net:link”);
-         paraMap.put(“conn1”, “urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&
-         vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029”);
-         paraMap.put(“conn2”,“urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&
-         vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029”);*/
         JSONObject jsonConnect = new JSONObject();
-        // JSONArray jsonLink = new JSONArray();
+        for(String linkName : linkUri)
+        {
         //
-        for (String link : connection) {
-            //JSONArray jsonLink = new JSONArray();
-            JSONObject jsonPort = new JSONObject();
-            connPara = topoUri + "=conn" + i;
+            connPara = linkName;
+            for (String link : connection) {
+                JSONObject jsonPort = new JSONObject();
                 // <<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&vlan_tag+3021-3029>>>>>\r\n<<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029>>>>>”
-            //JSONObject jsonPort = new JSONObject();
-            String[] linkPara = link.split("\r\n");
-                //System.out.println("linkPara");
-                /*for(int o=0;o<linkPara.length;o++)
-             {
-             System.out.println(o+linkPara[o]);
-             }
-             System.out.println("");*/
-            for (String port : linkPara) {
-                        //JSONObject jsonPort = new JSONObject();
-                //<<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*>>>>>>&<<<<<vlan_tag+3021-3029>>>>>>
-                String[] portPara = port.split("&");
-                        //System.out.println("portPara");
-                        /*for(int o=0;o<portPara.length;o++)
-                 {
-                 System.out.println(o+portPara[o]);
-                 }*/
-                JSONObject jsonVlan = new JSONObject();
-                for (String vlan : portPara) {
-                    if (vlan.contains("vlan")) {
-                        //vlan_tag+3021-3029
-                        String[] vlanPara = vlan.split("\\+");
-                                    //System.out.println("vlanPara");
-                                    /* for(int o=0;o<vlanPara.length;o++)
-                         {
-                         System.out.println(o+vlanPara[o]);
-                         }*/
-                        jsonVlan.put(vlanPara[0], vlanPara[1]);
-                                    //System.out.println("jsonVlan");
-                        //System.out.println(jsonVlan.toString()); 
+                String[] linkPara = link.split("\r\n");
+                for (String port : linkPara) {
+                    //<<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*>>>>>>&<<<<<vlan_tag+3021-3029>>>>>>
+                    String[] portPara = port.split("&");
+                    JSONObject jsonVlan = new JSONObject();
+                    for (String vlan : portPara) {
+                        if (vlan.contains("vlan")) {
+                            String[] vlanPara = vlan.split("\\+");
+                            jsonVlan.put(vlanPara[0], vlanPara[1]);
                     }
-                           // jsonPort.put(portPara[0], jsonVlan);  
-
                 }
-                jsonPort.put(portPara[0], jsonVlan);
-                            // System.out.println("jsonPort");
-                //System.out.println(jsonPort.toString());
-                //System.out.println("LinkPort");
-                //System.out.println(jsonLink.toString());
-                //jsonLink.add(jsonPort);        
+                jsonPort.put(portPara[0], jsonVlan);       
             }
-                    //System.out.println("LinkPort");
-            //System.out.println(jsonLink.toString());
-            //jsonLink.add(jsonPort);  
-            i++;
             jsonConnect.put(connPara, jsonPort);
 
+        }
         }
 
         System.out.println(jsonConnect.toString());
@@ -443,12 +399,11 @@ public class serviceBeans {
                 + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n"
                 + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n";
 
-        for (String link : connection) {
-
-            delta += "&lt;urn:ogf:network:vo1.maxgigapop.net:link=conn" + x + "&gt;\n"
+        for(String linkName : linkUri)
+        {
+            delta += "&lt;"+linkName+"&gt;\n"
                     + "      a            mrs:SwitchingSubnet ;\n"
                     + "spa:dependOn &lt;x-policy-annotation:action:create-path&gt;.\n\n";
-            x++;
         }
 
         delta += "&lt;x-policy-annotation:action:create-path&gt;\n"
@@ -465,22 +420,6 @@ public class serviceBeans {
                 + "    spa:type     \"JSON\" .\n\n"
                 + "</modelAddition>\n\n"
                 + "</serviceDelta>";
-
-        /* delta += "&lt;x-policy-annotation:action:create-path&gt;\n"+
-         "    a            spa:PolicyAction ;\n"+
-         "    spa:type     \"MCE_MPVlanConnection\" ;\n"+
-         "    spa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;\n"+
-         "    spa:exportTo &lt;x-policy-annotation:data:conn-criteriaexport&gt; .\n\n"+
-         "&lt;x-policy-annotation:data:conn-criteria&gt;\n"+
-         "    a            spa:PolicyData;\n"+
-         "    spa:type     \"JSON\";\n"+
-         "    spa:value    \"\"\""+ jsonConnect.toString().replace("\\", "") +
-         "\"\"\".\n\n&lt;x-policy-annotation:data:vpc-criteriaexport&gt;\n" +
-         "    a            spa:PolicyData;\n" +"spa:type     \"JSON\" .\n\n"+ 
-         "</modelAddition>\n\n" +
-         "</serviceDelta>";
-    
-         System.out.println("The delta is"+ delta);*/
         try {
 
             PrintWriter out = new PrintWriter("/Users/ranjitha/Desktop/test.ttl");
@@ -489,8 +428,7 @@ public class serviceBeans {
         } catch (Exception e) {
 
         }
-
-        // return 0;   
+  
         String result;
 
         // Cache serviceDelta.
@@ -527,12 +465,6 @@ public class serviceBeans {
         }
 
         try {
-//            URL url = new URL(String.format("%s/service/instance", host));
-//            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-//            siUuid = this.executeHttpMethod(url, connection, "GET", null);
-//            if (siUuid.length() != 36) {
-//                return 2;//Error occurs when interacting with back-end system
-//            }
             URL url = new URL(String.format("%s/service/%s", host, refUuid));
             HttpURLConnection compile = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, compile, "POST", delta);

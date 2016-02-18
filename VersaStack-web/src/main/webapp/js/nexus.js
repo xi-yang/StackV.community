@@ -353,9 +353,13 @@ function addLink(){
         cell1.innerHTML = 'Link ' + linkCounter;
         var cell2 = row.insertCell(1);
         cell2.innerHTML = '<div>' +
+                '<input type="text" name="linkUri'+linkCounter+'"size="60" placeholder="Link-URI">'+
+                '</div>'+
+                '<div>'+
                 '<input type="text" name="link' + linkCounter +'-src" size="60" placeholder="Source">' +
                 '<input type="text" name="link' + linkCounter +'-src-vlan" placeholder="Vlan-tag">' +
                 '</div>' +
+                '</div>'+
                 '<input type="text" name="link' + linkCounter +'-des" size="60" placeholder="Destination">' +
                 '<input type="text" name="link' + linkCounter +'-des-vlan" placeholder="Vlan-tag">' +
                 '</div>' ;
@@ -433,7 +437,7 @@ function applyDNCTemplate(code) {
         case 1: 
             var form = document.getElementById('custom-form');
             
-            form.elements['topoUri'].value = 'urn:ogf:network:vo1.maxgigapop.net:link';
+            form.elements['linkUri1'].value = 'urn:ogf:network:vo1.maxgigapop.net:link=conn1';
             form.elements['link1-src'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
             form.elements['link1-src-vlan'].value = '3021-3029';
             form.elements['link1-des'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*';
@@ -446,11 +450,12 @@ function applyDNCTemplate(code) {
             }
             var form = document.getElementById('custom-form');
             
-            form.elements['topoUri'].value = 'urn:ogf:network:vo1.maxgigapop.net:link';
+            form.elements['linkUri1'].value = 'urn:ogf:network:vo1.maxgigapop.net:link=conn1';
             form.elements['link1-src'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
             form.elements['link1-src-vlan'].value = '3021-3029';
             form.elements['link1-des'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*';
             form.elements['link1-des-vlan'].value = '3021-3029';
+            form.elements['linkUri2'].value = 'urn:ogf:network:vo1.maxgigapop.net:link=conn2';
             form.elements['link2-src'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
             form.elements['link2-src-vlan'].value = '3021-3029';
             form.elements['link2-des'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*';
@@ -514,13 +519,13 @@ function applyTemplate(code) {
 
 
 function clearCounters() {
-    volumeCounter = 0;
-    fieldCounter = 0;
-    queryCounter = 0;
-    routeCounter = 0;
-    subnetCounter = 0;
-    subRouteCounter = 0;
-    linkCounter = 0;
+    volumeCounter = 1;
+    fieldCounter = 1;
+    queryCounter = 1;
+    routeCounter = 1;
+    subnetCounter = 1;
+    subRouteCounter = 1;
+    linkCounter = 1;
 }
 
 var getUrlParameter = function getUrlParameter(sParam) {

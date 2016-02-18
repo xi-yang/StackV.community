@@ -481,7 +481,7 @@ public class ServiceServlet extends HttpServlet {
         
         if (paraMap.containsKey("template1")) {
             //paraMap.put("driverType", "aws");
-            paraMap.put("topoUri", "urn:ogf:network:vo1.maxgigapop.net:link");
+            paraMap.put("linkUri1", "urn:ogf:network:vo1.maxgigapop.net:link=conn1");
             paraMap.put("conn1", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029");
 
             paraMap.remove("template1");
@@ -491,8 +491,9 @@ public class ServiceServlet extends HttpServlet {
 
         } else if (paraMap.containsKey("template2")) {
             //paraMap.put("driverType", "aws");
-            paraMap.put("topoUri", "urn:ogf:network:vo1.maxgigapop.net:link");
+            paraMap.put("linkUri1", "urn:ogf:network:vo1.maxgigapop.net:link=conn1");
             paraMap.put("conn1", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*& vlan_tag+3021-3029\r\nc&vlan_tag+3021-3029");
+            paraMap.put("linkUri2", "urn:ogf:network:vo1.maxgigapop.net:link=conn2");
             paraMap.put("conn2", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*& vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029");
 
             paraMap.remove("template2");
@@ -504,6 +505,7 @@ public class ServiceServlet extends HttpServlet {
         else {
             //Process each link
                 for (int i = 1; i < 10; i++) {
+                    //if(paraMap.containsKey("linkUri"+i))
                     if(paraMap.containsKey("link"+ i +"-src")){
                     String linkString = "";
                     if (paraMap.containsKey("link" + i + "-src")) {
