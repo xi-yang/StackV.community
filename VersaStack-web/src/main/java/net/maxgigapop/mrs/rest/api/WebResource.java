@@ -225,38 +225,139 @@ public class WebResource {
         return "Error! Invalid Action\n";
     }
 
-    private HashMap<String, String> parseNet(JSONObject dataJSON, String refUuid) {
+    private HashMap<String, String> parseDNC(JSONObject dataJSON, String refUuid) {
         HashMap<String, String> paraMap = new HashMap<>();
 
-        JSONArray linksJSON = (JSONArray) ((JSONObject) dataJSON.get("data")).get("links");
-        for (int i = 0; i < linksJSON.size(); i++) {
-            JSONObject entryJSON = (JSONObject) linksJSON.get(i);
-            String name = (String) entryJSON.get("name");
-            String src = (String) entryJSON.get("src");
-            String srcVlan = (String) entryJSON.get("src-vlan");
-            String des = (String) entryJSON.get("des");
-            String desVlan = (String) entryJSON.get("des-vlan");
-            
+        JSONArray linksArr = (JSONArray) dataJSON.get("links");
+        for (int i = 0; i < linksArr.size(); i++) {
+            JSONObject linksJSON = (JSONObject) linksArr.get(i);
+            String name = (String) linksJSON.get("name");
+            String src = (String) linksJSON.get("src");
+            String srcVlan = (String) linksJSON.get("src-vlan");
+            String des = (String) linksJSON.get("des");
+            String desVlan = (String) linksJSON.get("des-vlan");
+
             String linkUrn = urnBuilder("dnc", name, refUuid);
             String connString = src + "&vlan_tag+" + srcVlan + "\r\n" + des + "&vlan_tag" + desVlan;
-            paraMap.put("conn" + i, connString);
+            paraMap.put("conn" + (i + 1), connString);
         }
 
+        System.out.println(paraMap);
         return paraMap;
     }
 
-    private HashMap<String, String> parseDNC(JSONObject dataJSON, String refUuid) {
-        return null;
+    private HashMap<String, String> parseNet(JSONObject dataJSON, String refUuid) {
+        HashMap<String, String> paraMap = new HashMap<>();
+
+        JSONArray vcnArr = (JSONArray) dataJSON.get("virtual_clouds");
+        JSONObject vcnJSON = (JSONObject) vcnArr.get(0);
+        paraMap.put("netType", (String) vcnJSON.get("type"));
+        paraMap.put("netCidr", (String) vcnJSON.get("cidr"));
+        
+        String name = (String) vcnJSON.get("name");
+        paraMap.put("topoUri", urnBuilder("netcreate", name, refUuid));
+        
+        String parent = (String) vcnJSON.get("parent");
+        if (parent.contains("aws") || parent.contains("amazon")) {
+            paraMap.put("driverType", "aws");
+        } else if (parent.contains("openstack")) {
+            paraMap.put("driverType", "os");
+        }
+
+        JSONArray subArr = (JSONArray) vcnJSON.get("subnets");
+        for (int i = 0; i < subArr.size(); i++) {
+            JSONObject subJSON = (JSONObject) subArr.get(i);
+
+            String subName = (String) subJSON.get("name");
+            String subCidr = (String) subJSON.get("cidr");
+
+            JSONArray vmArr = (JSONArray) subJSON.get("");
+            if (vmArr != null) {
+                for (int j = 0; j < vmArr.size(); j++) {
+                    JSONObject vmJSON = (JSONObject) vmArr.get(j);
+
+                }
+            }
+
+            JSONArray subRouteArr = (JSONArray) subJSON.get("routes");
+            String routeString = "";
+            if (subRouteArr != null) {
+                routeString = "routes";
+                for (Object routeEle : subRouteArr) {
+                    JSONObject routeJSON = (JSONObject) routeEle;
+
+                    JSONObject fromJSON = (JSONObject) routeJSON.get("from");
+                    if (fromJSON != null) {
+                        routeString += "from+" + fromJSON.get("value") + ",";
+                    }
+
+                    JSONObject toJSON = (JSONObject) routeJSON.get("to");
+                    if (toJSON != null) {
+                        routeString += "to+" + toJSON.get("value") + ",";
+                    }
+
+                    JSONObject nextJSON = (JSONObject) routeJSON.get("next_hop");
+                    if (nextJSON != null) {
+                        routeString += "nextHop+" + nextJSON.get("value");
+                    }
+
+                    routeString += "\r\n";
+                }
+
+                routeString = routeString.substring(0, routeString.length() - 2);
+            }
+
+            String subString = "name+" + subName + "&cidr+" + subCidr;
+            if (!routeString.isEmpty()) {
+                subString += "&" + routeString;
+            }
+            paraMap.put("subnet" + (i + 1), subString);
+        }
+
+        JSONArray netRouteArr = (JSONArray) vcnJSON.get("routes");
+        String netRouteString = "";
+        if (netRouteArr != null) {
+            for (Object routeEle : netRouteArr) {
+                JSONObject routeJSON = (JSONObject) routeEle;
+
+                JSONObject fromJSON = (JSONObject) routeJSON.get("from");
+                if (fromJSON != null) {
+                    netRouteString += "from+" + fromJSON.get("value") + ",";
+                }
+
+                JSONObject toJSON = (JSONObject) routeJSON.get("to");
+                if (toJSON != null) {
+                    netRouteString += "to+" + toJSON.get("value") + ",";
+                }
+
+                JSONObject nextJSON = (JSONObject) routeJSON.get("next_hop");
+                if (nextJSON != null) {
+                    netRouteString += "nextHop+" + nextJSON.get("value");
+                }
+
+                netRouteString += "\r\n";
+            }
+        }
+        paraMap.put("netRoutes", netRouteString);
+
+        System.out.println(paraMap);
+        return paraMap;
     }
 
-    
     // UTILITY METHODS
+    /*
     
+     JSONArray Arr = (JSONArray) JSON.get("");
+     for (int i = 0; i < Arr.size(); i++) {
+     JSONObject JSON = (JSONObject) Arr.get(i);
+     }
+    
+     */
     private String urnBuilder(String serviceType, String name, String refUuid) {
         switch (serviceType) {
             case "dnc":
                 return "urn:ogf:network:service+" + refUuid + ":resource+links:tag+" + name;
-            case "netCreate":
+            case "netcreate":
                 return "urn:ogf:network:service+" + refUuid + ":resource+virtual_clouds:tag+" + name;
             default:
                 return "ERROR";
