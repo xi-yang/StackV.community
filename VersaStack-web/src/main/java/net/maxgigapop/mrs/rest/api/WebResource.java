@@ -237,8 +237,10 @@ public class WebResource {
             String des = (String) linksJSON.get("des");
             String desVlan = (String) linksJSON.get("des-vlan");
 
-            String linkUrn = urnBuilder("dnc", name, refUuid);
+            String linkUrn = urnBuilder("dnc", name, refUuid);            
             String connString = src + "&vlan_tag+" + srcVlan + "\r\n" + des + "&vlan_tag" + desVlan;
+            
+            paraMap.put("linkUri" + (i + 1), linkUrn);
             paraMap.put("conn" + (i + 1), connString);
         }
 
