@@ -157,7 +157,7 @@ public class WebResource {
                     paraMap = parseNet(dataJSON, refUuid);
                     break;
                 default:
-            }
+            }            
 
             // Initialize service parameters.
             prep = front_conn.prepareStatement("SELECT service_id"
@@ -227,6 +227,7 @@ public class WebResource {
 
     private HashMap<String, String> parseDNC(JSONObject dataJSON, String refUuid) {
         HashMap<String, String> paraMap = new HashMap<>();
+        paraMap.put("instanceUUID", refUuid);
 
         JSONArray linksArr = (JSONArray) dataJSON.get("links");
         for (int i = 0; i < linksArr.size(); i++) {
@@ -250,6 +251,7 @@ public class WebResource {
 
     private HashMap<String, String> parseNet(JSONObject dataJSON, String refUuid) {
         HashMap<String, String> paraMap = new HashMap<>();
+        paraMap.put("instanceUUID", refUuid);
 
         JSONArray vcnArr = (JSONArray) dataJSON.get("virtual_clouds");
         JSONObject vcnJSON = (JSONObject) vcnArr.get(0);
