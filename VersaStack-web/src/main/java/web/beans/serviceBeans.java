@@ -451,7 +451,7 @@ public class serviceBeans {
 
             String formatDelta = delta.replaceAll("<", "&lt;");
             formatDelta = formatDelta.replaceAll(">", "&gt;");
-            
+
             prep = front_conn.prepareStatement("INSERT INTO Frontend.service_delta "
                     + "(`service_instance_id`, `service_state_id`, `delta`) "
                     + "VALUES (?, ?, ?)");
@@ -733,6 +733,39 @@ public class serviceBeans {
         }
         //System.out.println(svcDelta);
 
+        // Cache serviceDelta.
+        try {
+            Connection front_conn;
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", "root");
+            front_connectionProps.put("password", "root");
+
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("SELECT service_instance_id, service_state_id"
+                    + " FROM service_instance WHERE referenceUUID = ?");
+            prep.setString(1, refUuid);
+            ResultSet rs1 = prep.executeQuery();
+            rs1.next();
+            int instanceId = rs1.getInt(1);
+            int stateId = rs1.getInt(2);
+
+            String formatDelta = svcDelta.replaceAll("<", "&lt;");
+            formatDelta = formatDelta.replaceAll(">", "&gt;");
+
+            prep = front_conn.prepareStatement("INSERT INTO Frontend.service_delta "
+                    + "(`service_instance_id`, `service_state_id`, `delta`) "
+                    + "VALUES (?, ?, ?)");
+            prep.setInt(1, instanceId);
+            prep.setInt(2, stateId);
+            prep.setString(3, formatDelta);
+            prep.executeUpdate();
+
+        } catch (SQLException ex) {
+            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
 //        String siUuid;
         String result;
         try {
@@ -930,5 +963,21 @@ public class serviceBeans {
         }
 
         return retList;
+    }
+
+    public void cleanInstances() throws SQLException {
+
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", "root");
+        front_connectionProps.put("password", "root");
+
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
+                front_connectionProps);
+
+        PreparedStatement prep = front_conn.prepareStatement("DELETE FROM Frontend.service_delta");
+        prep.executeUpdate();
+        prep = front_conn.prepareStatement("DELETE FROM Frontend.service_instance");
+        prep.executeUpdate();
     }
 }

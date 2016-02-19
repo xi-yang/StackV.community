@@ -58,30 +58,27 @@
                             </div>
                         </div>
                         <div id="service-bottom">                            
-                            <div id="service-fields">                                
-                                <form id="service-template-form" action="/VersaStack-web/ServiceServlet" method="post">
-                                    <input type="hidden" name="userID" value="${user.getId()}"/>
-                                    <table class="management-table" id="net-template-form" style="margin-bottom: 0px;"> 
-                                        <thead>
-                                            <tr>
-                                                <th>Templates</th>
-                                                <th></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>Basic</td>
-                                                <td><input type="submit" name="template1" value="Select" /></td>
-                                            </tr>                                            
-                                            <tr>
-                                                <td>Advanced</td>
-                                                <td><input type="submit" name="template2" value="Select" /></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>    
-                                    <input type="hidden" name="netCreate" value="true"/>
-                                </form>  
-                                <form id="service-custom-form" action="/VersaStack-web/ServiceServlet" method="post">
+                            <div id="service-fields">                                                               
+                                <table class="management-table" id="net-template-form" style="margin-bottom: 0px;"> 
+                                    <thead>
+                                        <tr>
+                                            <th>Templates</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>No VM</td>
+                                            <td><button onclick="applyNetTemplate(1)">Apply</button></td>
+                                        </tr>                                            
+                                        <tr>
+                                            <td>VM</td>
+                                            <td><button onclick="applyNetTemplate(2)">Apply</button></td>
+                                        </tr>
+                                    </tbody>
+                                </table>    
+
+                                <form id="custom-form" action="/VersaStack-web/ServiceServlet" method="post">
                                     <input type="hidden" name="userID" value="${user.getId()}"/>    
                                     <table class="management-table" id="net-custom-form">
                                         <thead>

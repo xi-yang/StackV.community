@@ -432,11 +432,33 @@ function deleteInstance(uuid) {
     window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
-function applyDNCTemplate(code) {
+function applyNetTemplate(code) {
     switch(code) {
-        case 1: 
-            var form = document.getElementById('custom-form');
+        case 1:
+            form.elements['netType'].value = '';
+            form.elements['netCidr'].value = '';
             
+            //form.elements['linkUri1'].value = 'urn:ogf:network:vo1.maxgigapop.net:link=conn1';
+
+            form.elements['subnet1-name'].value = '';
+            form.elements['subnet1-cidr'].value = '10.1.0.0/24';
+            form.elements[''].value = '';
+            form.elements[''].value = '';
+            form.elements[''].value = '';
+            form.elements[''].value = '';
+            
+            break;
+        
+        case 2:
+            break;
+    }
+}
+
+function applyDNCTemplate(code) {
+    var form = document.getElementById('custom-form');
+    switch(code) {
+        case 1:    
+            //form.elements['topoUri'].value = 'urn:ogf:network:vo1.maxgigapop.net:link';
             form.elements['linkUri1'].value = 'urn:ogf:network:vo1.maxgigapop.net:link=conn1';
             form.elements['link1-src'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
             form.elements['link1-src-vlan'].value = '3021-3029';
@@ -448,7 +470,6 @@ function applyDNCTemplate(code) {
             if (linkCounter < 2) {
                 addLink();
             }
-            var form = document.getElementById('custom-form');
             
             form.elements['linkUri1'].value = 'urn:ogf:network:vo1.maxgigapop.net:link=conn1';
             form.elements['link1-src'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
@@ -527,6 +548,8 @@ function clearCounters() {
     subRouteCounter = 1;
     linkCounter = 1;
 }
+
+
 
 var getUrlParameter = function getUrlParameter(sParam) {
     var sPageURL = decodeURIComponent(window.location.search.substring(1)),

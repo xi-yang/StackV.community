@@ -41,7 +41,7 @@
         <!-- MAIN PANEL -->
         <div id="main-pane">                                   
             <div id="service-overview">
-                <button onclick="">Clean Boot</button>
+
                 <table class="management-table" id="status-table">
                     <thead>
                         <tr>
