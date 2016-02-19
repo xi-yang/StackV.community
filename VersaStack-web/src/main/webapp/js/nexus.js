@@ -388,11 +388,11 @@ function propagateInstance(uuid) {
         }
     });
     
-    location.reload(true);    
+    window.location.reload(true);    
 }
 
 function commitInstance(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/service/' + uuid + '/commit';
+    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/web/service/' + uuid + '/commit';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -401,11 +401,11 @@ function commitInstance(uuid) {
         }
     });
     
-    location.reload(true);
+    window.location.reload(true);
 }
 
 function revertInstance(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/service/' + uuid + '/revert';
+    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/web/service/' + uuid + '/revert';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -414,16 +414,16 @@ function revertInstance(uuid) {
         }
     });
     
-    location.reload(true);
+    window.location.reload(true);
 }
 
 function deleteInstance(uuid) {
     
     
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/service/' + uuid;
+    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/web/service/' + uuid + '/delete';
     $.ajax({
         url: apiUrl,
-        type: 'DELETE',
+        type: 'PUT',
         success: function (result) {
             // Do something with the result
         }

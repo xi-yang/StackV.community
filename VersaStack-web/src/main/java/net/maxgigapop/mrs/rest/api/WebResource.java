@@ -157,7 +157,7 @@ public class WebResource {
                     paraMap = parseNet(dataJSON, refUuid);
                     break;
                 default:
-            }            
+            }
 
             // Initialize service parameters.
             prep = front_conn.prepareStatement("SELECT service_id"
@@ -215,10 +215,30 @@ public class WebResource {
 
     @PUT
     @Path("/service/{siUUID}/{action}")
-    public String push(@PathParam("siUUID") String svcInstanceUUID, @PathParam("action") String action) {
-        if (action.equalsIgnoreCase("revert")) {
-
-        } else if (action.equalsIgnoreCase("terminate")) {
+    public String push(@PathParam("siUUID") String refUuid, @PathParam("action") String action) {
+        try {
+            if (action.equalsIgnoreCase("propagate")) {
+                URL url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
+                HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+                String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
+            } else if (action.equalsIgnoreCase("commit")) {
+                URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
+                HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+                String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
+            } else if (action.equalsIgnoreCase("revert")) {                
+                setSuperState(refUuid, 2);
+                        
+                URL url = new URL(String.format("%s/service/%s/revert", host, refUuid));
+                HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+                String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
+            } else if (action.equalsIgnoreCase("delete")) {
+                setSuperState(refUuid, 2);
+                
+                URL url = new URL(String.format("%s/service/%s/", host, refUuid));
+                HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+                String result = servBean.executeHttpMethod(url, propagate, "DELETE", null);
+            }
+        } catch (IOException | SQLException e) {
 
         }
 
@@ -238,9 +258,9 @@ public class WebResource {
             String des = (String) linksJSON.get("des");
             String desVlan = (String) linksJSON.get("des-vlan");
 
-            String linkUrn = urnBuilder("dnc", name, refUuid);            
+            String linkUrn = urnBuilder("dnc", name, refUuid);
             String connString = src + "&vlan_tag+" + srcVlan + "\r\n" + des + "&vlan_tag" + desVlan;
-            
+
             paraMap.put("linkUri" + (i + 1), linkUrn);
             paraMap.put("conn" + (i + 1), connString);
         }
@@ -257,10 +277,10 @@ public class WebResource {
         JSONObject vcnJSON = (JSONObject) vcnArr.get(0);
         paraMap.put("netType", (String) vcnJSON.get("type"));
         paraMap.put("netCidr", (String) vcnJSON.get("cidr"));
-        
+
         String name = (String) vcnJSON.get("name");
         paraMap.put("topoUri", urnBuilder("netcreate", name, refUuid));
-        
+
         String parent = (String) vcnJSON.get("parent");
         if (parent.contains("aws") || parent.contains("amazon")) {
             paraMap.put("driverType", "aws");
@@ -366,5 +386,21 @@ public class WebResource {
             default:
                 return "ERROR";
         }
+    }
+    
+    private void setSuperState(String refUuid, int superStateId) throws SQLException {
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", "root");
+        front_connectionProps.put("password", "root");
+
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
+                front_connectionProps);
+
+        PreparedStatement prep = front_conn.prepareStatement("UPDATE service_instance SET service_state_id = ? "
+                + "WHERE referenceUUID = ?");
+        prep.setInt(1, superStateId);
+        prep.setString(2, refUuid);
+        prep.executeUpdate();
     }
 }
