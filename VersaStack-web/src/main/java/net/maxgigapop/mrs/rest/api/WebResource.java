@@ -84,7 +84,7 @@ public class WebResource {
         Properties front_connectionProps = new Properties();
         front_connectionProps.put("user", front_db_user);
         front_connectionProps.put("password", front_db_pass);
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
         PreparedStatement prep = front_conn.prepareStatement("SELECT username FROM user_info");
@@ -132,7 +132,7 @@ public class WebResource {
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
             PreparedStatement prep = front_conn.prepareStatement("SELECT user_id FROM user_info WHERE username = ?");
@@ -169,7 +169,7 @@ public class WebResource {
             Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
 
             // Install Instance into DB.
-            prep = front_conn.prepareStatement("INSERT INTO Frontend.service_instance "
+            prep = front_conn.prepareStatement("INSERT INTO frontend.service_instance "
                     + "(`service_id`, `user_id`, `creation_time`, `referenceUUID`, `service_state_id`) VALUES (?, ?, ?, ?, ?)");
             prep.setInt(1, serviceID);
             prep.setString(2, userID);
@@ -391,10 +391,9 @@ public class WebResource {
     private void setSuperState(String refUuid, int superStateId) throws SQLException {
         Connection front_conn;
         Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", "root");
-        front_connectionProps.put("password", "root");
-
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
         PreparedStatement prep = front_conn.prepareStatement("UPDATE service_instance SET service_state_id = ? "
