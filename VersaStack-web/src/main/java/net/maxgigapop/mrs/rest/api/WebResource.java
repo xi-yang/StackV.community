@@ -6,7 +6,9 @@
 package net.maxgigapop.mrs.rest.api;
 
 import java.io.IOException;
+import static java.lang.Thread.sleep;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -216,27 +218,31 @@ public class WebResource {
     @PUT
     @Path("/service/{siUUID}/{action}")
     public String push(@PathParam("siUUID") String refUuid, @PathParam("action") String action) {
+        URL url;
+        HttpURLConnection propagate;
+        String result;
         try {
-            if (action.equalsIgnoreCase("propagate")) {
-                URL url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
-                HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-                String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
-            } else if (action.equalsIgnoreCase("commit")) {
-                URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
-                HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-                String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
-            } else if (action.equalsIgnoreCase("revert")) {                
+        switch (action) {
+            case "propagate":
+                propagate(refUuid);                
+                break;
+            case "commit":
+                commit(refUuid);                
+                break;
+            case "revert":
                 setSuperState(refUuid, 2);
-                        
-                URL url = new URL(String.format("%s/service/%s/revert", host, refUuid));
-                HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-                String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
-            } else if (action.equalsIgnoreCase("delete")) {
+                revert(refUuid);                
+                break;
+            case "delete":
                 setSuperState(refUuid, 2);
+                delete(refUuid);                
+                break;
                 
-                URL url = new URL(String.format("%s/service/%s/", host, refUuid));
-                HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-                String result = servBean.executeHttpMethod(url, propagate, "DELETE", null);
+            case "cancel":
+                cancelInstance(refUuid);                                
+                break;
+                
+                
             }
         } catch (IOException | SQLException e) {
 
@@ -368,6 +374,53 @@ public class WebResource {
         return paraMap;
     }
 
+    /**
+     * 
+     * @param refUuid instance UUID
+     * @return error code:
+     -1 - Exception thrown
+      0 - success
+      1 - stage 1 error (Failed revert)
+      2 - stage 2 error (Failed propagate)
+      3 - stage 3 error (Failed commit)
+      4 - stage 4 error (Failed result check)
+     */
+    private int cancelInstance(String refUuid) {
+        boolean result; 
+        try {
+            String instanceState = status(refUuid);
+            if (!instanceState.equalsIgnoreCase("READY")) {
+                return 1;
+            }
+            
+            result = revert(refUuid);
+            if (!result) {
+                return 1;
+            }
+            result = propagate(refUuid);
+            if (!result) {
+                return 2;
+            }
+            result = commit(refUuid);
+            if (!result) {
+                return 3;
+            }            
+            
+            while (true) {
+                instanceState = status(refUuid);
+                if (instanceState.equals("READY")) {
+                    return 0;
+                } else if (!instanceState.equals("COMMITTED")) {
+                    return 4;
+                }
+                sleep(3333);
+            }
+            
+        } catch (IOException | InterruptedException ex) {
+            return -1;
+        }
+    }
+    
     // UTILITY METHODS
     /*
     
@@ -403,4 +456,54 @@ public class WebResource {
         prep.setString(2, refUuid);
         prep.executeUpdate();
     }
+
+    private boolean propagate(String refUuid) throws MalformedURLException, IOException {
+        URL url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
+        HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+        String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
+        if (result.equalsIgnoreCase("PROPAGATED")) {
+            return true;
+        } else {
+            return false;
+        }            
+    }
+
+    private boolean commit(String refUuid) throws MalformedURLException, IOException {
+        URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
+        HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+        String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
+        if (result.equalsIgnoreCase("COMMITTED")) {
+            return true;
+        } else {
+            return false;
+        }     
+    }
+
+    private boolean revert(String refUuid) throws MalformedURLException, IOException {
+        URL url = new URL(String.format("%s/service/%s/revert", host, refUuid));
+        HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+        String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
+        if (result.equalsIgnoreCase("COMMITTED-PARTIAL")) {
+            return true;
+        } else {
+            return false;
+        }     
+    }
+
+    private String delete(String refUuid) throws MalformedURLException, IOException {
+        URL url = new URL(String.format("%s/service/%s/", host, refUuid));
+        HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+        String result = servBean.executeHttpMethod(url, propagate, "DELETE", null);
+
+        return result;
+    }
+
+    private String status(String refUuid) throws MalformedURLException, IOException {
+        URL url = new URL(String.format("%s/service/%s/status", host, refUuid));
+        HttpURLConnection status = (HttpURLConnection) url.openConnection();
+        String result = servBean.executeHttpMethod(url, status, "GET", null);
+        
+        return result;
+    }
+
 }

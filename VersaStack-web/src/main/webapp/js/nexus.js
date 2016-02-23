@@ -48,6 +48,13 @@ $(function () {
     clearCounters();
 });
 
+function detailsLoad() {
+    var uuid = getUrlParameter('uuid');
+    $ref = "/VersaStack-web/ops/details/dncDetails.jsp?uuid=" + uuid + " #instance-pane";
+    
+    $("service-specific").load($ref);
+}
+
 //Select Function
 function aclSelect(sel) {
     $ref = "privileges.jsp?id=" + sel.value + " #acl-tables";
@@ -416,6 +423,20 @@ function revertInstance(uuid) {
     
     window.location.reload(true);
 }
+
+function cancelInstance(uuid) {
+    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/web/service/' + uuid + '/cancel';
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        success: function (result) {
+            // Do something with the result
+        }
+    });
+    
+    window.location.reload(true);
+}
+
 
 function deleteInstance(uuid) {
     
