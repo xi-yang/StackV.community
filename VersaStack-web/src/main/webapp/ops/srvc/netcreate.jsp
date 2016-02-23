@@ -146,6 +146,14 @@
                                                         <div>
                                                             <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">
                                                         </div>
+                                                        <div id="subnet1-vm-block">
+                                                            <input type="text" name="subnet1-" placeholder="">
+                                                            <input type="text" name="subnet1-" placeholder="">
+                                                            <input type="text" name="subnet1-" placeholder="">
+                                                        </div>
+                                                        <div>
+                                                            <input class="button-register" id="subnet1-vm" type="button" value="Add VM" onClick="addVM(this.id)">
+                                                        </div>
                                                     </div>
                                                 </td>
                                             </tr>

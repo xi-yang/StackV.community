@@ -322,6 +322,22 @@ function addSubnet() {
     }
 }
 
+var VMCounter = 1;
+var VMLimit = 10;
+function addVM(subnetNum) {
+    if (VMCounter === VMLimit) {
+        alert("You have reached the limit of VMs.");
+    }
+    else {        
+        subRouteCounter++;
+        var block = document.getElementById(subnetNum + '-block');
+
+        block.innerHTML = block.innerHTML + 
+                '';
+    }
+
+}
+
 var subRouteCounter = 1;
 var subRouteLimit = 10;
 function addSubnetRoute(subnetNum) {

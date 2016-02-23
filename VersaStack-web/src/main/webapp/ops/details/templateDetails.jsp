@@ -46,24 +46,76 @@
                 <sql:param value="${param.uuid}" />
             </sql:query>
 
-            <c:forEach var="instance" items="${instancelist.rows}">
-                <c:if test="${instance.name == 'Dynamic Network Connection'}">
-                    <c:redirect url="/ops/details/dncDetails.jsp">
-                        <c:param name="uuid" value="${param.uuid}"></c:param>
-                    </c:redirect>
-                </c:if>
-                
-                
-                
-                <c:redirect url="/ops/details/templateDetails.jsp">
-                    <c:param name="uuid" value="${param.uuid}"></c:param>
-                </c:redirect>
-            </c:forEach>
+            <div id="instance-pane">
+                <c:forEach var="instance" items="${instancelist.rows}">            
+                    <table class="management-table" id="details-table">
+                        <thead>
+                            <tr>
+                                <th>${instance.name} Service Details</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Service Reference UUID</td>
+                                <td>${param.uuid}</td>
+                            </tr>
+                            <tr>
+                                <td>Service State</td>
+                                <td>${instance.superState}</td>
+                            </tr>
+                            <tr>
+                                <td>Operation Status</td>
+                                <td id="instance-status"></td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td>
+                                    <div class="service-instance-panel">
+                                        <button onClick="cancelInstance('${param.uuid}')">Cancel</button>
+                                        <button onClick="deleteInstance('${param.uuid}')">Delete</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
 
+
+                    <sql:query dataSource="${front_conn}" sql="SELECT D.delta, S.superState 
+                               FROM service_delta D, service_instance I, service_state S 
+                               WHERE I.referenceUUID = ? AND I.service_instance_id = D.service_instance_id AND I.service_state_id = S.service_state_id" var="deltalist">
+                        <sql:param value="${param.uuid}" />
+                    </sql:query>
+
+                    <c:forEach var="delta" items="${deltalist.rows}">
+                        <table class="management-table" id="delta-table">
+                            <thead>
+                                <tr>
+                                    <th>Delta Details</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Delta State</td>
+                                    <td>${delta.superState}</td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td>${delta.delta}</td>
+                                </tr>                        
+                            </tbody>
+                        </table>
+                    </c:forEach>
+                </c:forEach>
+            </div>  
         </div>        
         <!-- JS -->
         <script>
             $(function () {
+                var uuid = getUrlParameter('uuid');
+                checkInstance(uuid);
+
                 $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
                     if (${user.isAllowed(1)}) {
                         var element = document.getElementById("service1");

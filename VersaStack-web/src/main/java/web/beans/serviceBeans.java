@@ -980,4 +980,22 @@ public class serviceBeans {
         prep = front_conn.prepareStatement("DELETE FROM Frontend.service_instance");
         prep.executeUpdate();
     }
+    
+    /**
+     * 
+     * @param serviceType filename of the service
+     * @param name user-supplied tag
+     * @param refUuid instance UUID
+     * @return formatted URN.
+     */
+    private String urnBuilder(String serviceType, String name, String refUuid) {
+        switch (serviceType) {
+            case "dnc":
+                return "urn:ogf:network:service+" + refUuid + ":resource+links:tag+" + name;
+            case "netcreate":
+                return "urn:ogf:network:service+" + refUuid + ":resource+virtual_clouds:tag+" + name;
+            default:
+                return "ERROR";
+        }
+    }
 }
