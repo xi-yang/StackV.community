@@ -331,9 +331,7 @@ public class ServiceServlet extends HttpServlet {
 
         if (paraMap.containsKey("template1")) { // Basic Template
             // Add template data.
-            paraMap.put("driverType", "aws");
             paraMap.put("topoUri", "urn:ogf:network:aws.amazon.com:aws-cloud");
-            paraMap.put("netType", "internal");
             paraMap.put("netCidr", "10.1.0.0/16");
             paraMap.put("subnet1", "name+ &cidr+10.1.0.0/24&routesto+206.196.0.0/16,nextHop+internet\r\nfrom+vpn,to+0.0.0.0/0,nextHop+vpn\r\nto+72.24.24.0/24,nextHop+vpn");
             paraMap.put("subnet2", "name+ &cidr+10.1.1.0/24");
@@ -354,16 +352,15 @@ public class ServiceServlet extends HttpServlet {
         }
         else if(paraMap.containsKey("template2")){ // Advanced Template
             // Add template data.
-            paraMap.put("driverType", "aws");
             paraMap.put("topoUri", "urn:ogf:network:aws.amazon.com:aws-cloud");
-            paraMap.put("netType", "internal");
             paraMap.put("netCidr", "10.1.0.0/16");
             paraMap.put("subnet1", "name+ &cidr+10.1.0.0/24&routesto+206.196.0.0/16,nextHop+internet\r\nfrom+vpn,to+0.0.0.0/0,nextHop+vpn\r\nto+72.24.24.0/24,nextHop+vpn");
             paraMap.put("subnet2", "name+ &cidr+10.1.1.0/24");
             paraMap.put("netRoutes", "to+0.0.0.0/0,nextHop+internet");
-            paraMap.put("vm1", "1&imageType&instanceType&volumeSize&batch");
-            paraMap.put("vm2", "2&imageType&instanceType&volumeSize&batch");
-
+            paraMap.put("vm1", "vm1&1");  //value format: "vm_name&subnet_index_number"
+            paraMap.put("vm2", "vm2&2");
+            paraMap.put("directConn", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*?vlan=3023");
+            
             paraMap.remove("netCreate");
             paraMap.remove("template2");
 
