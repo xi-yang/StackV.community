@@ -572,7 +572,6 @@ public class serviceBeans {
 
     public int createNetwork(Map<String, String> paraMap) {
         String topoUri = null;
-        String driverType = null;
         String netCidr = null;
         String refUuid = null;
         String directConn = null;
@@ -581,9 +580,7 @@ public class serviceBeans {
         boolean gwVpn = false;
 
         for (Map.Entry<String, String> entry : paraMap.entrySet()) {
-            if (entry.getKey().equalsIgnoreCase("driverType")) {
-                driverType = entry.getValue();
-            } else if (entry.getKey().equalsIgnoreCase("topoUri")) {
+            if (entry.getKey().equalsIgnoreCase("topoUri")) {
                 topoUri = entry.getValue();
             } else if (entry.getKey().equalsIgnoreCase("netCidr")) {
                 netCidr = entry.getValue();
