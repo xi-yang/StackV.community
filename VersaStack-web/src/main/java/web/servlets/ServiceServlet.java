@@ -360,6 +360,7 @@ public class ServiceServlet extends HttpServlet {
             paraMap.put("vm1", "vm1&1");  //value format: "vm_name&subnet_index_number"
             paraMap.put("vm2", "vm2&2");
             paraMap.put("directConn", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*?vlan=3023");
+            //if not specified the vlan range, replace 3023 with any
             
             paraMap.remove("netCreate");
             paraMap.remove("template2");
