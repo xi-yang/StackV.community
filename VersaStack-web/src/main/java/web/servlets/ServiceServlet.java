@@ -405,7 +405,7 @@ public class ServiceServlet extends HttpServlet {
 
                     // Process each routes.
                     for (int j = 1; j < 10; j++) {
-                        // Check for subnet existence.
+                        // Check for subroute existence.
                         if (paraMap.containsKey("subnet" + i + "-route" + j + "-to")) {
                             subnetString += "to+" + paraMap.get("subnet" + i + "-route" + j + "-to") + ",";
 
@@ -436,6 +436,19 @@ public class ServiceServlet extends HttpServlet {
                     }
                     paraMap.remove("subnet" + i + "-route-prop");
 
+                    // Process VMs.
+                    for (int j = 1; j < 10; j++) {
+                        if (paraMap.containsKey("subnet" + i + "-vm" + j)) {
+                            String VMString = "";
+                            VMString += paraMap.get("subnet" + i + "-vm" + j);
+                            VMString += "&" + i;
+                            
+                            paraMap.put("vm" + j, VMString);
+                        }
+                        
+                        paraMap.remove("subnet" + i + "-vm" + j);
+                    }
+                    
                     paraMap.remove("subnet" + i + "-cidr");
                     paraMap.remove("subnet" + i + "-name");
 

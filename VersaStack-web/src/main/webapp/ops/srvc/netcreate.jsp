@@ -92,7 +92,7 @@
                                                 <td>Topology URI</td>
                                                 <td>
                                                     <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance" var="driverlist" />
-                                                    <select name="topoUri" >
+                                                    <select name="topoUri" required>
                                                         <option></option>
                                                         <c:forEach var="driver" items="${driverlist.rows}">
                                                             <option value="${driver.topologyUri}">${driver.topologyUri}</option>
@@ -102,11 +102,11 @@
                                             </tr>
                                             <tr>
                                                 <td>Network Type</td>
-                                                <td><input type="text" name="netType" /></td>
+                                                <td><input type="text" name="netType" required/></td>
                                             </tr>
                                             <tr>
                                                 <td>Network CIDR</td>
-                                                <td><input type="text" name="netCidr" /></td>
+                                                <td><input type="text" name="netCidr" required/></td>
                                             </tr>
                                             <!-- <tr>
                                                 <td>Route Table</td>
@@ -147,15 +147,17 @@
                                                             <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">
                                                         </div>
                                                         <div id="subnet1-vm-block">
-                                                            <input type="text" name="subnet1-" placeholder="">
-                                                            <input type="text" name="subnet1-" placeholder="">
-                                                            <input type="text" name="subnet1-" placeholder="">
+                                                            <div>VM 1   <input type="text" name="subnet1-vm1" placeholder="VM Name"></div>
                                                         </div>
                                                         <div>
                                                             <input class="button-register" id="subnet1-vm" type="button" value="Add VM" onClick="addVM(this.id)">
                                                         </div>
                                                     </div>
                                                 </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Direct Connect</td>
+                                                <td><input type="text" name="directConnect" size="60" /></td>
                                             </tr>
                                             <tr>
                                                 <td></td>

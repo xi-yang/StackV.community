@@ -41,17 +41,17 @@ $(function () {
         evt.preventDefault();
     });
 
-    $(".clickable-row").click(function() {
+    $(".clickable-row").click(function () {
         window.document.location = $(this).data("href");
     });
-    
+
     clearCounters();
 });
 
 function detailsLoad() {
     var uuid = getUrlParameter('uuid');
     $ref = "/VersaStack-web/ops/details/dncDetails.jsp?uuid=" + uuid + " #instance-pane";
-    
+
     $("service-specific").load($ref);
 }
 
@@ -272,12 +272,12 @@ function addRoute() {
     if (routeCounter === routeLimit) {
         alert("You have reached the limit of routes.");
     }
-    else {        
+    else {
         routeCounter++;
         var block = document.getElementById('route-block');
 
-        block.innerHTML = block.innerHTML + 
-                '<div>' + 
+        block.innerHTML = block.innerHTML +
+                '<div>' +
                 '<input type="text" name="route' + routeCounter + '-from" placeholder="From"/>' +
                 '<input type="text" name="route' + routeCounter + '-to" placeholder="To"/>' +
                 '<input type="text" name="route' + routeCounter + '-next" placeholder="Next Hop"/>' +
@@ -285,23 +285,39 @@ function addRoute() {
     }
 }
 
+var VMCounter = 1;
+var VMLimit = 10;
+function addVM(subnetNum) {
+    if (VMCounter === VMLimit) {
+        alert("You have reached the limit of VMs.");
+    }
+    else {
+        VMCounter++;
+        var block = document.getElementById(subnetNum + '-block');
+
+        block.innerHTML = block.innerHTML +
+                '<div>VM ' + VMCounter + '   <input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '" placeholder="VM Name"></div>';
+    }
+}
+
 var subnetCounter = 1;
 var subnetLimit = 10;
 function addSubnet() {
-     if (subnetCounter === subnetLimit) {
+    if (subnetCounter === subnetLimit) {
         alert("You have reached the limit of subnets.");
     }
     else {
         var table = document.getElementById("net-custom-form");
         var tableHeight = table.rows.length;
         subnetCounter++;
+        VMCounter++;
 
-        var row = table.insertRow(tableHeight - 1);
+        var row = table.insertRow(tableHeight - 2);
         row.id = 'subnet' + subnetCounter;
-        
+
         var cell1 = row.insertCell(0);
         cell1.innerHTML = 'Subnet ' + subnetCounter;
-        var cell2 = row.insertCell(1);               
+        var cell2 = row.insertCell(1);
         cell2.innerHTML = '<div>' +
                 '<input type="text" name="subnet' + subnetCounter + '-name" placeholder="Name"/>' +
                 '<input type="text" name="subnet' + subnetCounter + '-cidr" placeholder="CIDR Block"/>' +
@@ -318,24 +334,14 @@ function addSubnet() {
                 '<div>' +
                 '<input class="button-register" id="subnet' + subnetCounter + '-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">' +
                 '</div>' +
+                '</div>' +
+                '<div id="subnet' + subnetCounter + '-vm-block">' +
+                '<div>VM ' + VMCounter + '   <input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '" placeholder="VM Name">' +
+                '</div>' +
+                '<div>' +
+                '<input class="button-register" id="subnet' + subnetCounter + '-vm" type="button" value="Add VM" onClick="addVM(this.id)">' +
                 '</div>';
     }
-}
-
-var VMCounter = 1;
-var VMLimit = 10;
-function addVM(subnetNum) {
-    if (VMCounter === VMLimit) {
-        alert("You have reached the limit of VMs.");
-    }
-    else {        
-        subRouteCounter++;
-        var block = document.getElementById(subnetNum + '-block');
-
-        block.innerHTML = block.innerHTML + 
-                '';
-    }
-
 }
 
 var subRouteCounter = 1;
@@ -344,12 +350,12 @@ function addSubnetRoute(subnetNum) {
     if (subRouteCounter === subRouteLimit) {
         alert("You have reached the limit of routes.");
     }
-    else {        
+    else {
         subRouteCounter++;
         var block = document.getElementById(subnetNum + '-block');
 
-        block.innerHTML = block.innerHTML + 
-                '<div>' + 
+        block.innerHTML = block.innerHTML +
+                '<div>' +
                 '<input type="text" name="' + subnetNum + subRouteCounter + '-from" placeholder="From"/>' +
                 '<input type="text" name="' + subnetNum + subRouteCounter + '-to" placeholder="To"/>' +
                 '<input type="text" name="' + subnetNum + subRouteCounter + '-next" placeholder="Next Hop"/>' +
@@ -358,34 +364,34 @@ function addSubnetRoute(subnetNum) {
 
 }
 
-var linkCounter =1;
+var linkCounter = 1;
 var linkLimit = 10;
-function addLink(){
-    if(linkCounter === linkLimit){
+function addLink() {
+    if (linkCounter === linkLimit) {
         alert("You have reached the limit of connections");
     }
-    else{
+    else {
         var table = document.getElementById("net-custom-form");
         var tableHeight = table.rows.length;
         linkCounter++;
-        
+
         var row = table.insertRow(tableHeight - 1);
         row.id = 'link' + linkCounter;
-        
+
         var cell1 = row.insertCell(0);
         cell1.innerHTML = 'Link ' + linkCounter;
         var cell2 = row.insertCell(1);
         cell2.innerHTML = '<div>' +
-                '<input type="text" name="linkUri'+linkCounter+'"size="60" placeholder="Link-URI">'+
-                '</div>'+
-                '<div>'+
-                '<input type="text" name="link' + linkCounter +'-src" size="60" placeholder="Source">' +
-                '<input type="text" name="link' + linkCounter +'-src-vlan" placeholder="Vlan-tag">' +
+                '<input type="text" name="linkUri' + linkCounter + '"size="60" placeholder="Link-URI">' +
                 '</div>' +
-                '</div>'+
-                '<input type="text" name="link' + linkCounter +'-des" size="60" placeholder="Destination">' +
-                '<input type="text" name="link' + linkCounter +'-des-vlan" placeholder="Vlan-tag">' +
-                '</div>' ;
+                '<div>' +
+                '<input type="text" name="link' + linkCounter + '-src" size="60" placeholder="Source">' +
+                '<input type="text" name="link' + linkCounter + '-src-vlan" placeholder="Vlan-tag">' +
+                '</div>' +
+                '</div>' +
+                '<input type="text" name="link' + linkCounter + '-des" size="60" placeholder="Destination">' +
+                '<input type="text" name="link' + linkCounter + '-des-vlan" placeholder="Vlan-tag">' +
+                '</div>';
     }
 }
 
@@ -410,8 +416,8 @@ function propagateInstance(uuid) {
             // Do something with the result
         }
     });
-    
-    window.location.reload(true);    
+
+    window.location.reload(true);
 }
 
 function commitInstance(uuid) {
@@ -423,7 +429,7 @@ function commitInstance(uuid) {
             // Do something with the result
         }
     });
-    
+
     window.location.reload(true);
 }
 
@@ -436,7 +442,7 @@ function revertInstance(uuid) {
             // Do something with the result
         }
     });
-    
+
     window.location.reload(true);
 }
 
@@ -449,14 +455,14 @@ function cancelInstance(uuid) {
             // Do something with the result
         }
     });
-    
+
     window.location.reload(true);
 }
 
 
 function deleteInstance(uuid) {
-    
-    
+
+
     var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/web/service/' + uuid + '/delete';
     $.ajax({
         url: apiUrl,
@@ -465,16 +471,16 @@ function deleteInstance(uuid) {
             // Do something with the result
         }
     });
-    
+
     window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
 function applyNetTemplate(code) {
-    switch(code) {
+    switch (code) {
         case 1:
             form.elements['netType'].value = '';
             form.elements['netCidr'].value = '';
-            
+
             //form.elements['linkUri1'].value = 'urn:ogf:network:vo1.maxgigapop.net:link=conn1';
 
             form.elements['subnet1-name'].value = '';
@@ -483,9 +489,9 @@ function applyNetTemplate(code) {
             form.elements[''].value = '';
             form.elements[''].value = '';
             form.elements[''].value = '';
-            
+
             break;
-        
+
         case 2:
             break;
     }
@@ -493,21 +499,21 @@ function applyNetTemplate(code) {
 
 function applyDNCTemplate(code) {
     var form = document.getElementById('custom-form');
-    switch(code) {
-        case 1:    
+    switch (code) {
+        case 1:
             //form.elements['topoUri'].value = 'urn:ogf:network:vo1.maxgigapop.net:link';
             form.elements['linkUri1'].value = 'urn:ogf:network:vo1.maxgigapop.net:link=conn1';
             form.elements['link1-src'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
             form.elements['link1-src-vlan'].value = '3021-3029';
             form.elements['link1-des'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*';
             form.elements['link1-des-vlan'].value = '3021-3029';
-            
+
             break;
         case 2:
             if (linkCounter < 2) {
                 addLink();
             }
-            
+
             form.elements['linkUri1'].value = 'urn:ogf:network:vo1.maxgigapop.net:link=conn1';
             form.elements['link1-src'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
             form.elements['link1-src-vlan'].value = '3021-3029';
@@ -518,30 +524,30 @@ function applyDNCTemplate(code) {
             form.elements['link2-src-vlan'].value = '3021-3029';
             form.elements['link2-des'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*';
             form.elements['link2-des-vlan'].value = '3021-3029';
-            
+
             break;
         default:
-            
+
     }
 }
 
 /*
-
-function applyTemplate(code) {
-    switch(code) {
-        case 1: 
-            var form = document.getElementById('');
-            
-            form.elements[''] = '';
-            
-            break;
-        case 2:
-            
-            break;
-        default:
-            
-    }
-} 
+ 
+ function applyTemplate(code) {
+ switch(code) {
+ case 1: 
+ var form = document.getElementById('');
+ 
+ form.elements[''] = '';
+ 
+ break;
+ case 2:
+ 
+ break;
+ default:
+ 
+ }
+ } 
  
  
  function clearView() {
@@ -582,6 +588,7 @@ function clearCounters() {
     queryCounter = 1;
     routeCounter = 1;
     subnetCounter = 1;
+    VMCounter = 1;
     subRouteCounter = 1;
     linkCounter = 1;
 }
@@ -590,9 +597,9 @@ function clearCounters() {
 
 var getUrlParameter = function getUrlParameter(sParam) {
     var sPageURL = decodeURIComponent(window.location.search.substring(1)),
-        sURLVariables = sPageURL.split('&'),
-        sParameterName,
-        i;
+            sURLVariables = sPageURL.split('&'),
+            sParameterName,
+            i;
 
     for (i = 0; i < sURLVariables.length; i++) {
         sParameterName = sURLVariables[i].split('=');

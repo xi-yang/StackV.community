@@ -217,10 +217,7 @@ public class WebResource {
 
     @PUT
     @Path("/service/{siUUID}/{action}")
-    public String push(@PathParam("siUUID") String refUuid, @PathParam("action") String action) {
-        URL url;
-        HttpURLConnection propagate;
-        String result;
+    public String operate(@PathParam("siUUID") String refUuid, @PathParam("action") String action) {
         try {
         switch (action) {
             case "propagate":
@@ -293,7 +290,9 @@ public class WebResource {
         } else if (parent.contains("openstack")) {
             paraMap.put("driverType", "os");
         }
-
+        
+        int VMCounter = 1;
+        // Parse Subnets.
         JSONArray subArr = (JSONArray) vcnJSON.get("subnets");
         for (int i = 0; i < subArr.size(); i++) {
             JSONObject subJSON = (JSONObject) subArr.get(i);
@@ -301,14 +300,16 @@ public class WebResource {
             String subName = (String) subJSON.get("name");
             String subCidr = (String) subJSON.get("cidr");
 
-            JSONArray vmArr = (JSONArray) subJSON.get("");
+            JSONArray vmArr = (JSONArray) subJSON.get("virtual_machines");
             if (vmArr != null) {
-                for (int j = 0; j < vmArr.size(); j++) {
-                    JSONObject vmJSON = (JSONObject) vmArr.get(j);
-
+                for (Object vmEle : vmArr) {
+                    JSONObject vmJSON = (JSONObject) vmEle;
+                    String VMString = (String) vmJSON.get("name") + "&" + i;
+                    paraMap.put("vm" + VMCounter++, VMString);
                 }
             }
 
+            // Parse subroutes.
             JSONArray subRouteArr = (JSONArray) subJSON.get("routes");
             String routeString = "";
             if (subRouteArr != null) {
@@ -344,6 +345,7 @@ public class WebResource {
             paraMap.put("subnet" + (i + 1), subString);
         }
 
+        // Parse Network Routes.
         JSONArray netRouteArr = (JSONArray) vcnJSON.get("routes");
         String netRouteString = "";
         if (netRouteArr != null) {
