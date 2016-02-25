@@ -72,8 +72,8 @@
                                 <td></td>
                                 <td>
                                     <div class="service-instance-panel">
-                                        <button onClick="cancelInstance('${param.uuid}')">Cancel</button>
-                                        <button onClick="deleteInstance('${param.uuid}')">Delete</button>
+                                        <button class="hide" id="instance-cancel" onClick="cancelInstance('${param.uuid}')">Cancel</button>
+                                        <button class="hide" id="instance-delete" onClick="deleteInstance('${param.uuid}')">Delete</button>
                                     </div>
                                 </td>
                             </tr>
@@ -115,6 +115,7 @@
             $(function () {
                 var uuid = getUrlParameter('uuid');
                 checkInstance(uuid);
+                dncModerate(uuid);
 
                 $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
                     if (${user.isAllowed(1)}) {

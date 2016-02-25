@@ -455,6 +455,15 @@ public class ServiceServlet extends HttpServlet {
                     paraMap.put("subnet" + i, subnetString);
                 }
             }
+            
+            // Parse direct connect.
+            String connString = paraMap.get("conn-dest");
+            if (paraMap.containsKey("conn-vlan")) {
+                connString += "?vlan=" + paraMap.get("conn-vlan");
+            } else {
+                connString += "?vlan=any";
+            }            
+            paraMap.put("directConn", connString);
 
             paraMap.remove("userID");
             paraMap.remove("custom");

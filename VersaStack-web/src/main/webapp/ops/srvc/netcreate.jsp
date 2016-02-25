@@ -157,7 +157,7 @@
                                             </tr>
                                             <tr>
                                                 <td>Direct Connect</td>
-                                                <td><input type="text" name="directConnect" size="60" /></td>
+                                                <td><input type="text" name="conn-dest" placeholder="Destination" size="60" /><input type="text" name="conn-vlan" placeholder="VLAN" size="8" /></td>
                                             </tr>
                                             <tr>
                                                 <td></td>
