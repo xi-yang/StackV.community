@@ -29,6 +29,8 @@ import org.apache.commons.net.util.SubnetUtils;
 import org.apache.commons.net.util.SubnetUtils.SubnetInfo;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.api.identity.TenantService;
@@ -720,13 +722,6 @@ public class OpenStackPush {
                 ActionResponse ar = osClient.compute().floatingIps().addFloatingIP(s, ((IP)p.getFixedIps().toArray()[0]).getIpAddress(), floatip);
             } else if (o.get("request").toString().equals("CreateisAliaseRequest")) {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-                /*
-                 o.put("subnet name fixip", subnetnamefix);
-                 o.put("subnet name floatip", subnetnamefloat);
-                 o.put("server name fixip", servername);
-                 o.put("fixed ip", fixvalue);
-                 o.put("float ip", floatvalue);
-                 */
                 String servername = o.get("server name").toString();
                 String subnetnamefloat = o.get("subnet name floatip").toString();
                 String subnetnamefix = o.get("subnet name fixip").toString();
@@ -789,6 +784,34 @@ public class OpenStackPush {
                     String servername = (String)obj;
                     client.setMetadata(servername, "sriov_vnic:status", "do_attach");
                 }
+            } else if (o.get("request").toString().equals("CreateVirtualRouterRequest") && o.get("routing table").equals("quagga-bgp")) {
+                // OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                // handling only Quagga BGP for now
+                // 1. routing table (BGP root) level parameters as "network address #" 
+                    // set metadata for quagga:bgp:info 
+                        // set status=up
+                // 2. route (BGP neighbor) level parameters as "route #"
+                    // 2.1 per neighbor "network address #"
+                    // 2.2 per neighbor "route to", "route from" and "next hop"
+                    // set metadata for quagga:bgp:neighbor:#
+            } else if (o.get("request").toString().equals("DeleteVirtualRouterRequest") && o.get("routing table").equals("quagga-bgp")) {
+                String servername = o.get("server name").toString();
+                Server s = client.getServer(servername);                
+                String bgpInfoStr = client.getMetadata(s, "quagga:bgp:info");
+                if (bgpInfoStr == null || bgpInfoStr.isEmpty()) {
+                    continue;
+                }
+                try {
+                    JSONParser parser = new JSONParser();
+                    JSONObject jsonObj = (JSONObject) parser.parse(bgpInfoStr);
+                    if (jsonObj.containsKey("status")) {
+                        jsonObj.put("status", "down");
+                        client.setMetadata(servername, "quagga:bgp:info", jsonObj.toJSONString().replaceAll("\"", "'"));
+                    }
+                } catch (ParseException e) {
+                    throw new EJBException(String.format("%s:CreateVirtualRouterRequest cannot parse json string %s", this.getClass().getName(),bgpInfoStr));
+                }
+                // set status=down
             } else if (o.get("request").toString().equals("DetachSriovRequest")) {
                 int sriovNum = 1;
                 List<String> serversToDetachSriov = new ArrayList();
@@ -2144,6 +2167,120 @@ public class OpenStackPush {
             JO.put("request", "DetachSriovRequest");
         }
         requests.add(JO);
+        return requests;
+    }
+
+    private List<JSONObject> virtualRouterRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+        List<JSONObject> requests = new ArrayList();
+        String query = "SELECT ?rtsvc ?rtable ?rtable_type WHERE {"
+                + "?rtsvc mrs:providesRoutingTable ?rtable ."
+                + "?rtable mrs:type ?rtable_type ."
+                + "}";
+        ResultSet r = executeQuery(query, emptyModel, modelDelta);
+        while (r.hasNext()) {
+            JSONObject JO = new JSONObject();
+            QuerySolution q = r.next();
+            JSONObject o = new JSONObject();
+            String rtType = q.get("rtable_type").toString();
+            JO.put("routing table", rtType);
+            if (!rtType.startsWith("quagga") && !rtType.equalsIgnoreCase("linux")) {
+                continue;
+            }
+            Resource rtService = q.getResource("rtsvc");
+            Resource rtTable = q.getResource("rtable");
+            query = "SELECT ?vm ?netaddr WHERE {"
+                    + String.format("?vm mrs:hasService <%s> .", rtService.getURI())
+                    + "?vm a nml:Node ."
+                    + "}";
+            Resource VM = null;
+            ResultSet r1 = executeQueryUnion(query, modelRef, modelDelta);
+            if (r1.hasNext()) {
+                QuerySolution q1 = r1.next();
+                VM = q1.getResource("vm");
+            } else {
+                throw new EJBException("virtualRouterRequests cannot find a VM hosting routingService='" + rtService.getURI());
+            }
+            JO.put("server name", VM.getURI());
+            query = "SELECT ?netaddr ?netaddr_type ?netaddr_value WHERE {"
+                    + String.format("<%s> mrs:hasNetworkAddress ?netaddr .", rtTable.getURI())
+                    + "?netaddr mrs:type ?netaddr_type ."
+                    + "?netaddr mrs:value ?netaddr_value ."
+                    + "}";
+            ResultSet r2 = executeQuery(query, emptyModel, modelDelta);
+            int netAddrNum = 1;
+            while (r2.hasNext()) {
+                QuerySolution q2 = r2.next();
+                Resource netAddr = q2.getResource("netaddr");
+                String netAddrType = q2.get("netaddr_type").toString();
+                String netAddrValue = q2.get("netaddr_value").toString();
+                JO.put(String.format("network address %d", netAddrNum), netAddrType+"="+netAddrValue);
+                netAddrNum++;                        
+            }
+            query = "SELECT ?route ?route_to ?route_to_type ?route_to_value "
+                    + "?next_hop ?next_hop_type ?next_hop_value "
+                    + "?route_from ?route_from_type ?route_from_value WHERE {"
+                    + String.format("<%s> mrs:hasRoute ?route .", rtTable.getURI())
+                    + "OPTIONAL {?route mrs:routeTo ?route_to"
+                    + "     ?route_to mrs:type ?route_to_type. "
+                    + "     ?route_to mrs:value ?troute_to_value } ."
+                    + "OPTIONAL {?route mrs:routeFrom ?route_from"
+                    + "     ?route_from mrs:type ?route_from_type. "
+                    + "     ?route_from mrs:value ?route_from_value } ."
+                    + "OPTIONAL {?route mrs:nextHop ?next_hop "
+                    + "     ?next_hop mrs:type ?next_hop_type. "
+                    + "     ?next_hop mrs:value ?next_hop_value } "
+                    + "}";
+            ResultSet r3 = executeQuery(query, emptyModel, modelDelta);
+            int routeNum = 1;
+            while (r3.hasNext()) {
+                QuerySolution q3 = r3.next();
+                JSONObject jsonRoute = new JSONObject();
+                Resource route = q3.getResource("route");
+                jsonRoute.put("name", route.getURI());
+                Resource routeTo = q3.contains("route_to") ? q3.getResource("route_to") : null;
+                if (routeTo != null) {
+                    String routeToType = q3.get("route_to_type").toString();
+                    String routeToValue = q3.get("route_to_value").toString();
+                    jsonRoute.put("route to", routeToType+"="+routeToValue);
+                }
+                Resource routeFrom = q3.contains("route_from") ? q3.getResource("route_from") : null;
+                if (routeFrom != null) {
+                    String routeFromType = q3.get("route_from_type").toString();
+                    String routeFromValue = q3.get("route_from_value").toString();
+                    jsonRoute.put("route from", routeFromType+"="+routeFromValue);
+                }
+                Resource nextHop = q3.contains("next_hop") ? q3.getResource("next_hop") : null;
+                if (nextHop != null) {
+                    String nextHopType = q3.get("next_hop_type").toString();
+                    String nextHopValue = q3.get("next_hop_value").toString();
+                    jsonRoute.put("next hop", nextHopType+"="+nextHopValue);
+                }
+                // NetworkAddress elements for each Route
+                query = "SELECT ?netaddr ?netaddr_type ?netaddr_value WHERE {"
+                    + String.format("<%s> mrs:hasNetworkAddress ?netaddr .", route.getURI())
+                    + "?netaddr mrs:type ?netaddr_type ."
+                    + "?netaddr mrs:value ?netaddr_value ."
+                    + "}";
+                ResultSet r4 = executeQuery(query, emptyModel, modelDelta);
+                int routeNetAddrNum = 1;
+                while (r4.hasNext()) {
+                    QuerySolution q4 = r4.next();
+                    Resource netAddr = q4.getResource("netaddr");
+                    String netAddrType = q4.get("netaddr_type").toString();
+                    String netAddrValue = q4.get("netaddr_value").toString();
+                    jsonRoute.put(String.format("network address %d", routeNetAddrNum), netAddrType + "=" + netAddrValue);
+                    routeNetAddrNum++;
+                }
+                JO.put(String.format("route %d", routeNum), jsonRoute);
+                routeNum++;
+            }
+            if (creation == true) {
+                JO.put("request", "CreateVirtualRouterRequest");
+            } else {
+                JO.put("request", "DeleteVirtualRouterRequest");
+            }
+            requests.add(JO);
+        }
         return requests;
     }
 
