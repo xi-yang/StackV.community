@@ -966,7 +966,7 @@ public class serviceBeans {
 
         PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, X.superState FROM"
                 + " service S, service_instance I, service_state X WHERE I.referenceUUID = ? AND S.service_id = I.service_id AND I.service_state_id = X.service_state_id");
-        prep.setString(0, instanceUUID);
+        prep.setString(1, instanceUUID);
         ResultSet rs1 = prep.executeQuery();
         while (rs1.next()) {
             ArrayList<String> instanceList = new ArrayList<>();

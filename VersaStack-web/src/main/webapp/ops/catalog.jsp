@@ -47,7 +47,7 @@
                         <tr>
                             <th>Service Name</th>
                             <th>Service UUID</th>
-                            <th>Service Status</th>
+                            <th>Service Status   <button class="button-header" onclick="reloadPage()">Refresh</button></th>
                         </tr>
                     </thead>
                     <tbody>

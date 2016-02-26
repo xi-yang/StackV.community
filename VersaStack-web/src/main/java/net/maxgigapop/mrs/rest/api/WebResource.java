@@ -93,6 +93,17 @@ public class WebResource {
 
         return retList;
     }
+    
+    @GET
+    @Path("/{siUUID}/status")
+    public String checkStatus(@PathParam("siUUID") String svcInstanceUUID) {
+        String retString = "";
+        try {                    
+            return superStatus(svcInstanceUUID) + " - " + status(svcInstanceUUID) + "\n";
+        } catch (SQLException | IOException e) {
+            return "<<<CHECK STATUS ERROR: " + e.getMessage();
+        }
+    }
 
     @POST
     @Path("/service")
@@ -499,6 +510,24 @@ public class WebResource {
         String result = servBean.executeHttpMethod(url, propagate, "DELETE", null);
 
         return result;
+    }
+
+    private String superStatus(String refUuid) throws SQLException {
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        PreparedStatement prep = front_conn.prepareStatement("SELECT X.superState FROM"
+                + " service_instance I, service_state X WHERE I.referenceUUID = ? AND I.service_state_id = X.service_state_id");
+        prep.setString(1, refUuid);
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {
+            return rs1.getString("superState"); 
+        }
+        return "ERROR";
     }
 
     private String status(String refUuid) throws MalformedURLException, IOException {
