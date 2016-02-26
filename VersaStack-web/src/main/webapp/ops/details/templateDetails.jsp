@@ -28,7 +28,7 @@
     </head>
 
     <sql:setDataSource var="front_conn" driver="com.mysql.jdbc.Driver"
-                       url="jdbc:mysql://localhost:3306/Frontend"
+                       url="jdbc:mysql://localhost:3306/frontend"
                        user="front_view"  password="frontuser"/>
 
     <body>        
@@ -72,8 +72,8 @@
                                 <td></td>
                                 <td>
                                     <div class="service-instance-panel">
-                                        <button onClick="cancelInstance('${param.uuid}')">Cancel</button>
-                                        <button onClick="deleteInstance('${param.uuid}')">Delete</button>
+                                        <button class="hide" id="instance-cancel" onClick="cancelInstance('${param.uuid}')">Cancel</button>
+                                        <button class="hide" id="instance-delete" onClick="deleteInstance('${param.uuid}')">Delete</button>
                                     </div>
                                 </td>
                             </tr>
@@ -115,6 +115,7 @@
             $(function () {
                 var uuid = getUrlParameter('uuid');
                 checkInstance(uuid);
+                templateModerate(uuid);
 
                 $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
                     if (${user.isAllowed(1)}) {

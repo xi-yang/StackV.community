@@ -70,10 +70,10 @@ public class ServiceServlet extends HttpServlet {
 
             Connection front_conn;
             Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", "root");
-            front_connectionProps.put("password", "root");
+            front_connectionProps.put("user", "front_view");
+            front_connectionProps.put("password", "frontuser");
 
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
             // Select the correct service.
@@ -100,7 +100,7 @@ public class ServiceServlet extends HttpServlet {
             Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
 
             // Install Instance into DB.
-            prep = front_conn.prepareStatement("INSERT INTO Frontend.service_instance "
+            prep = front_conn.prepareStatement("INSERT INTO frontend.service_instance "
                     + "(`service_id`, `user_id`, `creation_time`, `referenceUUID`, `service_state_id`) VALUES (?, ?, ?, ?, ?)");
             prep.setInt(1, serviceID);
             prep.setString(2, request.getParameter("userID"));
@@ -239,7 +239,8 @@ public class ServiceServlet extends HttpServlet {
          } else if (paraMap.containsKey("uninstall")) {
          retCode = servBean.driverUninstall(paraMap.get("topologyUri"));
          }*/
-        // Async setup
+        // Async setup 
+        /*        
         request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
         AsyncContext asyncCtx = request.startAsync();
         asyncCtx.addListener(new AppAsyncListener());
@@ -248,7 +249,12 @@ public class ServiceServlet extends HttpServlet {
         ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
 
         executor.execute(new DriverWorker(asyncCtx, paraMap));
-
+        */
+        if (paraMap.containsKey("install")) {
+         paraMap.remove("install");
+         servBean.driverInstall(paraMap);
+         } 
+        
         return ("/VersaStack-web/ops/srvc/driver.jsp?ret=0");
     }
 
@@ -455,6 +461,15 @@ public class ServiceServlet extends HttpServlet {
                     paraMap.put("subnet" + i, subnetString);
                 }
             }
+            
+            // Parse direct connect.
+            String connString = paraMap.get("conn-dest");
+            if (paraMap.containsKey("conn-vlan")) {
+                connString += "?vlan=" + paraMap.get("conn-vlan");
+            } else {
+                connString += "?vlan=any";
+            }            
+            paraMap.put("directConn", connString);
 
             paraMap.remove("userID");
             paraMap.remove("custom");

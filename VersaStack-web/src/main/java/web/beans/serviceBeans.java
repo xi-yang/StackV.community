@@ -438,7 +438,7 @@ public class serviceBeans {
             front_connectionProps.put("user", "root");
             front_connectionProps.put("password", "root");
 
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
             PreparedStatement prep = front_conn.prepareStatement("SELECT service_instance_id, service_state_id"
@@ -452,7 +452,7 @@ public class serviceBeans {
             String formatDelta = delta.replaceAll("<", "&lt;");
             formatDelta = formatDelta.replaceAll(">", "&gt;");
 
-            prep = front_conn.prepareStatement("INSERT INTO Frontend.service_delta "
+            prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
                     + "(`service_instance_id`, `service_state_id`, `delta`) "
                     + "VALUES (?, ?, ?)");
             prep.setInt(1, instanceId);
@@ -765,7 +765,7 @@ public class serviceBeans {
             front_connectionProps.put("user", "root");
             front_connectionProps.put("password", "root");
 
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
             PreparedStatement prep = front_conn.prepareStatement("SELECT service_instance_id, service_state_id"
@@ -779,7 +779,7 @@ public class serviceBeans {
             String formatDelta = svcDelta.replaceAll("<", "&lt;");
             formatDelta = formatDelta.replaceAll(">", "&gt;");
 
-            prep = front_conn.prepareStatement("INSERT INTO Frontend.service_delta "
+            prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
                     + "(`service_instance_id`, `service_state_id`, `delta`) "
                     + "VALUES (?, ?, ?)");
             prep.setInt(1, instanceId);
@@ -920,7 +920,7 @@ public class serviceBeans {
         front_connectionProps.put("user", "root");
         front_connectionProps.put("password", "root");
 
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
         PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID, X.superState FROM"
@@ -952,15 +952,16 @@ public class serviceBeans {
         return retList;
     }
 
-    public ArrayList<ArrayList<String>> instanceStatusCheck(String instanceUUID) throws SQLException {
+    public ArrayList<ArrayList<String>> instanceStatusCheck(String instanceUUID) throws SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException {
         ArrayList<ArrayList<String>> retList = new ArrayList<>();
 
         Connection front_conn;
+                    Class.forName("com.mysql.jdbc.Driver").newInstance();
         Properties front_connectionProps = new Properties();
         front_connectionProps.put("user", "root");
         front_connectionProps.put("password", "root");
 
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
         PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, X.superState FROM"
@@ -990,6 +991,41 @@ public class serviceBeans {
         return retList;
     }
 
+    public ArrayList<ArrayList<String>> catalogPull(int usergroup_id, int user_id) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+        ArrayList<ArrayList<String>> retList = new ArrayList<>();
+            Class.forName("com.mysql.jdbc.Driver").newInstance();
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", "root");
+        front_connectionProps.put("password", "root");
+
+        try {
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("SELECT DISTINCT S.name, S.filename, S.description FROM service S JOIN acl A, acl_entry_group G, acl_entry_user U "
+                    + "WHERE S.atomic = 0 AND A.service_id = S.service_id AND ((A.acl_id = G.acl_id AND G.usergroup_id = ?) OR (A.acl_id = U.acl_id AND U.user_id = ?))");
+            prep.setInt(1, usergroup_id);
+            prep.setInt(2, user_id);
+            ResultSet rs1 = prep.executeQuery();
+
+            while (rs1.next()) {
+                ArrayList<String> instanceList = new ArrayList<>();
+
+                instanceList.add(rs1.getString("name"));
+                instanceList.add(rs1.getString("description"));
+                instanceList.add(rs1.getString("filename"));
+
+                retList.add(instanceList);
+            }
+        } catch (SQLException e) {
+            System.out.println("THIS IS A NEW BUILD.");
+            System.out.println("Exception: " + e);
+        }
+
+        return retList;
+    }
+
     public void cleanInstances() throws SQLException {
 
         Connection front_conn;
@@ -997,15 +1033,15 @@ public class serviceBeans {
         front_connectionProps.put("user", "root");
         front_connectionProps.put("password", "root");
 
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
-        PreparedStatement prep = front_conn.prepareStatement("DELETE FROM Frontend.service_delta");
+        PreparedStatement prep = front_conn.prepareStatement("DELETE FROM frontend.service_delta");
         prep.executeUpdate();
-        prep = front_conn.prepareStatement("DELETE FROM Frontend.service_instance");
+        prep = front_conn.prepareStatement("DELETE FROM frontend.service_instance");
         prep.executeUpdate();
     }
-    
+
     /**
      * 
      * @param serviceType filename of the service

@@ -377,17 +377,18 @@ public class WebResource {
     }
 
     /**
-     * 
+     * Cancels a service instance. Requires instance to be in 'ready' substate.
      * @param refUuid instance UUID
      * @return error code:
      -1 - Exception thrown
       0 - success
-      1 - stage 1 error (Failed revert)
-      2 - stage 2 error (Failed propagate)
-      3 - stage 3 error (Failed commit)
-      4 - stage 4 error (Failed result check)
+      1 - stage 1 error (Failed pre-condition)
+      2 - stage 2 error (Failed revert)
+      3 - stage 3 error (Failed propagate)
+      4 - stage 4 error (Failed commit)
+      5 - stage 5 error (Failed result check)
      */
-    private int cancelInstance(String refUuid) {
+    private int cancelInstance(String refUuid) throws SQLException {
         boolean result; 
         try {
             String instanceState = status(refUuid);
@@ -395,17 +396,18 @@ public class WebResource {
                 return 1;
             }
             
+            setSuperState(refUuid, 2);
             result = revert(refUuid);
-            if (!result) {
-                return 1;
-            }
-            result = propagate(refUuid);
             if (!result) {
                 return 2;
             }
-            result = commit(refUuid);
+            result = propagate(refUuid);
             if (!result) {
                 return 3;
+            }
+            result = commit(refUuid);
+            if (!result) {
+                return 4;
             }            
             
             while (true) {
@@ -413,7 +415,7 @@ public class WebResource {
                 if (instanceState.equals("READY")) {
                     return 0;
                 } else if (!instanceState.equals("COMMITTED")) {
-                    return 4;
+                    return 5;
                 }
                 sleep(3333);
             }

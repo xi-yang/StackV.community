@@ -531,6 +531,40 @@ function applyDNCTemplate(code) {
     }
 }
 
+function dncModerate(uuid) {
+    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/service/' + uuid + '/status';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        success: function (result) {
+            if (result === 'READY') {
+                $("#instance-cancel").toggleClass("hide");
+            }
+            if (result === 'INIT') {
+                $("#instance-delete").toggleClass("hide");
+            }
+        }
+    });
+}
+
+//**
+
+function templateModerate(uuid) {
+    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/service/' + uuid + '/status';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        success: function (result) {
+            if (result === 'READY') {
+                $("#instance-cancel").toggleClass("hide");
+            }
+            if (result === 'INIT') {
+                $("#instance-delete").toggleClass("hide");
+            }
+        }
+    });
+}
+
 /*
  
  function applyTemplate(code) {
