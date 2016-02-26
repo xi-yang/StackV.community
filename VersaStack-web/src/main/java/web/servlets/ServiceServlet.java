@@ -216,7 +216,7 @@ public class ServiceServlet extends HttpServlet {
             paraMap.put("driverID", "versaNSDriver");
             paraMap.put("topologyUri", "urn:ogf:network:sdn.maxgigapop.net:network");
             paraMap.put("driverEjbPath", "java:module/GenericRESTDriver");
-            paraMap.put("subsystemBaseUrl", "http://charon.dragon.maxgigapop.net:8080/VersaNS-0.0.1-SNAPSHOT");
+            paraMap.put("subsystemBaseUrl", "http://206.196.179.139:8080/VersaNS-0.0.1-SNAPSHOT");
             paraMap.put("install", "Install");
         }
 
