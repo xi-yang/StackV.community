@@ -17,9 +17,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -34,11 +32,9 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import net.maxgigapop.mrs.rest.api.model.WebServiceBase;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.JSONValue;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import web.beans.serviceBeans;
@@ -248,6 +244,9 @@ public class WebResource {
         return "Error! Invalid Action\n";
     }
 
+    
+    // Parsing Methods ---------------------------------------------------------
+    
     private HashMap<String, String> parseDNC(JSONObject dataJSON, String refUuid) {
         HashMap<String, String> paraMap = new HashMap<>();
         paraMap.put("instanceUUID", refUuid);
@@ -304,7 +303,7 @@ public class WebResource {
             if (vmArr != null) {
                 for (Object vmEle : vmArr) {
                     JSONObject vmJSON = (JSONObject) vmEle;
-                    String VMString = (String) vmJSON.get("name") + "&" + i;
+                    String VMString = (String) vmJSON.get("name") + "&" + (i + i);
                     paraMap.put("vm" + VMCounter++, VMString);
                 }
             }
@@ -371,6 +370,18 @@ public class WebResource {
             }
         }
         paraMap.put("netRoutes", netRouteString);
+        
+        // Parse Direct Connect.
+        JSONArray gateArr = (JSONArray) vcnJSON.get("gateways");
+        if (gateArr != null) {
+            JSONObject gateJSON = (JSONObject) gateArr.get(0);
+            JSONArray destArr = (JSONArray) gateJSON.get("to");
+            if (destArr != null) {
+                JSONObject destJSON = (JSONObject) destArr.get(0);
+                paraMap.put("directConn", (String) destJSON.get("value"));
+            }
+            
+        }
 
         System.out.println(paraMap);
         return paraMap;
@@ -417,7 +428,7 @@ public class WebResource {
                 } else if (!instanceState.equals("COMMITTED")) {
                     return 5;
                 }
-                sleep(3333);
+                sleep(5000);
             }
             
         } catch (IOException | InterruptedException ex) {
@@ -425,7 +436,8 @@ public class WebResource {
         }
     }
     
-    // UTILITY METHODS
+    
+    // Utility Methods ---------------------------------------------------------
     /*
     
      JSONArray Arr = (JSONArray) JSON.get("");
@@ -464,33 +476,21 @@ public class WebResource {
         URL url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
-        if (result.equalsIgnoreCase("PROPAGATED")) {
-            return true;
-        } else {
-            return false;
-        }            
+        return result.equalsIgnoreCase("PROPAGATED");            
     }
 
     private boolean commit(String refUuid) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
-        if (result.equalsIgnoreCase("COMMITTED")) {
-            return true;
-        } else {
-            return false;
-        }     
+        return result.equalsIgnoreCase("COMMITTED");     
     }
 
     private boolean revert(String refUuid) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/revert", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
-        if (result.equalsIgnoreCase("COMMITTED-PARTIAL")) {
-            return true;
-        } else {
-            return false;
-        }     
+        return result.equalsIgnoreCase("COMMITTED-PARTIAL");     
     }
 
     private String delete(String refUuid) throws MalformedURLException, IOException {

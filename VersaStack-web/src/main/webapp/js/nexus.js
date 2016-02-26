@@ -649,6 +649,10 @@ function clearCounters() {
     linkCounter = 1;
 }
 
+function reloadPage() {
+    window.location.reload(true);
+}
+
 
 
 var getUrlParameter = function getUrlParameter(sParam) {

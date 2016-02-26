@@ -52,7 +52,7 @@
                         <thead>
                             <tr>
                                 <th>${instance.name} Service Details</th>
-                                <th></th>
+                                <th><button class="button-header" onclick="reloadPage()">Refresh</button></th>
                             </tr>
                         </thead>
                         <tbody>

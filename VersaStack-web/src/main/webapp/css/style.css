@@ -555,6 +555,11 @@ body {
     position: relative;
 }
 
+.button-header {
+    background-color: #555555;
+    float: right;
+}
+
 .view-flag {
     display: inline-block;
     margin-right: 10px;
