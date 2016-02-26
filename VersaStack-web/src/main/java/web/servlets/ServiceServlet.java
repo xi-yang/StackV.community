@@ -239,8 +239,7 @@ public class ServiceServlet extends HttpServlet {
          } else if (paraMap.containsKey("uninstall")) {
          retCode = servBean.driverUninstall(paraMap.get("topologyUri"));
          }*/
-        // Async setup 
-        /*        
+        // Async setup        
         request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
         AsyncContext asyncCtx = request.startAsync();
         asyncCtx.addListener(new AppAsyncListener());
@@ -249,11 +248,6 @@ public class ServiceServlet extends HttpServlet {
         ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
 
         executor.execute(new DriverWorker(asyncCtx, paraMap));
-        */
-        if (paraMap.containsKey("install")) {
-         paraMap.remove("install");
-         servBean.driverInstall(paraMap);
-         } 
         
         return ("/VersaStack-web/ops/srvc/driver.jsp?ret=0");
     }
