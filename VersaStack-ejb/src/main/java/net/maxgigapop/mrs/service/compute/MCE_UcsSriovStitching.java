@@ -48,7 +48,7 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
 
     @Override
     @Asynchronous
-    public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
+    public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
         log.log(Level.FINE, "MCE_UcsSriovStitching::process {0}", annotatedDelta);
         try {
             log.log(Level.FINE, "\n>>>MCE_UcsSriovStitching--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
@@ -57,48 +57,30 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
         }
         //@TODO: make the initial data imports a common function
         // importPolicyData : Interface->Stitching->List<PolicyData>
-        String sparql = "SELECT ?policy ?data ?type ?value WHERE {"
-                + "?res spa:dependOn ?policy . "
-                + "?policy a spa:PolicyAction. "
-                + "?policy spa:type 'MCE_UcsSriovStitching'. "
-                + "?policy spa:importFrom ?data. "
+        String sparql = "SELECT ?data ?type ?value WHERE {"
+                + String.format("?res spa:dependOn <%s>. ", policy.getURI())
+                + String.format("<%s> spa:importFrom ?data. ", policy.getURI())
                 + "?data spa:type ?type. ?data spa:value ?value. "
-                + "FILTER (not exists {?policy spa:dependOn ?other} && not exists {?res a spa:PolicyAction}) "
+                + String.format("FILTER (not exists {<%s> spa:dependOn ?other} && not exists {?res a spa:PolicyAction}) ", policy.getURI())
                 + "}";
 
         ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);
-        Map<Resource, Map> stitchPolicyMap = new HashMap<>();
+        List<Map> stitchPolicyMaps = new ArrayList<>();
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
-            Resource resPolicy = querySolution.get("policy").asResource();
-            if (!stitchPolicyMap.containsKey(resPolicy)) {
-                Map<String, List> stitchMap = new HashMap<>();
-                List dataList = new ArrayList<>();
-                stitchMap.put("imports", dataList);
-                stitchPolicyMap.put(resPolicy, stitchMap);
-            }
             Resource resData = querySolution.get("data").asResource();
             RDFNode nodeDataType = querySolution.get("type");
             RDFNode nodeDataValue = querySolution.get("value");
-            boolean existed =false;
-            for (Map dataMap: (List<Map>)stitchPolicyMap.get(resPolicy).get("imports")) {
-                if(dataMap.get("data").equals(resData)) {
-                    existed = true;
-                    break;
-                }
-            }
-            if (!existed) {
-                Map policyData = new HashMap<>();
-                policyData.put("data", resData);
-                policyData.put("type", nodeDataType.toString());
-                policyData.put("value", nodeDataValue.toString());
-                ((List)stitchPolicyMap.get(resPolicy).get("imports")).add(policyData);
-            }
+            Map policyData = new HashMap<>();
+            policyData.put("data", resData);
+            policyData.put("type", nodeDataType.toString());
+            policyData.put("value", nodeDataValue.toString());
+            stitchPolicyMaps.add(policyData);
         }
         ServiceDelta outputDelta = annotatedDelta.clone();
 
-        for (Resource policyAction : stitchPolicyMap.keySet()) {
-            OntModel stitchModel = this.doStitching(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), policyAction, stitchPolicyMap.get(policyAction));
+        for (Map policyData : stitchPolicyMaps) {
+            OntModel stitchModel = this.doStitching(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), policy, policyData);
             // merge the placement satements into spaModel
             if (stitchModel != null) {
                 outputDelta.getModelAddition().getOntModel().add(stitchModel.getBaseModel());
@@ -108,7 +90,7 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
             //this.exportPolicyData()
 
             // remove policy dependency
-            MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), policyAction);
+            MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), policy);
         }
         return new AsyncResult(outputDelta);
     }
@@ -119,17 +101,14 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
     // 2. identify the "attach-point" resource (eg. VLAN port) along with a stitching path
     // 3. add statements to the stitching path to connect the terminal to the attach-point (if applicable)
     private OntModel doStitching(OntModel systemModel, OntModel spaModel, Resource policyAction, Map stitchPolicyData) {
-        //@TODO: common logic
-        List<Map> dataMapList = (List<Map>)stitchPolicyData.get("imports");
         JSONObject jsonStitchReq = null;
-        for (Map entry : dataMapList) {
-            if (!entry.containsKey("data") || !entry.containsKey("type") || !entry.containsKey("value")) {
-                continue;
+            if (!stitchPolicyData.containsKey("data") || !stitchPolicyData.containsKey("type") || !stitchPolicyData.containsKey("value")) {
+                throw new EJBException(String.format("%s::process doStitching imports invalid importData", this.getClass().getName()));
             }
-            if (entry.get("type").toString().equalsIgnoreCase("JSON")) {
+            if (stitchPolicyData.get("type").toString().equalsIgnoreCase("JSON")) {
                 JSONParser parser = new JSONParser();
                 try {
-                    JSONObject jsonObj = (JSONObject) parser.parse((String) entry.get("value"));
+                    JSONObject jsonObj = (JSONObject) parser.parse((String) stitchPolicyData.get("value"));
                     if (jsonStitchReq == null) {
                         jsonStitchReq = jsonObj;
                     } else { // merge
@@ -138,12 +117,11 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
                         }
                     }
                 } catch (ParseException e) {
-                    throw new EJBException(String.format("%s::process doStitching cannot parse json string %s", this.getClass().getName(), (String) entry.get("value")));
+                    throw new EJBException(String.format("%s::process doStitching cannot parse json string %s", this.getClass().getName(), (String) stitchPolicyData.get("value")));
                 }
             } else {
-                throw new EJBException(String.format("%s::process doStitching does not import policyData of %s type", entry.get("type").toString()));
+                throw new EJBException(String.format("%s::process doStitching does not import policyData of %s type", stitchPolicyData.get("type").toString()));
             }
-        }
         
         if (jsonStitchReq == null || jsonStitchReq.isEmpty()) {
             throw new EJBException(String.format("%s::process doStitching receive none request for <%s>", this.getClass().getName(), policyAction));
