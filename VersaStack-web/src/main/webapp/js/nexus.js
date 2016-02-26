@@ -476,23 +476,45 @@ function deleteInstance(uuid) {
 }
 
 function applyNetTemplate(code) {
+    var form = document.getElementById('custom-form');
     switch (code) {
         case 1:
-            form.elements['netType'].value = '';
-            form.elements['netCidr'].value = '';
-
-            //form.elements['linkUri1'].value = 'urn:ogf:network:vo1.maxgigapop.net:link=conn1';
+            form.elements['netType'].value = 'internal';
+            form.elements['netCidr'].value = '10.1.0.0/16';
 
             form.elements['subnet1-name'].value = '';
             form.elements['subnet1-cidr'].value = '10.1.0.0/24';
-            form.elements[''].value = '';
-            form.elements[''].value = '';
-            form.elements[''].value = '';
-            form.elements[''].value = '';
+            form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
+            form.elements['subnet1-route1-next'].value = 'internet';
+            form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
+            form.elements['subnet1-route2-next'].value = 'vpn';            
+            form.elements['subnet1-route-prop'].checked = true;
+            
+            form.elements['subnet2-name'].value = '';
+            form.elements['subnet2-cidr'].value = '10.1.1.0/24';
 
             break;
 
         case 2:
+            form.elements['netType'].value = 'internal';
+            form.elements['netCidr'].value = '10.1.0.0/16';
+
+            form.elements['subnet1-name'].value = '';
+            form.elements['subnet1-cidr'].value = '10.1.0.0/24';
+            form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
+            form.elements['subnet1-route1-next'].value = 'internet';
+            form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
+            form.elements['subnet1-route2-next'].value = 'vpn';
+            form.elements['subnet1-route-prop'].checked = true;
+            form.elements['subnet1-vm1'].value = 'vm1';
+
+            form.elements['subnet2-name'].value = '';
+            form.elements['subnet2-cidr'].value = '10.1.1.0/24';
+            form.elements['subnet2-vm2'].value = 'vm2';
+            
+            form.elements['conn-dest'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*';
+            form.elements['conn-vlan'].value = '3023';
+
             break;
     }
 }

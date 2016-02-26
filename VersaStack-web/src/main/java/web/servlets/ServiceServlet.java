@@ -369,7 +369,7 @@ public class ServiceServlet extends HttpServlet {
             request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
             AsyncContext asyncCtx = request.startAsync();
             asyncCtx.addListener(new AppAsyncListener());
-            asyncCtx.setTimeout(60000);
+            asyncCtx.setTimeout(300000);
 
             ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
 
@@ -455,6 +455,7 @@ public class ServiceServlet extends HttpServlet {
                     paraMap.put("subnet" + i, subnetString);
                 }
             }
+            paraMap.put("netRoutes", "to+0.0.0.0/0,nextHop+internet");
             
             // Parse direct connect.
             String connString = paraMap.get("conn-dest");
