@@ -95,7 +95,7 @@ public class WebResource {
     }
     
     @GET
-    @Path("/{siUUID}/status")
+    @Path("/service/{siUUID}/status")
     public String checkStatus(@PathParam("siUUID") String svcInstanceUUID) {
         String retString = "";
         try {                    
