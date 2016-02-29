@@ -290,10 +290,8 @@ public class WebResource {
         paraMap.put("netType", (String) vcnJSON.get("type"));
         paraMap.put("netCidr", (String) vcnJSON.get("cidr"));
 
-        String name = (String) vcnJSON.get("name");
-        paraMap.put("topoUri", urnBuilder("netcreate", name, refUuid));
-
         String parent = (String) vcnJSON.get("parent");
+        paraMap.put("topoUri", parent);
         if (parent.contains("aws") || parent.contains("amazon")) {
             paraMap.put("driverType", "aws");
         } else if (parent.contains("openstack")) {
@@ -313,7 +311,7 @@ public class WebResource {
             if (vmArr != null) {
                 for (Object vmEle : vmArr) {
                     JSONObject vmJSON = (JSONObject) vmEle;
-                    String VMString = (String) vmJSON.get("name") + "&" + (i + i);
+                    String VMString = (String) vmJSON.get("name") + "&" + (i + 1);
                     paraMap.put("vm" + VMCounter++, VMString);
                 }
             }
