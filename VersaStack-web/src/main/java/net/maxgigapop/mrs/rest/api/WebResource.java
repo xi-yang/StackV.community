@@ -214,7 +214,7 @@ public class WebResource {
                     + (endTime - startTime) + " ms.");
 
             // Return instance UUID
-            return ("\nInstance UUID: " + refUuid + "\n");
+            return refUuid;
 
         } catch (EJBException | SQLException | IOException e) {
             return e.getMessage();
@@ -245,14 +245,13 @@ public class WebResource {
             case "cancel":
                 cancelInstance(refUuid);                                
                 break;
-                
-                
+            default:
+                return "Error! Invalid Action\n";
             }
+            return superStatus(refUuid) + " - " + status(refUuid);
         } catch (IOException | SQLException e) {
-
+            return "Error: " + e.getMessage();
         }
-
-        return "Error! Invalid Action\n";
     }
 
     
