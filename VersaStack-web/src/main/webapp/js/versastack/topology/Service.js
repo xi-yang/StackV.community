@@ -98,7 +98,7 @@ define([
                 };
 
                 this.populateTreeMenu = function (tree) {
-                    var container = tree.addChild(this.getTypeBrief());
+                    var container = tree.addChild(this.getName());
                     map_(this.subnets, function (subnet) {
                         subnet.populateTreeMenu(container);
                     });

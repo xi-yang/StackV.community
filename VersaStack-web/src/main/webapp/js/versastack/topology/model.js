@@ -27,15 +27,16 @@ define([
     "local/versastack/topology/Service",
     "local/versastack/topology/modelConstants",
     "local/versastack/topology/Subnet",
-    "local/versastack/topology/Volume"    
-], function (utils, Node, Port, Service, values, Subnet, Volume) {
+    "local/versastack/topology/Volume",
+    "local/versastack/topology/Element"
+], function (utils, Node, Port, Service, values, Subnet, Volume, Element) {
 
     function Model(oldModel) {
         var map_ = utils.map_;
         var rootNodes = [];
         var versionID;
 //        var others = [];
-        
+
         //Associates a name with the corresponding backing
         var map = {};
         var that = this;
@@ -52,14 +53,13 @@ define([
                 //request.open("GET", "/VersaStack-web/data/json/ops-vns-model-complete.json");
                 //request.open("GET", "/VersaStack-web/data/json/ops-vns-model-incomplete.json");
                 //request.open("GET", "/VersaStack-web/data/json/hybrid-cloud-dtn-model-all.json");
-                
-            }
-            else if (mode === 2) {
+
+            } else if (mode === 2) {
                 request.open("GET", "/VersaStack-web/restapi/model/");
             }
 
             console.log("Mode: " + mode);
-            
+
             request.setRequestHeader("Accept", "application/json");
             request.setRequestHeader("Content-type", "application/json");
             request.onload = function () {
@@ -102,6 +102,7 @@ define([
                 that.serviceMap = {};
                 that.subnetMap = {};
                 that.volumeMap = {};
+                that.elementMap = {};
                 for (var key in map) {
                     var val = map[key];
                     val.name = key;
@@ -115,7 +116,7 @@ define([
                                 // Fallthrough group 
                                 case values.topology:
                                 case values.node:
-                                
+                                    console.log("type: " + type);
                                     var toAdd;
                                     if (oldModel && oldModel.nodeMap[key]) {
                                         toAdd = oldModel.nodeMap[key];
@@ -126,7 +127,7 @@ define([
                                     toAdd.isTopology = type === values.topology;
                                     that.nodeMap[key] = toAdd;
                                     break;
-                                    
+
                                 case values.bidirectionalPort:
                                     var toAdd;
                                     if (oldModel && oldModel.portMap[key]) {
@@ -137,8 +138,8 @@ define([
                                     }
                                     that.portMap[key] = toAdd;
                                     break;
-                                    
-                                // Fallthrough group     
+
+                                    // Fallthrough group     
                                 case values.switchingService:
                                 case values.topopolgySwitchingService:
                                 case values.hypervisorService:
@@ -154,8 +155,8 @@ define([
                                     }
                                     that.serviceMap[key] = toAdd;
                                     break;
-                                
-                                // Fallthrough group 
+
+                                    // Fallthrough group 
                                 case values.objectStorageService:
                                 case values.virtualSwitchingService:
                                 case values.hypervisorBypassInterfaceService:
@@ -185,18 +186,24 @@ define([
                                     that.subnetMap[key] = toAdd;
                                     break;
                                 case values.namedIndividual://All elements have this
-                                    break;                                
+                                    break;
+                                
+                                //fallthrough group x 
                                 case values.labelGroup:
-                                    break;
                                 case values.label:
-                                    break;
                                 case values.networkAdress:
-                                    break;
                                 case values.bucket:
-                                    break;
                                 case values.tag:
-                                    break;
                                 case values.route:
+                                    var toAdd;
+                                   // alert("" + type);
+                                    if (oldModel && oldModel.elementMap[key]) {
+                                        toAdd = oldModel.elementMap[key];
+                                        toAdd.reload(val, map);
+                                    } else {
+                                        toAdd = new Element(val, map);
+                                    }
+                                    that.elementMap[key] = toAdd;
                                     break;
                                 case values.volume:
                                     var toAdd;
@@ -210,10 +217,20 @@ define([
                                     toAdd.isTopology = type === values.topology;
                                     that.volumeMap[key] = toAdd;
                                     break;
+                                    
+                                // fallthrough group x 
                                 case values.routingTable:
                                 case values.ontology:
                                 case values.POSIX_IOBenchmark:
                                 case values.address:
+                                    var toAdd;
+                                    if (oldModel && oldModel.elementMap[key]) {
+                                        toAdd = oldModel.elementMap[key];
+                                        toAdd.reload(val, map);
+                                    } else {
+                                        toAdd = new Element(val, map);
+                                    }
+                                    that.elementMap[key] = toAdd;
                                     break;
                                 default:
                                     console.log("Unknown type: " + type);
@@ -222,7 +239,7 @@ define([
                         });
                     }
                 }
-                
+
                 for (var key in that.serviceMap) {
                     var service = that.serviceMap[key];
                     var service_ = service._backing;
@@ -236,11 +253,11 @@ define([
                             case values.providesRoutingTable:
                             case values.providesRoute:
                             case values.VirtualCloudService:
-                            break;
-                           
+                                break;
+
                             case values.encoding:
                             case values.labelSwapping:
-                            case values.providesVolume:    
+                            case values.providesVolume:
                             case values.providesRoutingTable:
                             case values.providesRoute:
                             case values.providesVM:
@@ -270,7 +287,7 @@ define([
                     }
 
                 }
-                
+
                 //Complete the ports
                 //  Create aliases between our Port objects
                 //  Associate a port with its children
@@ -303,10 +320,9 @@ define([
                         map_(childrenKeys, function (childKey) {
                             var child = that.portMap[childKey.value];
                             try {
-                            port.childrenPorts.push(child);
-                            child.parentPort = port;
-                            }
-                            catch (err) {
+                                port.childrenPorts.push(child);
+                                child.parentPort = port;
+                            } catch (err) {
                                 console.log("Port Children Error!");
                             }
                         });
@@ -358,7 +374,7 @@ define([
                                     portKey = portKey.value;
                                     var errorVal = portKey;
                                     var port = that.portMap[portKey];
-                                    if (!port ||  node.ports.indexOf(port) !== -1) {
+                                    if (!port || node.ports.indexOf(port) !== -1) {
                                         //port is undefined
                                         console.log("No port: " + errorVal);
                                     } else {
@@ -369,7 +385,7 @@ define([
                                 break;
                             case values.hasNode:
                             case values.hasTopology:
-                            case values.hasFileSystem:      
+                            case values.hasFileSystem:
                                 var subNodes = node_[key];
                                 map_(subNodes, function (subNodeKey) {
                                     var errorVal = subNodeKey.value;
@@ -400,14 +416,25 @@ define([
                             case "name":
                             case "isRoot": //This is a key that we added to determine which elements are root in the node/topology tree
                             case "processed":  //This is key that we added to assist in detecting when we fail to handle a case
+                                break;
                             case values.type:
                             case values.hasNetworkAddress:
                             case values.provideByService:
                             case values.hasBucket:
                             case values.belongsTo:
                             case values.name:
+                                var elements = node_[key];
+                                map_(elements, function (element){
+                                    var errorVal = element.value;
+                                    element = that.elementMap[element.value];
+                                    if (element) {
+                                       // alert("name: " + element.getName() + " \n type: " + element.getType());
+                                        node.misc_elements.push(element);
+                                    }
+                                });
+                                break;                         
                             case values.volume:
-                            break;
+                                break;
                             case values.hasVolume:
                                 var volumes = node_[key];
                                 map_(volumes, function (volume) {
@@ -429,38 +456,47 @@ define([
                             case values.measurement:
                             case values.topoType:
                             case values.hasTag:
+                                var elements = node_[key];
+                                map_(elements, function (element){
+                                    var errorVal = element.value;
+                                    element = that.elementMap[element.value];
+                                    if (element) {
+                                        node.misc_elements.push(element);
+                                    }
+                                });                                
                                 break;
                             default:
                                 console.log("Unknown key: " + key);
                         }
                     }
                 }
-                
+
                 // Goes through all of the nodes and if they have a switching service 
                 // that has ports that the node doesn't, adds the ports to the node
                 for (var key in that.nodeMap) {
-                        var node = that.nodeMap[key];
-                        map_(node.services, function(service){
-                            var service_ = service._backing;
-                            var types = service_[values.type];
-                            map_(types, function (type) {
-                                type = type.value;
-                                if (type === values.switchingService) {
-                                    var switchingServicePorts = service._backing[values.hasBidirectionalPort];
-                                    if (switchingServicePorts !== undefined) {
-                                        map_(switchingServicePorts, function(port) {
-                                             var portObj = that.portMap[port.value];
-                                             if (portObj !== undefined && node.ports.indexOf(portObj) === -1) {
-                                                node.ports.push(portObj);
-                                                portObj.setNode(node);                            
-                                             }                                                                                              
-                                        });
-                                    }
-                            }});
+                    var node = that.nodeMap[key];
+                    map_(node.services, function (service) {
+                        var service_ = service._backing;
+                        var types = service_[values.type];
+                        map_(types, function (type) {
+                            type = type.value;
+                            if (type === values.switchingService) {
+                                var switchingServicePorts = service._backing[values.hasBidirectionalPort];
+                                if (switchingServicePorts !== undefined) {
+                                    map_(switchingServicePorts, function (port) {
+                                        var portObj = that.portMap[port.value];
+                                        if (portObj !== undefined && node.ports.indexOf(portObj) === -1) {
+                                            node.ports.push(portObj);
+                                            portObj.setNode(node);
+                                        }
+                                    });
+                                }
+                            }
                         });
-                   }
-               
-               
+                    });
+                }
+
+                console.log ("ELEMENTS: \n\n\n" + Object.keys(that.elementMap).toString() + "\n\n\n\n");
                 for (var key in that.nodeMap) {
                     var node = that.nodeMap[key];
                     if (node.isRoot) {
@@ -474,15 +510,15 @@ define([
 
         this.getVersion = function () {
             return versionID;
-        }
-        
+        };
+
 
 
         this.listNodes = function () {
             var ans = [];
             map_(rootNodes, /**@param {Node} node**/function (node) {
 
-                    ans = ans.concat(node._getNodes());
+                ans = ans.concat(node._getNodes());
             });
             return ans;
         };
