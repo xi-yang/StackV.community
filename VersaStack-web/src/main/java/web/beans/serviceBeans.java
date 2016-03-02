@@ -703,7 +703,7 @@ public class serviceBeans {
                     + "    spa:value    \"\"\"{\n"
                     + "        \"urn:ogf:network:vo1_maxgigapop_net:link=conn1\":"
                     + "{ \""+ dest +"\":{\"vlan_tag\":\""+ vlan +"\"},\n"
-                    + "        \"" + topoUri + "\":{\"vlan_tag\":\"any\"}\n"
+                    + "        \"" + topoUri + "\":{\"vlan_tag\":\""+ vlan +"\"}\n"
                     + "        }\n"
                     + "    }\"\"\".\n\n";            
         } else
