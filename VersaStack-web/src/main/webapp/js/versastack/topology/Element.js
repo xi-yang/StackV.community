@@ -6,9 +6,15 @@ define(["local/versastack/topology/modelConstants"], function (values) {
         this.svgNodeCover = null; //To prevent the cursor from changing when we mouse over the text, we draw an invisible rectangle over it
         this._backing = backing;
         this._map = map;
-        /**@type Array.Port**/
-        this.ports = [];
-        this.hello = "hello";
+        
+//        /**@type Array.Port**/
+//        this.ports = [];
+//        this.services = [];
+//        this.children = [];
+//        this.misc_elements = [];
+        
+        this.relationship_to = []; // relationship with owner 
+        
         //We are reloading this port from a new model
         //Model.js will handle most of the reparsing, but we need to
         //clear out some old data
@@ -51,22 +57,68 @@ define(["local/versastack/topology/modelConstants"], function (values) {
             if (index > -1)
                 arr.splice(index, 1);
             console.log ("true type: " + arr[0] + "\n");
-            return arr[0];
+            return arr[0].split("#")[1];
         };
         
         this.populateTreeMenu = function (tree) {
-            var container = tree.addChild(backing.name);
-
-            if (this.ports.length > 0) {
-                var portSubnet = container.addChild("Ports");
-                map_(this.ports, function (port) {
-                    port.populateTreeMenu(portSubnet);
-                });
-            }
+                  var root = tree.addChild(this.getName(), "Element");
+//            map_(this.childrenPorts, function (child) {
+//                child.populateTreeMenu(root);
+//            });
+      
+//            if (this.services.length > 0) {
+//                var serviceNode = tree.addChild("hasService", '"');
+//                map_(this.services, function (service) {
+//                    service.populateTreeMenu(serviceNode);
+//                })
+//            }
+//            if (this.ports.length > 0) {
+//                var portsNode = tree.addChild("hasBidirectionalPort", "");
+//                map_(this.ports, function (port) {
+//                    port.populateTreeMenu(portsNode);
+//                });
+//            }
+//            if (this.children.length > 0) {
+//                var childrenNode = tree.addChild("hasNode", "");
+//                map_(this.children, function (child) {
+//                    var childNode = childrenNode.addChild(child.getName(), "Node");
+//                    child.populateTreeMenu(childNode);
+//                });
+//            }
+//
+//            if (this.misc_elements.length > 0) {
+//                var displayed = [];
+//               // alert(this.misc_elements);
+//                for (var i = 0; i < this.misc_elements.length; i++){
+//                    var el = this.misc_elements[i];
+//                    //alert("el.getName: " + el.getName() + 
+//                           // alert(" helllo: " + el.hello);
+//                    if (displayed.indexOf(el) === -1 && el.getName() !== undefined) {
+//                        var type = el.relationship_to[this];
+//                        //type = type.split("#");
+//                        var elementsNode = tree.addChild(type === undefined?"undefined":type, "");
+//                        var other_elms = [];
+//                        console.log("I'm hereeeee");
+//                        for (var o in this.misc_elements) {
+//                            console.log("I'm here");
+//                            if (displayed.indexOf(this.misc_elements[o]) === -1 && 
+//                                    this.misc_elements[o].relationship_to[this] === type
+//                                    && this.misc_elements[o].getName() !== undefined) {
+//                                other_elms.push(this.misc_elements[o]);
+//                                console.log ("name of thing: " + this.misc_elements[o].getName());
+//
+//                                elementsNode.addChild(this.misc_elements[o].getName(), "Element");;
+//                                displayed.push(this.misc_elements[o]);
+//                            }
+//                        }
+//                    }
+//                }
+//
+//
+//            }
         };
         
-                //console.log("Name: " + this.getName() );
 
-    }
+    };
     return Element;
 });

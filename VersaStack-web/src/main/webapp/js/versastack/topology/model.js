@@ -428,11 +428,11 @@ define([
                                     var errorVal = element.value;
                                     element = that.elementMap[element.value];
                                     if (element) {
-                                       // alert("name: " + element.getName() + " \n type: " + element.getType());
+                                        element.relationship_to[node] = key.split("#")[1];
                                         node.misc_elements.push(element);
                                     }
-                                });
-                                break;                         
+                                });                                
+                                break;                        
                             case values.volume:
                                 break;
                             case values.hasVolume:
@@ -461,6 +461,7 @@ define([
                                     var errorVal = element.value;
                                     element = that.elementMap[element.value];
                                     if (element) {
+                                        element.relationship_to[node] = key.split("#")[1];
                                         node.misc_elements.push(element);
                                     }
                                 });                                

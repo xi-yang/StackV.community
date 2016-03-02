@@ -630,7 +630,10 @@ define([
 
         function onServiceClick(n) {
             selectedNode = n;
-            d3.event.stopPropagation();
+            if (d3.event) {
+                //In the case of artificial clicks, d3.event may be null
+                d3.event.stopPropagation(); //prevent the click from being handled by the background, which would hide the panel
+            }
             if (didDrag) {
                 return;
             }
@@ -883,6 +886,11 @@ define([
                 selectElement(model.volumeMap[name]);     
                 outputApi.getDisplayTree().addToHistory(name, type);                 
                 console.log("i'm volume");
+                break;
+            case "Element":
+                selectElement(model.elementMap[name]);
+                outputApi.getDisplayTree().addToHistory(name, type);
+                console.log("I'm element");
                 break;
           }
         }

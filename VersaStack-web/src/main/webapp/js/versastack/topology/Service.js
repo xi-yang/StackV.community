@@ -98,7 +98,7 @@ define([
                 };
 
                 this.populateTreeMenu = function (tree) {
-                    var container = tree.addChild(this.getName());
+                    var container = tree.addChild(this.getName(), "Service");
                     map_(this.subnets, function (subnet) {
                         subnet.populateTreeMenu(container);
                     });
