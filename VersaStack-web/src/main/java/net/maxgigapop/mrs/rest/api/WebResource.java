@@ -19,6 +19,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
@@ -32,6 +33,8 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.Suspended;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -52,6 +55,7 @@ public class WebResource {
     String host = "http://localhost:8080/VersaStack-web/restapi";
     private final serviceBeans servBean = new serviceBeans();
     JSONParser parser = new JSONParser();
+    private ExecutorService executorService = java.util.concurrent.Executors.newCachedThreadPool();
 
     @Context
     private UriInfo context;
@@ -93,16 +97,27 @@ public class WebResource {
 
         return retList;
     }
-    
+
     @GET
-    @Path("/service/{siUUID}/status")
+    @Path("/{siUUID}/status")
     public String checkStatus(@PathParam("siUUID") String svcInstanceUUID) {
         String retString = "";
-        try {                    
+        try {
             return superStatus(svcInstanceUUID) + " - " + status(svcInstanceUUID) + "\n";
         } catch (SQLException | IOException e) {
             return "<<<CHECK STATUS ERROR: " + e.getMessage();
         }
+    }
+
+    @PUT
+    @Path(value = "/{siUUID}/{action}")
+    public void operate(@Suspended final AsyncResponse asyncResponse, @PathParam(value = "siUUID") final String refUuid, @PathParam(value = "action") final String action) {
+        executorService.submit(new Runnable() {
+            @Override
+            public void run() {
+                asyncResponse.resume(doOperate(refUuid, action));
+            }
+        });
     }
 
     @POST
@@ -222,41 +237,49 @@ public class WebResource {
 
     }
 
-    @PUT
-    @Path("/service/{siUUID}/{action}")
-    public String operate(@PathParam("siUUID") String refUuid, @PathParam("action") String action) {
+    // Async Methods -----------------------------------------------------------
+    private String doOperate(@PathParam("siUUID") String refUuid, @PathParam("action") String action) {
+        long startTime = System.currentTimeMillis();
+        System.out.println("Async API Operate Start::Name="
+                + Thread.currentThread().getName() + "::ID="
+                + Thread.currentThread().getId());
+
         try {
-        switch (action) {
-            case "propagate":
-                propagate(refUuid);                
-                break;
-            case "commit":
-                commit(refUuid);                
-                break;
-            case "revert":
-                setSuperState(refUuid, 2);
-                revert(refUuid);                
-                break;
-            case "delete":
-                setSuperState(refUuid, 2);
-                delete(refUuid);                
-                break;
-                
-            case "cancel":
-                cancelInstance(refUuid);                                
-                break;
-            default:
-                return "Error! Invalid Action\n";
+            switch (action) {
+                case "propagate":
+                    propagate(refUuid);
+                    break;
+                case "commit":
+                    commit(refUuid);
+                    break;
+                case "revert":
+                    setSuperState(refUuid, 2);
+                    revert(refUuid);
+                    break;
+                case "delete":
+                    setSuperState(refUuid, 2);
+                    delete(refUuid);
+                    break;
+
+                case "cancel":
+                    cancelInstance(refUuid);
+                    break;
+                default:
+                    return "Error! Invalid Action\n";
             }
-            return superStatus(refUuid) + " - " + status(refUuid);
+            long endTime = System.currentTimeMillis();
+            System.out.println("Async API Operate End::Name="
+                    + Thread.currentThread().getName() + "::ID="
+                    + Thread.currentThread().getId() + "::Time Taken="
+                    + (endTime - startTime) + " ms.");
+
+            return superStatus(refUuid) + " - " + status(refUuid) + "\r\n";
         } catch (IOException | SQLException e) {
-            return "Error: " + e.getMessage();
+            return "Error: " + e.getMessage() + "\r\n";
         }
     }
 
-    
     // Parsing Methods ---------------------------------------------------------
-    
     private HashMap<String, String> parseDNC(JSONObject dataJSON, String refUuid) {
         HashMap<String, String> paraMap = new HashMap<>();
         paraMap.put("instanceUUID", refUuid);
@@ -297,7 +320,7 @@ public class WebResource {
         } else if (parent.contains("openstack")) {
             paraMap.put("driverType", "os");
         }
-        
+
         int VMCounter = 1;
         // Parse Subnets.
         JSONArray subArr = (JSONArray) vcnJSON.get("subnets");
@@ -378,7 +401,7 @@ public class WebResource {
             }
         }
         paraMap.put("netRoutes", netRouteString);
-        
+
         // Parse Direct Connect.
         JSONArray gateArr = (JSONArray) vcnJSON.get("gateways");
         if (gateArr != null) {
@@ -388,7 +411,7 @@ public class WebResource {
                 JSONObject destJSON = (JSONObject) destArr.get(0);
                 paraMap.put("directConn", (String) destJSON.get("value"));
             }
-            
+
         }
 
         System.out.println(paraMap);
@@ -397,24 +420,21 @@ public class WebResource {
 
     /**
      * Cancels a service instance. Requires instance to be in 'ready' substate.
+     *
      * @param refUuid instance UUID
-     * @return error code:
-     -1 - Exception thrown
-      0 - success
-      1 - stage 1 error (Failed pre-condition)
-      2 - stage 2 error (Failed revert)
-      3 - stage 3 error (Failed propagate)
-      4 - stage 4 error (Failed commit)
-      5 - stage 5 error (Failed result check)
+     * @return error code: -1 - Exception thrown 0 - success 1 - stage 1 error
+     * (Failed pre-condition) 2 - stage 2 error (Failed revert) 3 - stage 3
+     * error (Failed propagate) 4 - stage 4 error (Failed commit) 5 - stage 5
+     * error (Failed result check)
      */
     private int cancelInstance(String refUuid) throws SQLException {
-        boolean result; 
+        boolean result;
         try {
             String instanceState = status(refUuid);
             if (!instanceState.equalsIgnoreCase("READY")) {
                 return 1;
             }
-            
+
             setSuperState(refUuid, 2);
             result = revert(refUuid);
             if (!result) {
@@ -427,8 +447,8 @@ public class WebResource {
             result = commit(refUuid);
             if (!result) {
                 return 4;
-            }            
-            
+            }
+
             while (true) {
                 instanceState = status(refUuid);
                 if (instanceState.equals("READY")) {
@@ -438,13 +458,12 @@ public class WebResource {
                 }
                 sleep(5000);
             }
-            
+
         } catch (IOException | InterruptedException ex) {
             return -1;
         }
     }
-    
-    
+
     // Utility Methods ---------------------------------------------------------
     /*
     
@@ -464,7 +483,7 @@ public class WebResource {
                 return "ERROR";
         }
     }
-    
+
     private void setSuperState(String refUuid, int superStateId) throws SQLException {
         Connection front_conn;
         Properties front_connectionProps = new Properties();
@@ -484,21 +503,21 @@ public class WebResource {
         URL url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
-        return result.equalsIgnoreCase("PROPAGATED");            
+        return result.equalsIgnoreCase("PROPAGATED");
     }
 
     private boolean commit(String refUuid) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
-        return result.equalsIgnoreCase("COMMITTED");     
+        return result.equalsIgnoreCase("COMMITTED");
     }
 
     private boolean revert(String refUuid) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/revert", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
-        return result.equalsIgnoreCase("COMMITTED-PARTIAL");     
+        return result.equalsIgnoreCase("COMMITTED-PARTIAL");
     }
 
     private String delete(String refUuid) throws MalformedURLException, IOException {
@@ -522,7 +541,7 @@ public class WebResource {
         prep.setString(1, refUuid);
         ResultSet rs1 = prep.executeQuery();
         while (rs1.next()) {
-            return rs1.getString("superState"); 
+            return rs1.getString("superState");
         }
         return "ERROR";
     }
@@ -531,7 +550,7 @@ public class WebResource {
         URL url = new URL(String.format("%s/service/%s/status", host, refUuid));
         HttpURLConnection status = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, status, "GET", null);
-        
+
         return result;
     }
 

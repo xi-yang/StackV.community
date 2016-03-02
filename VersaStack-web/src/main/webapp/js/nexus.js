@@ -421,7 +421,7 @@ function propagateInstance(uuid) {
 }
 
 function commitInstance(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/web/service/' + uuid + '/commit';
+    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/web/' + uuid + '/commit';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -434,7 +434,7 @@ function commitInstance(uuid) {
 }
 
 function revertInstance(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/web/service/' + uuid + '/revert';
+    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/web/' + uuid + '/revert';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -447,7 +447,7 @@ function revertInstance(uuid) {
 }
 
 function cancelInstance(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/web/service/' + uuid + '/cancel';
+    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/web/' + uuid + '/cancel';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -463,7 +463,7 @@ function cancelInstance(uuid) {
 function deleteInstance(uuid) {
 
 
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/web/service/' + uuid + '/delete';
+    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/web' + uuid + '/delete';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
