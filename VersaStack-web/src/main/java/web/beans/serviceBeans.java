@@ -917,8 +917,8 @@ public class serviceBeans {
 
         Connection front_conn;
         Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", "root");
-        front_connectionProps.put("password", "root");
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
 
         front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
@@ -958,8 +958,8 @@ public class serviceBeans {
         Connection front_conn;
                     Class.forName("com.mysql.jdbc.Driver").newInstance();
         Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", "root");
-        front_connectionProps.put("password", "root");
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
 
         front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
@@ -993,7 +993,7 @@ public class serviceBeans {
             HttpURLConnection status = (HttpURLConnection) url.openConnection();
             return this.executeHttpMethod(url, status, "GET", null);
         } catch (IOException ex) {
-            return "Error! " + ex;
+            return "Error retrieving backend status!";
         }
     }
 
@@ -1002,8 +1002,8 @@ public class serviceBeans {
         Class.forName("com.mysql.jdbc.Driver").newInstance();
         Connection front_conn;
         Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", "root");
-        front_connectionProps.put("password", "root");
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
 
         try {
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
@@ -1033,18 +1033,15 @@ public class serviceBeans {
     }
 
     public void cleanInstances() throws SQLException {
-
         Connection front_conn;
         Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", "root");
-        front_connectionProps.put("password", "root");
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
 
         front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
-        PreparedStatement prep = front_conn.prepareStatement("DELETE FROM frontend.service_delta");
-        prep.executeUpdate();
-        prep = front_conn.prepareStatement("DELETE FROM frontend.service_instance");
+        PreparedStatement prep = front_conn.prepareStatement("DELETE FROM frontend.service_instance");
         prep.executeUpdate();
     }
 

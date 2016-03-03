@@ -461,8 +461,6 @@ function cancelInstance(uuid) {
 
 
 function deleteInstance(uuid) {
-
-
     var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/app/service/' + uuid + '/delete';
     $.ajax({
         url: apiUrl,

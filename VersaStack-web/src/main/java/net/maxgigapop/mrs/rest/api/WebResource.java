@@ -243,12 +243,6 @@ public class WebResource {
         System.out.println("Async API Operate Start::Name="
                 + Thread.currentThread().getName() + "::ID="
                 + Thread.currentThread().getId());
-
-        try {            
-            sleep(60000);
-        } catch (InterruptedException ex) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
-        }
         
         try {
             switch (action) {
@@ -261,14 +255,22 @@ public class WebResource {
                 case "revert":
                     setSuperState(refUuid, 2);
                     revert(refUuid);
-                    break;
-                case "delete":
-                    setSuperState(refUuid, 2);
-                    return delete(refUuid);
+                    break;                    
 
                 case "cancel":
                     cancelInstance(refUuid);
                     break;
+                    
+                    
+                case "delete":
+                    deleteInstance(refUuid);
+
+                    long endTime = System.currentTimeMillis();
+                    System.out.println("Async API Operate End::Name="
+                            + Thread.currentThread().getName() + "::ID="
+                            + Thread.currentThread().getId() + "::Time Taken="
+                            + (endTime - startTime) + " ms.");
+                    return "Deletion Complete.\r\n";                    
                 default:
                     return "Error! Invalid Action\n";
             }
@@ -279,8 +281,86 @@ public class WebResource {
                     + (endTime - startTime) + " ms.");
 
             return superStatus(refUuid) + " - " + status(refUuid) + "\r\n";
-        } catch (IOException | SQLException e) {
-            return "Error: " + e.getMessage() + "\r\n";
+        } catch (IOException | SQLException ex) {
+            return "Operation Error: " + ex.getMessage() + "\r\n";
+        }
+    }
+    
+    // Operation Methods -------------------------------------------------------
+    /**
+     * Deletes a service instance.
+     * 
+     * @param refUuid instance UUID
+     * @return error code |
+     */
+    private int deleteInstance(String refUuid) throws SQLException {
+        try {
+            String result = delete(refUuid);
+            if (result.equalsIgnoreCase("Successfully terminated")) {
+                Connection front_conn;
+                Properties front_connectionProps = new Properties();
+                front_connectionProps.put("user", front_db_user);
+                front_connectionProps.put("password", front_db_pass);
+                front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                        front_connectionProps);
+
+                PreparedStatement prep = front_conn.prepareStatement("DELETE FROM `frontend`.`service_instance` WHERE `service_instance`.`referenceUUID` = ?");
+                prep.setString(1, refUuid);
+                prep.executeUpdate();
+                
+                return 0;
+            } else {
+                return 1;
+            }
+        } catch (IOException ex) {
+            return -1;
+        }     
+    }
+    
+    /**
+     * Cancels a service instance. Requires instance to be in 'ready' substate.
+     *
+     * @param refUuid instance UUID
+     * @return error code | -1: Exception thrown. 0: success. 1: stage 1 error
+     * (Failed pre-condition). 2: stage 2 error (Failed revert). 3: stage 3
+     * error (Failed propagate). 4: stage 4 error (Failed commit). 5: stage 5
+     * error (Failed result check).
+     */
+    private int cancelInstance(String refUuid) throws SQLException {
+        boolean result;
+        try {
+            String instanceState = status(refUuid);
+            if (!instanceState.equalsIgnoreCase("READY")) {
+                return 1;
+            }
+
+            setSuperState(refUuid, 2);
+            result = revert(refUuid);
+            if (!result) {
+                return 2;
+            }
+            result = propagate(refUuid);
+            if (!result) {
+                return 3;
+            }
+            result = commit(refUuid);
+            if (!result) {
+                return 4;
+            }
+
+            /*while (true) {
+                instanceState = status(refUuid);
+                if (instanceState.equals("READY")) {
+                    return 0;
+                } else if (!instanceState.equals("COMMITTED")) {
+                    return 5;
+                }
+                sleep(5000);
+            }*/
+            return 0;
+            
+        } catch (IOException ex) {
+            return -1;
         }
     }
 
@@ -421,54 +501,7 @@ public class WebResource {
 
         System.out.println(paraMap);
         return paraMap;
-    }
-
-    /**
-     * Cancels a service instance. Requires instance to be in 'ready' substate.
-     *
-     * @param refUuid instance UUID
-     * @return error code: -1 - Exception thrown 0 - success 1 - stage 1 error
-     * (Failed pre-condition) 2 - stage 2 error (Failed revert) 3 - stage 3
-     * error (Failed propagate) 4 - stage 4 error (Failed commit) 5 - stage 5
-     * error (Failed result check)
-     */
-    private int cancelInstance(String refUuid) throws SQLException {
-        boolean result;
-        try {
-            String instanceState = status(refUuid);
-            if (!instanceState.equalsIgnoreCase("READY")) {
-                return 1;
-            }
-
-            setSuperState(refUuid, 2);
-            result = revert(refUuid);
-            if (!result) {
-                return 2;
-            }
-            result = propagate(refUuid);
-            if (!result) {
-                return 3;
-            }
-            result = commit(refUuid);
-            if (!result) {
-                return 4;
-            }
-
-            /*while (true) {
-                instanceState = status(refUuid);
-                if (instanceState.equals("READY")) {
-                    return 0;
-                } else if (!instanceState.equals("COMMITTED")) {
-                    return 5;
-                }
-                sleep(5000);
-            }*/
-            return 0;
-            
-        } catch (IOException ex) {
-            return -1;
-        }
-    }
+    }    
 
     // Utility Methods ---------------------------------------------------------
     /*
