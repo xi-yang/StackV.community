@@ -408,7 +408,7 @@ function checkInstance(uuid) {
 }
 
 function propagateInstance(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/service/' + uuid + '/propagate';
+    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/app/service/' + uuid + '/propagate';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -421,7 +421,7 @@ function propagateInstance(uuid) {
 }
 
 function commitInstance(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/web/service/' + uuid + '/commit';
+    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/app/service/' + uuid + '/commit';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -434,7 +434,7 @@ function commitInstance(uuid) {
 }
 
 function revertInstance(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/web/service/' + uuid + '/revert';
+    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/app/service/' + uuid + '/revert';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -447,7 +447,7 @@ function revertInstance(uuid) {
 }
 
 function cancelInstance(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/web/service/' + uuid + '/cancel';
+    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/app/service/' + uuid + '/cancel';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -461,9 +461,7 @@ function cancelInstance(uuid) {
 
 
 function deleteInstance(uuid) {
-
-
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/web/service/' + uuid + '/delete';
+    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/app/service/' + uuid + '/delete';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -553,20 +551,17 @@ function applyDNCTemplate(code) {
     }
 }
 
-function dncModerate(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/service/' + uuid + '/status';
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        success: function (result) {
-            if (result === 'READY') {
-                $("#instance-cancel").toggleClass("hide");
-            }
-            if (result === 'INIT') {
-                $("#instance-delete").toggleClass("hide");
-            }
-        }
-    });
+function dncModerate() {
+    var status = document.getElementById("instance-status").innerHTML;
+    if (status === 'READY') {
+        $("#instance-cancel").toggleClass("hide");
+    }
+    if (status === 'INIT') {
+        $("#instance-delete").toggleClass("hide");
+    }
+    if (status === 'FAILED') {
+        $("#instance-delete").toggleClass("hide");
+    }
 }
 
 function fl2pModerate(uuid) {
@@ -591,20 +586,17 @@ function fl2pModerate(uuid) {
 
 //**
 
-function templateModerate(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/service/' + uuid + '/status';
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        success: function (result) {
-            if (result === 'READY') {
-                $("#instance-cancel").toggleClass("hide");
-            }
-            if (result === 'INIT') {
-                $("#instance-delete").toggleClass("hide");
-            }
-        }
-    });
+function templateModerate() {
+    var status = document.getElementById("instance-status").innerHTML;
+    if (status === 'READY') {
+        $("#instance-cancel").toggleClass("hide");
+    }
+    if (status === 'INIT') {
+        $("#instance-delete").toggleClass("hide");
+    }
+    if (status === 'FAILED') {
+        $("#instance-delete").toggleClass("hide");
+    }
 }
 
 /*

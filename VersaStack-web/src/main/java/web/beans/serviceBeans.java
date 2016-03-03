@@ -703,7 +703,7 @@ public class serviceBeans {
                     + "    spa:value    \"\"\"{\n"
                     + "        \"urn:ogf:network:vo1_maxgigapop_net:link=conn1\":"
                     + "{ \""+ dest +"\":{\"vlan_tag\":\""+ vlan +"\"},\n"
-                    + "        \"" + topoUri + "\":{\"vlan_tag\":\"any\"}\n"
+                    + "        \"" + topoUri + "\":{\"vlan_tag\":\""+ vlan +"\"}\n"
                     + "        }\n"
                     + "    }\"\"\".\n\n";            
         } else
@@ -917,8 +917,8 @@ public class serviceBeans {
 
         Connection front_conn;
         Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", "root");
-        front_connectionProps.put("password", "root");
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
 
         front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
@@ -952,14 +952,14 @@ public class serviceBeans {
         return retList;
     }
 
-    public ArrayList<ArrayList<String>> instanceStatusCheck(String instanceUUID) throws SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException {
-        ArrayList<ArrayList<String>> retList = new ArrayList<>();
+    public ArrayList<String> instanceStatusCheck(String instanceUUID) throws SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+        ArrayList<String> retList = new ArrayList<>();
 
         Connection front_conn;
                     Class.forName("com.mysql.jdbc.Driver").newInstance();
         Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", "root");
-        front_connectionProps.put("password", "root");
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
 
         front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
@@ -969,8 +969,6 @@ public class serviceBeans {
         prep.setString(1, instanceUUID);
         ResultSet rs1 = prep.executeQuery();
         while (rs1.next()) {
-            ArrayList<String> instanceList = new ArrayList<>();
-
             String instanceName = rs1.getString("name");
             String instanceSuperState = rs1.getString("superState");
             try {
@@ -979,11 +977,9 @@ public class serviceBeans {
 
                 String instanceState = instanceSuperState + " - " + this.executeHttpMethod(url, status, "GET", null);
 
-                instanceList.add(instanceName);
-                instanceList.add(instanceUUID);
-                instanceList.add(instanceState);
-
-                retList.add(instanceList);
+                retList.add(instanceName);
+                retList.add(instanceUUID);
+                retList.add(instanceState);
             } catch (IOException ex) {
             }
         }
@@ -991,13 +987,23 @@ public class serviceBeans {
         return retList;
     }
 
+    public String detailsStatus(String instanceUUID) throws SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+        try {
+            URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
+            HttpURLConnection status = (HttpURLConnection) url.openConnection();
+            return this.executeHttpMethod(url, status, "GET", null);
+        } catch (IOException ex) {
+            return "Error retrieving backend status!";
+        }
+    }
+
     public ArrayList<ArrayList<String>> catalogPull(int usergroup_id, int user_id) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
         ArrayList<ArrayList<String>> retList = new ArrayList<>();
-            Class.forName("com.mysql.jdbc.Driver").newInstance();
+        Class.forName("com.mysql.jdbc.Driver").newInstance();
         Connection front_conn;
         Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", "root");
-        front_connectionProps.put("password", "root");
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
 
         try {
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
@@ -1027,18 +1033,15 @@ public class serviceBeans {
     }
 
     public void cleanInstances() throws SQLException {
-
         Connection front_conn;
         Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", "root");
-        front_connectionProps.put("password", "root");
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
 
         front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
-        PreparedStatement prep = front_conn.prepareStatement("DELETE FROM frontend.service_delta");
-        prep.executeUpdate();
-        prep = front_conn.prepareStatement("DELETE FROM frontend.service_instance");
+        PreparedStatement prep = front_conn.prepareStatement("DELETE FROM frontend.service_instance");
         prep.executeUpdate();
     }
 
