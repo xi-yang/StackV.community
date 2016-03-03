@@ -47,7 +47,7 @@ import web.beans.serviceBeans;
  *
  * @author rikenavadur
  */
-@Path("web")
+@Path("app")
 public class WebResource {
 
     private final String front_db_user = "front_view";
@@ -55,7 +55,7 @@ public class WebResource {
     String host = "http://localhost:8080/VersaStack-web/restapi";
     private final serviceBeans servBean = new serviceBeans();
     JSONParser parser = new JSONParser();
-    private ExecutorService executorService = java.util.concurrent.Executors.newCachedThreadPool();
+    private final ExecutorService executorService = java.util.concurrent.Executors.newCachedThreadPool();
 
     @Context
     private UriInfo context;
@@ -99,7 +99,7 @@ public class WebResource {
     }
 
     @GET
-    @Path("/{siUUID}/status")
+    @Path("/service/{siUUID}")
     public String checkStatus(@PathParam("siUUID") String svcInstanceUUID) {
         String retString = "";
         try {
@@ -110,7 +110,7 @@ public class WebResource {
     }
 
     @PUT
-    @Path(value = "/{siUUID}/{action}")
+    @Path(value = "/service/{siUUID}/{action}")
     public void operate(@Suspended final AsyncResponse asyncResponse, @PathParam(value = "siUUID") final String refUuid, @PathParam(value = "action") final String action) {
         executorService.submit(new Runnable() {
             @Override
@@ -244,6 +244,12 @@ public class WebResource {
                 + Thread.currentThread().getName() + "::ID="
                 + Thread.currentThread().getId());
 
+        try {            
+            sleep(60000);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
         try {
             switch (action) {
                 case "propagate":
@@ -258,8 +264,7 @@ public class WebResource {
                     break;
                 case "delete":
                     setSuperState(refUuid, 2);
-                    delete(refUuid);
-                    break;
+                    return delete(refUuid);
 
                 case "cancel":
                     cancelInstance(refUuid);
@@ -449,7 +454,7 @@ public class WebResource {
                 return 4;
             }
 
-            while (true) {
+            /*while (true) {
                 instanceState = status(refUuid);
                 if (instanceState.equals("READY")) {
                     return 0;
@@ -457,9 +462,10 @@ public class WebResource {
                     return 5;
                 }
                 sleep(5000);
-            }
-
-        } catch (IOException | InterruptedException ex) {
+            }*/
+            return 0;
+            
+        } catch (IOException ex) {
             return -1;
         }
     }

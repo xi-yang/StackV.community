@@ -72,8 +72,8 @@
                                 <td></td>
                                 <td>
                                     <div class="service-instance-panel">
-                                        <button class="" id="instance-cancel" onClick="cancelInstance('${param.uuid}')">Cancel</button>
-                                        <button class="" id="instance-delete" onClick="deleteInstance('${param.uuid}')">Delete</button>
+                                        <button class="hide" id="instance-cancel" onClick="cancelInstance('${param.uuid}')">Cancel</button>
+                                        <button class="hide" id="instance-delete" onClick="deleteInstance('${param.uuid}')">Delete</button>
                                     </div>
                                 </td>
                             </tr>
