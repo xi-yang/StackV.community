@@ -117,15 +117,13 @@ define([
                                     if (displayed.indexOf(this.misc_elements[o]) === -1 && 
                                             this.misc_elements[o].relationship_to[this] === type
                                             && this.misc_elements[o].getName() !== undefined) {
-                                        console.log ("name of thing: " + this.misc_elements[o].getName());
+                                       // console.log ("name of thing: " + this.misc_elements[o].getName());
                                         elementsNode.addChild(this.misc_elements[o].getName(), "Element");;
                                         displayed.push(this.misc_elements[o]);
                                     }
                                 }
                             }
-                        }
-                            
-                        
+                        }                     
                     }                    
                 };
             }

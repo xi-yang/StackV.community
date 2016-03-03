@@ -6,7 +6,7 @@ define(["local/versastack/topology/modelConstants"], function (values) {
         this.svgNodeCover = null; //To prevent the cursor from changing when we mouse over the text, we draw an invisible rectangle over it
         this._backing = backing;
         this._map = map;
-        
+        this.misc_elements = [];
 //        /**@type Array.Port**/
 //        this.ports = [];
 //        this.services = [];
@@ -36,7 +36,7 @@ define(["local/versastack/topology/modelConstants"], function (values) {
         this.getType = function () {
            
             var types = this._backing[values.type];
-            console.log("types of : " + this.getName());
+            //console.log("types of : " + this.getName());
             
             //alert ("types = " + Object.keys(this._backing));
             // remove named indivdual from this 
@@ -47,16 +47,16 @@ define(["local/versastack/topology/modelConstants"], function (values) {
             var arr = map_(types, function (type) {
                             type = type.value;
                             
-                            console.log("-  " + type + "\n");
+                           // console.log("-  " + type + "\n");
                             return type; 
                         });
             //alert("types of " + this.name + ": " + arr.toString());
             
             var index = arr.indexOf("http://www.w3.org/2002/07/owl#NamedIndividual");
-            console.log ("index: " + index);
+            //console.log ("index: " + index);
             if (index > -1)
                 arr.splice(index, 1);
-            console.log ("true type: " + arr[0] + "\n");
+            //console.log ("true type: " + arr[0] + "\n");
             return arr[0].split("#")[1];
         };
         
@@ -86,36 +86,33 @@ define(["local/versastack/topology/modelConstants"], function (values) {
 //                });
 //            }
 //
-//            if (this.misc_elements.length > 0) {
-//                var displayed = [];
-//               // alert(this.misc_elements);
-//                for (var i = 0; i < this.misc_elements.length; i++){
-//                    var el = this.misc_elements[i];
-//                    //alert("el.getName: " + el.getName() + 
-//                           // alert(" helllo: " + el.hello);
-//                    if (displayed.indexOf(el) === -1 && el.getName() !== undefined) {
-//                        var type = el.relationship_to[this];
-//                        //type = type.split("#");
-//                        var elementsNode = tree.addChild(type === undefined?"undefined":type, "");
-//                        var other_elms = [];
-//                        console.log("I'm hereeeee");
-//                        for (var o in this.misc_elements) {
-//                            console.log("I'm here");
-//                            if (displayed.indexOf(this.misc_elements[o]) === -1 && 
-//                                    this.misc_elements[o].relationship_to[this] === type
-//                                    && this.misc_elements[o].getName() !== undefined) {
-//                                other_elms.push(this.misc_elements[o]);
-//                                console.log ("name of thing: " + this.misc_elements[o].getName());
-//
-//                                elementsNode.addChild(this.misc_elements[o].getName(), "Element");;
-//                                displayed.push(this.misc_elements[o]);
-//                            }
-//                        }
-//                    }
-//                }
-//
-//
-//            }
+            if (this.misc_elements.length > 0) {
+                var displayed = [];
+               // alert(this.misc_elements);
+                for (var i = 0; i < this.misc_elements.length; i++){
+                    var el = this.misc_elements[i];
+                    //alert("el.getName: " + el.getName() + 
+                           // alert(" helllo: " + el.hello);
+                    if (displayed.indexOf(el) === -1 && el.getName() !== undefined) {
+                        var type = el.relationship_to[this];
+                        //type = type.split("#");
+                        var elementsNode = tree.addChild(type === undefined?"undefined":type, "");
+                        var other_elms = [];
+                        for (var o in this.misc_elements) {
+                            if (displayed.indexOf(this.misc_elements[o]) === -1 && 
+                                    this.misc_elements[o].relationship_to[this] === type
+                                    && this.misc_elements[o].getName() !== undefined) {
+                                other_elms.push(this.misc_elements[o]);
+                                //console.log ("name of thing: " + this.misc_elements[o].getName());
+                                elementsNode.addChild(this.misc_elements[o].getName(), "Element");;
+                                displayed.push(this.misc_elements[o]);
+                            }
+                        }
+                    }
+                }
+
+
+            }
         };
         
 

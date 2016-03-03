@@ -233,13 +233,22 @@ define([
                                     that.elementMap[key] = toAdd;
                                     break;
                                 default:
+//                                    var toAdd;
+//                                    if (oldModel && oldModel.elementMap[key]) {
+//                                        toAdd = oldModel.elementMap[key];
+//                                        toAdd.reload(val, map);
+//                                    } else {
+//                                        console.log("i was used");
+//                                        toAdd = new Element(val, map);
+//                                    }
+//                                    that.elementMap[key] = toAdd;
                                     console.log("Unknown type: " + type);
                                     break;
                             }
                         });
                     }
                 }
-
+                
                 for (var key in that.serviceMap) {
                     var service = that.serviceMap[key];
                     var service_ = service._backing;
@@ -474,7 +483,7 @@ define([
                                     }
                                 });                                
                                 break;
-                            default:
+                            default:                                     
                                 console.log("Unknown key: " + key);
                         }
                     }
@@ -504,8 +513,28 @@ define([
                         });
                     });
                 }
-
-                console.log ("ELEMENTS: \n\n\n" + Object.keys(that.elementMap).toString() + "\n\n\n\n");
+                
+                
+                for (var key in that.elementMap) {
+                 
+                    var src_element = that.elementMap[key];
+                    if (src_element !== undefined) {
+                        var src_element_ = src_element._backing;
+                        for (var key in src_element_) {
+                            var elements = src_element_[key];
+                            map_(elements, function (element){
+                                var errorVal = element.value;
+                                element = that.elementMap[element.value];
+                                if (element) {
+                                    element.relationship_to[src_element] = key.split("#")[1];
+                                    src_element.misc_elements.push(element);
+                                    //console.log("I did this...");
+                                }
+                            });                                                     
+                        }
+                    }
+                }
+                //console.log ("ELEMENTS: \n\n\n" + Object.keys(that.elementMap).toString() + "\n\n\n\n");
                 for (var key in that.nodeMap) {
                     var node = that.nodeMap[key];
                     if (node.isRoot) {
