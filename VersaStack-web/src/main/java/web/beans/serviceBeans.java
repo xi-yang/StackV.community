@@ -952,8 +952,8 @@ public class serviceBeans {
         return retList;
     }
 
-    public ArrayList<ArrayList<String>> instanceStatusCheck(String instanceUUID) throws SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException {
-        ArrayList<ArrayList<String>> retList = new ArrayList<>();
+    public ArrayList<String> instanceStatusCheck(String instanceUUID) throws SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+        ArrayList<String> retList = new ArrayList<>();
 
         Connection front_conn;
                     Class.forName("com.mysql.jdbc.Driver").newInstance();
@@ -969,8 +969,6 @@ public class serviceBeans {
         prep.setString(1, instanceUUID);
         ResultSet rs1 = prep.executeQuery();
         while (rs1.next()) {
-            ArrayList<String> instanceList = new ArrayList<>();
-
             String instanceName = rs1.getString("name");
             String instanceSuperState = rs1.getString("superState");
             try {
@@ -979,11 +977,9 @@ public class serviceBeans {
 
                 String instanceState = instanceSuperState + " - " + this.executeHttpMethod(url, status, "GET", null);
 
-                instanceList.add(instanceName);
-                instanceList.add(instanceUUID);
-                instanceList.add(instanceState);
-
-                retList.add(instanceList);
+                retList.add(instanceName);
+                retList.add(instanceUUID);
+                retList.add(instanceState);
             } catch (IOException ex) {
             }
         }
@@ -991,9 +987,19 @@ public class serviceBeans {
         return retList;
     }
 
+    public String detailsStatus(String instanceUUID) throws SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+        try {
+            URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
+            HttpURLConnection status = (HttpURLConnection) url.openConnection();
+            return this.executeHttpMethod(url, status, "GET", null);
+        } catch (IOException ex) {
+            return "Error! " + ex;
+        }
+    }
+
     public ArrayList<ArrayList<String>> catalogPull(int usergroup_id, int user_id) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
         ArrayList<ArrayList<String>> retList = new ArrayList<>();
-            Class.forName("com.mysql.jdbc.Driver").newInstance();
+        Class.forName("com.mysql.jdbc.Driver").newInstance();
         Connection front_conn;
         Properties front_connectionProps = new Properties();
         front_connectionProps.put("user", "root");

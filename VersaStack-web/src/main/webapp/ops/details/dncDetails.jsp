@@ -66,7 +66,7 @@
                             </tr>
                             <tr>
                                 <td>Operation Status</td>
-                                <td id="instance-status"></td>
+                                <td id="instance-status">${serv.detailsStatus(param.uuid)}</td>
                             </tr>
                             <tr>
                                 <td></td>
@@ -113,9 +113,7 @@
         <!-- JS -->
         <script>
             $(function () {
-                var uuid = getUrlParameter('uuid');
-                checkInstance(uuid);
-                dncModerate(uuid);
+                dncModerate();
 
                 $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
                     if (${user.isAllowed(1)}) {
