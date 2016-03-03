@@ -48,11 +48,11 @@ import web.beans.serviceBeans;
  * @author rikenavadur
  */
 @Path("app")
-public class WebResource {
+public class WebResource {        
 
     private final String front_db_user = "front_view";
     private final String front_db_pass = "frontuser";
-    String host = "http://localhost:8080/VersaStack-web/restapi";
+    String host = "http://127.0.0.1:8080/VersaStack-web/restapi";
     private final serviceBeans servBean = new serviceBeans();
     JSONParser parser = new JSONParser();
     private final ExecutorService executorService = java.util.concurrent.Executors.newCachedThreadPool();
@@ -99,7 +99,7 @@ public class WebResource {
     }
 
     @GET
-    @Path("/service/{siUUID}")
+    @Path("/service/{siUUID}/status")
     public String checkStatus(@PathParam("siUUID") String svcInstanceUUID) {
         String retString = "";
         try {

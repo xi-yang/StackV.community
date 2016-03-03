@@ -554,7 +554,7 @@ function applyDNCTemplate(code) {
 }
 
 function dncModerate(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/service/' + uuid + '/status';
+    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/app/service/' + uuid + '';
     $.ajax({
         url: apiUrl,
         type: 'GET',
