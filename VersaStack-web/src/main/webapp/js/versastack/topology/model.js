@@ -253,7 +253,6 @@ define([
                             case values.providesRoutingTable:
                             case values.providesRoute:
                             case values.VirtualCloudService:
-                                break;
 
                             case values.encoding:
                             case values.labelSwapping:
@@ -270,7 +269,16 @@ define([
                             case values.value:
                             case values.hasLabel:
                             case values.hasLabelGroup:
-                                break;
+                                var elements = service_[key];
+                                map_(elements, function (element){
+                                    var errorVal = element.value;
+                                    element = that.elementMap[element.value];
+                                    if (element) {
+                                        element.relationship_to[service] = key.split("#")[1];
+                                        service.misc_elements.push(element);
+                                    }
+                                });                                
+                                break;                                                                 
                             case values.providesSubnet:
                                 var subnet = service_[key];
                                 map_(subnet, function (subnetKey) {

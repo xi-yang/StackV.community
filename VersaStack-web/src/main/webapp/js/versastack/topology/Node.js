@@ -266,25 +266,16 @@ define(["local/versastack/topology/modelConstants"],
                     
                     if (this.misc_elements.length > 0) {
                         var displayed = [];
-                       // alert(this.misc_elements);
                         for (var i = 0; i < this.misc_elements.length; i++){
                             var el = this.misc_elements[i];
-                            //alert("el.getName: " + el.getName() + 
-                                   // alert(" helllo: " + el.hello);
                             if (displayed.indexOf(el) === -1 && el.getName() !== undefined) {
                                 var type = el.relationship_to[this];
-                                //type = type.split("#");
                                 var elementsNode = tree.addChild(type === undefined?"undefined":type, "");
-                                var other_elms = [];
-                                console.log("I'm hereeeee");
                                 for (var o in this.misc_elements) {
-                                    console.log("I'm here");
                                     if (displayed.indexOf(this.misc_elements[o]) === -1 && 
                                             this.misc_elements[o].relationship_to[this] === type
                                             && this.misc_elements[o].getName() !== undefined) {
-                                        other_elms.push(this.misc_elements[o]);
                                         console.log ("name of thing: " + this.misc_elements[o].getName());
-                                        
                                         elementsNode.addChild(this.misc_elements[o].getName(), "Element");;
                                         displayed.push(this.misc_elements[o]);
                                     }
