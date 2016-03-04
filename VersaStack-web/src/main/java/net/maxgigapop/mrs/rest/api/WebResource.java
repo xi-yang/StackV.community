@@ -109,17 +109,6 @@ public class WebResource {
         }
     }
 
-    @PUT
-    @Path(value = "/service/{siUUID}/{action}")
-    public void operate(@Suspended final AsyncResponse asyncResponse, @PathParam(value = "siUUID") final String refUuid, @PathParam(value = "action") final String action) {
-        executorService.submit(new Runnable() {
-            @Override
-            public void run() {
-                asyncResponse.resume(doOperate(refUuid, action));
-            }
-        });
-    }
-
     @POST
     @Path("/service")
     @Consumes({"application/json", "application/xml"})
@@ -235,6 +224,17 @@ public class WebResource {
             return e.getMessage();
         }
 
+    }
+    
+    @PUT
+    @Path(value = "/service/{siUUID}/{action}")
+    public void operate(@Suspended final AsyncResponse asyncResponse, @PathParam(value = "siUUID") final String refUuid, @PathParam(value = "action") final String action) {
+        executorService.submit(new Runnable() {
+            @Override
+            public void run() {
+                asyncResponse.resume(doOperate(refUuid, action));
+            }
+        });
     }
 
     // Async Methods -----------------------------------------------------------
