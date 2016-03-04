@@ -396,7 +396,7 @@ function addLink() {
 }
 
 function checkInstance(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/service/' + uuid + '/status';
+    var apiUrl = 'http://127.0.0.1:8080/VersaStack-web/restapi/service/' + uuid + '/status';
     $.ajax({
         url: apiUrl,
         type: 'GET',
@@ -408,7 +408,7 @@ function checkInstance(uuid) {
 }
 
 function propagateInstance(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/app/service/' + uuid + '/propagate';
+    var apiUrl = 'http://127.0.0.1:8080/VersaStack-web/restapi/app/service/' + uuid + '/propagate';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -421,7 +421,7 @@ function propagateInstance(uuid) {
 }
 
 function commitInstance(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/app/service/' + uuid + '/commit';
+    var apiUrl = 'http://127.0.0.1:8080/VersaStack-web/restapi/app/service/' + uuid + '/commit';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -434,7 +434,7 @@ function commitInstance(uuid) {
 }
 
 function revertInstance(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/app/service/' + uuid + '/revert';
+    var apiUrl = 'http://127.0.0.1:8080/VersaStack-web/restapi/app/service/' + uuid + '/revert';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -447,7 +447,7 @@ function revertInstance(uuid) {
 }
 
 function cancelInstance(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/app/service/' + uuid + '/cancel';
+    var apiUrl = 'http://127.0.0.1:8080/VersaStack-web/restapi/app/service/' + uuid + '/cancel';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -461,12 +461,12 @@ function cancelInstance(uuid) {
 
 
 function deleteInstance(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/app/service/' + uuid + '/delete';
+    var apiUrl = 'http://127.0.0.1:8080/VersaStack-web/restapi/app/service/' + uuid + '/delete';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
         success: function (result) {
-            // Do something with the result
+            console.log("DELETION SUCCESS?!");
         }
     });
 

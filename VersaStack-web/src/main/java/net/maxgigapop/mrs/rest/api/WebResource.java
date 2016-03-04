@@ -255,13 +255,18 @@ public class WebResource {
                 case "revert":
                     setSuperState(refUuid, 2);
                     revert(refUuid);
-                    break;                    
-
+                    break; 
+                    
                 case "cancel":
+                    setSuperState(refUuid, 2);
+                    cancelInstance(refUuid);
+                    break;  
+
+                case "reinstate":
+                    setSuperState(refUuid, 4);
                     cancelInstance(refUuid);
                     break;
-                    
-                    
+                                        
                 case "delete":
                     deleteInstance(refUuid);
 
@@ -335,8 +340,7 @@ public class WebResource {
             if (!instanceState.equalsIgnoreCase("READY")) {
                 return 1;
             }
-
-            setSuperState(refUuid, 2);
+            
             result = revert(refUuid);
             if (!result) {
                 return 2;
