@@ -12,8 +12,11 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ec2.model.*;
 import com.amazonaws.services.ec2.AmazonEC2Client;
+import static java.lang.Thread.sleep;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -399,7 +402,7 @@ public class AwsEC2Get {
 
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
-        List<TagDescription> descriptions = this.client.describeTags(tagRequest).getTags();
+        List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
 
         for (TagDescription td : descriptions) {
             if (td.getKey().equals("id")) {
@@ -887,9 +890,21 @@ public class AwsEC2Get {
 
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
-        List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
-        if (!descriptions.isEmpty()) {
-            return descriptions.get(descriptions.size() - 1).getResourceId(); //get the last resource tagged with this id 
+        long delayInc = 1000L;
+        long delayMax = 64000L;
+        while (delayInc < delayMax) {
+        try {
+            List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
+            if (!descriptions.isEmpty()) {
+                return descriptions.get(descriptions.size() - 1).getResourceId(); //get the last resource tagged with this id 
+            }
+        } catch (com.amazonaws.AmazonServiceException ex) {
+            if (ex.getErrorCode().equals("RequestLimitExceeded")) {
+                //back off
+                // sleep for delayInc
+                delayInc *= 2;
+            }
+        }
         }
 
         return tag;
@@ -907,7 +922,7 @@ public class AwsEC2Get {
 
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
-        List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
+        List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
         if (!descriptions.isEmpty()) {
             for (TagDescription des : descriptions) {
                 Instance i = getInstance(des.getResourceId());
@@ -932,7 +947,7 @@ public class AwsEC2Get {
 
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
-        List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
+        List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
         if (!descriptions.isEmpty()) {
             for (TagDescription des : descriptions) {
                 Volume vol = getVolume(des.getResourceId());
@@ -956,7 +971,7 @@ public class AwsEC2Get {
 
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
-        List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
+        List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
         if (!descriptions.isEmpty()) {
             for (TagDescription des : descriptions) {
                 RouteTable table = getRoutingTable(des.getResourceId());
@@ -980,7 +995,7 @@ public class AwsEC2Get {
 
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
-        List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
+        List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
         if (!descriptions.isEmpty()) {
             for (TagDescription des : descriptions) {
                 Vpc vpc = getVpc(des.getResourceId());
@@ -1004,7 +1019,7 @@ public class AwsEC2Get {
 
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
-        List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
+        List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
         if (!descriptions.isEmpty()) {
             for (TagDescription des : descriptions) {
                 VpnGateway vpn = getVirtualPrivateGateway(des.getResourceId());
@@ -1053,5 +1068,27 @@ public class AwsEC2Get {
             }
         }
         return null;
+    }
+
+    private List<TagDescription> describeTagsUnlimit(DescribeTagsRequest tagRequest) {
+        long delay = 1000L;
+        long delayMax = 32000L;
+        while (true) {
+            delay *= 2; // pause for 2 ~ 32 seconds
+            try {
+                List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
+                return descriptions;
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } else {
+                    throw ex;
+                }
+            }
+        }
     }
 }
