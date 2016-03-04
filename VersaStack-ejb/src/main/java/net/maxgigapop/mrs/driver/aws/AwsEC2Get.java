@@ -890,23 +890,10 @@ public class AwsEC2Get {
 
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
-        long delayInc = 1000L;
-        long delayMax = 64000L;
-        while (delayInc < delayMax) {
-        try {
-            List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
-            if (!descriptions.isEmpty()) {
-                return descriptions.get(descriptions.size() - 1).getResourceId(); //get the last resource tagged with this id 
-            }
-        } catch (com.amazonaws.AmazonServiceException ex) {
-            if (ex.getErrorCode().equals("RequestLimitExceeded")) {
-                //back off
-                // sleep for delayInc
-                delayInc *= 2;
-            }
+        List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
+        if (!descriptions.isEmpty()) {
+            return descriptions.get(descriptions.size() - 1).getResourceId(); //get the last resource tagged with this id 
         }
-        }
-
         return tag;
     }
 
