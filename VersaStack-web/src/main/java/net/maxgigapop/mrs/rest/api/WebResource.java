@@ -294,8 +294,10 @@ public class WebResource {
      * @return error code |
      */
     private int deleteInstance(String refUuid) throws SQLException {
+        System.out.println("Deletion Beginning.");
         try {
             String result = delete(refUuid);
+            System.out.println("Result from Backend: " + result);
             if (result.equalsIgnoreCase("Successfully terminated")) {
                 Connection front_conn;
                 Properties front_connectionProps = new Properties();

@@ -552,15 +552,34 @@ function applyDNCTemplate(code) {
 }
 
 function dncModerate() {
-    var status = document.getElementById("instance-status").innerHTML;
-    if (status === 'READY') {
-        $("#instance-cancel").toggleClass("hide");
+    var superstate = document.getElementById("instance-superstate").innerHTML;
+    var substate = document.getElementById("instance-substate").innerHTML;
+
+    if (superstate === 'Create') {
+        switch (substate) {
+            case 'READY':
+                $("#instance-cancel").toggleClass("hide");
+                break;
+
+            case 'INIT':
+                $("#instance-delete").toggleClass("hide");
+                break;
+
+            case 'FAILED':
+                $("#instance-delete").toggleClass("hide");
+                break;
+        }
     }
-    if (status === 'INIT') {
-        $("#instance-delete").toggleClass("hide");
-    }
-    if (status === 'FAILED') {
-        $("#instance-delete").toggleClass("hide");
+    if (superstate === 'Cancel') {
+        switch (substate) {
+            case 'READY':
+                $("#instance-delete").toggleClass("hide");
+                break;
+                
+            case 'FAILED':
+                $("#instance-delete").toggleClass("hide");
+                break;
+        }
     }
 }
 
@@ -587,15 +606,34 @@ function fl2pModerate(uuid) {
 //**
 
 function templateModerate() {
-    var status = document.getElementById("instance-status").innerHTML;
-    if (status === 'READY') {
-        $("#instance-cancel").toggleClass("hide");
+    var superstate = document.getElementById("instance-superstate").innerHTML;
+    var substate = document.getElementById("instance-substate").innerHTML;
+
+    if (superstate === 'Create') {
+        switch (substate) {
+            case 'READY':
+                $("#instance-cancel").toggleClass("hide");
+                break;
+
+            case 'INIT':
+                $("#instance-delete").toggleClass("hide");
+                break;
+
+            case 'FAILED':
+                $("#instance-delete").toggleClass("hide");
+                break;
+        }
     }
-    if (status === 'INIT') {
-        $("#instance-delete").toggleClass("hide");
-    }
-    if (status === 'FAILED') {
-        $("#instance-delete").toggleClass("hide");
+    if (superstate === 'Cancel') {
+        switch (substate) {
+            case 'READY':
+                $("#instance-delete").toggleClass("hide");
+                break;
+                
+            case 'FAILED':
+                $("#instance-delete").toggleClass("hide");
+                break;
+        }
     }
 }
 

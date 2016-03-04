@@ -11,6 +11,7 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.directconnect.AmazonDirectConnectClient;
 import com.amazonaws.services.directconnect.model.*;
+import static java.lang.Thread.sleep;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -107,14 +108,25 @@ public class AwsDCGet {
     public void dxvifDeletionCheck(String id) {
         DescribeVirtualInterfacesRequest request = new DescribeVirtualInterfacesRequest();
         request.withVirtualInterfaceId(id);
-
+        long delay = 1000L;
+        long delayMax = 16000L;
         while (true) {
+            delay *= 2;
             try {
                 VirtualInterface resource = client.describeVirtualInterfaces(request).getVirtualInterfaces().get(0);
                 if (resource.getVirtualInterfaceState().equals(VirtualInterfaceState.Deleted.toString())) {
                     break;
                 }
-            } catch (AmazonServiceException | NullPointerException e) {
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                }
+                break;
+            } catch (NullPointerException ex2) {
                 break;
             }
         }
