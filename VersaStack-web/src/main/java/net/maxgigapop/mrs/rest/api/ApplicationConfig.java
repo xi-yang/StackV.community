@@ -29,8 +29,6 @@ public class ApplicationConfig extends Application {
      * out calling this method in getClasses().
      */
     private void addRestResourceClasses(Set<Class<?>> resources) {        
-        resources.add(net.maxgigapop.mrs.rest.api.CORSRequestFilter.class);
-        resources.add(net.maxgigapop.mrs.rest.api.CORSResponseFilter.class);
         resources.add(net.maxgigapop.mrs.rest.api.DeltaResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.DriverResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.ModelResource.class);

@@ -62,11 +62,11 @@
                             </tr>
                             <tr>
                                 <td>Service State</td>
-                                <td>${instance.superState}</td>
+                                <td id="instance-superstate">${instance.superState}</td>
                             </tr>
                             <tr>
                                 <td>Operation Status</td>
-                                <td id="instance-status">${serv.detailsStatus(param.uuid)}</td>
+                                <td id="instance-substate">${serv.detailsStatus(param.uuid)}</td>
                             </tr>
                             <tr>
                                 <td></td>
