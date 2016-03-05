@@ -109,17 +109,6 @@ public class WebResource {
         }
     }
 
-    @PUT
-    @Path(value = "/service/{siUUID}/{action}")
-    public void operate(@Suspended final AsyncResponse asyncResponse, @PathParam(value = "siUUID") final String refUuid, @PathParam(value = "action") final String action) {
-        executorService.submit(new Runnable() {
-            @Override
-            public void run() {
-                asyncResponse.resume(doOperate(refUuid, action));
-            }
-        });
-    }
-
     @POST
     @Path("/service")
     @Consumes({"application/json", "application/xml"})
@@ -236,6 +225,17 @@ public class WebResource {
         }
 
     }
+    
+    @PUT
+    @Path(value = "/service/{siUUID}/{action}")
+    public void operate(@Suspended final AsyncResponse asyncResponse, @PathParam(value = "siUUID") final String refUuid, @PathParam(value = "action") final String action) {
+        executorService.submit(new Runnable() {
+            @Override
+            public void run() {
+                asyncResponse.resume(doOperate(refUuid, action));
+            }
+        });
+    }
 
     // Async Methods -----------------------------------------------------------
     private String doOperate(@PathParam("siUUID") String refUuid, @PathParam("action") String action) {
@@ -255,13 +255,18 @@ public class WebResource {
                 case "revert":
                     setSuperState(refUuid, 2);
                     revert(refUuid);
-                    break;                    
-
+                    break; 
+                    
                 case "cancel":
+                    setSuperState(refUuid, 2);
+                    cancelInstance(refUuid);
+                    break;  
+
+                case "reinstate":
+                    setSuperState(refUuid, 4);
                     cancelInstance(refUuid);
                     break;
-                    
-                    
+                                        
                 case "delete":
                     deleteInstance(refUuid);
 
@@ -335,8 +340,7 @@ public class WebResource {
             if (!instanceState.equalsIgnoreCase("READY")) {
                 return 1;
             }
-
-            setSuperState(refUuid, 2);
+            
             result = revert(refUuid);
             if (!result) {
                 return 2;

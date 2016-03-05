@@ -1,8 +1,6 @@
 
 // Service JavaScript Library
-
-
-
+    var baseUrl = window.location.origin;
 
 // Page Load Function
 
@@ -396,7 +394,7 @@ function addLink() {
 }
 
 function checkInstance(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/service/' + uuid + '/status';
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/service/' + uuid + '/status';
     $.ajax({
         url: apiUrl,
         type: 'GET',
@@ -408,7 +406,7 @@ function checkInstance(uuid) {
 }
 
 function propagateInstance(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/app/service/' + uuid + '/propagate';
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/propagate';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -421,7 +419,7 @@ function propagateInstance(uuid) {
 }
 
 function commitInstance(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/app/service/' + uuid + '/commit';
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/commit';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -434,7 +432,7 @@ function commitInstance(uuid) {
 }
 
 function revertInstance(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/app/service/' + uuid + '/revert';
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/revert';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -447,7 +445,7 @@ function revertInstance(uuid) {
 }
 
 function cancelInstance(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/app/service/' + uuid + '/cancel';
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/cancel';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -461,12 +459,13 @@ function cancelInstance(uuid) {
 
 
 function deleteInstance(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/app/service/' + uuid + '/delete';
+
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/delete';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
         success: function (result) {
-            // Do something with the result
+            console.log("DELETION SUCCESS?!");
         }
     });
 
@@ -719,3 +718,25 @@ var getUrlParameter = function getUrlParameter(sParam) {
         }
     }
 };
+
+// Create the XHR object.
+function createCORSRequest(method, url) {
+  var xhr = new XMLHttpRequest();
+  if ("withCredentials" in xhr) {
+    // XHR for Chrome/Firefox/Opera/Safari.
+    xhr.open(method, url, true);
+  } else if (typeof XDomainRequest !== "undefined") {
+    // XDomainRequest for IE.
+    xhr = new XDomainRequest();
+    xhr.open(method, url);
+  } else {
+    // CORS not supported.
+    xhr = null;
+  }
+  return xhr;
+}
+
+// Helper method to parse the title tag from the response.
+function getTitle(text) {
+  return text.match('<title>(.*)?</title>')[1];
+}
