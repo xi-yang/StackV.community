@@ -139,7 +139,13 @@ public class HandleServiceCall {
             throw new EJBException(ex);
         }
         worker.setAnnoatedModel(spaDelta);
-        worker.run();
+        try {
+            worker.run();
+        } catch (EJBException ex) {
+            serviceInstance.setStatus("FAILED");
+            ServiceInstancePersistenceManager.merge(serviceInstance);
+            return null;
+        }
         // save serviceInstance, spaDelta and systemDelta
         SystemDelta resultDelta = worker.getResultModelDelta();
         resultDelta.setServiceDelta(spaDelta);
@@ -152,7 +158,7 @@ public class HandleServiceCall {
         spaDelta.setServiceInstance(serviceInstance);
         DeltaPersistenceManager.save(spaDelta);
         //serviceInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
-        serviceInstance.setStatus("INIT");
+        serviceInstance.setStatus("COMPILED");
         ServiceInstancePersistenceManager.merge(serviceInstance);
         return resultDelta;
     }
@@ -195,7 +201,7 @@ public class HandleServiceCall {
         if (serviceInstance == null) {
             throw new EJBException(HandleServiceCall.class.getName() + ".propogateDeltas cannot find serviceInstance with uuid=" + serviceInstanceUuid);
         }
-        if (!serviceInstance.getStatus().equals("INIT") && !serviceInstance.getStatus().equals("PROPAGATED-PARTIAL") && !serviceInstance.getStatus().equals("COMMITTED-PARTIAL")) {
+        if (!serviceInstance.getStatus().equals("COMPILED") && !serviceInstance.getStatus().equals("PROPAGATED-PARTIAL") && !serviceInstance.getStatus().equals("COMMITTED-PARTIAL")) {
             throw new EJBException(HandleServiceCall.class.getName() + ".propogateDeltas needs  status='INIT or PROPAGATED-PARTIAL or COMMITTED-PARTIAL' by " + serviceInstance + ", the actual status=" + serviceInstance.getStatus());
         }
         Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
@@ -245,7 +251,7 @@ public class HandleServiceCall {
                 hasCommited = true;
             }
         }
-        serviceInstance.setStatus("INIT");
+        //serviceInstance.setStatus("COMPILED");
         if (hasInitiated && hasPropagated) {
             serviceInstance.setStatus("PROPAGATED-PARTIAL");
         } else if (hasPropagated && !hasCommited) {
@@ -317,7 +323,7 @@ public class HandleServiceCall {
                 hasCommited = true;
             }
         }
-        serviceInstance.setStatus("INIT");
+        //serviceInstance.setStatus("INIT");
         if (hasInitiated && hasPropagated) {
             serviceInstance.setStatus("PROPAGATED-PARTIAL");
         } else if (hasPropagated && !hasCommited) {
@@ -620,7 +626,7 @@ public class HandleServiceCall {
                 hasCommited = true;
             }
         }
-        serviceInstance.setStatus("INIT");
+        //serviceInstance.setStatus("COMPILED");
         if (hasInitiated && hasPropagated) {
             serviceInstance.setStatus("PROPAGATED-PARTIAL");
         } else if (hasPropagated && !hasCommited) {

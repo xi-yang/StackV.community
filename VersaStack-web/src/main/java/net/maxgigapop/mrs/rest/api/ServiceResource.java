@@ -28,7 +28,7 @@ import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.rest.api.model.ServiceApiDelta;
 import net.maxgigapop.mrs.service.HandleServiceCall;
 import java.util.logging.Logger;
-import javax.ws.rs.BadRequestException;
+import javax.ws.rs.ProcessingException;
 import javax.ws.rs.PUT;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -121,6 +121,9 @@ public class ServiceResource {
     public ApiDeltaBase compile(@PathParam("siUUID") String svcInstanceUUID, ServiceApiDelta svcApiDelta) throws Exception {
         String workerClassPath = svcApiDelta.getWorkerClassPath();
         SystemDelta sysDelta = serviceCallHandler.compileAddDelta(svcInstanceUUID, workerClassPath, svcApiDelta.getUuid(), svcApiDelta.getModelAddition(), svcApiDelta.getModelReduction());
+        if (sysDelta == null) {
+            throw new ProcessingException("Failed to compile service delta");
+        }
         ApiDeltaBase apiSysDelta = new ApiDeltaBase();
         apiSysDelta.setId(sysDelta.getId().toString());
         java.util.Date now = new java.util.Date();
@@ -150,6 +153,9 @@ public class ServiceResource {
     public ApiDeltaBase compileJson(@PathParam("siUUID") String svcInstanceUUID, ServiceApiDelta svcApiDelta) throws Exception {
         String workerClassPath = svcApiDelta.getWorkerClassPath();
         SystemDelta sysDelta = serviceCallHandler.compileAddDelta(svcInstanceUUID, workerClassPath, svcApiDelta.getUuid(), svcApiDelta.getModelAddition(), svcApiDelta.getModelReduction());
+        if (sysDelta == null) {
+            throw new ProcessingException("Failed to compile service delta");
+        }
         ApiDeltaBase apiSysDelta = new ApiDeltaBase();
         apiSysDelta.setId(sysDelta.getId().toString());
         java.util.Date now = new java.util.Date();

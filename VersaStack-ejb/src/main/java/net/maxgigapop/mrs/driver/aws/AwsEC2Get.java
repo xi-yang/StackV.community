@@ -12,8 +12,11 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ec2.model.*;
 import com.amazonaws.services.ec2.AmazonEC2Client;
+import static java.lang.Thread.sleep;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -34,6 +37,8 @@ public class AwsEC2Get {
     private List<NetworkInterface> networkInterfaces = null;
     private List<InternetGateway> internetGateways = null;
     private List<VpnGateway> virtualPrivateGateways = null;
+    
+    final private long delayMax = 16000L;
 
     public AwsEC2Get(String access_key_id, String secret_access_key, Regions region) {
         AwsAuthenticateService authenticate = new AwsAuthenticateService(access_key_id, secret_access_key);
@@ -399,7 +404,7 @@ public class AwsEC2Get {
 
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
-        List<TagDescription> descriptions = this.client.describeTags(tagRequest).getTags();
+        List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
 
         for (TagDescription td : descriptions) {
             if (td.getKey().equals("id")) {
@@ -427,17 +432,29 @@ public class AwsEC2Get {
     public void vpcStatusCheck(String id, String status) {
         DescribeVpcsRequest request = new DescribeVpcsRequest();
         request.withVpcIds(id);
-
+        
+        long delay = 1000L;
         while (true) {
+            delay *= 2;
             try {
                 Vpc resource = client.describeVpcs(request).getVpcs().get(0);
                 if (resource.getState().toLowerCase().equals(status.toLowerCase())) {
                     break;
                 }
-            } catch (AmazonServiceException | NullPointerException e) {
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+            } catch (NullPointerException ex2) {
+                ;
             }
         }
     }
+
 
     /**
      * ****************************************************************
@@ -448,13 +465,24 @@ public class AwsEC2Get {
         DescribeSubnetsRequest request = new DescribeSubnetsRequest();
         request.withSubnetIds(id);
 
+        long delay = 1000L;
         while (true) {
+            delay *= 2;
             try {
                 Subnet resource = client.describeSubnets(request).getSubnets().get(0);
                 if (resource.getState().toLowerCase().equals(status.toLowerCase())) {
                     break;
                 }
-            } catch (AmazonServiceException | NullPointerException e) {
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+            } catch (NullPointerException ex2) {
+                ;
             }
         }
     }
@@ -468,11 +496,21 @@ public class AwsEC2Get {
         DescribeSubnetsRequest request = new DescribeSubnetsRequest();
         request.withSubnetIds(id);
 
+        long delay = 1000L;
         while (true) {
             try {
                 Subnet resource = client.describeSubnets(request).getSubnets().get(0);
+                //break;
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
                 break;
-            } catch (AmazonServiceException | NullPointerException e) {
+            } catch (NullPointerException ex2) {
                 break;
             }
         }
@@ -487,11 +525,21 @@ public class AwsEC2Get {
         DescribeRouteTablesRequest request = new DescribeRouteTablesRequest();
         request.withRouteTableIds(id);
 
+        long delay = 1000L;
         while (true) {
             try {
                 RouteTable resource = client.describeRouteTables(request).getRouteTables().get(0);
                 break;
-            } catch (AmazonServiceException | NullPointerException e) {
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+            } catch (NullPointerException ex2) {
+                ;
             }
         }
     }
@@ -504,11 +552,21 @@ public class AwsEC2Get {
     public void RouteTableDeletionCheck(String id) {
         DescribeRouteTablesRequest request = new DescribeRouteTablesRequest();
         request.withRouteTableIds(id);
-
+        long delay = 1000L;
         while (true) {
+            delay *= 2;
             try {
                 RouteTable resource = client.describeRouteTables(request).getRouteTables().get(0);
-            } catch (AmazonServiceException | NullPointerException e) {
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+                break;
+            } catch (NullPointerException ex2) {
                 break;
             }
         }
@@ -522,13 +580,22 @@ public class AwsEC2Get {
     public void internetGatewayAdditionCheck(String id) {
         DescribeInternetGatewaysRequest request = new DescribeInternetGatewaysRequest();
         request.withInternetGatewayIds(id);
-
+        long delay = 1000L;
         while (true) {
+            delay *= 2;
             try {
                 InternetGateway resource = client.describeInternetGateways(request).getInternetGateways().get(0);
                 break;
-            } catch (AmazonServiceException | NullPointerException e) {
-
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+            } catch (NullPointerException ex2) {
+                ;
             }
         }
     }
@@ -541,11 +608,21 @@ public class AwsEC2Get {
     public void internetGatewayDeletionCheck(String id) {
         DescribeInternetGatewaysRequest request = new DescribeInternetGatewaysRequest();
         request.withInternetGatewayIds(id);
-
+        long delay = 0;
         while (true) {
+            delay *= 2;
             try {
                 InternetGateway resource = client.describeInternetGateways(request).getInternetGateways().get(0);
-            } catch (AmazonServiceException | NullPointerException e) {
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+                break;
+            } catch (NullPointerException ex2) {
                 break;
             }
         }
@@ -560,10 +637,24 @@ public class AwsEC2Get {
         DescribeInternetGatewaysRequest request = new DescribeInternetGatewaysRequest();
         request.withInternetGatewayIds(id);
 
+        long delay = 1000L;
         while (true) {
-            InternetGateway resource = client.describeInternetGateways(request).getInternetGateways().get(0);
-            if (!resource.getAttachments().isEmpty()) {
-                break;
+            delay *= 2;
+            try {
+                InternetGateway resource = client.describeInternetGateways(request).getInternetGateways().get(0);
+                if (!resource.getAttachments().isEmpty()) {
+                    break;
+                }
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                }
+            } catch (NullPointerException ex2) {
+                ;
             }
         }
     }
@@ -577,10 +668,24 @@ public class AwsEC2Get {
         DescribeInternetGatewaysRequest request = new DescribeInternetGatewaysRequest();
         request.withInternetGatewayIds(id);
 
+        long delay = 1000L;
         while (true) {
-            InternetGateway resource = client.describeInternetGateways(request).getInternetGateways().get(0);
-            if (resource.getAttachments().isEmpty()) {
-                break;
+            delay *= 2;
+            try {
+                InternetGateway resource = client.describeInternetGateways(request).getInternetGateways().get(0);
+                if (resource.getAttachments().isEmpty()) {
+                    break;
+                }
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                }
+            } catch (NullPointerException ex2) {
+                ;
             }
         }
     }
@@ -593,13 +698,22 @@ public class AwsEC2Get {
     public void vpnGatewayAdditionCheck(String id) {
         DescribeVpnGatewaysRequest request = new DescribeVpnGatewaysRequest();
         request.withVpnGatewayIds(id);
-
+        long delay = 1000L;
         while (true) {
+            delay *= 2;
             try {
                 VpnGateway resource = client.describeVpnGateways(request).getVpnGateways().get(0);
                 break;
-            } catch (AmazonServiceException | NullPointerException e) {
-
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+            } catch (NullPointerException ex2) {
+                ;
             }
         }
     }
@@ -612,14 +726,24 @@ public class AwsEC2Get {
     public void vpnGatewayDeletionCheck(String id) {
         DescribeVpnGatewaysRequest request = new DescribeVpnGatewaysRequest();
         request.withVpnGatewayIds(id);
-
+        long delay = 1000L;
         while (true) {
+            delay *= 2;
             try {
                 VpnGateway resource = client.describeVpnGateways(request).getVpnGateways().get(0);
                 if (resource.getState().toLowerCase().equals("deleted")) {
                     break;
                 }
-            } catch (AmazonServiceException | NullPointerException e) {
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+                break;
+            } catch (NullPointerException ex2) {
                 break;
             }
         }
@@ -633,14 +757,27 @@ public class AwsEC2Get {
     public void vpnGatewayAttachmentCheck(String id, String vpcId) {
         DescribeVpnGatewaysRequest request = new DescribeVpnGatewaysRequest();
         request.withVpnGatewayIds(id);
-
+        long delay = 1000L;
         while (true) {
-            VpnGateway resource = client.describeVpnGateways(request).getVpnGateways().get(0);
-            VpcAttachment att = new VpcAttachment();
-            att.withState(AttachmentStatus.Attached)
-                    .withVpcId(vpcId);
-            if (!resource.getVpcAttachments().isEmpty() && resource.getVpcAttachments().contains(att)) {
-                break;
+            delay *= 2;
+            try {
+                VpnGateway resource = client.describeVpnGateways(request).getVpnGateways().get(0);
+                VpcAttachment att = new VpcAttachment();
+                att.withState(AttachmentStatus.Attached)
+                        .withVpcId(vpcId);
+                if (!resource.getVpcAttachments().isEmpty() && resource.getVpcAttachments().contains(att)) {
+                    break;
+                }
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                }
+            } catch (NullPointerException ex2) {
+                ;
             }
         }
     }
@@ -653,19 +790,32 @@ public class AwsEC2Get {
     public void vpnGatewayDetachmentCheck(String id, String vpcId) {
         DescribeVpnGatewaysRequest request = new DescribeVpnGatewaysRequest();
         request.withVpnGatewayIds(id);
-
+        long delay = 1000L;
         while (true) {
-            VpnGateway resource = client.describeVpnGateways(request).getVpnGateways().get(0);
-            VpcAttachment att = new VpcAttachment();
-            att.withState(AttachmentStatus.Detaching)
-                    .withVpcId(vpcId);
-            VpcAttachment att2 = new VpcAttachment();
-            att2.withState(AttachmentStatus.Attached)
-                    .withVpcId(vpcId);
-            if (resource.getVpcAttachments().isEmpty()) {
-                break;
-            } else if (!resource.getVpcAttachments().contains(att) && !resource.getVpcAttachments().contains(att2)) {
-                break;
+            delay *= 2;
+            try {
+                VpnGateway resource = client.describeVpnGateways(request).getVpnGateways().get(0);
+                VpcAttachment att = new VpcAttachment();
+                att.withState(AttachmentStatus.Detaching)
+                        .withVpcId(vpcId);
+                VpcAttachment att2 = new VpcAttachment();
+                att2.withState(AttachmentStatus.Attached)
+                        .withVpcId(vpcId);
+                if (resource.getVpcAttachments().isEmpty()) {
+                    break;
+                } else if (!resource.getVpcAttachments().contains(att) && !resource.getVpcAttachments().contains(att2)) {
+                    break;
+                }
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                }
+            } catch (NullPointerException ex2) {
+                ;
             }
         }
     }
@@ -679,13 +829,24 @@ public class AwsEC2Get {
         DescribeVolumesRequest request = new DescribeVolumesRequest();
         request.withVolumeIds(id);
 
+        long delay = 1000L;
         while (true) {
+            delay *= 2;
             try {
                 Volume resource = client.describeVolumes(request).getVolumes().get(0);
                 if (resource.getState().toLowerCase().equals(status)) {
                     break;
                 }
-            } catch (AmazonServiceException | NullPointerException e) {
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+            } catch (NullPointerException ex2) {
+                ;
             }
         }
     }
@@ -698,14 +859,24 @@ public class AwsEC2Get {
     public void volumeDeletionCheck(String id, String status) {
         DescribeVolumesRequest request = new DescribeVolumesRequest();
         request.withVolumeIds(id);
-
+        long delay = 1000L;
         while (true) {
+            delay *= 2;
             try {
                 Volume resource = client.describeVolumes(request).getVolumes().get(0);
                 if (resource.getState().toLowerCase().equals(status)) {
                     break;
                 }
-            } catch (AmazonServiceException | NullPointerException e) {
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+                break;
+            } catch (NullPointerException ex2) {
                 break;
             }
         }
@@ -719,14 +890,24 @@ public class AwsEC2Get {
     public void volumeAttachmentCheck(String id) {
         DescribeVolumesRequest request = new DescribeVolumesRequest();
         request.withVolumeIds(id);
-
+        long delay = 1000L;
         while (true) {
+            delay *= 2;
             try {
                 Volume resource = client.describeVolumes(request).getVolumes().get(0);
                 if (!resource.getAttachments().isEmpty()) {
                     break;
                 }
-            } catch (AmazonServiceException | NullPointerException e) {
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+            } catch (NullPointerException ex2) {
+                ;
             }
         }
     }
@@ -739,14 +920,24 @@ public class AwsEC2Get {
     public void volumeDetachmentCheck(String id) {
         DescribeVolumesRequest request = new DescribeVolumesRequest();
         request.withVolumeIds(id);
-
+        long delay = 1000L;
         while (true) {
+            delay *= 2;
             try {
                 Volume resource = client.describeVolumes(request).getVolumes().get(0);
                 if (resource.getAttachments().isEmpty()) {
                     break;
                 }
-            } catch (AmazonServiceException | NullPointerException e) {
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+                break;
+            } catch (NullPointerException ex2) {
                 break;
             }
         }
@@ -760,14 +951,24 @@ public class AwsEC2Get {
     public void PortAdditionCheck(String id) {
         DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
         request.withNetworkInterfaceIds(id);
-
+        long delay = 1000L;
         while (true) {
+            delay *= 2;
             try {
                 NetworkInterface resource = client.describeNetworkInterfaces(request).getNetworkInterfaces().get(0);
                 if (resource != null) {
                     break;
                 }
-            } catch (AmazonServiceException | NullPointerException e) {
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+            } catch (NullPointerException ex2) {
+                ;
             }
         }
     }
@@ -780,14 +981,24 @@ public class AwsEC2Get {
     public void PortDeletionCheck(String id) {
         DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
         request.withNetworkInterfaceIds(id);
-
+        long delay = 1000L;
         while (true) {
+            delay *= 2;
             try {
                 NetworkInterface resource = client.describeNetworkInterfaces(request).getNetworkInterfaces().get(0);
                 if (resource == null) {
                     break;
                 }
-            } catch (AmazonServiceException | NullPointerException e) {
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+                break;
+            } catch (NullPointerException ex2) {
                 break;
             }
         }
@@ -801,14 +1012,24 @@ public class AwsEC2Get {
     public void PortAttachmentCheck(String id) {
         DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
         request.withNetworkInterfaceIds(id);
-
+        long delay = 1000L;
         while (true) {
+            delay *= 2;
             try {
                 NetworkInterface resource = client.describeNetworkInterfaces(request).getNetworkInterfaces().get(0);
                 if (resource.getAttachment() != null) {
                     break;
                 }
-            } catch (AmazonServiceException | NullPointerException e) {
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+            } catch (NullPointerException ex2) {
+                ;
             }
         }
     }
@@ -821,14 +1042,24 @@ public class AwsEC2Get {
     public void PortDetachmentCheck(String id) {
         DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
         request.withNetworkInterfaceIds(id);
-
+        long delay = 1000L;
         while (true) {
+            delay *= 2;
             try {
                 NetworkInterface resource = client.describeNetworkInterfaces(request).getNetworkInterfaces().get(0);
                 if (resource.getAttachment() == null) {
                     break;
                 }
-            } catch (AmazonServiceException | NullPointerException e) {
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+                break;
+            } catch (NullPointerException ex2) {
                 break;
             }
         }
@@ -842,14 +1073,24 @@ public class AwsEC2Get {
     public void instanceStatusCheck(String id, String status) {
         DescribeInstancesRequest request = new DescribeInstancesRequest();
         request.withInstanceIds(id);
-
+        long delay = 1000L;
         while (true) {
+            delay *= 2;
             try {
                 Instance resource = client.describeInstances(request).getReservations().get(0).getInstances().get(0);
                 if (resource.getState().getName().toLowerCase().equals(status)) {
                     break;
                 }
-            } catch (AmazonServiceException | NullPointerException e) {
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+            } catch (NullPointerException ex2) {
+                ;
             }
         }
     }
@@ -861,13 +1102,29 @@ public class AwsEC2Get {
      *******************************************************************
      */
     public Volume getInstanceRootDevice(Instance i) {
-        List<Volume> vols = this.client.describeVolumes().getVolumes();
-        for (Volume vol : vols) {
-            if (!vol.getAttachments().isEmpty()  && vol.getAttachments().get(0).getInstanceId().equalsIgnoreCase(i.getInstanceId())) {
-                return vol;
+        long delay = 1000L;
+        while (true) {
+            delay *= 2; // pause for 2 ~ 32 seconds
+            try {
+                List<Volume> vols = this.client.describeVolumes().getVolumes();
+                for (Volume vol : vols) {
+                    if (!vol.getAttachments().isEmpty() && vol.getAttachments().get(0).getInstanceId().equalsIgnoreCase(i.getInstanceId())) {
+                        return vol;
+                    }
+                }
+                return null;
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } else {
+                    throw ex;
+                }
             }
         }
-        return null;
     }
 
     /**
@@ -887,11 +1144,10 @@ public class AwsEC2Get {
 
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
-        List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
+        List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
         if (!descriptions.isEmpty()) {
             return descriptions.get(descriptions.size() - 1).getResourceId(); //get the last resource tagged with this id 
         }
-
         return tag;
     }
 
@@ -907,7 +1163,7 @@ public class AwsEC2Get {
 
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
-        List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
+        List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
         if (!descriptions.isEmpty()) {
             for (TagDescription des : descriptions) {
                 Instance i = getInstance(des.getResourceId());
@@ -932,7 +1188,7 @@ public class AwsEC2Get {
 
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
-        List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
+        List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
         if (!descriptions.isEmpty()) {
             for (TagDescription des : descriptions) {
                 Volume vol = getVolume(des.getResourceId());
@@ -956,7 +1212,7 @@ public class AwsEC2Get {
 
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
-        List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
+        List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
         if (!descriptions.isEmpty()) {
             for (TagDescription des : descriptions) {
                 RouteTable table = getRoutingTable(des.getResourceId());
@@ -980,7 +1236,7 @@ public class AwsEC2Get {
 
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
-        List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
+        List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
         if (!descriptions.isEmpty()) {
             for (TagDescription des : descriptions) {
                 Vpc vpc = getVpc(des.getResourceId());
@@ -1004,7 +1260,7 @@ public class AwsEC2Get {
 
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
-        List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
+        List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
         if (!descriptions.isEmpty()) {
             for (TagDescription des : descriptions) {
                 VpnGateway vpn = getVirtualPrivateGateway(des.getResourceId());
@@ -1053,5 +1309,26 @@ public class AwsEC2Get {
             }
         }
         return null;
+    }
+
+    private List<TagDescription> describeTagsUnlimit(DescribeTagsRequest tagRequest) {
+        long delay = 1000L;
+        while (true) {
+            delay *= 2; // pause for 2 ~ 32 seconds
+            try {
+                List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
+                return descriptions;
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } else {
+                    throw ex;
+                }
+            }
+        }
     }
 }
