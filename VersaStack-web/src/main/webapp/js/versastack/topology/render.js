@@ -611,6 +611,11 @@ define([
             var displayTree = outputApi.getDisplayTree();
             displayTree.clear();
             n.populateTreeMenu(displayTree);
+            displayTree.renderApi = API;
+            displayTree.addToHistory(n.getName(), "Node");
+            //console.log("API: " + API);
+            //if (API === undefined)
+               //console.log("i am undefined: ");
             displayTree.draw();
             // Only show these popups if there are acutally ports and volumes 
             if (n.ports.length !== 0) 
@@ -625,7 +630,10 @@ define([
 
         function onServiceClick(n) {
             selectedNode = n;
-            d3.event.stopPropagation();
+            if (d3.event) {
+                //In the case of artificial clicks, d3.event may be null
+                d3.event.stopPropagation(); //prevent the click from being handled by the background, which would hide the panel
+            }
             if (didDrag) {
                 return;
             }
@@ -641,6 +649,11 @@ define([
             var displayTree = outputApi.getDisplayTree();
             displayTree.clear();
             n.populateTreeMenu(displayTree);
+            displayTree.renderApi = API;
+            displayTree.addToHistory(n.getName(), "Service");
+            //console.log("API: " + API);
+            //if (API === undefined)
+               //console.log("i am undefined: ");            
             displayTree.draw();
             if (n.getTypeBrief() === "SwitchingService") {
 
@@ -847,6 +860,41 @@ define([
                     .setInnerBuffer(switchSettings.DIALOG_INNER_BUFFER)
                     .setTextSize(switchSettings.DIALOG_TAB_TEXT_SIZE);
         }
+        function clickNode(name, type) {
+            //console.log(" a bunch of stuff ");
+           //nodeList = model.listNodes();
+           //var portList = model.listPorts();
+           //alert(" hi, my name is: " + model.nodeMap[name]);     
+           switch (type) {
+            case "Node":
+                onNodeClick(model.nodeMap[name]);
+                outputApi.getDisplayTree().addToHistory(name, type);
+                console.log("i'm node");
+
+                break;
+            case "Service":
+                onServiceClick(model.serviceMap[name]);
+                outputApi.getDisplayTree().addToHistory(name, type);
+                console.log("i'm service");
+                break;
+            case "Port":
+                selectElement(model.portMap[name]);
+                outputApi.getDisplayTree().addToHistory(name, type);                
+                console.log("i'm port");
+                break;
+            case "Volume":
+                selectElement(model.volumeMap[name]);     
+                outputApi.getDisplayTree().addToHistory(name, type);                 
+                console.log("i'm volume");
+                break;
+            case "Element":
+                selectElement(model.elementMap[name]);
+                outputApi.getDisplayTree().addToHistory(name, type);
+                console.log("I'm element");
+                break;
+          }
+        }
+        
 
         API["redraw"] = redraw;
         API["redrawPopups"] = drawPopups;
@@ -856,6 +904,7 @@ define([
         API["layoutEdges"] = function () {
             map_(edgeList, updateSvgChoordsEdge);
         };
+        API["clickNode"] = clickNode;
     }
 
 
@@ -863,6 +912,7 @@ define([
         doRender: doRender,
         redraw: function () {
             redraw_();
-        }
+        }, 
+        API: API
     };
 });

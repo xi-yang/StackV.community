@@ -273,7 +273,7 @@
 
                     evt.preventDefault();
                 });
-
+                
                 $("#displayPanel-tab").click(function (evt) {
                     $("#displayPanel").toggleClass("closed");
 
@@ -529,6 +529,9 @@
             <div id="displayPanel-actions">
                 <button id="awsButton">Install AWS</button>
                 <button id="loadingButton">Toggle Loading</button>
+                <button id="backButton">Back</button>
+                <button id="forwardButton">Forward</button>
+                
                 <div id="actionForm"></div>
             </div>
             <div id="displayPanel-tab">^^^^^</div>
