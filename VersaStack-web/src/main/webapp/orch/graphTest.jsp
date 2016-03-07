@@ -527,8 +527,6 @@
                 <div id="treeMenu"></div>                
             </div>
             <div id="displayPanel-actions">
-                <button id="awsButton">Install AWS</button>
-                <button id="loadingButton">Toggle Loading</button>
                 <button id="backButton">Back</button>
                 <button id="forwardButton">Forward</button>
                 
