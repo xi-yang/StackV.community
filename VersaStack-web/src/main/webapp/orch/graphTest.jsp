@@ -216,23 +216,6 @@
             }
 
             function buttonInit() {
-                $("#awsButton").click(function (evt) {
-                    var formUrl = "";
-                    if (document.getElementById("displayName").innerText.indexOf("aws") > -1) {
-                        formUrl = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=aws&graphTopo=" + document.getElementById("displayName").innerText + "";
-                    }
-                    else if (document.getElementById("displayName").innerText.indexOf("openstack") > -1) {
-                        formUrl = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=os&graphTopo=" + document.getElementById("displayName").innerText + "";
-                    }
-                    else if (document.getElementById("displayName").innerText.indexOf("versa") > -1) {
-                        formUrl = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=vs&graphTopo=" + document.getElementById("displayName").innerText + "";
-                    } else {
-                        return;
-                    }
-
-                    window.open(formUrl);
-                    evt.preventDefault();
-                });
                 $("#cancelButton").click(function (evt) {
                     $("#actionForm").empty();
 
@@ -265,15 +248,7 @@
 
                     evt.preventDefault();
                 });
-
-                $("#loadingButton").click(function (evt) {
-                    $("#loadingPanel").removeClass("hide");
-                    $("#hoverdiv").addClass("hide");
-                    $("#viz").attr("class", "loading");
-
-                    evt.preventDefault();
-                });
-                
+            
                 $("#displayPanel-tab").click(function (evt) {
                     $("#displayPanel").toggleClass("closed");
 
@@ -529,7 +504,12 @@
             <div id="displayPanel-actions">
                 <button id="backButton">Back</button>
                 <button id="forwardButton">Forward</button>
-                
+                <div id="URISeachContainer" style="float:right;padding-left:10px;">
+                    Search
+                    <input type="text" name="Search" id="URISearchInput" placeholder="Enter URI">
+                    <input type="submit" id= "URISearchSubmit" value="Submit">
+                </div>
+
                 <div id="actionForm"></div>
             </div>
             <div id="displayPanel-tab">^^^^^</div>
