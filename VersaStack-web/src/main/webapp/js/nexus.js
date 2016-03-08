@@ -144,6 +144,16 @@ function instanceSelect(sel) {
     }
 }
 
+function networkSelect(sel) {
+    if (sel.value !== null) {
+        $ref2 = "/VersaStack-web/ops/srvc/netcreate.jsp?networkType=" + sel.value + " #service-fields";
+    }
+    else {
+        $ref2 = "/VersaStack-web/ops/srvc/netcreate.jsp #service-fields";
+    }
+    $("#service-bottom").load($ref2);
+}
+
 // Field Addition Functions
 var fieldCounter = 0;
 var fieldLimit = 5;
