@@ -145,7 +145,8 @@ INSERT INTO `service` (`service_id`, `name`, `filename`, `description`, `atomic`
 (8, 'Virtual Machine Management', 'vmadd', 'Management, Instantiation, and Setup of Virtual Machine Topologies.', 0),
 (9, 'View Filter Management', 'viewcreate', 'Management and Creation of graphical view filters.', 0),
 (10, 'Network Creation', 'netcreate', 'Network Creation Pilot Testbed', 0),
-(11, 'Dynamic Network Connection', 'dnc', 'Creation of new network connections.', 0);
+(11, 'Dynamic Network Connection', 'dnc', 'Creation of new network connections.', 0),
+(11, 'Flow based Layer2 Protection', 'fl2p', 'Switching of protection and recovery path.', 0);
 
 -- --------------------------------------------------------
 

@@ -516,6 +516,18 @@ function applyNetTemplate(code) {
     }
 }
 
+function applyFL2PTemplate(code){
+    var form = document.getElementById('custom-form');
+    if(code){
+        form.elements['topoUri'].value = 'urn:ogf:network:domain=vo1.versastack.org:link=link1';
+        form.elements['eth-src'].value = 'urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000005:port-s5-eth1';
+        form.elements['eth-des'].value = 'urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000002:port-s2-eth1';
+    }
+        
+}
+
+
+
 function applyDNCTemplate(code) {
     var form = document.getElementById('custom-form');
     switch (code) {
@@ -582,23 +594,37 @@ function dncModerate() {
     }
 }
 
-function fl2pModerate(uuid) {
-    var apiUrl = 'http://localhost:8080/VersaStack-web/restapi/service/' + uuid + '/status';
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        success: function (result) {
-            if (result === 'READY') {
+
+function fl2pModerate(uuid){
+    var superstate = document.getElementById("instance-superstate").innerHTML;
+    var substate = document.getElementById("instance-substate").innerHTML;
+
+    if (superstate === 'Create') {
+        switch (substate) {
+            case 'READY':
                 $("#instance-cancel").toggleClass("hide");
-            }
-            if (result === 'INIT') {
+                break;
+
+            case 'INIT':
                 $("#instance-delete").toggleClass("hide");
-            }
-            if (result === 'READY') {
-                $("#instance-modify").toggleClass("hide");
-            }
+                break;
+
+            case 'FAILED':
+                $("#instance-delete").toggleClass("hide");
+                break;
         }
-    });
+    }
+    if (superstate === 'Cancel') {
+        switch (substate) {
+            case 'READY':
+                $("#instance-delete").toggleClass("hide");
+                break;
+                
+            case 'FAILED':
+                $("#instance-delete").toggleClass("hide");
+                break;
+        }
+    }
 }
 
 

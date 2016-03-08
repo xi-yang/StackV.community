@@ -27,6 +27,7 @@ import javax.servlet.AsyncContext;
 import javax.servlet.annotation.WebServlet;
 import web.async.AppAsyncListener;
 import web.async.DNCWorker;
+import web.async.FL2PWorker;
 import web.async.DriverWorker;
 import web.async.NetCreateWorker;
 
@@ -87,7 +88,10 @@ public class ServiceServlet extends HttpServlet {
                 //System.out.println("Im inside dnc");
                 serviceString = "dnc";
                 //System.out.println("Im inside dnc");
-            } else {
+            } else if(request.getParameter("fl2p") != null){
+                serviceString ="fl2p";
+            }
+            else {
                 response.sendRedirect("/VersaStack-web/errorPage.jsp");
             }
 
@@ -147,7 +151,10 @@ public class ServiceServlet extends HttpServlet {
             } else if (serviceString.equals("dnc")) {
                 //System.out.println("Im inside dnc");
                 response.sendRedirect(createConnection(request, paraMap));
-            } else {
+            } else if (serviceString.equals("fl2p")){
+               response.sendRedirect(createFlow(request, paraMap)); 
+            }
+            else {
                 response.sendRedirect("/VersaStack-web/errorPage.jsp");
             }
         } catch (SQLException ex) {
@@ -483,6 +490,57 @@ public class ServiceServlet extends HttpServlet {
 
         return ("/VersaStack-web/ops/srvc/netcreate.jsp?ret=0");
 
+    }
+    
+    public String createFlow(HttpServletRequest request,HashMap<String, String> paraMap) throws SQLException {
+        for (Object Key : paraMap.keySet().toArray()){
+            if (paraMap.get((String) Key).isEmpty()){
+                paraMap.remove((String) Key);
+            }
+        }
+        
+        Connection rains_conn;
+        Properties rains_connectionProps = new Properties();
+        rains_connectionProps.put("user","root");
+        rains_connectionProps.put("password","root");
+        
+        rains_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/rainsdb",
+                rains_connectionProps); 
+        
+        if (paraMap.containsKey("template1")) {
+            //paraMap.put("driverType", "aws");
+            paraMap.put("topUri", "urn:ogf:network:domain=vo1.versastack.org:link=link1");
+            paraMap.put("eth_src", "urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000005:port-s5-eth1");
+            paraMap.put("eth_des", "urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000002:port-s2-eth1");
+            paraMap.remove("template1");
+            paraMap.remove("fl2pCreate");
+            
+            servBean.createConnection(paraMap);
+
+        } 
+                else {
+                paraMap.remove("userID");
+                paraMap.remove("custom");
+                paraMap.remove("fl2pCreate");
+            //Process each link
+                
+                for(Map.Entry<String,String>entry : paraMap.entrySet())
+                {
+                    System.out.println(entry.getKey()+entry.getValue());
+                }
+
+        // Async setup 
+                request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
+                AsyncContext asyncCtx = request.startAsync();
+                asyncCtx.addListener(new AppAsyncListener());
+                asyncCtx.setTimeout(60000);
+
+                ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
+
+                executor.execute(new DNCWorker(asyncCtx, paraMap));
+        }
+        return ("/VersaStack-web/ops/srvc/fl2p.jsp?ret=0");
+        
     }
 
     public String createConnection(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {
