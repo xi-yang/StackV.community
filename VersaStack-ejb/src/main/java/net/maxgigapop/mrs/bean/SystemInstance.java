@@ -39,7 +39,7 @@ public class SystemInstance extends PersistentEntity implements Serializable {
 
     private String referenceUUID;
             
-    @OneToOne(cascade = {CascadeType.ALL})
+    @OneToOne
     @JoinColumn(name = "systemDeltaId")
     protected SystemDelta systemDelta = null;    
 
