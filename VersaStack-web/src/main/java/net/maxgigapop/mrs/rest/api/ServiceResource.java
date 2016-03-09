@@ -5,6 +5,7 @@
  */
 package net.maxgigapop.mrs.rest.api;
 
+import static java.lang.Thread.sleep;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -182,8 +183,33 @@ public class ServiceResource {
     @PUT
     @Path("/{siUUID}/{action}")
     public String push(@PathParam("siUUID") String svcInstanceUUID, @PathParam("action") String action) {
+        long retryDelay = 1000L; // 1 sec
+        long delayMax = 16000L; // 16 secs 
         if (action.equalsIgnoreCase("propagate")) {
-            return serviceCallHandler.propagateDeltas(svcInstanceUUID, true);
+            while (retryDelay < delayMax) {
+                retryDelay *= 2; // retry up to 4 times at 2, 4, 8, 16 secs
+                try {
+                    if (retryDelay == 2000L) {
+                        return serviceCallHandler.propagateDeltas(svcInstanceUUID, true);
+                    } else {
+                        return serviceCallHandler.propagateRetry(svcInstanceUUID, true);
+                    }   
+                } catch (EJBException ejbEx) {
+                    String errMsg = ejbEx.getMessage();
+                    log.warning("Caught+Retry: " + errMsg);
+                    if (errMsg.contains("could not execute statement") && retryDelay < delayMax) {
+                        try {
+                            sleep(retryDelay);
+                        } catch (InterruptedException ex) {
+                            ;
+                        }
+                        continue;
+                    } else {
+                        throw ejbEx;
+                    }
+                }
+            }
+            return "FAILED"; // should never get here
         } else if (action.equalsIgnoreCase("propagate_through")) {
             return serviceCallHandler.propagateDeltas(svcInstanceUUID, false);
         } else if (action.equalsIgnoreCase("propagate_retry")) {
