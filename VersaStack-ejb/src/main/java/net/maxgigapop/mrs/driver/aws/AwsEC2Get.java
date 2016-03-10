@@ -1311,17 +1311,18 @@ public class AwsEC2Get {
         return null;
     }
 
+    // use delayMax*2 = 32 secs (doubled total wait up to 2 minute)
     private List<TagDescription> describeTagsUnlimit(DescribeTagsRequest tagRequest) {
         long delay = 1000L;
         while (true) {
-            delay *= 2; // pause for 2 ~ 32 seconds
+            delay *= 2; 
             try {
                 List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
                 return descriptions;
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax*2) {
                     try {
-                        sleep(delay);
+                        sleep(delay); // pause for 2 ~ 64 seconds
                     } catch (InterruptedException ex1) {
                         ;
                     }
