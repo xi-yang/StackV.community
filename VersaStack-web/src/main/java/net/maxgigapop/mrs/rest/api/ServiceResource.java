@@ -204,6 +204,7 @@ public class ServiceResource {
                             ;
                         }
                     } else {
+                        serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
                         throw ejbEx;
                     }
                 }
@@ -227,6 +228,7 @@ public class ServiceResource {
                             ;
                         }
                     } else {
+                        serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
                         throw ejbEx;
                     }
                 }
@@ -246,6 +248,7 @@ public class ServiceResource {
                             ;
                         }
                     } else {
+                        serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
                         throw ejbEx;
                     }
                 }
@@ -265,6 +268,7 @@ public class ServiceResource {
                             ;
                         }
                     } else {
+                        serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
                         throw ejbEx;
                     }
                 }
