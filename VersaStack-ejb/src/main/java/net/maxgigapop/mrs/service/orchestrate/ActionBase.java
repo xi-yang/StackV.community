@@ -147,17 +147,17 @@ public class ActionBase {
     }
 
     public ActionBase getIdleLeaf() {
-        boolean hasChildInProcessing = false;
+        boolean hasChildInPending = false;
         for (ActionBase action : this.dependencies) {
             ActionBase deeperAction = action.getIdleLeaf();
             if (deeperAction != null) {
                 return deeperAction;
             }
-            if (action.getState().equals(ActionState.PROCESSING)) {
-                hasChildInProcessing = true;
+            if (action.getState().equals(ActionState.IDLE) || action.getState().equals(ActionState.PROCESSING)) {
+                hasChildInPending = true;
             }
         }
-        if (this.state.equals(ActionState.IDLE) && !hasChildInProcessing) {
+        if (this.state.equals(ActionState.IDLE) && !hasChildInPending) {
             return this;
         }
         return null;

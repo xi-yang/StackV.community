@@ -31,6 +31,7 @@ import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.ResourceTool;
+import net.maxgigapop.mrs.common.Spa;
 import net.maxgigapop.mrs.driver.openstack.OpenstackPrefix;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -104,8 +105,7 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
                 outputDelta.getModelAddition().getOntModel().add(stitchModel.getBaseModel());
             }
 
-            // no export ?
-            //this.exportPolicyData()
+            exportPolicyData(outputDelta.getModelAddition().getOntModel(), policyAction, stitchModel, systemModel.getOntModel());
 
             // remove policy dependency
             MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), policyAction);
@@ -281,4 +281,98 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
         }
         return stitchModel;
     }
-}
+
+    private void exportPolicyData(OntModel spaModel, Resource resPolicy, OntModel stitchModel, OntModel systemModel) {
+        // find Connection policy -> exportTo -> policyData
+        String sparql = "SELECT ?data ?type ?value ?format WHERE {"
+                + String.format("<%s> a spa:PolicyAction. ", resPolicy.getURI())
+                + String.format("<%s> spa:type 'MCE_UcsSriovStitching'. ", resPolicy.getURI())
+                + String.format("<%s> spa:exportTo ?data . ", resPolicy.getURI())
+                + "OPTIONAL {?data spa:type ?type.} "
+                + "OPTIONAL {?data spa:value ?value.} "
+                + "OPTIONAL {?data spa:format ?format.} "
+                + "}";
+        ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
+        List<QuerySolution> solutions = new ArrayList<>();
+        while (r.hasNext()) {
+            solutions.add(r.next());
+        }
+        for (QuerySolution querySolution : solutions) {
+            Resource resData = querySolution.get("data").asResource();
+            RDFNode dataType = querySolution.get("type");
+            RDFNode dataValue = querySolution.get("value");
+
+            if (dataType == null) {
+                spaModel.add(resData, Spa.type, "JSON");
+            } else if (!dataType.toString().equalsIgnoreCase("JSON")) {
+                continue;
+            }
+            JSONObject jsonValue = new JSONObject();
+            if (dataValue != null) {
+                JSONParser parser = new JSONParser();
+                try {
+                    jsonValue = (JSONObject)parser.parse(dataValue.toString());
+                } catch (ParseException e) {
+                    throw new EJBException(String.format("%s::exportPolicyData  cannot parse json string %s due to: %s", this.getClass().getName(), dataValue.toString(), e));
+                }
+            }
+            
+            // get export data
+            sparql = "SELECT ?vm ?vnic WHERE {"
+                + "?vm nml:hasBidirectionalPort ?vnic. "
+                + "?vmfex mrs:providesVNic ?vnic. "
+                + "}";
+            r = ModelUtil.sparqlQuery(stitchModel, sparql);
+            if (!r.hasNext()) {
+                return;
+            }
+            QuerySolution solution = r.next();
+            Resource resVNic = solution.getResource("vnic");
+            Resource resVM = solution.getResource("vm");
+            
+            sparql = "SELECT ?ip_address ?mac_address ?port_profile WHERE {"
+                    + String.format("<%s> mrs:hasNetworkAddress ?netaddr_ip. ", resVNic.getURI())
+                    + "?netaddr_ip mrs:type \"ipv4-address\". "
+                    + "?netaddr_ip mrs:value ?ip_address. "
+                    + String.format("<%s> mrs:hasNetworkAddress ?netaddr_mac. ", resVNic.getURI())
+                    + "?netaddr_mac mrs:type \"mac-address\". "
+                    + "?netaddr_mac mrs:value ?mac_address. "
+                    + String.format("?profile_subnet nml:hasBidirectionalPort <%s>. ", resVNic.getURI())
+                    + "?profile_subnet a mrs:SwitchingSubnet. "
+                    + "?profile_subnet mrs:type \"Cisco_UCS_Port_Profile\". "
+                    + "?profile_subnet mrs:value ?port_profile. "
+                    + "}";
+            Model unionModel = ModelFactory.createUnion(systemModel, spaModel); // spaModel contains stitchModel
+            r = ModelUtil.sparqlQuery(unionModel, sparql);
+            if (!r.hasNext()) {
+                return;
+            }
+            solution = r.next();
+            JSONObject vnicData = new JSONObject();
+            vnicData.put("ip_address", solution.get("ip_address").toString());
+            vnicData.put("mac_address", solution.get("mac_address").toString());
+            String portProfile = solution.get("port_profile").toString();
+            if (portProfile.startsWith("Cisco_UCS_Port_Profile+")) {
+                portProfile.substring("Cisco_UCS_Port_Profile+".length());
+            }
+            vnicData.put("port_profile", portProfile);
+            // put new data into jsonValue
+            jsonValue.put(resVNic.getURI(), vnicData);
+            //@TODO: common logic
+            if (dataValue != null) {
+                spaModel.remove(resData, Spa.value, dataValue);
+            }
+            //add output as spa:value of the export resrouce
+            String exportValue = jsonValue.toJSONString();
+            if (querySolution.contains("format")) {
+                String exportFormat = querySolution.get("format").toString();
+                try {
+                    exportValue = MCETools.formatJsonExport(exportValue, exportFormat);
+                } catch (EJBException ex) {
+                    log.log(Level.WARNING, ex.getMessage());
+                    continue;
+                }
+            }
+            spaModel.add(resData, Spa.value, exportValue);
+        }
+    }}

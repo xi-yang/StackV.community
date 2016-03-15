@@ -44,45 +44,45 @@ import org.json.simple.parser.ParseException;
  * @author xyang
  */
 @Stateless
-public class MCE_AwsDxStitching implements IModelComputationElement {
+public class MCE_NfvBgpRouting implements IModelComputationElement {
 
-    private static final Logger log = Logger.getLogger(MCE_AwsDxStitching.class.getName());
+    private static final Logger log = Logger.getLogger(MCE_NfvBgpRouting.class.getName());
 
     @Override
     @Asynchronous
     public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
-        log.log(Level.FINE, "MCE_AWSDirectConnectStitch::process {0}", annotatedDelta);
+        log.log(Level.FINE, "MCE_NfvBgpRouting::process {0}", annotatedDelta);
         try {
-            log.log(Level.FINE, "\n>>>MCE_AWSDirectConnectStitch--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
+            log.log(Level.FINE, "\n>>>MCE_NfvBgpRouting--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
-            Logger.getLogger(MCE_AwsDxStitching.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(MCE_NfvBgpRouting.class.getName()).log(Level.SEVERE, null, ex);
         }
 
         // importPolicyData : Interface->Stitching->List<PolicyData>
         String sparql = "SELECT ?policy ?data ?type ?value WHERE {"
                 + "?policy a spa:PolicyAction. "
-                + "?policy spa:type 'MCE_AwsDxStitching'. "
+                + "?policy spa:type 'MCE_NfvBgpRouting'. "
                 + "?policy spa:importFrom ?data. "
                 + "?data spa:type ?type. ?data spa:value ?value. "
                 + "FILTER not exists {?policy spa:dependOn ?other} "
                 + "}";
 
         ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);
-        Map<Resource, Map> stitchPolicyMap = new HashMap<>();
+        Map<Resource, Map> policyDataMap = new HashMap<>();
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             Resource resPolicy = querySolution.get("policy").asResource();
-            if (!stitchPolicyMap.containsKey(resPolicy)) {
+            if (!policyDataMap.containsKey(resPolicy)) {
                 Map<String, List> stitchMap = new HashMap<>();
                 List dataList = new ArrayList<>();
                 stitchMap.put("imports", dataList);
-                stitchPolicyMap.put(resPolicy, stitchMap);
+                policyDataMap.put(resPolicy, stitchMap);
             }
             Resource resData = querySolution.get("data").asResource();
             RDFNode nodeDataType = querySolution.get("type");
             RDFNode nodeDataValue = querySolution.get("value");
             boolean existed =false;
-            for (Map dataMap: (List<Map>)stitchPolicyMap.get(resPolicy).get("imports")) {
+            for (Map dataMap: (List<Map>)policyDataMap.get(resPolicy).get("imports")) {
                 if(dataMap.get("data").equals(resData)) {
                     existed = true;
                     break;
@@ -93,19 +93,19 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
                 policyData.put("data", resData);
                 policyData.put("type", nodeDataType.toString());
                 policyData.put("value", nodeDataValue.toString());
-                ((List)stitchPolicyMap.get(resPolicy).get("imports")).add(policyData);
+                ((List)policyDataMap.get(resPolicy).get("imports")).add(policyData);
             }
         }
         ServiceDelta outputDelta = annotatedDelta.clone();
 
-        for (Resource policyAction : stitchPolicyMap.keySet()) {
-            OntModel stitchModel = this.doStitching(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), policyAction, stitchPolicyMap.get(policyAction));
+        for (Resource policyAction : policyDataMap.keySet()) {
+            OntModel routingModel = this.doRouting(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), policyAction, policyDataMap.get(policyAction));
             // merge the placement satements into spaModel
-            if (stitchModel != null) {
-                outputDelta.getModelAddition().getOntModel().add(stitchModel.getBaseModel());
+            if (routingModel != null) {
+                outputDelta.getModelAddition().getOntModel().add(routingModel.getBaseModel());
             }
 
-            exportPolicyData(outputDelta.getModelAddition().getOntModel(), policyAction, stitchModel, systemModel.getOntModel());
+            exportPolicyData(outputDelta.getModelAddition().getOntModel(), policyAction, routingModel, systemModel.getOntModel());
 
             // remove policy dependency
             MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), policyAction);
@@ -113,15 +113,10 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
         return new AsyncResult(outputDelta);
     }
 
-    //@TODO: Stitch ( VGW | VPC | Subnet? )to ( DcVx | L2Path )
-
-    // General logic: 1. find the "terminal / end" containing resource (eg. Host Node or Topology)
-    // 2. identify the "attach-point" resource (eg. VLAN port) along with a stitching path
-    // 3. add statements to the stitching path to connect the terminal to the attach-point (if applicable)
-    private OntModel doStitching(OntModel systemModel, OntModel spaModel, Resource policyAction, Map stitchPolicyData) {
+    private OntModel doRouting(OntModel systemModel, OntModel spaModel, Resource policyAction, Map stitchPolicyData) {
         //@TODO: common logic
         List<Map> dataMapList = (List<Map>)stitchPolicyData.get("imports");
-        JSONObject jsonStitchReq = null;
+        JSONObject jsonReqData = null;
         for (Map entry : dataMapList) {
             if (!entry.containsKey("data") || !entry.containsKey("type") || !entry.containsKey("value")) {
                 continue;
@@ -130,11 +125,11 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
                 JSONParser parser = new JSONParser();
                 try {
                     JSONObject jsonObj = (JSONObject) parser.parse((String) entry.get("value"));
-                    if (jsonStitchReq == null) {
-                        jsonStitchReq = jsonObj;
+                    if (jsonReqData == null) {
+                        jsonReqData = jsonObj;
                     } else { // merge
                         for (Object key: jsonObj.keySet()) {
-                            jsonStitchReq.put(key, jsonObj.get(key));
+                            jsonReqData.put(key, jsonObj.get(key));
                         }
                     }
                 } catch (ParseException e) {
@@ -145,24 +140,24 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
             }
         }
         
-        if (jsonStitchReq == null || jsonStitchReq.isEmpty()) {
+        if (jsonReqData == null || jsonReqData.isEmpty()) {
             throw new EJBException(String.format("%s::process doStitching receive none request for <%s>", this.getClass().getName(), policyAction));
         }
 
-        OntModel stitchModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        OntModel routingModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         Model unionSysModel = spaModel.union(systemModel);
         try {
             log.log(Level.FINE, "\n>>>MCE_AWSDirectConnectStitch--unionSysModel=\n" + ModelUtil.marshalModel(unionSysModel));
         } catch (Exception ex) {
-            Logger.getLogger(MCE_AwsDxStitching.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(MCE_NfvBgpRouting.class.getName()).log(Level.SEVERE, null, ex);
         }
-
-        if (!jsonStitchReq.containsKey("parent") || !jsonStitchReq.containsKey("stitch_from")
-                || (!jsonStitchReq.containsKey("to_dxvif") && !jsonStitchReq.containsKey("to_l2path"))) {
+        /*
+        if (!jsonReqData.containsKey("parent") || !jsonReqData.containsKey("stitch_from")
+                || (!jsonReqData.containsKey("to_dxvif") && !jsonReqData.containsKey("to_l2path"))) {
             throw new EJBException(String.format("%s::process doStitching imports incomplete JSON data", this.getClass().getName()));
         }
-        String awsUri = (String) jsonStitchReq.get("parent");
-        String stitchFromUri = (String) jsonStitchReq.get("stitch_from");
+        String awsUri = (String) jsonReqData.get("parent");
+        String stitchFromUri = (String) jsonReqData.get("stitch_from");
 
         // 1. get VGW resources
         String sparql = "SELECT ?vgw WHERE {{"
@@ -199,15 +194,15 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
             throw new EJBException(String.format("%s::process cannot find resource for '%s: must be uri for a VPC or VGW or Subnet", this.getClass().getName(), stitchFromUri));
         }
         Resource resDxvif = null;
-        if (jsonStitchReq.containsKey("to_dxvif")) {
-            String stitchToUri = (String) jsonStitchReq.get("to_dxvif");
+        if (jsonReqData.containsKey("to_dxvif")) {
+            String stitchToUri = (String) jsonReqData.get("to_dxvif");
             if (unionSysModel.contains(unionSysModel.getResource(stitchToUri), Mrs.type, "direct-connect-vif")) {
                 resDxvif = unionSysModel.getResource(stitchToUri);
             } else {
                 throw new EJBException(String.format("%s::process cannot find resource for '%s: must be uri a DirectConnect vif", this.getClass().getName(), stitchToUri));
             }
-        } else { //if (jsonStitchReq.containsKey("to_l2path"))
-            JSONArray stitchToPath = (JSONArray) jsonStitchReq.get("to_l2path");
+        } else { //if (jsonReqData.containsKey("to_l2path"))
+            JSONArray stitchToPath = (JSONArray) jsonReqData.get("to_l2path");
             if (stitchToPath.isEmpty()) {
                 throw new EJBException(String.format("%s::process cannot parse JSON data 'to_l2path': %s", this.getClass().getName(), stitchToPath));
             }
@@ -231,20 +226,20 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
             }
         }
         if (resDxvif == null) {
-            throw new EJBException(String.format("%s::process cannot find DxVif resource to stitch to (in %s)", this.getClass().getName(), jsonStitchReq.containsKey("to_dxvif") ? (String) jsonStitchReq.get("to_l2path") : (String) jsonStitchReq.get("to_dxvif")));
+            throw new EJBException(String.format("%s::process cannot find DxVif resource to stitch to (in %s)", this.getClass().getName(), jsonReqData.containsKey("to_dxvif") ? (String) jsonReqData.get("to_l2path") : (String) jsonReqData.get("to_dxvif")));
         }
-        stitchModel.add(stitchModel.createStatement(resVgw, Nml.isAlias, resDxvif));
-        stitchModel.add(stitchModel.createStatement(resDxvif, Nml.isAlias, resVgw));
-        stitchModel.add(stitchModel.createStatement(resDxvif, Mrs.type, "direct-connect-vif"));
-
-        return stitchModel;
+        routingModel.add(routingModel.createStatement(resVgw, Nml.isAlias, resDxvif));
+        routingModel.add(routingModel.createStatement(resDxvif, Nml.isAlias, resVgw));
+        routingModel.add(routingModel.createStatement(resDxvif, Mrs.type, "direct-connect-vif"));
+        */
+        return routingModel;
     }
     
-    private void exportPolicyData(OntModel spaModel, Resource resPolicy, OntModel stitchModel, OntModel systemModel) {
+    private void exportPolicyData(OntModel spaModel, Resource resPolicy, OntModel routingModel, OntModel systemModel) {
         // find Connection policy -> exportTo -> policyData
         String sparql = "SELECT ?data ?type ?value ?format WHERE {"
                 + String.format("<%s> a spa:PolicyAction. ", resPolicy.getURI())
-                + String.format("<%s> spa:type 'MCE_AwsDxStitching'. ", resPolicy.getURI())
+                + String.format("<%s> spa:type 'MCE_NfvBgpRouting'. ", resPolicy.getURI())
                 + String.format("<%s> spa:exportTo ?data . ", resPolicy.getURI())
                 + "OPTIONAL {?data spa:type ?type.} "
                 + "OPTIONAL {?data spa:value ?value.} "
@@ -280,14 +275,14 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
                 + "?dxvif mrs:type \"direct-connect-vif\". "
                 + "?dxvif nml:isAlias ?vgw. "
                 + "}";
-            r = ModelUtil.sparqlQuery(stitchModel, sparql);
+            r = ModelUtil.sparqlQuery(routingModel, sparql);
             if (!r.hasNext()) {
                 return;
             }
             QuerySolution solution = r.next();
             Resource resDxvif = solution.getResource("dxvif");
             Resource resVgw = solution.getResource("vgw");
-            sparql = "SELECT ?dxvif_name ?asn ?vlan ?amazon_ip ?customer_ip ?authkey WHERE {"
+            sparql = "SELECT ?dxvif_name ?asn ?vlan ?amazon_ip ?customer_ip  ?authkey WHERE {"
                     + String.format("<%s> nml:name ?dxvif_name. ", resDxvif.getURI())
                     + String.format("<%s> mrs:hasNetworkAddress ?netaddr_asn. ", resDxvif.getURI())
                     + "?netaddr_asn mrs:type \"bgp-asn\". "
@@ -302,14 +297,12 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
                     + String.format("<%s> mrs:hasNetworkAddress ?netaddr_customer_ip. ", resDxvif.getURI())
                     + "?netaddr_customer_ip mrs:type \"ipv4-address:customer\". "
                     + "?netaddr_customer_ip mrs:value ?customer_ip. "
-                    + "}"
-                    + "OPTIONAL {"
                     + String.format("<%s> mrs:hasNetworkAddress ?netaddr_authkey. ", resDxvif.getURI())
                     + "?netaddr_authkey mrs:type \"bgp-authkey\". "
                     + "?netaddr_authkey mrs:value ?authkey. "
                     + "}"
                     + "}";
-            Model unionModel = ModelFactory.createUnion(systemModel, spaModel); // spaModel contains stitchModel
+            Model unionModel = ModelFactory.createUnion(systemModel, spaModel); // spaModel contains routingModel
             r = ModelUtil.sparqlQuery(unionModel, sparql);
             if (!r.hasNext()) {
                 return;
@@ -318,7 +311,6 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
             String dxvifName = solution.getLiteral("dxvif_name").getString();
             JSONObject dxvifData = new JSONObject();
             dxvifData.put("customer_asn", solution.get("asn").toString());
-            dxvifData.put("vlan", solution.get("vlan").toString());
             if (solution.contains("amazon_ip")) {
                 dxvifData.put("amazon_ip", solution.get("amazon_ip").toString());
             }
@@ -328,6 +320,7 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
             if (solution.contains("authkey")) {
                 dxvifData.put("bgp_authkey", solution.get("authkey").toString());
             }
+            dxvifData.put("vlan", solution.get("vlan").toString());
             // put new data into jsonValue
             jsonValue.put(dxvifName, dxvifData);
             //@TODO: common logic
