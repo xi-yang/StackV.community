@@ -166,13 +166,7 @@ define([
         this.getName = function () {
             return backing.name;
         };
-        this.populateTreeMenu = function (tree) {
-            var root = tree.addChild(this.getName(), "Port");
-            map_(this.childrenPorts, function (child) {
-                child.populateTreeMenu(root);
-            });          
-        };
-
+        
         this.hasAlias = function () {
             return this.alias !== null;
         };

@@ -39,7 +39,7 @@ define([
                console.log("in outer");
             }               
         };        
-        
+       
         this.addToHistory = function(name, type) {
                         console.log("I'm here: currentIndex: " + currentIndex);
 
@@ -55,6 +55,14 @@ define([
                 console.log("I'm here: currentIndex: " + currentIndex);
                 console.log("my history: name: " + that.history[currentIndex][0] + " type: " + that.history[currentIndex][1]);
             }
+        };
+
+        document.getElementById("URISearchSubmit").onclick = function() {
+            var uri = document.getElementById("URISearchInput").value;
+            if (that.renderApi !== null && that.renderApi !== undefined) {
+                alert("i'm here");
+               that.renderApi.clickNode(uri, "Element");
+            }           
         };
         
         this.clear = function () {

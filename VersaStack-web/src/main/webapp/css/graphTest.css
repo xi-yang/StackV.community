@@ -76,6 +76,7 @@
 .urnLink:hover { }
 .urnLink:visited {color:purple }
 
+.panelElementProperty{font-weight:bold;}
 .dropDownArrow {cursor:pointer;}
 /* Edit loading transition timer below */
 #viz{

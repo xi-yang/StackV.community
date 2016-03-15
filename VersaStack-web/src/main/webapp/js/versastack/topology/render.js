@@ -610,9 +610,11 @@ define([
             /**@type {DropDownTree} displayTree**/
             var displayTree = outputApi.getDisplayTree();
             displayTree.clear();
-            n.populateTreeMenu(displayTree);
+            var e = model.elementMap[n.getName()];
+            e.populateProperties(displayTree);
+            e.populateTreeMenu(displayTree);
             displayTree.renderApi = API;
-            displayTree.addToHistory(n.getName(), "Node");
+            displayTree.addToHistory(e.getName(), "Node");
             //console.log("API: " + API);
             //if (API === undefined)
                //console.log("i am undefined: ");
@@ -648,9 +650,11 @@ define([
             outputApi.setDisplayName(n.getName());
             var displayTree = outputApi.getDisplayTree();
             displayTree.clear();
-            n.populateTreeMenu(displayTree);
+            var e = model.elementMap[n.getName()];
+            e.populateProperties(displayTree);
+            e.populateTreeMenu(displayTree);
             displayTree.renderApi = API;
-            displayTree.addToHistory(n.getName(), "Service");
+            displayTree.addToHistory(e.getName(), "Service");
             //console.log("API: " + API);
             //if (API === undefined)
                //console.log("i am undefined: ");            
@@ -701,7 +705,12 @@ define([
                 /**@type {DropDownTree} displayTree**/
                 var displayTree = outputApi.getDisplayTree();
                 displayTree.clear();
-                elem.populateTreeMenu(displayTree);
+                            var e = model.elementMap[elem.getName()];
+            e.populateProperties(displayTree);
+            e.populateTreeMenu(displayTree);
+
+//                elem.populateProperties(displayTree);
+//                elem.populateTreeMenu(displayTree);
                 displayTree.draw();
             }
             highlightedNode = elem;
@@ -864,20 +873,40 @@ define([
             //console.log(" a bunch of stuff ");
            //nodeList = model.listNodes();
            //var portList = model.listPorts();
-           //alert(" hi, my name is: " + model.nodeMap[name]);     
+           //alert(" hi, my name is: " + model.nodeMap[name]);  
+                          // alert("i'm here in clicknode: " + model.getElementType(name));
+
+           // eventually we want to use type their type for this , not a given type. 
+           type = model.elementMap[name].getType();
+           
            switch (type) {
+            case "Topology":
             case "Node":
                 onNodeClick(model.nodeMap[name]);
                 outputApi.getDisplayTree().addToHistory(name, type);
                 console.log("i'm node");
 
                 break;
+            case "SwitchingServicHypervisorBypassInterfaceServicee":
+            case "HypervisorService":
+            case "RoutingService":
+            case "VirtualCloudService":
+            case "BlockStorageService":
+            case "ObjectStorageService":
+            case "VirtualSwitchService":
+            case "HypervisorBypassInterfaceService":
+            case "StorageService":
+            case "IOPerformanceMeasurementService":
+            case "DataTransferService":
+            case "DataTransferClusterService":
+            case "NetworkObject":
             case "Service":
                 onServiceClick(model.serviceMap[name]);
                 outputApi.getDisplayTree().addToHistory(name, type);
                 console.log("i'm service");
                 break;
             case "Port":
+            case "BidirectionalPort":
                 selectElement(model.portMap[name]);
                 outputApi.getDisplayTree().addToHistory(name, type);                
                 console.log("i'm port");
@@ -887,7 +916,7 @@ define([
                 outputApi.getDisplayTree().addToHistory(name, type);                 
                 console.log("i'm volume");
                 break;
-            case "Element":
+            default:
                 selectElement(model.elementMap[name]);
                 outputApi.getDisplayTree().addToHistory(name, type);
                 console.log("I'm element");

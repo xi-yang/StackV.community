@@ -95,6 +95,16 @@ define([
                 link.appendChild(text);
                 line.appendChild(link);
                 content.appendChild(line);
+            } else if (that.type === "Property") {
+                var key = document.createElement("span");
+                var value = document.createElement("span");               
+                key.className = "panelElementProperty";
+                var property =  that.name.split(":");
+                key.innerHTML = property[0] + ":";
+                value.innerHTML = property[1]; // just using this because it's there 
+                line.appendChild(key);
+                line.appendChild(value);
+                content.appendChild(line);
             } else {
                 line.appendChild(text);
                 content.appendChild(line);
