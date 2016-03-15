@@ -292,7 +292,7 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
                     + String.format("<%s> mrs:hasNetworkAddress ?netaddr_asn. ", resDxvif.getURI())
                     + "?netaddr_asn mrs:type \"bgp-asn\". "
                     + "?netaddr_asn mrs:value ?asn. "
-                    + String.format("<%s> mrs:hasLabelGroup ?lg_vlan. ", resDxvif.getURI())
+                    + String.format("<%s> nml:hasLabelGroup ?lg_vlan. ", resDxvif.getURI())
                     + "?lg_vlan nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
                     + "?lg_vlan nml:values ?vlan. "
                     + "OPTIONAL {"

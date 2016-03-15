@@ -59,12 +59,11 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
         //@TODO: make the initial data imports a common function
         // importPolicyData : Interface->Stitching->List<PolicyData>
         String sparql = "SELECT ?policy ?data ?type ?value WHERE {"
-                + "?res spa:dependOn ?policy . "
                 + "?policy a spa:PolicyAction. "
                 + "?policy spa:type 'MCE_UcsSriovStitching'. "
                 + "?policy spa:importFrom ?data. "
                 + "?data spa:type ?type. ?data spa:value ?value. "
-                + "FILTER (not exists {?policy spa:dependOn ?other} && not exists {?res a spa:PolicyAction}) "
+                + "FILTER not exists {?policy spa:dependOn ?other} "
                 + "}";
 
         ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);
