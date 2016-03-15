@@ -52,15 +52,11 @@
                         <c:param name="uuid" value="${param.uuid}"></c:param>
                     </c:redirect>
                 </c:if>
-            
-            <c:forEach var="instance" items="${instancelist.rows}">
-                <c:if test="${instance.name == 'Flow Based Layer 2 Protection'}">
+                <c:if test="${instance.name == 'Flow Based Layer2 Protection'}">
                     <c:redirect url="/ops/details/fl2pDetails.jsp">
                         <c:param name="uuid" value="${param.uuid}"></c:param>
                     </c:redirect>
                 </c:if>
-                
-                
                 
                 <c:redirect url="/ops/details/templateDetails.jsp">
                     <c:param name="uuid" value="${param.uuid}"></c:param>

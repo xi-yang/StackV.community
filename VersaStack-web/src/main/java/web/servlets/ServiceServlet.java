@@ -87,8 +87,8 @@ public class ServiceServlet extends HttpServlet {
             } else if (request.getParameter("dncCreate") != null) {
                 //System.out.println("Im inside dnc");
                 serviceString = "dnc";
-                //System.out.println("Im inside dnc");
-            } else if(request.getParameter("fl2p") != null){
+                //System.out.println("Im inside dnc");fl2pCreate
+            } else if(request.getParameter("fl2pCreate") != null){
                 serviceString ="fl2p";
             }
             else {
@@ -515,7 +515,7 @@ public class ServiceServlet extends HttpServlet {
             paraMap.remove("template1");
             paraMap.remove("fl2pCreate");
             
-            servBean.createConnection(paraMap);
+            servBean.createflow(paraMap);
 
         } 
                 else {
@@ -537,7 +537,7 @@ public class ServiceServlet extends HttpServlet {
 
                 ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
 
-                executor.execute(new DNCWorker(asyncCtx, paraMap));
+                executor.execute(new FL2PWorker(asyncCtx, paraMap));
         }
         return ("/VersaStack-web/ops/srvc/fl2p.jsp?ret=0");
         

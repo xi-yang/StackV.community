@@ -20,7 +20,7 @@
 <html >    
     <head>   
         <meta charset="UTF-8">
-        <title>Dynamic Network Connection Service</title>
+        <title>Flow Based Layer2 Service</title>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>

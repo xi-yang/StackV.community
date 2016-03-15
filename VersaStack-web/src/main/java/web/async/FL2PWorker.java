@@ -39,7 +39,7 @@ public class FL2PWorker implements Runnable {
 
         System.out.println("Async Supported? " + asyncContext.getRequest().isAsyncSupported());
         
-        servBean.createConnection(paraMap);
+        servBean.createflow(paraMap);
 
         long endTime = System.currentTimeMillis();
         System.out.println("[service] Worker End::Name="
