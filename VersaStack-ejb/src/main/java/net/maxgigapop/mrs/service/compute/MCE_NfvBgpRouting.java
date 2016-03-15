@@ -51,9 +51,9 @@ public class MCE_NfvBgpRouting implements IModelComputationElement {
     @Override
     @Asynchronous
     public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
-        log.log(Level.FINE, "MCE_NfvBgpRouting::process {0}", annotatedDelta);
+        log.log(Level.INFO, "MCE_NfvBgpRouting::process {0}", annotatedDelta);
         try {
-            log.log(Level.FINE, "\n>>>MCE_NfvBgpRouting--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
+            log.log(Level.INFO, "\n>>>MCE_NfvBgpRouting--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_NfvBgpRouting.class.getName()).log(Level.SEVERE, null, ex);
         }

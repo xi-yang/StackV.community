@@ -288,13 +288,15 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
             Resource resDxvif = solution.getResource("dxvif");
             Resource resVgw = solution.getResource("vgw");
             sparql = "SELECT ?dxvif_name ?asn ?vlan ?amazon_ip ?customer_ip ?authkey WHERE {"
-                    + String.format("<%s> nml:name ?dxvif_name. ", resDxvif.getURI())
                     + String.format("<%s> mrs:hasNetworkAddress ?netaddr_asn. ", resDxvif.getURI())
                     + "?netaddr_asn mrs:type \"bgp-asn\". "
                     + "?netaddr_asn mrs:value ?asn. "
                     + String.format("<%s> nml:hasLabelGroup ?lg_vlan. ", resDxvif.getURI())
                     + "?lg_vlan nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
                     + "?lg_vlan nml:values ?vlan. "
+                    + "OPTIONAL {"
+                    + String.format("<%s> nml:name ?dxvif_name. ", resDxvif.getURI())
+                    + "}"
                     + "OPTIONAL {"
                     + String.format("<%s> mrs:hasNetworkAddress ?netaddr_amazon_ip. ", resDxvif.getURI())
                     + "?netaddr_amazon_ip mrs:type \"ipv4-address:amazon\". "
@@ -315,10 +317,12 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
                 return;
             }
             solution = r.next();
-            String dxvifName = solution.getLiteral("dxvif_name").getString();
             JSONObject dxvifData = new JSONObject();
             dxvifData.put("customer_asn", solution.get("asn").toString());
             dxvifData.put("vlan", solution.get("vlan").toString());
+            if (solution.contains("dxvif_name")) {
+                dxvifData.put("name", solution.getLiteral("dxvif_name").getString());
+            }
             if (solution.contains("amazon_ip")) {
                 dxvifData.put("amazon_ip", solution.get("amazon_ip").toString());
             }
@@ -329,7 +333,7 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
                 dxvifData.put("bgp_authkey", solution.get("authkey").toString());
             }
             // put new data into jsonValue
-            jsonValue.put(dxvifName, dxvifData);
+            jsonValue.put(resDxvif.getURI(), dxvifData);
             //@TODO: common logic
             if (dataValue != null) {
                 spaModel.remove(resData, Spa.value, dataValue);

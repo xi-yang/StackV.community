@@ -352,7 +352,7 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
             vnicData.put("mac_address", solution.get("mac_address").toString());
             String portProfile = solution.get("port_profile").toString();
             if (portProfile.startsWith("Cisco_UCS_Port_Profile+")) {
-                portProfile.substring("Cisco_UCS_Port_Profile+".length());
+                portProfile = portProfile.substring("Cisco_UCS_Port_Profile+".length());
             }
             vnicData.put("port_profile", portProfile);
             // put new data into jsonValue
