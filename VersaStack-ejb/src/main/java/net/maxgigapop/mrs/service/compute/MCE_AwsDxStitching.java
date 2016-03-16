@@ -241,7 +241,6 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
     }
     
     private void exportPolicyData(OntModel spaModel, Resource resPolicy, OntModel stitchModel, OntModel systemModel) {
-        // find Connection policy -> exportTo -> policyData
         String sparql = "SELECT ?data ?type ?value ?format WHERE {"
                 + String.format("<%s> a spa:PolicyAction. ", resPolicy.getURI())
                 + String.format("<%s> spa:type 'MCE_AwsDxStitching'. ", resPolicy.getURI())

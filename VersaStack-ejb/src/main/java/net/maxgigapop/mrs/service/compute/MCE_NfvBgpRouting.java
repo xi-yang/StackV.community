@@ -38,6 +38,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.apache.commons.net.util.SubnetUtils;
 
 /**
  *
@@ -133,15 +134,15 @@ public class MCE_NfvBgpRouting implements IModelComputationElement {
                         }
                     }
                 } catch (ParseException e) {
-                    throw new EJBException(String.format("%s::process doStitching cannot parse json string %s", this.getClass().getName(), (String) entry.get("value")));
+                    throw new EJBException(String.format("%s::process doRouting cannot parse json string %s", this.getClass().getName(), (String) entry.get("value")));
                 }
             } else {
-                throw new EJBException(String.format("%s::process doStitching does not import policyData of %s type", entry.get("type").toString()));
+                throw new EJBException(String.format("%s::process doRouting does not import policyData of %s type", entry.get("type").toString()));
             }
         }
         
         if (jsonReqData == null || jsonReqData.isEmpty()) {
-            throw new EJBException(String.format("%s::process doStitching receive none request for <%s>", this.getClass().getName(), policyAction));
+            throw new EJBException(String.format("%s::process doRouting receive none request for <%s>", this.getClass().getName(), policyAction));
         }
 
         OntModel routingModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
@@ -151,92 +152,124 @@ public class MCE_NfvBgpRouting implements IModelComputationElement {
         } catch (Exception ex) {
             Logger.getLogger(MCE_NfvBgpRouting.class.getName()).log(Level.SEVERE, null, ex);
         }
-        /*
-        if (!jsonReqData.containsKey("parent") || !jsonReqData.containsKey("stitch_from")
-                || (!jsonReqData.containsKey("to_dxvif") && !jsonReqData.containsKey("to_l2path"))) {
-            throw new EJBException(String.format("%s::process doStitching imports incomplete JSON data", this.getClass().getName()));
+        if (!jsonReqData.containsKey("parent") || !jsonReqData.containsKey("router_id") 
+                || !jsonReqData.containsKey("as_number") || !jsonReqData.containsKey("neighbors")) {
+            throw new EJBException(String.format("%s::process doRouting imports incomplete JSON data", this.getClass().getName()));
         }
-        String awsUri = (String) jsonReqData.get("parent");
-        String stitchFromUri = (String) jsonReqData.get("stitch_from");
-
+        String parentVM = (String) jsonReqData.get("parent");
+        String routerId = (String) jsonReqData.get("router_id");
+        SubnetUtils utils1 = new SubnetUtils(routerId);
+        routerId = utils1.getInfo().getAddress();
+        String routerAsn = (String) jsonReqData.get("as_number");
+        Resource resVM = null;
+        Resource resRtSvc = null;
+        Resource resBgpRtTable = null;
         // 1. get VGW resources
-        String sparql = "SELECT ?vgw WHERE {{"
-                + "?aws nml:hasTopology ?vpc."
-                + "?aws a nml:Topology."
-                + "?vpc a nml:Topology."
-                + "?vpc nml:hasBidirectionalPort ?vgw."
-                + "?vgw mrs:type \"vpn-gateway\""
-                + String.format("FILTER ((?aws = <%s> && ?vgw = <%s>) )", awsUri, stitchFromUri)
-                + "} UNION {"
-                + "?aws nml:hasTopology ?vpc."
-                + "?aws a nml:Topology."
-                + "?vpc a nml:Topology."
-                + "?vpc nml:hasBidirectionalPort ?vgw."
-                + "?vgw mrs:type \"vpn-gateway\""
-                + String.format("FILTER ((?aws = <%s> && ?vpc = <%s>) )", awsUri, stitchFromUri)
-                + "} UNION {"
-                + "?aws nml:hasTopology ?vpc."
-                + "?aws a nml:Topology."
-                + "?vpc a nml:Topology."
-                + "?vpc nml:hasService ?swsvc."
-                + "?swsvc mrs:providesSubnet ?subnet."
-                + "?vpc nml:hasBidirectionalPort ?vgw."
-                + "?vgw mrs:type \"vpn-gateway\". "
-                + String.format("FILTER ((?aws = <%s> && ?subnet = <%s>) )", awsUri, stitchFromUri)
-                + "}}";
+        String sparql = "SELECT ?vm ?rtSvc ?bgpRtTable WHERE {\n"
+                + "?vm a nml:Node.\n"
+                + String.format("FILTER (?vm = <%s>) \n", parentVM)
+                + "OPTIONAL {"
+                + "?vm nml:hasService ?rtSvc."
+                + "?rtSvc a mrs:RoutingService."
+                + "}"
+                + "OPTIONAL {"
+                + "?rtSvc mrs:providesRoutingTable ?bgpRtTable."
+                + "?bgpRtTable mrs:type \"quagga-bgp\". "
+                + "}"
+                + "}";
 
         ResultSet r = ModelUtil.sparqlQuery(unionSysModel, sparql);
-        Resource resVgw = null;
         if (r.hasNext()) {
             QuerySolution solution = r.nextSolution();
-            resVgw = solution.getResource("vgw");
-        } else {
-            throw new EJBException(String.format("%s::process cannot find resource for '%s: must be uri for a VPC or VGW or Subnet", this.getClass().getName(), stitchFromUri));
-        }
-        Resource resDxvif = null;
-        if (jsonReqData.containsKey("to_dxvif")) {
-            String stitchToUri = (String) jsonReqData.get("to_dxvif");
-            if (unionSysModel.contains(unionSysModel.getResource(stitchToUri), Mrs.type, "direct-connect-vif")) {
-                resDxvif = unionSysModel.getResource(stitchToUri);
+            resVM = solution.getResource("vm");
+            if (solution.contains("rtSvc")) {
+                resRtSvc = solution.getResource("rtSvc");
             } else {
-                throw new EJBException(String.format("%s::process cannot find resource for '%s: must be uri a DirectConnect vif", this.getClass().getName(), stitchToUri));
+                resRtSvc = RdfOwl.createResource(spaModel, parentVM + ":routing+quagga", Mrs.RoutingService);
+                routingModel.add(routingModel.createStatement(resVM, Nml.hasService, resRtSvc));
             }
-        } else { //if (jsonReqData.containsKey("to_l2path"))
-            JSONArray stitchToPath = (JSONArray) jsonReqData.get("to_l2path");
-            if (stitchToPath.isEmpty()) {
-                throw new EJBException(String.format("%s::process cannot parse JSON data 'to_l2path': %s", this.getClass().getName(), stitchToPath));
+            if (solution.contains("bgpRtTable")) {
+                resBgpRtTable = solution.getResource("bgpRtTable");
+            } 
+        } else {
+            throw new EJBException(String.format("%s::process doRouting cannot identify NFV parent VM: %s", this.getClass().getName(), parentVM));
+        }
+        if (resBgpRtTable == null) {
+            resBgpRtTable = RdfOwl.createResource(spaModel, resRtSvc.getURI() + ":table+quagga_bgp", Mrs.RoutingTable);
+            routingModel.add(routingModel.createStatement(resRtSvc, Mrs.providesRoutingTable, resBgpRtTable));
+        }
+        Resource resNetAddrRouterId = RdfOwl.createResource(spaModel, resBgpRtTable.getURI() + ":router_id", Mrs.NetworkAddress);
+        routingModel.add(routingModel.createStatement(resBgpRtTable, Mrs.hasNetworkAddress, resNetAddrRouterId));
+        routingModel.add(routingModel.createStatement(resNetAddrRouterId, Mrs.type, "ipv4")); // ? ipv4-address
+        routingModel.add(routingModel.createStatement(resNetAddrRouterId, Mrs.value, routerId));        
+        Resource resNetAddrRouterAsn = RdfOwl.createResource(spaModel, resBgpRtTable.getURI() + ":asn", Mrs.NetworkAddress);
+        routingModel.add(routingModel.createStatement(resBgpRtTable, Mrs.hasNetworkAddress, resNetAddrRouterAsn));
+        routingModel.add(routingModel.createStatement(resNetAddrRouterAsn, Mrs.type, "bgp-asn")); 
+        routingModel.add(routingModel.createStatement(resNetAddrRouterAsn, Mrs.value, routerAsn));
+        Resource resNetAddrLocalPrefixes = null;
+        // create local_cluster NetworkAddress statements based on 'networks'
+        if (jsonReqData.containsKey("networks")) {
+            String prefixList = null;
+            JSONArray networks = (JSONArray)jsonReqData.get("networks");
+            for (Object obj: networks) {
+                String netAddr = (String) obj;
+                SubnetUtils utils2 = new SubnetUtils(netAddr);
+                String prefix = utils2.getInfo().getNetworkAddress()+"/"+netAddr.split("/")[1];
+                if (prefixList == null) {
+                    prefixList = prefix;
+                } else {
+                    prefixList += (","+prefix);
+                }
             }
-            for (Object obj : stitchToPath) {
-                JSONObject jsonObj = (JSONObject) obj;
-                if (!jsonObj.containsKey("uri")) {
-                    throw new EJBException(String.format("%s::process cannot parse JSON data 'to_l2path': %s - invalid hop: %s", this.getClass().getName(), stitchToPath, jsonObj.toJSONString()));
-                }
-                String hopUri = (String) jsonObj.get("uri");
-                sparql = "SELECT ?dxvif WHERE {"
-                        + "?aws nml:hasBidirectionalPort ?dxport."
-                        + "?aws a nml:Topology."
-                        + "?dxport nml:hasBidirectionalPort ?dxvif."
-                        + String.format("FILTER ((?aws = <%s> && ?dxvif = <%s>) )", awsUri, hopUri)
-                        + "}";
-                r = ModelUtil.sparqlQuery(unionSysModel, sparql);
-                if (r.hasNext()) {
-                    QuerySolution solution = r.nextSolution();
-                    resDxvif = solution.getResource("dxvif");
-                }
+            if (prefixList != null) {
+                resNetAddrLocalPrefixes = RdfOwl.createResource(spaModel, resBgpRtTable.getURI() + ":local_prefix_list", Mrs.NetworkAddress);
+                routingModel.add(routingModel.createStatement(resNetAddrLocalPrefixes, Mrs.type, "ipv4-prefix-list")); 
+                routingModel.add(routingModel.createStatement(resNetAddrLocalPrefixes, Mrs.value, prefixList));
+            }
+        } 
+        JSONArray neighbors = (JSONArray)jsonReqData.get("neighbors");
+        for (Object obj: neighbors) {
+            JSONObject bgpNeighbor = (JSONObject) obj;
+            if (!bgpNeighbor.containsKey("remote_ip") || !bgpNeighbor.containsKey("remote_asn")) {
+                continue;
+            }
+            String remoteAsn = (String)bgpNeighbor.get("remote_asn");
+            String remoteIp = (String)bgpNeighbor.get("remote_ip");
+            Resource resRouteToNeighbor = RdfOwl.createResource(spaModel, resBgpRtTable.getURI() + ":neighbor+"+remoteIp.replaceAll("[.\\/]", "_"), Mrs.Route);
+            routingModel.add(routingModel.createStatement(resBgpRtTable, Mrs.hasRoute, resRouteToNeighbor));
+            // route NetAddresses
+            Resource resNetAddrRemoteAsn = RdfOwl.createResource(spaModel, resRouteToNeighbor.getURI() + ":remote_asn", Mrs.NetworkAddress);
+            routingModel.add(routingModel.createStatement(resRouteToNeighbor, Mrs.hasNetworkAddress, resNetAddrRemoteAsn));
+            routingModel.add(routingModel.createStatement(resNetAddrRemoteAsn, Mrs.type, "bgp-asn"));
+            routingModel.add(routingModel.createStatement(resNetAddrRemoteAsn, Mrs.value, remoteAsn));
+            if (bgpNeighbor.containsKey("local_ip")) {
+                String localIp = (String)bgpNeighbor.get("local_ip");
+                Resource resNetAddrLocalIp = RdfOwl.createResource(spaModel, resRouteToNeighbor.getURI() + ":local_ip", Mrs.NetworkAddress);
+                routingModel.add(routingModel.createStatement(resRouteToNeighbor, Mrs.hasNetworkAddress, resNetAddrLocalIp));
+                routingModel.add(routingModel.createStatement(resNetAddrLocalIp, Mrs.type, "ipv4-local")); // ? ipv4-address
+                routingModel.add(routingModel.createStatement(resNetAddrLocalIp, Mrs.value, localIp));
+            }
+            if (bgpNeighbor.containsKey("bgp_authkey")) {
+                String authkey = (String)bgpNeighbor.get("bgp_authkey");
+                Resource resNetAddrAuthkey = RdfOwl.createResource(spaModel, resRouteToNeighbor.getURI() + ":bgp_authkey", Mrs.NetworkAddress);
+                routingModel.add(routingModel.createStatement(resRouteToNeighbor, Mrs.hasNetworkAddress, resNetAddrAuthkey));
+                routingModel.add(routingModel.createStatement(resNetAddrAuthkey, Mrs.type, "bgp-authkey"));
+                routingModel.add(routingModel.createStatement(resNetAddrAuthkey, Mrs.value, authkey));
+            }
+            // nextHop
+            Resource resNetAddrRemoteIp = RdfOwl.createResource(spaModel, resRouteToNeighbor.getURI() + ":remote_ip", Mrs.NetworkAddress);
+            routingModel.add(routingModel.createStatement(resRouteToNeighbor, Mrs.nextHop, resNetAddrRemoteIp));
+            routingModel.add(routingModel.createStatement(resNetAddrRemoteIp, Mrs.type, "ipv4-remote")); // ? ipv4-address
+            routingModel.add(routingModel.createStatement(resNetAddrRemoteIp, Mrs.value, remoteIp));
+            // routeFrom
+            if (resNetAddrLocalPrefixes != null) {
+                routingModel.add(routingModel.createStatement(resRouteToNeighbor, Mrs.routeFrom, resNetAddrLocalPrefixes));
             }
         }
-        if (resDxvif == null) {
-            throw new EJBException(String.format("%s::process cannot find DxVif resource to stitch to (in %s)", this.getClass().getName(), jsonReqData.containsKey("to_dxvif") ? (String) jsonReqData.get("to_l2path") : (String) jsonReqData.get("to_dxvif")));
-        }
-        routingModel.add(routingModel.createStatement(resVgw, Nml.isAlias, resDxvif));
-        routingModel.add(routingModel.createStatement(resDxvif, Nml.isAlias, resVgw));
-        routingModel.add(routingModel.createStatement(resDxvif, Mrs.type, "direct-connect-vif"));
-        */
         return routingModel;
     }
     
     private void exportPolicyData(OntModel spaModel, Resource resPolicy, OntModel routingModel, OntModel systemModel) {
-        // find Connection policy -> exportTo -> policyData
         String sparql = "SELECT ?data ?type ?value ?format WHERE {"
                 + String.format("<%s> a spa:PolicyAction. ", resPolicy.getURI())
                 + String.format("<%s> spa:type 'MCE_NfvBgpRouting'. ", resPolicy.getURI())
@@ -270,59 +303,11 @@ public class MCE_NfvBgpRouting implements IModelComputationElement {
                 }
             }
             
-            // get export data
-            sparql = "SELECT ?dxvif ?vgw WHERE {"
-                + "?dxvif mrs:type \"direct-connect-vif\". "
-                + "?dxvif nml:isAlias ?vgw. "
-                + "}";
-            r = ModelUtil.sparqlQuery(routingModel, sparql);
-            if (!r.hasNext()) {
-                return;
-            }
-            QuerySolution solution = r.next();
-            Resource resDxvif = solution.getResource("dxvif");
-            Resource resVgw = solution.getResource("vgw");
-            sparql = "SELECT ?dxvif_name ?asn ?vlan ?amazon_ip ?customer_ip  ?authkey WHERE {"
-                    + String.format("<%s> nml:name ?dxvif_name. ", resDxvif.getURI())
-                    + String.format("<%s> mrs:hasNetworkAddress ?netaddr_asn. ", resDxvif.getURI())
-                    + "?netaddr_asn mrs:type \"bgp-asn\". "
-                    + "?netaddr_asn mrs:value ?asn. "
-                    + String.format("<%s> mrs:hasLabelGroup ?lg_vlan. ", resDxvif.getURI())
-                    + "?lg_vlan nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
-                    + "?lg_vlan nml:values ?vlan. "
-                    + "OPTIONAL {"
-                    + String.format("<%s> mrs:hasNetworkAddress ?netaddr_amazon_ip. ", resDxvif.getURI())
-                    + "?netaddr_amazon_ip mrs:type \"ipv4-address:amazon\". "
-                    + "?netaddr_amazon_ip mrs:value ?amazon_ip. "
-                    + String.format("<%s> mrs:hasNetworkAddress ?netaddr_customer_ip. ", resDxvif.getURI())
-                    + "?netaddr_customer_ip mrs:type \"ipv4-address:customer\". "
-                    + "?netaddr_customer_ip mrs:value ?customer_ip. "
-                    + String.format("<%s> mrs:hasNetworkAddress ?netaddr_authkey. ", resDxvif.getURI())
-                    + "?netaddr_authkey mrs:type \"bgp-authkey\". "
-                    + "?netaddr_authkey mrs:value ?authkey. "
-                    + "}"
-                    + "}";
-            Model unionModel = ModelFactory.createUnion(systemModel, spaModel); // spaModel contains routingModel
-            r = ModelUtil.sparqlQuery(unionModel, sparql);
-            if (!r.hasNext()) {
-                return;
-            }
-            solution = r.next();
-            String dxvifName = solution.getLiteral("dxvif_name").getString();
-            JSONObject dxvifData = new JSONObject();
-            dxvifData.put("customer_asn", solution.get("asn").toString());
-            if (solution.contains("amazon_ip")) {
-                dxvifData.put("amazon_ip", solution.get("amazon_ip").toString());
-            }
-            if (solution.contains("customer_ip")) {
-                dxvifData.put("customer_ip", solution.get("customer_ip").toString());
-            }
-            if (solution.contains("authkey")) {
-                dxvifData.put("bgp_authkey", solution.get("authkey").toString());
-            }
-            dxvifData.put("vlan", solution.get("vlan").toString());
-            // put new data into jsonValue
-            jsonValue.put(dxvifName, dxvifData);
+            //@ get export data
+            
+            //@ put new data into jsonValue
+            //jsonValue.put(name, data);
+            
             //@TODO: common logic
             if (dataValue != null) {
                 spaModel.remove(resData, Spa.value, dataValue);
