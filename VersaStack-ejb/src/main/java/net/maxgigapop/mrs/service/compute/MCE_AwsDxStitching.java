@@ -50,7 +50,7 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
 
     @Override
     @Asynchronous
-    public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
+    public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
         log.log(Level.FINE, "MCE_AWSDirectConnectStitch::process {0}", annotatedDelta);
         try {
             log.log(Level.FINE, "\n>>>MCE_AWSDirectConnectStitch--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));

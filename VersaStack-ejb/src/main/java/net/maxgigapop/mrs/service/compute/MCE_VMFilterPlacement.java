@@ -52,7 +52,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
 
     @Override
     @Asynchronous
-    public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
+    public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
         // $$ MCE_VMFilterPlacement deals with add model only for now.
         if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
             throw new EJBException(String.format("%s::process ", this.getClass().getName()));

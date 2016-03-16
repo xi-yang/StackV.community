@@ -5,6 +5,7 @@
  */
 package net.maxgigapop.mrs.service.compute;
 
+import com.hp.hpl.jena.rdf.model.Resource;
 import java.util.concurrent.Future;
 import javax.ejb.Asynchronous;
 import javax.ejb.Local;
@@ -20,5 +21,5 @@ import net.maxgigapop.mrs.bean.ModelBase;
 public interface IModelComputationElement {
 
     @Asynchronous
-    public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta);
+    public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta);
 }
