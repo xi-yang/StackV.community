@@ -663,6 +663,7 @@ public class AwsPush {
                 List<InstanceNetworkInterfaceSpecification> portSpecification = new ArrayList();
                 for (int i = 9; i < parameters.length; i++) {
                     InstanceNetworkInterfaceSpecification s = new InstanceNetworkInterfaceSpecification();
+                    //s.withAssociatePublicIpAddress(true);
                     String netIfId = ec2Client.getResourceId(parameters[i]);
                     int retry = 0; // special handling for lagging interface name and tag
                     while (!netIfId.startsWith("eni-") && retry++ < 5) {

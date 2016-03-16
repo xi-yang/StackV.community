@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -49,7 +50,7 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
 
     @Override
     @Asynchronous
-    public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
+    public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
         log.log(Level.FINE, "MCE_UcsSriovStitching::process {0}", annotatedDelta);
         try {
             log.log(Level.FINE, "\n>>>MCE_UcsSriovStitching--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
@@ -57,13 +58,12 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
             Logger.getLogger(MCE_UcsSriovStitching.class.getName()).log(Level.SEVERE, null, ex);
         }
         //@TODO: make the initial data imports a common function
-        // importPolicyData : Interface->Stitching->List<PolicyData>
         String sparql = "SELECT ?policy ?data ?type ?value WHERE {"
                 + "?policy a spa:PolicyAction. "
                 + "?policy spa:type 'MCE_UcsSriovStitching'. "
                 + "?policy spa:importFrom ?data. "
                 + "?data spa:type ?type. ?data spa:value ?value. "
-                + "FILTER not exists {?policy spa:dependOn ?other} "
+                + String.format("FILTER (not exists {?policy spa:dependOn ?other} && ?policy = <%s>)", policy.getURI())
                 + "}";
 
         ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);
@@ -221,11 +221,11 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
         if (resPortProfile == null) {
             throw new EJBException(String.format("%s::process cannot find a SwitchingSubnet of 'UCS_Port_Profile' type to stitch to (in %s)", this.getClass().getName(), jsonStitchReq.containsKey("to_port_profile") ? (String) jsonStitchReq.get("to_l2path") : (String) jsonStitchReq.get("to_port_profile")));
         }
-        int ethNum = 1; 
-        while (unionSysModel.contains(unionSysModel.getResource(resVm.getURI()+String.format(":port+eth%d",ethNum)), RdfOwl.type, Nml.BidirectionalPort)) {
-            ethNum++;
-        }
-        Resource resVnic = RdfOwl.createResource(spaModel, resVm.getURI() + String.format(":port+eth%d", ethNum), Nml.BidirectionalPort);
+        //int ethNum = 1; 
+        //while (unionSysModel.contains(unionSysModel.getResource(resVm.getURI()+String.format(":port+eth%d",ethNum)), RdfOwl.type, Nml.BidirectionalPort)) {
+        //    ethNum++;
+        //}
+        Resource resVnic = RdfOwl.createResource(spaModel, resVm.getURI() + String.format(":port+eth%s", UUID.randomUUID().toString()), Nml.BidirectionalPort);
 
         stitchModel.add(stitchModel.createStatement(resVm, Nml.hasBidirectionalPort, resVnic));
         stitchModel.add(stitchModel.createStatement(resVmFex, Mrs.providesVNic, resVnic));

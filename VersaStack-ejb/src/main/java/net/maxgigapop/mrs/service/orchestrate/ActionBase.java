@@ -186,7 +186,7 @@ public class ActionBase {
             }
             if (addList != null) {
                 retList.addAll(addList);
-            } else if (A.getState().equals(ActionState.IDLE) && action.hasAllDependenciesMerged()) {
+            } else if (A.getState().equals(ActionState.IDLE) && A.hasAllDependenciesMerged()) {
                 retList.add(A);
             }
         }
