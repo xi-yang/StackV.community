@@ -350,9 +350,9 @@ public class serviceBeans {
                 topUri = entry.getValue();
             else if (entry.getKey().equalsIgnoreCase("instanceUUID")) 
                 refUuid = entry.getValue();
-            else if (entry.getKey().equalsIgnoreCase("eth_src"))
+            else if (entry.getKey().equalsIgnoreCase("eth-src"))
                 eth_src = entry.getValue();
-            else if (entry.getKey().equalsIgnoreCase("eth_des"))
+            else if (entry.getKey().equalsIgnoreCase("eth-des"))
                 eth_des = entry.getValue();
         }
         

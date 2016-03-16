@@ -47,7 +47,8 @@ INSERT INTO `acl` (`acl_id`, `service_id`) VALUES
 (8, 8),
 (9, 9),
 (10, 10),
-(11, 11);
+(11, 11),
+(12,12);
 
 -- --------------------------------------------------------
 
@@ -80,6 +81,7 @@ INSERT INTO `acl_entry_group` (`acl_id`, `usergroup_id`) VALUES
 (9, 1),
 (10, 1),
 (11, 1),
+(12,1),
 (2, 2),
 (3, 2),
 (11, 2);
@@ -146,7 +148,7 @@ INSERT INTO `service` (`service_id`, `name`, `filename`, `description`, `atomic`
 (9, 'View Filter Management', 'viewcreate', 'Management and Creation of graphical view filters.', 0),
 (10, 'Network Creation', 'netcreate', 'Network Creation Pilot Testbed', 0),
 (11, 'Dynamic Network Connection', 'dnc', 'Creation of new network connections.', 0),
-(11, 'Flow based Layer2 Protection', 'fl2p', 'Switching of protection and recovery path.', 0);
+(12, 'Flow based Layer2 Protection', 'fl2p', 'Switching of protection and recovery path.', 0);
 
 -- --------------------------------------------------------
 
