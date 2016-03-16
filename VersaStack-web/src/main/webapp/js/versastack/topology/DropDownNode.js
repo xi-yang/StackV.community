@@ -55,6 +55,11 @@ define([
                 drop.style.float = "left";         
                 drop.className = "dropDownArrow";
                 line.appendChild(drop);
+            } else if (that.name.substring(0,3) === "urn") {
+                var bullet = document.createElement("span");
+                bullet.innerHTML = "•";
+                bullet.style.float = "left";
+                line.appendChild(bullet);
             }
             
             text.innerHTML = _getText();
@@ -69,17 +74,16 @@ define([
 //                text.innerHTML = _getText();
 //            };
             if (that.children.length !== 0) {
-
-            drop.onclick = function () {
-                isExpanded = !isExpanded;
-                drop.innerHTML = isExpanded ? "▼" : "▶";
-                var disp = isExpanded ? "inherit" : "none";
-                map_(childNodes, function (child) {
-                    child.style.display = disp;
-                });
-                text.innerHTML = _getText();
-            };            
-        }
+                drop.onclick = function () {
+                    isExpanded = !isExpanded;
+                    drop.innerHTML = isExpanded ? "▼" : "▶";
+                    var disp = isExpanded ? "inherit" : "none";
+                    map_(childNodes, function (child) {
+                        child.style.display = disp;
+                    });
+                    text.innerHTML = _getText();
+                };            
+            }
             if (that.name.substring(0,3) === "urn") {
                 var link = document.createElement("div");
                 link.className = "urnLink";
