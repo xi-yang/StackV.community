@@ -5,6 +5,7 @@
  */
 package net.maxgigapop.mrs.rest.api;
 
+import static java.lang.Thread.sleep;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,7 +29,7 @@ import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.rest.api.model.ServiceApiDelta;
 import net.maxgigapop.mrs.service.HandleServiceCall;
 import java.util.logging.Logger;
-import javax.ws.rs.BadRequestException;
+import javax.ws.rs.ProcessingException;
 import javax.ws.rs.PUT;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -121,6 +122,9 @@ public class ServiceResource {
     public ApiDeltaBase compile(@PathParam("siUUID") String svcInstanceUUID, ServiceApiDelta svcApiDelta) throws Exception {
         String workerClassPath = svcApiDelta.getWorkerClassPath();
         SystemDelta sysDelta = serviceCallHandler.compileAddDelta(svcInstanceUUID, workerClassPath, svcApiDelta.getUuid(), svcApiDelta.getModelAddition(), svcApiDelta.getModelReduction());
+        if (sysDelta == null) {
+            throw new ProcessingException("Failed to compile service delta");
+        }
         ApiDeltaBase apiSysDelta = new ApiDeltaBase();
         apiSysDelta.setId(sysDelta.getId().toString());
         java.util.Date now = new java.util.Date();
@@ -150,6 +154,9 @@ public class ServiceResource {
     public ApiDeltaBase compileJson(@PathParam("siUUID") String svcInstanceUUID, ServiceApiDelta svcApiDelta) throws Exception {
         String workerClassPath = svcApiDelta.getWorkerClassPath();
         SystemDelta sysDelta = serviceCallHandler.compileAddDelta(svcInstanceUUID, workerClassPath, svcApiDelta.getUuid(), svcApiDelta.getModelAddition(), svcApiDelta.getModelReduction());
+        if (sysDelta == null) {
+            throw new ProcessingException("Failed to compile service delta");
+        }
         ApiDeltaBase apiSysDelta = new ApiDeltaBase();
         apiSysDelta.setId(sysDelta.getId().toString());
         java.util.Date now = new java.util.Date();
@@ -176,14 +183,96 @@ public class ServiceResource {
     @PUT
     @Path("/{siUUID}/{action}")
     public String push(@PathParam("siUUID") String svcInstanceUUID, @PathParam("action") String action) {
+        long retryDelay = 1000L; // 1 sec
+        long delayMax = 16000L; // 16 secs 
         if (action.equalsIgnoreCase("propagate")) {
-            return serviceCallHandler.propagateDeltas(svcInstanceUUID, true);
+            while (true) {
+                retryDelay *= 2; // retry up to 4 times at 2, 4, 8, 16 secs
+                try {
+                    if (retryDelay == 2000L) {
+                        return serviceCallHandler.propagateDeltas(svcInstanceUUID, true);
+                    } else {
+                        return serviceCallHandler.propagateRetry(svcInstanceUUID, true);
+                    }   
+                } catch (EJBException ejbEx) {
+                    String errMsg = ejbEx.getMessage();
+                    log.warning("Caught+Retry: " + errMsg);
+                    if (errMsg.contains("could not execute statement") && retryDelay <= delayMax) {
+                        try {
+                            sleep(retryDelay);
+                        } catch (InterruptedException ex) {
+                            ;
+                        }
+                    } else {
+                        serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
+                        throw ejbEx;
+                    }
+                }
+            }
         } else if (action.equalsIgnoreCase("propagate_through")) {
-            return serviceCallHandler.propagateDeltas(svcInstanceUUID, false);
+            while (true) {
+                retryDelay *= 2; // retry up to 4 times at 2, 4, 8, 16 secs
+                try {
+                    if (retryDelay == 2000L) {
+                        return serviceCallHandler.propagateDeltas(svcInstanceUUID, false);
+                    } else {
+                        return serviceCallHandler.propagateRetry(svcInstanceUUID, false);
+                    }   
+                } catch (EJBException ejbEx) {
+                    String errMsg = ejbEx.getMessage();
+                    log.warning("Caught+Retry: " + errMsg);
+                    if (errMsg.contains("could not execute statement") && retryDelay <= delayMax) {
+                        try {
+                            sleep(retryDelay);
+                        } catch (InterruptedException ex) {
+                            ;
+                        }
+                    } else {
+                        serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
+                        throw ejbEx;
+                    }
+                }
+            }
         } else if (action.equalsIgnoreCase("propagate_retry")) {
-            return serviceCallHandler.propagateRetry(svcInstanceUUID, false);
+            while (true) {
+                retryDelay *= 2; // retry up to 4 times at 2, 4, 8, 16 secs
+                try {
+                    return serviceCallHandler.propagateRetry(svcInstanceUUID, false);
+                } catch (EJBException ejbEx) {
+                    String errMsg = ejbEx.getMessage();
+                    log.warning("Caught+Retry: " + errMsg);
+                    if (errMsg.contains("could not execute statement") && retryDelay <= delayMax) {
+                        try {
+                            sleep(retryDelay);
+                        } catch (InterruptedException ex) {
+                            ;
+                        }
+                    } else {
+                        serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
+                        throw ejbEx;
+                    }
+                }
+            }
         } else if (action.equalsIgnoreCase("propagate_forcedretry")) {
-            return serviceCallHandler.propagateRetry(svcInstanceUUID, true);
+            while (true) {
+                retryDelay *= 2; // retry up to 4 times at 2, 4, 8, 16 secs
+                try {
+                    return serviceCallHandler.propagateRetry(svcInstanceUUID, true);
+                } catch (EJBException ejbEx) {
+                    String errMsg = ejbEx.getMessage();
+                    log.warning("Caught+Retry: " + errMsg);
+                    if (errMsg.contains("could not execute statement") && retryDelay <= delayMax) {
+                        try {
+                            sleep(retryDelay);
+                        } catch (InterruptedException ex) {
+                            ;
+                        }
+                    } else {
+                        serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
+                        throw ejbEx;
+                    }
+                }
+            }
         } else if (action.equalsIgnoreCase("commit")) {
             return serviceCallHandler.commitDeltas(svcInstanceUUID, false);
         } else if (action.equalsIgnoreCase("commit_forced")) {

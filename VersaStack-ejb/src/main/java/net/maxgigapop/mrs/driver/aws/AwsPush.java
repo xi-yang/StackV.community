@@ -418,7 +418,7 @@ public class AwsPush {
                 String vpcId = vpcResult.getVpc().getVpcId();
                 ec2Client.getVpcs().add(vpcResult.getVpc());
                 ec2Client.vpcStatusCheck(vpcId, VpcState.Available.name().toLowerCase());
-
+                
                 //tag the routing table of the 
                 RouteTable mainTable = null;
                 DescribeRouteTablesResult tablesResult = this.ec2.describeRouteTables();
@@ -427,11 +427,11 @@ public class AwsPush {
                         mainTable = tb;
                     }
                 }
+                //@TODO retry this.ec2.describeRouteTables() when mainTable == null
                 ec2Client.getRoutingTables().add(mainTable);
                 //create the tag for the vpc
                 ec2Client.tagResource(vpcId, parameters[2]);
                 ec2Client.tagResource(mainTable.getRouteTableId(), parameters[3]);
-
             } else if (request.contains("CreateSubnetRequest")) {
                 String[] parameters = request.split("\\s+");
 
@@ -512,10 +512,9 @@ public class AwsPush {
 
             } else if (request.contains("AttachVpnGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
-
+                //@TODO: retry getVirtualPrivateGateway query when vpn == null
                 VpnGateway vpn = ec2Client.getVirtualPrivateGateway(ec2Client.getVpnGatewayId(parameters[1]));
                 Vpc v = ec2Client.getVpc(ec2Client.getVpcId(parameters[2]));
-
                 if (!vpn.equals(ec2Client.getVirtualPrivateGateway(v))) {
                     AttachVpnGatewayRequest gwRequest = new AttachVpnGatewayRequest();
                     gwRequest.withVpnGatewayId(vpn.getVpnGatewayId())
@@ -664,7 +663,12 @@ public class AwsPush {
                 List<InstanceNetworkInterfaceSpecification> portSpecification = new ArrayList();
                 for (int i = 9; i < parameters.length; i++) {
                     InstanceNetworkInterfaceSpecification s = new InstanceNetworkInterfaceSpecification();
-                    s.withNetworkInterfaceId(ec2Client.getResourceId(parameters[i]));
+                    String netIfId = ec2Client.getResourceId(parameters[i]);
+                    int retry = 0; // special handling for lagging interface name and tag
+                    while (!netIfId.startsWith("eni-") && retry++ < 5) {
+                        netIfId = ec2Client.getResourceId(parameters[i]);
+                    }
+                    s.withNetworkInterfaceId(netIfId);
                     i++;
                     s.withDeviceIndex(Integer.parseInt(parameters[i]));
                     portSpecification.add(s);

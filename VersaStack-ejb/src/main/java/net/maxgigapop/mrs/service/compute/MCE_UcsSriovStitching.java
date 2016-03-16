@@ -31,6 +31,7 @@ import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.ResourceTool;
+import net.maxgigapop.mrs.common.Spa;
 import net.maxgigapop.mrs.driver.openstack.OpenstackPrefix;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -48,7 +49,7 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
 
     @Override
     @Asynchronous
-    public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
+    public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
         log.log(Level.FINE, "MCE_UcsSriovStitching::process {0}", annotatedDelta);
         try {
             log.log(Level.FINE, "\n>>>MCE_UcsSriovStitching--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
@@ -57,40 +58,56 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
         }
         //@TODO: make the initial data imports a common function
         // importPolicyData : Interface->Stitching->List<PolicyData>
-        String sparql = "SELECT ?data ?type ?value WHERE {"
-                + String.format("?res spa:dependOn <%s>. ", policy.getURI())
-                + String.format("<%s> spa:importFrom ?data. ", policy.getURI())
+        String sparql = "SELECT ?policy ?data ?type ?value WHERE {"
+                + "?policy a spa:PolicyAction. "
+                + "?policy spa:type 'MCE_UcsSriovStitching'. "
+                + "?policy spa:importFrom ?data. "
                 + "?data spa:type ?type. ?data spa:value ?value. "
-                + String.format("FILTER (not exists {<%s> spa:dependOn ?other} && not exists {?res a spa:PolicyAction}) ", policy.getURI())
+                + "FILTER not exists {?policy spa:dependOn ?other} "
                 + "}";
 
         ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);
-        List<Map> stitchPolicyMaps = new ArrayList<>();
+        Map<Resource, Map> stitchPolicyMap = new HashMap<>();
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
+            Resource resPolicy = querySolution.get("policy").asResource();
+            if (!stitchPolicyMap.containsKey(resPolicy)) {
+                Map<String, List> stitchMap = new HashMap<>();
+                List dataList = new ArrayList<>();
+                stitchMap.put("imports", dataList);
+                stitchPolicyMap.put(resPolicy, stitchMap);
+            }
             Resource resData = querySolution.get("data").asResource();
             RDFNode nodeDataType = querySolution.get("type");
             RDFNode nodeDataValue = querySolution.get("value");
-            Map policyData = new HashMap<>();
-            policyData.put("data", resData);
-            policyData.put("type", nodeDataType.toString());
-            policyData.put("value", nodeDataValue.toString());
-            stitchPolicyMaps.add(policyData);
+            boolean existed =false;
+            for (Map dataMap: (List<Map>)stitchPolicyMap.get(resPolicy).get("imports")) {
+                if(dataMap.get("data").equals(resData)) {
+                    existed = true;
+                    break;
+                }
+            }
+            if (!existed) {
+                Map policyData = new HashMap<>();
+                policyData.put("data", resData);
+                policyData.put("type", nodeDataType.toString());
+                policyData.put("value", nodeDataValue.toString());
+                ((List)stitchPolicyMap.get(resPolicy).get("imports")).add(policyData);
+            }
         }
         ServiceDelta outputDelta = annotatedDelta.clone();
 
-        for (Map policyData : stitchPolicyMaps) {
-            OntModel stitchModel = this.doStitching(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), policy, policyData);
+        for (Resource policyAction : stitchPolicyMap.keySet()) {
+            OntModel stitchModel = this.doStitching(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), policyAction, stitchPolicyMap.get(policyAction));
             // merge the placement satements into spaModel
             if (stitchModel != null) {
                 outputDelta.getModelAddition().getOntModel().add(stitchModel.getBaseModel());
             }
 
-            // no export ?
-            //this.exportPolicyData()
+            exportPolicyData(outputDelta.getModelAddition().getOntModel(), policyAction, stitchModel, systemModel.getOntModel());
 
             // remove policy dependency
-            MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), policy);
+            MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), policyAction);
         }
         return new AsyncResult(outputDelta);
     }
@@ -101,14 +118,17 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
     // 2. identify the "attach-point" resource (eg. VLAN port) along with a stitching path
     // 3. add statements to the stitching path to connect the terminal to the attach-point (if applicable)
     private OntModel doStitching(OntModel systemModel, OntModel spaModel, Resource policyAction, Map stitchPolicyData) {
+        //@TODO: common logic
+        List<Map> dataMapList = (List<Map>)stitchPolicyData.get("imports");
         JSONObject jsonStitchReq = null;
-            if (!stitchPolicyData.containsKey("data") || !stitchPolicyData.containsKey("type") || !stitchPolicyData.containsKey("value")) {
-                throw new EJBException(String.format("%s::process doStitching imports invalid importData", this.getClass().getName()));
+        for (Map entry : dataMapList) {
+            if (!entry.containsKey("data") || !entry.containsKey("type") || !entry.containsKey("value")) {
+                continue;
             }
-            if (stitchPolicyData.get("type").toString().equalsIgnoreCase("JSON")) {
+            if (entry.get("type").toString().equalsIgnoreCase("JSON")) {
                 JSONParser parser = new JSONParser();
                 try {
-                    JSONObject jsonObj = (JSONObject) parser.parse((String) stitchPolicyData.get("value"));
+                    JSONObject jsonObj = (JSONObject) parser.parse((String) entry.get("value"));
                     if (jsonStitchReq == null) {
                         jsonStitchReq = jsonObj;
                     } else { // merge
@@ -117,11 +137,12 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
                         }
                     }
                 } catch (ParseException e) {
-                    throw new EJBException(String.format("%s::process doStitching cannot parse json string %s", this.getClass().getName(), (String) stitchPolicyData.get("value")));
+                    throw new EJBException(String.format("%s::process doStitching cannot parse json string %s", this.getClass().getName(), (String) entry.get("value")));
                 }
             } else {
-                throw new EJBException(String.format("%s::process doStitching does not import policyData of %s type", stitchPolicyData.get("type").toString()));
+                throw new EJBException(String.format("%s::process doStitching does not import policyData of %s type", entry.get("type").toString()));
             }
+        }
         
         if (jsonStitchReq == null || jsonStitchReq.isEmpty()) {
             throw new EJBException(String.format("%s::process doStitching receive none request for <%s>", this.getClass().getName(), policyAction));
@@ -259,4 +280,97 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
         }
         return stitchModel;
     }
-}
+
+    private void exportPolicyData(OntModel spaModel, Resource resPolicy, OntModel stitchModel, OntModel systemModel) {
+        String sparql = "SELECT ?data ?type ?value ?format WHERE {"
+                + String.format("<%s> a spa:PolicyAction. ", resPolicy.getURI())
+                + String.format("<%s> spa:type 'MCE_UcsSriovStitching'. ", resPolicy.getURI())
+                + String.format("<%s> spa:exportTo ?data . ", resPolicy.getURI())
+                + "OPTIONAL {?data spa:type ?type.} "
+                + "OPTIONAL {?data spa:value ?value.} "
+                + "OPTIONAL {?data spa:format ?format.} "
+                + "}";
+        ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
+        List<QuerySolution> solutions = new ArrayList<>();
+        while (r.hasNext()) {
+            solutions.add(r.next());
+        }
+        for (QuerySolution querySolution : solutions) {
+            Resource resData = querySolution.get("data").asResource();
+            RDFNode dataType = querySolution.get("type");
+            RDFNode dataValue = querySolution.get("value");
+
+            if (dataType == null) {
+                spaModel.add(resData, Spa.type, "JSON");
+            } else if (!dataType.toString().equalsIgnoreCase("JSON")) {
+                continue;
+            }
+            JSONObject jsonValue = new JSONObject();
+            if (dataValue != null) {
+                JSONParser parser = new JSONParser();
+                try {
+                    jsonValue = (JSONObject)parser.parse(dataValue.toString());
+                } catch (ParseException e) {
+                    throw new EJBException(String.format("%s::exportPolicyData  cannot parse json string %s due to: %s", this.getClass().getName(), dataValue.toString(), e));
+                }
+            }
+            
+            // get export data
+            sparql = "SELECT ?vm ?vnic WHERE {"
+                + "?vm nml:hasBidirectionalPort ?vnic. "
+                + "?vmfex mrs:providesVNic ?vnic. "
+                + "}";
+            r = ModelUtil.sparqlQuery(stitchModel, sparql);
+            if (!r.hasNext()) {
+                return;
+            }
+            QuerySolution solution = r.next();
+            Resource resVNic = solution.getResource("vnic");
+            Resource resVM = solution.getResource("vm");
+            
+            sparql = "SELECT ?ip_address ?mac_address ?port_profile WHERE {"
+                    + String.format("<%s> mrs:hasNetworkAddress ?netaddr_ip. ", resVNic.getURI())
+                    + "?netaddr_ip mrs:type \"ipv4-address\". "
+                    + "?netaddr_ip mrs:value ?ip_address. "
+                    + String.format("<%s> mrs:hasNetworkAddress ?netaddr_mac. ", resVNic.getURI())
+                    + "?netaddr_mac mrs:type \"mac-address\". "
+                    + "?netaddr_mac mrs:value ?mac_address. "
+                    + String.format("?profile_subnet nml:hasBidirectionalPort <%s>. ", resVNic.getURI())
+                    + "?profile_subnet a mrs:SwitchingSubnet. "
+                    + "?profile_subnet mrs:type \"Cisco_UCS_Port_Profile\". "
+                    + "?profile_subnet mrs:value ?port_profile. "
+                    + "}";
+            Model unionModel = ModelFactory.createUnion(systemModel, spaModel); // spaModel contains stitchModel
+            r = ModelUtil.sparqlQuery(unionModel, sparql);
+            if (!r.hasNext()) {
+                return;
+            }
+            solution = r.next();
+            JSONObject vnicData = new JSONObject();
+            vnicData.put("ip_address", solution.get("ip_address").toString());
+            vnicData.put("mac_address", solution.get("mac_address").toString());
+            String portProfile = solution.get("port_profile").toString();
+            if (portProfile.startsWith("Cisco_UCS_Port_Profile+")) {
+                portProfile = portProfile.substring("Cisco_UCS_Port_Profile+".length());
+            }
+            vnicData.put("port_profile", portProfile);
+            // put new data into jsonValue
+            jsonValue.put(resVNic.getURI(), vnicData);
+            //@TODO: common logic
+            if (dataValue != null) {
+                spaModel.remove(resData, Spa.value, dataValue);
+            }
+            //add output as spa:value of the export resrouce
+            String exportValue = jsonValue.toJSONString();
+            if (querySolution.contains("format")) {
+                String exportFormat = querySolution.get("format").toString();
+                try {
+                    exportValue = MCETools.formatJsonExport(exportValue, exportFormat);
+                } catch (EJBException ex) {
+                    log.log(Level.WARNING, ex.getMessage());
+                    continue;
+                }
+            }
+            spaModel.add(resData, Spa.value, exportValue);
+        }
+    }}

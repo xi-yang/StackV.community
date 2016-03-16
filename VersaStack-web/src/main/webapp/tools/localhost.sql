@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost:3306
--- Generation Time: Feb 03, 2016 at 04:57 PM
+-- Generation Time: Mar 03, 2016 at 07:51 PM
 -- Server version: 5.5.42
 -- PHP Version: 5.6.7
 
@@ -14,7 +14,7 @@ SET time_zone = "+00:00";
 -- Database: `frontend`
 --
 DROP DATABASE `frontend`;
-CREATE DATABASE IF NOT EXISTS `frontend` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+CREATE DATABASE IF NOT EXISTS `frontend` DEFAULT CHARACTER SET latin1 COLLATE latin1_swedish_ci;
 USE `frontend`;
 
 -- --------------------------------------------------------
@@ -29,6 +29,11 @@ CREATE TABLE `acl` (
   `service_id` int(11) NOT NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `acl`
+--
+
+TRUNCATE TABLE `acl`;
 --
 -- Dumping data for table `acl`
 --
@@ -56,6 +61,11 @@ CREATE TABLE `acl_entry_group` (
   `usergroup_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `acl_entry_group`
+--
+
+TRUNCATE TABLE `acl_entry_group`;
 --
 -- Dumping data for table `acl_entry_group`
 --
@@ -87,6 +97,11 @@ CREATE TABLE `acl_entry_user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
+-- Truncate table before insert `acl_entry_user`
+--
+
+TRUNCATE TABLE `acl_entry_user`;
+--
 -- Dumping data for table `acl_entry_user`
 --
 
@@ -112,6 +127,11 @@ CREATE TABLE `service` (
   `atomic` tinyint(1) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `service`
+--
+
+TRUNCATE TABLE `service`;
 --
 -- Dumping data for table `service`
 --
@@ -139,8 +159,13 @@ CREATE TABLE `service_delta` (
   `service_instance_id` int(11) NOT NULL,
   `service_state_id` int(11) NOT NULL,
   `delta` longtext COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `service_delta`
+--
+
+TRUNCATE TABLE `service_delta`;
 -- --------------------------------------------------------
 
 --
@@ -154,9 +179,14 @@ CREATE TABLE `service_instance` (
   `user_id` int(11) NOT NULL,
   `creation_time` datetime DEFAULT NULL,
   `referenceUUID` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `service_state_id` int(11) DEFAULT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=141 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `service_state_id` int(11) NOT NULL DEFAULT '1'
+) ENGINE=InnoDB AUTO_INCREMENT=238 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `service_instance`
+--
+
+TRUNCATE TABLE `service_instance`;
 -- --------------------------------------------------------
 
 --
@@ -167,14 +197,23 @@ DROP TABLE IF EXISTS `service_state`;
 CREATE TABLE `service_state` (
   `service_state_id` int(11) NOT NULL COMMENT '	',
   `superState` varchar(45) COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `service_state`
+--
+
+TRUNCATE TABLE `service_state`;
 --
 -- Dumping data for table `service_state`
 --
 
 INSERT INTO `service_state` (`service_state_id`, `superState`) VALUES
-(1, 'Creation');
+(2, 'Cancel'),
+(1, 'Create'),
+(5, 'Delete'),
+(3, 'Modify'),
+(4, 'Reinstate');
 
 -- --------------------------------------------------------
 
@@ -188,6 +227,11 @@ CREATE TABLE `user_belongs` (
   `usergroup_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `user_belongs`
+--
+
+TRUNCATE TABLE `user_belongs`;
 --
 -- Dumping data for table `user_belongs`
 --
@@ -218,6 +262,11 @@ CREATE TABLE `user_info` (
 ) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
+-- Truncate table before insert `user_info`
+--
+
+TRUNCATE TABLE `user_info`;
+--
 -- Dumping data for table `user_info`
 --
 
@@ -241,6 +290,11 @@ CREATE TABLE `usergroup` (
   `title` varchar(25) COLLATE utf8_unicode_ci NOT NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `usergroup`
+--
+
+TRUNCATE TABLE `usergroup`;
 --
 -- Dumping data for table `usergroup`
 --
@@ -345,17 +399,17 @@ ALTER TABLE `service`
 -- AUTO_INCREMENT for table `service_delta`
 --
 ALTER TABLE `service_delta`
-  MODIFY `service_delta_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `service_delta_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=54;
 --
 -- AUTO_INCREMENT for table `service_instance`
 --
 ALTER TABLE `service_instance`
-  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=141;
+  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=238;
 --
 -- AUTO_INCREMENT for table `service_state`
 --
 ALTER TABLE `service_state`
-  MODIFY `service_state_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '	',AUTO_INCREMENT=2;
+  MODIFY `service_state_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '	',AUTO_INCREMENT=6;
 --
 -- AUTO_INCREMENT for table `user_info`
 --
@@ -394,15 +448,15 @@ ALTER TABLE `acl_entry_user`
 -- Constraints for table `service_delta`
 --
 ALTER TABLE `service_delta`
-  ADD CONSTRAINT `service_delta-service_instance` FOREIGN KEY (`service_instance_id`) REFERENCES `service_instance` (`service_instance_id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT `service_delta-service_instance` FOREIGN KEY (`service_instance_id`) REFERENCES `service_instance` (`service_instance_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `service_delta-service_state` FOREIGN KEY (`service_state_id`) REFERENCES `service_state` (`service_state_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 --
 -- Constraints for table `service_instance`
 --
 ALTER TABLE `service_instance`
-  ADD CONSTRAINT `service_instance-service_state` FOREIGN KEY (`service_state_id`) REFERENCES `service_state` (`service_state_id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   ADD CONSTRAINT `service_instance-service` FOREIGN KEY (`service_id`) REFERENCES `service` (`service_id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT `service_instance-service_state` FOREIGN KEY (`service_state_id`) REFERENCES `service_state` (`service_state_id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   ADD CONSTRAINT `service_instance-user_info` FOREIGN KEY (`user_id`) REFERENCES `user_info` (`user_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 --
@@ -437,6 +491,11 @@ CREATE TABLE `cred` (
   `salt` varchar(64) COLLATE utf8_unicode_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `cred`
+--
+
+TRUNCATE TABLE `cred`;
 --
 -- Dumping data for table `cred`
 --

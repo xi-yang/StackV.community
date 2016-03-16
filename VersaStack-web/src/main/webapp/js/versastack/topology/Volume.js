@@ -137,7 +137,7 @@ define([
             return backing.name;
         };
         this.populateTreeMenu = function (tree) {
-            var root = tree.addChild(this.getName());
+            var root = tree.addChild(this.getName(), "Volume");
         };
 
         this.getIconPath = function () {

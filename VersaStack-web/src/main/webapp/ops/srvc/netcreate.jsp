@@ -58,30 +58,27 @@
                             </div>
                         </div>
                         <div id="service-bottom">                            
-                            <div id="service-fields">                                
-                                <form id="service-template-form" action="/VersaStack-web/ServiceServlet" method="post">
-                                    <input type="hidden" name="userID" value="${user.getId()}"/>
-                                    <table class="management-table" id="net-template-form" style="margin-bottom: 0px;"> 
-                                        <thead>
-                                            <tr>
-                                                <th>Templates</th>
-                                                <th></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>Basic</td>
-                                                <td><input type="submit" name="template1" value="Select" /></td>
-                                            </tr>                                            
-                                            <tr>
-                                                <td>Advanced</td>
-                                                <td><input type="submit" name="template2" value="Select" /></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>    
-                                    <input type="hidden" name="netCreate" value="true"/>
-                                </form>  
-                                <form id="service-custom-form" action="/VersaStack-web/ServiceServlet" method="post">
+                            <div id="service-fields">                                                               
+                                <table class="management-table" id="net-template-form" style="margin-bottom: 0px;"> 
+                                    <thead>
+                                        <tr>
+                                            <th>Templates</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>No VM</td>
+                                            <td><button onclick="applyNetTemplate(1)">Apply</button></td>
+                                        </tr>                                            
+                                        <tr>
+                                            <td>VM</td>
+                                            <td><button onclick="applyNetTemplate(2)">Apply</button></td>
+                                        </tr>
+                                    </tbody>
+                                </table>    
+
+                                <form id="custom-form" action="/VersaStack-web/ServiceServlet" method="post">
                                     <input type="hidden" name="userID" value="${user.getId()}"/>    
                                     <table class="management-table" id="net-custom-form">
                                         <thead>
@@ -95,7 +92,7 @@
                                                 <td>Topology URI</td>
                                                 <td>
                                                     <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance" var="driverlist" />
-                                                    <select name="topoUri" >
+                                                    <select name="topoUri" required>
                                                         <option></option>
                                                         <c:forEach var="driver" items="${driverlist.rows}">
                                                             <option value="${driver.topologyUri}">${driver.topologyUri}</option>
@@ -105,11 +102,11 @@
                                             </tr>
                                             <tr>
                                                 <td>Network Type</td>
-                                                <td><input type="text" name="netType" /></td>
+                                                <td><input type="text" name="netType" required/></td>
                                             </tr>
                                             <tr>
                                                 <td>Network CIDR</td>
-                                                <td><input type="text" name="netCidr" /></td>
+                                                <td><input type="text" name="netCidr" required/></td>
                                             </tr>
                                             <!-- <tr>
                                                 <td>Route Table</td>
@@ -149,8 +146,18 @@
                                                         <div>
                                                             <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">
                                                         </div>
+                                                        <div id="subnet1-vm-block">
+                                                            <div>VM 1   <input type="text" name="subnet1-vm1" placeholder="VM Name"></div>
+                                                        </div>
+                                                        <div>
+                                                            <input class="button-register" id="subnet1-vm" type="button" value="Add VM" onClick="addVM(this.id)">
+                                                        </div>
                                                     </div>
                                                 </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Direct Connect</td>
+                                                <td><input type="text" name="conn-dest" placeholder="Destination" size="60" /><input type="text" name="conn-vlan" placeholder="VLAN" size="8" /></td>
                                             </tr>
                                             <tr>
                                                 <td></td>

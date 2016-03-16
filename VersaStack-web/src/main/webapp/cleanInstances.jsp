@@ -6,7 +6,7 @@
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
 <jsp:setProperty name="user" property="*" />  
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
-<jsp:setProperty name="serv" property="*" />
+<jsp:setProperty name="serv" property="*" />  
 <c:if test="${user.loggedIn == false}">
     <c:redirect url="/index.jsp" />
 </c:if>
@@ -14,7 +14,7 @@
 <html >    
     <head>   
         <meta charset="UTF-8">
-        <title>Service Details</title>
+        <title>Template Service</title>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>
@@ -27,11 +27,11 @@
         <link rel="stylesheet" href="/VersaStack-web/css/driver.css">
     </head>
 
-    <sql:setDataSource var="front_conn" driver="com.mysql.jdbc.Driver"
-                       url="jdbc:mysql://localhost:3306/frontend"
-                       user="front_view"  password="frontuser"/>
+    <sql:setDataSource var="rains_conn" driver="com.mysql.jdbc.Driver"
+                       url="jdbc:mysql://localhost:3306/rainsdb"
+                       user="root"  password="root"/>
 
-    <body>        
+    <body>
         <!-- NAV BAR -->
         <div id="nav">
         </div>
@@ -39,28 +39,10 @@
         <div id="sidebar">            
         </div>
         <!-- MAIN PANEL -->
-        <div id="main-pane">      
-            <button type="button" id="button-service-return">Back to Catalog</button>
-            <sql:query dataSource="${front_conn}" sql="SELECT S.name, X.superState FROM service S, service_instance I, service_state X
-                       WHERE referenceUUID = ? AND S.service_id = I.service_id AND X.service_state_id = I.service_state_id" var="instancelist">
-                <sql:param value="${param.uuid}" />
-            </sql:query>
-
-            <c:forEach var="instance" items="${instancelist.rows}">
-                <c:if test="${instance.name == 'Dynamic Network Connection'}">
-                    <c:redirect url="/ops/details/dncDetails.jsp">
-                        <c:param name="uuid" value="${param.uuid}"></c:param>
-                    </c:redirect>
-                </c:if>
-                
-                
-                
-                <c:redirect url="/ops/details/templateDetails.jsp">
-                    <c:param name="uuid" value="${param.uuid}"></c:param>
-                </c:redirect>
-            </c:forEach>
-
-        </div>        
+        <div id="main-pane">
+            ${serv.cleanInstances()}
+            <c:redirect url="home.jsp" />
+        </div>
         <!-- JS -->
         <script>
             $(function () {
@@ -83,7 +65,6 @@
                     }
                 });
             });
-
         </script>        
     </body>
 </html>
