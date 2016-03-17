@@ -482,6 +482,20 @@ function deleteInstance(uuid) {
     window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
+function reinstateInstance(uuid) {
+
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/reinstate';
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        success: function (result) {
+            console.log("RE-INITAILIZATION SUCCESS?!");
+        }
+    });
+
+    window.location.replace('/VersaStack-web/ops/catalog.jsp');
+}
+
 function applyNetTemplate(code) {
     var form = document.getElementById('custom-form');
     switch (code) {
@@ -633,6 +647,17 @@ function fl2pModerate(uuid){
             case 'FAILED':
                 $("#instance-delete").toggleClass("hide");
                 break;
+        }
+    }
+    if (superstate === 'Reinstate'){
+        switch(substate){
+            case 'READY':
+                $("#instance-reinstate").toggleClass("hide");
+                break;
+            case 'FAILED':
+                $("#instance-delete").toggleClass("hide");
+                break;
+            
         }
     }
 }

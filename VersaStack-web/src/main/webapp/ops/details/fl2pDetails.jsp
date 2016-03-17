@@ -79,7 +79,8 @@
                                 <td>
                                     <div class="service-instance-panel">
                                         <button class="hide" id="instance-cancel" onClick="cancelInstance('${param.uuid}')">Switch-Protection</button>
-                                        <button class="hide" id="instance-delete" onClick="deleteInstance('${param.uuid}')">Switch-Recovery</button>
+                                        <button class="hide" id="instance-reinstate" onClick="reinstateInstance('${param.uuid}')">Switch-Recovery</button>
+                                        <button class="hide" id="instance-delete" onClick="deleteInstance('${param.uuid}')">Delete</button>
                                         <button class="hide" id="instance-modify" onClick="modifyInstance('${param.uuid}')">Modify</button>
                                     </div>
                                 </td>
