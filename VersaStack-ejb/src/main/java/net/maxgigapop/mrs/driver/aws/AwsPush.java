@@ -441,11 +441,15 @@ public class AwsPush {
                         .withAvailabilityZone(Regions.US_EAST_1.getName() + "e");
 
                 CreateSubnetResult subnetResult = ec2.createSubnet(subnetRequest);
-
                 ec2Client.getSubnets().add(subnetResult.getSubnet());
                 ec2Client.subnetCreationCheck(subnetResult.getSubnet().getSubnetId(), SubnetState.Available.name().toLowerCase());
                 ec2Client.tagResource(subnetResult.getSubnet().getSubnetId(), parameters[3]);
-
+                
+                if (parameters.length > 4 && parameters[4].equals("public")) {
+                    ec2.modifySubnetAttribute(new ModifySubnetAttributeRequest()
+                            .withSubnetId(subnetResult.getSubnet().getSubnetId())
+                            .withMapPublicIpOnLaunch(true));
+                }
             } else if (request.contains("CreateRouteTableReques")) {
                 String[] parameters = request.split("\\s+");
 
@@ -562,7 +566,13 @@ public class AwsPush {
                     routeRequest.withRouteTableId(t.getRouteTableId())
                             .withGatewayId(target)
                             .withDestinationCidrBlock(parameters[2]);
-                    ec2.createRoute(routeRequest);
+                    try {
+                        ec2.createRoute(routeRequest);
+                    } catch (AmazonServiceException ex) {
+                        if (ex.getErrorCode().equals("RouteAlreadyExists")) {
+                            ; // never mind
+                        }
+                    }
                 }
 
             } else if (request.contains("CreateVolumeRequest")) {
@@ -663,7 +673,6 @@ public class AwsPush {
                 List<InstanceNetworkInterfaceSpecification> portSpecification = new ArrayList();
                 for (int i = 9; i < parameters.length; i++) {
                     InstanceNetworkInterfaceSpecification s = new InstanceNetworkInterfaceSpecification();
-                    //s.withAssociatePublicIpAddress(true);
                     String netIfId = ec2Client.getResourceId(parameters[i]);
                     int retry = 0; // special handling for lagging interface name and tag
                     while (!netIfId.startsWith("eni-") && retry++ < 5) {
@@ -1890,10 +1899,17 @@ public class AwsPush {
                 RDFNode vpc = querySolution1.get("vpc");
                 String vpcIdTagValue = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.vpc);
 
-                query = "SELECT ?subnet ?address ?value WHERE {<" + subnet.asResource() + "> mrs:hasNetworkAddress ?address ."
+                query = "SELECT ?subnet ?address ?value ?igw_route WHERE {"
+                        + "<" + subnet.asResource() + "> mrs:hasNetworkAddress ?address ."
                         + "?address a mrs:NetworkAddress ."
                         + "?address mrs:type \"ipv4-prefix\" ."
-                        + "?address mrs:value ?value}";
+                        + "?address mrs:value ?value. "
+                        + "OPTIONAL {"
+                        + "?igw_route mrs:routeFrom ?subnet."
+                        + "?igw_route mrs:nextHop ?igw."
+                        + "?igw mrs:type \"internet-gateway\""
+                        + "}"
+                        + "}";
                 r1 = executeQuery(query, model, modelAdd);
                 if (!r1.hasNext()) {
                     throw new EJBException(String.format("Subnet %s does not have a valid CIDR", subnetIdTagValue));
@@ -1901,9 +1917,8 @@ public class AwsPush {
                 querySolution1 = r1.next();
                 RDFNode value = querySolution1.get("value");
                 String cidrBlock = value.asLiteral().toString();
-
-                requests += String.format("CreateSubnetRequest %s %s %s \n", vpcIdTagValue, cidrBlock, subnetIdTagValue);
-
+                String subnetType = querySolution1.contains("igw_route")?"public":"private";
+                requests += String.format("CreateSubnetRequest %s %s %s %s \n", vpcIdTagValue, cidrBlock, subnetIdTagValue, subnetType);
             }
         }
         return requests;

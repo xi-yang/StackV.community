@@ -207,27 +207,20 @@ public class MCE_NfvBgpRouting implements IModelComputationElement {
         routingModel.add(routingModel.createStatement(resBgpRtTable, Mrs.hasNetworkAddress, resNetAddrRouterAsn));
         routingModel.add(routingModel.createStatement(resNetAddrRouterAsn, Mrs.type, "bgp-asn")); 
         routingModel.add(routingModel.createStatement(resNetAddrRouterAsn, Mrs.value, routerAsn));
-        Resource resNetAddrLocalPrefixes = null;
         // create local_cluster NetworkAddress statements based on 'networks'
+        String prefixList = routerId+"/32";
         if (jsonReqData.containsKey("networks")) {
-            String prefixList = null;
             JSONArray networks = (JSONArray)jsonReqData.get("networks");
             for (Object obj: networks) {
                 String netAddr = (String) obj;
                 SubnetUtils utils2 = new SubnetUtils(netAddr);
                 String prefix = utils2.getInfo().getNetworkAddress()+"/"+netAddr.split("/")[1];
-                if (prefixList == null) {
-                    prefixList = prefix;
-                } else {
-                    prefixList += (","+prefix);
-                }
-            }
-            if (prefixList != null) {
-                resNetAddrLocalPrefixes = RdfOwl.createResource(spaModel, resBgpRtTable.getURI() + ":local_prefix_list", Mrs.NetworkAddress);
-                routingModel.add(routingModel.createStatement(resNetAddrLocalPrefixes, Mrs.type, "ipv4-prefix-list")); 
-                routingModel.add(routingModel.createStatement(resNetAddrLocalPrefixes, Mrs.value, prefixList));
+                prefixList += (","+prefix);
             }
         } 
+        Resource resNetAddrLocalPrefixes = RdfOwl.createResource(spaModel, resBgpRtTable.getURI() + ":local_prefix_list", Mrs.NetworkAddress);
+        routingModel.add(routingModel.createStatement(resNetAddrLocalPrefixes, Mrs.type, "ipv4-prefix-list")); 
+        routingModel.add(routingModel.createStatement(resNetAddrLocalPrefixes, Mrs.value, prefixList));
         JSONArray neighbors = (JSONArray)jsonReqData.get("neighbors");
         for (Object obj: neighbors) {
             JSONObject bgpNeighbor = (JSONObject) obj;
