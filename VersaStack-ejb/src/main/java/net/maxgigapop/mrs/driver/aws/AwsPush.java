@@ -1899,13 +1899,13 @@ public class AwsPush {
                 RDFNode vpc = querySolution1.get("vpc");
                 String vpcIdTagValue = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.vpc);
 
-                query = "SELECT ?subnet ?address ?value ?igw_route WHERE {"
-                        + "<" + subnet.asResource() + "> mrs:hasNetworkAddress ?address ."
+                query = "SELECT ?address ?value ?igw_route WHERE {"
+                        + String.format("<%s> mrs:hasNetworkAddress ?address .", subnet.asResource().getURI())
                         + "?address a mrs:NetworkAddress ."
                         + "?address mrs:type \"ipv4-prefix\" ."
                         + "?address mrs:value ?value. "
                         + "OPTIONAL {"
-                        + "?igw_route mrs:routeFrom ?subnet."
+                        + String.format("?igw_route mrs:routeFrom <%s>.", subnet.asResource().getURI())
                         + "?igw_route mrs:nextHop ?igw."
                         + "?igw mrs:type \"internet-gateway\""
                         + "}"
