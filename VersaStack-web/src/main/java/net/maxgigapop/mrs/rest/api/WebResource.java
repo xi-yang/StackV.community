@@ -6,7 +6,6 @@
 package net.maxgigapop.mrs.rest.api;
 
 import java.io.IOException;
-import static java.lang.Thread.sleep;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -169,6 +168,9 @@ public class WebResource {
                 case "netcreate":
                     paraMap = parseNet(dataJSON, refUuid);
                     break;
+                case "fl2p":
+                    paraMap = parseFlow(dataJSON, refUuid);
+                    break;
                 default:
             }
 
@@ -207,6 +209,9 @@ public class WebResource {
                     break;
                 case "netcreate":
                     servBean.createNetwork(paraMap);
+                    break;
+                case "fl2p":
+                    servBean.createflow(paraMap);
                     break;
                 default:
             }
@@ -391,7 +396,6 @@ public class WebResource {
             paraMap.put("conn" + (i + 1), connString);
         }
 
-        System.out.println(paraMap);
         return paraMap;
     }
 
@@ -505,9 +509,25 @@ public class WebResource {
 
         }
 
-        System.out.println(paraMap);
         return paraMap;
     }    
+    
+    private HashMap<String, String> parseFlow(JSONObject dataJSON, String refUuid) {
+        HashMap<String, String> paraMap = new HashMap<>();
+        paraMap.put("instanceUUID", refUuid);
+
+        JSONObject flowJSON = (JSONObject) dataJSON.get("flow");
+        String name = (String) flowJSON.get("name");
+        String src = (String) flowJSON.get("src");
+        String des = (String) flowJSON.get("des");
+
+        String flowUrn = urnBuilder("flow", name, refUuid);
+        paraMap.put("topUri", flowUrn);
+        paraMap.put("eth_src", src);
+        paraMap.put("eth_des", des);
+
+        return paraMap;
+    }
 
     // Utility Methods ---------------------------------------------------------
     /*
@@ -524,6 +544,8 @@ public class WebResource {
                 return "urn:ogf:network:service+" + refUuid + ":resource+links:tag+" + name;
             case "netcreate":
                 return "urn:ogf:network:service+" + refUuid + ":resource+virtual_clouds:tag+" + name;
+            case "flow":
+                return "urn:ogf:network:service+" + refUuid + ":resource+flow:tag+" + name;
             default:
                 return "ERROR";
         }
