@@ -467,6 +467,18 @@ function cancelInstance(uuid) {
     window.location.reload(true);
 }
 
+function reinstateInstance(uuid) {
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/reinstate';
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        success: function (result) {
+            // Do something with the result
+        }
+    });
+
+    window.location.reload(true);
+}
 
 function deleteInstance(uuid) {
 
@@ -542,10 +554,13 @@ function applyNetTemplate(code) {
 
 function applyFL2PTemplate(code){
     var form = document.getElementById('custom-form');
-    if(code){
-        form.elements['topUri'].value = 'urn:ogf:network:domain=vo1.versastack.org:link=link1';
-        form.elements['eth-src'].value = 'urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000005:port-s5-eth1';
-        form.elements['eth-des'].value = 'urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000002:port-s2-eth1';
+    switch(code){
+        case 1:
+            form.elements['topoUri'].value = 'urn:ogf:network:domain=vo1.versastack.org:link=link1';
+            form.elements['eth-src'].value = 'urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000005:port-s5-eth1';
+            form.elements['eth-des'].value = 'urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000002:port-s2-eth1';
+            
+            break;
     }
         
 }
