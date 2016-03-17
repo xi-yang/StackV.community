@@ -92,12 +92,12 @@
                                                 <td>TopoUri</td>
                                                 <td>
                                                     <div>
-                                                        <input type="text" name="topoUri" size="60" placeholder="Topo-URI">
+                                                        <input type="text" name="topUri" size="60" placeholder="Topo-URI">
                                                     </div>
                                                 </td>
                                             </tr>
                                             <tr>
-                                                <td>Eth_src_mac</td>
+                                                <td>Eth_src_port</td>
                                                 <td>
                                                     <div>
                                                         <input type="text" name="eth-src" size="60" placeholder="Source">
@@ -105,7 +105,7 @@
                                                 </td>
                                             </tr>
                                             <tr>
-                                                <td>Eth_des_mac</td>
+                                                <td>Eth_des_port</td>
                                                 <td>
                                                     <div>
                                                         <input type="text" name="eth-des" size="60" placeholder="Destination">
