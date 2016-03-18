@@ -107,32 +107,54 @@ public class WebResource {
             return "<<<CHECK STATUS ERROR: " + e.getMessage();
         }
     }
-
+    
     @POST
-    @Path("/service")
-    @Consumes({"application/json", "application/xml"})
-    public String createService(String inputString) {
+    @Path(value = "/service")
+    @Consumes(value = {"application/json", "application/xml"})
+    public void createService(@Suspended final AsyncResponse asyncResponse, final String inputString) {
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                asyncResponse.resume(doCreateService(inputString));
+            }
+        });
+    }
+    
+    @PUT
+    @Path(value = "/service/{siUUID}/{action}")
+    public void operate(@Suspended final AsyncResponse asyncResponse, @PathParam(value = "siUUID") final String refUuid, @PathParam(value = "action") final String action) {
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                asyncResponse.resume(doOperate(refUuid, action));
+            }
+        });        
+    }
+
+    // Async Methods -----------------------------------------------------------
+    
+       private String doCreateService(String inputString) {
         try {
             long startTime = System.currentTimeMillis();
             System.out.println("Service API Start::Name="
                     + Thread.currentThread().getName() + "::ID="
                     + Thread.currentThread().getId());
-
+            
             // Pull data from JSON.
             JSONObject inputJSON = new JSONObject();
             try {
                 Object obj = parser.parse(inputString);
                 inputJSON = (JSONObject) obj;
-
+                
             } catch (ParseException ex) {
                 Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
             }
-
+            
             String serviceType = (String) inputJSON.get("type");
             JSONObject dataJSON = (JSONObject) inputJSON.get("data");
             String user = (String) inputJSON.get("user");
             String userID = "";
-
+            
             // Find user ID.
             Connection front_conn;
             try {
@@ -140,25 +162,25 @@ public class WebResource {
             } catch (InstantiationException | IllegalAccessException | ClassNotFoundException ex) {
                 Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
             }
-
+            
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("SELECT user_id FROM user_info WHERE username = ?");
             prep.setString(1, user);
             ResultSet rs1 = prep.executeQuery();
             while (rs1.next()) {
                 userID = rs1.getString("user_id");
             }
-
+            
             // Instance Creation
             URL url = new URL(String.format("%s/service/instance", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             String refUuid = servBean.executeHttpMethod(url, connection, "GET", null);
-
+            
             // Create Parameter Map
             HashMap<String, String> paraMap = new HashMap<>();
             switch (serviceType) {
@@ -173,7 +195,7 @@ public class WebResource {
                     break;
                 default:
             }
-
+            
             // Initialize service parameters.
             prep = front_conn.prepareStatement("SELECT service_id"
                     + " FROM service WHERE filename = ?");
@@ -182,7 +204,7 @@ public class WebResource {
             rs1.next();
             int serviceID = rs1.getInt(1);
             Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
-
+            
             // Install Instance into DB.
             prep = front_conn.prepareStatement("INSERT INTO frontend.service_instance "
                     + "(`service_id`, `user_id`, `creation_time`, `referenceUUID`, `service_state_id`) VALUES (?, ?, ?, ?, ?)");
@@ -192,7 +214,7 @@ public class WebResource {
             prep.setString(4, refUuid);
             prep.setInt(5, 1);
             prep.executeUpdate();
-
+            
             // Replicate properties into DB.
             for (String key : paraMap.keySet()) {
                 if (!paraMap.get(key).isEmpty()) {
@@ -201,7 +223,7 @@ public class WebResource {
                     servBean.executeHttpMethod(url, connection, "POST", paraMap.get(key));
                 }
             }
-
+            
             // Execute service Creation.
             switch (serviceType) {
                 case "dnc":
@@ -215,34 +237,21 @@ public class WebResource {
                     break;
                 default:
             }
-
+            
             long endTime = System.currentTimeMillis();
             System.out.println("Service API End::Name="
                     + Thread.currentThread().getName() + "::ID="
                     + Thread.currentThread().getId() + "::Time Taken="
                     + (endTime - startTime) + " ms.");
-
+            
             // Return instance UUID
             return refUuid;
-
+            
         } catch (EJBException | SQLException | IOException e) {
             return e.getMessage();
         }
-
     }
     
-    @PUT
-    @Path(value = "/service/{siUUID}/{action}")
-    public void operate(@Suspended final AsyncResponse asyncResponse, @PathParam(value = "siUUID") final String refUuid, @PathParam(value = "action") final String action) {
-        executorService.submit(new Runnable() {
-            @Override
-            public void run() {
-                asyncResponse.resume(doOperate(refUuid, action));
-            }
-        });
-    }
-
-    // Async Methods -----------------------------------------------------------
     private String doOperate(@PathParam("siUUID") String refUuid, @PathParam("action") String action) {
         long startTime = System.currentTimeMillis();
         System.out.println("Async API Operate Start::Name="
@@ -621,4 +630,5 @@ public class WebResource {
         return result;
     }
 
+ 
 }
