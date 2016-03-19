@@ -212,15 +212,30 @@ public class AwsEC2Get {
     public List<SecurityGroup> getSecurityGroups(String id) {
         List<SecurityGroup> group = new ArrayList();
         for (SecurityGroup gr : securityGroups) {
-            if (gr.getVpcId().equals(id)) {
+            if (gr.getGroupName().equals(id)) {
                 group.add(gr);
+                return group;                
             } else if (gr.getGroupId().equals(id)) {
                 group.add(gr);
                 return group;
-            }
+            } else if (gr.getVpcId() != null && gr.getVpcId().equals(id)) {
+                group.add(gr);
+            } 
         }
         return group;
     }
+    
+    public SecurityGroup getSecurityGroup(String id) {
+        for (SecurityGroup gr : securityGroups) {
+            if (gr.getGroupName().equals(id)) {
+                return gr;                
+            } else if (gr.getGroupId().equals(id)) {
+                return gr;                
+            } 
+        }
+        return null;
+    }
+
 
     //get all the ACLs withinan AWS account
     public List<NetworkAcl> getACLs() {

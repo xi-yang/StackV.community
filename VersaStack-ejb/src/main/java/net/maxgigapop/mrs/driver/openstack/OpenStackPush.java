@@ -1549,18 +1549,34 @@ public class OpenStackPush {
                 String flavorID = "any";
                 String keypairName = null;
                 String secgroupName = null;
+                String instanceTypes = null;
                 while (r5.hasNext()) {
                     QuerySolution q2 = r5.next();
                     RDFNode type = q2.get("type");
-                    String typename = type.toString();
-                    if (typename.contains("imageUUID")) {
-                        imageID = getresourcename(typename, "+", "");
-                    } else if (typename.contains("flavorID")) {
-                        flavorID = getresourcename(typename, "+", "");
-                    } else if (typename.contains("keypairName")) {
-                        keypairName = getresourcename(typename, "+", "");
-                    } else if (typename.contains("secgroupName")) {
-                        secgroupName = getresourcename(typename, "+", "");
+                    if (instanceTypes == null) {
+                        instanceTypes = type.toString();
+                    } else {
+                        instanceTypes += "," + type.toString();
+                    }
+                }
+                if (instanceTypes != null) {
+                    String[] typeItems = instanceTypes.split(",|;|:");
+                    for (String typename : typeItems) {
+                        String value = null;
+                        if (typename.contains("+") || typename.contains("=")) {
+                            value = typename.split("\\+|=")[1];
+                        } else {
+                            continue;
+                        }
+                        if (typename.startsWith("image")) {
+                            imageID = value;
+                        } else if (typename.startsWith("flavor") || typename.startsWith("instance")) {
+                            flavorID = value;
+                        } else if (typename.startsWith("keypair")) {
+                            keypairName = value;
+                        } else if (typename.startsWith("secgroup")) {
+                            secgroupName = value;
+                        }
                     }
                 }
 
