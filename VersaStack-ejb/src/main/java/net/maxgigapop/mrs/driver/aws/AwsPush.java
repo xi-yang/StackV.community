@@ -289,7 +289,18 @@ public class AwsPush {
                 DeleteVpcRequest vpcRequest = new DeleteVpcRequest();
                 vpcRequest.withVpcId(vpc.getVpcId());
                 int tries = 0;
-
+                // delete added security groups in the VPC (all but 'default')
+                DescribeSecurityGroupsResult securityGroupsResult = ec2.describeSecurityGroups();
+                List<SecurityGroup> listSecGroups = securityGroupsResult.getSecurityGroups();
+                for (SecurityGroup sg: listSecGroups){
+                    if (sg.getVpcId() != null 
+                            && sg.getVpcId().equals(vpcRequest.getVpcId()) 
+                            && !sg.getGroupName().equals("default")) {
+                        DeleteSecurityGroupRequest deleteSecGroupRequst = new DeleteSecurityGroupRequest()
+                                .withGroupId(sg.getGroupId());
+                        ec2.deleteSecurityGroup(deleteSecGroupRequst);
+                    }
+                }
                 while (true) {
                     try {
                         ec2.deleteVpc(vpcRequest);
@@ -688,8 +699,13 @@ public class AwsPush {
                     InstanceNetworkInterfaceSpecification s = new InstanceNetworkInterfaceSpecification();
                     String netIfId = ec2Client.getResourceId(parameters[i]);
                     int retry = 0; // special handling for lagging interface name and tag
-                    while (!netIfId.startsWith("eni-") && retry++ < 5) {
+                    while (!netIfId.startsWith("eni-") && retry++ < 6) {
                         netIfId = ec2Client.getResourceId(parameters[i]);
+                        try {
+                            sleep(10000L);
+                        } catch (InterruptedException ex) {
+                            ;
+                        }
                     }
                     s.withNetworkInterfaceId(netIfId);
                     i++;
