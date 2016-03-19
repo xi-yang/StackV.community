@@ -723,7 +723,7 @@ public class AwsPush {
                 ec2Client.tagResource(instance.getInstanceId(), parameters[5]);
                 //modify security group as it conflicts with specified newtork interface at launch
                 SecurityGroup secGroup = ec2Client.getSecurityGroup(parameters[4]);
-                if (secGroup != null) {
+                if (secGroup != null && !secGroup.getGroupName().equals("default")) {
                     CreateSecurityGroupRequest csgr = new CreateSecurityGroupRequest()
                             .withGroupName(instance.getVpcId() + '-' + secGroup.getGroupName())
                             .withVpcId(instance.getVpcId())
