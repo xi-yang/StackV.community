@@ -510,19 +510,29 @@ function reinstateInstance(uuid) {
 
 function applyNetTemplate(code) {
     var form = document.getElementById('custom-form');
+    form.reset();
+    
     switch (code) {
         case 1:
             form.elements['netType'].value = 'internal';
             form.elements['netCidr'].value = '10.1.0.0/16';
+            
+            if (subRouteCounter === 1) {
+                addSubnetRoute('subnet1-route');
+            }               
+            if (subnetCounter === 1) {
+                addSubnet();
+            }       
 
             form.elements['subnet1-name'].value = '';
             form.elements['subnet1-cidr'].value = '10.1.0.0/24';
             form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
             form.elements['subnet1-route1-next'].value = 'internet';
+         
             form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
             form.elements['subnet1-route2-next'].value = 'vpn';            
             form.elements['subnet1-route-prop'].checked = true;
-            
+     
             form.elements['subnet2-name'].value = '';
             form.elements['subnet2-cidr'].value = '10.1.1.0/24';
 
@@ -531,6 +541,13 @@ function applyNetTemplate(code) {
         case 2:
             form.elements['netType'].value = 'internal';
             form.elements['netCidr'].value = '10.1.0.0/16';
+            
+            if (subRouteCounter === 1) {
+                addSubnetRoute('subnet1-route');
+            }      
+            if (subnetCounter === 1) {
+                addSubnet();
+            }  
 
             form.elements['subnet1-name'].value = '';
             form.elements['subnet1-cidr'].value = '10.1.0.0/24';
@@ -540,6 +557,7 @@ function applyNetTemplate(code) {
             form.elements['subnet1-route2-next'].value = 'vpn';
             form.elements['subnet1-route-prop'].checked = true;
             form.elements['subnet1-vm1'].value = 'vm1';
+
 
             form.elements['subnet2-name'].value = '';
             form.elements['subnet2-cidr'].value = '10.1.1.0/24';
@@ -554,6 +572,8 @@ function applyNetTemplate(code) {
 
 function applyFL2PTemplate(code){
     var form = document.getElementById('custom-form');
+    form.reset();
+    
     switch(code){
         case 1:
             form.elements['topUri'].value = 'urn:ogf:network:domain=vo1.versastack.org:link=link1';
@@ -569,6 +589,8 @@ function applyFL2PTemplate(code){
 
 function applyDNCTemplate(code) {
     var form = document.getElementById('custom-form');
+    form.reset();
+    
     switch (code) {
         case 1:
             //form.elements['topoUri'].value = 'urn:ogf:network:vo1.maxgigapop.net:link';
@@ -580,7 +602,7 @@ function applyDNCTemplate(code) {
 
             break;
         case 2:
-            if (linkCounter < 2) {
+            if (linkCounter === 1) {
                 addLink();
             }
 

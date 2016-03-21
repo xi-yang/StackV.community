@@ -95,10 +95,90 @@
                                             <tr>
                                                 <th>Custom</th>
                                                 <th><div id="custom-toggle"></div></th>
-                                            </tr>
+                                        </tr>
                                         </thead>
                                         <tbody id="custom-fields">
+                                            <!-- AWS -->
                                             <c:if test="${param.networkType == 'aws'}">
+                                                <tr>
+                                                    <td>Topology URI</td>
+                                                    <td>
+                                                        <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance" var="driverlist" />
+                                                        <select name="topoUri" required>
+                                                            <option></option>
+                                                            <c:forEach var="driver" items="${driverlist.rows}">
+                                                                <option value="${driver.topologyUri}">${driver.topologyUri}</option>
+                                                            </c:forEach>
+                                                        </select>   
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Network Type</td>
+                                                    <td><input type="text" name="netType" required/></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Network CIDR</td>
+                                                    <td><input type="text" name="netCidr" required/></td>
+                                                </tr>
+                                                <!-- <tr>
+                                                    <td>Route Table</td>
+                                                    <td>
+                                                        <div id="route-block">
+                                                            <div>
+                                                                <input type="text" name="route1-from" placeholder="From"/>
+                                                                <input type="text" name="route1-to" placeholder="To"/>
+                                                                <input type="text" name="route1-next" placeholder="Next Hop"/>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <input type="checkbox" name="route-prop" value="true"/>   Enable VPN Routes Propogation                                                       
+                                                        </div>
+                                                        <div>
+                                                             <input class="button-register" type="button" 
+                                                                   value="Add Route" onClick="addRoute()">
+                                                        </div>
+                                                    </td>
+                                                </tr> -->
+                                                <tr id="subnet1">
+                                                    <td>Subnet 1</td>
+                                                    <td>
+                                                        <div>
+                                                            <input type="text" name="subnet1-name" placeholder="Name"/>
+                                                            <input type="text" name="subnet1-cidr" placeholder="CIDR Block"/>
+                                                            <div id="subnet1-route-block">
+                                                                <div>
+                                                                    <input type="text" name="subnet1-route1-from" placeholder="From"/>
+                                                                    <input type="text" name="subnet1-route1-to" placeholder="To"/>
+                                                                    <input type="text" name="subnet1-route1-next" placeholder="Next Hop"/>
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <input type="checkbox" name="subnet1-route-prop" value="true"/>   Enable VPN Routes Propogation
+                                                            </div>
+                                                            <div>
+                                                                <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">
+                                                            </div>
+                                                            <div id="subnet1-vm-block">
+                                                                <div>VM 1   <input type="text" name="subnet1-vm1" placeholder="VM Name"></div>
+                                                            </div>
+                                                            <div>
+                                                                <input class="button-register" id="subnet1-vm" type="button" value="Add VM" onClick="addVM(this.id)">
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Direct Connect</td>
+                                                    <td><input type="text" name="conn-dest" placeholder="Destination" size="60" /><input type="text" name="conn-vlan" placeholder="VLAN" size="8" /></td>
+                                                </tr>
+                                                <tr>
+                                                    <td></td>
+                                                    <td><input type="submit" name="custom" value="Submit" /><input class="button-register" type="button" value="Add Subnet" onClick="addSubnet()"></td>
+                                                </tr>
+                                            </c:if>
+
+                                            <!-- OpenStack -->
+                                            <c:if test="${param.networkType == 'os'}">
                                                 <tr>
                                                     <td>Topology URI</td>
                                                     <td>
