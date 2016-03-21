@@ -48,7 +48,7 @@ import net.maxgigapop.mrs.service.compute.MCE_MPVlanConnection;
  * @author xyang
  */
 public class ActionBase {
-
+    protected Resource policy = null;
     protected String name = "";
     protected String mceBeanPath = "";
     protected String state = ActionState.IDLE;
@@ -65,6 +65,14 @@ public class ActionBase {
     public ActionBase(String name, String mceBean) {
         this.name = name;
         this.mceBeanPath = mceBean;
+    }
+
+    public Resource getPolicy() {
+        return policy;
+    }
+
+    public void setPolicy(Resource policy) {
+        this.policy = policy;
     }
 
     public String getName() {
@@ -178,7 +186,7 @@ public class ActionBase {
             }
             if (addList != null) {
                 retList.addAll(addList);
-            } else if (A.getState().equals(ActionState.IDLE) && action.hasAllDependenciesMerged()) {
+            } else if (A.getState().equals(ActionState.IDLE) && A.hasAllDependenciesMerged()) {
                 retList.add(A);
             }
         }
@@ -199,7 +207,7 @@ public class ActionBase {
             Context ejbCxt = new InitialContext();
             IModelComputationElement ejbMce = (IModelComputationElement) ejbCxt.lookup(this.mceBeanPath);
             this.state = ActionState.PROCESSING;
-            Future<ServiceDelta> asyncResult = ejbMce.process(referenceModel, inputDelta);
+            Future<ServiceDelta> asyncResult = ejbMce.process(policy, referenceModel, inputDelta);
             //# not FINISHED yet
             return asyncResult;
         } catch (NamingException ex) {

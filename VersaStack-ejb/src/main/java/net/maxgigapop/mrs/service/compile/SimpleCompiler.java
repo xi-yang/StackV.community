@@ -134,6 +134,7 @@ public class SimpleCompiler extends CompilerBase {
             QuerySolution solution = r.next();
             String actionType = solution.getLiteral("actionType").toString();
             ActionBase policyAction = new ActionBase(policy.getURI(), "java:module/" + actionType);
+            policyAction.setPolicy(policy);
             try {
                 Context ejbCxt = new InitialContext();
                 IModelComputationElement ejbMce = (IModelComputationElement) ejbCxt.lookup(policyAction.getMceBeanPath());

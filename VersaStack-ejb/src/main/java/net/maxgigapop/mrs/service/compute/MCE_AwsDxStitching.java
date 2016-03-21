@@ -50,7 +50,7 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
 
     @Override
     @Asynchronous
-    public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
+    public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
         log.log(Level.FINE, "MCE_AWSDirectConnectStitch::process {0}", annotatedDelta);
         try {
             log.log(Level.FINE, "\n>>>MCE_AWSDirectConnectStitch--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
@@ -64,7 +64,7 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
                 + "?policy spa:type 'MCE_AwsDxStitching'. "
                 + "?policy spa:importFrom ?data. "
                 + "?data spa:type ?type. ?data spa:value ?value. "
-                + "FILTER not exists {?policy spa:dependOn ?other} "
+                + String.format("FILTER (not exists {?policy spa:dependOn ?other} && ?policy = <%s>)", policy.getURI())
                 + "}";
 
         ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);

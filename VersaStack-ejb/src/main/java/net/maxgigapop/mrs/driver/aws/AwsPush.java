@@ -31,6 +31,7 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
+import static java.lang.Thread.sleep;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -288,7 +289,18 @@ public class AwsPush {
                 DeleteVpcRequest vpcRequest = new DeleteVpcRequest();
                 vpcRequest.withVpcId(vpc.getVpcId());
                 int tries = 0;
-
+                // delete added security groups in the VPC (all but 'default')
+                DescribeSecurityGroupsResult securityGroupsResult = ec2.describeSecurityGroups();
+                List<SecurityGroup> listSecGroups = securityGroupsResult.getSecurityGroups();
+                for (SecurityGroup sg: listSecGroups){
+                    if (sg.getVpcId() != null 
+                            && sg.getVpcId().equals(vpcRequest.getVpcId()) 
+                            && !sg.getGroupName().equals("default")) {
+                        DeleteSecurityGroupRequest deleteSecGroupRequst = new DeleteSecurityGroupRequest()
+                                .withGroupId(sg.getGroupId());
+                        ec2.deleteSecurityGroup(deleteSecGroupRequst);
+                    }
+                }
                 while (true) {
                     try {
                         ec2.deleteVpc(vpcRequest);
@@ -441,11 +453,15 @@ public class AwsPush {
                         .withAvailabilityZone(Regions.US_EAST_1.getName() + "e");
 
                 CreateSubnetResult subnetResult = ec2.createSubnet(subnetRequest);
-
                 ec2Client.getSubnets().add(subnetResult.getSubnet());
                 ec2Client.subnetCreationCheck(subnetResult.getSubnet().getSubnetId(), SubnetState.Available.name().toLowerCase());
                 ec2Client.tagResource(subnetResult.getSubnet().getSubnetId(), parameters[3]);
-
+                
+                if (parameters.length > 4 && parameters[4].equals("public")) {
+                    ec2.modifySubnetAttribute(new ModifySubnetAttributeRequest()
+                            .withSubnetId(subnetResult.getSubnet().getSubnetId())
+                            .withMapPublicIpOnLaunch(true));
+                }
             } else if (request.contains("CreateRouteTableReques")) {
                 String[] parameters = request.split("\\s+");
 
@@ -462,14 +478,14 @@ public class AwsPush {
 
                 String routeTableId = ec2Client.getTableId(parameters[1]);
                 String subnetId = ec2Client.getResourceId(parameters[2]);
-                for (int i = 10; i > 0; i--) {
+                for (int i = 6; i > 0; i--) {
                     String resId = ec2Client.getResourceId(routeTableId);
                     if (routeTableId != resId) {
                         routeTableId = resId;
                         break;
                     }
                     try {
-                        Thread.sleep(1000L);
+                        Thread.sleep(5000L);
                     } catch (InterruptedException ex) {
                         ;
                     }
@@ -512,16 +528,26 @@ public class AwsPush {
 
             } else if (request.contains("AttachVpnGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
-                //@TODO: retry getVirtualPrivateGateway query when vpn == null
-                VpnGateway vpn = ec2Client.getVirtualPrivateGateway(ec2Client.getVpnGatewayId(parameters[1]));
-                Vpc v = ec2Client.getVpc(ec2Client.getVpcId(parameters[2]));
-                if (!vpn.equals(ec2Client.getVirtualPrivateGateway(v))) {
-                    AttachVpnGatewayRequest gwRequest = new AttachVpnGatewayRequest();
-                    gwRequest.withVpnGatewayId(vpn.getVpnGatewayId())
-                            .withVpcId(v.getVpcId());
+                for (int retry = 0; retry < 3; retry++) {
+                    try {
+                        VpnGateway vpn = ec2Client.getVirtualPrivateGateway(ec2Client.getVpnGatewayId(parameters[1]));
+                        Vpc v = ec2Client.getVpc(ec2Client.getVpcId(parameters[2]));
+                        if (!vpn.equals(ec2Client.getVirtualPrivateGateway(v))) {
+                            AttachVpnGatewayRequest gwRequest = new AttachVpnGatewayRequest();
+                            gwRequest.withVpnGatewayId(vpn.getVpnGatewayId())
+                                    .withVpcId(v.getVpcId());
 
-                    AttachVpnGatewayResult result = ec2.attachVpnGateway(gwRequest);
-                    ec2Client.vpnGatewayAttachmentCheck(vpn.getVpnGatewayId(), v.getVpcId());
+                            AttachVpnGatewayResult result = ec2.attachVpnGateway(gwRequest);
+                            ec2Client.vpnGatewayAttachmentCheck(vpn.getVpnGatewayId(), v.getVpcId());
+                        }
+                    } catch (NullPointerException nullEx) {
+                        try {
+                            sleep(20000L); // pause for 20 seconds and retry
+                        } catch (InterruptedException ex) {
+                            ;
+                        }
+                    }
+                    break;
 
                 }
             } else if (request.contains("PropagateVpnRequest")) {
@@ -562,7 +588,13 @@ public class AwsPush {
                     routeRequest.withRouteTableId(t.getRouteTableId())
                             .withGatewayId(target)
                             .withDestinationCidrBlock(parameters[2]);
-                    ec2.createRoute(routeRequest);
+                    try {
+                        ec2.createRoute(routeRequest);
+                    } catch (AmazonServiceException ex) {
+                        if (ex.getErrorCode().equals("RouteAlreadyExists")) {
+                            ; // never mind
+                        }
+                    }
                 }
 
             } else if (request.contains("CreateVolumeRequest")) {
@@ -645,28 +677,35 @@ public class AwsPush {
                 RunInstancesRequest runInstance = new RunInstancesRequest();
                 runInstance.withImageId(parameters[1]);
                 runInstance.withInstanceType(parameters[2]);
+                runInstance.withKeyName(parameters[3]);
                 runInstance.withMaxCount(1);
                 runInstance.withMinCount(1);
+                //runInstance.withSecurityGroupIds(parameters[4]);
 
                 //integrate the root device
-                if (!parameters[4].equalsIgnoreCase("any")) {
+                if (!parameters[6].equalsIgnoreCase("any")) {
                     EbsBlockDevice device = new EbsBlockDevice();
-                    device.withVolumeType(parameters[4]);
-                    device.withVolumeSize(Integer.parseInt(parameters[5]));
+                    device.withVolumeType(parameters[6]);
+                    device.withVolumeSize(Integer.parseInt(parameters[7]));
                     BlockDeviceMapping mapping = new BlockDeviceMapping();
-                    mapping.withDeviceName(parameters[6]);
+                    mapping.withDeviceName(parameters[8]);
                     mapping.withEbs(device);
-                    String volumeTag = parameters[7];
+                    String volumeTag = parameters[9];
                     runInstance.withBlockDeviceMappings(mapping);
                 }
 
                 List<InstanceNetworkInterfaceSpecification> portSpecification = new ArrayList();
-                for (int i = 9; i < parameters.length; i++) {
+                for (int i = 11; i < parameters.length; i++) {
                     InstanceNetworkInterfaceSpecification s = new InstanceNetworkInterfaceSpecification();
                     String netIfId = ec2Client.getResourceId(parameters[i]);
                     int retry = 0; // special handling for lagging interface name and tag
-                    while (!netIfId.startsWith("eni-") && retry++ < 5) {
+                    while (!netIfId.startsWith("eni-") && retry++ < 6) {
                         netIfId = ec2Client.getResourceId(parameters[i]);
+                        try {
+                            sleep(10000L);
+                        } catch (InterruptedException ex) {
+                            ;
+                        }
                     }
                     s.withNetworkInterfaceId(netIfId);
                     i++;
@@ -674,26 +713,49 @@ public class AwsPush {
                     portSpecification.add(s);
                 }
                 runInstance.withNetworkInterfaces(portSpecification);
-                runInstance.withKeyName("driver_key");
+
                 RunInstancesResult result = ec2.runInstances(runInstance);
 
                 //tag the new instance
                 Instance instance = result.getReservation().getInstances().get(0);
                 ec2Client.getEc2Instances().add(instance);
                 ec2Client.instanceStatusCheck(instance.getInstanceId(), "running");
-                ec2Client.tagResource(instance.getInstanceId(), parameters[3]);
-
+                ec2Client.tagResource(instance.getInstanceId(), parameters[5]);
+                //modify security group as it conflicts with specified newtork interface at launch
+                SecurityGroup secGroup = ec2Client.getSecurityGroup(parameters[4]);
+                if (secGroup != null && !secGroup.getGroupName().equals("default")) {
+                    CreateSecurityGroupRequest csgr = new CreateSecurityGroupRequest()
+                            .withGroupName(instance.getVpcId() + '-' + secGroup.getGroupName())
+                            .withVpcId(instance.getVpcId())
+                            .withDescription(secGroup.getGroupName() + "-copy-to-" + instance.getVpcId());
+                    CreateSecurityGroupResult csgResult = ec2.createSecurityGroup(csgr);
+                    List<IpPermission> ingPermList = secGroup.getIpPermissions();
+                    AuthorizeSecurityGroupIngressRequest asgir = new AuthorizeSecurityGroupIngressRequest()
+                            .withGroupId(csgResult.getGroupId())
+                            .withIpPermissions(ingPermList);
+                    ec2.authorizeSecurityGroupIngress(asgir);
+                    List<IpPermission> egrPermList = secGroup.getIpPermissionsEgress();
+                    if (!egrPermList.isEmpty()) {
+                        AuthorizeSecurityGroupEgressRequest asger = new AuthorizeSecurityGroupEgressRequest()
+                                .withGroupId(csgResult.getGroupId())
+                                .withIpPermissions(egrPermList);
+                        ec2.authorizeSecurityGroupEgress(asger);
+                    }
+                    ec2.modifyInstanceAttribute((new ModifyInstanceAttributeRequest()
+                            .withInstanceId(instance.getInstanceId())
+                            .withGroups(csgResult.getGroupId())));
+                }
                 //suport for batch
-                if (parameters[3].matches("(.*)(batch)(\\d{1,19}$)")) {
-                    String batchTag = parameters[3].split("batch")[0] + "batch";
+                if (parameters[5].matches("(.*)(batch)(\\d{1,19}$)")) {
+                    String batchTag = parameters[5].split("batch")[0] + "batch";
                     CreateTagsRequest tagRequest = new CreateTagsRequest();
                     tagRequest.withTags(new Tag("batch", batchTag));
                     tagRequest.withResources(instance.getInstanceId());
                     ec2.createTags(tagRequest);
                 }
 
-                if (!parameters[4].equalsIgnoreCase("any")) {
-                    String volumeTag = parameters[7];
+                if (!parameters[6].equalsIgnoreCase("any")) {
+                    String volumeTag = parameters[9];
                     Volume volume = ec2Client.getInstanceRootDevice(instance);
                     String volumeId = volume.getVolumeId();
                     ec2Client.tagResource(volumeId, volumeTag);
@@ -715,8 +777,8 @@ public class AwsPush {
                     ec2Client.getVolumes().add(volume);
 
                     //case of batch instance
-                    if (parameters[3].matches("(.*)(batch)(\\d{1,19}$)")) {
-                        String split[] = parameters[3].split("batch");
+                    if (parameters[5].matches("(.*)(batch)(\\d{1,19}$)")) {
+                        String split[] = parameters[5].split("batch");
                         volumeTag = split[0] + ":volume+rootbatch" + split[1];
                         ec2Client.tagResource(volumeId, volumeTag);
                         String batchTag = volumeTag.split("batch")[0] + "batch";
@@ -725,7 +787,7 @@ public class AwsPush {
                         tagRequest.withResources(volumeId);
                         ec2.createTags(tagRequest);
                     } else {
-                        volumeTag = parameters[3] + ":volume+root";
+                        volumeTag = parameters[5] + ":volume+root";
                         ec2Client.tagResource(volumeId, volumeTag);
                     }
                 }
@@ -1889,10 +1951,17 @@ public class AwsPush {
                 RDFNode vpc = querySolution1.get("vpc");
                 String vpcIdTagValue = ResourceTool.getResourceName(vpc.asResource().toString(), AwsPrefix.vpc);
 
-                query = "SELECT ?subnet ?address ?value WHERE {<" + subnet.asResource() + "> mrs:hasNetworkAddress ?address ."
+                query = "SELECT ?address ?value ?igw_route WHERE {"
+                        + String.format("<%s> mrs:hasNetworkAddress ?address .", subnet.asResource().getURI())
                         + "?address a mrs:NetworkAddress ."
                         + "?address mrs:type \"ipv4-prefix\" ."
-                        + "?address mrs:value ?value}";
+                        + "?address mrs:value ?value. "
+                        + "OPTIONAL {"
+                        + String.format("?igw_route mrs:routeFrom <%s>.", subnet.asResource().getURI())
+                        + "?igw_route mrs:nextHop ?igw."
+                        + "?igw mrs:type \"internet-gateway\""
+                        + "}"
+                        + "}";
                 r1 = executeQuery(query, model, modelAdd);
                 if (!r1.hasNext()) {
                     throw new EJBException(String.format("Subnet %s does not have a valid CIDR", subnetIdTagValue));
@@ -1900,9 +1969,8 @@ public class AwsPush {
                 querySolution1 = r1.next();
                 RDFNode value = querySolution1.get("value");
                 String cidrBlock = value.asLiteral().toString();
-
-                requests += String.format("CreateSubnetRequest %s %s %s \n", vpcIdTagValue, cidrBlock, subnetIdTagValue);
-
+                String subnetType = querySolution1.contains("igw_route")?"public":"private";
+                requests += String.format("CreateSubnetRequest %s %s %s %s \n", vpcIdTagValue, cidrBlock, subnetIdTagValue, subnetType);
             }
         }
         return requests;
@@ -2628,11 +2696,6 @@ public class AwsPush {
                 //find the EBS volumes that the instance uses
                 query = "SELECT ?volume WHERE {<" + node.asResource() + ">  mrs:hasVolume  ?volume}";
                 ResultSet r4 = executeQuery(query, model, modelAdd);
-                /*
-                 if (!r4.hasNext()) {
-                 throw new EJBException(String.format("model addition does not specify the volume of the new node: %s", node));
-                 }
-                 */
                 List<String> volumesId = new ArrayList();
                 while (r4.hasNext())//there could be multiple volumes attached to the instance
                 {
@@ -2641,9 +2704,46 @@ public class AwsPush {
                     String id = ResourceTool.getResourceName(volume.asResource().toString(), AwsPrefix.volume);
                     volumesId.add(ec2Client.getVolumeId(id));
                 }
-
+                
+                //get instance type, image, secgroup and keypair names
+                query = "SELECT ?type WHERE {<" + node.asResource() + "> mrs:type ?type}";
+                ResultSet r5 = executeQuery(query, model, modelAdd);
+                String flavorID = "t2.micro";
+                String imageID = "ami-146e2a7c";
+                String keypairName = "driver_key";
+                String secgroupName = "default";
+                String instanceTypes = null;
+                while (r5.hasNext()) {
+                    QuerySolution q2 = r5.next();
+                    RDFNode type = q2.get("type");
+                    if (instanceTypes == null) {
+                        instanceTypes = type.toString();
+                    } else {
+                        instanceTypes += "," + type.toString();
+                    }
+                }
+                if (instanceTypes != null) {
+                    String[] typeItems = instanceTypes.split(",|;|:");
+                    for (String typename: typeItems) {
+                        String value = null;
+                        if (typename.contains("+") || typename.contains("=")) {
+                            value = typename.split("\\+|=")[1];
+                        } else {
+                            continue;
+                        }
+                        if (typename.contains("flavor") || typename.contains("instance")) {
+                            flavorID = value;
+                        } else if (typename.startsWith("image")) {
+                            imageID = value;
+                        } else if (typename.contains("keypair")) {
+                            keypairName = value;
+                        } else if (typename.contains("secgroup")) {
+                            secgroupName = value;
+                        }
+                    }
+                }
                 //put request for new instance
-                requests += String.format("RunInstancesRequest ami-146e2a7c t2.micro %s ", nodeIdTagValue);
+                requests += String.format("RunInstancesRequest %s %s %s %s %s ", imageID, flavorID, keypairName, secgroupName, nodeIdTagValue);
 
                 //put the root device of the instance
                 query = "SELECT ?volume ?deviceName ?size ?type  WHERE {"
@@ -2651,10 +2751,10 @@ public class AwsPush {
                         + "?volume mrs:target_device ?deviceName ."
                         + "?volume mrs:disk_gb ?size ."
                         + "?volume mrs:value ?type}";
-                r4 = executeQuery(query, model, modelAdd);
+                ResultSet r6 = executeQuery(query, model, modelAdd);
                 boolean hasRootVolume = false;
-                while (r4.hasNext()) {
-                    QuerySolution querySolution4 = r4.next();
+                while (r6.hasNext()) {
+                    QuerySolution querySolution4 = r6.next();
                     RDFNode volume = querySolution4.get("volume");
                     String volumeTag = ResourceTool.getResourceName(volume.asResource().toString(), AwsPrefix.volume);
                     String type = querySolution4.get("type").asLiteral().toString();

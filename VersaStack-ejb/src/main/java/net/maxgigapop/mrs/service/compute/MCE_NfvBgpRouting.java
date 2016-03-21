@@ -51,10 +51,10 @@ public class MCE_NfvBgpRouting implements IModelComputationElement {
 
     @Override
     @Asynchronous
-    public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
-        log.log(Level.INFO, "MCE_NfvBgpRouting::process {0}", annotatedDelta);
+    public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
+        log.log(Level.FINE, "MCE_NfvBgpRouting::process {0}", annotatedDelta);
         try {
-            log.log(Level.INFO, "\n>>>MCE_NfvBgpRouting--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
+            log.log(Level.FINE, "\n>>>MCE_NfvBgpRouting--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             Logger.getLogger(MCE_NfvBgpRouting.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -65,7 +65,7 @@ public class MCE_NfvBgpRouting implements IModelComputationElement {
                 + "?policy spa:type 'MCE_NfvBgpRouting'. "
                 + "?policy spa:importFrom ?data. "
                 + "?data spa:type ?type. ?data spa:value ?value. "
-                + "FILTER not exists {?policy spa:dependOn ?other} "
+                + String.format("FILTER (not exists {?policy spa:dependOn ?other} && ?policy = <%s>)", policy.getURI())
                 + "}";
 
         ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);
@@ -197,6 +197,7 @@ public class MCE_NfvBgpRouting implements IModelComputationElement {
         if (resBgpRtTable == null) {
             resBgpRtTable = RdfOwl.createResource(spaModel, resRtSvc.getURI() + ":table+quagga_bgp", Mrs.RoutingTable);
             routingModel.add(routingModel.createStatement(resRtSvc, Mrs.providesRoutingTable, resBgpRtTable));
+            routingModel.add(routingModel.createStatement(resBgpRtTable, Mrs.type, "quagga-bgp"));
         }
         Resource resNetAddrRouterId = RdfOwl.createResource(spaModel, resBgpRtTable.getURI() + ":router_id", Mrs.NetworkAddress);
         routingModel.add(routingModel.createStatement(resBgpRtTable, Mrs.hasNetworkAddress, resNetAddrRouterId));
@@ -206,27 +207,20 @@ public class MCE_NfvBgpRouting implements IModelComputationElement {
         routingModel.add(routingModel.createStatement(resBgpRtTable, Mrs.hasNetworkAddress, resNetAddrRouterAsn));
         routingModel.add(routingModel.createStatement(resNetAddrRouterAsn, Mrs.type, "bgp-asn")); 
         routingModel.add(routingModel.createStatement(resNetAddrRouterAsn, Mrs.value, routerAsn));
-        Resource resNetAddrLocalPrefixes = null;
         // create local_cluster NetworkAddress statements based on 'networks'
+        String prefixList = routerId+"/32";
         if (jsonReqData.containsKey("networks")) {
-            String prefixList = null;
             JSONArray networks = (JSONArray)jsonReqData.get("networks");
             for (Object obj: networks) {
                 String netAddr = (String) obj;
                 SubnetUtils utils2 = new SubnetUtils(netAddr);
                 String prefix = utils2.getInfo().getNetworkAddress()+"/"+netAddr.split("/")[1];
-                if (prefixList == null) {
-                    prefixList = prefix;
-                } else {
-                    prefixList += (","+prefix);
-                }
-            }
-            if (prefixList != null) {
-                resNetAddrLocalPrefixes = RdfOwl.createResource(spaModel, resBgpRtTable.getURI() + ":local_prefix_list", Mrs.NetworkAddress);
-                routingModel.add(routingModel.createStatement(resNetAddrLocalPrefixes, Mrs.type, "ipv4-prefix-list")); 
-                routingModel.add(routingModel.createStatement(resNetAddrLocalPrefixes, Mrs.value, prefixList));
+                prefixList += (","+prefix);
             }
         } 
+        Resource resNetAddrLocalPrefixes = RdfOwl.createResource(spaModel, resBgpRtTable.getURI() + ":local_prefix_list", Mrs.NetworkAddress);
+        routingModel.add(routingModel.createStatement(resNetAddrLocalPrefixes, Mrs.type, "ipv4-prefix-list")); 
+        routingModel.add(routingModel.createStatement(resNetAddrLocalPrefixes, Mrs.value, prefixList));
         JSONArray neighbors = (JSONArray)jsonReqData.get("neighbors");
         for (Object obj: neighbors) {
             JSONObject bgpNeighbor = (JSONObject) obj;
@@ -235,6 +229,9 @@ public class MCE_NfvBgpRouting implements IModelComputationElement {
             }
             String remoteAsn = (String)bgpNeighbor.get("remote_asn");
             String remoteIp = (String)bgpNeighbor.get("remote_ip");
+            if (remoteIp.contains("/")) {
+                remoteIp = remoteIp.split("/")[0];
+            }
             Resource resRouteToNeighbor = RdfOwl.createResource(spaModel, resBgpRtTable.getURI() + ":neighbor+"+remoteIp.replaceAll("[.\\/]", "_"), Mrs.Route);
             routingModel.add(routingModel.createStatement(resBgpRtTable, Mrs.hasRoute, resRouteToNeighbor));
             // route NetAddresses
@@ -244,6 +241,9 @@ public class MCE_NfvBgpRouting implements IModelComputationElement {
             routingModel.add(routingModel.createStatement(resNetAddrRemoteAsn, Mrs.value, remoteAsn));
             if (bgpNeighbor.containsKey("local_ip")) {
                 String localIp = (String)bgpNeighbor.get("local_ip");
+                if (localIp.contains("/")) {
+                    localIp = localIp.split("/")[0];
+                }
                 Resource resNetAddrLocalIp = RdfOwl.createResource(spaModel, resRouteToNeighbor.getURI() + ":local_ip", Mrs.NetworkAddress);
                 routingModel.add(routingModel.createStatement(resRouteToNeighbor, Mrs.hasNetworkAddress, resNetAddrLocalIp));
                 routingModel.add(routingModel.createStatement(resNetAddrLocalIp, Mrs.type, "ipv4-local")); // ? ipv4-address

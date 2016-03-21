@@ -29,6 +29,8 @@ import org.apache.commons.net.util.SubnetUtils;
 import org.apache.commons.net.util.SubnetUtils.SubnetInfo;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.api.identity.TenantService;
@@ -118,6 +120,7 @@ public class OpenStackPush {
         List<JSONObject> requests = new ArrayList();
 
         //get all the requests
+        requests.addAll(virtualRouterRequests(modelRef, modelReduct, false));
         requests.addAll(sriovRequests(modelRef, modelReduct, false));
         requests.addAll(portAttachmentRequests(modelRef, modelReduct, false));
         requests.addAll(volumesAttachmentRequests(modelRef, modelReduct, false));
@@ -128,7 +131,7 @@ public class OpenStackPush {
         requests.addAll(isAliasRequest(modelRef, modelReduct, false));
         requests.addAll(subnetRequests(modelRef, modelReduct, false));
         requests.addAll(networkRequests(modelRef, modelReduct, false));
-        
+
         requests.addAll(networkRequests(modelRef, modelAdd, true));
         requests.addAll(subnetRequests(modelRef, modelAdd, true));
         requests.addAll(volumeRequests(modelRef, modelAdd, true));
@@ -140,6 +143,7 @@ public class OpenStackPush {
         requests.addAll(floatingIpRequests(modelRef, modelAdd, true));
         requests.addAll(isAliasRequest(modelRef, modelAdd, true));
         requests.addAll(sriovRequests(modelRef, modelAdd, true));
+        requests.addAll(virtualRouterRequests(modelRef, modelAdd, true));
 
         return requests;
     }
@@ -195,18 +199,6 @@ public class OpenStackPush {
                 String netid = null;
                 Subnet subnet = new NeutronSubnet();
                 String subnet_name = o.get("name").toString();
-                /*
-                 if (client.getNetworks().) {
-                 Network network = new NeutronNetwork();
-                 network.toBuilder().name(o.get("network name").toString())
-                 .tenantId("3cf2d992f604479dbcb1a6c679c6697a")
-                 .adminStateUp(true);
-                 netid = network.getId();
-                 osClient.networking().network().create(network);
-
-                 }
-                 */
-                //System.out.println(openstackget.getNetwork(o.get("network name").toString()).toString());
                 Network network1 = client.getNetwork(o.get("network name").toString());
                 if (network1 == null) {
                     throw new EJBException("CreateSubnetRequest for" + subnet_name + "failed without network =" + o.get("network name"));
@@ -283,7 +275,6 @@ public class OpenStackPush {
                         break;
                     }
                 }
-
                 ServerCreate server = (ServerCreate) builder.build();
                 Server s = osClient.compute().servers().boot(server);
                 String servername = o.get("server name").toString();
@@ -375,7 +366,6 @@ public class OpenStackPush {
 
                                 if (o.containsKey(key_ip)) {
                                     for (Router router1 : client.getRouters()) {
-
                                         if (routing_info_for_router.containsKey(router1.getName()) || routing_info_for_router.containsKey(router1.getId())) {
                                             router_name = router1.getName();
                                             routing_info1 = routing_info_for_router.get(router1.getName());
@@ -468,25 +458,20 @@ public class OpenStackPush {
                                                         j++;
                                                         key_ip = "nexthop" + Integer.toString(j);
                                                     }
-
                                                 }
                                             } else {
                                                 j++;
                                                 key_ip = "nexthop" + Integer.toString(j);
                                             }
-
                                         }
                                     }
 
                                 } else {
                                     break;
                                 }
-
                             }
-
                         } else {
                             OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-
                             //update the client
                             //multiple subnet and nexthop create once a time, same concept of the router one
                             while (true) {
@@ -512,7 +497,6 @@ public class OpenStackPush {
                                                 if (router_name.equals(router1.getName())) {
                                                     Subnet s = client.getSubnet(subnet_name);
                                                     Router r = client.getRouter(router_name);
-
                                                     if (!o.get(key_ip).toString().contains("any")) {
 
                                                         String nexthop = o.get(key_ip).toString();
@@ -527,7 +511,6 @@ public class OpenStackPush {
                                                                 .fixedIp(nexthop, subnetid)
                                                                 .name(router_name + "port" + i)
                                                                 .adminState(true);
-
                                                         osClient.networking().port().create(port);
                                                         OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                                                         String portid = client.getPort(router_name + "port" + i).getId();
@@ -556,20 +539,16 @@ public class OpenStackPush {
                                                         j++;
                                                         key_ip = "nexthop" + Integer.toString(j);
                                                     }
-
                                                 }
                                             } else {
                                                 j++;
                                                 key_ip = "nexthop" + Integer.toString(j);
                                             }
-
                                         }
                                     }
-
                                 } else {
                                     break;
                                 }
-
                             }
                         }
                         routing_info_for_router.remove(router_name);
@@ -577,9 +556,7 @@ public class OpenStackPush {
                     } else {
                         break;
                     }
-
                 }
-
             } else if (o.get("request").toString().equals("CreateNetworkInterfaceRequest")) {
                 Port port = new NeutronPort();
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
@@ -658,9 +635,7 @@ public class OpenStackPush {
                                     }
                                     r1.toBuilder().clearExternalGateway();
                                     osClient.networking().router().update(r1);
-
                                     PortDeletionCheck(portid, url, NATServer, username, password, tenantName, topologyUri);
-
                                 } else {
                                     for (Port p : client.getPorts()) {
                                         if (p.getDeviceId().equals(r1.getId()) && p.getNetworkId().equals(s.getNetworkId())) {
@@ -669,10 +644,8 @@ public class OpenStackPush {
                                         }
                                     }
                                     osClient.networking().router().detachInterface(routerid, subid, null);
-
                                     PortDeletionCheck(portid, url, NATServer, username, password, tenantName, topologyUri);
                                 }
-
                                 ArrayList<Boolean> arr = new ArrayList<Boolean>();
                                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                                 //@TODO: should getPorts from adminClient
@@ -720,13 +693,6 @@ public class OpenStackPush {
                 ActionResponse ar = osClient.compute().floatingIps().addFloatingIP(s, ((IP)p.getFixedIps().toArray()[0]).getIpAddress(), floatip);
             } else if (o.get("request").toString().equals("CreateisAliaseRequest")) {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-                /*
-                 o.put("subnet name fixip", subnetnamefix);
-                 o.put("subnet name floatip", subnetnamefloat);
-                 o.put("server name fixip", servername);
-                 o.put("fixed ip", fixvalue);
-                 o.put("float ip", floatvalue);
-                 */
                 String servername = o.get("server name").toString();
                 String subnetnamefloat = o.get("subnet name floatip").toString();
                 String subnetnamefix = o.get("subnet name fixip").toString();
@@ -779,7 +745,7 @@ public class OpenStackPush {
                     }
                     // add routes even is empty
                     metaObj.put("routes", routes);
-                    String data = metaObj.toJSONString().replaceAll("\"", "'");
+                    String data = metaObj.toJSONString().replaceAll("\"", "'").replaceAll("\\\\/", "/");
                     // set metadata: "sriov_vnic:#": data
                     client.setMetadata(servername, String.format("sriov_vnic:%d", metaObjArray.size()), data);
                     sriovNum++;
@@ -789,6 +755,122 @@ public class OpenStackPush {
                     String servername = (String)obj;
                     client.setMetadata(servername, "sriov_vnic:status", "do_attach");
                 }
+            } else if (o.get("request").toString().equals("CreateVirtualRouterRequest") && o.get("routing table").equals("quagga-bgp")) {
+                // OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                // handling only Quagga BGP for now
+                String servername = o.get("server name").toString();
+                // 1. routing table (BGP root) level parameters as "network address #" 
+                JSONObject jsonBgpInfo = new JSONObject();
+                jsonBgpInfo.put("status", "up");
+                int netAddrNum = 1;
+                while (o.containsKey(String.format("network address %d", netAddrNum))) {
+                    String addrValue = (String)o.get(String.format("network address %d", netAddrNum));
+                    String[] typeValue = addrValue.split("=");
+                    if (typeValue.length != 2) {
+                        continue;
+                    }
+                    switch (typeValue[0]) {
+                        case "ipv4":
+                        case "router-id":
+                            jsonBgpInfo.put("router_id", typeValue[1]);
+                            break;
+                        case "bgp-asn":
+                            jsonBgpInfo.put("as_number", typeValue[1]);
+                            break;
+                    }
+                    netAddrNum++;
+                }
+                client.setMetadata(servername, "quagga:bgp:info", jsonBgpInfo.toJSONString().replaceAll("\"", "'").replaceAll("\\\\/", "/"));
+                // 2. route (BGP neighbor) level parameters as "route #"
+                int neighborNum = 1;
+                while (o.containsKey(String.format("route %d", neighborNum))) {
+                    Map o2 = (Map) o.get(String.format("route %d", neighborNum));
+                    // 2.1 per neighbor "network address #"
+                    JSONObject jsonBgpNeighbor = new JSONObject();
+                    netAddrNum = 1;
+                    while (o2.containsKey(String.format("network address %d", netAddrNum))) {
+                        String addrValue = (String) o2.get(String.format("network address %d", netAddrNum));
+                        String[] typeValue = addrValue.split("=");
+                        if (typeValue.length != 2) {
+                            continue;
+                        }
+                        switch (typeValue[0]) {
+                            case "bgp-asn":
+                                jsonBgpNeighbor.put("as_number", typeValue[1]);
+                                break;
+                            case "bgp-authkey":
+                                jsonBgpNeighbor.put("bgp_authkey", typeValue[1]);
+                                break;
+                            case "ipv4-local":
+                            case "local-ip":
+                                jsonBgpNeighbor.put("local_ip", typeValue[1]);
+                                break;
+                            case "ipv4-remote": // alternative to nextHop 
+                            case "remote-ip":
+                                jsonBgpNeighbor.put("remote_ip", typeValue[1]);
+                                break;
+                            case "ipv4-prefix-list": // alternative to routeFrom 
+                                String[] prefixes = typeValue[1].split("[,;\\s]");
+                                JSONArray jsonPrefixList = new JSONArray();
+                                for (String prefix : prefixes) {
+                                    jsonPrefixList.add(prefix);
+                                }
+                                jsonBgpNeighbor.put("export_prefixes", jsonPrefixList);
+                                break;
+                        }
+                        netAddrNum++;
+                    }
+
+                    // 2.2 per neighbor "route to", "route from" and "next hop"
+                    if (o2.containsKey("next hop")) {
+                        String addrValue = (String) o2.get("next hop");
+                        String[] typeValue = addrValue.split("=");
+                        if (typeValue.length == 2) {
+                            if (typeValue[0].equals("ipv4-remote") || typeValue[0].equals("remote_ip")) {
+                                jsonBgpNeighbor.put("remote_ip", typeValue[1]);
+                            }
+                        }           
+                    }
+                    if (o2.containsKey("route from")) {
+                        String addrValue = (String) o2.get("route from");
+                        String[] typeValue = addrValue.split("=");
+                        if (typeValue.length == 2) {
+                            if (typeValue[0].equals("ipv4-prefix-list")) {
+                                String[] prefixes = typeValue[1].split("[,;\\s]");
+                                JSONArray jsonPrefixList = new JSONArray();
+                                for (String prefix : prefixes) {
+                                    jsonPrefixList.add(prefix);
+                                }
+                                jsonBgpNeighbor.put("export_prefixes", jsonPrefixList);
+                            }
+                        }
+                    }
+                    if (!jsonBgpNeighbor.containsKey("export_prefixes")) {
+                        jsonBgpNeighbor.put("export_prefixes", new JSONArray());
+                    }
+                    // no need from "route to" (default == any)
+                    // set metadata for quagga:bgp:neighbor:#
+                    client.setMetadata(servername, String.format("quagga:bgp:neighbor:%d", neighborNum), jsonBgpNeighbor.toJSONString().replaceAll("\"", "'").replaceAll("\\\\/", "/"));
+                    neighborNum++;
+                }
+            } else if (o.get("request").toString().equals("DeleteVirtualRouterRequest") && o.get("routing table").equals("quagga-bgp")) {
+                String servername = o.get("server name").toString();
+                Server s = client.getServer(servername);                
+                String bgpInfoStr = client.getMetadata(s, "quagga:bgp:info");
+                if (bgpInfoStr == null || bgpInfoStr.isEmpty()) {
+                    continue;
+                }
+                try {
+                    JSONParser parser = new JSONParser();
+                    JSONObject jsonObj = (JSONObject) parser.parse(bgpInfoStr);
+                    if (jsonObj.containsKey("status")) {
+                        jsonObj.put("status", "down");
+                        client.setMetadata(servername, "quagga:bgp:info", jsonObj.toJSONString().replaceAll("\"", "'").replaceAll("\\\\/", "/"));
+                    }
+                } catch (ParseException e) {
+                    throw new EJBException(String.format("%s:DeleteVirtualRouterRequest cannot parse json string %s", this.getClass().getName(),bgpInfoStr));
+                }
+                // set status=down
             } else if (o.get("request").toString().equals("DetachSriovRequest")) {
                 int sriovNum = 1;
                 List<String> serversToDetachSriov = new ArrayList();
@@ -1467,18 +1549,34 @@ public class OpenStackPush {
                 String flavorID = "any";
                 String keypairName = null;
                 String secgroupName = null;
+                String instanceTypes = null;
                 while (r5.hasNext()) {
                     QuerySolution q2 = r5.next();
                     RDFNode type = q2.get("type");
-                    String typename = type.toString();
-                    if (typename.contains("imageUUID")) {
-                        imageID = getresourcename(typename, "+", "");
-                    } else if (typename.contains("flavorID")) {
-                        flavorID = getresourcename(typename, "+", "");
-                    } else if (typename.contains("keypairName")) {
-                        keypairName = getresourcename(typename, "+", "");
-                    } else if (typename.contains("secgroupName")) {
-                        secgroupName = getresourcename(typename, "+", "");
+                    if (instanceTypes == null) {
+                        instanceTypes = type.toString();
+                    } else {
+                        instanceTypes += "," + type.toString();
+                    }
+                }
+                if (instanceTypes != null) {
+                    String[] typeItems = instanceTypes.split(",|;|:");
+                    for (String typename : typeItems) {
+                        String value = null;
+                        if (typename.contains("+") || typename.contains("=")) {
+                            value = typename.split("\\+|=")[1];
+                        } else {
+                            continue;
+                        }
+                        if (typename.startsWith("image")) {
+                            imageID = value;
+                        } else if (typename.startsWith("flavor") || typename.startsWith("instance")) {
+                            flavorID = value;
+                        } else if (typename.startsWith("keypair")) {
+                            keypairName = value;
+                        } else if (typename.startsWith("secgroup")) {
+                            secgroupName = value;
+                        }
                     }
                 }
 
@@ -2144,6 +2242,120 @@ public class OpenStackPush {
             JO.put("request", "DetachSriovRequest");
         }
         requests.add(JO);
+        return requests;
+    }
+
+    private List<JSONObject> virtualRouterRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+        List<JSONObject> requests = new ArrayList();
+        String query = "SELECT ?rtsvc ?rtable ?rtable_type WHERE {"
+                + "?rtsvc mrs:providesRoutingTable ?rtable ."
+                + "?rtable mrs:type ?rtable_type ."
+                + "}";
+        ResultSet r = executeQuery(query, emptyModel, modelDelta);
+        while (r.hasNext()) {
+            JSONObject JO = new JSONObject();
+            QuerySolution q = r.next();
+            JSONObject o = new JSONObject();
+            String rtType = q.get("rtable_type").toString();
+            JO.put("routing table", rtType);
+            if (!rtType.startsWith("quagga") && !rtType.equalsIgnoreCase("linux")) {
+                continue;
+            }
+            Resource rtService = q.getResource("rtsvc");
+            Resource rtTable = q.getResource("rtable");
+            query = "SELECT ?vm WHERE {"
+                    + String.format("?vm nml:hasService <%s> .", rtService.getURI())
+                    + "?vm a nml:Node ."
+                    + "}";
+            Resource VM = null;
+            ResultSet r1 = executeQueryUnion(query, modelRef, modelDelta);
+            if (r1.hasNext()) {
+                QuerySolution q1 = r1.next();
+                VM = q1.getResource("vm");
+            } else {
+                throw new EJBException("virtualRouterRequests cannot find a VM hosting routingService='" + rtService.getURI());
+            }
+            JO.put("server name", VM.getURI());
+            query = "SELECT ?netaddr ?netaddr_type ?netaddr_value WHERE {"
+                    + String.format("<%s> mrs:hasNetworkAddress ?netaddr .", rtTable.getURI())
+                    + "?netaddr mrs:type ?netaddr_type ."
+                    + "?netaddr mrs:value ?netaddr_value ."
+                    + "}";
+            ResultSet r2 = executeQuery(query, emptyModel, modelDelta);
+            int netAddrNum = 1;
+            while (r2.hasNext()) {
+                QuerySolution q2 = r2.next();
+                Resource netAddr = q2.getResource("netaddr");
+                String netAddrType = q2.get("netaddr_type").toString();
+                String netAddrValue = q2.get("netaddr_value").toString();
+                JO.put(String.format("network address %d", netAddrNum), netAddrType+"="+netAddrValue);
+                netAddrNum++;                        
+            }
+            query = "SELECT ?route ?route_to ?route_to_type ?route_to_value "
+                    + "?next_hop ?next_hop_type ?next_hop_value "
+                    + "?route_from ?route_from_type ?route_from_value WHERE {"
+                    + String.format("<%s> mrs:hasRoute ?route .", rtTable.getURI())
+                    + "OPTIONAL {?route mrs:routeTo ?route_to. "
+                    + "     ?route_to mrs:type ?route_to_type. "
+                    + "     ?route_to mrs:value ?troute_to_value. } ."
+                    + "OPTIONAL {?route mrs:routeFrom ?route_from. "
+                    + "     ?route_from mrs:type ?route_from_type. "
+                    + "     ?route_from mrs:value ?route_from_value. } ."
+                    + "OPTIONAL {?route mrs:nextHop ?next_hop. "
+                    + "     ?next_hop mrs:type ?next_hop_type. "
+                    + "     ?next_hop mrs:value ?next_hop_value. } "
+                    + "}";
+            ResultSet r3 = executeQuery(query, emptyModel, modelDelta);
+            int routeNum = 1;
+            while (r3.hasNext()) {
+                QuerySolution q3 = r3.next();
+                JSONObject jsonRoute = new JSONObject();
+                Resource route = q3.getResource("route");
+                jsonRoute.put("name", route.getURI());
+                Resource routeTo = q3.contains("route_to") ? q3.getResource("route_to") : null;
+                if (routeTo != null) {
+                    String routeToType = q3.get("route_to_type").toString();
+                    String routeToValue = q3.get("route_to_value").toString();
+                    jsonRoute.put("route to", routeToType+"="+routeToValue);
+                }
+                Resource routeFrom = q3.contains("route_from") ? q3.getResource("route_from") : null;
+                if (routeFrom != null) {
+                    String routeFromType = q3.get("route_from_type").toString();
+                    String routeFromValue = q3.get("route_from_value").toString();
+                    jsonRoute.put("route from", routeFromType+"="+routeFromValue);
+                }
+                Resource nextHop = q3.contains("next_hop") ? q3.getResource("next_hop") : null;
+                if (nextHop != null) {
+                    String nextHopType = q3.get("next_hop_type").toString();
+                    String nextHopValue = q3.get("next_hop_value").toString();
+                    jsonRoute.put("next hop", nextHopType+"="+nextHopValue);
+                }
+                // NetworkAddress elements for each Route
+                query = "SELECT ?netaddr ?netaddr_type ?netaddr_value WHERE {"
+                    + String.format("<%s> mrs:hasNetworkAddress ?netaddr .", route.getURI())
+                    + "?netaddr mrs:type ?netaddr_type ."
+                    + "?netaddr mrs:value ?netaddr_value ."
+                    + "}";
+                ResultSet r4 = executeQuery(query, emptyModel, modelDelta);
+                int routeNetAddrNum = 1;
+                while (r4.hasNext()) {
+                    QuerySolution q4 = r4.next();
+                    Resource netAddr = q4.getResource("netaddr");
+                    String netAddrType = q4.get("netaddr_type").toString();
+                    String netAddrValue = q4.get("netaddr_value").toString();
+                    jsonRoute.put(String.format("network address %d", routeNetAddrNum), netAddrType + "=" + netAddrValue);
+                    routeNetAddrNum++;
+                }
+                JO.put(String.format("route %d", routeNum), jsonRoute);
+                routeNum++;
+            }
+            if (creation == true) {
+                JO.put("request", "CreateVirtualRouterRequest");
+            } else {
+                JO.put("request", "DeleteVirtualRouterRequest");
+            }
+            requests.add(JO);
+        }
         return requests;
     }
 
