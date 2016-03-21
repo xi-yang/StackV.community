@@ -478,14 +478,14 @@ public class AwsPush {
 
                 String routeTableId = ec2Client.getTableId(parameters[1]);
                 String subnetId = ec2Client.getResourceId(parameters[2]);
-                for (int i = 10; i > 0; i--) {
+                for (int i = 6; i > 0; i--) {
                     String resId = ec2Client.getResourceId(routeTableId);
                     if (routeTableId != resId) {
                         routeTableId = resId;
                         break;
                     }
                     try {
-                        Thread.sleep(1000L);
+                        Thread.sleep(5000L);
                     } catch (InterruptedException ex) {
                         ;
                     }
