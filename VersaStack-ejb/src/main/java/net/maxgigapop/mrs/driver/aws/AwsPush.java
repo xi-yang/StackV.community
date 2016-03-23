@@ -725,16 +725,16 @@ public class AwsPush {
                 SecurityGroup secGroup = ec2Client.getSecurityGroup(parameters[4]);
                 if (secGroup != null && !secGroup.getGroupName().equals("default")) {
                     String secGroupName = instance.getVpcId() + '-' + secGroup.getGroupName();
-                    boolean secGroupExisting = false;
+                    String secGroupId = null;
                     DescribeSecurityGroupsResult securityGroupsResult = ec2.describeSecurityGroups();
                     List<SecurityGroup> listSecGroups = securityGroupsResult.getSecurityGroups();
                     for (SecurityGroup sg : listSecGroups) {
                         if (sg.getGroupName().equals(secGroupName)) {
-                            secGroupExisting = true;
+                            secGroupId = sg.getGroupId();
                             break;
                         }
                     }
-                    if (!secGroupExisting) {
+                    if (secGroupId == null) {
                         CreateSecurityGroupRequest csgr = new CreateSecurityGroupRequest()
                                 .withGroupName(secGroupName)
                                 .withVpcId(instance.getVpcId())
@@ -752,10 +752,11 @@ public class AwsPush {
                                     .withIpPermissions(egrPermList);
                             ec2.authorizeSecurityGroupEgress(asger);
                         }
-                        ec2.modifyInstanceAttribute((new ModifyInstanceAttributeRequest()
-                                .withInstanceId(instance.getInstanceId())
-                                .withGroups(csgResult.getGroupId())));
+                        secGroupId = csgResult.getGroupId();
                     }
+                    ec2.modifyInstanceAttribute((new ModifyInstanceAttributeRequest()
+                            .withInstanceId(instance.getInstanceId())
+                            .withGroups(secGroupId)));
                 }
                 //suport for batch
                 if (parameters[5].matches("(.*)(batch)(\\d{1,19}$)")) {
