@@ -706,6 +706,7 @@ public class serviceBeans {
 
     public int createNetwork(Map<String, String> paraMap) {
         String topoUri = null;
+        String driverType = null;
         String netCidr = null;
         String refUuid = null;
         String directConn = null;
@@ -716,7 +717,9 @@ public class serviceBeans {
         for (Map.Entry<String, String> entry : paraMap.entrySet()) {
             if (entry.getKey().equalsIgnoreCase("topoUri")) {
                 topoUri = entry.getValue();
-            } else if (entry.getKey().equalsIgnoreCase("netCidr")) {
+            }else if (entry.getKey().equalsIgnoreCase("driverType")) {
+                driverType = entry.getValue();
+            }else if (entry.getKey().equalsIgnoreCase("netCidr")) {
                 netCidr = entry.getValue();
             } else if (entry.getKey().equalsIgnoreCase("instanceUUID")) {
                 refUuid = entry.getValue();
@@ -798,7 +801,7 @@ public class serviceBeans {
                 + "    a                         nml:Topology ;\n";
         
         String exportTo = "";
-        if(directConn != null){
+        if(driverType.equals("aws") && directConn != null){
             String dest = directConn.contains("?vlan") ? directConn.substring(0, directConn.indexOf("?vlan")) : directConn;
             String vlan = directConn.contains("?vlan") ? directConn.substring(directConn.indexOf("?vlan")+6): "any";
             exportTo += "&lt;x-policy-annotation:data:vpc-export&gt;, ";
@@ -844,12 +847,23 @@ public class serviceBeans {
             svcDelta += "    spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; .\n\n";
 
         if (!vmList.isEmpty()) {
+            if(driverType.equals("aws")){
             for (String vm : vmList) {
                 String[] vmPara = vm.split("&");
                 //0:vm name.
                 //1:subnet #
+                //2:image type
+                //3:instance type
+                //4:keypair name
+                //5:security group name
                 svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n"
-                        + "    a                         nml:Node ;\n"
+                        + "    a                         nml:Node ;\n";
+                String typeDetail = (vmPara[2].equals(" ")?"":"\"image+"+ vmPara[2] +"\",")
+                        + (vmPara[3].equals(" ")?"":"\"instance+"+ vmPara[3] +"\",")
+                        + (vmPara[4].equals(" ")?"":"\"keypair+"+ vmPara[4] +"\",")
+                        + (vmPara[5].equals(" ")?"":"\"secgroup+"+ vmPara[5] +"\",");
+                
+                svcDelta += (typeDetail.isEmpty()? "": "    mrs:type       " + typeDetail.substring(0, typeDetail.length()-1) + ";\n")
                         + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt; ;\n"
                         + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;.\n\n"
                         + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt;\n"
@@ -867,6 +881,63 @@ public class serviceBeans {
                         + subnetCriteria + "\n    a            spa:PolicyData;\n"
                         + "    spa:type     \"JSON\";\n    spa:format    \"\"\"{ "
                         + "\"place_into\": \"%$.subnets[" + sub + "].uri%\"}\"\"\" .\n\n";
+            }                
+            }
+            else{
+            for (String vm : vmList) {
+                String[] vmPara = vm.split("&");
+                //0:vm name.
+                //1:subnet #
+                //2:image type
+                //3:instance type
+                //4:keypair name
+                //5:security group name
+                //6:vm host
+                //7:floating IP
+                svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n"
+                        + "    a                         nml:Node ;\n";
+                String typeDetail = (vmPara[2].equals(" ")?"":"\"image+"+ vmPara[2] +"\",")
+                        + (vmPara[3].equals(" ")?"":"\"instance+"+ vmPara[3] +"\",")
+                        + (vmPara[4].equals(" ")?"":"\"keypair+"+ vmPara[4] +"\",")
+                        + (vmPara[5].equals(" ")?"":"\"secgroup+"+ vmPara[5] +"\",");
+                
+                svcDelta += (typeDetail.isEmpty()? "": "    mrs:type       " + typeDetail.substring(0, typeDetail.length()-1) + ";\n")
+                        + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt; ;\n"
+                        + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;.\n\n";
+                if(vmPara[7].equals(" ")){
+                    svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt;\n"
+                        + "    a            nml:BidirectionalPort;\n"
+                        + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "-eth0&gt;.\n\n";
+                }else{
+                    svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt;\n"
+                        + "    a            nml:BidirectionalPort;\n"
+                        + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "-eth0&gt;.\n\n"
+                        + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0:floating&gt;\n"
+                        + "    a            mrs:NetworkAddress;\n    mrs:type     \"floating-ip\";\n"
+                        + "    mrs:value     \""+ vmPara[7] + "\".";
+                }                
+                    svcDelta += "&lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;\n"
+                        + "    a            spa:PolicyAction ;\n"
+                        + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
+                        + "    spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;\n"
+                        + "    spa:importFrom &lt;x-policy-annotation:data:" + vmPara[0] + "-host-criteria&gt;.\n\n"
+                        + "&lt;x-policy-annotation:data:" + vmPara[0] + "-host-criteria&gt;\n"
+                        + "    a            spa:PolicyData;\n    spa:type     \"JSON\";\n"
+                        + "    spa:value    \"\"\"{\n"
+                        + "       \"place_into\": \"urn:ogf:network:openstack.com:openstack-cloud:host+" + vmPara[6] + "\"\n"
+                        + "    }\"\"\" .\n\n"    
+                        + "&lt;x-policy-annotation:action:create-" + vmPara[0] + "-eth0&gt;\n"
+                        + "    a            spa:PolicyAction ;\n"
+                        + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
+                        + "    spa:importFrom ";
+                String subnetCriteria = "&lt;x-policy-annotation:data:vpc-subnet-" + vmPara[0] + "-criteria&gt;";
+                exportTo += subnetCriteria + ", ";
+                int sub = Integer.valueOf(vmPara[1]) - 1;
+                svcDelta += subnetCriteria + ".\n\n"
+                        + subnetCriteria + "\n    a            spa:PolicyData;\n"
+                        + "    spa:type     \"JSON\";\n    spa:format    \"\"\"{ "
+                        + "\"place_into\": \"%$.subnets[" + sub + "].uri%\"}\"\"\" .\n\n";
+            }
             }
         }
         svcDelta += "&lt;x-policy-annotation:action:create-vpc&gt;\n"
