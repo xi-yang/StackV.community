@@ -724,26 +724,38 @@ public class AwsPush {
                 //modify security group as it conflicts with specified newtork interface at launch
                 SecurityGroup secGroup = ec2Client.getSecurityGroup(parameters[4]);
                 if (secGroup != null && !secGroup.getGroupName().equals("default")) {
-                    CreateSecurityGroupRequest csgr = new CreateSecurityGroupRequest()
-                            .withGroupName(instance.getVpcId() + '-' + secGroup.getGroupName())
-                            .withVpcId(instance.getVpcId())
-                            .withDescription(secGroup.getGroupName() + "-copy-to-" + instance.getVpcId());
-                    CreateSecurityGroupResult csgResult = ec2.createSecurityGroup(csgr);
-                    List<IpPermission> ingPermList = secGroup.getIpPermissions();
-                    AuthorizeSecurityGroupIngressRequest asgir = new AuthorizeSecurityGroupIngressRequest()
-                            .withGroupId(csgResult.getGroupId())
-                            .withIpPermissions(ingPermList);
-                    ec2.authorizeSecurityGroupIngress(asgir);
-                    List<IpPermission> egrPermList = secGroup.getIpPermissionsEgress();
-                    if (!egrPermList.isEmpty()) {
-                        AuthorizeSecurityGroupEgressRequest asger = new AuthorizeSecurityGroupEgressRequest()
-                                .withGroupId(csgResult.getGroupId())
-                                .withIpPermissions(egrPermList);
-                        ec2.authorizeSecurityGroupEgress(asger);
+                    String secGroupName = instance.getVpcId() + '-' + secGroup.getGroupName();
+                    boolean secGroupExisting = false;
+                    DescribeSecurityGroupsResult securityGroupsResult = ec2.describeSecurityGroups();
+                    List<SecurityGroup> listSecGroups = securityGroupsResult.getSecurityGroups();
+                    for (SecurityGroup sg : listSecGroups) {
+                        if (sg.getGroupName().equals(secGroupName)) {
+                            secGroupExisting = true;
+                            break;
+                        }
                     }
-                    ec2.modifyInstanceAttribute((new ModifyInstanceAttributeRequest()
-                            .withInstanceId(instance.getInstanceId())
-                            .withGroups(csgResult.getGroupId())));
+                    if (!secGroupExisting) {
+                        CreateSecurityGroupRequest csgr = new CreateSecurityGroupRequest()
+                                .withGroupName(secGroupName)
+                                .withVpcId(instance.getVpcId())
+                                .withDescription(secGroup.getGroupName() + "-copy-to-" + instance.getVpcId());
+                        CreateSecurityGroupResult csgResult = ec2.createSecurityGroup(csgr);
+                        List<IpPermission> ingPermList = secGroup.getIpPermissions();
+                        AuthorizeSecurityGroupIngressRequest asgir = new AuthorizeSecurityGroupIngressRequest()
+                                .withGroupId(csgResult.getGroupId())
+                                .withIpPermissions(ingPermList);
+                        ec2.authorizeSecurityGroupIngress(asgir);
+                        List<IpPermission> egrPermList = secGroup.getIpPermissionsEgress();
+                        if (!egrPermList.isEmpty()) {
+                            AuthorizeSecurityGroupEgressRequest asger = new AuthorizeSecurityGroupEgressRequest()
+                                    .withGroupId(csgResult.getGroupId())
+                                    .withIpPermissions(egrPermList);
+                            ec2.authorizeSecurityGroupEgress(asger);
+                        }
+                        ec2.modifyInstanceAttribute((new ModifyInstanceAttributeRequest()
+                                .withInstanceId(instance.getInstanceId())
+                                .withGroups(csgResult.getGroupId())));
+                    }
                 }
                 //suport for batch
                 if (parameters[5].matches("(.*)(batch)(\\d{1,19}$)")) {
