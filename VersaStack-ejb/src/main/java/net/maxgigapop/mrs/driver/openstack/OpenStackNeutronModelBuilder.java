@@ -185,8 +185,8 @@ public class OpenStackNeutronModelBuilder {
             model.add(model.createStatement(HOST, hasService, HYPERVISOR));
             model.add(model.createStatement(HYPERVISOR, providesVM, VM));
             model.add(model.createStatement(HOST, hasNode, VM));
-            model.add(model.createStatement(VM, type, "imageID+" + imageid));
-            model.add(model.createStatement(VM, type, "flavorID+" + flavorid));
+            model.add(model.createStatement(VM, type, "image+" + imageid));
+            model.add(model.createStatement(VM, type, "flavor+" + flavorid));
 
             for (Port port : openstackget.getServerPorts(server)) {
                 String PortName = openstackget.getResourceName(port);
