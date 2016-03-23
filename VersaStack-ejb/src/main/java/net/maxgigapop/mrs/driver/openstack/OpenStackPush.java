@@ -258,7 +258,10 @@ public class OpenStackPush {
                 if (o.containsKey("keypair") && !o.get("keypair").toString().isEmpty()) {
                     builder.keypairName(o.get("keypair").toString());
                 } 
-                
+                // optional host placement
+                if (o.containsKey("host name")) {
+                    builder.availabilityZone("nova:"+o.get("host name").toString());
+                }
                 int index = 0;
                 while (true) {
                     String key = "port" + Integer.toString(index);
@@ -304,13 +307,13 @@ public class OpenStackPush {
                 serverService.detachVolume(serverId, attachmentId);
             } else if (o.get("request").toString().equals("AttachPortRequest")) {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+
                 InterfaceServiceImpl portService = new InterfaceServiceImpl();
                 String serverId = client.getServer(o.get("server name").toString()).getId();
                 String portId = client.getPort(o.get("port name").toString()).getId();
 
                 //portService.create(serverId, portId);
             } else if (o.get("request").toString().equals("DetachPortRequest")) {
-                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 InterfaceServiceImpl portService = new InterfaceServiceImpl();
                 String serverId = client.getServer(o.get("server name").toString()).getId();
                 String portId = client.getPort(o.get("port name").toString()).getId();
@@ -1524,6 +1527,7 @@ public class OpenStackPush {
                 if (!r1.hasNext()) {
                     throw new EJBException(String.format("Host %s to host node %s is not of type nml:Node", host, vm));
                 }
+                String hostName = ResourceTool.getResourceName(host.toString(), OpenstackPrefix.host);
 
                 //?? unused ?
                 //1.6 find the network that the server will be in
@@ -1624,13 +1628,15 @@ public class OpenStackPush {
                 } else {
                     o.put("flavor", flavorID);
                 }
-                if (keypairName != null) {
+                if (keypairName != null && !keypairName.isEmpty())  {
                     o.put("keypair", keypairName);
                 }
-                if (secgroupName != null) {
+                if (secgroupName != null && !secgroupName.isEmpty()) {
                     o.put("secgroup", secgroupName);
                 }
-
+                if (hostName != null && !hostName.isEmpty()) {
+                    o.put("host name", hostName);
+                }
                 //1.10.1 put all the ports in the request
                 int index = 0;
                 for (String port : portNames) {
