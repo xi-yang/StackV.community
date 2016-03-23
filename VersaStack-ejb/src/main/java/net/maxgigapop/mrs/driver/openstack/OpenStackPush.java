@@ -304,13 +304,13 @@ public class OpenStackPush {
                 serverService.detachVolume(serverId, attachmentId);
             } else if (o.get("request").toString().equals("AttachPortRequest")) {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-
                 InterfaceServiceImpl portService = new InterfaceServiceImpl();
                 String serverId = client.getServer(o.get("server name").toString()).getId();
                 String portId = client.getPort(o.get("port name").toString()).getId();
 
                 //portService.create(serverId, portId);
             } else if (o.get("request").toString().equals("DetachPortRequest")) {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 InterfaceServiceImpl portService = new InterfaceServiceImpl();
                 String serverId = client.getServer(o.get("server name").toString()).getId();
                 String portId = client.getPort(o.get("port name").toString()).getId();
