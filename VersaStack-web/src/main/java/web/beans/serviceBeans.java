@@ -893,6 +893,8 @@ public class serviceBeans {
         //System.out.println(svcDelta);
 
         // Cache serviceDelta.
+        int instanceID = -1;
+        int historyID = -1;
         try {
             Connection front_conn;
             Properties front_connectionProps = new Properties();
@@ -902,29 +904,30 @@ public class serviceBeans {
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
-            PreparedStatement prep = front_conn.prepareStatement("SELECT service_instance_id, service_state_id"
+            PreparedStatement prep = front_conn.prepareStatement("SELECT service_instance_id"
                     + " FROM service_instance WHERE referenceUUID = ?");
             prep.setString(1, refUuid);
             ResultSet rs1 = prep.executeQuery();
             rs1.next();
-            int instanceId = rs1.getInt(1);
-            int stateId = rs1.getInt(2);
-
+            instanceID = rs1.getInt(1);
+            
+            historyID = currentHistoryID(instanceID);
+            
             String formatDelta = svcDelta.replaceAll("<", "&lt;");
             formatDelta = formatDelta.replaceAll(">", "&gt;");
 
             prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
-                    + "(`service_instance_id`, `service_state_id`, `delta`) "
+                    + "(`service_instance_id`, `service_history_id`, `delta`) "
                     + "VALUES (?, ?, ?)");
-            prep.setInt(1, instanceId);
-            prep.setInt(2, stateId);
+            prep.setInt(1, instanceID);
+            prep.setInt(2, historyID);
             prep.setString(3, formatDelta);
             prep.executeUpdate();
 
         } catch (SQLException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
         }
-
+                
 //        String siUuid;
         String result;
         try {
@@ -940,6 +943,31 @@ public class serviceBeans {
             if (!result.contains("referenceVersion")) {
                 return 2;//Error occurs when interacting with back-end system
             }
+
+            try {
+                Connection front_conn;
+                Properties front_connectionProps = new Properties();
+                front_connectionProps.put("user", "root");
+                front_connectionProps.put("password", "root");
+
+                front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                        front_connectionProps);
+
+                String formatDelta = result.replaceAll("<", "&lt;");
+                formatDelta = formatDelta.replaceAll(">", "&gt;");
+
+                PreparedStatement prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
+                        + "(`service_instance_id`, `service_history_id`, `delta`) "
+                        + "VALUES (?, ?, ?)");
+                prep.setInt(1, instanceID);
+                prep.setInt(2, historyID);
+                prep.setString(3, formatDelta);
+                prep.executeUpdate();
+
+            } catch (SQLException ex) {
+                Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+            }
+
             url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
             HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, propagate, "PUT", null);
@@ -1057,7 +1085,7 @@ public class serviceBeans {
         front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
-        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID, X.superState FROM"
+        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID, X.super_state FROM"
                 + " service S, service_instance I, service_state X WHERE S.service_id = I.service_id AND I.service_state_id = X.service_state_id");
         ResultSet rs1 = prep.executeQuery();
         while (rs1.next()) {
@@ -1065,7 +1093,7 @@ public class serviceBeans {
 
             String instanceName = rs1.getString("name");
             String instanceUUID = rs1.getString("referenceUUID");
-            String instanceSuperState = rs1.getString("superState");
+            String instanceSuperState = rs1.getString("super_state");
             if (!banList.contains(instanceName)) {
                 try {
                     URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
@@ -1098,13 +1126,13 @@ public class serviceBeans {
         front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
-        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, X.superState FROM"
+        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, X.super_state FROM"
                 + " service S, service_instance I, service_state X WHERE I.referenceUUID = ? AND S.service_id = I.service_id AND I.service_state_id = X.service_state_id");
         prep.setString(1, instanceUUID);
         ResultSet rs1 = prep.executeQuery();
         while (rs1.next()) {
             String instanceName = rs1.getString("name");
-            String instanceSuperState = rs1.getString("superState");
+            String instanceSuperState = rs1.getString("super_state");
             try {
                 URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
@@ -1178,7 +1206,40 @@ public class serviceBeans {
         PreparedStatement prep = front_conn.prepareStatement("DELETE FROM frontend.service_instance");
         prep.executeUpdate();
     }
+    
+    public int getInstanceID(String referenceUUID) throws SQLException {
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
 
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+        
+        PreparedStatement prep = front_conn.prepareStatement("SELECT service_instance_id FROM service_instance WHERE referenceUUID = ?");
+        prep.setString(1, referenceUUID);
+        ResultSet rs1 = prep.executeQuery();
+        rs1.next();
+        return rs1.getInt("service_instance_id");
+    }
+    
+    public int currentHistoryID(int instanceID) throws SQLException {
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+        
+        PreparedStatement prep = front_conn.prepareStatement("SELECT service_history_id FROM service_history "
+                + "WHERE service_instance_id = ? ORDER BY service_history_id DESC LIMIT 0, 1");
+        prep.setInt(1, instanceID);
+        ResultSet rs1 = prep.executeQuery();
+        rs1.next();
+        return rs1.getInt("service_instance_id");
+    }
+    
     /**
      * 
      * @param serviceType filename of the service

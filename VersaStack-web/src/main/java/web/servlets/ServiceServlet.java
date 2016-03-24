@@ -85,9 +85,7 @@ public class ServiceServlet extends HttpServlet {
             } else if (request.getParameter("netCreate") != null) { // Network Creation
                 serviceString = "netcreate";
             } else if (request.getParameter("dncCreate") != null) {
-                //System.out.println("Im inside dnc");
                 serviceString = "dnc";
-                //System.out.println("Im inside dnc");fl2pCreate
             } else if(request.getParameter("fl2pCreate") != null){
                 serviceString ="fl2p";
             }
@@ -113,7 +111,12 @@ public class ServiceServlet extends HttpServlet {
             prep.setInt(5, 1);
             prep.executeUpdate();
             
+            int instanceID = servBean.getInstanceID(refUuid);
             
+            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_history` "
+                    + "(`service_history_id`, `service_state_id`, `service_instance_id`) VALUES (1, 1, ?)");
+            prep.setInt(1, instanceID);
+            prep.executeUpdate();
 
             // Create paraMap.
             while (paramNames.hasMoreElements()) {

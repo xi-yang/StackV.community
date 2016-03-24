@@ -156,13 +156,20 @@
                                                                 <input type="checkbox" name="subnet1-route-prop" value="true"/>   Enable VPN Routes Propogation
                                                             </div>
                                                             <div>
-                                                                <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">
+                                                                <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute('aws', this.id)">
                                                             </div>
                                                             <div id="subnet1-vm-block">
-                                                                <div>VM 1   <input type="text" name="subnet1-vm1" placeholder="VM Name"></div>
+                                                                <div>VM 1   
+                                                                    <input type="text" name="subnet1-vm1" placeholder="VM Name">
+                                                                    <input type="text" name="subnet1-vm1-" placeholder="">
+                                                                    <input type="text" name="subnet1-vm1-" placeholder="">
+                                                                    <input type="text" name="subnet1-vm1-" placeholder="">
+                                                                    <input type="text" name="subnet1-vm1-" placeholder="">
+                                                                    <input type="text" name="subnet1-vm1-" placeholder="">
+                                                                </div>
                                                             </div>
                                                             <div>
-                                                                <input class="button-register" id="subnet1-vm" type="button" value="Add VM" onClick="addVM(this.id)">
+                                                                <input class="button-register" id="subnet1-vm" type="button" value="Add VM" onClick="addVM('aws', this.id)">
                                                             </div>
                                                         </div>
                                                     </td>
@@ -173,7 +180,7 @@
                                                 </tr>
                                                 <tr>
                                                     <td></td>
-                                                    <td><input type="submit" name="custom" value="Submit" /><input class="button-register" type="button" value="Add Subnet" onClick="addSubnet()"></td>
+                                                    <td><input type="submit" name="custom" value="Submit" /><input class="button-register" type="button" value="Add Subnet" onClick="addSubnet('aws')"></td>
                                                 </tr>
                                             </c:if>
 
@@ -232,16 +239,16 @@
                                                                 </div>
                                                             </div>
                                                             <div>
-                                                                <input type="checkbox" name="subnet1-route-prop" value="true"/>   Enable VPN Routes Propogation
+                                                                <input type="checkbox" name="subnet1-route-prop" value="true"/>   Enable Default Routing
                                                             </div>
                                                             <div>
-                                                                <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">
+                                                                <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute('aws', this.id)">
                                                             </div>
                                                             <div id="subnet1-vm-block">
                                                                 <div>VM 1   <input type="text" name="subnet1-vm1" placeholder="VM Name"></div>
                                                             </div>
                                                             <div>
-                                                                <input class="button-register" id="subnet1-vm" type="button" value="Add VM" onClick="addVM(this.id)">
+                                                                <input class="button-register" id="subnet1-vm" type="button" value="Add VM" onClick="addVM('aws', this.id)">
                                                             </div>
                                                         </div>
                                                     </td>
@@ -252,7 +259,7 @@
                                                 </tr>
                                                 <tr>
                                                     <td></td>
-                                                    <td><input type="submit" name="custom" value="Submit" /><input class="button-register" type="button" value="Add Subnet" onClick="addSubnet()"></td>
+                                                    <td><input type="submit" name="custom" value="Submit" /><input class="button-register" type="button" value="Add Subnet" onClick="addSubnet('aws')"></td>
                                                 </tr>
                                             </c:if>
                                         </tbody>

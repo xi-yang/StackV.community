@@ -295,11 +295,11 @@ function addRoute() {
 
 var VMCounter = 1;
 var VMLimit = 10;
-function addVM(subnetNum) {
+function addVM(type, subnetNum) {
     if (VMCounter === VMLimit) {
         alert("You have reached the limit of VMs.");
     }
-    else {
+    else if (type === 'aws') {
         VMCounter++;
         var block = document.getElementById(subnetNum + '-block');
 
@@ -310,11 +310,11 @@ function addVM(subnetNum) {
 
 var subnetCounter = 1;
 var subnetLimit = 10;
-function addSubnet() {
+function addSubnet(type) {
     if (subnetCounter === subnetLimit) {
         alert("You have reached the limit of subnets.");
     }
-    else {
+    else if (type === 'aws') {
         var table = document.getElementById("net-custom-form");
         var tableHeight = table.rows.length;
         subnetCounter++;
@@ -354,11 +354,11 @@ function addSubnet() {
 
 var subRouteCounter = 1;
 var subRouteLimit = 10;
-function addSubnetRoute(subnetNum) {
+function addSubnetRoute(type, subnetNum) {
     if (subRouteCounter === subRouteLimit) {
         alert("You have reached the limit of routes.");
     }
-    else {
+    else if (type === 'aws') {
         subRouteCounter++;
         var block = document.getElementById(subnetNum + '-block');
 
