@@ -153,7 +153,7 @@
                                                                 </div>
                                                             </div>
                                                             <div>
-                                                                <input type="checkbox" name="subnet1-route-prop" value="true"/>   Enable VPN Routes Propogation
+                                                                <input type="checkbox" name="subnet1-route-prop" value="true"/>   Enable VPN Routes Propagation
                                                             </div>
                                                             <div>
                                                                 <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute('aws', this.id)">
@@ -161,11 +161,10 @@
                                                             <div id="subnet1-vm-block">
                                                                 <div>VM 1   
                                                                     <input type="text" name="subnet1-vm1" placeholder="VM Name">
-                                                                    <input type="text" name="subnet1-vm1-" placeholder="">
-                                                                    <input type="text" name="subnet1-vm1-" placeholder="">
-                                                                    <input type="text" name="subnet1-vm1-" placeholder="">
-                                                                    <input type="text" name="subnet1-vm1-" placeholder="">
-                                                                    <input type="text" name="subnet1-vm1-" placeholder="">
+                                                                    <input type="text" name="subnet1-vm1-keypair" placeholder="Keypair Name">
+                                                                    <input type="text" name="subnet1-vm1-security" placeholder="Security Name">
+                                                                    <input type="text" name="subnet1-vm1-image" placeholder="Image Type">
+                                                                    <input type="text" name="subnet1-vm1-type" placeholder="Instance Type">
                                                                 </div>
                                                             </div>
                                                             <div>
@@ -245,7 +244,16 @@
                                                                 <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute('aws', this.id)">
                                                             </div>
                                                             <div id="subnet1-vm-block">
-                                                                <div>VM 1   <input type="text" name="subnet1-vm1" placeholder="VM Name"></div>
+                                                                <div>VM 1   
+                                                                    <input type="text" name="subnet1-vm1" placeholder="VM Name">
+                                                                    <input type="text" name="subnet1-vm1-keypair" placeholder="Keypair Name">
+                                                                    <input type="text" name="subnet1-vm1-security" placeholder="Security Name">
+                                                                    <input type="text" name="subnet1-vm1-image" placeholder="Image Type">
+                                                                    <input type="text" name="subnet1-vm1-instance" placeholder="Instance Type">
+                                                                    <input type="text" name="subnet1-vm1-host" placeholder="VM Host">
+                                                                    <input type="text" name="subnet1-vm1-floating" placeholder="Floating IP">
+                                                                    <input type="text" name="subnet1-vm1-sriov" placeholder="SRIOV Connection">
+                                                                </div>
                                                             </div>
                                                             <div>
                                                                 <input class="button-register" id="subnet1-vm" type="button" value="Add VM" onClick="addVM('aws', this.id)">
