@@ -58,7 +58,7 @@ define([
             } else if (that.name.substring(0,3) === "urn") {
                 var bullet = document.createElement("span");
                 bullet.innerHTML = "•";
-                bullet.style.float = "left";
+                //bullet.style.float = "left";
                 line.appendChild(bullet);
             }
             

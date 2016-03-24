@@ -1,5 +1,8 @@
 /*::-webkit-scrollbar {display:none;}*/
+html{
+        overflow-y: scroll; 
 
+}
 
 #hoverdiv{
     position: fixed;
@@ -126,12 +129,11 @@ body{
     text-align: left;
 }
 #treeMenu {
-    
-    height:130px;    
+    min-height:150px;
+    max-height:250px;    
     overflow-y:scroll;
          overflow: -moz-scrollbars-vertical;
-     overflow: scroll;
-
+    clear:both;
     /* webkit scrollbar stuff */
 }
 
