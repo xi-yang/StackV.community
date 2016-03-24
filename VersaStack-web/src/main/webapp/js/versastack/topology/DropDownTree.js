@@ -10,20 +10,22 @@ define([
         this.containerDiv = containerDiv;
         this.renderApi = null;
         this.history = [];
+        this.topViewShown = false;
         var currentIndex = -1;
         var lastIndex = -1;
         
 
                 
         var that = this;
+        
+        // Code for all functionality related to the Model Browser goes here. 
         // going back and forth in stuff that already exists 
         document.getElementById("backButton").onclick = function() {
                         console.log("I'm in back : currentIndex: " + currentIndex + " lastIndex: " + lastIndex);
 
             if (that.history.length > 0  && currentIndex - 1 >= 0 ) {
                currentIndex--;
-               if (that.renderApi !== null && that.renderApi !== undefined)
-                   that.renderApi.clickNode(that.history[currentIndex][0], that.history[currentIndex][1]);
+               that.renderApi.clickNode(that.history[currentIndex][0], that.history[currentIndex][1]);
             }
         };
 
@@ -32,11 +34,7 @@ define([
                            
              if (that.history.length > 0  && currentIndex + 1 <= lastIndex ) {
                currentIndex++;
-               if (that.renderApi !== null && that.renderApi !== undefined) {
-                   that.renderApi.clickNode(that.history[currentIndex][0], that.history[currentIndex][1]);
-                    console.log("in innter");
-                }
-               console.log("in outer");
+               that.renderApi.clickNode(that.history[currentIndex][0], that.history[currentIndex][1]);
             }               
         };        
        
@@ -59,9 +57,17 @@ define([
 
         document.getElementById("URISearchSubmit").onclick = function() {
             var uri = document.getElementById("URISearchInput").value;
-            if (that.renderApi !== null && that.renderApi !== undefined) {
-                alert("i'm here");
-               that.renderApi.clickNode(uri, "Element");
+                //alert("i'm here");
+            that.renderApi.clickNode(uri, "Element");
+        };
+        
+        document.getElementById("fullDiaplayButton").onclick = function() {
+            if (!that.topViewShown) {
+                that.topViewShown = true;
+                that.renderApi.selectElement(null);
+            } else {
+                that.topViewShown = false;
+                that.renderApi.clickNode(that.history[currentIndex][0], that.history[currentIndex][1]);
             }           
         };
         
@@ -74,20 +80,14 @@ define([
         this.draw = function () {
             utils.deleteAllChildNodes(this.containerDiv);
             this.rootNodes= map_(this.rootNodes, /**@param {DropDownNode} node**/function (node) {
+           //     if (node === undefined)return 0;
                 var toAppend = node.getHTML();
                 //Every node automatically indents itself.
                 //In the case of the root node, this is undesired, so we apply 
                 //an opposite indent to counteract it.
 //                toAppend.style.marginLeft="-15px";
                 that.containerDiv.appendChild(toAppend);
-                if (that.renderApi !== null &&  that.renderApi !== undefined) {
-                    node.renderApi = that.renderApi;
-                    console.log("I did this");
-                    
-                    console.log("node.renderApi: "  + node.renderApi);
-                    if (node.renderApi === undefined)
-                        console.log("it's undefined");
-                }
+                node.renderApi = that.renderApi;
             });
             if (this.rootNodes.length === 0) {
                 this.addChild("test", "");

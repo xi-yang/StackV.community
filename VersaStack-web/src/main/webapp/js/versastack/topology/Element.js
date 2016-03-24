@@ -1,11 +1,13 @@
 "use strict";
 define(["local/versastack/topology/modelConstants"], function (values) {
-    function Element(backing, map) {
+    function Element(backing, map, elementMap) {
         this.svgNode = null;
         this.svgNodeText = null;
         this.svgNodeCover = null; //To prevent the cursor from changing when we mouse over the text, we draw an invisible rectangle over it
         this._backing = backing;
         this._map = map;
+        this.topLevel = true;
+        this.elementMap = elementMap;
         this.misc_elements = [];
 //        /**@type Array.Port**/
 //        this.ports = [];
@@ -14,7 +16,7 @@ define(["local/versastack/topology/modelConstants"], function (values) {
 //        this.misc_elements = [];
         
         this.relationship_to = []; // relationship with owner 
-        
+        var that = this;
         //We are reloading this port from a new model
         //Model.js will handle most of the reparsing, but we need to
         //clear out some old data
@@ -95,10 +97,11 @@ define(["local/versastack/topology/modelConstants"], function (values) {
         };
         
         this.populateTreeMenu = function (tree) {
-            console.log("~~~~~~~~~~~~\nElement tree debuggins: "  + this.getName());
+            //console.log("~~~~~~~~~~~~\nElement tree debuggins: "  + this.getName());
+           // tree.addChild("", "Separator");
 
             if (this.misc_elements.length > 0) {
-                console.log("I have more than one element. No of elements: " ); //+ this.misc_elements.length);
+                //console.log("I have more than one element. No of elements: " ); //+ this.misc_elements.length);
                 
                 var displayed = [];
                // alert(this.misc_elements);
@@ -110,15 +113,15 @@ define(["local/versastack/topology/modelConstants"], function (values) {
                     //alert("el.getName: " + el.getName() + 
                            // alert(" helllo: " + el.hello);
                     if (displayed.indexOf(el) === -1 && el.getName() !== undefined) {
-                        var type = el.relationship_to[this];
+                        var type = el.relationship_to[this.getName()];
                         //type = type.split("#");
-                        var elementsNode = tree.addChild(type === undefined?"undefined":type, "");
+                        var elementsNode = tree.addChild(type === undefined?"undefined":type, "Type");
                         //displayed.push(el);
                         for (var o in this.misc_elements) {
                             //if(this.misc_elements[o].misc_elements.indexOf(this) !== -1) continue;
 //                            console.log("I got this far");
                             if (displayed.indexOf(this.misc_elements[o]) === -1 && 
-                                    this.misc_elements[o].relationship_to[this] === type
+                                    this.misc_elements[o].relationship_to[this.getName()] === type
                                     && this.misc_elements[o].getName() !== undefined) {
                                 //console.log ("name of thing: " + this.misc_elements[o].getName());
                                 var elementNode = elementsNode.addChild(this.misc_elements[o].getName(), "Element");;
@@ -136,12 +139,21 @@ define(["local/versastack/topology/modelConstants"], function (values) {
                     }
                 }
 
-                console.log("End element debugging\n ~~~~~~~~~~~ " + this.getName());
+                //console.log("End element debugging\n ~~~~~~~~~~~ " + this.getName());
             }
             
         };
         
+        this.showRelationships = function(tree) {
+            if (Object.keys(this.relationship_to).length > 0) {
+                tree.addChild("", "Separator");
+                tree.addChild("Element Used By", "Title");
 
+                Object.keys(this.relationship_to).forEach(function (key) {
+                    tree.addChild(key + "(*)" + that.relationship_to[key], "Relationship");   
+                });   
+            }
+        };
     };
     return Element;
 });

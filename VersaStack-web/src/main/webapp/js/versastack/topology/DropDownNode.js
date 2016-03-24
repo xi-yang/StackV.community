@@ -82,9 +82,30 @@ define([
                         child.style.display = disp;
                     });
                     text.innerHTML = _getText();
+                    map_(that.children, function (child) {
+                        console.log("only on click");
+                        var toAdd = child.getHTML();
+                        toAdd.style.display = isExpanded ? "inherit" : "none";
+                        childNodes.push(toAdd);
+                        content.appendChild(toAdd);
+                    });                    
                 };            
             }
-            if (that.name.substring(0,3) === "urn") {
+            
+            if (that.type === "Type") {
+                text.style = "font-style:italic";
+                line.appendChild(text);
+                content.appendChild(line);
+            } else if (that.type === "Title") {
+                text.style = "font-weight:bold;font-style:italic;";
+                line.appendChild(text);
+                content.appendChild(line);
+            } else if (that.type === "Separator") {
+                var horiz =  document.createElement("hr"); 
+                horiz.style = "font-weight:bold;margin-top: 5px;margin-bottom: 5px;border-top: 1px solid #333;";
+                line.appendChild(horiz);
+                content.appendChild(line);
+            } else if (that.name.substring(0,3) === "urn" && that.type !== "Relationship") {
                 var link = document.createElement("div");
                 link.className = "urnLink";
                 //link.setAttribute("href", "");
@@ -98,6 +119,28 @@ define([
                 };
                 link.appendChild(text);
                 line.appendChild(link);
+                content.appendChild(line);
+            } else if (that.name.substring(0,3) === "urn" && that.type === "Relationship") {
+                // copy paste below and above to get desired result 
+                var property =  that.name.split("(*)");                
+                var link = document.createElement("span");
+                link.className = "urnLink";
+                //link.setAttribute("href", "");
+                link.onclick = function () {
+                   link.className = "urnLink clicked";
+                   console.log(" what is this: " + that.renderApi);
+                   that.renderApi.clickNode(property[0], that.type);          
+                };
+                link.innerHTML = property[0];
+                
+                var key = document.createElement("span");
+                var value = document.createElement("span");               
+                value.className = "panelElementProperty";
+                key.appendChild(link);
+                value.innerHTML = " : " + property[1]; // just using this because it's there 
+               
+                line.appendChild(key);
+                line.appendChild(value);
                 content.appendChild(line);
             } else if (that.type === "Property") {
                 var key = document.createElement("span");
@@ -114,12 +157,12 @@ define([
                 content.appendChild(line);
             }
 
-            map_(this.children, function (child) {
-                var toAdd = child.getHTML();
-                toAdd.style.display = isExpanded ? "inherit" : "none";
-                childNodes.push(toAdd);
-                content.appendChild(toAdd);
-            });
+//            map_(this.children, function (child) {
+//                var toAdd = child.getHTML();
+//                toAdd.style.display = isExpanded ? "inherit" : "none";
+//                childNodes.push(toAdd);
+//                content.appendChild(toAdd);
+//            });
             ans.appendChild(content);
 
             return ans;

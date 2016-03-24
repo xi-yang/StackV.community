@@ -125,9 +125,13 @@ body{
     margin-left:15px;
     text-align: left;
 }
-#treeMenu {height:150px;;
-
+#treeMenu {
+    
+    height:130px;    
     overflow-y:scroll;
+         overflow: -moz-scrollbars-vertical;
+     overflow: scroll;
+
     /* webkit scrollbar stuff */
 }
 

@@ -125,7 +125,8 @@ define([
                                 toAdd.reload(val, map);
                             } else {
                                 console.log("i was used");
-                                toAdd = new Element(val, map);
+                                toAdd = new Element(val, map, that.elementMap);
+                                toAdd.topLevel = true;
                             }
                             that.elementMap[key] = toAdd;
                             
@@ -218,7 +219,7 @@ define([
                                         toAdd = oldModel.elementMap[key];
                                         toAdd.reload(val, map);
                                     } else {
-                                        toAdd = new Element(val, map);
+                                        toAdd = new Element(val, map, that.elementMap);
                                     }
                                     that.elementMap[key] = toAdd;
                                     break;
@@ -245,7 +246,7 @@ define([
                                         toAdd = oldModel.elementMap[key];
                                         toAdd.reload(val, map);
                                     } else {
-                                        toAdd = new Element(val, map);
+                                        toAdd = new Element(val, map, that.elementMap);
                                     }
                                     that.elementMap[key] = toAdd;
                                     break;
@@ -291,7 +292,7 @@ define([
                                     var errorVal = element.value;
                                     element = that.elementMap[element.value];
                                     if (element) {
-                                        element.relationship_to[service] = key.split("#")[1];
+                                        element.relationship_to[service.getName()] = key.split("#")[1];
                                         service.misc_elements.push(element);
                                     }
                                 });                                
@@ -487,7 +488,7 @@ define([
                                     var errorVal = element.value;
                                     element = that.elementMap[element.value];
                                     if (element) {
-                                        element.relationship_to[node] = key.split("#")[1];
+                                        element.relationship_to[node.getName()] = key.split("#")[1];
                                         node.misc_elements.push(element);
                                     }
                                 });                                
@@ -530,6 +531,14 @@ define([
                 // is. 
                 for (var key in that.elementMap) {               
                     var src_element = that.elementMap[key];
+                    if ((src_element.getType() === "Node" ||
+                            src_element.getType() === "Topology")
+                            && that.nodeMap[src_element.getName()].isLeaf()
+                            ) {
+                        src_element.topLevel = false;
+                        if (src_element.getName() === "urn:ogf:network:sdn.maxgigapop.net:network")
+                            alert("why?");
+                            }
                     if (src_element !== undefined) {
                         var src_element_ = src_element._backing;
                         for (var key in src_element_) {
@@ -542,7 +551,22 @@ define([
                                 var errorVal = element.value;
                                 element = that.elementMap[element.value];
                                 if (element) {
-                                    element.relationship_to[src_element] = key.split("#")[1];
+                                    var relationship =  key.split("#")[1];
+                                    //element.getType() === "Topology" && 
+                                    var src_type = src_element.getType();
+                                    var type = element.getType();
+                                    if ((type !== "Topology" && type !== "Node") ||
+                                        ((src_type === "Topology" || src_type === "Node")  && 
+                                        (relationship === "hasTopology"))
+                                        )
+              
+                                        
+                                {
+                                        element.topLevel = false;
+                                                                if (src_element.getName() === "urn:ogf:network:sdn.maxgigapop.net:network")
+                            alert("why? 2");
+                                    }
+                                    element.relationship_to[src_element.getName()] = relationship;
                                     src_element.misc_elements.push(element);
                                 } else {
                                     console.log("name: " + key.split("#")[1] + " value: " + errorVal);

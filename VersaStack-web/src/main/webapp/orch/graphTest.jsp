@@ -106,7 +106,7 @@
                             map_ = utils.map_;
                             DropDownTree = tree;
 
-                            outputApi = new outputApi_();
+                            outputApi = new outputApi_(render.API);
                         });
 
                 var request = new XMLHttpRequest();
@@ -130,7 +130,7 @@
                 $("#loadingPanel").addClass("hide");
                 $("#hoverdiv").removeClass("hide");
                 $("#viz").attr("class", "");
-
+                
                 buttonInit();
             }
             function drawGraph() {
@@ -140,7 +140,6 @@
                 //If we do not, the layout does to converge as nicely, even if we double the number of iterations
                 layout.doLayout(model, null, width, height);
                 layout.doLayout(model, null, width, height);
-
 
                 render.doRender(outputApi, model);
 //                animStart(30);
@@ -260,6 +259,7 @@
 
                     evt.preventDefault();
                 });
+
             }
 
             //animStart and animStop are primarily intended as debug functions
@@ -278,13 +278,16 @@
             }
 
 
-            function outputApi_() {
+            function outputApi_(renderAPI) {
                 var that = this;
+                this.renderApi = renderAPI;
+
                 this.getSvgContainer = function () {
                     return d3.select("#viz");
                 };
 
                 var displayTree = new DropDownTree(document.getElementById("treeMenu"));
+                displayTree.renderApi = this.renderApi;
                 this.getDisplayTree = function () {
                     return displayTree;
                 };
@@ -292,7 +295,6 @@
                 this.setDisplayName = function (name) {
                     document.getElementById("displayName").innerText = name;
                 };
-
 
 
 
@@ -498,9 +500,11 @@
             <div id="displayPanel-contents">
                 <button id="refreshButton">Refresh</button>
                 <button id="modelButton">Display Model</button>
+                <button id="fullDiaplayButton">Toggle Full Model</button>
                 <div id="displayName"></div>
                 <div id="treeMenu"></div>                
             </div>
+            <div id="displayPanel-actions-container">
             <div id="displayPanel-actions">
                 <button id="backButton">Back</button>
                 <button id="forwardButton">Forward</button>
@@ -513,6 +517,7 @@
                 <div id="actionForm"></div>
             </div>
             <div id="displayPanel-tab">^^^^^</div>
+            </div>
         </div>
         <div class="hide" id="hoverdiv"></div>        
 
