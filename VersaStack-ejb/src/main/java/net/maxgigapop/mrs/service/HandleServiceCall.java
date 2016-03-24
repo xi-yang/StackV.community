@@ -224,7 +224,7 @@ public class HandleServiceCall {
                 try {
                     systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta(), useUpdatedRefModel);
                 } catch (EJBException ejbEx) {
-                    serviceInstance.setStatus("FAILED");
+                    //serviceInstance.setStatus("FAILED");
                     //ServiceInstancePersistenceManager.merge(serviceInstance);
                     throw ejbEx;
                 }
@@ -549,6 +549,12 @@ public class HandleServiceCall {
         ServiceInstancePersistenceManager.merge(serviceInstance);
         return serviceInstance.getStatus();
     }
+
+    public void updateStatus(String serviceInstanceUuid, String status) {
+        ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
+        serviceInstance.setStatus(status);
+        ServiceInstancePersistenceManager.merge(serviceInstance);
+    }
     
     public String propagateRetry(String serviceInstanceUuid, boolean forced) {
         ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
@@ -601,7 +607,7 @@ public class HandleServiceCall {
                 try {
                     systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta(), true);
                 } catch (EJBException ejbEx) {
-                    serviceInstance.setStatus("FAILED");
+                    //serviceInstance.setStatus("FAILED");
                     //ServiceInstancePersistenceManager.merge(serviceInstance);
                     throw ejbEx;
                 }

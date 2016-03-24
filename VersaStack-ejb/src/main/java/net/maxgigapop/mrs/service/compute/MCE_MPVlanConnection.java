@@ -54,7 +54,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
 
     @Override
     @Asynchronous
-    public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
+    public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
         try {
             log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--DeltaAddModel Input=\n" + ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
         } catch (Exception ex) {

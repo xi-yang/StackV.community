@@ -47,6 +47,9 @@ define(["local/versastack/topology/modelConstants"],
                 this.dx = 0;
                 this.dy = 0;
                 this.size = 0;
+                
+                this.misc_elements = [];
+                
                 /**@type Node**/
                 var that = this;
                 ////We are reloading this port from a new model
@@ -242,23 +245,45 @@ define(["local/versastack/topology/modelConstants"],
 
                 this.populateTreeMenu = function (tree) {
                     if (this.services.length > 0) {
-                        var serviceNode = tree.addChild("Services");
+                        var serviceNode = tree.addChild("hasService", '"');
                         map_(this.services, function (service) {
                             service.populateTreeMenu(serviceNode);
                         })
                     }
                     if (this.ports.length > 0) {
-                        var portsNode = tree.addChild("Ports");
+                        var portsNode = tree.addChild("hasBidirectionalPort", "");
                         map_(this.ports, function (port) {
                             port.populateTreeMenu(portsNode);
                         });
                     }
                     if (this.children.length > 0) {
-                        var childrenNode = tree.addChild("SubNodes");
+                        var childrenNode = tree.addChild("hasNode", "");
                         map_(this.children, function (child) {
-                            var childNode = childrenNode.addChild(child.getName());
+                            var childNode = childrenNode.addChild(child.getName(), "Node");
                             child.populateTreeMenu(childNode);
                         });
+                    }
+                    
+                    if (this.misc_elements.length > 0) {
+                        var displayed = [];
+                        for (var i = 0; i < this.misc_elements.length; i++){
+                            var el = this.misc_elements[i];
+                            if (displayed.indexOf(el) === -1 && el.getName() !== undefined) {
+                                var type = el.relationship_to[this];
+                                var elementsNode = tree.addChild(type === undefined?"undefined":type, "");
+                                for (var o in this.misc_elements) {
+                                    if (displayed.indexOf(this.misc_elements[o]) === -1 && 
+                                            this.misc_elements[o].relationship_to[this] === type
+                                            && this.misc_elements[o].getName() !== undefined) {
+                                        //console.log ("name of thing: " + this.misc_elements[o].getName());
+                                        elementsNode.addChild(this.misc_elements[o].getName(), "Element");;
+                                        displayed.push(this.misc_elements[o]);
+                                    }
+                                }
+                            }
+                        }
+                            
+                        
                     }
                 };
             }

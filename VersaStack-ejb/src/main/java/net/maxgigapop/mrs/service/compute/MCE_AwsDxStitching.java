@@ -50,7 +50,7 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
 
     @Override
     @Asynchronous
-    public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
+    public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
         log.log(Level.FINE, "MCE_AWSDirectConnectStitch::process {0}", annotatedDelta);
         try {
             log.log(Level.FINE, "\n>>>MCE_AWSDirectConnectStitch--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
@@ -64,7 +64,7 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
                 + "?policy spa:type 'MCE_AwsDxStitching'. "
                 + "?policy spa:importFrom ?data. "
                 + "?data spa:type ?type. ?data spa:value ?value. "
-                + "FILTER not exists {?policy spa:dependOn ?other} "
+                + String.format("FILTER (not exists {?policy spa:dependOn ?other} && ?policy = <%s>)", policy.getURI())
                 + "}";
 
         ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);
@@ -105,8 +105,7 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
                 outputDelta.getModelAddition().getOntModel().add(stitchModel.getBaseModel());
             }
 
-            // no export ?
-            //this.exportPolicyData()
+            exportPolicyData(outputDelta.getModelAddition().getOntModel(), policyAction, stitchModel, systemModel.getOntModel());
 
             // remove policy dependency
             MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), policyAction);
@@ -239,5 +238,117 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
         stitchModel.add(stitchModel.createStatement(resDxvif, Mrs.type, "direct-connect-vif"));
 
         return stitchModel;
+    }
+    
+    private void exportPolicyData(OntModel spaModel, Resource resPolicy, OntModel stitchModel, OntModel systemModel) {
+        String sparql = "SELECT ?data ?type ?value ?format WHERE {"
+                + String.format("<%s> a spa:PolicyAction. ", resPolicy.getURI())
+                + String.format("<%s> spa:type 'MCE_AwsDxStitching'. ", resPolicy.getURI())
+                + String.format("<%s> spa:exportTo ?data . ", resPolicy.getURI())
+                + "OPTIONAL {?data spa:type ?type.} "
+                + "OPTIONAL {?data spa:value ?value.} "
+                + "OPTIONAL {?data spa:format ?format.} "
+                + "}";
+        ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
+        List<QuerySolution> solutions = new ArrayList<>();
+        while (r.hasNext()) {
+            solutions.add(r.next());
+        }
+        for (QuerySolution querySolution : solutions) {
+            Resource resData = querySolution.get("data").asResource();
+            RDFNode dataType = querySolution.get("type");
+            RDFNode dataValue = querySolution.get("value");
+
+            if (dataType == null) {
+                spaModel.add(resData, Spa.type, "JSON");
+            } else if (!dataType.toString().equalsIgnoreCase("JSON")) {
+                continue;
+            }
+            JSONObject jsonValue = new JSONObject();
+            if (dataValue != null) {
+                JSONParser parser = new JSONParser();
+                try {
+                    jsonValue = (JSONObject)parser.parse(dataValue.toString());
+                } catch (ParseException e) {
+                    throw new EJBException(String.format("%s::exportPolicyData  cannot parse json string %s due to: %s", this.getClass().getName(), dataValue.toString(), e));
+                }
+            }
+            
+            // get export data
+            sparql = "SELECT ?dxvif ?vgw WHERE {"
+                + "?dxvif mrs:type \"direct-connect-vif\". "
+                + "?dxvif nml:isAlias ?vgw. "
+                + "}";
+            r = ModelUtil.sparqlQuery(stitchModel, sparql);
+            if (!r.hasNext()) {
+                return;
+            }
+            QuerySolution solution = r.next();
+            Resource resDxvif = solution.getResource("dxvif");
+            Resource resVgw = solution.getResource("vgw");
+            sparql = "SELECT ?dxvif_name ?asn ?vlan ?amazon_ip ?customer_ip ?authkey WHERE {"
+                    + String.format("<%s> mrs:hasNetworkAddress ?netaddr_asn. ", resDxvif.getURI())
+                    + "?netaddr_asn mrs:type \"bgp-asn\". "
+                    + "?netaddr_asn mrs:value ?asn. "
+                    + String.format("<%s> nml:hasLabelGroup ?lg_vlan. ", resDxvif.getURI())
+                    + "?lg_vlan nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
+                    + "?lg_vlan nml:values ?vlan. "
+                    + "OPTIONAL {"
+                    + String.format("<%s> nml:name ?dxvif_name. ", resDxvif.getURI())
+                    + "}"
+                    + "OPTIONAL {"
+                    + String.format("<%s> mrs:hasNetworkAddress ?netaddr_amazon_ip. ", resDxvif.getURI())
+                    + "?netaddr_amazon_ip mrs:type \"ipv4-address:amazon\". "
+                    + "?netaddr_amazon_ip mrs:value ?amazon_ip. "
+                    + String.format("<%s> mrs:hasNetworkAddress ?netaddr_customer_ip. ", resDxvif.getURI())
+                    + "?netaddr_customer_ip mrs:type \"ipv4-address:customer\". "
+                    + "?netaddr_customer_ip mrs:value ?customer_ip. "
+                    + "}"
+                    + "OPTIONAL {"
+                    + String.format("<%s> mrs:hasNetworkAddress ?netaddr_authkey. ", resDxvif.getURI())
+                    + "?netaddr_authkey mrs:type \"bgp-authkey\". "
+                    + "?netaddr_authkey mrs:value ?authkey. "
+                    + "}"
+                    + "}";
+            Model unionModel = ModelFactory.createUnion(systemModel, spaModel); // spaModel contains stitchModel
+            r = ModelUtil.sparqlQuery(unionModel, sparql);
+            if (!r.hasNext()) {
+                return;
+            }
+            solution = r.next();
+            JSONObject dxvifData = new JSONObject();
+            dxvifData.put("customer_asn", solution.get("asn").toString());
+            dxvifData.put("vlan", solution.get("vlan").toString());
+            if (solution.contains("dxvif_name")) {
+                dxvifData.put("name", solution.getLiteral("dxvif_name").getString());
+            }
+            if (solution.contains("amazon_ip")) {
+                dxvifData.put("amazon_ip", solution.get("amazon_ip").toString());
+            }
+            if (solution.contains("customer_ip")) {
+                dxvifData.put("customer_ip", solution.get("customer_ip").toString());
+            }
+            if (solution.contains("authkey")) {
+                dxvifData.put("bgp_authkey", solution.get("authkey").toString());
+            }
+            // put new data into jsonValue
+            jsonValue.put(resDxvif.getURI(), dxvifData);
+            //@TODO: common logic
+            if (dataValue != null) {
+                spaModel.remove(resData, Spa.value, dataValue);
+            }
+            //add output as spa:value of the export resrouce
+            String exportValue = jsonValue.toJSONString();
+            if (querySolution.contains("format")) {
+                String exportFormat = querySolution.get("format").toString();
+                try {
+                    exportValue = MCETools.formatJsonExport(exportValue, exportFormat);
+                } catch (EJBException ex) {
+                    log.log(Level.WARNING, ex.getMessage());
+                    continue;
+                }
+            }
+            spaModel.add(resData, Spa.value, exportValue);
+        }
     }
 }

@@ -152,11 +152,34 @@ public class AwsModelBuilder {
             model.add(model.createStatement(VLAN_LABEL_GROUP, Nml.values, vlanNum));
             
             Resource VIRTUAL_INTERFACE = RdfOwl.createResource(model, ResourceTool.getResourceUri(vi.getVirtualInterfaceId(),AwsPrefix.vif,vi.getVirtualInterfaceId()), biPort);
+            model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.name, vi.getVirtualInterfaceId()));
             model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.type, "direct-connect-vif"));
             model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabelGroup, VLAN_LABEL_GROUP));
             model.add(model.createStatement(VLAN_LABEL_GROUP, Nml.labeltype, vlan));
             model.add(model.createStatement(directConnect, hasBidirectionalPort, VIRTUAL_INTERFACE));
 
+            Resource vifAsn = RdfOwl.createResource(model, VIRTUAL_INTERFACE.getURI()+":asn", Mrs.NetworkAddress);
+            model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.hasNetworkAddress, vifAsn));
+            model.add(model.createStatement(vifAsn, Mrs.type, "bgp-asn"));
+            model.add(model.createStatement(vifAsn, Mrs.value, vi.getAsn().toString()));
+            if (vi.getAmazonAddress() != null && !vi.getAmazonAddress().isEmpty()) {
+                Resource vifAmazonIp = RdfOwl.createResource(model, VIRTUAL_INTERFACE.getURI()+":amazon_ip", Mrs.NetworkAddress);
+                model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.hasNetworkAddress, vifAmazonIp));
+                model.add(model.createStatement(vifAmazonIp, Mrs.type, "ipv4-address:amazon"));
+                model.add(model.createStatement(vifAmazonIp, Mrs.value, vi.getAmazonAddress()));
+            }
+            if (vi.getCustomerAddress() != null && !vi.getCustomerAddress().isEmpty()) {
+                Resource vifCustomerIp = RdfOwl.createResource(model, VIRTUAL_INTERFACE.getURI()+":customer_ip", Mrs.NetworkAddress);
+                model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.hasNetworkAddress, vifCustomerIp));
+                model.add(model.createStatement(vifCustomerIp, Mrs.type, "ipv4-address:customer"));
+                model.add(model.createStatement(vifCustomerIp, Mrs.value, vi.getCustomerAddress()));
+            }
+            if (vi.getAuthKey() != null && !vi.getAuthKey().isEmpty()) {
+                Resource vifBgpAuthKey = RdfOwl.createResource(model, VIRTUAL_INTERFACE.getURI()+":bgp_authkey", Mrs.NetworkAddress);
+                model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.hasNetworkAddress, vifBgpAuthKey));
+                model.add(model.createStatement(vifBgpAuthKey, Mrs.type, "bgp-authkey"));
+                model.add(model.createStatement(vifBgpAuthKey, Mrs.value, vi.getAuthKey()));
+            }            
             //check if it has a gateway, meaning the virtual interface is being used
             String virtualGatewayId =  vi.getVirtualGatewayId();
             String[] acceptedStates = {VirtualInterfaceState.Available.toString(), 

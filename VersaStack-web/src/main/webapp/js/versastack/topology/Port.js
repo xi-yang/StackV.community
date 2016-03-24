@@ -23,7 +23,7 @@ define([
         this.svgNode = null;
         this.svgNodeSubnetHighlight = null; // For subnet tab
         this.folded = false;
-
+        
         //We are reloading this port from a new model
         //Model.js will handle most of the reparsing, but we need to
         //clear out some old data
@@ -167,10 +167,10 @@ define([
             return backing.name;
         };
         this.populateTreeMenu = function (tree) {
-            var root = tree.addChild(this.getName());
+            var root = tree.addChild(this.getName(), "Port");
             map_(this.childrenPorts, function (child) {
                 child.populateTreeMenu(root);
-            });
+            });          
         };
 
         this.hasAlias = function () {

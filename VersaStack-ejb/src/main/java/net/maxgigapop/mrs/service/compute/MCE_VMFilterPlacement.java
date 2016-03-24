@@ -52,7 +52,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
 
     @Override
     @Asynchronous
-    public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
+    public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
         // $$ MCE_VMFilterPlacement deals with add model only for now.
         if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
             throw new EJBException(String.format("%s::process ", this.getClass().getName()));
@@ -63,23 +63,16 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
         // importPolicyData
-        String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
-                + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
-                + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
-                + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
-                + "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n"
-                + "SELECT ?res ?policy ?data ?dataType ?dataValue WHERE {"
+        String sparql = "SELECT ?res ?policy ?data ?dataType ?dataValue WHERE {"
                 + "?res spa:dependOn ?policy . "
                 + "?policy a spa:PolicyAction. "
                 + "?policy spa:type 'MCE_VMFilterPlacement'. "
                 + "?policy spa:importFrom ?data. "
                 + "?data spa:type ?dataType. ?data spa:value ?dataValue. "
-                + "FILTER (not exists {?policy spa:dependOn ?other} && not exists {?res a spa:PolicyAction}) "
+                + String.format("FILTER (not exists {?policy spa:dependOn ?other} && not exists {?res a spa:PolicyAction} && ?policy = <%s>)", policy.getURI())
                 + "}";
         Map<Resource, List> policyMap = new HashMap<>();
-        Query query = QueryFactory.create(sparqlString);
-        QueryExecution qexec = QueryExecutionFactory.create(query, annotatedDelta.getModelAddition().getOntModel());
-        ResultSet r = (ResultSet) qexec.execSelect();
+        ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             Resource res = querySolution.get("res").asResource();
