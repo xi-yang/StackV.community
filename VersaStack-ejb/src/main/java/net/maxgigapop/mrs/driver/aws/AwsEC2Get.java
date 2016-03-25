@@ -38,7 +38,7 @@ public class AwsEC2Get {
     private List<InternetGateway> internetGateways = null;
     private List<VpnGateway> virtualPrivateGateways = null;
     
-    final private long delayMax = 16000L;
+    final private long delayMax = 32000L;
 
     public AwsEC2Get(String access_key_id, String secret_access_key, Regions region) {
         AwsAuthenticateService authenticate = new AwsAuthenticateService(access_key_id, secret_access_key);

@@ -1584,14 +1584,14 @@ public class OpenStackPush {
                     }
                 }
 
-                //1.7 to find the subnet the server is in first  find the port the server uses
+                //1.7 (creation==true) find the subnet the server is in first  find the port the server uses
                 query = "SELECT ?port WHERE {<" + vm.asResource() + "> nml:hasBidirectionalPort ?port}";
                 ResultSet r2 = executeQuery(query, modelRef, modelDelta);
-                if (!r2.hasNext()) {
+                if (creation && !r2.hasNext()) {
                     throw new EJBException(String.format("Vm %s does not specify the attached network interface", vm));
                 }
                 List<String> portNames = new ArrayList();
-                while (r2.hasNext())//there could be multiple network interfaces attached to the instance
+                while (creation && r2.hasNext())//there could be multiple network interfaces attached to the instance
                 {
                     QuerySolution q2 = r2.next();
                     RDFNode port = q2.get("port");
