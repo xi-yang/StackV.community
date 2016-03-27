@@ -13,6 +13,7 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -644,5 +645,18 @@ public class HandleServiceCall {
         }
         ServiceInstancePersistenceManager.merge(serviceInstance);
         return serviceInstance.getStatus();
+    }
+    
+    public boolean verifyDelta(String serviceDeltaUuid, SystemDelta manifestDelta) {
+        ServiceDelta serviceDelta = ServiceDeltaPersistenceManager.findByReferenceUUID(serviceDeltaUuid);
+        if (serviceDelta == null || serviceDelta.getSystemDelta() == null) {
+            manifestDelta.setModelAddition(null);
+            manifestDelta.setModelReduction(null);
+            return false;
+        }
+        //@TODO: verify all statements and add to reverifedList (for both modelAddition and modelReduction
+            //  create verified modelAddition and modelReduction into manifestDelta
+            //  return false if missing essential statement
+        return true;
     }
 }

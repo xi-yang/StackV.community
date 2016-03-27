@@ -505,15 +505,26 @@ public class AwsPush {
                 ec2Client.internetGatewayAdditionCheck(igw.getInternetGatewayId());
                 ec2Client.tagResource(igw.getInternetGatewayId(), parameters[1]);
 
-                Vpc v = ec2Client.getVpc(ec2Client.getResourceId(parameters[2]));
+                for (int retry = 0; retry < 3; retry++) {
+                    try {
+                        AttachInternetGatewayRequest gwRequest = new AttachInternetGatewayRequest();
+                        gwRequest.withInternetGatewayId(ec2Client.getResourceId(parameters[1]))
+                                .withVpcId(ec2Client.getVpcId(parameters[2]));
 
-                AttachInternetGatewayRequest gwRequest = new AttachInternetGatewayRequest();
-                gwRequest.withInternetGatewayId(ec2Client.getResourceId(parameters[1]))
-                        .withVpcId(ec2Client.getVpcId(parameters[2]));
-
-                ec2.attachInternetGateway(gwRequest);
-                ec2Client.internetGatewayAttachmentCheck(ec2Client.getResourceId(parameters[1]));
-
+                        ec2.attachInternetGateway(gwRequest);
+                        ec2Client.internetGatewayAttachmentCheck(ec2Client.getResourceId(parameters[1]));
+                        break;
+                    } catch (AmazonServiceException e) {
+                        if (!e.getErrorCode().equals("InvalidInternetGatewayID.NotFound")) {
+                            throw e;
+                        }
+                        try {
+                            sleep(20000L); // pause for 20 seconds and retry
+                        } catch (InterruptedException ex) {
+                            ;
+                        }
+                    }
+                }
             } else if (request.contains("CreateVpnGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
 
@@ -540,6 +551,7 @@ public class AwsPush {
                             AttachVpnGatewayResult result = ec2.attachVpnGateway(gwRequest);
                             ec2Client.vpnGatewayAttachmentCheck(vpn.getVpnGatewayId(), v.getVpcId());
                         }
+                        break;
                     } catch (NullPointerException nullEx) {
                         try {
                             sleep(20000L); // pause for 20 seconds and retry
@@ -547,8 +559,6 @@ public class AwsPush {
                             ;
                         }
                     }
-                    break;
-
                 }
             } else if (request.contains("PropagateVpnRequest")) {
                 String[] parameters = request.split("\\s+");

@@ -97,6 +97,7 @@ public class SystemModelCoordinator {
         return this.systemVersionGroup;
     }
     
+    @Lock(LockType.READ)
     public OntModel getCachedOntModel() {
         if (this.systemVersionGroup != null) {
             return this.systemVersionGroup.getCachedModelBase().getOntModel();
@@ -104,6 +105,7 @@ public class SystemModelCoordinator {
         return null;
     }
 
+    @Lock(LockType.READ)
     public OntModel getLatestOntModel() {
         VersionGroup vg = getLatest();
         return vg.getCachedModelBase().getOntModel();
