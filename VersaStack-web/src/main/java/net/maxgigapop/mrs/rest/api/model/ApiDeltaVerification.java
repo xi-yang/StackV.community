@@ -23,13 +23,17 @@ public class ApiDeltaVerification {
     @XmlElement(required = true)
     protected String creationTime;
     @XmlElement(required = true)
-    protected String modelReduction = null;
+    protected String verifiedModelReduction = null;
     @XmlElement(required = true)
-    protected String modelAddition = null;
+    protected String unverifiedModelReduction = null;
     @XmlElement(required = true)
-    protected String verifiedReduction = null;
+    protected String reductionVerified = null;
     @XmlElement(required = true)
-    protected String verifiedAddition = null;
+    protected String verifiedModelAddition = null;
+    @XmlElement(required = true)
+    protected String unverifiedModelAddition = null;
+    @XmlElement(required = true)
+    protected String additionVerified = null;
 
     public String getReferenceUUID() {
         return referenceUUID;
@@ -47,41 +51,56 @@ public class ApiDeltaVerification {
         this.creationTime = creationTime;
     }
 
-    public String getModelReduction() {
-        return modelReduction;
+    public String getVerifiedModelReduction() {
+        return verifiedModelReduction;
     }
 
-    public void setModelReduction(String modelReduction) {
-        this.modelReduction = modelReduction;
+    public void setVerifiedModelReduction(String verifiedModelReduction) {
+        this.verifiedModelReduction = verifiedModelReduction;
     }
 
-    public String getModelAddition() {
-        return modelAddition;
+    public String getUnverifiedModelReduction() {
+        return unverifiedModelReduction;
     }
 
-    public void setModelAddition(String modelAddition) {
-        this.modelAddition = modelAddition;
+    public void setUnverifiedModelReduction(String unverifiedModelReduction) {
+        this.unverifiedModelReduction = unverifiedModelReduction;
     }
 
-    public String getVerifiedReduction() {
-        return verifiedReduction;
+    public String getVerifiedModelAddition() {
+        return verifiedModelAddition;
     }
 
-    public void setVerifiedReduction(String verifiedReduction) {
-        this.verifiedReduction = verifiedReduction;
+    public void setVerifiedModelAddition(String verifiedModelAddition) {
+        this.verifiedModelAddition = verifiedModelAddition;
     }
 
-    public String getVerifiedAddition() {
-        return verifiedAddition;
+    public String getUnverifiedModelAddition() {
+        return unverifiedModelAddition;
     }
 
-    public void setVerifiedAddition(String verifiedAddition) {
-        this.verifiedAddition = verifiedAddition;
+    public void setUnverifiedModelAddition(String unverifiedModelAddition) {
+        this.unverifiedModelAddition = unverifiedModelAddition;
     }
 
-    
+    public String getReductionVerified() {
+        return reductionVerified;
+    }
+
+    public void setReductionVerified(String reductionVerified) {
+        this.reductionVerified = reductionVerified;
+    }
+
+    public String getAdditionVerified() {
+        return additionVerified;
+    }
+
+    public void setAdditionVerified(String additionVerified) {
+        this.additionVerified = additionVerified;
+    }
+
     @Override
     public String toString() {
-        return "net.maxgigapop.mrs.rest.api.model.ApiDeltaBase[ referenceUUID=" + referenceUUID + " ]";
+        return "net.maxgigapop.mrs.rest.api.model.ApiDeltaVerification[ referenceUUID=" + referenceUUID + " ]";
     }
 }

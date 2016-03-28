@@ -515,4 +515,62 @@ public class ModelUtil {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
         return dateFormat.parse(str);
     }
+    
+    static public class DeltaVerification {
+        protected String modelAdditionVerified = null;
+        protected String modelReductionVerified = null;
+        protected String modelAdditionUnverified = null;
+        protected String modelReductionUnverified = null;
+        protected Boolean additionVerified = null;
+        protected Boolean reductionVerified = null;
+
+        public String getModelAdditionVerified() {
+            return modelAdditionVerified;
+        }
+
+        public void setModelAdditionVerified(String modelAdditionVerified) {
+            this.modelAdditionVerified = modelAdditionVerified;
+        }
+
+        public String getModelReductionVerified() {
+            return modelReductionVerified;
+        }
+
+        public void setModelReductionVerified(String modelReductionVerified) {
+            this.modelReductionVerified = modelReductionVerified;
+        }
+
+        public String getModelAdditionUnverified() {
+            return modelAdditionUnverified;
+        }
+
+        public void setModelAdditionUnverified(String modelAdditionUnverified) {
+            this.modelAdditionUnverified = modelAdditionUnverified;
+        }
+
+        public String getModelReductionUnverified() {
+            return modelReductionUnverified;
+        }
+
+        public void setModelReductionUnverified(String modelReductionUnverified) {
+            this.modelReductionUnverified = modelReductionUnverified;
+        }
+
+        public Boolean getAdditionVerified() {
+            return additionVerified;
+        }
+
+        public void setAdditionVerified(Boolean additionVerified) {
+            this.additionVerified = additionVerified;
+        }
+
+        public Boolean getReductionVerified() {
+            return reductionVerified;
+        }
+
+        public void setReductionVerified(Boolean reductionVerified) {
+            this.reductionVerified = reductionVerified;
+        }
+
+    }
 }

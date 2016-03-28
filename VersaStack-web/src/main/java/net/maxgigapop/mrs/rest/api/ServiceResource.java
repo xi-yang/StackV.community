@@ -300,41 +300,71 @@ public class ServiceResource {
             throw new EJBException("Unrecognized action=" + action);
         }
     }
+
+    @GET
+    @Produces("application/json")
+    @Path("/verify/{sdUUID}")
+    public ApiDeltaVerification verifyJson(@PathParam("sdUUID") String svcDeltaUUID) throws Exception {
+        ApiDeltaVerification apiDeltaVerification = new ApiDeltaVerification();
+        java.util.Date now = new java.util.Date();
+        apiDeltaVerification.setCreationTime(new java.sql.Date(now.getTime()).toString());
+        apiDeltaVerification.setReferenceUUID(svcDeltaUUID);
+        ModelUtil.DeltaVerification deltaVerification = new ModelUtil.DeltaVerification();
+        serviceCallHandler.verifyDelta(svcDeltaUUID, deltaVerification, true);
+        if (deltaVerification.getModelAdditionVerified() != null) {
+            apiDeltaVerification.setVerifiedModelAddition(deltaVerification.getModelAdditionVerified());
+        }
+        if (deltaVerification.getModelAdditionUnverified() != null) {
+            apiDeltaVerification.setUnverifiedModelAddition(deltaVerification.getModelAdditionUnverified());
+        }
+        if (deltaVerification.getModelReductionVerified() != null) {
+            apiDeltaVerification.setVerifiedModelReduction(deltaVerification.getModelReductionVerified());
+        }
+        if (deltaVerification.getModelReductionUnverified() != null) {
+            apiDeltaVerification.setUnverifiedModelReduction(deltaVerification.getModelReductionUnverified());
+        }
+        if (deltaVerification.getAdditionVerified() != null) {
+           apiDeltaVerification.setAdditionVerified(deltaVerification.getAdditionVerified() ? "true" : "false");
+        }
+        if (deltaVerification.getReductionVerified() != null) {
+            apiDeltaVerification.setReductionVerified(deltaVerification.getReductionVerified() ? "true" : "false");
+        }
+        return apiDeltaVerification;
+    }
     
     @GET
     @Produces("application/xml")
     @Path("/verify/{sdUUID}")
     public ApiDeltaVerification verify(@PathParam("sdUUID") String svcDeltaUUID) throws Exception {
-        ApiDeltaVerification deltaVerification = new ApiDeltaVerification();
+        ApiDeltaVerification apiDeltaVerification = new ApiDeltaVerification();
         java.util.Date now = new java.util.Date();
-        deltaVerification.setCreationTime(new java.sql.Date(now.getTime()).toString());
-        deltaVerification.setReferenceUUID(svcDeltaUUID);
-        OntModel modelAddition = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-        OntModel modelReduction = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-        boolean[] verified = serviceCallHandler.verifyDelta(svcDeltaUUID, modelAddition, modelReduction);
-        deltaVerification.setModelAddition(ModelUtil.marshalOntModel(modelAddition));
-        deltaVerification.setModelReduction(ModelUtil.marshalOntModel(modelReduction));
-        deltaVerification.setVerifiedAddition(verified[0] ? "true" : "false");
-        deltaVerification.setVerifiedReduction(verified[1] ? "true" : "false");
-        return deltaVerification;
+        apiDeltaVerification.setCreationTime(new java.sql.Date(now.getTime()).toString());
+        apiDeltaVerification.setReferenceUUID(svcDeltaUUID);
+        ModelUtil.DeltaVerification deltaVerification = new ModelUtil.DeltaVerification();
+        serviceCallHandler.verifyDelta(svcDeltaUUID, deltaVerification, false);
+        if (deltaVerification.getModelAdditionVerified() != null) {
+            apiDeltaVerification.setVerifiedModelAddition(deltaVerification.getModelAdditionVerified());
+            log.info("ModelAdditionVerified=\n"+deltaVerification.getModelAdditionVerified());
+        }
+        if (deltaVerification.getModelAdditionUnverified() != null) {
+            apiDeltaVerification.setUnverifiedModelAddition(deltaVerification.getModelAdditionUnverified());
+            log.info("ModelAdditionUnverified=\n"+deltaVerification.getModelAdditionUnverified());
+        }
+        if (deltaVerification.getModelReductionVerified() != null) {
+            apiDeltaVerification.setVerifiedModelReduction(deltaVerification.getModelReductionVerified());
+            log.info("ModelReductionVerified=\n"+deltaVerification.getModelReductionVerified());
+        }
+        if (deltaVerification.getModelReductionUnverified() != null) {
+            apiDeltaVerification.setUnverifiedModelReduction(deltaVerification.getModelReductionUnverified());
+            log.info("ModelReductionUnverified=\n"+deltaVerification.getModelReductionUnverified());
+        }
+        if (deltaVerification.getAdditionVerified() != null) {
+           apiDeltaVerification.setAdditionVerified(deltaVerification.getAdditionVerified() ? "true" : "false");
+        }
+        if (deltaVerification.getReductionVerified() != null) {
+            apiDeltaVerification.setReductionVerified(deltaVerification.getReductionVerified() ? "true" : "false");
+        }
+        return apiDeltaVerification;
     }
     
-    @GET
-    @Produces("application/json")
-    @Path("/verify/{sdUUID}")
-    public ApiDeltaVerification verifyJson(@PathParam("sdUUID") String svcDeltaUUID) throws Exception {
-        ApiDeltaVerification deltaVerification = new ApiDeltaVerification();
-        java.util.Date now = new java.util.Date();
-        deltaVerification.setCreationTime(new java.sql.Date(now.getTime()).toString());
-        deltaVerification.setReferenceUUID(svcDeltaUUID);
-        OntModel modelAddition = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-        OntModel modelReduction = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-        boolean[] verified = serviceCallHandler.verifyDelta(svcDeltaUUID, modelAddition, modelReduction);
-        deltaVerification.setModelAddition(ModelUtil.marshalOntModelJson(modelAddition));
-        deltaVerification.setModelReduction(ModelUtil.marshalOntModelJson(modelReduction));
-        deltaVerification.setVerifiedAddition(verified[0] ? "true" : "false");
-        deltaVerification.setVerifiedReduction(verified[1] ? "true" : "false");
-        return deltaVerification;
-    }
-
 }
