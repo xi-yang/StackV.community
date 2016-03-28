@@ -295,16 +295,38 @@ function addRoute() {
 
 var VMCounter = 1;
 var VMLimit = 10;
-function addVM(type, subnetNum) {
+function addVM(type, subnetID) {
     if (VMCounter === VMLimit) {
         alert("You have reached the limit of VMs.");
     }
     else if (type === 'aws') {
         VMCounter++;
-        var block = document.getElementById(subnetNum + '-block');
+        var block = document.getElementById(subnetID + '-block');
 
         block.innerHTML = block.innerHTML +
-                '<div>VM ' + VMCounter + '   <input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '" placeholder="VM Name"></div>';
+                '<div>VM ' + VMCounter + 
+                '<input type="text" name="' + subnetID + VMCounter + '" placeholder="VM Name">' +
+                '<input type="text" name="' + subnetID + VMCounter + '-keypair" placeholder="Keypair Name">' +
+                '<input type="text" name="' + subnetID + VMCounter + '-security" placeholder="Security Name">' +
+                '<input type="text" name="' + subnetID + VMCounter + '-image" placeholder="Image Type">' +
+                '<input type="text" name="' + subnetID + VMCounter + '-instance" placeholder="Instance Type">' +
+                '</div>';
+    }
+    else if (type === 'ops') {
+        VMCounter++;
+        var block = document.getElementById(subnetID + '-block');
+
+        block.innerHTML = block.innerHTML +
+                '<div>VM ' + VMCounter + 
+                '<input type="text" name="' + subnetID + VMCounter + '" placeholder="VM Name">' +
+                '<input type="text" name="' + subnetID + VMCounter + '-keypair" placeholder="Keypair Name">' +
+                '<input type="text" name="' + subnetID + VMCounter + '-security" placeholder="Security Name">' +
+                '<input type="text" name="' + subnetID + VMCounter + '-image" placeholder="Image Type">' +
+                '<input type="text" name="' + subnetID + VMCounter + '-instance" placeholder="Instance Type">' +
+                '<input type="text" name="' + subnetID + VMCounter + '-host" placeholder="VM Host">' +
+                '<input type="text" name="' + subnetID + VMCounter + '-floating" placeholder="Floating IP">' +
+                '<input type="text" name="' + subnetID + VMCounter + '-sriov" placeholder="SRIOV Connection">' +
+                '</div>';
     }
 }
 
@@ -318,7 +340,7 @@ function addSubnet(type) {
         var table = document.getElementById("net-custom-form");
         var tableHeight = table.rows.length;
         subnetCounter++;
-        VMCounter++;
+        VMCounter++;       
 
         var row = table.insertRow(tableHeight - 2);
         row.id = 'subnet' + subnetCounter;
@@ -344,31 +366,80 @@ function addSubnet(type) {
                 '</div>' +
                 '</div>' +
                 '<div id="subnet' + subnetCounter + '-vm-block">' +
-                '<div>VM ' + VMCounter + '   <input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '" placeholder="VM Name">' +
+                '<div>VM ' + VMCounter + 
+                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '" placeholder="VM Name">' +
+                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-keypair" placeholder="Keypair Name">' +
+                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-security" placeholder="Security Name">' +
+                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-image" placeholder="Image Type">' +
+                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-instance" placeholder="Instance Type">' +
                 '</div>' +
                 '<div>' +
-                '<input class="button-register" id="subnet' + subnetCounter + '-vm" type="button" value="Add VM" onClick="addVM(this.id)">' +
+                '<input class="button-register" id="subnet' + subnetCounter + '-vm" type="button" value="Add VM" onClick="addVM(\'aws\', this.id)">' +
+                '</div>';
+    }
+        else if (type === 'ops') {
+        var table = document.getElementById("net-custom-form");
+        var tableHeight = table.rows.length;
+        subnetCounter++;
+        VMCounter++;       
+
+        var row = table.insertRow(tableHeight - 2);
+        row.id = 'subnet' + subnetCounter;
+
+        var cell1 = row.insertCell(0);
+        cell1.innerHTML = 'Subnet ' + subnetCounter;
+        var cell2 = row.insertCell(1);
+        cell2.innerHTML = '<div>' +
+                '<input type="text" name="subnet' + subnetCounter + '-name" placeholder="Name"/>' +
+                '<input type="text" name="subnet' + subnetCounter + '-cidr" placeholder="CIDR Block"/>' +
+                '<div id="subnet' + subnetCounter + '-route-block">' +
+                '<div>' +
+                '<input type="text" name="subnet' + subnetCounter + '-route1-from" placeholder="From"/>\n' +
+                '<input type="text" name="subnet' + subnetCounter + '-route1-to" placeholder="To"/>\n' +
+                '<input type="text" name="subnet' + subnetCounter + '-route1-next" placeholder="Next Hop"/>\n' +
+                '</div>' +
+                '</div>' +
+                '<div>' +
+                '<input type="checkbox" name="subnet' + subnetCounter + '-route-prop" value="true"/>   Enable VPN Routes Propogation' +
+                '</div>' +
+                '<div>' +
+                '<input class="button-register" id="subnet' + subnetCounter + '-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">' +
+                '</div>' +
+                '</div>' +
+                '<div id="subnet' + subnetCounter + '-vm-block">' +
+                '<div>VM ' + VMCounter + 
+                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '" placeholder="VM Name">' +
+                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-keypair" placeholder="Keypair Name">' +
+                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-security" placeholder="Security Name">' +
+                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-image" placeholder="Image Type">' +
+                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-instance" placeholder="Instance Type">' +
+                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-host" placeholder="VM Host">' +
+                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-floating" placeholder="Floating IP">' +
+                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-sriov" placeholder="SRIOV Connection">' +
+                '</div>' +
+                '<div>' +
+                '<input class="button-register" id="subnet' + subnetCounter + '-vm" type="button" value="Add VM" onClick="addVM(\'ops\', this.id)">' +
                 '</div>';
     }
 }
 
 var subRouteCounter = 1;
 var subRouteLimit = 10;
-function addSubnetRoute(type, subnetNum) {
+function addSubnetRoute(subnetID) {
     if (subRouteCounter === subRouteLimit) {
         alert("You have reached the limit of routes.");
     }
-    else if (type === 'aws') {
-        subRouteCounter++;
-        var block = document.getElementById(subnetNum + '-block');
 
-        block.innerHTML = block.innerHTML +
-                '<div>' +
-                '<input type="text" name="' + subnetNum + subRouteCounter + '-from" placeholder="From"/>' +
-                '<input type="text" name="' + subnetNum + subRouteCounter + '-to" placeholder="To"/>' +
-                '<input type="text" name="' + subnetNum + subRouteCounter + '-next" placeholder="Next Hop"/>' +
-                '</div>';
-    }
+    subRouteCounter++;
+    var block = document.getElementById(subnetID + '-block');
+
+    block.innerHTML = block.innerHTML +
+            '<div>' +
+            '<input type="text" name="' + subnetID + subRouteCounter + '-from" placeholder="From"/>' +
+            '<input type="text" name="' + subnetID + subRouteCounter + '-to" placeholder="To"/>' +
+            '<input type="text" name="' + subnetID + subRouteCounter + '-next" placeholder="Next Hop"/>' +
+            '</div>';
+
 
 }
 
@@ -521,7 +592,7 @@ function applyNetTemplate(code) {
                 addSubnetRoute('subnet1-route');
             }               
             if (subnetCounter === 1) {
-                addSubnet();
+                addSubnet('aws');
             }       
 
             form.elements['subnet1-name'].value = '';
@@ -546,7 +617,7 @@ function applyNetTemplate(code) {
                 addSubnetRoute('subnet1-route');
             }      
             if (subnetCounter === 1) {
-                addSubnet();
+                addSubnet('aws');
             }  
 
             form.elements['subnet1-name'].value = '';
@@ -567,10 +638,76 @@ function applyNetTemplate(code) {
             form.elements['conn-vlan'].value = '3023';
 
             break;
+            
+        case 3:
+            form.elements['netType'].value = 'internal';
+            form.elements['netCidr'].value = '10.1.0.0/16';
+
+            if (subRouteCounter === 1) {
+                addSubnetRoute('subnet1-route');
+            }
+            if (subnetCounter === 1) {
+                addSubnet('aws');
+            }
+
+            form.elements['subnet1-name'].value = '';
+            form.elements['subnet1-cidr'].value = '10.1.0.0/24';
+            
+            form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
+            form.elements['subnet1-route1-next'].value = 'internet';
+            form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
+            form.elements['subnet1-route2-next'].value = 'vpn';
+            form.elements['subnet1-route-prop'].checked = true;
+            
+            form.elements['subnet1-vm1'].value = 'test_with_vm_types_1';
+            form.elements['subnet1-vm1-image'].value = 'ami-08111162';
+            form.elements['subnet1-vm1-instance'].value = 't2.micro';
+
+            form.elements['subnet2-name'].value = '';
+            form.elements['subnet2-cidr'].value = '10.1.1.0/24';
+
+            form.elements['subnet2-vm2'].value = 'test_with_vm_types_2';
+            form.elements['subnet2-vm2-image'].value = 'ami-fce3c696';
+            form.elements['subnet2-vm2-instance'].value = 't2.small';
+            form.elements['subnet2-vm2-keypair'].value = 'xi-aws-max-dev-key';
+            form.elements['subnet2-vm2-security'].value = 'geni';
+
+            break;
+            
+        case 4:
+            form.elements['netType'].value = 'internal';
+            form.elements['netCidr'].value = '10.1.0.0/16';
+            
+            if (subRouteCounter === 1) {
+                addSubnetRoute('subnet1-route');
+            }
+            if (subnetCounter === 1) {
+                addSubnet('ops');
+            }
+
+            form.elements['subnet1-name'].value = '';
+            form.elements['subnet1-cidr'].value = '10.1.0.0/24';
+            
+            form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
+            form.elements['subnet1-route1-next'].value = 'internet';
+            form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
+            form.elements['subnet1-route2-next'].value = 'vpn';
+            form.elements['subnet1-route-prop'].checked = true;
+            
+            form.elements['subnet1-vm1'].value = 'vm_OPS';
+            form.elements['subnet1-vm1-instance'].value = 'm1.medium';
+            form.elements['subnet1-vm1-keypair'].value = 'icecube_key';
+            form.elements['subnet1-vm1-security'].value = 'rains';
+            form.elements['subnet1-vm1-host'].value = 'msx1';
+            
+            form.elements['subnet2-name'].value = '';
+            form.elements['subnet2-cidr'].value = '10.1.1.0/24';
+            
+            break;
     }
 }
 
-function applyFL2PTemplate(code){
+function applyFL2PTemplate(code) {
     var form = document.getElementById('custom-form');
     form.reset();
     

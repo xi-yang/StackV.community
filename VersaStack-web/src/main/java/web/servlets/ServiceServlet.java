@@ -390,7 +390,7 @@ public class ServiceServlet extends HttpServlet {
         }
         else if(paraMap.containsKey("template3")){ // AWS with VMs specified VM types
             // Add template data.
-            paraMap.put("topoUri", "urn:ogf:network:openstack.com:openstack-cloud");
+            paraMap.put("topoUri", "urn:ogf:network:aws.amazon.com:aws-cloud");
             paraMap.put("netCidr", "10.1.0.0/16");
             paraMap.put("driverType","aws");
             paraMap.put("subnet1", "name+ &cidr+10.1.0.0/24&routesto+206.196.0.0/16,nextHop+internet\r\nfrom+vpn,to+0.0.0.0/0,nextHop+vpn\r\nto+72.24.24.0/24,nextHop+vpn");

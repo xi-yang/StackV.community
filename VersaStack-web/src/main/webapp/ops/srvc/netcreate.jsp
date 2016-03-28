@@ -58,7 +58,7 @@
                                                 <select name="networkType" onchange="networkSelect(this)">                                                
                                                     <option value=""></option>
                                                     <option value="aws">AWS</option>
-                                                    <option value="os">OpenStack</option>
+                                                    <option value="ops">OpenStack</option>
                                                 </select>
                                             </th>
                                         </tr>
@@ -77,14 +77,26 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
-                                            <td>No VM</td>
-                                            <td><button onclick="applyNetTemplate(1)">Apply</button></td>
-                                        </tr>                                            
-                                        <tr>
-                                            <td>VM</td>
-                                            <td><button onclick="applyNetTemplate(2)">Apply</button></td>
-                                        </tr>
+                                        <c:if test="${param.networkType == 'aws'}">
+                                            <tr>
+                                                <td>No VM</td>
+                                                <td><button onclick="applyNetTemplate(1)">Apply</button></td>
+                                            </tr>                                            
+                                            <tr>
+                                                <td>Basic VM</td>
+                                                <td><button onclick="applyNetTemplate(2)">Apply</button></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Various VM Types</td>
+                                                <td><button onclick="applyNetTemplate(3)">Apply</button></td>
+                                            </tr>
+                                        </c:if>
+                                        <c:if test="${param.networkType == 'ops'}">    
+                                            <tr>
+                                                <td>VM Test</td>
+                                                <td><button onclick="applyNetTemplate(4)">Apply</button></td>
+                                            </tr>
+                                        </c:if>
                                     </tbody>
                                 </table>    
 
@@ -156,7 +168,7 @@
                                                                 <input type="checkbox" name="subnet1-route-prop" value="true"/>   Enable VPN Routes Propagation
                                                             </div>
                                                             <div>
-                                                                <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute('aws', this.id)">
+                                                                <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">
                                                             </div>
                                                             <div id="subnet1-vm-block">
                                                                 <div>VM 1   
@@ -164,7 +176,7 @@
                                                                     <input type="text" name="subnet1-vm1-keypair" placeholder="Keypair Name">
                                                                     <input type="text" name="subnet1-vm1-security" placeholder="Security Name">
                                                                     <input type="text" name="subnet1-vm1-image" placeholder="Image Type">
-                                                                    <input type="text" name="subnet1-vm1-type" placeholder="Instance Type">
+                                                                    <input type="text" name="subnet1-vm1-instance" placeholder="Instance Type">
                                                                 </div>
                                                             </div>
                                                             <div>
@@ -184,7 +196,7 @@
                                             </c:if>
 
                                             <!-- OpenStack -->
-                                            <c:if test="${param.networkType == 'os'}">
+                                            <c:if test="${param.networkType == 'ops'}">
                                                 <tr>
                                                     <td>Topology URI</td>
                                                     <td>
@@ -241,7 +253,7 @@
                                                                 <input type="checkbox" name="subnet1-route-prop" value="true"/>   Enable Default Routing
                                                             </div>
                                                             <div>
-                                                                <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute('aws', this.id)">
+                                                                <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">
                                                             </div>
                                                             <div id="subnet1-vm-block">
                                                                 <div>VM 1   
@@ -256,7 +268,7 @@
                                                                 </div>
                                                             </div>
                                                             <div>
-                                                                <input class="button-register" id="subnet1-vm" type="button" value="Add VM" onClick="addVM('aws', this.id)">
+                                                                <input class="button-register" id="subnet1-vm" type="button" value="Add VM" onClick="addVM('ops', this.id)">
                                                             </div>
                                                         </div>
                                                     </td>
@@ -267,7 +279,7 @@
                                                 </tr>
                                                 <tr>
                                                     <td></td>
-                                                    <td><input type="submit" name="custom" value="Submit" /><input class="button-register" type="button" value="Add Subnet" onClick="addSubnet('aws')"></td>
+                                                    <td><input type="submit" name="custom" value="Submit" /><input class="button-register" type="button" value="Add Subnet" onClick="addSubnet('ops')"></td>
                                                 </tr>
                                             </c:if>
                                         </tbody>
