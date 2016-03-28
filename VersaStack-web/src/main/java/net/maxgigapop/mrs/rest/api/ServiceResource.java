@@ -5,6 +5,9 @@
  */
 package net.maxgigapop.mrs.rest.api;
 
+import com.hp.hpl.jena.ontology.OntModel;
+import com.hp.hpl.jena.ontology.OntModelSpec;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
 import static java.lang.Thread.sleep;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -40,6 +43,7 @@ import net.maxgigapop.mrs.bean.ServiceInstance;
 import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ServiceInstancePersistenceManager;
 import net.maxgigapop.mrs.rest.api.model.ApiDeltaBase;
+import net.maxgigapop.mrs.rest.api.model.ApiDeltaVerification;
 import org.json.simple.JSONObject;
 
 /**
@@ -296,4 +300,41 @@ public class ServiceResource {
             throw new EJBException("Unrecognized action=" + action);
         }
     }
+    
+    @GET
+    @Produces("application/xml")
+    @Path("/verify/{sdUUID}")
+    public ApiDeltaVerification verify(@PathParam("sdUUID") String svcDeltaUUID) throws Exception {
+        ApiDeltaVerification deltaVerification = new ApiDeltaVerification();
+        java.util.Date now = new java.util.Date();
+        deltaVerification.setCreationTime(new java.sql.Date(now.getTime()).toString());
+        deltaVerification.setReferenceUUID(svcDeltaUUID);
+        OntModel modelAddition = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        OntModel modelReduction = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        boolean[] verified = serviceCallHandler.verifyDelta(svcDeltaUUID, modelAddition, modelReduction);
+        deltaVerification.setModelAddition(ModelUtil.marshalOntModel(modelAddition));
+        deltaVerification.setModelReduction(ModelUtil.marshalOntModel(modelReduction));
+        deltaVerification.setVerifiedAddition(verified[0] ? "true" : "false");
+        deltaVerification.setVerifiedReduction(verified[1] ? "true" : "false");
+        return deltaVerification;
+    }
+    
+    @GET
+    @Produces("application/json")
+    @Path("/verify/{sdUUID}")
+    public ApiDeltaVerification verifyJson(@PathParam("sdUUID") String svcDeltaUUID) throws Exception {
+        ApiDeltaVerification deltaVerification = new ApiDeltaVerification();
+        java.util.Date now = new java.util.Date();
+        deltaVerification.setCreationTime(new java.sql.Date(now.getTime()).toString());
+        deltaVerification.setReferenceUUID(svcDeltaUUID);
+        OntModel modelAddition = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        OntModel modelReduction = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        boolean[] verified = serviceCallHandler.verifyDelta(svcDeltaUUID, modelAddition, modelReduction);
+        deltaVerification.setModelAddition(ModelUtil.marshalOntModelJson(modelAddition));
+        deltaVerification.setModelReduction(ModelUtil.marshalOntModelJson(modelReduction));
+        deltaVerification.setVerifiedAddition(verified[0] ? "true" : "false");
+        deltaVerification.setVerifiedReduction(verified[1] ? "true" : "false");
+        return deltaVerification;
+    }
+
 }

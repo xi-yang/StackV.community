@@ -15,26 +15,28 @@ import javax.xml.bind.annotation.XmlRootElement;
  *
  * @author max
  */
-@XmlRootElement(name = "delta")
+@XmlRootElement(name = "deltaVerification")
 @XmlAccessorType(XmlAccessType.FIELD)
-public class ApiDeltaBase {
+public class ApiDeltaVerification {
     @XmlElement(required = true)
-    protected String id = "";
+    protected String referenceUUID = "";
     @XmlElement(required = true)
     protected String creationTime;
-    @XmlElement(required = true)
-    protected String referenceVersion = "";
     @XmlElement(required = true)
     protected String modelReduction = null;
     @XmlElement(required = true)
     protected String modelAddition = null;
+    @XmlElement(required = true)
+    protected String verifiedReduction = null;
+    @XmlElement(required = true)
+    protected String verifiedAddition = null;
 
-    public String getId() {
-        return id;
+    public String getReferenceUUID() {
+        return referenceUUID;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setReferenceUUID(String referenceUUID) {
+        this.referenceUUID = referenceUUID;
     }
 
     public String getCreationTime() {
@@ -45,14 +47,6 @@ public class ApiDeltaBase {
         this.creationTime = creationTime;
     }
 
-    public String getModelAddition() {
-        return modelAddition;
-    }
-
-    public void setModelAddition(String modelAddition) {
-        this.modelAddition = modelAddition;
-    }
-
     public String getModelReduction() {
         return modelReduction;
     }
@@ -61,23 +55,33 @@ public class ApiDeltaBase {
         this.modelReduction = modelReduction;
     }
 
-    public String getReferenceVersion() {
-        return referenceVersion;
+    public String getModelAddition() {
+        return modelAddition;
     }
 
-    public void setReferenceVersion(String referenceVersion) {
-        this.referenceVersion = referenceVersion;
+    public void setModelAddition(String modelAddition) {
+        this.modelAddition = modelAddition;
     }
 
-//    public String getStatus() {
-//        return status;
-//    }
-//
-//    public void setStatus(String status) {
-//        this.status = status;
-//    }
+    public String getVerifiedReduction() {
+        return verifiedReduction;
+    }
+
+    public void setVerifiedReduction(String verifiedReduction) {
+        this.verifiedReduction = verifiedReduction;
+    }
+
+    public String getVerifiedAddition() {
+        return verifiedAddition;
+    }
+
+    public void setVerifiedAddition(String verifiedAddition) {
+        this.verifiedAddition = verifiedAddition;
+    }
+
+    
     @Override
     public String toString() {
-        return "net.maxgigapop.mrs.rest.api.model.ApiDeltaBase[ id=" + id + " ]";
+        return "net.maxgigapop.mrs.rest.api.model.ApiDeltaBase[ referenceUUID=" + referenceUUID + " ]";
     }
 }
