@@ -356,7 +356,9 @@ public class serviceBeans {
                 eth_des = entry.getValue();
         }
         
-        String delta = "<serviceDelta>\n<uuid>" + UUID.randomUUID().toString()
+        String deltaUUID = UUID.randomUUID().toString();
+        
+        String delta = "<serviceDelta>\n<uuid>" + deltaUUID
                 + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
                 + "\n\n<modelAddition>\n\n"
                 + "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
@@ -522,7 +524,9 @@ public class serviceBeans {
 
         System.out.println(jsonConnect.toString());
 
-        String delta = "<serviceDelta>\n<uuid>" + UUID.randomUUID().toString()
+        String deltaUUID = UUID.randomUUID().toString();
+        
+        String delta = "<serviceDelta>\n<uuid>" + deltaUUID
                 + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
                 + "\n\n<modelAddition>\n"
                 + "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
@@ -787,7 +791,9 @@ public class serviceBeans {
         }
         network.put("gateways", gatewaysJson);
    
-        String svcDelta = "<serviceDelta>\n<uuid>" + UUID.randomUUID().toString()
+        String deltaUUID = UUID.randomUUID().toString();
+        
+        String svcDelta = "<serviceDelta>\n<uuid>" + deltaUUID
                 + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
                 + "\n\n<modelAddition>\n"
                 + "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
@@ -988,11 +994,12 @@ public class serviceBeans {
             formatDelta = formatDelta.replaceAll(">", "&gt;");
 
             prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
-                    + "(`service_instance_id`, `service_history_id`, `delta`) "
-                    + "VALUES (?, ?, ?)");
+                    + "(`service_instance_id`, `service_history_id`, `referenceUUID`, `delta`) "
+                    + "VALUES (?, ?, ?, ?)");
             prep.setInt(1, instanceID);
             prep.setInt(2, historyID);
-            prep.setString(3, formatDelta);
+            prep.setString(3, deltaUUID);
+            prep.setString(4, formatDelta);
             prep.executeUpdate();
 
         } catch (SQLException ex) {
