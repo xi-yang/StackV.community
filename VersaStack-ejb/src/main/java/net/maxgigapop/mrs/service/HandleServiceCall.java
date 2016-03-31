@@ -464,7 +464,7 @@ public class HandleServiceCall {
             serviceInstance.setStatus("COMMITTED-PARTIAL");
         }
         ServiceInstancePersistenceManager.merge(serviceInstance);
-        return serviceInstance.getStatus();
+        return serviceInstance.getReferenceUUID();
     }
 
     public String checkStatus(String serviceInstanceUuid) {
@@ -646,34 +646,36 @@ public class HandleServiceCall {
         }
         
         if (serviceDelta.getSystemDelta().getModelAddition() != null && serviceDelta.getSystemDelta().getModelAddition().getOntModel() != null) {
-            OntModel modelAdditionVerified = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-            OntModel modelAdditionUnverified = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-            boolean additionVerified = this.verifyModelAddition(serviceDelta.getSystemDelta().getModelAddition().getOntModel(), refModel, modelAdditionVerified, modelAdditionUnverified);
+            Model modelAdditionVerified = ModelFactory.createDefaultModel();
+            Model modelAdditionUnverified = ModelFactory.createDefaultModel();
+            boolean additionVerified = this.verifyModelAddition(serviceDelta.getSystemDelta().getModelAddition().getOntModel().getBaseModel(), 
+                    refModel.getBaseModel(), modelAdditionVerified, modelAdditionUnverified);
             apiData.setAdditionVerified(additionVerified);
             try {
                 if (marshallWithJson) {
-                    apiData.setModelAdditionVerified(ModelUtil.marshalModelJson(modelAdditionVerified.getBaseModel()));
-                    apiData.setModelAdditionUnverified(ModelUtil.marshalModelJson(modelAdditionUnverified.getBaseModel()));
+                    apiData.setModelAdditionVerified(ModelUtil.marshalModelJson(modelAdditionVerified));
+                    apiData.setModelAdditionUnverified(ModelUtil.marshalModelJson(modelAdditionUnverified));
                 } else {
-                    apiData.setModelAdditionVerified(ModelUtil.marshalModel(modelAdditionVerified.getBaseModel()));
-                    apiData.setModelAdditionUnverified(ModelUtil.marshalModel(modelAdditionUnverified.getBaseModel()));
+                    apiData.setModelAdditionVerified(ModelUtil.marshalModel(modelAdditionVerified));
+                    apiData.setModelAdditionUnverified(ModelUtil.marshalModel(modelAdditionUnverified));
                 }
             } catch (Exception ex) {
                 throw new EJBException(ex);
             }
         }
         if (serviceDelta.getSystemDelta().getModelReduction()!= null && serviceDelta.getSystemDelta().getModelReduction().getOntModel() != null) {
-            OntModel modelReductionVerified = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-            OntModel modelReductionUnverified = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-            boolean reductionVerified = this.verifyModelReduction(serviceDelta.getSystemDelta().getModelReduction().getOntModel(), refModel, modelReductionVerified, modelReductionUnverified);
+            Model modelReductionVerified = ModelFactory.createDefaultModel();
+            Model modelReductionUnverified = ModelFactory.createDefaultModel();
+            boolean reductionVerified = this.verifyModelReduction(serviceDelta.getSystemDelta().getModelReduction().getOntModel().getBaseModel(), 
+                    refModel.getBaseModel(), modelReductionVerified, modelReductionUnverified);
             apiData.setReductionVerified(reductionVerified);
             try {
                 if (marshallWithJson) {
-                    apiData.setModelReductionVerified(ModelUtil.marshalModelJson(modelReductionVerified.getBaseModel()));
+                    apiData.setModelReductionVerified(ModelUtil.marshalModelJson(modelReductionVerified));
                     apiData.setModelReductionUnverified(ModelUtil.marshalModelJson(modelReductionUnverified));
                 } else {
-                    apiData.setModelReductionVerified(ModelUtil.marshalModel(modelReductionVerified.getBaseModel()));
-                    apiData.setModelReductionUnverified(ModelUtil.marshalModel(modelReductionUnverified.getBaseModel()));
+                    apiData.setModelReductionVerified(ModelUtil.marshalModel(modelReductionVerified));
+                    apiData.setModelReductionUnverified(ModelUtil.marshalModel(modelReductionUnverified));
                 }
             } catch (Exception ex) {
                 throw new EJBException(ex);
@@ -681,7 +683,7 @@ public class HandleServiceCall {
         }
     }
     
-    public boolean verifyModelAddition(OntModel deltaModel, OntModel refModel, OntModel verifiedModel, OntModel unverifiedModel) {
+    public boolean verifyModelAddition(Model deltaModel, Model refModel, Model verifiedModel, Model unverifiedModel) {
         if (refModel == null) {
             refModel = this.fetchReferenceModel();
         }
@@ -690,7 +692,7 @@ public class HandleServiceCall {
         }
         // residual (deltaModel - refModel)
         boolean allEssentialVerified = true;
-        OntModel residualModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        Model residualModel = ModelFactory.createDefaultModel();
         residualModel.add(deltaModel);
         residualModel.remove(refModel);
         // check essential statemtns in residual
@@ -729,7 +731,7 @@ public class HandleServiceCall {
         return allEssentialVerified;
     }
     
-    public boolean verifyModelReduction(OntModel deltaModel, OntModel refModel, OntModel verifiedModel, OntModel unverifiedModel) {
+    public boolean verifyModelReduction(Model deltaModel, Model refModel, Model verifiedModel, Model unverifiedModel) {
         if (refModel == null) {
             refModel = this.fetchReferenceModel();
         }
@@ -741,7 +743,7 @@ public class HandleServiceCall {
         verifiedModel.add(deltaModel);
         verifiedModel.remove(refModel);
         // check if the essential satements in manifestModel are same as in deltaModel
-        OntModel residualModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        Model residualModel = ModelFactory.createDefaultModel();
         residualModel.add(deltaModel);
         residualModel.remove(verifiedModel);
         String sparql = "SELECT ?res WHERE {?s ?p ?res. "

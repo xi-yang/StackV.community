@@ -344,19 +344,15 @@ public class ServiceResource {
         serviceCallHandler.verifyDelta(svcDeltaUUID, deltaVerification, false);
         if (deltaVerification.getModelAdditionVerified() != null) {
             apiDeltaVerification.setVerifiedModelAddition(deltaVerification.getModelAdditionVerified());
-            log.info("ModelAdditionVerified=\n"+deltaVerification.getModelAdditionVerified());
         }
         if (deltaVerification.getModelAdditionUnverified() != null) {
             apiDeltaVerification.setUnverifiedModelAddition(deltaVerification.getModelAdditionUnverified());
-            log.info("ModelAdditionUnverified=\n"+deltaVerification.getModelAdditionUnverified());
         }
         if (deltaVerification.getModelReductionVerified() != null) {
             apiDeltaVerification.setVerifiedModelReduction(deltaVerification.getModelReductionVerified());
-            log.info("ModelReductionVerified=\n"+deltaVerification.getModelReductionVerified());
         }
         if (deltaVerification.getModelReductionUnverified() != null) {
             apiDeltaVerification.setUnverifiedModelReduction(deltaVerification.getModelReductionUnverified());
-            log.info("ModelReductionUnverified=\n"+deltaVerification.getModelReductionUnverified());
         }
         if (deltaVerification.getAdditionVerified() != null) {
            apiDeltaVerification.setAdditionVerified(deltaVerification.getAdditionVerified() ? "true" : "false");

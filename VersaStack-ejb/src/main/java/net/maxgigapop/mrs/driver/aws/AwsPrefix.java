@@ -23,8 +23,10 @@ public class AwsPrefix {
 
     public static String instance = "aws.amazon.cloud:vpc+%s:subnet+%s:instance+%s";
 
-    public static String labelGroup = "aws.amazon.cloud:vif+%s:labelgroup+%s";
+    public static String label = "aws.amazon.cloud:vif+%s:label+%s";
 
+    public static String labelGroup = "aws.amazon.cloud:vif+%s:labelgroup+%s";
+    
     public static String nic = "aws.amazon.cloud:vpc+%s:subnet+%s:nic+%s";
     
     public static String nicNetworkAddress = "aws.amazon.cloud:vpc+%s:subnet+%s:nic+%s:ip+%s";

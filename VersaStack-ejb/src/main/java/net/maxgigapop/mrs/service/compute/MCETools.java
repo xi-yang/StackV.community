@@ -50,6 +50,8 @@ import org.json.simple.JSONObject;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.JsonPathException;
 import java.util.LinkedHashMap;
+import net.maxgigapop.mrs.common.ResourceTool;
+import net.maxgigapop.mrs.driver.aws.AwsPrefix;
 
 /**
  *
@@ -745,7 +747,7 @@ public class MCETools {
             QuerySolution solution = rs.next();
             Resource resVlanPort = solution.getResource("vlan_port");
             Resource resSubnet = solution.getResource("subnet");
-            String vlanLabelUrn = resVlanPort + ":label";
+            String vlanLabelUrn = ResourceTool.getResourceUri(suggestedVlan.toString(), AwsPrefix.label, resVlanPort.getURI(), suggestedVlan.toString());
             Resource resVlanPortLabel = RdfOwl.createResource(vlanSubnetModel, vlanLabelUrn, Nml.Label);
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, RdfOwl.type, Nml.BidirectionalPort));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.hasLabel, resVlanPortLabel));
@@ -793,7 +795,7 @@ public class MCETools {
             resVlanPort = RdfOwl.createResource(vlanSubnetModel, vlanPortUrn, Nml.BidirectionalPort);
         }
         // create vlan label for either new or existing VLAN port
-        String vlanLabelUrn = vlanPortUrn + ":label";
+        String vlanLabelUrn = vlanPortUrn + ":label+"+suggestedVlan;
         Resource resVlanPortLabel = RdfOwl.createResource(vlanSubnetModel, vlanLabelUrn, Nml.Label);
         vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.hasLabel, resVlanPortLabel));
         vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPortLabel, Nml.labeltype, RdfOwl.labelTypeVLAN));
