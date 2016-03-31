@@ -603,6 +603,27 @@ public class WebResource {
 
         return result;
     }
+    
+    private boolean verify(String refUuid) throws MalformedURLException, IOException, InterruptedException {
+        for (int i = 0; i < 10; i++) {
+            try {
+                URL url = new URL(String.format("%s/service/verify/%s", host, refUuid));
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setConnectTimeout(60000);
+                
+                String result = servBean.executeHttpMethod(url, conn, "PUT", null);
+                
+                System.out.println("Verify Result: " + result + "\r\n");
+                return true;
+            }
+            catch (java.net.SocketTimeoutException e) {
+                System.out.println("Timeout #" + i + "\r\n");
+                Thread.sleep(5000);
+            }               
+        }
+        
+        return false;
+    }
 
     private String superStatus(String refUuid) throws SQLException {
         Connection front_conn;

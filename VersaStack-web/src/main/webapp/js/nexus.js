@@ -1,4 +1,6 @@
 
+/* global XDomainRequest */
+
 // Service JavaScript Library
     var baseUrl = window.location.origin;
 
@@ -87,6 +89,8 @@ function viewmodeSelect(sel) {
     }
     $("#service-top").load($ref);
     $("#service-bottom").load($ref2);
+    
+    clearCounters();
 }
 
 function driverSelect(sel) {
@@ -123,6 +127,8 @@ function topoSelect(sel) {
         $ref = "/VersaStack-web/ops/srvc/vmadd.jsp #service-fields";
 
     $("#service-bottom").load($ref);
+    
+    clearCounters();
 }
 
 
@@ -152,6 +158,8 @@ function networkSelect(sel) {
         $ref2 = "/VersaStack-web/ops/srvc/netcreate.jsp #service-fields";
     }
     $("#service-bottom").load($ref2);
+    
+    clearCounters();
 }
 
 // Field Addition Functions
@@ -923,8 +931,8 @@ function templateModerate() {
 
 
 function clearCounters() {
-    volumeCounter = 1;
-    fieldCounter = 1;
+    volumeCounter = 0;
+    fieldCounter = 0;
     queryCounter = 1;
     routeCounter = 1;
     subnetCounter = 1;
