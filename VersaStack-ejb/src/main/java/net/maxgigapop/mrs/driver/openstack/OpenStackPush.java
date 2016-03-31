@@ -1811,7 +1811,7 @@ public class OpenStackPush {
                 hp = new HashMap<>();
                 hp.put(routername, lr);
 
-                String subnet = getresourcename(routeToResource.toString(), "+", "");
+                String subnet = ResourceTool.getResourceName(routeToResource.toString(), OpenstackPrefix.subnet);
                 String subnet_routername = subnet + "," + routername;
                 query = "SELECT ?type ?value WHERE {<" + nextHopResource.asResource() + "> a mrs:NetworkAddress ."
                         + "<" + nextHopResource.asResource() + "> mrs:type ?type ."
@@ -1860,7 +1860,7 @@ public class OpenStackPush {
                 q1 = r1.next();
                 RDFNode routetosubnet = q1.get("subnet");
                 String routeTosubnet = routetosubnet.toString();
-                String subnetname = getresourcename(routeTosubnet, "+", "");
+                String subnetname = ResourceTool.getResourceName(routeToResource.toString(), OpenstackPrefix.subnet);
                 routetoName.add(subnetname);
                 //}
                 //next hop information
