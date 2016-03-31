@@ -185,7 +185,7 @@ public class MCE_NfvBgpRouting implements IModelComputationElement {
             if (solution.contains("rtSvc")) {
                 resRtSvc = solution.getResource("rtSvc");
             } else {
-                resRtSvc = RdfOwl.createResource(spaModel, parentVM + ":routing+quagga", Mrs.RoutingService);
+                resRtSvc = RdfOwl.createResource(spaModel, parentVM + ":routingservice+quagga", Mrs.RoutingService);
                 routingModel.add(routingModel.createStatement(resVM, Nml.hasService, resRtSvc));
             }
             if (solution.contains("bgpRtTable")) {
@@ -195,7 +195,7 @@ public class MCE_NfvBgpRouting implements IModelComputationElement {
             throw new EJBException(String.format("%s::process doRouting cannot identify NFV parent VM: %s", this.getClass().getName(), parentVM));
         }
         if (resBgpRtTable == null) {
-            resBgpRtTable = RdfOwl.createResource(spaModel, resRtSvc.getURI() + ":table+quagga_bgp", Mrs.RoutingTable);
+            resBgpRtTable = RdfOwl.createResource(spaModel, resRtSvc.getURI() + ":routingtable+quagga_bgp", Mrs.RoutingTable);
             routingModel.add(routingModel.createStatement(resRtSvc, Mrs.providesRoutingTable, resBgpRtTable));
             routingModel.add(routingModel.createStatement(resBgpRtTable, Mrs.type, "quagga-bgp"));
         }

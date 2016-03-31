@@ -111,6 +111,29 @@ public class ModelUtil {
         return ttl;
     }
 
+    static public Model unmarshalModelJson(String ttl) throws Exception {
+        Model model = ModelFactory.createDefaultModel();
+        //$$ TODO: add ontology schema and namespace handling code
+        try {
+            model.read(new ByteArrayInputStream(ttl.getBytes()), null, "RDF/JSON");
+        } catch (Exception e) {
+            throw new Exception(String.format("failure to unmarshall ontology model, due to %s", e.getMessage()));
+        }
+        return model;
+    }
+
+    static public String marshalModelJson(Model model) throws Exception {
+        //$$ TODO: add namespace handling code
+        StringWriter out = new StringWriter();
+        try {
+            model.write(out, "RDF/JSON");
+        } catch (Exception e) {
+            throw new Exception(String.format("failure to marshall ontology model, due to %s", e.getMessage()));
+        }
+        String ttl = out.toString();
+        return ttl;
+    }
+    
     static public OntModel cloneOntModel(OntModel model) {
         OntModel cloned = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         cloned.add(model.getBaseModel());

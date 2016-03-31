@@ -430,16 +430,24 @@ public class AwsPush {
                 String vpcId = vpcResult.getVpc().getVpcId();
                 ec2Client.getVpcs().add(vpcResult.getVpc());
                 ec2Client.vpcStatusCheck(vpcId, VpcState.Available.name().toLowerCase());
-                
                 //tag the routing table of the 
                 RouteTable mainTable = null;
-                DescribeRouteTablesResult tablesResult = this.ec2.describeRouteTables();
-                for (RouteTable tb : tablesResult.getRouteTables()) {
-                    if (tb.getVpcId().equals(vpcId)) {
-                        mainTable = tb;
+                for (int retry = 0; retry < 6; retry++) {
+                    DescribeRouteTablesResult tablesResult = this.ec2.describeRouteTables();
+                    for (RouteTable tb : tablesResult.getRouteTables()) {
+                        if (tb.getVpcId().equals(vpcId)) {
+                            mainTable = tb;
+                        }
+                    }
+                    if (mainTable != null) {
+                        break;
+                    }
+                    try {
+                        Thread.sleep(5000L);
+                    } catch (InterruptedException ex) {
+                        ;
                     }
                 }
-                //@TODO retry this.ec2.describeRouteTables() when mainTable == null
                 ec2Client.getRoutingTables().add(mainTable);
                 //create the tag for the vpc
                 ec2Client.tagResource(vpcId, parameters[2]);
@@ -478,7 +486,7 @@ public class AwsPush {
 
                 String routeTableId = ec2Client.getTableId(parameters[1]);
                 String subnetId = ec2Client.getResourceId(parameters[2]);
-                for (int i = 6; i > 0; i--) {
+                for (int retry = 0; retry < 6; retry++) {
                     String resId = ec2Client.getResourceId(routeTableId);
                     if (routeTableId != resId) {
                         routeTableId = resId;
@@ -1302,7 +1310,7 @@ public class AwsPush {
             r2 = executeQuery(query, model, modelReduct);
             QuerySolution q1 = r2.next();
             RDFNode mainRoute = q1.get("route");
-
+            boolean skipRoute = false;
             //get the subnets of the main route, that will tell the routeTable associations
             query = "SELECT ?routeFrom WHERE {<" + mainRoute.asResource() + "> mrs:routeFrom ?routeFrom ."
                     + "?routeFrom a mrs:SwitchingSubnet}";
@@ -1313,8 +1321,9 @@ public class AwsPush {
                 query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeFrom <" + routeFrom + ">}";
                 ResultSet r3 = executeQuery(query, emptyModel, modelReduct);
                 if (!r3.hasNext()) {
-                    throw new EJBException(String.format("new route %s does not contain all the subnet"
-                            + " associations of the route table", route.asResource()));
+                    skipRoute = true;
+                    //throw new EJBException(String.format("new route %s does not contain all the subnet"
+                    //        + " associations of the route table", route.asResource()));
                 }
             }
             query = "SELECT ?routeFrom WHERE {<" + mainRoute.asResource() + "> mrs:routeFrom ?routeFrom ."
@@ -1326,11 +1335,14 @@ public class AwsPush {
                 query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeFrom <" + routeFrom + ">}";
                 ResultSet r3 = executeQuery(query, emptyModel, modelReduct);
                 if (!r3.hasNext()) {
-                    throw new EJBException(String.format("new route %s does not contain all the subnet"
-                            + "associations od the route table", route.asResource()));
+                    skipRoute = true;
+                    //throw new EJBException(String.format("new route %s does not contain all the subnet"
+                    //        + "associations of the route table", route.asResource()));
                 }
             }
-
+            if (skipRoute) {
+                continue;
+            }
             //find the destination and nex hop
             query = "SELECT  ?nextHop ?value WHERE {<" + route.asResource() + "> mrs:routeTo ?routeTo ."
                     + "<" + route.asResource() + "> mrs:nextHop ?nextHop ."
@@ -1514,10 +1526,11 @@ public class AwsPush {
             String type = q1.get("type").asLiteral().toString();
 
             //find the vpc of the gateway
-            query = "SELECT ?vpc ?port  WHERE {?vpc nml:hasBidirectionalPort <" + igw + ">}";
+            query = "SELECT ?vpc WHERE {?vpc nml:hasBidirectionalPort <" + igw + ">}";
             r1 = executeQuery(query, emptyModel, modelReduct);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("Gateway %s does not specify topology", igw));
+                continue; // the gateway might be detached, skip
+                //throw new EJBException(String.format("Gateway %s does not specify topology", igw));
             }
             q = r1.next();
             RDFNode vpc = q.get("vpc");

@@ -46,6 +46,7 @@ import net.maxgigapop.mrs.bean.persist.ServiceDeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ServiceInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.core.SystemModelCoordinator;
 import net.maxgigapop.mrs.service.orchestrate.WorkerBase;
 import net.maxgigapop.mrs.system.HandleSystemCall;
@@ -651,11 +652,11 @@ public class HandleServiceCall {
             apiData.setAdditionVerified(additionVerified);
             try {
                 if (marshallWithJson) {
-                    apiData.setModelAdditionVerified(ModelUtil.marshalOntModelJson(modelAdditionVerified));
-                    apiData.setModelAdditionUnverified(ModelUtil.marshalOntModelJson(modelAdditionUnverified));
+                    apiData.setModelAdditionVerified(ModelUtil.marshalModelJson(modelAdditionVerified.getBaseModel()));
+                    apiData.setModelAdditionUnverified(ModelUtil.marshalModelJson(modelAdditionUnverified.getBaseModel()));
                 } else {
-                    apiData.setModelAdditionVerified(ModelUtil.marshalOntModel(modelAdditionVerified));
-                    apiData.setModelAdditionUnverified(ModelUtil.marshalOntModel(modelAdditionUnverified));
+                    apiData.setModelAdditionVerified(ModelUtil.marshalModel(modelAdditionVerified.getBaseModel()));
+                    apiData.setModelAdditionUnverified(ModelUtil.marshalModel(modelAdditionUnverified.getBaseModel()));
                 }
             } catch (Exception ex) {
                 throw new EJBException(ex);
@@ -668,11 +669,11 @@ public class HandleServiceCall {
             apiData.setReductionVerified(reductionVerified);
             try {
                 if (marshallWithJson) {
-                    apiData.setModelReductionVerified(ModelUtil.marshalOntModelJson(modelReductionVerified));
-                    apiData.setModelReductionUnverified(ModelUtil.marshalOntModelJson(modelReductionUnverified));
+                    apiData.setModelReductionVerified(ModelUtil.marshalModelJson(modelReductionVerified.getBaseModel()));
+                    apiData.setModelReductionUnverified(ModelUtil.marshalModelJson(modelReductionUnverified));
                 } else {
-                    apiData.setModelReductionVerified(ModelUtil.marshalOntModel(modelReductionVerified));
-                    apiData.setModelReductionUnverified(ModelUtil.marshalOntModel(modelReductionUnverified));
+                    apiData.setModelReductionVerified(ModelUtil.marshalModel(modelReductionVerified.getBaseModel()));
+                    apiData.setModelReductionUnverified(ModelUtil.marshalModel(modelReductionUnverified.getBaseModel()));
                 }
             } catch (Exception ex) {
                 throw new EJBException(ex);
@@ -694,7 +695,8 @@ public class HandleServiceCall {
         residualModel.remove(refModel);
         // check essential statemtns in residual
         String sparql = "SELECT ?res WHERE {?s ?p ?res. "
-                + "FILTER(regex(str(?p), '#has|#provides'))"
+                + "FILTER(regex(str(?p), '#has|#provides') && "
+                + String.format("str(?p) != <%s> )", Mrs.hasNetworkAddress.getURI())
                 + "}";
         ResultSet rs = ModelUtil.sparqlQuery(residualModel, sparql);
         if (rs.hasNext()) {
