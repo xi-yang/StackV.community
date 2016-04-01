@@ -464,7 +464,7 @@ public class HandleServiceCall {
             serviceInstance.setStatus("COMMITTED-PARTIAL");
         }
         ServiceInstancePersistenceManager.merge(serviceInstance);
-        return serviceInstance.getReferenceUUID();
+        return reverseSvcDelta.getReferenceUUID();
     }
 
     public String checkStatus(String serviceInstanceUuid) {
@@ -637,6 +637,13 @@ public class HandleServiceCall {
     
     public void verifyDelta(String serviceDeltaUuid, ModelUtil.DeltaVerification apiData, boolean marshallWithJson) {
         ServiceDelta serviceDelta = ServiceDeltaPersistenceManager.findByReferenceUUID(serviceDeltaUuid);
+        if (serviceDelta == null) {
+            //try serviceDeltaUuid as a serviceInstanceUuid and look for the latest serviceDeltaUuid in this instance
+            ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceDeltaUuid);
+            if (serviceInstance != null && !serviceInstance.getServiceDeltas().isEmpty()) {
+                serviceDelta = serviceInstance.getServiceDeltas().get(serviceInstance.getServiceDeltas().size()-1);
+            }
+        }
         if (serviceDelta == null || serviceDelta.getSystemDelta() == null) {
             throw new EJBException(this.getClass().getName() + " verifyDelta does not know serviceDelta: " + serviceDeltaUuid);
         }
@@ -697,9 +704,10 @@ public class HandleServiceCall {
         residualModel.remove(refModel);
         // check essential statemtns in residual
         String sparql = "SELECT ?res WHERE {?s ?p ?res. "
-                + "FILTER(regex(str(?p), '#has|#provides') && "
-                + String.format("str(?p) != <%s> )", Mrs.hasNetworkAddress.getURI())
-                + "}";
+                + "FILTER ( regex(str(?p), '#has|#provides') "
+                + "     && (not exists {?s mrs:hasNetworkAddress ?res.}) "
+                + "     && (not exists {?res mrs:type \"unverifiable\".}) "
+                + ") }";
         ResultSet rs = ModelUtil.sparqlQuery(residualModel, sparql);
         if (rs.hasNext()) {
             allEssentialVerified = false;

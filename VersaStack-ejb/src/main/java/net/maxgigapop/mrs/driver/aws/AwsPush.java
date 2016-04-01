@@ -1363,7 +1363,7 @@ public class AwsPush {
                 } else {
                     String nextHopResource = nextHop.asResource().toString();
                     target = ResourceTool.getResourceName(nextHop.asResource().toString(), AwsPrefix.gateway);
-                    query = String.format("SELECT ?gateway WHERE{<%s> a owl:NamedIndividual}", nextHopResource);
+                    query = String.format("SELECT ?gateway WHERE{<%s> a nml:BidirectionalPort}", nextHopResource);
                     ResultSet r3 = executeQuery(query, model, modelReduct);
                     if (!r3.hasNext()) {
                         throw new EJBException(String.format("next hop %s does not exist in delta "
@@ -2425,7 +2425,7 @@ public class AwsPush {
                     gatewayId = ec2Client.getResourceId(target);
                     //if the resource is a vpn gateway then just do a vpngateway propagation
                     //instead of route addition
-                    query = String.format("SELECT ?gateway WHERE{<%s> a owl:NamedIndividual}", targetResource);
+                    query = String.format("SELECT ?gateway WHERE{<%s> a nml:BidirectionalPort}", targetResource);
                     r3 = executeQuery(query, model, modelAdd);
                     if (!r3.hasNext()) {
                         throw new EJBException(String.format("next hop %s does not exist in delta "
