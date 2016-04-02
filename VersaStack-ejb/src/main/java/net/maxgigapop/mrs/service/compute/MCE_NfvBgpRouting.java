@@ -185,7 +185,7 @@ public class MCE_NfvBgpRouting implements IModelComputationElement {
             if (solution.contains("rtSvc")) {
                 resRtSvc = solution.getResource("rtSvc");
             } else {
-                resRtSvc = RdfOwl.createResource(spaModel, parentVM + ":routingservice+quagga", Mrs.RoutingService);
+                resRtSvc = RdfOwl.createResource(spaModel, parentVM + ":routingservice", Mrs.RoutingService);
                 routingModel.add(routingModel.createStatement(resVM, Nml.hasService, resRtSvc));
             }
             if (solution.contains("bgpRtTable")) {

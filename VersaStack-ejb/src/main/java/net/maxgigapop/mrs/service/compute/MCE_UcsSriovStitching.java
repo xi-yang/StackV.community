@@ -221,11 +221,8 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
         if (resPortProfile == null) {
             throw new EJBException(String.format("%s::process cannot find a SwitchingSubnet of 'UCS_Port_Profile' type to stitch to (in %s)", this.getClass().getName(), jsonStitchReq.containsKey("to_port_profile") ? (String) jsonStitchReq.get("to_l2path") : (String) jsonStitchReq.get("to_port_profile")));
         }
-        //int ethNum = 1; 
-        //while (unionSysModel.contains(unionSysModel.getResource(resVm.getURI()+String.format(":port+eth%d",ethNum)), RdfOwl.type, Nml.BidirectionalPort)) {
-        //    ethNum++;
-        //}
-        Resource resVnic = RdfOwl.createResource(spaModel, resVm.getURI() + String.format(":port+eth%s", UUID.randomUUID().toString()), Nml.BidirectionalPort);
+        String vnicName = "eth" + UUID.randomUUID().toString();
+        Resource resVnic = RdfOwl.createResource(spaModel, ResourceTool.getResourceUri(vnicName, OpenstackPrefix.PORT, vnicName), Nml.BidirectionalPort);
 
         stitchModel.add(stitchModel.createStatement(resVm, Nml.hasBidirectionalPort, resVnic));
         stitchModel.add(stitchModel.createStatement(resVmFex, Mrs.providesVNic, resVnic));
@@ -258,7 +255,7 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
                 resRoutingSvc = solution.getResource("routing");
             }
             if (resRoutingSvc == null) {
-                resRoutingSvc = RdfOwl.createResource(stitchModel, resVm.getURI() + ":linuxrouting", Mrs.RoutingService);
+                resRoutingSvc = RdfOwl.createResource(stitchModel, resVm.getURI() + ":routingservice", Mrs.RoutingService);
                 stitchModel.add(spaModel.createStatement(resVm, Nml.hasService, resRoutingSvc));
             }
             JSONArray routes = (JSONArray) jsonStitchReq.get("routes");

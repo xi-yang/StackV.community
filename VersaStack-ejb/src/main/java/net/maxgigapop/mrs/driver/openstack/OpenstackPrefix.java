@@ -14,11 +14,11 @@ public class OpenstackPrefix {
     //@TODO: dynamic pattern prefix
     public static String bucket = prefix+":bucket+%s";
     
-    public static String networkService = prefix+":networkservice";
+    public static String networkService = prefix+"%s:networkservice";
 
-    public static String routingService = prefix+":routingservice+%s";
+    public static String routingService = prefix+"%s:routingservice";
 
-    public static String cinderService = prefix+":cinderservice+%s";
+    public static String cinderService = prefix+"%s:cinderservice";
 
     public static String PORT = prefix+":port+%s";
 
