@@ -161,6 +161,7 @@
                     layout.doLayout(model, null, width, height);
 
                     render.doRender(outputApi, model);
+                    outputApi.renderApi.selectElement(null);
                 }, null);
 
                 var request = new XMLHttpRequest();
