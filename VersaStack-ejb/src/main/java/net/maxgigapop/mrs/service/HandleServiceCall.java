@@ -750,17 +750,32 @@ public class HandleServiceCall {
         // manifest = (deltaModel - refModel), meaning statements no longer showing up
         verifiedModel.add(deltaModel);
         verifiedModel.remove(refModel);
-        // check if the essential satements in manifestModel are same as in deltaModel
         Model residualModel = ModelFactory.createDefaultModel();
         residualModel.add(deltaModel);
         residualModel.remove(verifiedModel);
+        // first create a list of unverifiable resources 
         String sparql = "SELECT ?res WHERE {?s ?p ?res. "
-                + "FILTER(regex(str(?p), '#has|#provides'))"
-                + "}";
-        ResultSet rs = ModelUtil.sparqlQuery(residualModel, sparql);
-        if (rs.hasNext()) {
+                + "?res mrs:type \"unverifiable\".}";
+        ResultSet rs = ModelUtil.sparqlQuery(deltaModel, sparql);
+        List<Resource> unverifiableList = new ArrayList<>();
+        while (rs.hasNext()) {
+            unverifiableList.add(rs.next().getResource("res"));
+        }
+        // check if the essential satements in manifestModel are same as in deltaModel
+        sparql = "SELECT ?res WHERE {?s ?p ?res. "
+                + "FILTER( regex(str(?p), '#has|#provides')"
+                + "     && (not exists {?s mrs:hasNetworkAddress ?res.}) "
+                + "     && (not exists {?res mrs:type \"unverifiable\".}) "
+                + ") }";
+        rs = ModelUtil.sparqlQuery(residualModel, sparql);
+        while (rs.hasNext()) {
+            Resource res = rs.next().getResource("res");
+            if (unverifiableList.contains(res)) {
+                continue;
+            }
             allEssentialVerified = false;
             unverifiedModel.add(residualModel);
+            break;
         }
         return allEssentialVerified;
     }

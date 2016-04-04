@@ -261,8 +261,8 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
             JSONArray routes = (JSONArray) jsonStitchReq.get("routes");
             for (Object obj : routes) {
                 JSONObject route = (JSONObject) obj;
-                String strRouteTo = (String) route.get("to");
-                String strRouteVia = (String) route.get("next_hop");
+                String strRouteTo = ((String) route.get("to")).replaceAll("/", "");
+                String strRouteVia = ((String) route.get("next_hop")).replaceAll("/", "");
                 Resource vnicRoute = RdfOwl.createResource(stitchModel, resVnic.getURI() + ":route+to-" + strRouteTo + "-via-" + strRouteVia, Mrs.Route);
                 stitchModel.add(stitchModel.createStatement(resRoutingSvc, Mrs.providesRoute, vnicRoute));
                 Resource vnicRouteTo = RdfOwl.createResource(stitchModel, resVnic.getURI() + ":routeto+" + strRouteTo, Mrs.NetworkAddress);

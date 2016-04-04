@@ -746,9 +746,12 @@ public class MCETools {
         if (rs.hasNext()) {
             QuerySolution solution = rs.next();
             Resource resVlanPort = solution.getResource("vlan_port");
+            // do not verify shared vlan port
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Mrs.type, "unverifiable"));
             Resource resSubnet = solution.getResource("subnet");
-            String vlanLabelUrn = ResourceTool.getResourceUri(suggestedVlan.toString(), AwsPrefix.label, resVlanPort.getURI(), suggestedVlan.toString());
-            Resource resVlanPortLabel = RdfOwl.createResource(vlanSubnetModel, vlanLabelUrn, Nml.Label);
+            String vlanLabelUrn = resVlanPort.getURI() + ":label+"+suggestedVlan;
+            // do not verify shared vlan port label
+            Resource resVlanPortLabel = RdfOwl.createResourceUnverifiable(vlanSubnetModel, vlanLabelUrn, Nml.Label);
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, RdfOwl.type, Nml.BidirectionalPort));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.hasLabel, resVlanPortLabel));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPortLabel, Nml.labeltype, RdfOwl.labelTypeVLAN));

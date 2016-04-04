@@ -27,6 +27,7 @@ import static net.maxgigapop.mrs.common.Mrs.hasNetworkAddress;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.ResourceTool;
+import net.maxgigapop.mrs.service.compute.MCE_NfvBgpRouting;
 import org.apache.commons.net.util.SubnetUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -55,7 +56,7 @@ import org.openstack4j.openstack.networking.domain.NeutronRouterInterface;
  * @author max
  */
 public class OpenStackNeutronModelBuilder {
-
+    private static final Logger log = Logger.getLogger(OpenStackNeutronModelBuilder.class.getName());
     private static final String uri = "urn:ogf:network:";
 
     public static OntModel createOntology(String url, String NATServer, String topologyURI, String user_name, String password, String tenantName,
@@ -189,12 +190,87 @@ public class OpenStackNeutronModelBuilder {
                 Resource Port = RdfOwl.createResource(model, ResourceTool.getResourceUri(PortName, OpenstackPrefix.PORT, PortName), biPort);
                 model.add(model.createStatement(VM, hasBidirectionalPort, Port));
             }
-            //@TODO:  quagga bgp routing table  
-            //UCS STIOV special handling
             Map<String, String> metadata = openstackget.getMetadata(server);
+            //Quagga BGP routing table  
+            Resource vmRoutingSvc = null;
+            if (metadata != null && metadata.containsKey("quagga:bgp:info")) {
+                if (vmRoutingSvc == null) {
+                    vmRoutingSvc = RdfOwl.createResource(model, ResourceTool.getResourceUri(server_name + ":routingservice", OpenstackPrefix.routingService, server_name), Mrs.RoutingService);
+                    model.add(model.createStatement(VM, Nml.hasService, vmRoutingSvc));
+                }
+                Resource vmQuaggaBgp = RdfOwl.createResource(model, vmRoutingSvc.getURI() + ":routingtable+quagga_bgp", Mrs.RoutingTable);
+                model.add(model.createStatement(vmRoutingSvc, Mrs.providesRoutingTable, vmQuaggaBgp));
+                int neighborNum = 1;
+                while (metadata.containsKey("quagga:bgp:neighbor:"+neighborNum)) {
+                    JSONParser parser = new JSONParser();
+                    try {
+                        String metaJson = (String) metadata.get("quagga:bgp:neighbor:" + neighborNum);
+                        metaJson = metaJson.replaceAll("\'", "\"");
+                        JSONObject bgpNeighbor = (JSONObject) parser.parse(metaJson);
+                        if (!bgpNeighbor.containsKey("remote_ip") || !bgpNeighbor.containsKey("as_number")) {
+                            continue;
+                        }
+                        String remoteIp = (String) bgpNeighbor.get("remote_ip");
+                        String remoteAsn = (String) bgpNeighbor.get("as_number");
+                        if (remoteIp.contains("/")) {
+                            remoteIp = remoteIp.split("/")[0];
+                        }
+                        Resource resRouteToNeighbor = RdfOwl.createResource(model, vmQuaggaBgp.getURI() + ":neighbor+" + remoteIp.replaceAll("[.\\/]", "_"), Mrs.Route);
+                        model.add(model.createStatement(vmQuaggaBgp, Mrs.hasRoute, resRouteToNeighbor));
+                        // route NetAddresses
+                        Resource resNetAddrRemoteAsn = RdfOwl.createResource(model, resRouteToNeighbor.getURI() + ":remote_asn", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resRouteToNeighbor, Mrs.hasNetworkAddress, resNetAddrRemoteAsn));
+                        model.add(model.createStatement(resNetAddrRemoteAsn, Mrs.type, "bgp-asn"));
+                        model.add(model.createStatement(resNetAddrRemoteAsn, Mrs.value, remoteAsn));
+                        if (bgpNeighbor.containsKey("local_ip")) {
+                            String localIp = (String) bgpNeighbor.get("local_ip");
+                            if (localIp.contains("/")) {
+                                localIp = localIp.split("/")[0];
+                            }
+                            Resource resNetAddrLocalIp = RdfOwl.createResource(model, resRouteToNeighbor.getURI() + ":local_ip", Mrs.NetworkAddress);
+                            model.add(model.createStatement(resRouteToNeighbor, Mrs.hasNetworkAddress, resNetAddrLocalIp));
+                            model.add(model.createStatement(resNetAddrLocalIp, Mrs.type, "ipv4-local")); // ? ipv4-address
+                            model.add(model.createStatement(resNetAddrLocalIp, Mrs.value, localIp));
+                        }
+                        if (bgpNeighbor.containsKey("bgp_authkey")) {
+                            String authkey = (String) bgpNeighbor.get("bgp_authkey");
+                            Resource resNetAddrAuthkey = RdfOwl.createResource(model, resRouteToNeighbor.getURI() + ":bgp_authkey", Mrs.NetworkAddress);
+                            model.add(model.createStatement(resRouteToNeighbor, Mrs.hasNetworkAddress, resNetAddrAuthkey));
+                            model.add(model.createStatement(resNetAddrAuthkey, Mrs.type, "bgp-authkey"));
+                            model.add(model.createStatement(resNetAddrAuthkey, Mrs.value, authkey));
+                        }
+                        // nextHop
+                        Resource resNetAddrRemoteIp = RdfOwl.createResource(model, resRouteToNeighbor.getURI() + ":remote_ip", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resRouteToNeighbor, Mrs.nextHop, resNetAddrRemoteIp));
+                        model.add(model.createStatement(resNetAddrRemoteIp, Mrs.type, "ipv4-remote")); // ? ipv4-address
+                        model.add(model.createStatement(resNetAddrRemoteIp, Mrs.value, remoteIp));
+                        // routeFrom
+                        if (bgpNeighbor.containsKey("export_prefixes")) {
+                            JSONArray jsonPrefixList = (JSONArray) bgpNeighbor.get("export_prefixes");
+                            String prefixList = "";
+                            for (Object obj: jsonPrefixList) {
+                                if (!prefixList.isEmpty()) {
+                                    prefixList += ",";
+                                }
+                                prefixList += obj.toString();
+                             }
+                            Resource resNetAddrLocalPrefixes = RdfOwl.createResource(model, vmQuaggaBgp.getURI() + ":local_prefix_list", Mrs.NetworkAddress);
+                            model.add(model.createStatement(resNetAddrLocalPrefixes, Mrs.type, "ipv4-prefix-list")); 
+                            model.add(model.createStatement(resNetAddrLocalPrefixes, Mrs.value, prefixList));
+                            model.add(model.createStatement(resRouteToNeighbor, Mrs.routeFrom, resNetAddrLocalPrefixes));
+                        }
+                    } catch (ParseException e) {
+                        log.warning("OpenStackNeutronModelBuilder:createOntology() cannot parse json string due to: " + e.getMessage());
+                    }
+                    neighborNum++;
+                }
+            }
+            //UCS STIOV special handling
             if (metadata != null && metadata.containsKey("sriov_vnic:status") && !metadata.get("sriov_vnic:status").equals("detached")) {
-                Resource vmRoutingSvc = RdfOwl.createResource(model, ResourceTool.getResourceUri(server_name + ":routingservice", OpenstackPrefix.routingService, server_name), Mrs.RoutingService);
-                model.add(model.createStatement(VM, Nml.hasService, vmRoutingSvc));
+                if (vmRoutingSvc == null) {
+                    vmRoutingSvc = RdfOwl.createResource(model, ResourceTool.getResourceUri(server_name + ":routingservice", OpenstackPrefix.routingService, server_name), Mrs.RoutingService);
+                    model.add(model.createStatement(VM, Nml.hasService, vmRoutingSvc));
+                }
                 int sriovVnicNum = 1;
                 while (modelExt != null) {
                     String sriovVnicKey = String.format("sriov_vnic:%d", sriovVnicNum);
