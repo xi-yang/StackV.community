@@ -18,7 +18,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name = "delta")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ApiDeltaBase {
-
     @XmlElement(required = true)
     protected String id = "";
     @XmlElement(required = true)
@@ -29,8 +28,6 @@ public class ApiDeltaBase {
     protected String modelReduction = null;
     @XmlElement(required = true)
     protected String modelAddition = null;
-//    @XmlElement(required=true) 
-//    protected String status = "";
 
     public String getId() {
         return id;
@@ -81,6 +78,6 @@ public class ApiDeltaBase {
 //    }
     @Override
     public String toString() {
-        return "net.maxgigapop.versans.model.DeltaBase[ id=" + id + " ]";
+        return "net.maxgigapop.mrs.rest.api.model.ApiDeltaBase[ id=" + id + " ]";
     }
 }

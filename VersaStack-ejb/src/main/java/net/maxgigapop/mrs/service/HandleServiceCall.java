@@ -13,6 +13,8 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.Statement;
+import static java.lang.Thread.sleep;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -44,6 +46,7 @@ import net.maxgigapop.mrs.bean.persist.ServiceDeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ServiceInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.core.SystemModelCoordinator;
 import net.maxgigapop.mrs.service.orchestrate.WorkerBase;
 import net.maxgigapop.mrs.system.HandleSystemCall;
@@ -410,13 +413,6 @@ public class HandleServiceCall {
             List<String> includeMatches = new ArrayList<String>();
             List<String> excludeMatches = new ArrayList<String>();
             List<String> excludeExtentials = new ArrayList<String>();
-            /*
-            includeMatches.add("#has");
-            includeMatches.add("#provides");
-            includeMatches.add("#type");
-            includeMatches.add("#value");
-            includeMatches.add("#route");
-            */
             excludeMatches.add("#isAlias");
             excludeMatches.add("#providedBy");
             excludeExtentials.add("#nextHop");
@@ -426,44 +422,37 @@ public class HandleServiceCall {
             String sparql = "SELECT ?res WHERE {?s ?p ?res. "
                     + "FILTER(regex(str(?p), '#has|#provides'))"
                     + "}";
-            try {
-                Context ejbCxt = new InitialContext();
-                SystemModelCoordinator systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
-                //@TODO: with verification before revert/termination we can use systemModelCoordinator.getCachedOntModel() instead
-                OntModel refModel = systemModelCoordinator.getLatestOntModel();
-                if (refModel == null) {
-                    throw new EJBException(this.getClass().getName() + " systemModelCoordinator has no cached OntModel (not ready).");
+            OntModel refModel = this.fetchReferenceModel();
+            if (refModel == null) {
+                throw new EJBException(this.getClass().getName() + " systemModelCoordinator not ready or contending on access lock.");
+            }
+            if (systemDelta.getModelReduction() != null && systemDelta.getModelReduction().getOntModel() != null) {
+                reverseSysDelta.getModelAddition().getOntModel().add(systemDelta.getModelReduction().getOntModel().getBaseModel());
+                ResultSet rs = ModelUtil.sparqlQuery(systemDelta.getModelReduction().getOntModel().getBaseModel(), sparql);
+                List resList = new ArrayList<Resource>();
+                while (rs.hasNext()) {
+                    QuerySolution querySolution = rs.next();
+                    Resource res = querySolution.getResource("res");
+                    resList.add(res);
                 }
-                if (systemDelta.getModelReduction() != null && systemDelta.getModelReduction().getOntModel() != null) {
-                    reverseSysDelta.getModelAddition().getOntModel().add(systemDelta.getModelReduction().getOntModel().getBaseModel());
-                    ResultSet rs = ModelUtil.sparqlQuery(systemDelta.getModelReduction().getOntModel().getBaseModel(), sparql);
-                    List resList = new ArrayList<Resource>();
-                    while (rs.hasNext()) {
-                        QuerySolution querySolution = rs.next();
-                        Resource res = querySolution.getResource("res");      
-                        resList.add(res);
-                    }
-                    if (!resList.isEmpty()) {
-                        Model sysModelReductionExt = ModelUtil.getModelSubTree(refModel, resList, includeMatches, excludeMatches, excludeExtentials);
-                        reverseSysDelta.getModelAddition().getOntModel().add(sysModelReductionExt);
-                    }
+                if (!resList.isEmpty()) {
+                    Model sysModelReductionExt = ModelUtil.getModelSubTree(refModel, resList, includeMatches, excludeMatches, excludeExtentials);
+                    reverseSysDelta.getModelAddition().getOntModel().add(sysModelReductionExt);
                 }
-                if (systemDelta.getModelAddition() != null && systemDelta.getModelAddition().getOntModel() != null) {
-                    reverseSysDelta.getModelReduction().getOntModel().add(systemDelta.getModelAddition().getOntModel().getBaseModel());
-                    ResultSet rs = ModelUtil.sparqlQuery(systemDelta.getModelAddition().getOntModel().getBaseModel(), sparql);
-                    List resList = new ArrayList<Resource>();
-                    while (rs.hasNext()) {
-                        QuerySolution querySolution = rs.next();
-                        Resource res = querySolution.getResource("res");      
-                        resList.add(res);
-                    }
-                    if (!resList.isEmpty()) {
-                        Model sysModelAdditionExt = ModelUtil.getModelSubTree(refModel, resList, includeMatches, excludeMatches, excludeExtentials);
-                        reverseSysDelta.getModelReduction().getOntModel().add(sysModelAdditionExt);
-                    }
+            }
+            if (systemDelta.getModelAddition() != null && systemDelta.getModelAddition().getOntModel() != null) {
+                reverseSysDelta.getModelReduction().getOntModel().add(systemDelta.getModelAddition().getOntModel().getBaseModel());
+                ResultSet rs = ModelUtil.sparqlQuery(systemDelta.getModelAddition().getOntModel().getBaseModel(), sparql);
+                List resList = new ArrayList<Resource>();
+                while (rs.hasNext()) {
+                    QuerySolution querySolution = rs.next();
+                    Resource res = querySolution.getResource("res");
+                    resList.add(res);
                 }
-            } catch (NamingException ex) {
-                throw new EJBException(this.getClass().getName() + " failed to inject systemModelCoordinator", ex);
+                if (!resList.isEmpty()) {
+                    Model sysModelAdditionExt = ModelUtil.getModelSubTree(refModel, resList, includeMatches, excludeMatches, excludeExtentials);
+                    reverseSysDelta.getModelReduction().getOntModel().add(sysModelAdditionExt);
+                }
             }
         }
         serviceInstance.getServiceDeltas().add(reverseSvcDelta);
@@ -475,7 +464,7 @@ public class HandleServiceCall {
             serviceInstance.setStatus("COMMITTED-PARTIAL");
         }
         ServiceInstancePersistenceManager.merge(serviceInstance);
-        return serviceInstance.getStatus();
+        return reverseSvcDelta.getReferenceUUID();
     }
 
     public String checkStatus(String serviceInstanceUuid) {
@@ -644,5 +633,178 @@ public class HandleServiceCall {
         }
         ServiceInstancePersistenceManager.merge(serviceInstance);
         return serviceInstance.getStatus();
+    }
+    
+    public void verifyDelta(String serviceDeltaUuid, ModelUtil.DeltaVerification apiData, boolean marshallWithJson) {
+        ServiceDelta serviceDelta = ServiceDeltaPersistenceManager.findByReferenceUUID(serviceDeltaUuid);
+        if (serviceDelta == null) {
+            //try serviceDeltaUuid as a serviceInstanceUuid and look for the latest serviceDeltaUuid in this instance
+            ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceDeltaUuid);
+            if (serviceInstance != null && !serviceInstance.getServiceDeltas().isEmpty()) {
+                serviceDelta = serviceInstance.getServiceDeltas().get(serviceInstance.getServiceDeltas().size()-1);
+            }
+        }
+        if (serviceDelta == null || serviceDelta.getSystemDelta() == null) {
+            throw new EJBException(this.getClass().getName() + " verifyDelta does not know serviceDelta: " + serviceDeltaUuid);
+        }
+        OntModel refModel = this.fetchReferenceModel();
+        if (refModel == null) {
+            throw new EJBException(this.getClass().getName() + " verifyDelta cannot obtain reference model from SystemModelCoordinator.");
+        }
+        
+        if (serviceDelta.getSystemDelta().getModelAddition() != null && serviceDelta.getSystemDelta().getModelAddition().getOntModel() != null) {
+            Model modelAdditionVerified = ModelFactory.createDefaultModel();
+            Model modelAdditionUnverified = ModelFactory.createDefaultModel();
+            boolean additionVerified = this.verifyModelAddition(serviceDelta.getSystemDelta().getModelAddition().getOntModel().getBaseModel(), 
+                    refModel.getBaseModel(), modelAdditionVerified, modelAdditionUnverified);
+            apiData.setAdditionVerified(additionVerified);
+            try {
+                if (marshallWithJson) {
+                    apiData.setModelAdditionVerified(ModelUtil.marshalModelJson(modelAdditionVerified));
+                    apiData.setModelAdditionUnverified(ModelUtil.marshalModelJson(modelAdditionUnverified));
+                } else {
+                    apiData.setModelAdditionVerified(ModelUtil.marshalModel(modelAdditionVerified));
+                    apiData.setModelAdditionUnverified(ModelUtil.marshalModel(modelAdditionUnverified));
+                }
+            } catch (Exception ex) {
+                throw new EJBException(ex);
+            }
+        }
+        if (serviceDelta.getSystemDelta().getModelReduction()!= null && serviceDelta.getSystemDelta().getModelReduction().getOntModel() != null) {
+            Model modelReductionVerified = ModelFactory.createDefaultModel();
+            Model modelReductionUnverified = ModelFactory.createDefaultModel();
+            boolean reductionVerified = this.verifyModelReduction(serviceDelta.getSystemDelta().getModelReduction().getOntModel().getBaseModel(), 
+                    refModel.getBaseModel(), modelReductionVerified, modelReductionUnverified);
+            apiData.setReductionVerified(reductionVerified);
+            try {
+                if (marshallWithJson) {
+                    apiData.setModelReductionVerified(ModelUtil.marshalModelJson(modelReductionVerified));
+                    apiData.setModelReductionUnverified(ModelUtil.marshalModelJson(modelReductionUnverified));
+                } else {
+                    apiData.setModelReductionVerified(ModelUtil.marshalModel(modelReductionVerified));
+                    apiData.setModelReductionUnverified(ModelUtil.marshalModel(modelReductionUnverified));
+                }
+            } catch (Exception ex) {
+                throw new EJBException(ex);
+            }
+        }
+    }
+    
+    public boolean verifyModelAddition(Model deltaModel, Model refModel, Model verifiedModel, Model unverifiedModel) {
+        if (refModel == null) {
+            refModel = this.fetchReferenceModel();
+        }
+        if (refModel == null) {
+            throw new EJBException(this.getClass().getName() + " verifyModelAddition cannot obtain reference model from SystemModelCoordinator.");
+        }
+        // residual (deltaModel - refModel)
+        boolean allEssentialVerified = true;
+        Model residualModel = ModelFactory.createDefaultModel();
+        residualModel.add(deltaModel);
+        residualModel.remove(refModel);
+        // check essential statemtns in residual
+        String sparql = "SELECT ?res WHERE {?s ?p ?res. "
+                + "FILTER ( regex(str(?p), '#has|#provides') "
+                + "     && (not exists {?s mrs:hasNetworkAddress ?res.}) "
+                + "     && (not exists {?res mrs:type \"unverifiable\".}) "
+                + ") }";
+        ResultSet rs = ModelUtil.sparqlQuery(residualModel, sparql);
+        if (rs.hasNext()) {
+            allEssentialVerified = false;
+            unverifiedModel.add(residualModel);
+        }
+        // add verified statements to verifiedModel
+        verifiedModel.add(deltaModel);
+        verifiedModel.remove(residualModel);
+        // explore essential subtrees
+        rs = ModelUtil.sparqlQuery(verifiedModel, sparql);
+        List resList = new ArrayList<Resource>();
+        while (rs.hasNext()) {
+            QuerySolution querySolution = rs.next();
+            Resource res = querySolution.getResource("res");
+            resList.add(res);
+        }
+        if (!resList.isEmpty()) {
+            List<String> includeMatches = new ArrayList<String>();
+            List<String> excludeMatches = new ArrayList<String>();
+            List<String> excludeExtentials = new ArrayList<String>();
+            excludeMatches.add("#isAlias");
+            excludeMatches.add("#providedBy");
+            excludeExtentials.add("#nextHop");
+            excludeExtentials.add("#routeFrom");
+            excludeExtentials.add("#routeTo");
+            Model extModel = ModelUtil.getModelSubTree(refModel, resList, includeMatches, excludeMatches, excludeExtentials);
+            verifiedModel.add(extModel);
+        }
+        return allEssentialVerified;
+    }
+    
+    public boolean verifyModelReduction(Model deltaModel, Model refModel, Model verifiedModel, Model unverifiedModel) {
+        if (refModel == null) {
+            refModel = this.fetchReferenceModel();
+        }
+        if (refModel == null) {
+            throw new EJBException(this.getClass().getName() + " verifyModelAddition cannot obtain reference model from SystemModelCoordinator.");
+        }
+        boolean allEssentialVerified = true;
+        // manifest = (deltaModel - refModel), meaning statements no longer showing up
+        verifiedModel.add(deltaModel);
+        verifiedModel.remove(refModel);
+        Model residualModel = ModelFactory.createDefaultModel();
+        residualModel.add(deltaModel);
+        residualModel.remove(verifiedModel);
+        // first create a list of unverifiable resources 
+        String sparql = "SELECT ?res WHERE {?s ?p ?res. "
+                + "?res mrs:type \"unverifiable\".}";
+        ResultSet rs = ModelUtil.sparqlQuery(deltaModel, sparql);
+        List<Resource> unverifiableList = new ArrayList<>();
+        while (rs.hasNext()) {
+            unverifiableList.add(rs.next().getResource("res"));
+        }
+        // check if the essential satements in manifestModel are same as in deltaModel
+        sparql = "SELECT ?res WHERE {?s ?p ?res. "
+                + "FILTER( regex(str(?p), '#has|#provides')"
+                + "     && (not exists {?s mrs:hasNetworkAddress ?res.}) "
+                + "     && (not exists {?res mrs:type \"unverifiable\".}) "
+                + ") }";
+        rs = ModelUtil.sparqlQuery(residualModel, sparql);
+        while (rs.hasNext()) {
+            Resource res = rs.next().getResource("res");
+            if (unverifiableList.contains(res)) {
+                continue;
+            }
+            allEssentialVerified = false;
+            unverifiedModel.add(residualModel);
+            break;
+        }
+        return allEssentialVerified;
+    }
+    
+    private OntModel fetchReferenceModel() {
+        SystemModelCoordinator systemModelCoordinator = null;
+        try {
+            Context ejbCxt = new InitialContext();
+            systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
+        } catch (NamingException ex) {
+            throw new EJBException(this.getClass().getName() + " failed to inject systemModelCoordinator", ex);
+        }
+        OntModel refModel = null;
+        for (int retry = 0; retry < 10; retry++) {
+            try {
+                refModel = systemModelCoordinator.getLatestOntModel();
+                break;
+            } catch (EJBException ex) {
+                if (ex.getMessage().contains("concurrent access timeout ")) {
+                    try {
+                        sleep(10000L);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } else {
+                    throw ex;
+                }
+            }
+        }
+        return refModel;
     }
 }
