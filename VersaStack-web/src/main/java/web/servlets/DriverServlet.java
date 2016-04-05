@@ -52,7 +52,7 @@ public class DriverServlet extends HttpServlet {
             front_connectionProps.put("user", "root");
             front_connectionProps.put("password", "root");
 
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
             PreparedStatement prep = front_conn.prepareStatement("SELECT service_id"
@@ -64,7 +64,7 @@ public class DriverServlet extends HttpServlet {
 
             Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
 
-            prep = front_conn.prepareStatement("INSERT INTO Frontend.service_instance "
+            prep = front_conn.prepareStatement("INSERT INTO frontend.service_instance "
                     + "(`service_id`, `user_id`, `creation_time`, `referenceUUID`) VALUES (?, ?, ?, ?)");
             prep.setInt(1, serviceID);
             prep.setString(2, request.getParameter("userID"));

@@ -86,6 +86,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
         } catch (Exception e) {
             throw new EJBException(String.format("propagateDelta failed for %s with %s due to exception (%s)", driverInstance, aDelta, e.getMessage()));
         }
+        Logger.getLogger(GenericRESTDriver.class.getName()).log(Level.INFO, "GenericRESTDriver delta models succesfully propagated: "+subsystemBaseUrl);
     }
 
     //@Override
@@ -129,6 +130,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
                 throw new EJBException(String.format("%s failed to communicate with subsystem with exception (%s)", driverInstance, ex));
             }
         }
+        Logger.getLogger(GenericRESTDriver.class.getName()).log(Level.INFO, "GenericRESTDriver delta models succesfully commited: "+subsystemBaseUrl);
         return new AsyncResult<>("SUCCESS");
     }
 

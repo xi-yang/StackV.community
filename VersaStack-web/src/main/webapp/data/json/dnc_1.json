@@ -1,0 +1,15 @@
+{
+    "user": "admin",
+    "type": "dnc",
+    "data": {
+        "links": [
+            {
+                "name": "newlink",
+                "src": "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*",
+                "src-vlan": "3021-3029",
+                "des": "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*",
+                "des-vlan": "3021-3029"
+            }
+        ]
+    }
+}

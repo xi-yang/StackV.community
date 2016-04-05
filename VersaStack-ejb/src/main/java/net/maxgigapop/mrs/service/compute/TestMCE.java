@@ -5,6 +5,7 @@
  */
 package net.maxgigapop.mrs.service.compute;
 
+import com.hp.hpl.jena.rdf.model.Resource;
 import static java.lang.Thread.sleep;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
@@ -28,7 +29,7 @@ public class TestMCE implements IModelComputationElement {
 
     @Override
     @Asynchronous
-    public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
+    public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
         log.info("TceMCE::process #" + sn++);
         try {
             sleep(sn * 1000); // sleep sn seconds

@@ -152,11 +152,34 @@ public class AwsModelBuilder {
             model.add(model.createStatement(VLAN_LABEL_GROUP, Nml.values, vlanNum));
             
             Resource VIRTUAL_INTERFACE = RdfOwl.createResource(model, ResourceTool.getResourceUri(vi.getVirtualInterfaceId(),AwsPrefix.vif,vi.getVirtualInterfaceId()), biPort);
+            model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.name, vi.getVirtualInterfaceId()));
             model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.type, "direct-connect-vif"));
             model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabelGroup, VLAN_LABEL_GROUP));
             model.add(model.createStatement(VLAN_LABEL_GROUP, Nml.labeltype, vlan));
             model.add(model.createStatement(directConnect, hasBidirectionalPort, VIRTUAL_INTERFACE));
 
+            Resource vifAsn = RdfOwl.createResource(model, VIRTUAL_INTERFACE.getURI()+":asn", Mrs.NetworkAddress);
+            model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.hasNetworkAddress, vifAsn));
+            model.add(model.createStatement(vifAsn, Mrs.type, "bgp-asn"));
+            model.add(model.createStatement(vifAsn, Mrs.value, vi.getAsn().toString()));
+            if (vi.getAmazonAddress() != null && !vi.getAmazonAddress().isEmpty()) {
+                Resource vifAmazonIp = RdfOwl.createResource(model, VIRTUAL_INTERFACE.getURI()+":amazon_ip", Mrs.NetworkAddress);
+                model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.hasNetworkAddress, vifAmazonIp));
+                model.add(model.createStatement(vifAmazonIp, Mrs.type, "ipv4-address:amazon"));
+                model.add(model.createStatement(vifAmazonIp, Mrs.value, vi.getAmazonAddress()));
+            }
+            if (vi.getCustomerAddress() != null && !vi.getCustomerAddress().isEmpty()) {
+                Resource vifCustomerIp = RdfOwl.createResource(model, VIRTUAL_INTERFACE.getURI()+":customer_ip", Mrs.NetworkAddress);
+                model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.hasNetworkAddress, vifCustomerIp));
+                model.add(model.createStatement(vifCustomerIp, Mrs.type, "ipv4-address:customer"));
+                model.add(model.createStatement(vifCustomerIp, Mrs.value, vi.getCustomerAddress()));
+            }
+            if (vi.getAuthKey() != null && !vi.getAuthKey().isEmpty()) {
+                Resource vifBgpAuthKey = RdfOwl.createResource(model, VIRTUAL_INTERFACE.getURI()+":bgp_authkey", Mrs.NetworkAddress);
+                model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.hasNetworkAddress, vifBgpAuthKey));
+                model.add(model.createStatement(vifBgpAuthKey, Mrs.type, "bgp-authkey"));
+                model.add(model.createStatement(vifBgpAuthKey, Mrs.value, vi.getAuthKey()));
+            }            
             //check if it has a gateway, meaning the virtual interface is being used
             String virtualGatewayId =  vi.getVirtualGatewayId();
             String[] acceptedStates = {VirtualInterfaceState.Available.toString(), 
@@ -165,7 +188,7 @@ public class AwsModelBuilder {
             if(virtualGatewayId != null && (Arrays.asList(acceptedStates).contains(virtualInterfaceState)))
             {
                 virtualGatewayId = ec2Client.getIdTag(virtualGatewayId);
-                Resource VLAN_LABEL = RdfOwl.createResource(model, ResourceTool.getResourceUri(vlanNum, AwsPrefix.vlan,vi.getVirtualInterfaceId(),vlanNum), Nml.Label);
+                Resource VLAN_LABEL = RdfOwl.createResource(model, ResourceTool.getResourceUri(vlanNum, AwsPrefix.label,vi.getVirtualInterfaceId(),vlanNum), Nml.Label);
                 Resource VPNGATEWAY = model.getResource(ResourceTool.getResourceUri(virtualGatewayId,AwsPrefix.gateway,virtualGatewayId));
                 model.add(model.createStatement(VLAN_LABEL, Nml.labeltype, vlan));
                 model.add(model.createStatement(VLAN_LABEL, Nml.value, vlanNum));
@@ -190,8 +213,11 @@ public class AwsModelBuilder {
             String subnetId = ec2Client.getIdTag(p.getSubnetId());
             String vpcId = ec2Client.getIdTag(p.getVpcId());
             Resource SUBNET = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetId,AwsPrefix.subnet,vpcId,subnetId), switchingSubnet);
-            Resource SUBNET_NETWORK_ADDRESS
-                    = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetId,AwsPrefix.subnetNetworkAddress,vpcId,subnetId), networkAddress);
+            String subnetNetAddress = ResourceTool.getResourceUri(subnetId, AwsPrefix.subnetNetworkAddress, vpcId, subnetId);
+            if (subnetNetAddress.equals(subnetId)) {
+                subnetNetAddress += ":networkaddress";
+            }
+            Resource SUBNET_NETWORK_ADDRESS = RdfOwl.createResource(model, subnetNetAddress, networkAddress);
             model.add(model.createStatement(SUBNET_NETWORK_ADDRESS, type, "ipv4-prefix"));
             model.add(model.createStatement(SUBNET_NETWORK_ADDRESS, value, p.getCidrBlock()));
             model.add(model.createStatement(SUBNET, hasNetworkAddress, SUBNET_NETWORK_ADDRESS));
@@ -238,8 +264,12 @@ public class AwsModelBuilder {
         for (Vpc v : ec2Client.getVpcs()) {
             String vpcId = ec2Client.getIdTag(v.getVpcId());
             Resource VPC = RdfOwl.createResource(model, ResourceTool.getResourceUri(vpcId,AwsPrefix.vpc,vpcId), topology);
+            String vpcNetAddress = ResourceTool.getResourceUri(vpcId,AwsPrefix.vpcNetworkAddress,vpcId);
+            if (vpcNetAddress.equals(vpcId)) {
+                vpcNetAddress += ":networkaddress";
+            }
             Resource VPC_NETWORK_ADDRESS
-                    = RdfOwl.createResource(model, ResourceTool.getResourceUri(vpcId,AwsPrefix.vpcNetworkAddress,vpcId ), networkAddress);
+                    = RdfOwl.createResource(model, vpcNetAddress, networkAddress);
             model.add(model.createStatement(vpcService, providesVPC, VPC));
             model.add(model.createStatement(awsTopology, hasTopology, VPC));
             model.add(model.createStatement(VPC_NETWORK_ADDRESS, type, "ipv4-prefix"));
@@ -333,7 +363,7 @@ public class AwsModelBuilder {
                     Resource ROUTE_FROM = null;
                     int i = 0;
                     String routeId = r.getDestinationCidrBlock().replace("/", "");
-                    Resource ROUTE = RdfOwl.createResource(model, ResourceTool.getResourceUri(routeId,AwsPrefix.route,vpcId,routeTableId,routeId), route);
+                    Resource ROUTE = RdfOwl.createResource(model, ROUTINGTABLE.toString()+":route-"+routeId, route);
                     model.add(model.createStatement(ROUTINGSERVICE, providesRoute, ROUTE));
                     String target = r.getGatewayId();
 
@@ -364,7 +394,7 @@ public class AwsModelBuilder {
                         model.add(model.createStatement(ROUTE, nextHop, resource));
                     }
 
-                    ROUTE_TO = RdfOwl.createResource(model, ResourceTool.getResourceUri(routeId,AwsPrefix.routeTo,vpcId,routeTableId,routeId), networkAddress);
+                    ROUTE_TO = RdfOwl.createResource(model, ROUTE.toString()+":routeto", networkAddress);
                     if (target.equals("local")) {
                         model.add(model.createStatement(ROUTE_TO, type, "ipv4-prefix"));
                     } else {
@@ -384,7 +414,21 @@ public class AwsModelBuilder {
                         }
                         ROUTE_FROM = model.getResource(ResourceTool.getResourceUri(complementId,AwsPrefix.subnet,vpcId,complementId));
                         model.add(model.createStatement(ROUTE, routeFrom, ROUTE_FROM));
-
+                        // if this ROUTINGTABLE has VPN propagation=yes add 0.0.0.0/0 routeto with nexthop=routefrom=propagatingVgw
+                        if (t.getPropagatingVgws() != null && !t.getPropagatingVgws().isEmpty()) {
+                            PropagatingVgw vgw = t.getPropagatingVgws().get(0);
+                            String vpnGatewayId = vgw.getGatewayId();
+                            Resource propagatingVGW = model.getResource(ResourceTool.getResourceUri(vpnGatewayId,AwsPrefix.gateway,vpnGatewayId));
+                            Resource propagatingRoute = RdfOwl.createResource(model, ROUTINGTABLE.getURI()+":route-0.0.0.00", Mrs.Route);
+                            Resource propagatingRouteTo = RdfOwl.createResource(model, ROUTINGTABLE.getURI()+":route-0.0.0.00:routeto", Mrs.NetworkAddress);
+                            model.add(model.createStatement(propagatingRouteTo, Mrs.type, "ipv4-prefix"));
+                            model.add(model.createStatement(propagatingRouteTo, Mrs.value, "0.0.0.0/0"));
+                            model.add(model.createStatement(propagatingRoute, Mrs.routeTo, propagatingRouteTo));
+                            model.add(model.createStatement(propagatingRoute, Mrs.routeFrom, propagatingVGW));
+                            model.add(model.createStatement(propagatingRoute, Mrs.nextHop, propagatingVGW));
+                            model.add(model.createStatement(ROUTINGTABLE, Mrs.hasRoute, propagatingRoute));
+                            model.add(model.createStatement(ROUTINGSERVICE, Mrs.providesRoute, propagatingRoute));
+                        }
                         i++; //increment the association index
                     }
 

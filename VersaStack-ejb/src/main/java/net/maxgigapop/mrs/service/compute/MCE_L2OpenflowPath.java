@@ -67,7 +67,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
 
     @Override
     @Asynchronous
-    public Future<ServiceDelta> process(ModelBase systemModel, ServiceDelta annotatedDelta) {
+    public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
         try {
             log.log(Level.INFO, "\n>>>MCE_L2OpenflowPath--DeltaAddModel Input=\n{0}", ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
             log.log(Level.INFO, "Entering L2OpenflowPath process!");
