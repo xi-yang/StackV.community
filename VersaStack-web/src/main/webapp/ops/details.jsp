@@ -41,7 +41,7 @@
         <!-- MAIN PANEL -->
         <div id="main-pane">      
             <button type="button" id="button-service-return">Back to Catalog</button>
-            <sql:query dataSource="${front_conn}" sql="SELECT S.name, X.superState FROM service S, service_instance I, service_state X
+            <sql:query dataSource="${front_conn}" sql="SELECT S.name, X.super_state FROM service S, service_instance I, service_state X
                        WHERE referenceUUID = ? AND S.service_id = I.service_id AND X.service_state_id = I.service_state_id" var="instancelist">
                 <sql:param value="${param.uuid}" />
             </sql:query>
@@ -52,8 +52,11 @@
                         <c:param name="uuid" value="${param.uuid}"></c:param>
                     </c:redirect>
                 </c:if>
-                
-                
+                <c:if test="${instance.name == 'Flow Based Layer2 Protection'}">
+                    <c:redirect url="/ops/details/fl2pDetails.jsp">
+                        <c:param name="uuid" value="${param.uuid}"></c:param>
+                    </c:redirect>
+                </c:if>
                 
                 <c:redirect url="/ops/details/templateDetails.jsp">
                     <c:param name="uuid" value="${param.uuid}"></c:param>

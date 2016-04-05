@@ -1,3 +1,9 @@
+<%-- 
+    Document   : fl2p
+    Created on : Mar 3, 2016, 10:37:58 AM
+    Author     : ranjitha
+--%>
+
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page errorPage = "/VersaStack-web/errorPage.jsp" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
@@ -62,18 +68,20 @@
                             </tr>
                             <tr>
                                 <td>Service State</td>
-                                <td id="instance-superstate">${instance.super_state}</td>
+                                <td>${instance.super_state}</td>
                             </tr>
                             <tr>
                                 <td>Operation Status</td>
-                                <td id="instance-substate">${serv.detailsStatus(param.uuid)}</td>
+                                <td id="instance-status"></td>
                             </tr>
                             <tr>
                                 <td></td>
                                 <td>
                                     <div class="service-instance-panel">
-                                        <button class="hide" id="instance-cancel" onClick="cancelInstance('${param.uuid}')">Cancel</button>
+                                        <button class="hide" id="instance-cancel" onClick="cancelInstance('${param.uuid}')">Switch-Protection</button>
+                                        <button class="hide" id="instance-reinstate" onClick="reinstateInstance('${param.uuid}')">Switch-Recovery</button>
                                         <button class="hide" id="instance-delete" onClick="deleteInstance('${param.uuid}')">Delete</button>
+                                        <button class="hide" id="instance-modify" onClick="modifyInstance('${param.uuid}')">Modify</button>
                                     </div>
                                 </td>
                             </tr>
@@ -113,7 +121,9 @@
         <!-- JS -->
         <script>
             $(function () {
-                dncModerate();
+                var uuid = getUrlParameter('uuid');
+                checkInstance(uuid);
+                fl2pModerate(uuid);
 
                 $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
                     if (${user.isAllowed(1)}) {
@@ -138,3 +148,4 @@
         </script>        
     </body>
 </html>
+
