@@ -74,6 +74,8 @@
                                     <div class="service-instance-panel">
                                         <button class="hide" id="instance-cancel" onClick="cancelInstance('${param.uuid}')">Cancel</button>
                                         <button class="hide" id="instance-delete" onClick="deleteInstance('${param.uuid}')">Delete</button>
+                                        <button class="hide" id="instance-fprop" onClick="forcePropInstance('${param.uuid}')">Force Propagate</button>
+                                        <button class="hide" id="instance-frevert" onClick="forceRevertInstance('${param.uuid}')">Force Revert</button>
                                     </div>
                                 </td>
                             </tr>
@@ -87,15 +89,15 @@
                         <sql:param value="${param.uuid}" />
                     </sql:query>
 
-                    <c:forEach var="delta" items="${deltalist.rows}">
-                        <table class="management-table" id="delta-table">
-                            <thead>
-                                <tr>
-                                    <th>Delta Details</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                    <table class="management-table" id="delta-table">
+                        <thead id="delta-table-header">
+                            <tr>
+                                <th>Delta Details</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="delta-table-body">
+                            <c:forEach var="delta" items="${deltalist.rows}">
                                 <tr>
                                     <td>Delta State</td>
                                     <td>${delta.super_state}</td>
@@ -103,10 +105,10 @@
                                 <tr>
                                     <td></td>
                                     <td>${delta.delta}</td>
-                                </tr>                        
-                            </tbody>
-                        </table>
-                    </c:forEach>
+                                </tr>
+                            </c:forEach>
+                        </tbody>
+                    </table>
                 </c:forEach>
             </div>  
         </div>        

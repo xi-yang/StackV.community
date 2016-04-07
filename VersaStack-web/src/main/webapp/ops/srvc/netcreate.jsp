@@ -250,7 +250,7 @@
                                                                 </div>
                                                             </div>
                                                             <div>
-                                                                <input type="checkbox" name="subnet1-route-prop" value="true"/>   Enable Default Routing
+                                                                <input type="checkbox" name="subnet1-route-default" value="true"/>   Enable Default Routing
                                                             </div>
                                                             <div>
                                                                 <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">

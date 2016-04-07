@@ -491,6 +491,12 @@ public class ServiceServlet extends HttpServlet {
                             subnetString += "routes";
                         }
                         subnetString += "from+vpn,to+0.0.0.0/0,nextHop+vpn";
+                    } 
+                    else if (paraMap.containsKey("subnet" + i + "-route-default")) {
+                        if (!subnetString.contains("routes")) {
+                            subnetString += "routes";
+                        }
+                        subnetString += "to+0.0.0.0/0,nextHop+internet";
                     } else {
                         if (subnetString.contains("routes")) {
                             subnetString = subnetString.substring(0, (subnetString.length() - 2));
@@ -601,13 +607,15 @@ public class ServiceServlet extends HttpServlet {
             paraMap.put("netRoutes", "to+0.0.0.0/0,nextHop+internet");
 
             // Parse direct connect.
-            String connString = paraMap.get("conn-dest");
-            if (paraMap.containsKey("conn-vlan")) {
-                connString += "?vlan=" + paraMap.get("conn-vlan");
-            } else {
-                connString += "?vlan=any";
-            }            
-            paraMap.put("directConn", connString);
+            if (paraMap.containsKey("conn-dest")) {
+                String connString = paraMap.get("conn-dest");
+                if (paraMap.containsKey("conn-vlan")) {
+                    connString += "?vlan=" + paraMap.get("conn-vlan");
+                } else {
+                    connString += "?vlan=any";
+                }            
+                paraMap.put("directConn", connString);
+            }
 
             paraMap.remove("userID");
             paraMap.remove("custom");

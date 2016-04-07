@@ -44,6 +44,10 @@ $(function () {
     $(".clickable-row").click(function () {
         window.document.location = $(this).data("href");
     });
+    
+    $("#delta-table-header").click(function () {
+       $("#delta-table-body").toggleClass("hide"); 
+    });
 
     clearCounters();
 });
