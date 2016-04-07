@@ -393,7 +393,6 @@ public class ServiceServlet extends HttpServlet {
             paraMap.put("driverType","aws");
             paraMap.put("subnet1", "name+ &cidr+10.1.0.0/24&routesto+206.196.0.0/16,nextHop+internet\r\nfrom+vpn,to+0.0.0.0/0,nextHop+vpn\r\nto+72.24.24.0/24,nextHop+vpn");
             paraMap.put("subnet2", "name+ &cidr+10.1.1.0/24");
-            paraMap.put("netRoutes", "to+0.0.0.0/0,nextHop+internet");
             paraMap.put("vm1", "test_with_vm_types_1&1&ami-08111162&t2.micro& & ");  //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name"
             paraMap.put("vm2", "test_with_vm_type_2&2&ami-fce3c696&t2.small&xi-aws-max-dev-key&geni");  //put space if not mentioned
             
@@ -442,7 +441,7 @@ public class ServiceServlet extends HttpServlet {
             paraMap.put("driverType","ops");
             paraMap.put("subnet1", "name+ &cidr+10.0.0.0/24&routesto+0.0.0.0/0,nextHop+internet");
             paraMap.put("subnet2", "name+ &cidr+10.1.1.0/24");
-            paraMap.put("vm1", "vm_OPS&1& &m1.medium&icecube_key&rains&msx1&206.196.180.148&urn:ogf:network:aws.amazon.com:aws-cloud&aa:bb:cc:00:00:12&10.10.0.1/30&to+192.168.0.0/24,next_hop+10.10.0.2\r\nto+206.196.179.0/24,next_hop+10.10.0.2");
+            paraMap.put("vm1", "vm_OPS&1& &m1.medium&icecube_key&rains&msx1&206.196.180.148&urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&aa:bb:cc:00:00:12&10.10.0.1/30&to+192.168.0.0/24,next_hop+10.10.0.2\r\nto+206.196.179.0/24,next_hop+10.10.0.2");
             //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name&host&floating_IP&sriov_destination&sriov_mac_address&sriov_ip_address&sriov_routes"
             
             paraMap.remove("netCreate");
