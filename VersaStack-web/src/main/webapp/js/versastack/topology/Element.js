@@ -24,6 +24,8 @@ define(["local/versastack/topology/modelConstants"], function (values) {
         this.reload = function (backing, map) {
             this._backing = backing;
             this._map = map;
+            this.elementMap = null;
+            this.misc_elements = [];
         };
         this.getName = function () {
             return this._backing.name;
@@ -40,7 +42,7 @@ define(["local/versastack/topology/modelConstants"], function (values) {
             var types = this._backing[values.type];
             //console.log("types of : " + this.getName());
             
-            //alert ("types = " + Object.keys(this._backing));
+//            console.log ("types = " + Object.keys(this._backing));
             // remove named indivdual from this 
             /*var index = types.indexOf(values.namedIndividual);
             if (index > -1)
@@ -52,7 +54,7 @@ define(["local/versastack/topology/modelConstants"], function (values) {
                            // console.log("-  " + type + "\n");
                             return type; 
                         });
-            //alert("types of " + this.name + ": " + arr.toString());
+            //console.log("types of " + this.name + ": " + arr.toString());
             
             var index = arr.indexOf("http://www.w3.org/2002/07/owl#NamedIndividual");
             //console.log ("index: " + index);
@@ -99,7 +101,7 @@ define(["local/versastack/topology/modelConstants"], function (values) {
         this.populateTreeMenu = function (tree) {
             //console.log("~~~~~~~~~~~~\nElement tree debuggins: "  + this.getName());
            // tree.addChild("", "Separator");
-
+            
             if (this.misc_elements.length > 0) {
                 //console.log("I have more than one element. No of elements: " ); //+ this.misc_elements.length);
                 
@@ -109,8 +111,8 @@ define(["local/versastack/topology/modelConstants"], function (values) {
                     
                     var el = this.misc_elements[i];
                     //console.log ("my name in loop 1: " + el.getName());
-                    
-                    //alert("el.getName: " + el.getName() + 
+
+ //                   console.log("el.getName: " + el.getName() + 
                            // alert(" helllo: " + el.hello);
                     if (displayed.indexOf(el) === -1 && el.getName() !== undefined) {
                         var type = el.relationship_to[this.getName()];
@@ -128,7 +130,6 @@ define(["local/versastack/topology/modelConstants"], function (values) {
 //                                                            console.log("I got this far789789");
 
                                 displayed.push(this.misc_elements[o]);
-                                
                                 // Done to stop infinite calls to propulateTreeMenu if an element
                                 // has a relationship with an element directly lower in the hierarchy. 
                                 if(this.misc_elements[o].misc_elements.indexOf(this) === -1) {
