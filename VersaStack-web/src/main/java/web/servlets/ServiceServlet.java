@@ -346,7 +346,6 @@ public class ServiceServlet extends HttpServlet {
             paraMap.put("driverType","aws");
             paraMap.put("subnet1", "name+ &cidr+10.1.0.0/24&routesto+206.196.0.0/16,nextHop+internet\r\nfrom+vpn,to+0.0.0.0/0,nextHop+vpn\r\nto+72.24.24.0/24,nextHop+vpn");
             paraMap.put("subnet2", "name+ &cidr+10.1.1.0/24");
-            paraMap.put("netRoutes", "to+0.0.0.0/0,nextHop+internet");
 
             paraMap.remove("netCreate");
             paraMap.remove("template1");
@@ -368,7 +367,6 @@ public class ServiceServlet extends HttpServlet {
             paraMap.put("driverType","aws");
             paraMap.put("subnet1", "name+ &cidr+10.1.0.0/24&routesto+206.196.0.0/16,nextHop+internet\r\nfrom+vpn,to+0.0.0.0/0,nextHop+vpn\r\nto+72.24.24.0/24,nextHop+vpn");
             paraMap.put("subnet2", "name+ &cidr+10.1.1.0/24");
-            paraMap.put("netRoutes", "to+0.0.0.0/0,nextHop+internet");
             paraMap.put("vm1", "vm1&1& & & & ");  //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name"
             paraMap.put("vm2", "vm2&2& & & & ");  //put space if not mentioned
             paraMap.put("directConn", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*?vlan=3023");
@@ -413,16 +411,39 @@ public class ServiceServlet extends HttpServlet {
             executor.execute(new NetCreateWorker(asyncCtx, paraMap));
             
         }
-        else if(paraMap.containsKey("template4")){ 
+        else if(paraMap.containsKey("template4")){ //OpenStack with 2 subnets and 1 VM
             // Add template data.
             paraMap.put("topoUri", "urn:ogf:network:openstack.com:openstack-cloud");
             paraMap.put("netCidr", "10.1.0.0/16");
             paraMap.put("driverType","ops");
-            paraMap.put("subnet1", "name+ &cidr+10.1.0.0/24&routesto+206.196.0.0/16,nextHop+internet\r\nfrom+vpn,to+0.0.0.0/0,nextHop+vpn\r\nto+72.24.24.0/24,nextHop+vpn");
+            paraMap.put("subnet1", "name+ &cidr+10.0.0.0/24&routesto+0.0.0.0/0,nextHop+internet");
             paraMap.put("subnet2", "name+ &cidr+10.1.1.0/24");
-            paraMap.put("netRoutes", "to+0.0.0.0/0,nextHop+internet");
-            paraMap.put("vm1", "vm_OPS&1& &m1.medium&icecube_key&rains&msx1& ");
-            //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name&host&floating_IP"
+            paraMap.put("vm1", "vm_OPS&1& &m1.medium&icecube_key&rains&msx1& & & & & ");
+            //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name&host&floating_IP&sriov_destination&sriov_mac_address&sriov_ip_address&sriov_routes"
+            
+            paraMap.remove("netCreate");
+            paraMap.remove("template4");
+
+            // Async setup
+            request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
+            AsyncContext asyncCtx = request.startAsync();
+            asyncCtx.addListener(new AppAsyncListener());
+            asyncCtx.setTimeout(300000);
+
+            ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
+
+            executor.execute(new NetCreateWorker(asyncCtx, paraMap));
+            
+        }
+        else if(paraMap.containsKey("template5")){ //OpenStack with 1 VM with sriov connection
+            // Add template data.
+            paraMap.put("topoUri", "urn:ogf:network:openstack.com:openstack-cloud");
+            paraMap.put("netCidr", "10.1.0.0/16");
+            paraMap.put("driverType","ops");
+            paraMap.put("subnet1", "name+ &cidr+10.0.0.0/24&routesto+0.0.0.0/0,nextHop+internet");
+            paraMap.put("subnet2", "name+ &cidr+10.1.1.0/24");
+            paraMap.put("vm1", "vm_OPS&1& &m1.medium&icecube_key&rains&msx1&206.196.180.148&urn:ogf:network:aws.amazon.com:aws-cloud&aa:bb:cc:00:00:12&10.10.0.1/30&to+192.168.0.0/24,next_hop+10.10.0.2\r\nto+206.196.179.0/24,next_hop+10.10.0.2");
+            //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name&host&floating_IP&sriov_destination&sriov_mac_address&sriov_ip_address&sriov_routes"
             
             paraMap.remove("netCreate");
             paraMap.remove("template4");
