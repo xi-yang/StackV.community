@@ -158,7 +158,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
                 }  
             } 
             if (placeToUri == null || !model.contains(model.getResource(placeToUri), null)) {
-                throw new EJBException(String.format("%s::process  cannot import data from %s", this.getClass().getName(), (String) filterCriterion.get("data")));
+                throw new EJBException(String.format("%s::process  cannot import data from %s", this.getClass().getName(), (String) filterCriterion.get("value")));
             }
             OntModel hostModel = filterTopologyNode(model, vm, placeToUri);
             if (hostModel == null) {
