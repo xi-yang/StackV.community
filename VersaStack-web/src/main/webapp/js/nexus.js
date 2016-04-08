@@ -337,7 +337,18 @@ function addVM(type, subnetID) {
                 '<input type="text" name="' + subnetID + VMCounter + '-instance" placeholder="Instance Type">' +
                 '<input type="text" name="' + subnetID + VMCounter + '-host" placeholder="VM Host">' +
                 '<input type="text" name="' + subnetID + VMCounter + '-floating" placeholder="Floating IP">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-sriov" placeholder="SRIOV Connection">' +
+                '<input type="text" name="' + subnetID + VMCounter + '-sriov-dest" placeholder="SRIOV Destination">' +
+                '<input type="text" name="' + subnetID + VMCounter + '-sriov-mac" placeholder="SRIOV MAC Address">' +
+                '<input type="text" name="' + subnetID + VMCounter + '-sriov-ip" placeholder="SRIOV IP Address">' +
+                '<div>' +
+                '<input type="text" name="' + subnetID + VMCounter + '-route1-from" placeholder="From">' +                
+                '<input type="text" name="' + subnetID + VMCounter + '-route1-to" placeholder="To">' +        
+                '<input type="text" name="' + subnetID + VMCounter + '-route1-next" placeholder="Next Hop">' +
+                '</div><div>' +
+                '<input type="text" name="' + subnetID + VMCounter + '-route2-from" placeholder="From">' +                
+                '<input type="text" name="' + subnetID + VMCounter + '-route2-to" placeholder="To">' +        
+                '<input type="text" name="' + subnetID + VMCounter + '-route2-next" placeholder="Next Hop">' +                
+                '</div>' +
                 '</div>';
     }
 }
@@ -715,6 +726,45 @@ function applyNetTemplate(code) {
             form.elements['subnet2-name'].value = '';
             form.elements['subnet2-cidr'].value = '10.1.1.0/24';
             
+            break;
+            
+        case 5:    
+            form.elements['netType'].value = 'internal';
+            form.elements['netCidr'].value = '10.1.0.0/16';
+            
+            if (subRouteCounter === 1) {
+                addSubnetRoute('subnet1-route');
+            }
+            if (subnetCounter === 1) {
+                addSubnet('ops');
+            }
+
+            form.elements['subnet1-name'].value = '';
+            form.elements['subnet1-cidr'].value = '10.1.0.0/24';
+            
+            form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
+            form.elements['subnet1-route1-next'].value = 'internet';
+            form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
+            form.elements['subnet1-route2-next'].value = 'vpn';
+            form.elements['subnet1-route-prop'].checked = true;
+            
+            form.elements['subnet1-vm1'].value = 'vm_OPS';
+            form.elements['subnet1-vm1-instance'].value = 'm1.medium';
+            form.elements['subnet1-vm1-keypair'].value = 'icecube_key';
+            form.elements['subnet1-vm1-security'].value = 'rains';
+            form.elements['subnet1-vm1-host'].value = 'msx1';
+            form.elements['subnet1-vm1-floating'].value = '206.196.180.148';
+            form.elements['subnet1-vm1-sriov-dest'].value = 'urn:ogf:network:aws.amazon.com:aws-cloud';
+            form.elements['subnet1-vm1-sriov-mac'].value = 'aa:bb:cc:00:00:12';
+            form.elements['subnet1-vm1-sriov-ip'].value = '10.10.0.1/30';
+            form.elements['subnet1-vm1-route1-to'].value = '192.168.0.0/24';
+            form.elements['subnet1-vm1-route1-next'].value = '10.10.0.2';
+            form.elements['subnet1-vm1-route2-to'].value = '206.196.179.0/24';
+            form.elements['subnet1-vm1-route2-next'].value = '10.10.0.2';
+
+            form.elements['subnet2-name'].value = '';
+            form.elements['subnet2-cidr'].value = '10.1.1.0/24';
+
             break;
     }
 }

@@ -264,7 +264,18 @@
                                                                     <input type="text" name="subnet1-vm1-instance" placeholder="Instance Type">
                                                                     <input type="text" name="subnet1-vm1-host" placeholder="VM Host">
                                                                     <input type="text" name="subnet1-vm1-floating" placeholder="Floating IP">
-                                                                    <input type="text" name="subnet1-vm1-sriov" placeholder="SRIOV Connection">
+                                                                    <input type="text" name="subnet1-vm1-sriov-dest" placeholder="SRIOV Destination">
+                                                                    <input type="text" name="subnet1-vm1-sriov-mac" placeholder="SRIOV MAC Address">
+                                                                    <input type="text" name="subnet1-vm1-sriov-ip" placeholder="SRIOV IP Address">
+                                                                    <div>
+                                                                        <input type="text" name="subnet1-vm1-route1-from" placeholder="From"/>
+                                                                        <input type="text" name="subnet1-vm1-route1-to" placeholder="To"/>
+                                                                        <input type="text" name="subnet1-vm1-route1-next" placeholder="Next Hop"/>
+                                                                    </div><div>
+                                                                        <input type="text" name="subnet1-vm1-route2-from" placeholder="From"/>
+                                                                        <input type="text" name="subnet1-vm1-route2-to" placeholder="To"/>
+                                                                        <input type="text" name="subnet1-vm1-route2-next" placeholder="Next Hop"/>                                                                    
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                             <div>

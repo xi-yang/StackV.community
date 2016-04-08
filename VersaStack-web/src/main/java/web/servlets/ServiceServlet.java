@@ -562,7 +562,7 @@ public class ServiceServlet extends HttpServlet {
                                 paraMap.put("vm" + j, VMString);
                             }
                         } else if (paraMap.get("driverType").equalsIgnoreCase("ops")) {
-                            //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name&host&floating_IP"
+                            //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name&host&floating_IP&sriov_destination&sriov_mac_address&sriov_ip_address&sriov_routes"
                             if (paraMap.containsKey("subnet" + i + "-vm" + j)) {
                                 String VMString = "";
 
@@ -587,25 +587,73 @@ public class ServiceServlet extends HttpServlet {
                                     VMString += "& ";
                                 }
 
-                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "security")) {
-                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "security");
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-security")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-security");
                                 } else {
                                     VMString += "& ";
                                 }
 
-                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "host")) {
-                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "host");
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-host")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-host");
                                 } else {
                                     VMString += "& ";
                                 }
                                 
-                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "floating")) {
-                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "floating");
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-floating")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-floating");
                                 } else {
                                     VMString += "& ";
                                 }
                                 
-                                paraMap.put("vm" + j, VMString);
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-sriov-dest")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-sriov-dest");
+                                } else {
+                                    VMString += "& ";
+                                }
+                                
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-sriov-mac")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-sriov-mac");
+                                } else {
+                                    VMString += "& ";
+                                }
+                                
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-sriov-ip")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-sriov-ip");
+                                } else {
+                                    VMString += "& ";
+                                }
+                                
+                                String vmRouteString = "";
+                                for (int k = 1; k < 5; k++) {
+
+                                    if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k)) {
+                                        VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-");
+                                    } else {
+                                        VMString += "& ";
+                                    }
+
+                                    if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k + "-to")) {
+                                        vmRouteString += "to+" + paraMap.get("subnet" + i + "-vm" + j + "-route" + k + "-to") + ",";
+
+                                        if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k + "-from")) {
+                                            vmRouteString += "from+" + paraMap.get("subnet" + i + "-vm" + j + "-route" + k + "-from") + ",";
+                                        }
+                                        if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k + "-next")) {
+                                            vmRouteString += "nextHop+" + paraMap.get("subnet" + i + "-vm" + j + "-route" + k + "-next");
+                                        }
+                                        vmRouteString += "\r\n";
+                                    }
+
+                                    paraMap.remove("subnet" + i + "-vm" + j + "-route" + k + "-to");
+                                    paraMap.remove("subnet" + i + "-vm" + j + "-route" + k + "-from");
+                                    paraMap.remove("subnet" + i + "-vm" + j + "-route" + k + "-next");
+                                }
+                                
+                                if (!vmRouteString.isEmpty()) {
+                                    VMString += "&" + vmRouteString;
+                                } else {
+                                    VMString += "& ";
+                                }
                             }
                         }
 
