@@ -66,6 +66,14 @@ public class OpenStackGet {
         if (pors != null && !pors.isEmpty()) {
             ports.addAll(pors);
         }
+        try {
+            List<? extends Hypervisor> hyps = client.compute().hypervisors().list();
+            if (hyps != null && !hyps.isEmpty()) {
+                hypervisors.addAll(hyps);
+            }
+        } catch (Exception e) {
+            ;
+        }
         List<? extends Server> sers = client.compute().servers().list();
         if (sers != null && !sers.isEmpty()) {
             servers.addAll(sers);

@@ -82,7 +82,7 @@ define([
                 }
             });
             if (this.rootNodes.length === 0) {
-                addChild("test", "");
+                this.addChild("test", "");
             }
             //("i'm here"); was for seeig where the start is 
         };

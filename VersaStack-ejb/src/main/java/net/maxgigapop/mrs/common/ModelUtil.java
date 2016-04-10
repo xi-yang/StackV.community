@@ -111,6 +111,29 @@ public class ModelUtil {
         return ttl;
     }
 
+    static public Model unmarshalModelJson(String ttl) throws Exception {
+        Model model = ModelFactory.createDefaultModel();
+        //$$ TODO: add ontology schema and namespace handling code
+        try {
+            model.read(new ByteArrayInputStream(ttl.getBytes()), null, "RDF/JSON");
+        } catch (Exception e) {
+            throw new Exception(String.format("failure to unmarshall ontology model, due to %s", e.getMessage()));
+        }
+        return model;
+    }
+
+    static public String marshalModelJson(Model model) throws Exception {
+        //$$ TODO: add namespace handling code
+        StringWriter out = new StringWriter();
+        try {
+            model.write(out, "RDF/JSON");
+        } catch (Exception e) {
+            throw new Exception(String.format("failure to marshall ontology model, due to %s", e.getMessage()));
+        }
+        String ttl = out.toString();
+        return ttl;
+    }
+    
     static public OntModel cloneOntModel(OntModel model) {
         OntModel cloned = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         cloned.add(model.getBaseModel());
@@ -514,5 +537,63 @@ public class ModelUtil {
     public static Date modelDateFromString(String str) throws ParseException {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
         return dateFormat.parse(str);
+    }
+    
+    static public class DeltaVerification {
+        protected String modelAdditionVerified = null;
+        protected String modelReductionVerified = null;
+        protected String modelAdditionUnverified = null;
+        protected String modelReductionUnverified = null;
+        protected Boolean additionVerified = null;
+        protected Boolean reductionVerified = null;
+
+        public String getModelAdditionVerified() {
+            return modelAdditionVerified;
+        }
+
+        public void setModelAdditionVerified(String modelAdditionVerified) {
+            this.modelAdditionVerified = modelAdditionVerified;
+        }
+
+        public String getModelReductionVerified() {
+            return modelReductionVerified;
+        }
+
+        public void setModelReductionVerified(String modelReductionVerified) {
+            this.modelReductionVerified = modelReductionVerified;
+        }
+
+        public String getModelAdditionUnverified() {
+            return modelAdditionUnverified;
+        }
+
+        public void setModelAdditionUnverified(String modelAdditionUnverified) {
+            this.modelAdditionUnverified = modelAdditionUnverified;
+        }
+
+        public String getModelReductionUnverified() {
+            return modelReductionUnverified;
+        }
+
+        public void setModelReductionUnverified(String modelReductionUnverified) {
+            this.modelReductionUnverified = modelReductionUnverified;
+        }
+
+        public Boolean getAdditionVerified() {
+            return additionVerified;
+        }
+
+        public void setAdditionVerified(Boolean additionVerified) {
+            this.additionVerified = additionVerified;
+        }
+
+        public Boolean getReductionVerified() {
+            return reductionVerified;
+        }
+
+        public void setReductionVerified(Boolean reductionVerified) {
+            this.reductionVerified = reductionVerified;
+        }
+
     }
 }

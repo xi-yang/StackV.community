@@ -67,25 +67,7 @@ public class CompilerBase {
         for (Resource policy : spaActions) {
             // test resAtion is terminal/leaf
             if (this.isLeafPolicy(spaModel, policy)) {
-                OntModel modelPart = getReverseDependencyTree(spaModel, policy);
-                StmtIterator stmtIter = spaModel.listStatements(policy, Spa.importFrom, (Resource) null);
-                while (stmtIter.hasNext()) {
-                    Statement stmt = stmtIter.next();
-                    modelPart.add(stmt);
-                    StmtIterator stmtIter2 = spaModel.listStatements(stmt.getObject().asResource(), null, (Resource) null);
-                    while (stmtIter2.hasNext()) {
-                        modelPart.add(stmtIter2.next());
-                    }
-                }
-                stmtIter = spaModel.listStatements(policy, Spa.exportTo, (Resource) null);
-                while (stmtIter.hasNext()) {
-                    Statement stmt = stmtIter.next();
-                    modelPart.add(stmt);
-                    StmtIterator stmtIter2 = spaModel.listStatements(stmt.getObject().asResource(), null, (Resource) null);
-                    while (stmtIter2.hasNext()) {
-                        modelPart.add(stmtIter2.next());
-                    }
-                }
+                OntModel modelPart = getModelPartByPolicy(spaModel, policy);
                 if (leafPolicyModelMap == null) {
                     leafPolicyModelMap = new HashMap<>();
                 }
@@ -96,6 +78,29 @@ public class CompilerBase {
         return leafPolicyModelMap;
     }
 
+    protected OntModel getModelPartByPolicy(OntModel spaModel, Resource policy) {
+        OntModel modelPart = getReverseDependencyTree(spaModel, policy);
+        StmtIterator stmtIter = spaModel.listStatements(policy, Spa.importFrom, (Resource) null);
+        while (stmtIter.hasNext()) {
+            Statement stmt = stmtIter.next();
+            modelPart.add(stmt);
+            StmtIterator stmtIter2 = spaModel.listStatements(stmt.getObject().asResource(), null, (Resource) null);
+            while (stmtIter2.hasNext()) {
+                modelPart.add(stmtIter2.next());
+            }
+        }
+        stmtIter = spaModel.listStatements(policy, Spa.exportTo, (Resource) null);
+        while (stmtIter.hasNext()) {
+            Statement stmt = stmtIter.next();
+            modelPart.add(stmt);
+            StmtIterator stmtIter2 = spaModel.listStatements(stmt.getObject().asResource(), null, (Resource) null);
+            while (stmtIter2.hasNext()) {
+                modelPart.add(stmtIter2.next());
+            }
+        }
+        return modelPart;
+    }
+    
     protected boolean isPolicyAction(OntModel spaModel, Resource res) {
         NodeIterator nodeIter = spaModel.listObjectsOfProperty(res, RdfOwl.type);
         while (nodeIter.hasNext()) {

@@ -58,28 +58,24 @@
                         </div>
                         <div id="service-bottom">
                             <div id="service-fields">
-                                <form id="template-form" action="/VersaStack-web/ServiceServlet" method="post">
-                                    <input type="hidden" name="userID" value="${user.getId()}"/>
-                                    <table class="management-table" id="service-form" style="margin-bottom: 0px;"> 
-                                        <thead>
-                                            <tr>
-                                                <th>Templates</th>
-                                                <th></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>Basic</td>
-                                                <td><input type="submit" name ="template1" value="Select" /></td>
-                                            </tr>
-                                            <tr>
-                                                <td>Advanced</td>
-                                                <td><input type="submit" name ="template2" value="Select" /></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                    <input type="hidden" name ="dncCreate" value="true"/>
-                                </form>
+                                <table class="management-table" id="service-form" style="margin-bottom: 0px;"> 
+                                    <thead>
+                                        <tr>
+                                            <th>Templates</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>1 Link</td>
+                                            <td><button onclick="applyDNCTemplate(1)">Apply</button></td>
+                                        </tr>
+                                        <tr>
+                                            <td>2 Links</td>
+                                            <td><button onclick="applyDNCTemplate(2)">Apply</button></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                                 <form id="custom-form" action="/VersaStack-web/ServiceServlet" method="post">
                                     <input type="hidden" name="userID" value="${user.getId()}"/>
                                     <table class="management-table" id="net-custom-form">
@@ -87,22 +83,21 @@
                                             <tr>
                                                 <th>Custom</th>
                                                 <th><div id="custom-toggle">Display</div></th>
-                                            </tr>
+                                        </tr>
                                         </thead>
                                         <tbody id="custom-fields">
-                                            <tr>
-                                                <td>Connection URI</td>
-                                                <td><input type="text" name="connUri">
-                                            </tr>
                                             <tr id="link1">
                                                 <td>Link 1</td>
                                                 <td>
                                                     <div>
-                                                        <input type="text" name="link1-src" placeholder="Source">
+                                                        <input type="text" name="linkUri1" size="60" placeholder="Link-URI">
+                                                    </div>
+                                                    <div>
+                                                        <input type="text" name="link1-src" size="60" placeholder="Source">
                                                         <input type="text" name="link1-src-vlan" placeholder="Vlan-tag">
                                                     </div>
                                                     <div>
-                                                        <input type="text" name="link1-des" placeholder="Destination">
+                                                        <input type="text" name="link1-des" size="60" placeholder="Destination">
                                                         <input type="text" name="link1-des-vlan" placeholder="Vlan-tag">
                                                     </div>
                                                 </td>

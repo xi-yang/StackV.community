@@ -28,13 +28,8 @@
     </head>
 
     <sql:setDataSource var="front_conn" driver="com.mysql.jdbc.Driver"
-                       url="jdbc:mysql://localhost:3306/Frontend"
+                       url="jdbc:mysql://localhost:3306/frontend"
                        user="front_view"  password="frontuser"/>
-
-    <sql:query dataSource="${front_conn}" sql="SELECT S.name, X.superState FROM service S, service_instance I, service_state X
-               WHERE referenceUUID = ? AND S.service_id = I.service_id AND X.service_state_id = I.service_state_id" var="instancelist">
-        <sql:param value="${param.uuid}" />
-    </sql:query>
 
     <body>        
         <!-- NAV BAR -->
@@ -46,48 +41,32 @@
         <!-- MAIN PANEL -->
         <div id="main-pane">      
             <button type="button" id="button-service-return">Back to Catalog</button>
+            <sql:query dataSource="${front_conn}" sql="SELECT S.name, X.super_state FROM service S, service_instance I, service_state X
+                       WHERE referenceUUID = ? AND S.service_id = I.service_id AND X.service_state_id = I.service_state_id" var="instancelist">
+                <sql:param value="${param.uuid}" />
+            </sql:query>
+
             <c:forEach var="instance" items="${instancelist.rows}">
-                <table class="management-table" id="details-table">
-                    <thead>
-                        <tr>
-                            <th>${instance.name} Service Details</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Service Reference UUID</td>
-                            <td>${param.uuid}</td>
-                        </tr>
-                        <tr>
-                            <td>Service State</td>
-                            <td>${instance.superState}</td>
-                        </tr>
-                        <tr>
-                            <td>Operation Status</td>
-                            <td id="instance-status"></td>
-                        </tr>
-                        <tr>
-                            <td></td>
-                            <td>
-                                <div class="service-instance-panel">
-                                    <button onClick="propagateInstance('${param.uuid}')">Propagate</button>
-                                    <button onClick="commitInstance('${param.uuid}')">Commit</button>
-                                    <button onClick="revertInstance('${param.uuid}')">Revert</button>
-                                    <button onClick="deleteInstance('${param.uuid}')">Delete</button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <c:if test="${instance.name == 'Dynamic Network Connection'}">
+                    <c:redirect url="/ops/details/dncDetails.jsp">
+                        <c:param name="uuid" value="${param.uuid}"></c:param>
+                    </c:redirect>
+                </c:if>
+                <c:if test="${instance.name == 'Flow Based Layer2 Protection'}">
+                    <c:redirect url="/ops/details/fl2pDetails.jsp">
+                        <c:param name="uuid" value="${param.uuid}"></c:param>
+                    </c:redirect>
+                </c:if>
+                
+                <c:redirect url="/ops/details/templateDetails.jsp">
+                    <c:param name="uuid" value="${param.uuid}"></c:param>
+                </c:redirect>
             </c:forEach>
+
         </div>        
         <!-- JS -->
         <script>
             $(function () {
-                var uuid = getUrlParameter('uuid');
-                checkInstance(uuid);
-
                 $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
                     if (${user.isAllowed(1)}) {
                         var element = document.getElementById("service1");

@@ -48,7 +48,7 @@ import net.maxgigapop.mrs.service.compute.MCE_MPVlanConnection;
  * @author xyang
  */
 public class ActionBase {
-
+    protected Resource policy = null;
     protected String name = "";
     protected String mceBeanPath = "";
     protected String state = ActionState.IDLE;
@@ -65,6 +65,14 @@ public class ActionBase {
     public ActionBase(String name, String mceBean) {
         this.name = name;
         this.mceBeanPath = mceBean;
+    }
+
+    public Resource getPolicy() {
+        return policy;
+    }
+
+    public void setPolicy(Resource policy) {
+        this.policy = policy;
     }
 
     public String getName() {
@@ -147,17 +155,17 @@ public class ActionBase {
     }
 
     public ActionBase getIdleLeaf() {
-        boolean hasChildInProcessing = false;
+        boolean hasChildInPending = false;
         for (ActionBase action : this.dependencies) {
             ActionBase deeperAction = action.getIdleLeaf();
             if (deeperAction != null) {
                 return deeperAction;
             }
-            if (action.getState().equals(ActionState.PROCESSING)) {
-                hasChildInProcessing = true;
+            if (action.getState().equals(ActionState.IDLE) || action.getState().equals(ActionState.PROCESSING)) {
+                hasChildInPending = true;
             }
         }
-        if (this.state.equals(ActionState.IDLE) && !hasChildInProcessing) {
+        if (this.state.equals(ActionState.IDLE) && !hasChildInPending) {
             return this;
         }
         return null;
@@ -178,7 +186,7 @@ public class ActionBase {
             }
             if (addList != null) {
                 retList.addAll(addList);
-            } else if (A.getState().equals(ActionState.IDLE) && action.hasAllDependenciesMerged()) {
+            } else if (A.getState().equals(ActionState.IDLE) && A.hasAllDependenciesMerged()) {
                 retList.add(A);
             }
         }
@@ -199,7 +207,7 @@ public class ActionBase {
             Context ejbCxt = new InitialContext();
             IModelComputationElement ejbMce = (IModelComputationElement) ejbCxt.lookup(this.mceBeanPath);
             this.state = ActionState.PROCESSING;
-            Future<ServiceDelta> asyncResult = ejbMce.process(referenceModel, inputDelta);
+            Future<ServiceDelta> asyncResult = ejbMce.process(policy, referenceModel, inputDelta);
             //# not FINISHED yet
             return asyncResult;
         } catch (NamingException ex) {
@@ -283,7 +291,13 @@ public class ActionBase {
                 sanitizeSpaModel(this.outputDelta.getModelAddition().getOntModel(), spaDelta.getModelAddition().getOntModel());
             }
             if (this.outputDelta.getModelReduction() != null && this.outputDelta.getModelReduction().getOntModel() != null) {
-                sanitizeSpaModel(this.outputDelta.getModelReduction().getOntModel(), spaDelta.getModelReduction().getOntModel());
+                if (spaDelta.getModelReduction() != null && spaDelta.getModelReduction().getOntModel() != null) {
+                    sanitizeSpaModel(this.outputDelta.getModelReduction().getOntModel(), spaDelta.getModelReduction().getOntModel());
+                } else if (spaDelta.getModelAddition() != null && spaDelta.getModelAddition().getOntModel() != null) {
+                    sanitizeSpaModel(this.outputDelta.getModelReduction().getOntModel(), spaDelta.getModelAddition().getOntModel());
+                } else {
+                    throw new EJBException(this + ".sanitizeOutputDelta() failed to clean up outputDelta.modelReduction");
+                }
             }
         }
     }
@@ -375,14 +389,17 @@ public class ActionBase {
 
         // sanity check
         spaModel.remove(listStmtsToRemove);
-        sparql = "SELECT ?policyX WHERE {"
-                + "?policyX ?p ?o. "
-                + String.format("FILTER(regex(str(?policyX), '^%s'))", Spa.NS)
+        sparql = "SELECT ?s ?p ?o WHERE {"
+                + "?s ?p ?o. "
+                + String.format("FILTER(regex(str(?o), '^%s'))", Spa.NS)
                 + "}";
         rs = ModelUtil.sparqlQuery(spaModel, sparql);
         while (rs.hasNext()) {
-            String policyAnotation = rs.next().getResource("policyX").toString();
-            throw new EJBException(this + ".sanitizeSpaModel() failed to clean up policy annotation: " + policyAnotation);
+            QuerySolution solution = rs.next();
+            String s = solution.getResource("s").toString();
+            String p = solution.getResource("p").toString();
+            String o = solution.getResource("p").toString();
+            throw new EJBException(this + String.format(".sanitizeSpaModel() failed to clean up policy annotation: (%s, %s, %s)", s, p, o));
         }
     }
 

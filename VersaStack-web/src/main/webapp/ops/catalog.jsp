@@ -28,7 +28,7 @@
     </head>
 
     <sql:setDataSource var="front_conn" driver="com.mysql.jdbc.Driver"
-                       url="jdbc:mysql://localhost:3306/Frontend"
+                       url="jdbc:mysql://localhost:3306/frontend"
                        user="front_view"  password="frontuser"/>
 
     <body>        
@@ -40,13 +40,14 @@
         </div>
         <!-- MAIN PANEL -->
         <div id="main-pane">                                   
-            <div id="service-overview">                
+            <div id="service-overview">
+
                 <table class="management-table" id="status-table">
                     <thead>
                         <tr>
                             <th>Service Name</th>
                             <th>Service UUID</th>
-                            <th>Service Status</th>
+                            <th>Service Status   <button class="button-header" onclick="reloadPage()">Refresh</button></th>
                         </tr>
                     </thead>
                     <tbody>

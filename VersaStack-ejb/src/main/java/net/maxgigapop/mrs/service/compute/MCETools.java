@@ -50,6 +50,8 @@ import org.json.simple.JSONObject;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.JsonPathException;
 import java.util.LinkedHashMap;
+import net.maxgigapop.mrs.common.ResourceTool;
+import net.maxgigapop.mrs.driver.aws.AwsPrefix;
 
 /**
  *
@@ -744,9 +746,12 @@ public class MCETools {
         if (rs.hasNext()) {
             QuerySolution solution = rs.next();
             Resource resVlanPort = solution.getResource("vlan_port");
+            // do not verify shared vlan port
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Mrs.type, "unverifiable"));
             Resource resSubnet = solution.getResource("subnet");
-            String vlanLabelUrn = resVlanPort + ":label";
-            Resource resVlanPortLabel = RdfOwl.createResource(vlanSubnetModel, vlanLabelUrn, Nml.Label);
+            String vlanLabelUrn = resVlanPort.getURI() + ":label+"+suggestedVlan;
+            // do not verify shared vlan port label
+            Resource resVlanPortLabel = RdfOwl.createResourceUnverifiable(vlanSubnetModel, vlanLabelUrn, Nml.Label);
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, RdfOwl.type, Nml.BidirectionalPort));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.hasLabel, resVlanPortLabel));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPortLabel, Nml.labeltype, RdfOwl.labelTypeVLAN));
@@ -793,7 +798,7 @@ public class MCETools {
             resVlanPort = RdfOwl.createResource(vlanSubnetModel, vlanPortUrn, Nml.BidirectionalPort);
         }
         // create vlan label for either new or existing VLAN port
-        String vlanLabelUrn = vlanPortUrn + ":label";
+        String vlanLabelUrn = vlanPortUrn + ":label+"+suggestedVlan;
         Resource resVlanPortLabel = RdfOwl.createResource(vlanSubnetModel, vlanLabelUrn, Nml.Label);
         vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.hasLabel, resVlanPortLabel));
         vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPortLabel, Nml.labeltype, RdfOwl.labelTypeVLAN));

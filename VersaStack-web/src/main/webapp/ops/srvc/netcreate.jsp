@@ -43,125 +43,264 @@
         <div id="main-pane">
             <c:choose>                  
                 <c:when test="${empty param.ret}">  <!-- Display this section when no return value supplied -->
+
                     <div id="service-specific">
                         <div id="service-top">
-                            <div id="service-title">
-                                Network Creation
-                            </div>
                             <div id="service-menu">
                                 <c:if test="${not empty param.self}">
                                     <button type="button" id="button-service-return">Cancel</button>
                                 </c:if>
                                 <table class="management-table">
-
+                                    <thead>
+                                        <tr>
+                                            <th>Network Creation</th>
+                                            <th>
+                                                <select name="networkType" onchange="networkSelect(this)">                                                
+                                                    <option value=""></option>
+                                                    <option value="aws">AWS</option>
+                                                    <option value="ops">OpenStack</option>
+                                                </select>
+                                            </th>
+                                        </tr>
+                                    </thead>
                                 </table>
                             </div>
                         </div>
+
                         <div id="service-bottom">                            
-                            <div id="service-fields">                                
-                                <form id="service-template-form" action="/VersaStack-web/ServiceServlet" method="post">
-                                    <input type="hidden" name="userID" value="${user.getId()}"/>
-                                    <table class="management-table" id="net-template-form" style="margin-bottom: 0px;"> 
-                                        <thead>
+                            <div id="service-fields">                                                               
+                                <table class="management-table" id="net-template-form" style="margin-bottom: 0px;"> 
+                                    <thead>
+                                        <tr>
+                                            <th>Templates</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <c:if test="${param.networkType == 'aws'}">
                                             <tr>
-                                                <th>Templates</th>
-                                                <th></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>Basic</td>
-                                                <td><input type="submit" name="template1" value="Select" /></td>
+                                                <td>No VM</td>
+                                                <td><button onclick="applyNetTemplate(1)">Apply</button></td>
                                             </tr>                                            
                                             <tr>
-                                                <td>Advanced</td>
-                                                <td><input type="submit" name="template2" value="Select" /></td>
+                                                <td>Basic VM</td>
+                                                <td><button onclick="applyNetTemplate(2)">Apply</button></td>
                                             </tr>
-                                        </tbody>
-                                    </table>    
-                                    <input type="hidden" name="netCreate" value="true"/>
-                                </form>  
-                                <form id="service-custom-form" action="/VersaStack-web/ServiceServlet" method="post">
+                                            <tr>
+                                                <td>Various VM Types</td>
+                                                <td><button onclick="applyNetTemplate(3)">Apply</button></td>
+                                            </tr>
+                                        </c:if>
+                                        <c:if test="${param.networkType == 'ops'}">    
+                                            <tr>
+                                                <td>VM Test</td>
+                                                <td><button onclick="applyNetTemplate(4)">Apply</button></td>
+                                            </tr>
+                                        </c:if>
+                                    </tbody>
+                                </table>    
+
+                                <form id="custom-form" action="/VersaStack-web/ServiceServlet" method="post">
                                     <input type="hidden" name="userID" value="${user.getId()}"/>    
                                     <table class="management-table" id="net-custom-form">
                                         <thead>
                                             <tr>
                                                 <th>Custom</th>
-                                                <th><div id="custom-toggle">Display</div></th>
+                                                <th><div id="custom-toggle"></div></th>
                                         </tr>
                                         </thead>
                                         <tbody id="custom-fields">
-                                            <tr>
-                                                <td>Topology URI</td>
-                                                <td>
-                                                    <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance" var="driverlist" />
-                                                    <select name="topoUri" >
-                                                        <option></option>
-                                                        <c:forEach var="driver" items="${driverlist.rows}">
-                                                            <option value="${driver.topologyUri}">${driver.topologyUri}</option>
-                                                        </c:forEach>
-                                                    </select>   
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>Network Type</td>
-                                                <td><input type="text" name="netType" /></td>
-                                            </tr>
-                                            <tr>
-                                                <td>Network CIDR</td>
-                                                <td><input type="text" name="netCidr" /></td>
-                                            </tr>
-                                            <!-- <tr>
-                                                <td>Route Table</td>
-                                                <td>
-                                                    <div id="route-block">
-                                                        <div>
-                                                            <input type="text" name="route1-from" placeholder="From"/>
-                                                            <input type="text" name="route1-to" placeholder="To"/>
-                                                            <input type="text" name="route1-next" placeholder="Next Hop"/>
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <input type="checkbox" name="route-prop" value="true"/>   Enable VPN Routes Propogation                                                       
-                                                    </div>
-                                                    <div>
-                                                         <input class="button-register" type="button" 
-                                                               value="Add Route" onClick="addRoute()">
-                                                    </div>
-                                                </td>
-                                            </tr> -->
-                                            <tr id="subnet1">
-                                                <td>Subnet 1</td>
-                                                <td>
-                                                    <div>
-                                                        <input type="text" name="subnet1-name" placeholder="Name"/>
-                                                        <input type="text" name="subnet1-cidr" placeholder="CIDR Block"/>
-                                                        <div id="subnet1-route-block">
+                                            <!-- AWS -->
+                                            <c:if test="${param.networkType == 'aws'}">
+                                                <tr>
+                                                    <td>Topology URI</td>
+                                                    <td>
+                                                        <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance" var="driverlist" />
+                                                        <select name="topoUri" required>
+                                                            <option></option>
+                                                            <c:forEach var="driver" items="${driverlist.rows}">
+                                                                <option value="${driver.topologyUri}">${driver.topologyUri}</option>
+                                                            </c:forEach>
+                                                        </select>   
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Network Type</td>
+                                                    <td><input type="text" name="netType" required/></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Network CIDR</td>
+                                                    <td><input type="text" name="netCidr" required/></td>
+                                                </tr>
+                                                <!-- <tr>
+                                                    <td>Route Table</td>
+                                                    <td>
+                                                        <div id="route-block">
                                                             <div>
-                                                                <input type="text" name="subnet1-route1-from" placeholder="From"/>
-                                                                <input type="text" name="subnet1-route1-to" placeholder="To"/>
-                                                                <input type="text" name="subnet1-route1-next" placeholder="Next Hop"/>
+                                                                <input type="text" name="route1-from" placeholder="From"/>
+                                                                <input type="text" name="route1-to" placeholder="To"/>
+                                                                <input type="text" name="route1-next" placeholder="Next Hop"/>
                                                             </div>
                                                         </div>
                                                         <div>
-                                                            <input type="checkbox" name="subnet1-route-prop" value="true"/>   Enable VPN Routes Propogation
+                                                            <input type="checkbox" name="route-prop" value="true"/>   Enable VPN Routes Propogation                                                       
                                                         </div>
                                                         <div>
-                                                            <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">
+                                                             <input class="button-register" type="button" 
+                                                                   value="Add Route" onClick="addRoute()">
                                                         </div>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td></td>
-                                                <td><input type="submit" name="custom" value="Submit" /><input class="button-register" type="button" value="Add Subnet" onClick="addSubnet()"></td>
-                                            </tr>
+                                                    </td>
+                                                </tr> -->
+                                                <tr id="subnet1">
+                                                    <td>Subnet 1</td>
+                                                    <td>
+                                                        <div>
+                                                            <input type="text" name="subnet1-name" placeholder="Name"/>
+                                                            <input type="text" name="subnet1-cidr" placeholder="CIDR Block"/>
+                                                            <div id="subnet1-route-block">
+                                                                <div>
+                                                                    <input type="text" name="subnet1-route1-from" placeholder="From"/>
+                                                                    <input type="text" name="subnet1-route1-to" placeholder="To"/>
+                                                                    <input type="text" name="subnet1-route1-next" placeholder="Next Hop"/>
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <input type="checkbox" name="subnet1-route-prop" value="true"/>   Enable VPN Routes Propagation
+                                                            </div>
+                                                            <div>
+                                                                <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">
+                                                            </div>
+                                                            <div id="subnet1-vm-block">
+                                                                <div>VM 1   
+                                                                    <input type="text" name="subnet1-vm1" placeholder="VM Name">
+                                                                    <input type="text" name="subnet1-vm1-keypair" placeholder="Keypair Name">
+                                                                    <input type="text" name="subnet1-vm1-security" placeholder="Security Name">
+                                                                    <input type="text" name="subnet1-vm1-image" placeholder="Image Type">
+                                                                    <input type="text" name="subnet1-vm1-instance" placeholder="Instance Type">
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <input class="button-register" id="subnet1-vm" type="button" value="Add VM" onClick="addVM('aws', this.id)">
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Direct Connect</td>
+                                                    <td><input type="text" name="conn-dest" placeholder="Destination" size="60" /><input type="text" name="conn-vlan" placeholder="VLAN" size="8" /></td>
+                                                </tr>
+                                                <tr>
+                                                    <td></td>
+                                                    <td><input type="submit" name="custom" value="Submit" /><input class="button-register" type="button" value="Add Subnet" onClick="addSubnet('aws')"></td>
+                                                </tr>
+                                            </c:if>
+
+                                            <!-- OpenStack -->
+                                            <c:if test="${param.networkType == 'ops'}">
+                                                <tr>
+                                                    <td>Topology URI</td>
+                                                    <td>
+                                                        <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance" var="driverlist" />
+                                                        <select name="topoUri" required>
+                                                            <option></option>
+                                                            <c:forEach var="driver" items="${driverlist.rows}">
+                                                                <option value="${driver.topologyUri}">${driver.topologyUri}</option>
+                                                            </c:forEach>
+                                                        </select>   
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Network Type</td>
+                                                    <td><input type="text" name="netType" required/></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Network CIDR</td>
+                                                    <td><input type="text" name="netCidr" required/></td>
+                                                </tr>
+                                                <!-- <tr>
+                                                    <td>Route Table</td>
+                                                    <td>
+                                                        <div id="route-block">
+                                                            <div>
+                                                                <input type="text" name="route1-from" placeholder="From"/>
+                                                                <input type="text" name="route1-to" placeholder="To"/>
+                                                                <input type="text" name="route1-next" placeholder="Next Hop"/>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <input type="checkbox" name="route-prop" value="true"/>   Enable VPN Routes Propogation                                                       
+                                                        </div>
+                                                        <div>
+                                                             <input class="button-register" type="button" 
+                                                                   value="Add Route" onClick="addRoute()">
+                                                        </div>
+                                                    </td>
+                                                </tr> -->
+                                                <tr id="subnet1">
+                                                    <td>Subnet 1</td>
+                                                    <td>
+                                                        <div>
+                                                            <input type="text" name="subnet1-name" placeholder="Name"/>
+                                                            <input type="text" name="subnet1-cidr" placeholder="CIDR Block"/>
+                                                            <div id="subnet1-route-block">
+                                                                <div>
+                                                                    <input type="text" name="subnet1-route1-from" placeholder="From"/>
+                                                                    <input type="text" name="subnet1-route1-to" placeholder="To"/>
+                                                                    <input type="text" name="subnet1-route1-next" placeholder="Next Hop"/>
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <input type="checkbox" name="subnet1-route-default" value="true"/>   Enable Default Routing
+                                                            </div>
+                                                            <div>
+                                                                <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">
+                                                            </div>
+                                                            <div id="subnet1-vm-block">
+                                                                <div>VM 1   
+                                                                    <input type="text" name="subnet1-vm1" placeholder="VM Name">
+                                                                    <input type="text" name="subnet1-vm1-keypair" placeholder="Keypair Name">
+                                                                    <input type="text" name="subnet1-vm1-security" placeholder="Security Name">
+                                                                    <input type="text" name="subnet1-vm1-image" placeholder="Image Type">
+                                                                    <input type="text" name="subnet1-vm1-instance" placeholder="Instance Type">
+                                                                    <input type="text" name="subnet1-vm1-host" placeholder="VM Host">
+                                                                    <input type="text" name="subnet1-vm1-floating" placeholder="Floating IP">
+                                                                    <input type="text" name="subnet1-vm1-sriov-dest" placeholder="SRIOV Destination">
+                                                                    <input type="text" name="subnet1-vm1-sriov-mac" placeholder="SRIOV MAC Address">
+                                                                    <input type="text" name="subnet1-vm1-sriov-ip" placeholder="SRIOV IP Address">
+                                                                    <div>
+                                                                        <input type="text" name="subnet1-vm1-route1-from" placeholder="From"/>
+                                                                        <input type="text" name="subnet1-vm1-route1-to" placeholder="To"/>
+                                                                        <input type="text" name="subnet1-vm1-route1-next" placeholder="Next Hop"/>
+                                                                    </div><div>
+                                                                        <input type="text" name="subnet1-vm1-route2-from" placeholder="From"/>
+                                                                        <input type="text" name="subnet1-vm1-route2-to" placeholder="To"/>
+                                                                        <input type="text" name="subnet1-vm1-route2-next" placeholder="Next Hop"/>                                                                    
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <input class="button-register" id="subnet1-vm" type="button" value="Add VM" onClick="addVM('ops', this.id)">
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Direct Connect</td>
+                                                    <td><input type="text" name="conn-dest" placeholder="Destination" size="60" /><input type="text" name="conn-vlan" placeholder="VLAN" size="8" /></td>
+                                                </tr>
+                                                <tr>
+                                                    <td></td>
+                                                    <td><input type="submit" name="custom" value="Submit" /><input class="button-register" type="button" value="Add Subnet" onClick="addSubnet('ops')"></td>
+                                                </tr>
+                                            </c:if>
                                         </tbody>
                                     </table>                                    
                                     <input type="hidden" name="netCreate" value="true"/>
                                 </form>
                             </div>
                         </div>
+
+
                     </div> 
                 </c:when>
 

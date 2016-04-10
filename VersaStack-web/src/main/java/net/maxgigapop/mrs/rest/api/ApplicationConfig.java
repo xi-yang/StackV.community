@@ -28,7 +28,7 @@ public class ApplicationConfig extends Application {
      * populated with all resources defined in the project. If required, comment
      * out calling this method in getClasses().
      */
-    private void addRestResourceClasses(Set<Class<?>> resources) {
+    private void addRestResourceClasses(Set<Class<?>> resources) {        
         resources.add(net.maxgigapop.mrs.rest.api.DeltaResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.DriverResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.ModelResource.class);

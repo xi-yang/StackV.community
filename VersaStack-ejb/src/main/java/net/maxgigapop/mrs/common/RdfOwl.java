@@ -46,8 +46,14 @@ public class RdfOwl {
 
     public static Resource createResource(OntModel model, String uri, Resource type) {
         Resource res = model.createResource(uri);
-        model.add(model.createStatement(res, RdfOwl.type, RdfOwl.NamedIndividual));
+        //model.add(model.createStatement(res, RdfOwl.type, RdfOwl.NamedIndividual));
         model.add(model.createStatement(res, RdfOwl.type, type));
+        return res;
+    }
+    public static Resource createResourceUnverifiable(OntModel model, String uri, Resource type) {
+        Resource res = model.createResource(uri);
+        model.add(model.createStatement(res, RdfOwl.type, type));
+        model.add(model.createStatement(res, Mrs.type, "unverifiable"));
         return res;
     }
 }

@@ -21,11 +21,13 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 import javax.servlet.AsyncContext;
 import javax.servlet.annotation.WebServlet;
 import web.async.AppAsyncListener;
 import web.async.DNCWorker;
+import web.async.FL2PWorker;
 import web.async.DriverWorker;
 import web.async.NetCreateWorker;
 
@@ -69,10 +71,10 @@ public class ServiceServlet extends HttpServlet {
 
             Connection front_conn;
             Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", "root");
-            front_connectionProps.put("password", "root");
+            front_connectionProps.put("user", "front_view");
+            front_connectionProps.put("password", "frontuser");
 
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
             // Select the correct service.
@@ -83,10 +85,11 @@ public class ServiceServlet extends HttpServlet {
             } else if (request.getParameter("netCreate") != null) { // Network Creation
                 serviceString = "netcreate";
             } else if (request.getParameter("dncCreate") != null) {
-                //System.out.println("Im inside dnc");
                 serviceString = "dnc";
-                //System.out.println("Im inside dnc");
-            } else {
+            } else if(request.getParameter("fl2pCreate") != null){
+                serviceString ="fl2p";
+            }
+            else {
                 response.sendRedirect("/VersaStack-web/errorPage.jsp");
             }
 
@@ -99,7 +102,7 @@ public class ServiceServlet extends HttpServlet {
             Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
 
             // Install Instance into DB.
-            prep = front_conn.prepareStatement("INSERT INTO Frontend.service_instance "
+            prep = front_conn.prepareStatement("INSERT INTO frontend.service_instance "
                     + "(`service_id`, `user_id`, `creation_time`, `referenceUUID`, `service_state_id`) VALUES (?, ?, ?, ?, ?)");
             prep.setInt(1, serviceID);
             prep.setString(2, request.getParameter("userID"));
@@ -108,7 +111,12 @@ public class ServiceServlet extends HttpServlet {
             prep.setInt(5, 1);
             prep.executeUpdate();
             
+            int instanceID = servBean.getInstanceID(refUuid);
             
+            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_history` "
+                    + "(`service_history_id`, `service_state_id`, `service_instance_id`) VALUES (1, 1, ?)");
+            prep.setInt(1, instanceID);
+            prep.executeUpdate();
 
             // Create paraMap.
             while (paramNames.hasMoreElements()) {
@@ -146,7 +154,10 @@ public class ServiceServlet extends HttpServlet {
             } else if (serviceString.equals("dnc")) {
                 //System.out.println("Im inside dnc");
                 response.sendRedirect(createConnection(request, paraMap));
-            } else {
+            } else if (serviceString.equals("fl2p")){
+               response.sendRedirect(createFlow(request, paraMap)); 
+            }
+            else {
                 response.sendRedirect("/VersaStack-web/errorPage.jsp");
             }
         } catch (SQLException ex) {
@@ -170,7 +181,7 @@ public class ServiceServlet extends HttpServlet {
         return "";
     }
 
-    private String createDriverInstance(HttpServletRequest request, HashMap<String, String> paraMap) {
+    public String createDriverInstance(HttpServletRequest request, HashMap<String, String> paraMap) {
 
         // Handles templates, in this order:
         // OpenStack, Stack Driver, Stub Driver, Generic Driver, AWS Driver 
@@ -215,7 +226,7 @@ public class ServiceServlet extends HttpServlet {
             paraMap.put("driverID", "versaNSDriver");
             paraMap.put("topologyUri", "urn:ogf:network:sdn.maxgigapop.net:network");
             paraMap.put("driverEjbPath", "java:module/GenericRESTDriver");
-            paraMap.put("subsystemBaseUrl", "http://charon.dragon.maxgigapop.net:8080/VersaNS-0.0.1-SNAPSHOT");
+            paraMap.put("subsystemBaseUrl", "http://206.196.179.139:8080/VersaNS-0.0.1-SNAPSHOT");
             paraMap.put("install", "Install");
         }
 
@@ -238,7 +249,7 @@ public class ServiceServlet extends HttpServlet {
          } else if (paraMap.containsKey("uninstall")) {
          retCode = servBean.driverUninstall(paraMap.get("topologyUri"));
          }*/
-        // Async setup
+        // Async setup        
         request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
         AsyncContext asyncCtx = request.startAsync();
         asyncCtx.addListener(new AppAsyncListener());
@@ -247,11 +258,11 @@ public class ServiceServlet extends HttpServlet {
         ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
 
         executor.execute(new DriverWorker(asyncCtx, paraMap));
-
+        
         return ("/VersaStack-web/ops/srvc/driver.jsp?ret=0");
     }
 
-    private String createVMInstance(HashMap<String, String> paraMap) {
+    public String createVMInstance(HashMap<String, String> paraMap) {
         int retCode = -1;
 
         // Handle templates 
@@ -311,7 +322,7 @@ public class ServiceServlet extends HttpServlet {
         return ("/VersaStack-web/ops/srvc/vmadd.jsp?ret=" + retCode);
     }
 
-    private String createFullNetwork(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {
+    public String createFullNetwork(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {
         int retCode;
 
         for (Object key : paraMap.keySet().toArray()) {
@@ -330,13 +341,11 @@ public class ServiceServlet extends HttpServlet {
 
         if (paraMap.containsKey("template1")) { // Basic Template
             // Add template data.
-            paraMap.put("driverType", "aws");
             paraMap.put("topoUri", "urn:ogf:network:aws.amazon.com:aws-cloud");
-            paraMap.put("netType", "internal");
             paraMap.put("netCidr", "10.1.0.0/16");
+            paraMap.put("driverType","aws");
             paraMap.put("subnet1", "name+ &cidr+10.1.0.0/24&routesto+206.196.0.0/16,nextHop+internet\r\nfrom+vpn,to+0.0.0.0/0,nextHop+vpn\r\nto+72.24.24.0/24,nextHop+vpn");
             paraMap.put("subnet2", "name+ &cidr+10.1.1.0/24");
-            paraMap.put("netRoutes", "to+0.0.0.0/0,nextHop+internet");
 
             paraMap.remove("netCreate");
             paraMap.remove("template1");
@@ -351,18 +360,18 @@ public class ServiceServlet extends HttpServlet {
 
             executor.execute(new NetCreateWorker(asyncCtx, paraMap));
         }
-        else if(paraMap.containsKey("template2")){ // Advanced Template
+        else if(paraMap.containsKey("template2")){ // AWS with VMs and direct connect
             // Add template data.
-            paraMap.put("driverType", "aws");
             paraMap.put("topoUri", "urn:ogf:network:aws.amazon.com:aws-cloud");
-            paraMap.put("netType", "internal");
             paraMap.put("netCidr", "10.1.0.0/16");
+            paraMap.put("driverType","aws");
             paraMap.put("subnet1", "name+ &cidr+10.1.0.0/24&routesto+206.196.0.0/16,nextHop+internet\r\nfrom+vpn,to+0.0.0.0/0,nextHop+vpn\r\nto+72.24.24.0/24,nextHop+vpn");
             paraMap.put("subnet2", "name+ &cidr+10.1.1.0/24");
-            paraMap.put("netRoutes", "to+0.0.0.0/0,nextHop+internet");
-            paraMap.put("vm1", "1&imageType&instanceType&volumeSize&batch");
-            paraMap.put("vm2", "2&imageType&instanceType&volumeSize&batch");
-
+            paraMap.put("vm1", "vm1&1& & & & ");  //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name"
+            paraMap.put("vm2", "vm2&2& & & & ");  //put space if not mentioned
+            paraMap.put("directConn", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*?vlan=3023");
+            //if not specified the vlan range, replace 3023 with any
+            
             paraMap.remove("netCreate");
             paraMap.remove("template2");
 
@@ -370,7 +379,79 @@ public class ServiceServlet extends HttpServlet {
             request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
             AsyncContext asyncCtx = request.startAsync();
             asyncCtx.addListener(new AppAsyncListener());
-            asyncCtx.setTimeout(60000);
+            asyncCtx.setTimeout(300000);
+
+            ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
+
+            executor.execute(new NetCreateWorker(asyncCtx, paraMap));
+            
+        }
+        else if(paraMap.containsKey("template3")){ // AWS with VMs specified VM types
+            // Add template data.
+            paraMap.put("topoUri", "urn:ogf:network:aws.amazon.com:aws-cloud");
+            paraMap.put("netCidr", "10.1.0.0/16");
+            paraMap.put("driverType","aws");
+            paraMap.put("subnet1", "name+ &cidr+10.1.0.0/24&routesto+206.196.0.0/16,nextHop+internet\r\nfrom+vpn,to+0.0.0.0/0,nextHop+vpn\r\nto+72.24.24.0/24,nextHop+vpn");
+            paraMap.put("subnet2", "name+ &cidr+10.1.1.0/24");
+            paraMap.put("vm1", "test_with_vm_types_1&1&ami-08111162&t2.micro& & ");  //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name"
+            paraMap.put("vm2", "test_with_vm_type_2&2&ami-fce3c696&t2.small&xi-aws-max-dev-key&geni");  //put space if not mentioned
+            
+            paraMap.remove("netCreate");
+            paraMap.remove("template3");
+
+            // Async setup
+            request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
+            AsyncContext asyncCtx = request.startAsync();
+            asyncCtx.addListener(new AppAsyncListener());
+            asyncCtx.setTimeout(300000);
+
+            ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
+
+            executor.execute(new NetCreateWorker(asyncCtx, paraMap));
+            
+        }
+        else if(paraMap.containsKey("template4")){ //OpenStack with 2 subnets and 1 VM
+            // Add template data.
+            paraMap.put("topoUri", "urn:ogf:network:openstack.com:openstack-cloud");
+            paraMap.put("netCidr", "10.1.0.0/16");
+            paraMap.put("driverType","ops");
+            paraMap.put("subnet1", "name+ &cidr+10.0.0.0/24&routesto+0.0.0.0/0,nextHop+internet");
+            paraMap.put("subnet2", "name+ &cidr+10.1.1.0/24");
+            paraMap.put("vm1", "vm_OPS&1& &m1.medium&icecube_key&rains&msx1& & & & & ");
+            //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name&host&floating_IP&sriov_destination&sriov_mac_address&sriov_ip_address&sriov_routes"
+            
+            paraMap.remove("netCreate");
+            paraMap.remove("template4");
+
+            // Async setup
+            request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
+            AsyncContext asyncCtx = request.startAsync();
+            asyncCtx.addListener(new AppAsyncListener());
+            asyncCtx.setTimeout(300000);
+
+            ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
+
+            executor.execute(new NetCreateWorker(asyncCtx, paraMap));
+            
+        }
+        else if(paraMap.containsKey("template5")){ //OpenStack with 1 VM with sriov connection
+            // Add template data.
+            paraMap.put("topoUri", "urn:ogf:network:openstack.com:openstack-cloud");
+            paraMap.put("netCidr", "10.1.0.0/16");
+            paraMap.put("driverType","ops");
+            paraMap.put("subnet1", "name+ &cidr+10.0.0.0/24&routesto+0.0.0.0/0,nextHop+internet");
+            paraMap.put("subnet2", "name+ &cidr+10.1.1.0/24");
+            paraMap.put("vm1", "vm_OPS&1& &m1.medium&icecube_key&rains&msx1&206.196.180.148&urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&aa:bb:cc:00:00:12&10.10.0.1/30&to+192.168.0.0/24,next_hop+10.10.0.2\r\nto+206.196.179.0/24,next_hop+10.10.0.2");
+            //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name&host&floating_IP&sriov_destination&sriov_mac_address&sriov_ip_address&sriov_routes"
+            
+            paraMap.remove("netCreate");
+            paraMap.remove("template4");
+
+            // Async setup
+            request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
+            AsyncContext asyncCtx = request.startAsync();
+            asyncCtx.addListener(new AppAsyncListener());
+            asyncCtx.setTimeout(300000);
 
             ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
 
@@ -386,8 +467,8 @@ public class ServiceServlet extends HttpServlet {
             String driverPath = rs1.getString(1);
             if (driverPath.contains("Aws") || driverPath.contains("aws")) {
                 paraMap.put("driverType", "aws");
-            } else if (driverPath.contains("Os") || driverPath.contains("os")) {
-                paraMap.put("driverType", "os");
+            } else if (driverPath.contains("openstack") || driverPath.contains("os")) {
+                paraMap.put("driverType", "ops");
             }
 
             // Process each subnet.
@@ -406,7 +487,7 @@ public class ServiceServlet extends HttpServlet {
 
                     // Process each routes.
                     for (int j = 1; j < 10; j++) {
-                        // Check for subnet existence.
+                        // Check for subroute existence.
                         if (paraMap.containsKey("subnet" + i + "-route" + j + "-to")) {
                             subnetString += "to+" + paraMap.get("subnet" + i + "-route" + j + "-to") + ",";
 
@@ -430,6 +511,12 @@ public class ServiceServlet extends HttpServlet {
                             subnetString += "routes";
                         }
                         subnetString += "from+vpn,to+0.0.0.0/0,nextHop+vpn";
+                    } 
+                    else if (paraMap.containsKey("subnet" + i + "-route-default")) {
+                        if (!subnetString.contains("routes")) {
+                            subnetString += "routes";
+                        }
+                        subnetString += "to+0.0.0.0/0,nextHop+internet";
                     } else {
                         if (subnetString.contains("routes")) {
                             subnetString = subnetString.substring(0, (subnetString.length() - 2));
@@ -437,11 +524,165 @@ public class ServiceServlet extends HttpServlet {
                     }
                     paraMap.remove("subnet" + i + "-route-prop");
 
+                    // Process VMs.
+                    for (int j = 1; j < 10; j++) {
+                        if (paraMap.get("driverType").equalsIgnoreCase("aws")) {
+                            //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name"
+                            if (paraMap.containsKey("subnet" + i + "-vm" + j)) {
+                                String VMString = "";
+
+                                VMString += paraMap.get("subnet" + i + "-vm" + j);
+                                VMString += "&" + i;
+
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-image")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-image");
+                                } else {
+                                    VMString += "& ";
+                                }
+
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-instance")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-instance");
+                                } else {
+                                    VMString += "& ";
+                                }
+
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-keypair")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-keypair");
+                                } else {
+                                    VMString += "& ";
+                                }
+
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "security")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "security");
+                                } else {
+                                    VMString += "& ";
+                                }
+
+                                paraMap.put("vm" + j, VMString);
+                            }
+                        } else if (paraMap.get("driverType").equalsIgnoreCase("ops")) {
+                            //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name&host&floating_IP&sriov_destination&sriov_mac_address&sriov_ip_address&sriov_routes"
+                            if (paraMap.containsKey("subnet" + i + "-vm" + j)) {
+                                String VMString = "";
+
+                                VMString += paraMap.get("subnet" + i + "-vm" + j);
+                                VMString += "&" + i;
+
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-image")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-image");
+                                } else {
+                                    VMString += "& ";
+                                }
+
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-instance")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-instance");
+                                } else {
+                                    VMString += "& ";
+                                }
+
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-keypair")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-keypair");
+                                } else {
+                                    VMString += "& ";
+                                }
+
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-security")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-security");
+                                } else {
+                                    VMString += "& ";
+                                }
+
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-host")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-host");
+                                } else {
+                                    VMString += "& ";
+                                }
+                                
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-floating")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-floating");
+                                } else {
+                                    VMString += "& ";
+                                }
+                                
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-sriov-dest")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-sriov-dest");
+                                } else {
+                                    VMString += "& ";
+                                }
+                                
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-sriov-mac")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-sriov-mac");
+                                } else {
+                                    VMString += "& ";
+                                }
+                                
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-sriov-ip")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-sriov-ip");
+                                } else {
+                                    VMString += "& ";
+                                }
+                                
+                                String vmRouteString = "";
+                                for (int k = 1; k < 5; k++) {
+
+                                    if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k)) {
+                                        VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-");
+                                    } else {
+                                        VMString += "& ";
+                                    }
+
+                                    if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k + "-to")) {
+                                        vmRouteString += "to+" + paraMap.get("subnet" + i + "-vm" + j + "-route" + k + "-to") + ",";
+
+                                        if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k + "-from")) {
+                                            vmRouteString += "from+" + paraMap.get("subnet" + i + "-vm" + j + "-route" + k + "-from") + ",";
+                                        }
+                                        if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k + "-next")) {
+                                            vmRouteString += "nextHop+" + paraMap.get("subnet" + i + "-vm" + j + "-route" + k + "-next");
+                                        }
+                                        vmRouteString += "\r\n";
+                                    }
+
+                                    paraMap.remove("subnet" + i + "-vm" + j + "-route" + k + "-to");
+                                    paraMap.remove("subnet" + i + "-vm" + j + "-route" + k + "-from");
+                                    paraMap.remove("subnet" + i + "-vm" + j + "-route" + k + "-next");
+                                }
+                                
+                                if (!vmRouteString.isEmpty()) {
+                                    VMString += "&" + vmRouteString;
+                                } else {
+                                    VMString += "& ";
+                                }
+                            }
+                        }
+
+                        paraMap.remove("subnet" + i + "-vm" + j);
+                        paraMap.remove("subnet" + i + "-vm" + j + "-image");
+                        paraMap.remove("subnet" + i + "-vm" + j + "-instance");
+                        paraMap.remove("subnet" + i + "-vm" + j + "-keypair");
+                        paraMap.remove("subnet" + i + "-vm" + j + "security");
+                        paraMap.remove("subnet" + i + "-vm" + j + "host");
+                        paraMap.remove("subnet" + i + "-vm" + j + "floating");
+                        paraMap.remove("subnet" + i + "-vm" + j + "sriov");
+                    }
+
                     paraMap.remove("subnet" + i + "-cidr");
                     paraMap.remove("subnet" + i + "-name");
 
                     paraMap.put("subnet" + i, subnetString);
                 }
+            }
+            paraMap.put("netRoutes", "to+0.0.0.0/0,nextHop+internet");
+
+            // Parse direct connect.
+            if (paraMap.containsKey("conn-dest")) {
+                String connString = paraMap.get("conn-dest");
+                if (paraMap.containsKey("conn-vlan")) {
+                    connString += "?vlan=" + paraMap.get("conn-vlan");
+                } else {
+                    connString += "?vlan=any";
+                }            
+                paraMap.put("directConn", connString);
             }
 
             paraMap.remove("userID");
@@ -462,8 +703,59 @@ public class ServiceServlet extends HttpServlet {
         return ("/VersaStack-web/ops/srvc/netcreate.jsp?ret=0");
 
     }
+    
+    public String createFlow(HttpServletRequest request,HashMap<String, String> paraMap) throws SQLException {
+        for (Object Key : paraMap.keySet().toArray()){
+            if (paraMap.get((String) Key).isEmpty()){
+                paraMap.remove((String) Key);
+            }
+        }
+        
+        Connection rains_conn;
+        Properties rains_connectionProps = new Properties();
+        rains_connectionProps.put("user","root");
+        rains_connectionProps.put("password","root");
+        
+        rains_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/rainsdb",
+                rains_connectionProps); 
+        
+        if (paraMap.containsKey("template1")) {
+            //paraMap.put("driverType", "aws");
+            paraMap.put("topUri", "urn:ogf:network:domain=vo1.versastack.org:link=link1");
+            paraMap.put("eth_src", "urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000005:port-s5-eth1");
+            paraMap.put("eth_des", "urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000002:port-s2-eth1");
+            paraMap.remove("template1");
+            paraMap.remove("fl2pCreate");
+            
+            servBean.createflow(paraMap);
 
-    private String createConnection(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {
+        } 
+                else {
+                paraMap.remove("userID");
+                paraMap.remove("custom");
+                paraMap.remove("fl2pCreate");
+            //Process each link
+                
+                for(Map.Entry<String,String>entry : paraMap.entrySet())
+                {
+                    System.out.println(entry.getKey()+entry.getValue());
+                }
+
+        // Async setup 
+                request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
+                AsyncContext asyncCtx = request.startAsync();
+                asyncCtx.addListener(new AppAsyncListener());
+                asyncCtx.setTimeout(60000);
+
+                ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
+
+                executor.execute(new FL2PWorker(asyncCtx, paraMap));
+        }
+        return ("/VersaStack-web/ops/srvc/fl2p.jsp?ret=0");
+        
+    }
+
+    public String createConnection(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {
         for (Object key : paraMap.keySet().toArray()) {
             if (paraMap.get((String) key).isEmpty()) {
                 paraMap.remove((String) key);
@@ -479,9 +771,9 @@ public class ServiceServlet extends HttpServlet {
                 rains_connectionProps);
         
         if (paraMap.containsKey("template1")) {
-            paraMap.put("driverType", "aws");
-            paraMap.put("topoUri", "urn:ogf:network:vo1.maxgigapop.net:link");
-            paraMap.put("conn1", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*& vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029");
+            //paraMap.put("driverType", "aws");
+            paraMap.put("linkUri1", "urn:ogf:network:vo1.maxgigapop.net:link=conn1");
+            paraMap.put("conn1", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029");
 
             paraMap.remove("template1");
             paraMap.remove("dncCreate");
@@ -489,9 +781,10 @@ public class ServiceServlet extends HttpServlet {
             servBean.createConnection(paraMap);
 
         } else if (paraMap.containsKey("template2")) {
-            paraMap.put("driverType", "aws");
-            paraMap.put("topoUri", "urn:ogf:network:vo1.maxgigapop.net:link");
-            paraMap.put("conn1", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*& vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029");
+            //paraMap.put("driverType", "aws");
+            paraMap.put("linkUri1", "urn:ogf:network:vo1.maxgigapop.net:link=conn1");
+            paraMap.put("conn1", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*& vlan_tag+3021-3029\r\nc&vlan_tag+3021-3029");
+            paraMap.put("linkUri2", "urn:ogf:network:vo1.maxgigapop.net:link=conn2");
             paraMap.put("conn2", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*& vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029");
 
             paraMap.remove("template2");
@@ -503,18 +796,20 @@ public class ServiceServlet extends HttpServlet {
         else {
             //Process each link
                 for (int i = 1; i < 10; i++) {
+                    //if(paraMap.containsKey("linkUri"+i))
+                    if(paraMap.containsKey("link"+ i +"-src")){
                     String linkString = "";
                     if (paraMap.containsKey("link" + i + "-src")) {
                         linkString = paraMap.get("link" + i + "-src") + "&";
                      }
                     if (paraMap.containsKey("link" + i + "-src-vlan")) {
-                        linkString += paraMap.get("link" + i + "-src-vlan");
+                        linkString += "vlan_tag+"+paraMap.get("link" + i + "-src-vlan");
                     }
                     if (paraMap.containsKey("link" + i + "-des")) {
-                        linkString += "/r/n" + paraMap.get("link" + i + "-des") + "&";
+                        linkString += "\r\n" + paraMap.get("link" + i + "-des") + "&";
                     }
                     if (paraMap.containsKey("link" + i + "-des-vlan")) {
-                        linkString += paraMap.get("link" + i + "-des-vlan");
+                        linkString += "vlan_tag+"+paraMap.get("link" + i + "-des-vlan");
                     }
 
                     paraMap.remove("link" + i + "-src");
@@ -524,10 +819,16 @@ public class ServiceServlet extends HttpServlet {
 
                     paraMap.put("conn" + i, linkString);
                 }
+                }
         
                 paraMap.remove("userID");
                 paraMap.remove("custom");
                 paraMap.remove("dncCreate");
+                
+                for(Map.Entry<String,String>entry : paraMap.entrySet())
+                {
+                    System.out.println(entry.getKey()+entry.getValue());
+                }
 
         // Async setup 
                 request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);

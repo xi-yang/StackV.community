@@ -384,7 +384,7 @@ public class HandleSystemCall {
         }
         // 4. Qury for status in a loop bounded by timeout.
         //@TODO: make timeout and interval values configurable
-        int timeoutMinutes = 10; // 10 minutes 
+        int timeoutMinutes = 20; // 20 minutes 
         for (int minute = 0; minute < timeoutMinutes; minute++) {
             boolean doneSucessful = true;
             for (DriverSystemDelta dsd : commitResultMap.keySet()) {

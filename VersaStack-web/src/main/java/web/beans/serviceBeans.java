@@ -25,7 +25,6 @@ import java.util.logging.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
-
 public class serviceBeans {
 
     private static final Logger logger = Logger.getLogger(serviceBeans.class.getName());
@@ -36,16 +35,16 @@ public class serviceBeans {
     String rains_db_user = "root";
     String rains_db_pass = "root";
     String host = "http://localhost:8080/VersaStack-web/restapi";
-        
+
     public serviceBeans() {
 
     }
 
-    
     /**
-     * Installs driver with the user defined properties via the system API 
-     * @param paraMap a key-value pair contains all the properties defined by user.
-     * It should contains at least the driver ID and the topology uri. 
+     * Installs driver with the user defined properties via the system API
+     *
+     * @param paraMap a key-value pair contains all the properties defined by
+     * user. It should contains at least the driver ID and the topology uri.
      * @return error code:<br />
      * 0 - success.<br />
      * 2 - plugin error.<br />
@@ -53,11 +52,11 @@ public class serviceBeans {
      */
     public int driverInstall(Map<String, String> paraMap) {
         String driver = "<driverInstance><properties>";
-        for(Map.Entry<String, String> entry : paraMap.entrySet()){
+        for (Map.Entry<String, String> entry : paraMap.entrySet()) {
             //if the key indicates what kind of driver it is, put the corresponding ejb path
-            if(entry.getKey().equalsIgnoreCase("driverID")){
+            if (entry.getKey().equalsIgnoreCase("driverID")) {
                 driver += "<entry><key>driverEjbPath</key>";
-                switch(entry.getValue()){
+                switch (entry.getValue()) {
                     case "stubdriver":
                         driver += "<value>java:module/StubSystemDriver</value></entry>";
                         break;
@@ -66,7 +65,7 @@ public class serviceBeans {
                         break;
                     case "versaNSDriver":
                         driver += "<value>java:module/GenericRESTDriver</value></entry>";
-                        break;                    
+                        break;
                     case "openStackDriver":
                         driver += "<value>java:module/OpenStackDriver</value></entry>";
                         break;
@@ -76,29 +75,23 @@ public class serviceBeans {
                     default:
                         break;
                 }
-            }
-            
-            //if it is ttl model, modify the format so that the system can recognize the brackets
-            else if(entry.getKey().equalsIgnoreCase("ttlmodel")){
+            } //if it is ttl model, modify the format so that the system can recognize the brackets
+            else if (entry.getKey().equalsIgnoreCase("ttlmodel")) {
                 String ttlModel = entry.getValue().replaceAll("<", "&lt;");
                 ttlModel = ttlModel.replaceAll(">", "&gt;");
-                driver += "<entry><key>stubModelTtl</key><value>" + ttlModel +"</value></entry>";
-                
-            }
-            
-            //if it indicates it's a natserver in openstack, add this entry
-            else if(entry.getKey().equalsIgnoreCase("NATServer") && entry.getValue().equalsIgnoreCase("yes")){
+                driver += "<entry><key>stubModelTtl</key><value>" + ttlModel + "</value></entry>";
+
+            } //if it indicates it's a natserver in openstack, add this entry
+            else if (entry.getKey().equalsIgnoreCase("NATServer") && entry.getValue().equalsIgnoreCase("yes")) {
                 driver += "<entry><key>NATServer</key><value></value></entry>";
-            }
-            
-            //simply put the key value pair into the string
-            else{
-                driver += "<entry><key>" + entry.getKey() + "</key><value>" 
+            } //simply put the key value pair into the string
+            else {
+                driver += "<entry><key>" + entry.getKey() + "</key><value>"
                         + entry.getValue() + "</value></entry>";
             }
         }
         driver += "</properties></driverInstance>";
-                
+
         //push to the system api and get response
         try {
             URL url = new URL(String.format("%s/driver", host));
@@ -117,6 +110,7 @@ public class serviceBeans {
 
     /**
      * Uninstalls driver via the system API
+     *
      * @param topoUri an unique string represents each driver topology
      * @return error code:<br />
      * 0 - success.<br />
@@ -138,24 +132,989 @@ public class serviceBeans {
         return 0;
     }
 
-    /**
+// -------------------------- SERVICE FUNCTIONS --------------------------------
+    public int createflow(Map<String, String> paraMap) {
+        String topUri = null;
+        String refUuid = null;
+        String eth_src = null;
+        String eth_des = null;
 
+        for (Map.Entry<String, String> entry : paraMap.entrySet()) {
+            if (entry.getKey().contains("topUri")) {
+                topUri = entry.getValue();
+            } else if (entry.getKey().equalsIgnoreCase("instanceUUID")) {
+                refUuid = entry.getValue();
+            } else if (entry.getKey().equalsIgnoreCase("eth-src")) {
+                eth_src = entry.getValue();
+            } else if (entry.getKey().equalsIgnoreCase("eth-des")) {
+                eth_des = entry.getValue();
+            }
+        }
+
+        String deltaUUID = UUID.randomUUID().toString();
+
+        String delta = "<serviceDelta>\n<uuid>" + deltaUUID
+                + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
+                + "\n\n<modelAddition>\n\n"
+                + "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
+                + "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n"
+                + "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n"
+                + "@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .\n"
+                + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
+                + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n"
+                + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n"
+                + "@prefix sna:   &lt;http://schemas.ogf.org/mrs/2015/08/network#&gt; .\n\n\n"
+                + "&lt;" + topUri + "&gt; \n"
+                + "        a                         owl:NamedIndividual , nml:Link ;\n"
+                + "        spa:type                  spa:Abstraction;\n"
+                + "        nml:name                  \"l2-connetion-test\" ;\n"
+                + "        spa:dependOn &lt;x-policy-annotation:action:connect-path1&gt; .\n\n"
+                + "&lt;x-policy-annotation:action:connect-path1&gt;\n"
+                + "        a            spa:PolicyAction ;\n"
+                + "        spa:type     \"MCE_L2OpenflowPath\" ;\n"
+                + "        spa:value    \"SRRG Path Pair\" ;\n"
+                + "        spa:importFrom &lt;x-policy-annotation:data:left-location&gt;, &lt;x-policy-annotation:data:right-location&gt; ;\n"
+                + "        spa:exportTo &lt;x-policy-annotation:data:path1-vlan&gt; .\n\n"
+                + "&lt;x-policy-annotation:data:left-location&gt;\n"
+                + "        a            spa:PolicyData ;\n"
+                + "        spa:type     \"port\";\n"
+                + "        spa:value    \" " + eth_src + "\"  .\n\n"
+                + "&lt;x-policy-annotation:data:right-location&gt;\n"
+                + "        a            spa:PolicyData ;\n"
+                + "        spa:type     \"port\";\n"
+                + "        spa:value    \" " + eth_des + "\" .\n\n"
+                + "&lt;x-policy-annotation:data:path1-vlan&gt;\n"
+                + "        a            spa:PolicyData.\n\n"
+                + "</modelAddition>\n\n"
+                + "</serviceDelta>";
+
+        String result;
+
+        try {
+            Connection front_conn;
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", "root");
+            front_connectionProps.put("password", "root");
+
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("SELECT service_instance_id, service_state_id"
+                    + " FROM service_instance WHERE referenceUUID = ?");
+            prep.setString(1, refUuid);
+            ResultSet rs1 = prep.executeQuery();
+            rs1.next();
+            int instanceId = rs1.getInt(1);
+            int stateId = rs1.getInt(2);
+
+            String formatDelta = delta.replaceAll("<", "&lt;");
+            formatDelta = formatDelta.replaceAll(">", "&gt;");
+
+            prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
+                    + "(`service_instance_id`, `service_state_id`, `delta`) "
+                    + "VALUES (?, ?, ?)");
+            prep.setInt(1, instanceId);
+            prep.setInt(2, stateId);
+            prep.setString(3, formatDelta);
+            prep.executeUpdate();
+
+        } catch (SQLException ex) {
+            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        try {
+            URL url = new URL(String.format("%s/service/%s", host, refUuid));
+            HttpURLConnection compile = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, compile, "POST", delta);
+            if (!result.contains("referenceVersion")) {
+                return 2;//Error occurs when interacting with back-end system
+            }
+            url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
+            HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, propagate, "PUT", null);
+            if (!result.equals("PROPAGATED")) {
+                return 2;//Error occurs when interacting with back-end system
+            }
+            url = new URL(String.format("%s/service/%s/commit", host, refUuid));
+            HttpURLConnection commit = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, commit, "PUT", null);
+            if (!result.equals("COMMITTED")) {
+                return 2;//Error occurs when interacting with back-end system
+            }
+            url = new URL(String.format("%s//%s/status", host, refUuid));
+            while (true) {
+                HttpURLConnection status = (HttpURLConnection) url.openConnection();
+                result = this.executeHttpMethod(url, status, "GET", null);
+                if (result.equals("READY")) {
+                    return 0;//create network successfully
+                } else if (!result.equals("COMMITTED")) {
+                    return 3;//Fail to create network
+                }
+                sleep(5000);//wait for 5 seconds and check again later
+            }
+        } catch (Exception e) {
+            return 1;//connection error
+        }
+
+    }
+
+    public int createConnection(Map<String, String> paraMap) {
+
+        String topoUri = null;
+        String refUuid = null;
+        List<String> connection = new ArrayList<>();
+        List<String> linkUri = new ArrayList<>();
+        String connPara;
+
+        for (Map.Entry<String, String> entry : paraMap.entrySet()) {
+
+            if (entry.getKey().contains("linkUri")) {
+                linkUri.add(entry.getValue());
+            } else if (entry.getKey().contains("conn")) {
+                connection.add(entry.getValue());
+
+            } else if (entry.getKey().equalsIgnoreCase("instanceUUID")) {
+                refUuid = entry.getValue();
+            }
+
+        }
+        JSONObject jsonConnect = new JSONObject();
+        for (String linkName : linkUri) {
+            //
+            connPara = linkName;
+            for (String link : connection) {
+                JSONObject jsonPort = new JSONObject();
+                // <<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&vlan_tag+3021-3029>>>>>\r\n<<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029>>>>>”
+                String[] linkPara = link.split("\r\n");
+                for (String port : linkPara) {
+                    //<<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*>>>>>>&<<<<<vlan_tag+3021-3029>>>>>>
+                    String[] portPara = port.split("&");
+                    JSONObject jsonVlan = new JSONObject();
+                    for (String vlan : portPara) {
+                        if (vlan.contains("vlan")) {
+                            String[] vlanPara = vlan.split("\\+");
+                            jsonVlan.put(vlanPara[0], vlanPara[1]);
+                        }
+                    }
+                    jsonPort.put(portPara[0], jsonVlan);
+                }
+                jsonConnect.put(connPara, jsonPort);
+
+            }
+        }
+
+        System.out.println(jsonConnect.toString());
+
+        String deltaUUID = UUID.randomUUID().toString();
+
+        String delta = "<serviceDelta>\n<uuid>" + deltaUUID
+                + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
+                + "\n\n<modelAddition>\n"
+                + "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
+                + "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n"
+                + "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n"
+                + "@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .\n"
+                + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
+                + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n"
+                + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n";
+
+        for (String linkName : linkUri) {
+            delta += "&lt;" + linkName + "&gt;\n"
+                    + "      a            mrs:SwitchingSubnet ;\n"
+                    + "spa:dependOn &lt;x-policy-annotation:action:create-path&gt;.\n\n";
+        }
+
+        delta += "&lt;x-policy-annotation:action:create-path&gt;\n"
+                + "    a            spa:PolicyAction ;\n"
+                + "    spa:type     \"MCE_MPVlanConnection\" ;\n"
+                + "    spa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;\n"
+                + "    spa:exportTo &lt;x-policy-annotation:data:conn-criteriaexport&gt; .\n\n"
+                + "&lt;x-policy-annotation:data:conn-criteria&gt;\n"
+                + "    a            spa:PolicyData;\n"
+                + "    spa:type     \"JSON\";\n"
+                + "    spa:value    \"\"\"" + jsonConnect.toString().replace("\\", "")
+                + "    \"\"\".\n\n&lt;x-policy-annotation:data:conn-criteriaexport&gt;\n"
+                + "    a            spa:PolicyData;\n"
+                + "    spa:type     \"JSON\" .\n\n"
+                + "</modelAddition>\n\n"
+                + "</serviceDelta>";
+        try {
+
+            PrintWriter out = new PrintWriter("/Users/ranjitha/Desktop/test.ttl");
+            out.println(delta);
+            out.close();
+        } catch (Exception e) {
+
+        }
+
+        String result;
+
+        // Cache serviceDelta.
+        int[] results = cacheServiceDelta(refUuid, deltaUUID, delta);
+        int instanceID = results[0];
+        int historyID = results[1];
+
+        try {
+            URL url = new URL(String.format("%s/service/%s", host, refUuid));
+            HttpURLConnection compile = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, compile, "POST", delta);
+            if (!result.contains("referenceVersion")) {
+                return 2;//Error occurs when interacting with back-end system
+            }
+            
+            // Cache System Delta
+            cacheSystemDelta(instanceID, historyID, result);
+            
+            url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
+            HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, propagate, "PUT", null);
+            if (!result.equals("PROPAGATED")) {
+                return 2;//Error occurs when interacting with back-end system
+            }
+            url = new URL(String.format("%s/service/%s/commit", host, refUuid));
+            HttpURLConnection commit = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, commit, "PUT", null);
+            if (!result.equals("COMMITTED")) {
+                return 2;//Error occurs when interacting with back-end system
+            }
+            url = new URL(String.format("%s//%s/status", host, refUuid));
+            while (true) {
+                HttpURLConnection status = (HttpURLConnection) url.openConnection();
+                result = this.executeHttpMethod(url, status, "GET", null);
+                if (result.equals("READY")) {
+                    return 0;//create network successfully
+                } else if (!result.equals("COMMITTED")) {
+                    return 3;//Fail to create network
+                }
+                sleep(5000);//wait for 5 seconds and check again later
+            }
+        } catch (Exception e) {
+            return 1;//connection error
+        }
+
+    }
+
+    public int createNetwork(Map<String, String> paraMap) {
+        String topoUri = null;
+        String driverType = null;
+        String netCidr = null;
+        String refUuid = null;
+        String directConn = null;
+        List<String> subnets = new ArrayList<>();
+        List<String> vmList = new ArrayList<>();
+        boolean gwVpn = false;
+
+        for (Map.Entry<String, String> entry : paraMap.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase("topoUri")) {
+                topoUri = entry.getValue();
+            }else if (entry.getKey().equalsIgnoreCase("driverType")) {
+                driverType = entry.getValue();
+            }else if (entry.getKey().equalsIgnoreCase("netCidr")) {
+                netCidr = entry.getValue();
+            } else if (entry.getKey().equalsIgnoreCase("instanceUUID")) {
+                refUuid = entry.getValue();
+            } else if (entry.getKey().equalsIgnoreCase("directConn")) {
+                directConn = entry.getValue();
+            } else if (entry.getKey().contains("subnet")) {
+                subnets.add(entry.getValue());
+            } else if (entry.getKey().contains("vm")) {
+                vmList.add(entry.getValue());
+            }
+            //example for vm : vm1&0
+        }
+
+        JSONObject network = new JSONObject();
+        network.put("type", "internal");
+        network.put("cidr", netCidr);
+        network.put("parent", topoUri);
+
+        JSONArray subnetsJson = new JSONArray();
+        //routing problem solved. need testing.
+        for (String net : subnets) {
+            String[] netPara = net.split("&");
+            JSONObject subnetValue = new JSONObject();
+            for (String para : netPara) {
+                if (para.startsWith("routes")) {
+                    String[] route = para.substring(6).split("\r\n");
+                    JSONArray routesArray = new JSONArray();
+                    for (String r : route) {
+                        String[] routePara = r.split(",");
+                        JSONObject jsonRoute = new JSONObject();
+                        for (String rp : routePara) {
+                            String[] keyValue = rp.split("\\+");
+                            jsonRoute.put(keyValue[0], keyValue[1]);
+                            if (keyValue[1].contains("vpn")) {
+                                gwVpn = true;
+                            }
+                        }
+                        routesArray.add(jsonRoute);
+                    }
+                    subnetValue.put("routes", routesArray);
+                } else {
+                    String[] keyValue = para.split("\\+");
+                    subnetValue.put(keyValue[0], keyValue[1]);
+                }
+            }
+            subnetsJson.add(subnetValue);
+        }
+        network.put("subnets", subnetsJson);
+
+        JSONArray routesJson = new JSONArray();
+        JSONObject routesValue = new JSONObject();
+        routesValue.put("to", "0.0.0.0/0");
+        routesValue.put("nextHop", "internet");
+        routesJson.add(routesValue);
+        network.put("routes", routesJson);
+
+        JSONArray gatewaysJson = new JSONArray();
+        JSONObject temp = new JSONObject();
+        temp.put("type", "internet");
+        gatewaysJson.add(temp);
+        if (gwVpn) {
+            JSONObject gatewayValue = new JSONObject();
+            gatewayValue.put("type", "vpn");
+            gatewaysJson.add(gatewayValue);
+        }
+        network.put("gateways", gatewaysJson);
+   
+        String deltaUUID = UUID.randomUUID().toString();
+        
+        String svcDelta = "<serviceDelta>\n<uuid>" + deltaUUID
+                + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
+                + "\n\n<modelAddition>\n"
+                + "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
+                + "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n"
+                + "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n"
+                + "@prefix rdf:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
+                + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
+                + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n"
+                + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n"
+                + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_clouds:tag+vpc1&gt;\n"
+                + "    a                         nml:Topology ;\n";
+        
+        String exportTo = "";
+        if(driverType.equals("aws") && directConn != null){
+            String dest = directConn.contains("?vlan") ? directConn.substring(0, directConn.indexOf("?vlan")) : directConn;
+            String vlan = directConn.contains("?vlan") ? directConn.substring(directConn.indexOf("?vlan")+6): "any";
+            exportTo += "&lt;x-policy-annotation:data:vpc-export&gt;, ";
+            svcDelta += "    spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt;"
+                    + ", &lt;x-policy-annotation:action:create-mce_dc1&gt; .\n\n"
+                    + "&lt;urn:ogf:network:vo1_maxgigapop_net:link=conn1&gt;\n" 
+                    + "    a            mrs:SwitchingSubnet;\n"
+                    + "    spa:type     spa:Abstraction;\n" 
+                    + "    spa:dependOn &lt;x-policy-annotation:action:create-path&gt;.\n\n"
+                    + "&lt;x-policy-annotation:action:create-path&gt;\n" 
+                    + "    a            spa:PolicyAction ;\n"
+                    + "    spa:type     \"MCE_MPVlanConnection\" ;\n"
+                    + "    spa:importFrom &lt;x-policy-annotation:data:conn-criteria1&gt; ;\n"
+                    + "    spa:exportTo &lt;x-policy-annotation:data:conn-export&gt; .\n\n"
+                    + "&lt;x-policy-annotation:action:create-mce_dc1&gt;\n"
+                    + "    a            spa:PolicyAction ;\n"
+                    + "    spa:type     \"MCE_AwsDxStitching\" ;\n"
+                    + "    spa:importFrom &lt;x-policy-annotation:data:vpc-export&gt;, &lt;x-policy-annotation:data:conn-export&gt; ;\n"
+                    + "    spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt;, &lt;x-policy-annotation:action:create-path&gt;.\n\n"
+                    + "&lt;x-policy-annotation:data:vpc-export&gt;\n"
+                    + "    a            spa:PolicyData ;\n"
+                    + "    spa:type     \"JSON\" ;\n"
+                    + "    spa:format   \"\"\"{\n"
+                    + "       \"parent\":\"" + topoUri + "\",\n"
+                    + "       \"stitch_from\": \"%$.gateways[?(@.type=='vpn-gateway')].uri%\",\n"
+                    + "    }\"\"\" .\n\n"
+                    + "&lt;x-policy-annotation:data:conn-export&gt;\n"
+                    + "    a            spa:PolicyData;\n"
+                    + "    spa:type     \"JSON\" ;\n"
+                    + "    spa:format   \"\"\"{\n"
+                    + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%\n"
+                    + "    }\"\"\" .\n\n"
+                    + "&lt;x-policy-annotation:data:conn-criteria1&gt;\n"
+                    + "    a            spa:PolicyData;\n"
+                    + "    spa:type     \"JSON\";\n"
+                    + "    spa:value    \"\"\"{\n"
+                    + "        \"urn:ogf:network:vo1_maxgigapop_net:link=conn1\":"
+                    + "{ \""+ dest +"\":{\"vlan_tag\":\""+ vlan +"\"},\n"
+                    + "        \"" + topoUri + "\":{\"vlan_tag\":\""+ vlan +"\"}\n"
+                    + "        }\n"
+                    + "    }\"\"\".\n\n";            
+        } else
+            svcDelta += "    spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; .\n\n";
+
+        if (!vmList.isEmpty()) {
+            if(driverType.equals("aws")){
+            for (String vm : vmList) {
+                String[] vmPara = vm.split("&");
+                //0:vm name.
+                //1:subnet #
+                //2:image type
+                //3:instance type
+                //4:keypair name
+                //5:security group name
+                svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n"
+                        + "    a                         nml:Node ;\n";
+                String typeDetail = (vmPara[2].equals(" ")?"":"\"image+"+ vmPara[2] +"\",")
+                        + (vmPara[3].equals(" ")?"":"\"instance+"+ vmPara[3] +"\",")
+                        + (vmPara[4].equals(" ")?"":"\"keypair+"+ vmPara[4] +"\",")
+                        + (vmPara[5].equals(" ")?"":"\"secgroup+"+ vmPara[5] +"\",");
+                
+                svcDelta += (typeDetail.isEmpty()? "": "    mrs:type       " + typeDetail.substring(0, typeDetail.length()-1) + ";\n")
+                        + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt; ;\n"
+                        + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;.\n\n"
+                        + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt;\n"
+                        + "    a            nml:BidirectionalPort;\n"
+                        + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;.\n\n"
+                        + "&lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;\n"
+                        + "    a            spa:PolicyAction ;\n"
+                        + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
+                        + "    spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;\n"
+                        + "    spa:importFrom ";
+                String subnetCriteria = "&lt;x-policy-annotation:data:vpc-subnet-" + vmPara[0] + "-criteria&gt;";
+                exportTo += subnetCriteria + ", ";
+                int sub = Integer.valueOf(vmPara[1]) - 1;
+                svcDelta += subnetCriteria + ".\n\n"
+                        + subnetCriteria + "\n    a            spa:PolicyData;\n"
+                        + "    spa:type     \"JSON\";\n    spa:format    \"\"\"{ "
+                        + "\"place_into\": \"%$.subnets[" + sub + "].uri%\"}\"\"\" .\n\n";
+            }                
+            }
+            else if(driverType.equals("ops")){
+            for (String vm : vmList) {
+                String[] vmPara = vm.split("&");
+                //0:vm name.
+                //1:subnet #
+                //2:image type
+                //3:instance type
+                //4:keypair name
+                //5:security group name
+                //6:vm host
+                //7:floating IP
+                //8:sriov destination
+                //9:sriov mac_address
+                //10:sriov ip_address
+                //11:sriov routes
+                svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n"
+                        + "    a                         nml:Node ;\n";
+                String typeDetail = (vmPara[2].equals(" ")?"":"\"image+"+ vmPara[2] +"\",")
+                        + (vmPara[3].equals(" ")?"":"\"instance+"+ vmPara[3] +"\",")
+                        + (vmPara[4].equals(" ")?"":"\"keypair+"+ vmPara[4] +"\",")
+                        + (vmPara[5].equals(" ")?"":"\"secgroup+"+ vmPara[5] +"\",");
+                
+                svcDelta += (typeDetail.isEmpty()? "": "    mrs:type       " + typeDetail.substring(0, typeDetail.length()-1) + ";\n")
+                        + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt; ;\n"
+                        + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;.\n\n"
+                        + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt;\n"
+                        + "    a            nml:BidirectionalPort;\n"
+                        + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "-eth0&gt;";
+                if(vmPara[7].equals(" ")){
+                    svcDelta += ".\n\n";
+                }else{
+                    svcDelta += ";\n    mrs:hasNetworkAddress   "
+                        + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0:floating&gt;.\n\n"
+                        + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0:floating&gt;\n"
+                        + "    a            mrs:NetworkAddress;\n    mrs:type     \"floating-ip\";\n"
+                        + "    mrs:value     \""+ vmPara[7] + "\".";
+                    if(!vmPara[8].equals(" ")){
+                        String dest = vmPara[8].contains("?vlan") ? vmPara[8].substring(0, vmPara[8].indexOf("?vlan")) : vmPara[8]; 
+                        String vlan = vmPara[8].contains("?vlan") ? vmPara[8].substring(vmPara[8].indexOf("?vlan")+6): "any";
+                        String[] route = vmPara[11].split("\r\n");
+                        JSONArray routesArray = new JSONArray();
+                        for (String r : route) {
+                            String[] routePara = r.split(",");
+                            JSONObject jsonRoute = new JSONObject();
+                            for (String rp : routePara) {
+                                String[] keyValue = rp.split("\\+");
+                                jsonRoute.put(keyValue[0], keyValue[1]);
+                            }
+                            routesArray.add(jsonRoute);
+                        }
+                        
+                        svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+ucs_sriov:tag+" + vmPara[0] + "&gt;\n"
+                                + "   a  nml:Topology;\n"
+                                + "   spa:type spa:Abstraction;\n"
+                                + "   spa:dependOn  &lt;x-policy-annotation:action:ucs-sviov-stitch-" + vmPara[0] + "&gt;.\n\n"
+                                + "&lt;x-policy-annotation:action:ucs-sviov-stitch-" + vmPara[0] + "&gt;\n"
+                                + "    a            spa:PolicyAction ;\n"
+                                + "    spa:type     \"MCE_UcsSriovStitching\" ;\n"
+                                + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;, "
+                                + "&lt;x-policy-annotation:action:create-path-" + vmPara[0] + "&gt;;\n"
+                                + "    spa:importFrom &lt;x-policy-annotation:data:sriov-criteria-" + vmPara[0] + "&gt;, "
+                                + "&lt;x-policy-annotation:data:conn-criteriaexport-" + vmPara[0] + "&gt; .\n\n"
+                                + "&lt;x-policy-annotation:data:sriov-criteria-" + vmPara[0] + "&gt;\n"
+                                + "    a            spa:PolicyData;\n" 
+                                + "    spa:type     \"JSON\";\n"
+                                + "    spa:value    \"\"\"{\n"
+                                + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "\",\n"
+                                + (vmPara[9].equals(" ")? "":"       \"mac_address\": \"" + vmPara[9] + "\",\n")
+                                + "       \"ip_address\": \"" + vmPara[10] + "\",\n"
+                                + "       \"routes\": " + routesArray.toString().replace("\\", "") + "\n"
+                                + "    }\"\"\" .\n\n"
+                                + "&lt;x-policy-annotation:action:create-path-" + vmPara[0] + "&gt;\n"
+                                + "    a            spa:PolicyAction ;\n"
+                                + "    spa:type     \"MCE_MPVlanConnection\" ;\n"
+                                + "    spa:importFrom &lt;x-policy-annotation:data:conn-criteria-" + vmPara[0] + "&gt; ;\n"
+                                + "    spa:exportTo &lt;x-policy-annotation:data:conn-criteriaexport-" + vmPara[0] + "&gt; .\n\n"
+                                + "&lt;x-policy-annotation:data:conn-criteria-" + vmPara[0] + "&gt;\n"
+                                + "    a            spa:PolicyData;\n"
+                                + "    spa:type     \"JSON\";\n"
+                                + "    spa:value    \"\"\"{\n"
+                                + "        \"urn:ogf:network:vo1_maxgigapop_net:link=conn-" + vmPara[0] + "\": {\n"
+                                + "        \""+ dest +"\":{\"vlan_tag\":\""+ vlan +"\"},\n"
+                                + "        \"" + topoUri + "\":{\"vlan_tag\":\""+ vlan +"\"}\n"
+                                + "        }\n"
+                                + "    }\"\"\".\n\n"
+                                + "&lt;x-policy-annotation:data:conn-criteriaexport-" + vmPara[0] + "&gt;\n"
+                                + "    a            spa:PolicyData;\n"
+                                + "    spa:type     \"JSON\" ;\n"
+                                + "    spa:format   \"\"\"{\n"
+                                + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn-" + vmPara[0] + "%\n"
+                                + "    }\"\"\" .\n\n";
+                    }
+                }                
+                    svcDelta += "&lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;\n"
+                        + "    a            spa:PolicyAction ;\n"
+                        + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
+                        + "    spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;\n"
+                        + "    spa:importFrom &lt;x-policy-annotation:data:" + vmPara[0] + "-host-criteria&gt;.\n\n"
+                        + "&lt;x-policy-annotation:data:" + vmPara[0] + "-host-criteria&gt;\n"
+                        + "    a            spa:PolicyData;\n    spa:type     \"JSON\";\n"
+                        + "    spa:value    \"\"\"{\n"
+                        + "       \"place_into\": \"urn:ogf:network:openstack.com:openstack-cloud:host+" + vmPara[6] + "\"\n"
+                        + "    }\"\"\" .\n\n"    
+                        + "&lt;x-policy-annotation:action:create-" + vmPara[0] + "-eth0&gt;\n"
+                        + "    a            spa:PolicyAction ;\n"
+                        + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
+                        + "    spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;\n"
+                        + "    spa:importFrom ";
+                String subnetCriteria = "&lt;x-policy-annotation:data:vpc-subnet-" + vmPara[0] + "-criteria&gt;";
+                exportTo += subnetCriteria + ", ";
+                int sub = Integer.valueOf(vmPara[1]) - 1;
+                svcDelta += subnetCriteria + ".\n\n"
+                        + subnetCriteria + "\n    a            spa:PolicyData;\n"
+                        + "    spa:type     \"JSON\";\n    spa:format    \"\"\"{ "
+                        + "\"place_into\": \"%$.subnets[" + sub + "].uri%\"}\"\"\" .\n\n";
+            }
+            }
+        }
+        svcDelta += "&lt;x-policy-annotation:action:create-vpc&gt;\n"
+                + "    a           spa:PolicyAction ;\n"
+                + "    spa:type     \"MCE_VirtualNetworkCreation\" ;\n"
+                + "    spa:importFrom &lt;x-policy-annotation:data:vpc-criteria&gt; ";
+        svcDelta += exportTo.isEmpty() ? ".\n\n":";\n    spa:exportTo " + exportTo.substring(0, (exportTo.length() - 2)) + " .\n\n";
+        
+        svcDelta += "&lt;x-policy-annotation:data:vpc-criteria&gt;\n"
+                    + "    a            spa:PolicyData;\n"
+                    + "    spa:type     nml:Topology;\n"
+                    + "    spa:value    \"\"\"" + network.toString().replace("\\", "")
+                    + "\"\"\".\n\n"
+                    + "</modelAddition>\n\n"
+                    + "</serviceDelta>";
+
+        try {
+            PrintWriter out = new PrintWriter("/Users/rikenavadur/test.ttl");
+            out.println(svcDelta);
+            out.close();
+        } catch (Exception e) {
+
+        }
+        //System.out.println(svcDelta);
+
+        // Cache serviceDelta.
+        int[] results = cacheServiceDelta(refUuid, deltaUUID, svcDelta);
+        int instanceID = results[0];
+        int historyID = results[1];
+
+//        String siUuid;
+        String result;
+        try {
+//            URL url = new URL(String.format("%s/service/instance", host));
+//            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+//            siUuid = this.executeHttpMethod(url, connection, "GET", null);
+//            if (siUuid.length() != 36) {
+//                return 2;//Error occurs when interacting with back-end system
+//            }
+            URL url = new URL(String.format("%s/service/%s", host, refUuid));
+            HttpURLConnection compile = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, compile, "POST", svcDelta);
+            if (!result.contains("referenceVersion")) {
+                return 2;//Error occurs when interacting with back-end system
+            }
+
+            // Cache System Delta
+            cacheSystemDelta(instanceID, historyID, result);
+
+            url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
+            HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, propagate, "PUT", null);
+            if (!result.equals("PROPAGATED")) {
+                return 2;//Error occurs when interacting with back-end system
+            }
+            url = new URL(String.format("%s/service/%s/commit", host, refUuid));
+            HttpURLConnection commit = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, commit, "PUT", null);
+            if (!result.equals("COMMITTED")) {
+                return 2;//Error occurs when interacting with back-end system
+            }
+            url = new URL(String.format("%s/service/%s/status", host, refUuid));
+            while (true) {
+                HttpURLConnection status = (HttpURLConnection) url.openConnection();
+                result = this.executeHttpMethod(url, status, "GET", null);
+                if (result.equals("READY")) {
+                    return 0;//create network successfully
+                } else if (!result.equals("COMMITTED")) {
+                    return 3;//Fail to create network
+                }
+                sleep(5000);//wait for 5 seconds and check again later
+            }
+        } catch (Exception e) {
+            return 1;//connection error
+        }
+    }
+
+// --------------------------- UTILITY FUNCTIONS -------------------------------    
+    public HashMap<String, String> getJobStatuses() throws SQLException {
+        HashMap<String, String> retMap = new HashMap<>();
+
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        ArrayList<String> service_list = new ArrayList<>();
+        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID FROM service S, service_instance I WHERE I.service_id = S.service_id");
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {
+            String name = rs1.getString("name");
+            String refId = rs1.getString("referenceUUID");
+
+            String status;
+            try {
+                URL url = new URL(String.format("%s/service/%s/status", host, refId));
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                status = this.executeHttpMethod(url, connection, "GET", null);
+
+                retMap.put(name, status);
+            } catch (Exception e) {
+                System.out.println(e.toString());//query error
+            }
+        }
+
+        return retMap;
+    }
+
+    private HashMap<String, ArrayList<String>> getJobProperties() throws SQLException {
+        HashMap<String, ArrayList<String>> retMap = new HashMap<>();
+
+        return retMap;
+    }
+
+    /**
+     * Executes HTTP Request.
+     *
+     * @param url destination url
+     * @param conn connection object
+     * @param method request method
+     * @param body request body
+     * @return response string.
+     * @throws IOException
+     */
+    public String executeHttpMethod(URL url, HttpURLConnection conn, String method, String body) throws IOException {
+        conn.setRequestMethod(method);
+        conn.setRequestProperty("Content-type", "application/xml");
+        conn.setRequestProperty("Accept", "application/json");
+        if (body != null && !body.isEmpty()) {
+            conn.setDoOutput(true);
+            try (DataOutputStream wr = new DataOutputStream(conn.getOutputStream())) {
+                wr.writeBytes(body);
+                wr.flush();
+            }
+        }
+        logger.log(Level.INFO, "Sending {0} request to URL : {1}", new Object[]{method, url});
+        int responseCode = conn.getResponseCode();
+        logger.log(Level.INFO, "Response Code : {0}", responseCode);
+
+        StringBuilder responseStr;
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+            String inputLine;
+            responseStr = new StringBuilder();
+            while ((inputLine = in.readLine()) != null) {
+                responseStr.append(inputLine);
+            }
+        }
+        return responseStr.toString();
+    }
+
+    public ArrayList<ArrayList<String>> instanceStatusCheck() throws SQLException {
+        ArrayList<ArrayList<String>> retList = new ArrayList<>();
+        ArrayList<String> banList = new ArrayList<>();
+
+        banList.add("Driver Management");
+
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID, X.super_state FROM"
+                + " service S, service_instance I, service_state X WHERE S.service_id = I.service_id AND I.service_state_id = X.service_state_id");
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {
+            ArrayList<String> instanceList = new ArrayList<>();
+
+            String instanceName = rs1.getString("name");
+            String instanceUUID = rs1.getString("referenceUUID");
+            String instanceSuperState = rs1.getString("super_state");
+            if (!banList.contains(instanceName)) {
+                try {
+                    URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
+                    HttpURLConnection status = (HttpURLConnection) url.openConnection();
+
+                    String instanceState = instanceSuperState + " - " + this.executeHttpMethod(url, status, "GET", null);
+
+                    instanceList.add(instanceName);
+                    instanceList.add(instanceUUID);
+                    instanceList.add(instanceState);
+
+                    retList.add(instanceList);
+                } catch (IOException ex) {
+                }
+            }
+        }
+
+        return retList;
+    }
+
+    public ArrayList<String> instanceStatusCheck(String instanceUUID) throws SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+        ArrayList<String> retList = new ArrayList<>();
+
+        Connection front_conn;
+        Class.forName("com.mysql.jdbc.Driver").newInstance();
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, X.super_state FROM"
+                + " service S, service_instance I, service_state X WHERE I.referenceUUID = ? AND S.service_id = I.service_id AND I.service_state_id = X.service_state_id");
+        prep.setString(1, instanceUUID);
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {
+            String instanceName = rs1.getString("name");
+            String instanceSuperState = rs1.getString("super_state");
+            try {
+                URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
+                HttpURLConnection status = (HttpURLConnection) url.openConnection();
+
+                String instanceState = instanceSuperState + " - " + this.executeHttpMethod(url, status, "GET", null);
+
+                retList.add(instanceName);
+                retList.add(instanceUUID);
+                retList.add(instanceState);
+            } catch (IOException ex) {
+            }
+        }
+
+        return retList;
+    }
+
+    public String detailsStatus(String instanceUUID) throws SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+        try {
+            URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
+            HttpURLConnection status = (HttpURLConnection) url.openConnection();
+            return this.executeHttpMethod(url, status, "GET", null);
+        } catch (IOException ex) {
+            return "Error retrieving backend status!";
+        }
+    }
+
+    public ArrayList<ArrayList<String>> catalogPull(int usergroup_id, int user_id) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+        ArrayList<ArrayList<String>> retList = new ArrayList<>();
+        Class.forName("com.mysql.jdbc.Driver").newInstance();
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+
+        try {
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("SELECT DISTINCT S.name, S.filename, S.description FROM service S JOIN acl A, acl_entry_group G, acl_entry_user U "
+                    + "WHERE S.atomic = 0 AND A.service_id = S.service_id AND ((A.acl_id = G.acl_id AND G.usergroup_id = ?) OR (A.acl_id = U.acl_id AND U.user_id = ?))");
+            prep.setInt(1, usergroup_id);
+            prep.setInt(2, user_id);
+            ResultSet rs1 = prep.executeQuery();
+
+            while (rs1.next()) {
+                ArrayList<String> instanceList = new ArrayList<>();
+
+                instanceList.add(rs1.getString("name"));
+                instanceList.add(rs1.getString("description"));
+                instanceList.add(rs1.getString("filename"));
+
+                retList.add(instanceList);
+            }
+        } catch (SQLException e) {
+            System.out.println("THIS IS A NEW BUILD.");
+            System.out.println("Exception: " + e);
+        }
+
+        return retList;
+    }
+
+    public void cleanInstances() throws SQLException {
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        PreparedStatement prep = front_conn.prepareStatement("DELETE FROM frontend.service_instance");
+        prep.executeUpdate();
+    }
+
+    public int getInstanceID(String referenceUUID) throws SQLException {
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        PreparedStatement prep = front_conn.prepareStatement("SELECT service_instance_id FROM service_instance WHERE referenceUUID = ?");
+        prep.setString(1, referenceUUID);
+        ResultSet rs1 = prep.executeQuery();
+        rs1.next();
+        return rs1.getInt("service_instance_id");
+    }
+
+    public int currentHistoryID(int instanceID) throws SQLException {
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", "root");
+        front_connectionProps.put("password", "root");
+
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        PreparedStatement prep = front_conn.prepareStatement("SELECT service_history_id FROM service_history WHERE `service_instance_id` = ? ORDER BY service_history_id DESC LIMIT 0, 1");
+        prep.setInt(1, instanceID);
+        ResultSet rs1 = prep.executeQuery();
+        rs1.next();
+        return rs1.getInt(1);
+    }
+
+    /**
+     *
+     * @param serviceType filename of the service
+     * @param name user-supplied tag
+     * @param refUuid instance UUID
+     * @return formatted URN.
+     */
+    private String urnBuilder(String serviceType, String name, String refUuid) {
+        switch (serviceType) {
+            case "dnc":
+                return "urn:ogf:network:service+" + refUuid + ":resource+links:tag+" + name;
+            case "netcreate":
+                return "urn:ogf:network:service+" + refUuid + ":resource+virtual_clouds:tag+" + name;
+            default:
+                return "ERROR";
+        }
+    }
+
+    private int[] cacheServiceDelta(String refUuid, String deltaUUID, String svcDelta) {
+        // Cache serviceDelta.
+        int instanceID = -1;
+        int historyID = -1;
+        try {
+            Connection front_conn;
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", "root");
+            front_connectionProps.put("password", "root");
+
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("SELECT service_instance_id"
+                    + " FROM service_instance WHERE referenceUUID = ?");
+            prep.setString(1, refUuid);
+            ResultSet rs1 = prep.executeQuery();
+            rs1.next();
+            instanceID = rs1.getInt(1);
+
+            historyID = currentHistoryID(instanceID);
+
+            String formatDelta = svcDelta.replaceAll("<", "&lt;");
+            formatDelta = formatDelta.replaceAll(">", "&gt;");
+
+            prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
+                    + "(`service_instance_id`, `service_history_id`, `referenceUUID`, `delta`) "
+                    + "VALUES (?, ?, ?, ?)");
+            prep.setInt(1, instanceID);
+            prep.setInt(2, historyID);
+            prep.setString(3, deltaUUID);
+            prep.setString(4, formatDelta);
+            prep.executeUpdate();
+
+        } catch (SQLException ex) {
+            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return new int[]{instanceID, historyID};
+    }
+
+    private void cacheSystemDelta(int instanceID, int historyID, String result) {
+        try {
+            Connection front_conn;
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", "root");
+            front_connectionProps.put("password", "root");
+
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            String formatDelta = result.replaceAll("<", "&lt;");
+            formatDelta = formatDelta.replaceAll(">", "&gt;");
+
+            PreparedStatement prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
+                    + "(`service_instance_id`, `service_history_id`, `delta`) "
+                    + "VALUES (?, ?, ?)");
+            prep.setInt(1, instanceID);
+            prep.setInt(2, historyID);
+            prep.setString(3, formatDelta);
+            prep.executeUpdate();
+
+        } catch (SQLException ex) {
+            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+// ------------------------- DEPRECATED SERVICES -------------------------------
+    /**
+     *
      * Create a virtual machine. Compose the ttl model according to the parsing
-     * parameters. Put the ttl model and the VersionGroup UUID in the parsing 
-     * parameter into the modelAddition part and referenceVersion respectively 
-     * in the delta. Request an UUID for system instance and use the UUID to 
+     * parameters. Put the ttl model and the VersionGroup UUID in the parsing
+     * parameter into the modelAddition part and referenceVersion respectively
+     * in the delta. Request an UUID for system instance and use the UUID to
      * propagate and commit the delta via the system API.
-     * @param paraMap a key-value pair contains all the required information, 
-     * either selected by the user or assigned by the system, to build the request
-     * virtual machine.
-     * @return
-     * 0 - success.<br />
+     *
+     * @param paraMap a key-value pair contains all the required information,
+     * either selected by the user or assigned by the system, to build the
+     * request virtual machine.
+     * @return 0 - success.<br />
      * 1 - Requesting System Instance UUID error.<br />
      * 2 - plugin error.<br />
      * 3 - connection error.<br />
      * 4 - parsing parameter error<br />
      */
-    public int vmInstall(Map<String, String> paraMap){
+    public int vmInstall(Map<String, String> paraMap) {
         String vgUuid = null;
         String driverType = null;
         String hypervisor = null;
@@ -170,35 +1129,36 @@ public class serviceBeans {
         int quantity;
 
         //Map the parsing parameters into each variable
-        for(Map.Entry<String, String> entry : paraMap.entrySet()){
-            if(entry.getKey().equalsIgnoreCase("driverType"))
+        for (Map.Entry<String, String> entry : paraMap.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase("driverType")) {
                 driverType = entry.getValue();
-            else if(entry.getKey().equalsIgnoreCase("hypervisor"))
+            } else if (entry.getKey().equalsIgnoreCase("hypervisor")) {
                 hypervisor = entry.getValue();
-            else if(entry.getKey().equalsIgnoreCase("topologyUri"))
+            } else if (entry.getKey().equalsIgnoreCase("topologyUri")) {
                 topoUri = entry.getValue();
-            else if(entry.getKey().equalsIgnoreCase("region"))
+            } else if (entry.getKey().equalsIgnoreCase("region")) {
                 region = entry.getValue();
-            else if(entry.getKey().equalsIgnoreCase("vpcID"))
+            } else if (entry.getKey().equalsIgnoreCase("vpcID")) {
                 vpcUri = entry.getValue();
-            else if(entry.getKey().equalsIgnoreCase("osType"))
+            } else if (entry.getKey().equalsIgnoreCase("osType")) {
                 osType = entry.getValue();
-            else if(entry.getKey().equalsIgnoreCase("instanceType"))
+            } else if (entry.getKey().equalsIgnoreCase("instanceType")) {
                 instanceType = entry.getValue();
-            else if(entry.getKey().equalsIgnoreCase("vmQuantity"))
+            } else if (entry.getKey().equalsIgnoreCase("vmQuantity")) {
                 quantity = Integer.valueOf(entry.getValue());
-            else if(entry.getKey().equalsIgnoreCase("vmName"))
+            } else if (entry.getKey().equalsIgnoreCase("vmName")) {
                 name = entry.getValue();
-            else if(entry.getKey().equalsIgnoreCase("subnets"))
+            } else if (entry.getKey().equalsIgnoreCase("subnets")) {
                 subnets = entry.getValue().split("\r\n");
-            else if(entry.getKey().equalsIgnoreCase("volumes"))
-                volumes = entry.getValue().split("\r\n");            
+            } else if (entry.getKey().equalsIgnoreCase("volumes")) {
+                volumes = entry.getValue().split("\r\n");
+            }
         }
 
         try {
             URL url = new URL(String.format("%s/model/", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            this.executeHttpMethod(url, connection, "GET", null);           
+            this.executeHttpMethod(url, connection, "GET", null);
         } catch (Exception e) {
             return 3;//connection error
         }
@@ -249,52 +1209,51 @@ public class serviceBeans {
                 + "@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .\n"
                 + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
                 + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n\n";
-        
+
         //check if driver the client choose is of AWS
-        if(driverType.equalsIgnoreCase("awsdriver")){
+        if (driverType.equalsIgnoreCase("awsdriver")) {
             String nodeTag = "&lt;" + topoUri + ":i-" + UUID.randomUUID().toString() + "&gt;";
             String model = "&lt;" + vpcUri + "&gt;\n"
                     + "        nml:hasNode        " + nodeTag + ".\n\n"
                     + "&lt;" + topoUri + ":ec2service-" + region + "&gt;\n"
                     + "        mrs:providesVM  " + nodeTag + ".\n\n";
-        
+
             //building all the volumes 
             String allVolUri = "";
-            for(String vol : volumes){
-               String volUri = "&lt;" + topoUri + ":vol-" + UUID.randomUUID().toString() + "&gt;";
-               String[] parameters = vol.split(",");
-               model += volUri +"\n        a                  mrs:Volume , owl:NamedIndividual ;\n"
-                    + "        mrs:disk_gb        \"" + parameters[0] + "\" ;\n" 
-                    + "        mrs:target_device  \"" + parameters[2] + "\" ;\n"
-                    + "        mrs:value          \"" + parameters[1] + "\" .\n\n";
+            for (String vol : volumes) {
+                String volUri = "&lt;" + topoUri + ":vol-" + UUID.randomUUID().toString() + "&gt;";
+                String[] parameters = vol.split(",");
+                model += volUri + "\n        a                  mrs:Volume , owl:NamedIndividual ;\n"
+                        + "        mrs:disk_gb        \"" + parameters[0] + "\" ;\n"
+                        + "        mrs:target_device  \"" + parameters[2] + "\" ;\n"
+                        + "        mrs:value          \"" + parameters[1] + "\" .\n\n";
                 allVolUri += volUri + " , ";
-            }        
+            }
             model += "&lt;" + topoUri + ":ebsservice-" + region + "&gt;\n"
-                   + "        mrs:providesVolume  " + allVolUri.substring(0, (allVolUri.length()-2)) + ".\n\n";
+                    + "        mrs:providesVolume  " + allVolUri.substring(0, (allVolUri.length() - 2)) + ".\n\n";
 
             //building all the network interfaces
             String allSubnets = "";
-            for(String net : subnets){
+            for (String net : subnets) {
                 String portUri = "&lt;" + topoUri + ":eni-" + UUID.randomUUID().toString() + "&gt;";
                 model += "&lt;" + net + "&gt;\n        nml:hasBidirectionalPort " + portUri + " .\n\n"
-                       + portUri + "\n        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n"
+                        + portUri + "\n        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n"
                         + "        mrs:hasTag            &lt;" + topoUri + ":portTag&gt; .\n\n";
-            
-                allSubnets += portUri + " , "; 
+
+                allSubnets += portUri + " , ";
             }
-        
+
             //building the node
-            model += nodeTag +"\n        a                         nml:Node , owl:NamedIndividual ;\n"
+            model += nodeTag + "\n        a                         nml:Node , owl:NamedIndividual ;\n"
                     + "        mrs:providedByService     &lt;" + topoUri + ":ec2service-" + region + "&gt; ;\n"
-                    + "        mrs:hasVolume             " 
-                    + allVolUri.substring(0, (allVolUri.length()-2)) + ";\n"
+                    + "        mrs:hasVolume             "
+                    + allVolUri.substring(0, (allVolUri.length() - 2)) + ";\n"
                     + "        nml:hasBidirectionalPort  "
-                    + allSubnets.substring(0, (allSubnets.length()-2)) + ".\n\n";
-        
+                    + allSubnets.substring(0, (allSubnets.length() - 2)) + ".\n\n";
+
             delta += model + "</modelAddition>\n</delta>";
-        }
-        //
-        else if (driverType.equalsIgnoreCase("openStackDriver")){
+        } //
+        else if (driverType.equalsIgnoreCase("openStackDriver")) {
             String nodeTag = "&lt;" + topoUri + ":server-name+" + UUID.randomUUID().toString() + "&gt;";
             String model = "&lt;" + vpcUri + "&gt;\n"
                     + "        nml:hasNode        " + nodeTag + ".\n\n"
@@ -302,7 +1261,7 @@ public class serviceBeans {
                     + "        mrs:providesVM  " + nodeTag + ".\n\n";
             //building all the subnets connected
             String allSubnets = "";
-            for(String net : subnets){
+            for (String net : subnets) {
                 String portUri = "&lt;" + topoUri + ":port+" + UUID.randomUUID().toString() + "&gt;";
                 model += "&lt;" + net + "&gt;\n       a       mrs:SwitchingSubnet , owl:NamedIndividual ;\n"
                         + "        nml:hasBidirectionalPort " + portUri + " .\n\n"
@@ -313,13 +1272,11 @@ public class serviceBeans {
             //building the node
             model += nodeTag + "\n        a       nml:Node , owl:NamedIndividual ;\n"
                     + "        nml:hasBidirectionalPort                "
-                    + allSubnets.substring(0, (allSubnets.length()-2)) + ".\n\n";
-            
+                    + allSubnets.substring(0, (allSubnets.length() - 2)) + ".\n\n";
+
             delta += model + "</modelAddition>\n</delta>";
         }
 
-
-        
         //push to the system api and get response
         try {
             //propagate the delta
@@ -331,216 +1288,32 @@ public class serviceBeans {
                 return 2;
             }
             //commit the delta
-            url = new URL(String.format("%s/delta/%s/commit", host,siUuid));
+            url = new URL(String.format("%s/delta/%s/commit", host, siUuid));
             connection = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, connection, "PUT", "");
             if (!result.equalsIgnoreCase("PROCESSING")) //plugin error
             {
                 return 2;
             }
-            
+
         } catch (Exception e) {
             return 3;//connection error
         }
-        
-        
+
         return 0;
 
     }
-    
-    
-    public  int createConnection(Map<String, String> paraMap){
-         
-     
-        String topoUri = null;
-        String refUuid = null;
-        List<String> connection = new ArrayList<>();
-        int i=1;String connPara;
-        String vgUuid = null;int x =1;
-                
-        for(Map.Entry<String, String> entry : paraMap.entrySet())
-        {
-                    
-            //System.out.println(entry.getKey());
-
-            //tring entryKey = 
-            
-            if(entry.getKey().equalsIgnoreCase("connUri"))
-            {
-                topoUri = entry.getValue();
-                //System.out.println("topoUri"+topoUri);
-            }
-            if(entry.getKey().contains("conn"))
-            {
-                //System.out.println("I'm inside conn");
-                connection.add(entry.getValue());
-                
-            }
-            
-        }
-       //for(String d : connection)
-               // System.out.println("conn"+d );
-            
-        /*paraMap.put(“topoUri”, “urn:ogf:network:vo1.maxgigapop.net:link”);
-          paraMap.put(“conn1”, “urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&
-          vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029”);
-          paraMap.put(“conn2”,“urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&
-          vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029”);*/
-            
-        JSONObject jsonConnect = new JSONObject();   
-       // JSONArray jsonLink = new JSONArray();
-        //
-            for(String link : connection){
-                //JSONArray jsonLink = new JSONArray();
-                JSONObject jsonPort = new JSONObject();
-                connPara = topoUri+"=conn"+i;
-                // <<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&vlan_tag+3021-3029>>>>>\r\n<<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029>>>>>”
-                //JSONObject jsonPort = new JSONObject();
-                String[] linkPara = link.split("\r\n");
-                //System.out.println("linkPara");
-                /*for(int o=0;o<linkPara.length;o++)
-                {
-                    System.out.println(o+linkPara[o]);
-                }
-                System.out.println("");*/
-                    for(String port : linkPara){
-                        //JSONObject jsonPort = new JSONObject();
-                        //<<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*>>>>>>&<<<<<vlan_tag+3021-3029>>>>>>
-                        String[] portPara = port.split("&");
-                        //System.out.println("portPara");
-                        /*for(int o=0;o<portPara.length;o++)
-                         {
-                           System.out.println(o+portPara[o]);
-                          }*/
-                        JSONObject jsonVlan = new JSONObject();
-                            for(String vlan : portPara){
-                                if(vlan.contains("vlan"))
-                                {
-                                    //vlan_tag+3021-3029
-                                    String[] vlanPara = vlan.split("\\+");
-                                    //System.out.println("vlanPara");
-                                    /* for(int o=0;o<vlanPara.length;o++)
-                                    {
-                                        System.out.println(o+vlanPara[o]);
-                                    }*/
-                                    jsonVlan.put(vlanPara[0], vlanPara[1]);
-                                    //System.out.println("jsonVlan");
-                                    //System.out.println(jsonVlan.toString()); 
-                                }
-                           // jsonPort.put(portPara[0], jsonVlan);  
-                           
-                            }
-                            jsonPort.put(portPara[0], jsonVlan); 
-                            // System.out.println("jsonPort");
-                            //System.out.println(jsonPort.toString());
-                            //System.out.println("LinkPort");
-                    //System.out.println(jsonLink.toString());
-                    //jsonLink.add(jsonPort);        
-                    }
-                    //System.out.println("LinkPort");
-                    //System.out.println(jsonLink.toString());
-                    //jsonLink.add(jsonPort);  
-                    i++;
-            jsonConnect.put(connPara, jsonPort);
-            
-            }
-            
-      System.out.println(jsonConnect.toString());     
-      
-      
-    String delta = "<serviceDelta>\n<uuid>" + UUID.randomUUID().toString()+
-                "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"+
-                "\n\n<modelAddition>\n" 
-                + "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
-                + "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n"
-                + "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n"
-                + "@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .\n"
-                + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
-                + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n\n"
-                + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n" ;
-    
-    for(String link : connection){
-        
-        delta += "&lt;urn:ogf:network:vo1.maxgigapop.net:link=conn" + x + "&gt;\n" +
-                 "a            mrs:SwitchingSubnet ;\n" +
-                 "spa:dependOn &lt;x-policy-annotation:action:create-path&gt;.\n\n";
-        x++;
-    }
-    
-    delta += "&lt;x-policy-annotation:action:create-path&gt;\n"+
-    "a            spa:PolicyAction ;\n"+
-    "spa:type     \"MCE_MPVlanConnection\" ;\n"+
-    "spa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;\n"+
-    "spa:exportTo &lt;x-policy-annotation:data:conn-criteriaexport&gt; .\n\n"+
-    "&lt;x-policy-annotation:data:conn-criteria&gt;\n"+
-    "a            spa:PolicyData;\n"+
-    "spa:type     \"JSON\";"+
-    "spa:value    \"\"\""+ jsonConnect.toString().replace("\\", "") +
-    "\"\"\".\n\n&lt;x-policy-annotation:data:vpc-criteriaexport&gt;\n" +
-    "    a            spa:PolicyData;\n\n" + 
-    "</modelAddition>\n\n" +
-    "</serviceDelta>";
-    
-    System.out.println("The delta is"+ delta);
-    
-    
-        
-    
-       // return 0;
-    
-     String result;
-        try {
-//            URL url = new URL(String.format("%s/service/instance", host));
-//            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-//            siUuid = this.executeHttpMethod(url, connection, "GET", null);
-//            if (siUuid.length() != 36) {
-//                return 2;//Error occurs when interacting with back-end system
-//            }
-            URL url = new URL(String.format("%s/service/%s", host, refUuid));
-            HttpURLConnection compile = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, compile, "POST",delta);
-            if (!result.contains("referenceVersion")) {
-                return 2;//Error occurs when interacting with back-end system
-            }
-            url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
-            HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, propagate, "PUT", null);
-            if (!result.equals("PROPAGATED")) {
-                return 2;//Error occurs when interacting with back-end system
-            }
-            url = new URL(String.format("%s/service/%s/commit", host, refUuid));
-            HttpURLConnection commit = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, commit, "PUT", null);
-            if (!result.equals("COMMITTED")) {
-                return 2;//Error occurs when interacting with back-end system
-            }
-            url = new URL(String.format("%s/service/%s/status", host, refUuid));
-            while(true){
-                HttpURLConnection status = (HttpURLConnection) url.openConnection();
-                result = this.executeHttpMethod(url, status, "GET", null); 
-                if(result.equals("READY"))
-                    return 0;//create network successfully
-                else if(!result.equals("COMMITTED"))
-                    return 3;//Fail to create network
-                sleep(5000);//wait for 5 seconds and check again later
-            }
-        } catch (Exception e) {
-            return 1;//connection error
-        }
-    
-    
-    
-}
 
     /**
      * Create a customize model view based on the criteria user specifies.
-     * @param filters A string array. Each string contains SPARQL description, 
-     * inclusive flag, subtreeRecursive flag, and suptreeRecursive flag, 
-     * concatenated by "\r\n".<br /><br /> 
-     * For example: CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o. ?s a nml:Topology.}\r\ntrue\r\nfalse\r\nfalse
-     * @return
-     * A string contains the filtered model in json format if creating successfully,
-     * otherwise, a string contains the error message.
+     *
+     * @param filters A string array. Each string contains SPARQL description,
+     * inclusive flag, subtreeRecursive flag, and suptreeRecursive flag,
+     * concatenated by "\r\n".<br /><br />
+     * For example: CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o. ?s a
+     * nml:Topology.}\r\ntrue\r\nfalse\r\nfalse
+     * @return A string contains the filtered model in json format if creating
+     * successfully, otherwise, a string contains the error message.
      */
     public String createModelView(String[] filters) {
         String vgUuid = null;
@@ -549,7 +1322,7 @@ public class serviceBeans {
             //URL url = new URL(String.format("http://localhost:8080/VersaStack-web/data/json/umd-anl-all.json"));
             URL url = new URL(String.format("%s/model/", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            this.executeHttpMethod(url, connection, "GET", null);           
+            this.executeHttpMethod(url, connection, "GET", null);
         } catch (Exception e) {
             System.out.println(e.toString());//connection error
             return null;
@@ -575,10 +1348,10 @@ public class serviceBeans {
         } catch (SQLException | InstantiationException | IllegalAccessException | ClassNotFoundException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
+
         //construct the queryModelView object.
         String view = "<view><filters>";
-        for (String filter : filters){
+        for (String filter : filters) {
             String[] filterParam = filter.split("\r\n");
             view += "<filter><sparql>" + filterParam[0] + "</sparql>"
                     + "<inclusive>" + filterParam[1] + "</inclusive>"
@@ -590,383 +1363,15 @@ public class serviceBeans {
         //Send the request though API to back-end system.
         String result;
         try {
-            URL url = new URL(String.format("%s/model/view/%s", host,vgUuid));
+            URL url = new URL(String.format("%s/model/view/%s", host, vgUuid));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, connection, "POST", view);
         } catch (Exception e) {
             System.out.println(e.toString());//query error
             return null;
         }
-        
+
         return result;
-    }       
-        
-    public int createNetwork(Map<String, String> paraMap){
-        String topoUri = null;
-        String driverType = null;
-        String netCidr = null;
-        String refUuid = null;
-        List<String> subnets = new ArrayList<>();
-        List<String> vmList = new ArrayList<>();
-        boolean gwVpn = false;
-
-        for (Map.Entry<String, String> entry : paraMap.entrySet()) {
-            if (entry.getKey().equalsIgnoreCase("driverType")) {
-                driverType = entry.getValue();
-            } else if (entry.getKey().equalsIgnoreCase("topoUri")) {
-                topoUri = entry.getValue();
-            } else if (entry.getKey().equalsIgnoreCase("netCidr")) {
-                netCidr = entry.getValue();
-            } else if (entry.getKey().equalsIgnoreCase("instanceUUID")) {
-                refUuid = entry.getValue();
-            } else if (entry.getKey().contains("subnet")) {
-                subnets.add(entry.getValue());
-            } else if (entry.getKey().contains("vm")) {
-                vmList.add(entry.getValue());
-            }
-            //example for vm : 1&imageType&instanceType&volumeSize&batch
-        }
-        
-        JSONObject network = new JSONObject();
-        network.put("type", "internal");
-        network.put("cidr", netCidr);
-        network.put("parent", topoUri);
-        
-        JSONArray subnetsJson = new JSONArray();
-        //routing problem solved. need testing.
-        for(String net : subnets){
-            String[] netPara = net.split("&");
-            JSONObject subnetValue = new JSONObject();
-            for(String para : netPara){
-                if(para.startsWith("routes")){
-                    String[] route = para.substring(6).split("\r\n");
-                    JSONArray routesArray = new JSONArray();
-                    for(String r : route){
-                        String[] routePara = r.split(",");
-                        JSONObject jsonRoute = new JSONObject();
-                        for(String rp : routePara){
-                            String[] keyValue = rp.split("\\+");
-                            jsonRoute.put(keyValue[0], keyValue[1]);
-                            if(keyValue[1].contains("vpn"))
-                                gwVpn = true;
-                        }
-                        routesArray.add(jsonRoute);
-                    }
-                    subnetValue.put("routes",routesArray);
-                }
-                else{
-                    String[] keyValue = para.split("\\+");
-                    subnetValue.put(keyValue[0], keyValue[1]);
-                }
-            }
-            subnetsJson.add(subnetValue);
-        }
-        network.put("subnets", subnetsJson);
-        
-        JSONArray routesJson = new JSONArray();
-        JSONObject routesValue = new JSONObject();
-        routesValue.put("to", "0.0.0.0/0");
-        routesValue.put("nextHop", "internet");
-        routesJson.add(routesValue);
-        network.put("routes", routesJson);
-
-        
-        JSONArray gatewaysJson = new JSONArray();
-        JSONObject temp = new JSONObject();
-        temp.put("type", "internet");
-        gatewaysJson.add(temp);
-        if(gwVpn){
-            JSONObject gatewayValue = new JSONObject();
-            gatewayValue.put("type", "vpn");
-            gatewaysJson.add(gatewayValue);
-        }
-        network.put("gateways", gatewaysJson);
-        
-        
-        String svcDelta = "<serviceDelta>\n<uuid>" + UUID.randomUUID().toString()+
-                "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"+
-                "\n\n<modelAddition>\n" +
-                "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n" +
-                "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n" +
-                "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n" +
-                "@prefix rdf:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n" +
-                "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n" +
-                "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n" +
-                "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n" +
-                "&lt;" + topoUri + ":vpc=abstract&gt;\n" +
-                "    a                         nml:Topology ;\n" +
-                "    spa:dependOn &lt;x-policy-annotation:action:create-" + driverType + "-vpc&gt; .\n\n";
-        
-        if(vmList.isEmpty()){
-            svcDelta += "&lt;x-policy-annotation:action:create-" + driverType + "-vpc&gt;\n" +
-                    "    a           spa:PolicyAction ;\n" +
-                    "    spa:type     \"MCE_VirtualNetworkCreation\" ;\n" +
-                    "    spa:importFrom &lt;x-policy-annotation:data:vpc-criteria&gt; ;\n" +
-                    "    spa:exportTo &lt;x-policy-annotation:data:vpc-criteriaexport&gt; .\n\n" +
-                    "&lt;x-policy-annotation:data:vpc-criteria&gt;\n" +
-                    "    a            spa:PolicyData;\n" +
-                    "    spa:type     nml:Topology;\n" +
-                    "    spa:value    \"\"\"" + network.toString().replace("\\", "") +
-                    "\"\"\".\n\n&lt;x-policy-annotation:data:vpc-criteriaexport&gt;\n" +
-                    "    a            spa:PolicyData;\n\n" +
-                    "</modelAddition>\n\n" +
-                    "</serviceDelta>";
-        }
-        else{
-            String exportTo = "";
-            int vmNumber = 1;
-            for (String vm : vmList){
-                String[] vmPara = vm.split("&");
-                //1:subnet #
-                //2:image Type
-                //3:instance Type
-                //4:volume size
-                //5:batch
-                svcDelta += "&lt;" + topoUri + ":vpc=abstract:vm" + vmNumber + "&gt;\n" +
-                        "    a                         nml:Node ;\n" +
-                        "    nml:hasBidirectionalPort   &lt;" + topoUri + ":vpc=abstract:vm" + vmNumber + ":eth0&gt; ;\n" +
-                        "    spa:dependOn &lt;x-policy-annotation:action:create-vm" + vmNumber + "&gt;.\n\n" +
-                        "&lt;" + topoUri + ":vpc=abstract:vm" + vmNumber + ":eth0&gt;\n" +
-                        "    a            nml:BidirectionalPort;\n" +
-                        "    spa:dependOn &lt;x-policy-annotation:action:create-vm" + vmNumber + "&gt;.\n\n" +
-                        "&lt;x-policy-annotation:action:create-vm" + vmNumber + "&gt;\n" +
-                        "    a            spa:PolicyAction ;\n" +
-                        "    spa:type     \"MCE_VMFilterPlacement\" ;\n" +
-                        "    spa:dependOn &lt;x-policy-annotation:action:create-" + driverType + "-vpc&gt; ;\n" +
-                        "    spa:importFrom ";
-                String subnetCriteria = "&lt;x-policy-annotation:data:vpc-subnet-vm"+ vmNumber +"-criteria&gt;";
-                exportTo += subnetCriteria + ", ";
-                int sub = Integer.valueOf(vmPara[0]) - 1;
-                svcDelta += subnetCriteria + ".\n\n" +
-                        subnetCriteria + "\n    a            spa:PolicyData;\n" +
-                        "    spa:type     \"JSON\";\n    spa:format    \"\"\"{ " +
-                        "\"place_into\": \"%%$.subnets[" + sub + "].uri%%\"}\"\"\" .\n\n";
-                vmNumber++;                
-            }
-            svcDelta += "&lt;x-policy-annotation:action:create-" + driverType + "-vpc&gt;\n" +
-                    "    a           spa:PolicyAction ;\n" +
-                    "    spa:type     \"MCE_VirtualNetworkCreation\" ;\n" +
-                    "    spa:importFrom &lt;x-policy-annotation:data:vpc-criteria&gt; ;\n" +
-                    "    spa:exportTo " + exportTo.substring(0, (exportTo.length()-2)) + " .\n\n" +
-                    "&lt;x-policy-annotation:data:vpc-criteria&gt;\n" +
-                    "    a            spa:PolicyData;\n" +
-                    "    spa:type     nml:Topology;\n" +
-                    "    spa:value    \"\"\"" + network.toString().replace("\\", "") +
-                    "\"\"\".\n\n&lt;x-policy-annotation:data:vpc-criteriaexport&gt;\n" +
-                    "    a            spa:PolicyData.\n\n" +
-                    "</modelAddition>\n\n" +
-                    "</serviceDelta>";
-        }
-        
-        try {
-        PrintWriter out = new PrintWriter("/Users/rikenavadur/test.ttl");
-        out.println(svcDelta);
-        out.close();
-        } catch (Exception e) {
-            
-        }
-        //System.out.println(svcDelta);
-        
-//        String siUuid;
-        String result;
-        try {
-//            URL url = new URL(String.format("%s/service/instance", host));
-//            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-//            siUuid = this.executeHttpMethod(url, connection, "GET", null);
-//            if (siUuid.length() != 36) {
-//                return 2;//Error occurs when interacting with back-end system
-//            }
-            URL url = new URL(String.format("%s/service/%s", host, refUuid));
-            HttpURLConnection compile = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, compile, "POST", svcDelta);
-            if (!result.contains("referenceVersion")) {
-                return 2;//Error occurs when interacting with back-end system
-            }
-            url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
-            HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, propagate, "PUT", null);
-            if (!result.equals("PROPAGATED")) {
-                return 2;//Error occurs when interacting with back-end system
-            }
-            url = new URL(String.format("%s/service/%s/commit", host, refUuid));
-            HttpURLConnection commit = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, commit, "PUT", null);
-            if (!result.equals("COMMITTED")) {
-                return 2;//Error occurs when interacting with back-end system
-            }
-            url = new URL(String.format("%s/service/%s/status", host, refUuid));
-            while(true){
-                HttpURLConnection status = (HttpURLConnection) url.openConnection();
-                result = this.executeHttpMethod(url, status, "GET", null); 
-                if(result.equals("READY"))
-                    return 0;//create network successfully
-                else if(!result.equals("COMMITTED"))
-                    return 3;//Fail to create network
-                sleep(5000);//wait for 5 seconds and check again later
-            }
-        } catch (Exception e) {
-            return 1;//connection error
-        }
     }
 
-
-    
-    
-    
-    
-// UTILITY FUNCTIONS -----------------------------------------------------------
-    
-    public HashMap<String, String> getJobStatuses() throws SQLException {
-        HashMap<String, String> retMap = new HashMap<>();
-        
-        Connection front_conn;
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                front_connectionProps);
-
-        ArrayList<String> service_list = new ArrayList<>();
-        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID FROM service S, service_instance I WHERE I.service_id = S.service_id");
-        ResultSet rs1 = prep.executeQuery();
-        while (rs1.next()) {
-            String name = rs1.getString("name");
-            String refId = rs1.getString("referenceUUID");
-
-            String status;
-            try {
-                URL url = new URL(String.format("%s/service/%s/status", host, refId));
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                status = this.executeHttpMethod(url, connection, "GET", null);
-                
-                retMap.put(name, status);
-            } catch (Exception e) {
-                System.out.println(e.toString());//query error
-            }
-        }
-
-        return retMap;
-    }      
-    
-    private HashMap<String,ArrayList<String>> getJobProperties() throws SQLException {
-        HashMap<String, ArrayList<String>> retMap = new HashMap<>();
-        
-        return retMap;
-    }
-
-    /**
-     * Executes HTTP Request.
-     * @param url destination url
-     * @param conn connection object
-     * @param method request method
-     * @param body request body
-     * @return response string.
-     * @throws IOException 
-     */
-    public String executeHttpMethod(URL url, HttpURLConnection conn, String method, String body) throws IOException {
-        conn.setRequestMethod(method);
-        conn.setRequestProperty("Content-type", "application/xml");
-        conn.setRequestProperty("Accept", "application/json");
-        if (body != null && !body.isEmpty()) {
-            conn.setDoOutput(true);
-            try (DataOutputStream wr = new DataOutputStream(conn.getOutputStream())) {
-                wr.writeBytes(body);
-                wr.flush();
-            }
-        }
-        logger.log(Level.INFO, "Sending {0} request to URL : {1}", new Object[]{method, url});
-        int responseCode = conn.getResponseCode();
-        logger.log(Level.INFO, "Response Code : {0}", responseCode);
-
-        StringBuilder responseStr;
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-            String inputLine;
-            responseStr = new StringBuilder();
-            while ((inputLine = in.readLine()) != null) {
-                responseStr.append(inputLine);
-            }
-        }
-        return responseStr.toString();
-    }
-
-    public ArrayList<ArrayList<String>> instanceStatusCheck() throws SQLException {
-        ArrayList<ArrayList<String>> retList = new ArrayList<>();
-        ArrayList<String> banList = new ArrayList<>();
-        
-        banList.add("Driver Management");
-        
-        Connection front_conn;
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", "root");
-        front_connectionProps.put("password", "root");
-
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
-                front_connectionProps);
-
-        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID, X.superState FROM"
-                + " service S, service_instance I, service_state X WHERE S.service_id = I.service_id AND I.service_state_id = X.service_state_id");
-        ResultSet rs1 = prep.executeQuery();
-        while (rs1.next()) {
-            ArrayList<String> instanceList = new ArrayList<>();
-
-            String instanceName = rs1.getString("name");
-            String instanceUUID = rs1.getString("referenceUUID");
-            String instanceSuperState = rs1.getString("superState");
-            if (!banList.contains(instanceName)) {
-                try {
-                    URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
-                    HttpURLConnection status = (HttpURLConnection) url.openConnection();
-
-                    String instanceState = instanceSuperState + " - " + this.executeHttpMethod(url, status, "GET", null);
-                    
-                    instanceList.add(instanceName);
-                    instanceList.add(instanceUUID);                        
-                    instanceList.add(instanceState);
-
-                    retList.add(instanceList);
-                } catch (IOException ex) {
-                }
-            }
-        }
-
-        return retList;
-    }
-    
-    public ArrayList<ArrayList<String>> instanceStatusCheck(String instanceUUID) throws SQLException {
-        ArrayList<ArrayList<String>> retList = new ArrayList<>();
-        
-        Connection front_conn;
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", "root");
-        front_connectionProps.put("password", "root");
-
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Frontend",
-                front_connectionProps);
-
-        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, X.superState FROM"
-                + " service S, service_instance I, service_state X WHERE I.referenceUUID = ? AND S.service_id = I.service_id AND I.service_state_id = X.service_state_id");
-        prep.setString(0, instanceUUID);
-        ResultSet rs1 = prep.executeQuery();
-        while (rs1.next()) {
-            ArrayList<String> instanceList = new ArrayList<>();
-
-            String instanceName = rs1.getString("name");
-            String instanceSuperState = rs1.getString("superState");
-                try {
-                    URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
-                    HttpURLConnection status = (HttpURLConnection) url.openConnection();
-
-                    String instanceState = instanceSuperState + " - " + this.executeHttpMethod(url, status, "GET", null);
-                    
-                    instanceList.add(instanceName);
-                    instanceList.add(instanceUUID);                        
-                    instanceList.add(instanceState);
-
-                    retList.add(instanceList);
-                } catch (IOException ex) {
-                }
-        }
-
-        return retList;
-    }
 }
