@@ -346,7 +346,6 @@ public class ServiceServlet extends HttpServlet {
             paraMap.put("driverType","aws");
             paraMap.put("subnet1", "name+ &cidr+10.1.0.0/24&routesto+206.196.0.0/16,nextHop+internet\r\nfrom+vpn,to+0.0.0.0/0,nextHop+vpn\r\nto+72.24.24.0/24,nextHop+vpn");
             paraMap.put("subnet2", "name+ &cidr+10.1.1.0/24");
-            paraMap.put("netRoutes", "to+0.0.0.0/0,nextHop+internet");
 
             paraMap.remove("netCreate");
             paraMap.remove("template1");
@@ -368,7 +367,6 @@ public class ServiceServlet extends HttpServlet {
             paraMap.put("driverType","aws");
             paraMap.put("subnet1", "name+ &cidr+10.1.0.0/24&routesto+206.196.0.0/16,nextHop+internet\r\nfrom+vpn,to+0.0.0.0/0,nextHop+vpn\r\nto+72.24.24.0/24,nextHop+vpn");
             paraMap.put("subnet2", "name+ &cidr+10.1.1.0/24");
-            paraMap.put("netRoutes", "to+0.0.0.0/0,nextHop+internet");
             paraMap.put("vm1", "vm1&1& & & & ");  //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name"
             paraMap.put("vm2", "vm2&2& & & & ");  //put space if not mentioned
             paraMap.put("directConn", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*?vlan=3023");
@@ -395,7 +393,6 @@ public class ServiceServlet extends HttpServlet {
             paraMap.put("driverType","aws");
             paraMap.put("subnet1", "name+ &cidr+10.1.0.0/24&routesto+206.196.0.0/16,nextHop+internet\r\nfrom+vpn,to+0.0.0.0/0,nextHop+vpn\r\nto+72.24.24.0/24,nextHop+vpn");
             paraMap.put("subnet2", "name+ &cidr+10.1.1.0/24");
-            paraMap.put("netRoutes", "to+0.0.0.0/0,nextHop+internet");
             paraMap.put("vm1", "test_with_vm_types_1&1&ami-08111162&t2.micro& & ");  //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name"
             paraMap.put("vm2", "test_with_vm_type_2&2&ami-fce3c696&t2.small&xi-aws-max-dev-key&geni");  //put space if not mentioned
             
@@ -413,16 +410,39 @@ public class ServiceServlet extends HttpServlet {
             executor.execute(new NetCreateWorker(asyncCtx, paraMap));
             
         }
-        else if(paraMap.containsKey("template4")){ 
+        else if(paraMap.containsKey("template4")){ //OpenStack with 2 subnets and 1 VM
             // Add template data.
             paraMap.put("topoUri", "urn:ogf:network:openstack.com:openstack-cloud");
             paraMap.put("netCidr", "10.1.0.0/16");
             paraMap.put("driverType","ops");
-            paraMap.put("subnet1", "name+ &cidr+10.1.0.0/24&routesto+206.196.0.0/16,nextHop+internet\r\nfrom+vpn,to+0.0.0.0/0,nextHop+vpn\r\nto+72.24.24.0/24,nextHop+vpn");
+            paraMap.put("subnet1", "name+ &cidr+10.0.0.0/24&routesto+0.0.0.0/0,nextHop+internet");
             paraMap.put("subnet2", "name+ &cidr+10.1.1.0/24");
-            paraMap.put("netRoutes", "to+0.0.0.0/0,nextHop+internet");
-            paraMap.put("vm1", "vm_OPS&1& &m1.medium&icecube_key&rains&msx1& ");
-            //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name&host&floating_IP"
+            paraMap.put("vm1", "vm_OPS&1& &m1.medium&icecube_key&rains&msx1& & & & & ");
+            //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name&host&floating_IP&sriov_destination&sriov_mac_address&sriov_ip_address&sriov_routes"
+            
+            paraMap.remove("netCreate");
+            paraMap.remove("template4");
+
+            // Async setup
+            request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
+            AsyncContext asyncCtx = request.startAsync();
+            asyncCtx.addListener(new AppAsyncListener());
+            asyncCtx.setTimeout(300000);
+
+            ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
+
+            executor.execute(new NetCreateWorker(asyncCtx, paraMap));
+            
+        }
+        else if(paraMap.containsKey("template5")){ //OpenStack with 1 VM with sriov connection
+            // Add template data.
+            paraMap.put("topoUri", "urn:ogf:network:openstack.com:openstack-cloud");
+            paraMap.put("netCidr", "10.1.0.0/16");
+            paraMap.put("driverType","ops");
+            paraMap.put("subnet1", "name+ &cidr+10.0.0.0/24&routesto+0.0.0.0/0,nextHop+internet");
+            paraMap.put("subnet2", "name+ &cidr+10.1.1.0/24");
+            paraMap.put("vm1", "vm_OPS&1& &m1.medium&icecube_key&rains&msx1&206.196.180.148&urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&aa:bb:cc:00:00:12&10.10.0.1/30&to+192.168.0.0/24,next_hop+10.10.0.2\r\nto+206.196.179.0/24,next_hop+10.10.0.2");
+            //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name&host&floating_IP&sriov_destination&sriov_mac_address&sriov_ip_address&sriov_routes"
             
             paraMap.remove("netCreate");
             paraMap.remove("template4");
@@ -491,6 +511,12 @@ public class ServiceServlet extends HttpServlet {
                             subnetString += "routes";
                         }
                         subnetString += "from+vpn,to+0.0.0.0/0,nextHop+vpn";
+                    } 
+                    else if (paraMap.containsKey("subnet" + i + "-route-default")) {
+                        if (!subnetString.contains("routes")) {
+                            subnetString += "routes";
+                        }
+                        subnetString += "to+0.0.0.0/0,nextHop+internet";
                     } else {
                         if (subnetString.contains("routes")) {
                             subnetString = subnetString.substring(0, (subnetString.length() - 2));
@@ -535,7 +561,7 @@ public class ServiceServlet extends HttpServlet {
                                 paraMap.put("vm" + j, VMString);
                             }
                         } else if (paraMap.get("driverType").equalsIgnoreCase("ops")) {
-                            //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name&host&floating_IP"
+                            //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name&host&floating_IP&sriov_destination&sriov_mac_address&sriov_ip_address&sriov_routes"
                             if (paraMap.containsKey("subnet" + i + "-vm" + j)) {
                                 String VMString = "";
 
@@ -560,25 +586,73 @@ public class ServiceServlet extends HttpServlet {
                                     VMString += "& ";
                                 }
 
-                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "security")) {
-                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "security");
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-security")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-security");
                                 } else {
                                     VMString += "& ";
                                 }
 
-                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "host")) {
-                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "host");
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-host")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-host");
                                 } else {
                                     VMString += "& ";
                                 }
                                 
-                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "floating")) {
-                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "floating");
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-floating")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-floating");
                                 } else {
                                     VMString += "& ";
                                 }
                                 
-                                paraMap.put("vm" + j, VMString);
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-sriov-dest")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-sriov-dest");
+                                } else {
+                                    VMString += "& ";
+                                }
+                                
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-sriov-mac")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-sriov-mac");
+                                } else {
+                                    VMString += "& ";
+                                }
+                                
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-sriov-ip")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-sriov-ip");
+                                } else {
+                                    VMString += "& ";
+                                }
+                                
+                                String vmRouteString = "";
+                                for (int k = 1; k < 5; k++) {
+
+                                    if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k)) {
+                                        VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-");
+                                    } else {
+                                        VMString += "& ";
+                                    }
+
+                                    if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k + "-to")) {
+                                        vmRouteString += "to+" + paraMap.get("subnet" + i + "-vm" + j + "-route" + k + "-to") + ",";
+
+                                        if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k + "-from")) {
+                                            vmRouteString += "from+" + paraMap.get("subnet" + i + "-vm" + j + "-route" + k + "-from") + ",";
+                                        }
+                                        if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k + "-next")) {
+                                            vmRouteString += "nextHop+" + paraMap.get("subnet" + i + "-vm" + j + "-route" + k + "-next");
+                                        }
+                                        vmRouteString += "\r\n";
+                                    }
+
+                                    paraMap.remove("subnet" + i + "-vm" + j + "-route" + k + "-to");
+                                    paraMap.remove("subnet" + i + "-vm" + j + "-route" + k + "-from");
+                                    paraMap.remove("subnet" + i + "-vm" + j + "-route" + k + "-next");
+                                }
+                                
+                                if (!vmRouteString.isEmpty()) {
+                                    VMString += "&" + vmRouteString;
+                                } else {
+                                    VMString += "& ";
+                                }
                             }
                         }
 
@@ -601,13 +675,15 @@ public class ServiceServlet extends HttpServlet {
             paraMap.put("netRoutes", "to+0.0.0.0/0,nextHop+internet");
 
             // Parse direct connect.
-            String connString = paraMap.get("conn-dest");
-            if (paraMap.containsKey("conn-vlan")) {
-                connString += "?vlan=" + paraMap.get("conn-vlan");
-            } else {
-                connString += "?vlan=any";
-            }            
-            paraMap.put("directConn", connString);
+            if (paraMap.containsKey("conn-dest")) {
+                String connString = paraMap.get("conn-dest");
+                if (paraMap.containsKey("conn-vlan")) {
+                    connString += "?vlan=" + paraMap.get("conn-vlan");
+                } else {
+                    connString += "?vlan=any";
+                }            
+                paraMap.put("directConn", connString);
+            }
 
             paraMap.remove("userID");
             paraMap.remove("custom");
