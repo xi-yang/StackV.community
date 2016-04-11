@@ -590,7 +590,7 @@ public class OpenStackPush {
                 PortCreationCheck(portname, url, NATServer, username, password, tenantName, topologyUri);
             } else if (o.get("request").toString().equals("DeleteNetworkInterfaceRequest")) {
                 Port port = client.getPort(o.get("port name").toString());
-                if (port.getDeviceOwner().equals("")) { //this is for delete port have no device owner, if the port has a device owner, it cannot delete it at here besides it will delete at elsewhere.
+                if (port != null && port.getDeviceOwner().equals("")) { //this is for delete port have no device owner, if the port has a device owner, it cannot delete it at here besides it will delete at elsewhere.
                     osClient.networking().port().delete(port.getId());
                 }
 
