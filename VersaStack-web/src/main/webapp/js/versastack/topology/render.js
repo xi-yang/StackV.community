@@ -176,6 +176,7 @@ define([
                     selectElement(null);
                 }
             });
+            selectElement(null); // show top level topologies in display panel 
         }
         if (!switchPopup) {
             switchPopup = buildSwitchPopup();
@@ -610,13 +611,19 @@ define([
             /**@type {DropDownTree} displayTree**/
             var displayTree = outputApi.getDisplayTree();
             displayTree.clear();
-            n.populateTreeMenu(displayTree);
-            displayTree.renderApi = API;
-            displayTree.addToHistory(n.getName(), "Node");
+            var e = model.elementMap[n.getName()];
+            e.populateProperties(displayTree);
+            
+            if (e.misc_elements.length > 0 )
+                displayTree.addChild("", "Separator");
+
+            e.populateTreeMenu(displayTree);
+            displayTree.addToHistory(e.getName(), "Node");
             //console.log("API: " + API);
             //if (API === undefined)
                //console.log("i am undefined: ");
             displayTree.draw();
+            displayTree.topViewShown = false;            
             // Only show these popups if there are acutally ports and volumes 
             if (n.ports.length !== 0) 
                 n.portPopup.toggleVisible();
@@ -648,13 +655,19 @@ define([
             outputApi.setDisplayName(n.getName());
             var displayTree = outputApi.getDisplayTree();
             displayTree.clear();
-            n.populateTreeMenu(displayTree);
-            displayTree.renderApi = API;
-            displayTree.addToHistory(n.getName(), "Service");
+            var e = model.elementMap[n.getName()];
+            e.populateProperties(displayTree);
+            
+            if (e.misc_elements.length > 0 )
+             displayTree.addChild("", "Separator");
+
+            e.populateTreeMenu(displayTree);
+            displayTree.addToHistory(e.getName(), "Service");
             //console.log("API: " + API);
             //if (API === undefined)
                //console.log("i am undefined: ");            
             displayTree.draw();
+            displayTree.topViewShown = false;
             if (n.getTypeBrief() === "SwitchingService") {
 
                 if (switchPopup.hostNode === n) {
@@ -694,14 +707,49 @@ define([
         function selectElement(elem) {
             if (!elem) {
                 //deselect element
-                outputApi.setDisplayName("");
+                outputApi.setDisplayName("Topologies");
+                var displayTree = outputApi.getDisplayTree();
                 outputApi.getDisplayTree().clear();
+                
+                // Tried to optimize where I can by saving the topLevelTopologies
+                // here, still some delay. 
+                // Changing everything so that you only populate the display
+                // tree when the drop down node is clicked, how long would that take? 
+               if ( typeof selectElement.topLevelTopologies === 'undefined' ) {
+                        // It has not... perform the initialization
+                        selectElement.topLevelTopologies = [];
+                        for (var key in model.elementMap) {
+                            var e = model.elementMap[key];
+                            if (e.getType() === "Topology" && e.topLevel) {
+                                selectElement.topLevelTopologies.push(e);
+                                var child = displayTree.addChild(e.getName(), "Element");
+                                e.populateTreeMenu(child);
+                            }
+                        } 
+                } else {
+                    for (var i in selectElement.topLevelTopologies) {
+                        e = selectElement.topLevelTopologies[i];
+                        var child = displayTree.addChild(e.getName(), "Element");
+                        e.populateTreeMenu(child);
+                        
+                    }
+                }
+                displayTree.draw();
+                
+                //outputApi.getDisplayTree().clear();
             } else {
                 outputApi.setDisplayName(elem.getName());
                 /**@type {DropDownTree} displayTree**/
                 var displayTree = outputApi.getDisplayTree();
                 displayTree.clear();
-                elem.populateTreeMenu(displayTree);
+                var e = model.elementMap[elem.getName()];
+                e.populateProperties(displayTree);
+                
+                if (e.misc_elements.length > 0 )
+                    displayTree.addChild("", "Separator");
+
+                e.populateTreeMenu(displayTree);
+                e.showRelationships(displayTree);
                 displayTree.draw();
             }
             highlightedNode = elem;
@@ -753,7 +801,7 @@ define([
                     svg = n.svgNode;
                     x = n.x - settings.NODE_SIZE / 2;
                     y = n.y - settings.NODE_SIZE / 2;
-                    if (isNaN(n)) console.log("NAN N");                    
+                    //if (isNaN(n)) console.log("NAN N");                    
                     if (isNaN(settings.NODE_SIZE)) alert("NAN SETTINGS");
                     if (isNaN(x) || isNaN(y)) alert("NAN NODE" + "\n" + settings.NODE_SIZE
                             + "\nx: " + n.x + "\ny: " + n.y);
@@ -864,35 +912,70 @@ define([
             //console.log(" a bunch of stuff ");
            //nodeList = model.listNodes();
            //var portList = model.listPorts();
-           //alert(" hi, my name is: " + model.nodeMap[name]);     
-           switch (type) {
-            case "Node":
-                onNodeClick(model.nodeMap[name]);
-                outputApi.getDisplayTree().addToHistory(name, type);
-                console.log("i'm node");
+           //alert(" hi, my name is: " + model.nodeMap[name]);  
+                          // alert("i'm here in clicknode: " + model.getElementType(name));
 
-                break;
-            case "Service":
-                onServiceClick(model.serviceMap[name]);
-                outputApi.getDisplayTree().addToHistory(name, type);
-                console.log("i'm service");
-                break;
-            case "Port":
-                selectElement(model.portMap[name]);
-                outputApi.getDisplayTree().addToHistory(name, type);                
-                console.log("i'm port");
-                break;
-            case "Volume":
-                selectElement(model.volumeMap[name]);     
-                outputApi.getDisplayTree().addToHistory(name, type);                 
-                console.log("i'm volume");
-                break;
-            case "Element":
-                selectElement(model.elementMap[name]);
-                outputApi.getDisplayTree().addToHistory(name, type);
-                console.log("I'm element");
-                break;
-          }
+           // eventually we want to use type their type for this , not a given type. 
+           var element = model.elementMap[name];
+           if (element === undefined) {
+               alert("Element not found. Please enter valid URN.")
+           } else {
+                type = element.getType();
+           
+                switch (type) {
+                 case "Topology":
+                 case "Node":
+                     onNodeClick(model.nodeMap[name]);
+                     outputApi.getDisplayTree().addToHistory(name, type);
+                     outputApi.getDisplayTree().topViewShown = false;
+
+                     console.log("i'm node");
+
+                     break;
+                 case "SwitchingServicHypervisorBypassInterfaceServicee":
+                 case "HypervisorService":
+                 case "RoutingService":
+                 case "VirtualCloudService":
+                 case "BlockStorageService":
+                 case "ObjectStorageService":
+                 case "VirtualSwitchService":
+                 case "HypervisorBypassInterfaceService":
+                 case "StorageService":
+                 case "IOPerformanceMeasurementService":
+                 case "DataTransferService":
+                 case "DataTransferClusterService":
+                 case "NetworkObject":
+                 case "Service":
+                     onServiceClick(model.serviceMap[name]);
+                     outputApi.getDisplayTree().addToHistory(name, type);
+                     outputApi.getDisplayTree().topViewShown = false;
+
+                     console.log("i'm service");
+                     break;
+                 case "Port":
+                 case "BidirectionalPort":
+                     selectElement(model.portMap[name]);
+                     outputApi.getDisplayTree().addToHistory(name, type);  
+                     outputApi.getDisplayTree().topViewShown = false;
+
+                     console.log("i'm port");
+                     break;
+                 case "Volume":
+                     selectElement(model.volumeMap[name]);     
+                     outputApi.getDisplayTree().addToHistory(name, type);   
+                     outputApi.getDisplayTree().topViewShown = false;
+
+                     console.log("i'm volume");
+                     break;
+                 default:
+                     selectElement(model.elementMap[name]);
+                     outputApi.getDisplayTree().addToHistory(name, type);
+                     outputApi.getDisplayTree().topViewShown = false;
+
+                     console.log("I'm element");
+                     break;
+               }
+           }
         }
         
 
