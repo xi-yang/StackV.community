@@ -142,7 +142,8 @@ public class OpenStackNeutronModelBuilder {
         model.add(model.createStatement(OpenstackTopology, hasService, cinderService));
 
         for (Hypervisor hv : openstackget.getHypervisors()) {
-            String hostname = hv.getHypervisorHostname();
+            //@TODO: hypervisor to host mapping by naming convention or configuration
+            String hostname = hv.getHypervisorHostname().split("\\.")[0]; 
             Resource HOST = RdfOwl.createResource(model, topologyURI + ":" + "host+" + hostname, Nml.Node);
             Resource HYPERVISOR = RdfOwl.createResource(model, topologyURI + ":" + "hypervisor+" + hostname, Mrs.HypervisorService);
             model.add(model.createStatement(OpenstackTopology, hasNode, HOST));
