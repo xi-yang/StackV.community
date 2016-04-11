@@ -88,7 +88,8 @@ define([
                     map[newNode.value][values.type] = [{type: 'uri', value: values.namedIndividual}, {type: 'uri', value: values.node}];
                 }
 //            map=data;
-
+                console.log("\n\nda map\n\n");
+                console.log(JSON.stringify(map, null, 2));
 
                 /*
                  * We begin by extracting all nodes/topologies
@@ -106,12 +107,29 @@ define([
                 for (var key in map) {
                     var val = map[key];
                     val.name = key;
+                    //console.log("JSON.stringify(element, null, 2): " + JSON.stringify(val, null, 2));
                     var types = val[values.type];
                     if (!types) {
                         console.log("Types empty!\n\nVal: " + val + "\nName: " + val.name);
                     } else {
                         map_(types, function (type) {
                             type = type.value;
+                            
+                            // Adding every element to the elementMap for the 
+                            // displayPanel.  Ifnoring elemnets with the type "NamedIndividual"
+                            if (type.split("#")[1] === "NamedIndividual") return "";//                                                
+                            
+                            var toAdd;
+                            if (oldModel && oldModel.elementMap[key]) {
+                                toAdd = oldModel.elementMap[key];
+                                toAdd.reload(val, map);
+                            } else {
+                                console.log("i was used");
+                                toAdd = new Element(val, map, that.elementMap);
+                                toAdd.topLevel = true;
+                            }
+                            that.elementMap[key] = toAdd;
+                            
                             switch (type) {
                                 // Fallthrough group 
                                 case values.topology:
@@ -201,7 +219,7 @@ define([
                                         toAdd = oldModel.elementMap[key];
                                         toAdd.reload(val, map);
                                     } else {
-                                        toAdd = new Element(val, map);
+                                        toAdd = new Element(val, map, that.elementMap);
                                     }
                                     that.elementMap[key] = toAdd;
                                     break;
@@ -228,27 +246,18 @@ define([
                                         toAdd = oldModel.elementMap[key];
                                         toAdd.reload(val, map);
                                     } else {
-                                        toAdd = new Element(val, map);
+                                        toAdd = new Element(val, map, that.elementMap);
                                     }
                                     that.elementMap[key] = toAdd;
                                     break;
                                 default:
-//                                    var toAdd;
-//                                    if (oldModel && oldModel.elementMap[key]) {
-//                                        toAdd = oldModel.elementMap[key];
-//                                        toAdd.reload(val, map);
-//                                    } else {
-//                                        console.log("i was used");
-//                                        toAdd = new Element(val, map);
-//                                    }
-//                                    that.elementMap[key] = toAdd;
                                     console.log("Unknown type: " + type);
                                     break;
                             }
-                        });
+                        });                                                
                     }
                 }
-                
+         
                 for (var key in that.serviceMap) {
                     var service = that.serviceMap[key];
                     var service_ = service._backing;
@@ -283,7 +292,7 @@ define([
                                     var errorVal = element.value;
                                     element = that.elementMap[element.value];
                                     if (element) {
-                                        element.relationship_to[service] = key.split("#")[1];
+                                        element.relationship_to[service.getName()] = key.split("#")[1];
                                         service.misc_elements.push(element);
                                     }
                                 });                                
@@ -381,9 +390,10 @@ define([
                 //Create services
                 for (var key in that.nodeMap) {
                     /**@type Node**/
-                    var node = that.nodeMap[key]
+                    var node = that.nodeMap[key];
                     var node_ = node._backing;
                     for (var key in node_) {
+                        console.log("key: " + key);
                         switch (key) {
                             case values.hasBidirectionalPort:
                                 var ports = node_[key];
@@ -440,15 +450,15 @@ define([
                             case values.hasBucket:
                             case values.belongsTo:
                             case values.name:
-                                var elements = node_[key];
-                                map_(elements, function (element){
-                                    var errorVal = element.value;
-                                    element = that.elementMap[element.value];
-                                    if (element) {
-                                        element.relationship_to[node] = key.split("#")[1];
-                                        node.misc_elements.push(element);
-                                    }
-                                });                                
+//                                var elements = node_[key];
+//                                map_(elements, function (element){
+//                                    var errorVal = element.value;
+//                                    element = that.elementMap[element.value];
+//                                    if (element) {
+//                                        element.relationship_to[node] = key.split("#")[1];
+//                                        node.misc_elements.push(element);
+//                                    }
+//                                });                                
                                 break;                        
                             case values.volume:
                                 break;
@@ -478,12 +488,12 @@ define([
                                     var errorVal = element.value;
                                     element = that.elementMap[element.value];
                                     if (element) {
-                                        element.relationship_to[node] = key.split("#")[1];
+                                        element.relationship_to[node.getName()] = key.split("#")[1];
                                         node.misc_elements.push(element);
                                     }
                                 });                                
                                 break;
-                            default:                                     
+                            default:                         
                                 console.log("Unknown key: " + key);
                         }
                     }
@@ -515,22 +525,53 @@ define([
                 }
                 
                 
-                for (var key in that.elementMap) {
-                 
+                // Storing the relationships between all of the elemnts
+                // Relationships stored in an <Element, Type> map, storing the
+                // element it has the relationship to and what the relationship
+                // is. 
+                for (var key in that.elementMap) {               
                     var src_element = that.elementMap[key];
+                    if ((src_element.getType() === "Node" ||
+                            src_element.getType() === "Topology")
+                            && that.nodeMap[src_element.getName()].isLeaf()
+                            ) {
+                        src_element.topLevel = false;
+                        if (src_element.getName() === "urn:ogf:network:sdn.maxgigapop.net:network")
+                            alert("why?");
+                            }
                     if (src_element !== undefined) {
                         var src_element_ = src_element._backing;
                         for (var key in src_element_) {
+                            
+                            // Elements with key 'name' are always undefined. 
+                            if (key === "name") continue;
+                            
                             var elements = src_element_[key];
                             map_(elements, function (element){
                                 var errorVal = element.value;
                                 element = that.elementMap[element.value];
                                 if (element) {
-                                    element.relationship_to[src_element] = key.split("#")[1];
+                                    var relationship =  key.split("#")[1];
+                                    //element.getType() === "Topology" && 
+                                    var src_type = src_element.getType();
+                                    var type = element.getType();
+                                    if ((type !== "Topology" && type !== "Node") ||
+                                        ((src_type === "Topology" || src_type === "Node")  && 
+                                        (relationship === "hasTopology"))
+                                        )
+              
+                                        
+                                {
+                                        element.topLevel = false;
+                                                                if (src_element.getName() === "urn:ogf:network:sdn.maxgigapop.net:network")
+                            alert("why? 2");
+                                    }
+                                    element.relationship_to[src_element.getName()] = relationship;
                                     src_element.misc_elements.push(element);
-                                    //console.log("I did this...");
+                                } else {
+                                    console.log("name: " + key.split("#")[1] + " value: " + errorVal);
                                 }
-                            });                                                     
+                            }); 
                         }
                     }
                 }
@@ -623,7 +664,7 @@ define([
             });
             return ans;
         };
-
+        
         /**
          * 
          * @param {Node} n

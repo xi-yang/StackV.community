@@ -1,5 +1,8 @@
 /*::-webkit-scrollbar {display:none;}*/
+html{
+        overflow-y: scroll; 
 
+}
 
 #hoverdiv{
     position: fixed;
@@ -76,6 +79,7 @@
 .urnLink:hover { }
 .urnLink:visited {color:purple }
 
+.panelElementProperty{font-weight:bold;}
 .dropDownArrow {cursor:pointer;}
 /* Edit loading transition timer below */
 #viz{
@@ -124,9 +128,12 @@ body{
     margin-left:15px;
     text-align: left;
 }
-#treeMenu {height:150px;;
-
+#treeMenu {
+    min-height:150px;
+    max-height:250px;    
     overflow-y:scroll;
+         overflow: -moz-scrollbars-vertical;
+    clear:both;
     /* webkit scrollbar stuff */
 }
 

@@ -136,16 +136,13 @@ define([
         this.getName = function () {
             return backing.name;
         };
-        this.populateTreeMenu = function (tree) {
-            var root = tree.addChild(this.getName(), "Volume");
-        };
 
         this.getIconPath = function () {
             return "/VersaStack-web/resources/filesystem.png";
         };
         this.getType = function () {
             return "Volume";
-        }
+        };
     }
 
     return Volume;

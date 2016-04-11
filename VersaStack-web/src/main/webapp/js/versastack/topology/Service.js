@@ -99,33 +99,6 @@ define([
                 this.getType = function () {
                     return "Service";
                 };
-
-                this.populateTreeMenu = function (tree) {
-                    var container = tree.addChild(this.getName(), "Service");
-                    map_(this.subnets, function (subnet) {
-                        subnet.populateTreeMenu(container);
-                    });
-                    
-                    if (this.misc_elements.length > 0) {
-                        var displayed = [];
-                        for (var i = 0; i < this.misc_elements.length; i++){
-                            var el = this.misc_elements[i];
-                            if (displayed.indexOf(el) === -1 && el.getName() !== undefined) {
-                                var type = el.relationship_to[this];
-                                var elementsNode = tree.addChild(type === undefined?"undefined":type, "");
-                                for (var o in this.misc_elements) {
-                                    if (displayed.indexOf(this.misc_elements[o]) === -1 && 
-                                            this.misc_elements[o].relationship_to[this] === type
-                                            && this.misc_elements[o].getName() !== undefined) {
-                                       // console.log ("name of thing: " + this.misc_elements[o].getName());
-                                        elementsNode.addChild(this.misc_elements[o].getName(), "Element");;
-                                        displayed.push(this.misc_elements[o]);
-                                    }
-                                }
-                            }
-                        }                     
-                    }                    
-                };
             }
             return Service;
         });

@@ -106,7 +106,7 @@
                             map_ = utils.map_;
                             DropDownTree = tree;
 
-                            outputApi = new outputApi_();
+                            outputApi = new outputApi_(render.API);
                         });
 
                 var request = new XMLHttpRequest();
@@ -130,7 +130,7 @@
                 $("#loadingPanel").addClass("hide");
                 $("#hoverdiv").removeClass("hide");
                 $("#viz").attr("class", "");
-
+                
                 buttonInit();
             }
             function drawGraph() {
@@ -140,7 +140,6 @@
                 //If we do not, the layout does to converge as nicely, even if we double the number of iterations
                 layout.doLayout(model, null, width, height);
                 layout.doLayout(model, null, width, height);
-
 
                 render.doRender(outputApi, model);
 //                animStart(30);
@@ -162,6 +161,7 @@
                     layout.doLayout(model, null, width, height);
 
                     render.doRender(outputApi, model);
+                    outputApi.renderApi.selectElement(null);
                 }, null);
 
                 var request = new XMLHttpRequest();
@@ -216,23 +216,6 @@
             }
 
             function buttonInit() {
-                $("#awsButton").click(function (evt) {
-                    var formUrl = "";
-                    if (document.getElementById("displayName").innerText.indexOf("aws") > -1) {
-                        formUrl = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=aws&graphTopo=" + document.getElementById("displayName").innerText + "";
-                    }
-                    else if (document.getElementById("displayName").innerText.indexOf("openstack") > -1) {
-                        formUrl = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=os&graphTopo=" + document.getElementById("displayName").innerText + "";
-                    }
-                    else if (document.getElementById("displayName").innerText.indexOf("versa") > -1) {
-                        formUrl = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=vs&graphTopo=" + document.getElementById("displayName").innerText + "";
-                    } else {
-                        return;
-                    }
-
-                    window.open(formUrl);
-                    evt.preventDefault();
-                });
                 $("#cancelButton").click(function (evt) {
                     $("#actionForm").empty();
 
@@ -265,15 +248,7 @@
 
                     evt.preventDefault();
                 });
-
-                $("#loadingButton").click(function (evt) {
-                    $("#loadingPanel").removeClass("hide");
-                    $("#hoverdiv").addClass("hide");
-                    $("#viz").attr("class", "loading");
-
-                    evt.preventDefault();
-                });
-                
+            
                 $("#displayPanel-tab").click(function (evt) {
                     $("#displayPanel").toggleClass("closed");
 
@@ -285,6 +260,7 @@
 
                     evt.preventDefault();
                 });
+
             }
 
             //animStart and animStop are primarily intended as debug functions
@@ -303,13 +279,16 @@
             }
 
 
-            function outputApi_() {
+            function outputApi_(renderAPI) {
                 var that = this;
+                this.renderApi = renderAPI;
+
                 this.getSvgContainer = function () {
                     return d3.select("#viz");
                 };
 
                 var displayTree = new DropDownTree(document.getElementById("treeMenu"));
+                displayTree.renderApi = this.renderApi;
                 this.getDisplayTree = function () {
                     return displayTree;
                 };
@@ -317,7 +296,6 @@
                 this.setDisplayName = function (name) {
                     document.getElementById("displayName").innerText = name;
                 };
-
 
 
 
@@ -523,18 +501,24 @@
             <div id="displayPanel-contents">
                 <button id="refreshButton">Refresh</button>
                 <button id="modelButton">Display Model</button>
+                <button id="fullDiaplayButton">Toggle Full Model</button>
                 <div id="displayName"></div>
                 <div id="treeMenu"></div>                
             </div>
+            <div id="displayPanel-actions-container">
             <div id="displayPanel-actions">
-                <button id="awsButton">Install AWS</button>
-                <button id="loadingButton">Toggle Loading</button>
                 <button id="backButton">Back</button>
                 <button id="forwardButton">Forward</button>
-                
+                <div id="URISeachContainer" style="float:right;padding-left:10px;">
+                    Search
+                    <input type="text" name="Search" id="URISearchInput" placeholder="Enter URI">
+                    <input type="submit" id= "URISearchSubmit" value="Submit">
+                </div>
+
                 <div id="actionForm"></div>
             </div>
             <div id="displayPanel-tab">^^^^^</div>
+            </div>
         </div>
         <div class="hide" id="hoverdiv"></div>        
 
