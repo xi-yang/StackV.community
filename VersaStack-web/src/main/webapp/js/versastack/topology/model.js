@@ -69,7 +69,7 @@ define([
                     var data = model;
 
                 if (data.charAt(0) === '<') {
-                    window.alert("Empty Topology.");
+                    alert("Empty Topology.");
                     return;
                 } else if (data.charAt(0) === 'u') {
                     data = JSON.parse(data);
@@ -88,7 +88,7 @@ define([
                     map[newNode.value][values.type] = [{type: 'uri', value: values.namedIndividual}, {type: 'uri', value: values.node}];
                 }
 //            map=data;
-                console.log("\n\nda map\n\n");
+                console.log("\n\nmap from request \n\n");
                 console.log(JSON.stringify(map, null, 2));
 
                 /*
@@ -104,13 +104,14 @@ define([
                 that.subnetMap = {};
                 that.volumeMap = {};
                 that.elementMap = {};
+                that.versionID = versionID;
                 for (var key in map) {
                     var val = map[key];
                     val.name = key;
                     //console.log("JSON.stringify(element, null, 2): " + JSON.stringify(val, null, 2));
                     var types = val[values.type];
                     if (!types) {
-                        console.log("Types empty!\n\nVal: " + val + "\nName: " + val.name);
+                       //console.log("Types empty!\n\nVal: " + val + "\nName: " + val.name);
                     } else {
                         map_(types, function (type) {
                             type = type.value;
@@ -129,7 +130,6 @@ define([
                                 toAdd.topLevel = true;
                             }
                             that.elementMap[key] = toAdd;
-                            
                             switch (type) {
                                 // Fallthrough group 
                                 case values.topology:
@@ -213,15 +213,6 @@ define([
                                 case values.bucket:
                                 case values.tag:
                                 case values.route:
-                                    var toAdd;
-                                   // alert("" + type);
-                                    if (oldModel && oldModel.elementMap[key]) {
-                                        toAdd = oldModel.elementMap[key];
-                                        toAdd.reload(val, map);
-                                    } else {
-                                        toAdd = new Element(val, map, that.elementMap);
-                                    }
-                                    that.elementMap[key] = toAdd;
                                     break;
                                 case values.volume:
                                     var toAdd;
@@ -241,14 +232,6 @@ define([
                                 case values.ontology:
                                 case values.POSIX_IOBenchmark:
                                 case values.address:
-                                    var toAdd;
-                                    if (oldModel && oldModel.elementMap[key]) {
-                                        toAdd = oldModel.elementMap[key];
-                                        toAdd.reload(val, map);
-                                    } else {
-                                        toAdd = new Element(val, map, that.elementMap);
-                                    }
-                                    that.elementMap[key] = toAdd;
                                     break;
                                 default:
                                     console.log("Unknown type: " + type);
@@ -286,16 +269,7 @@ define([
                             case values.topoType:
                             case values.value:
                             case values.hasLabel:
-                            case values.hasLabelGroup:
-                                var elements = service_[key];
-                                map_(elements, function (element){
-                                    var errorVal = element.value;
-                                    element = that.elementMap[element.value];
-                                    if (element) {
-                                        element.relationship_to[service.getName()] = key.split("#")[1];
-                                        service.misc_elements.push(element);
-                                    }
-                                });                                
+                            case values.hasLabelGroup:                          
                                 break;                                                                 
                             case values.providesSubnet:
                                 var subnet = service_[key];
@@ -449,16 +423,7 @@ define([
                             case values.provideByService:
                             case values.hasBucket:
                             case values.belongsTo:
-                            case values.name:
-//                                var elements = node_[key];
-//                                map_(elements, function (element){
-//                                    var errorVal = element.value;
-//                                    element = that.elementMap[element.value];
-//                                    if (element) {
-//                                        element.relationship_to[node] = key.split("#")[1];
-//                                        node.misc_elements.push(element);
-//                                    }
-//                                });                                
+                            case values.name:                           
                                 break;                        
                             case values.volume:
                                 break;
@@ -482,16 +447,7 @@ define([
                             case values.mount_point:
                             case values.measurement:
                             case values.topoType:
-                            case values.hasTag:
-                                var elements = node_[key];
-                                map_(elements, function (element){
-                                    var errorVal = element.value;
-                                    element = that.elementMap[element.value];
-                                    if (element) {
-                                        element.relationship_to[node.getName()] = key.split("#")[1];
-                                        node.misc_elements.push(element);
-                                    }
-                                });                                
+                            case values.hasTag:                            
                                 break;
                             default:                         
                                 console.log("Unknown key: " + key);
@@ -533,12 +489,10 @@ define([
                     var src_element = that.elementMap[key];
                     if ((src_element.getType() === "Node" ||
                             src_element.getType() === "Topology")
-                            && that.nodeMap[src_element.getName()].isLeaf()
-                            ) {
+                            && that.nodeMap[src_element.getName()].isLeaf()) 
+                    {
                         src_element.topLevel = false;
-                        if (src_element.getName() === "urn:ogf:network:sdn.maxgigapop.net:network")
-                            alert("why?");
-                            }
+                    }
                     if (src_element !== undefined) {
                         var src_element_ = src_element._backing;
                         for (var key in src_element_) {
@@ -552,29 +506,40 @@ define([
                                 element = that.elementMap[element.value];
                                 if (element) {
                                     var relationship =  key.split("#")[1];
-                                    //element.getType() === "Topology" && 
                                     var src_type = src_element.getType();
                                     var type = element.getType();
                                     if ((type !== "Topology" && type !== "Node") ||
                                         ((src_type === "Topology" || src_type === "Node")  && 
-                                        (relationship === "hasTopology"))
-                                        )
-              
-                                        
-                                {
+                                        (relationship === "hasTopology")))
+                                    {
                                         element.topLevel = false;
-                                                                if (src_element.getName() === "urn:ogf:network:sdn.maxgigapop.net:network")
-                            alert("why? 2");
                                     }
                                     element.relationship_to[src_element.getName()] = relationship;
-                                    src_element.misc_elements.push(element);
+                                    src_element.misc_elements.push(element);                                  
                                 } else {
-                                    console.log("name: " + key.split("#")[1] + " value: " + errorVal);
+                                    //  console.log("name: " + key.split("#")[1] + " value: " + errorVal);
                                 }
                             }); 
                         }
                     }
                 }
+                
+                // New unidirectional alias code 
+                for (var key in that.elementMap) {               
+                    var src_element = that.elementMap[key];
+                    for (var i in src_element.misc_elements) {
+                        var elem = src_element.misc_elements[i];
+                        if (elem.relationship_to[src_element.getName()] === "isAlias"){
+                                var port1 = that.portMap[src_element.getName()];
+                                var port2 = that.portMap[elem.getName()];
+                                if (port1 && port2) {
+                                    port1.alias = port2;
+                                    port2.alias = port1;
+                                }
+                        }
+                    }
+                }
+   
                 //console.log ("ELEMENTS: \n\n\n" + Object.keys(that.elementMap).toString() + "\n\n\n\n");
                 for (var key in that.nodeMap) {
                     var node = that.nodeMap[key];
