@@ -159,30 +159,29 @@
                     //If we do not, the layout does to converge as nicely, even if we double the number of iterations
                     layout.doLayout(model, null, width, height);
                     layout.doLayout(model, null, width, height);
-                    
-                    outputApi = new outputApi_(render.API);
+
                     render.doRender(outputApi, model);
-                    outputApi.renderApi.selectElement(null, model);
+                    outputApi.renderApi.selectElement(null);
                 }, null);
 
-//                var request = new XMLHttpRequest();
-//                request.open("GET", "/VersaStack-web/restapi/model/");
-//
-//                request.setRequestHeader("Accept", "application/json");
-//                request.onload = function () {
-//                    var modelData = request.responseText;
-//
-//                    if (modelData.charAt(0) === '<') {
-//                        return;
-//                    }
-//
-//                    modelData = JSON.parse(modelData);
-//                    $.post("/VersaStack-web/ViewServlet", {newModel: modelData.ttlModel}, function (response) {
-//                        // handle response from your servlet.
-//                    });
-//                };
-//                request.send();
-//
+                var request = new XMLHttpRequest();
+                request.open("GET", "/VersaStack-web/restapi/model/");
+
+                request.setRequestHeader("Accept", "application/json");
+                request.onload = function () {
+                    var modelData = request.responseText;
+
+                    if (modelData.charAt(0) === '<') {
+                        return;
+                    }
+
+                    modelData = JSON.parse(modelData);
+                    $.post("/VersaStack-web/ViewServlet", {newModel: modelData.ttlModel}, function (response) {
+                        // handle response from your servlet.
+                    });
+                };
+                request.send();
+
                 $("#loadingPanel").addClass("hide");
                 $("#hoverdiv").removeClass("hide");
                 $("#viz").attr("class", "");
