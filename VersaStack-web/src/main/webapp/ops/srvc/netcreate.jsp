@@ -93,8 +93,12 @@
                                         </c:if>
                                         <c:if test="${param.networkType == 'ops'}">    
                                             <tr>
-                                                <td>VM Test</td>
+                                                <td>Basic VM</td>
                                                 <td><button onclick="applyNetTemplate(4)">Apply</button></td>
+                                            </tr>
+                                            <tr>
+                                                <td>VM with type details and SRIOV connection</td>
+                                                <td><button onclick="applyNetTemplate(5)">Apply</button></td>
                                             </tr>
                                         </c:if>
                                     </tbody>
@@ -284,10 +288,10 @@
                                                         </div>
                                                     </td>
                                                 </tr>
-                                                <tr>
+<!--                                                <tr>
                                                     <td>Direct Connect</td>
                                                     <td><input type="text" name="conn-dest" placeholder="Destination" size="60" /><input type="text" name="conn-vlan" placeholder="VLAN" size="8" /></td>
-                                                </tr>
+                                                </tr>-->
                                                 <tr>
                                                     <td></td>
                                                     <td><input type="submit" name="custom" value="Submit" /><input class="button-register" type="button" value="Add Subnet" onClick="addSubnet('ops')"></td>
