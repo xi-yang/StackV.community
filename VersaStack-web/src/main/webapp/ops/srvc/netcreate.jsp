@@ -119,7 +119,7 @@
                                                 <tr>
                                                     <td>Topology URI</td>
                                                     <td>
-                                                        <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance" var="driverlist" />
+                                                        <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance WHERE driverEjbPath='java:module/AwsDriver'" var="driverlist" />
                                                         <select name="topoUri" required>
                                                             <option></option>
                                                             <c:forEach var="driver" items="${driverlist.rows}">
@@ -204,7 +204,7 @@
                                                 <tr>
                                                     <td>Topology URI</td>
                                                     <td>
-                                                        <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance" var="driverlist" />
+                                                        <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance WHERE driverEjbPath='java:module/OpenStackDriver'" var="driverlist" />
                                                         <select name="topoUri" required>
                                                             <option></option>
                                                             <c:forEach var="driver" items="${driverlist.rows}">
