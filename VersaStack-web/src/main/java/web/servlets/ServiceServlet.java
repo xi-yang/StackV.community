@@ -467,7 +467,7 @@ public class ServiceServlet extends HttpServlet {
             String driverPath = rs1.getString(1);
             if (driverPath.contains("Aws") || driverPath.contains("aws")) {
                 paraMap.put("driverType", "aws");
-            } else if (driverPath.contains("openstack") || driverPath.contains("os")) {
+            } else if (driverPath.contains("OpenStack") || driverPath.contains("os")) {
                 paraMap.put("driverType", "ops");
             }
 
@@ -523,6 +523,7 @@ public class ServiceServlet extends HttpServlet {
                         }
                     }
                     paraMap.remove("subnet" + i + "-route-prop");
+                    paraMap.remove("subnet" + i + "-route-default");
 
                     // Process VMs.
                     for (int j = 1; j < 10; j++) {
@@ -625,11 +626,11 @@ public class ServiceServlet extends HttpServlet {
                                 String vmRouteString = "";
                                 for (int k = 1; k < 5; k++) {
 
-                                    if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k)) {
-                                        VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-");
-                                    } else {
-                                        VMString += "& ";
-                                    }
+//                                    if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k)) {
+//                                        VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-");
+//                                    } else {
+//                                        VMString += "& ";
+//                                    }
 
                                     if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k + "-to")) {
                                         vmRouteString += "to+" + paraMap.get("subnet" + i + "-vm" + j + "-route" + k + "-to") + ",";
@@ -653,6 +654,9 @@ public class ServiceServlet extends HttpServlet {
                                 } else {
                                     VMString += "& ";
                                 }
+
+                                paraMap.put("vm" + j, VMString);
+                                
                             }
                         }
 
@@ -660,10 +664,12 @@ public class ServiceServlet extends HttpServlet {
                         paraMap.remove("subnet" + i + "-vm" + j + "-image");
                         paraMap.remove("subnet" + i + "-vm" + j + "-instance");
                         paraMap.remove("subnet" + i + "-vm" + j + "-keypair");
-                        paraMap.remove("subnet" + i + "-vm" + j + "security");
-                        paraMap.remove("subnet" + i + "-vm" + j + "host");
-                        paraMap.remove("subnet" + i + "-vm" + j + "floating");
-                        paraMap.remove("subnet" + i + "-vm" + j + "sriov");
+                        paraMap.remove("subnet" + i + "-vm" + j + "-security");
+                        paraMap.remove("subnet" + i + "-vm" + j + "-host");
+                        paraMap.remove("subnet" + i + "-vm" + j + "-floating");
+                        paraMap.remove("subnet" + i + "-vm" + j + "-sriov-dest");
+                        paraMap.remove("subnet" + i + "-vm" + j + "-sriov-ip");
+                        paraMap.remove("subnet" + i + "-vm" + j + "-sriov-mac");
                     }
 
                     paraMap.remove("subnet" + i + "-cidr");
