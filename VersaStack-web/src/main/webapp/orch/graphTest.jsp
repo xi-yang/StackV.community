@@ -20,6 +20,7 @@
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/VersaStack-web/css/bootstrap.css">
         <link rel="stylesheet" href="/VersaStack-web/css/style.css">       
+<!--        <link rel="stylesheet" href="/VersaStack-web/css/contextMenu.css">       -->
 
         <script>
             $(document).ready(function () {
@@ -160,7 +161,6 @@
                     layout.doLayout(model, null, width, height);
                     layout.doLayout(model, null, width, height);
                     
-                    outputApi = new outputApi_(render.API);
                     render.doRender(outputApi, model);
                     outputApi.renderApi.selectElement(null, model);
                 }, null);
@@ -182,7 +182,7 @@
 //                    });
 //                };
 //                request.send();
-//
+
                 $("#loadingPanel").addClass("hide");
                 $("#hoverdiv").removeClass("hide");
                 $("#viz").attr("class", "");
@@ -574,6 +574,21 @@
 
     </g>
     </svg>
+    
+<!--    <nav id="context-menu" class="context-menu">
+      <ul class="context-menu__items">
+        <li class="context-menu__item">
+          <a href="#" class="context-menu__link" data-action="View"><i class="fa fa-eye"></i> Add Tag</a>
+        </li>
+        <li class="context-menu__item">
+          <a href="#" class="context-menu__link" data-action="Edit"><i class="fa fa-edit"></i> Option 2</a>
+        </li>
+        <li class="context-menu__item">
+          <a href="#" class="context-menu__link" data-action="Delete"><i class="fa fa-times"></i> Option 3</a>
+        </li>
+      </ul>
+    </nav>
+           <script src="/VersaStack-web/js/versastack/topology/contextMenu.js"></script>-->
 
 </body>
 
