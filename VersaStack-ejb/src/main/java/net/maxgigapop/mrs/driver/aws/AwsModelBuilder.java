@@ -363,6 +363,10 @@ public class AwsModelBuilder {
                     Resource ROUTE_TO = null;
                     Resource ROUTE_FROM = null;
                     int i = 0;
+                    //@TODO: A workaround for unconventional routes such as ones for VPC EndPoints
+                    if (r.getDestinationCidrBlock() == null) {
+                        continue;
+                    }
                     String routeId = r.getDestinationCidrBlock().replace("/", "");
                     Resource ROUTE = RdfOwl.createResource(model, ROUTINGTABLE.toString()+":route-"+routeId, route);
                     model.add(model.createStatement(ROUTINGSERVICE, providesRoute, ROUTE));
