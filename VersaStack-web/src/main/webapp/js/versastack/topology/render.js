@@ -120,7 +120,6 @@ define([
      * @param {Model} model
      **/
     function doRender(outputApi, model) {
-
         var svgContainer = outputApi.getSvgContainer();
         if (firstRun) {
             firstRun = false;
@@ -177,7 +176,18 @@ define([
                 }
             });
             selectElement(null); // show top level topologies in display panel 
-        }
+        } 
+        
+        // Fixes bug of selectElement(null) having stale model after reloading 
+        svgContainer.on("click", function () {
+           //Clear the selected element.
+           //We check the event path so this only happens if we did not actually click on something
+           var clickedElem = d3.event.path[0];
+           if (clickedElem.id === "viz") {
+               selectElement(null);
+           }
+        });       
+        
         if (!switchPopup) {
             switchPopup = buildSwitchPopup();
         }
@@ -228,6 +238,7 @@ define([
         }
         /**@param {Node} n**/
         function drawTopology(n) {
+
             if (!n.isLeaf()) {
                 if (!n.portPopup) {
                     n.portPopup = buildPortDisplayPopup(n);
@@ -235,7 +246,10 @@ define([
                 if (!n.volumePopup) {
                     n.volumePopup = buildVolumeDisplayPopup(n);
                 }
-                
+//                console.log("In drawTopology-> n.getHeight = " +  n.getHeight());
+//                console.log("In drawTopology-> n.getDepth = " +  n.getDepth());
+//                console.log("In drawTopology-> n.visibleSize = " +  n.visibleSize());
+
                 //render the convex hull surounding the decendents of n
                 var path = getTopolgyPath(n);
                 var color = settings.HULL_COLORS[n.getDepth() % settings.HULL_COLORS.length];
@@ -272,7 +286,7 @@ define([
             }
 
         }
-
+        
         /**@param {Node} n**/
         function drawServices(n) {
             n.svgNodeServices = svgContainer.select("#node").append("g");
@@ -710,32 +724,32 @@ define([
                 outputApi.setDisplayName("Topologies");
                 var displayTree = outputApi.getDisplayTree();
                 outputApi.getDisplayTree().clear();
-                
                 // Tried to optimize where I can by saving the topLevelTopologies
                 // here, still some delay. 
                 // Changing everything so that you only populate the display
                 // tree when the drop down node is clicked, how long would that take? 
-               if ( typeof selectElement.topLevelTopologies === 'undefined' ) {
+//               if ( typeof selectElement.topLevelTopologies === 'undefined' ) {
                         // It has not... perform the initialization
-                        selectElement.topLevelTopologies = [];
+                       var topLevelTopologies = [];
                         for (var key in model.elementMap) {
                             var e = model.elementMap[key];
                             if (e.getType() === "Topology" && e.topLevel) {
-                                selectElement.topLevelTopologies.push(e);
+                                topLevelTopologies.push(e);                                
                                 var child = displayTree.addChild(e.getName(), "Element");
                                 e.populateTreeMenu(child);
                             }
-                        } 
-                } else {
-                    for (var i in selectElement.topLevelTopologies) {
-                        e = selectElement.topLevelTopologies[i];
-                        var child = displayTree.addChild(e.getName(), "Element");
-                        e.populateTreeMenu(child);
-                        
-                    }
-                }
+                        }
+                   // }
+//                } else {
+//                    for (var i in selectElement.topLevelTopologies) {
+//                        e = selectElement.topLevelTopologies[i];
+//                        var child = displayTree.addChild(e.getName(), "Element");
+//                        e.populateTreeMenu(child);
+//                        
+//                    }
+//                }
                 displayTree.draw();
-                
+                console.log("versionalID: " + model.versionID);
                 //outputApi.getDisplayTree().clear();
             } else {
                 outputApi.setDisplayName(elem.getName());
@@ -836,7 +850,7 @@ define([
             n.dx = -ds / 2;
             n.dy = -ds / 2;
             n.size = size;
-            svg
+               svg
                     .attr("width", size)
                     .attr("height", size)
                     .attr("x", x + n.dx)//make it appear to zoom into center of the icon
@@ -847,7 +861,9 @@ define([
                         .attr("height", size)
                         .attr("x", x + n.dx)
                         .attr("y", y + n.dy);
-            }
+            }        
+
+            
             drawHighlight();
         }
 
@@ -912,16 +928,14 @@ define([
             //console.log(" a bunch of stuff ");
            //nodeList = model.listNodes();
            //var portList = model.listPorts();
-           //alert(" hi, my name is: " + model.nodeMap[name]);  
-                          // alert("i'm here in clicknode: " + model.getElementType(name));
 
            // eventually we want to use type their type for this , not a given type. 
            var element = model.elementMap[name];
            if (element === undefined) {
-               alert("Element not found. Please enter valid URN.")
+               alert("Element not found. Please enter valid URN.");
            } else {
                 type = element.getType();
-           
+                
                 switch (type) {
                  case "Topology":
                  case "Node":
@@ -929,7 +943,7 @@ define([
                      outputApi.getDisplayTree().addToHistory(name, type);
                      outputApi.getDisplayTree().topViewShown = false;
 
-                     console.log("i'm node");
+                     console.log("i'm node: " + model.nodeMap[name].getName());
 
                      break;
                  case "SwitchingServicHypervisorBypassInterfaceServicee":
