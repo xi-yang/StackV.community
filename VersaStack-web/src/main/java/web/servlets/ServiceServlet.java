@@ -639,7 +639,7 @@ public class ServiceServlet extends HttpServlet {
                                             vmRouteString += "from+" + paraMap.get("subnet" + i + "-vm" + j + "-route" + k + "-from") + ",";
                                         }
                                         if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k + "-next")) {
-                                            vmRouteString += "nextHop+" + paraMap.get("subnet" + i + "-vm" + j + "-route" + k + "-next");
+                                            vmRouteString += "next_hop+" + paraMap.get("subnet" + i + "-vm" + j + "-route" + k + "-next");
                                         }
                                         vmRouteString += "\r\n";
                                     }
