@@ -9,23 +9,19 @@ define(["local/versastack/topology/modelConstants"], function (values) {
         this.topLevel = true;
         this.elementMap = elementMap;
         this.misc_elements = [];
-//        /**@type Array.Port**/
-//        this.ports = [];
-//        this.services = [];
-//        this.children = [];
-//        this.misc_elements = [];
         
         this.relationship_to = []; // relationship with owner 
         var that = this;
-        //We are reloading this port from a new model
+        
+        //We are reloading this element  from a new model
         //Model.js will handle most of the reparsing, but we need to
         //clear out some old data
-        
         this.reload = function (backing, map) {
             this._backing = backing;
             this._map = map;
             this.elementMap = null;
             this.misc_elements = [];
+            this.relationship_to = []; // relationship with owner 
         };
         this.getName = function () {
             return this._backing.name;
@@ -36,64 +32,41 @@ define(["local/versastack/topology/modelConstants"], function (values) {
             return this.getName().split(":").slice(-1).pop();
         };*/
 
-        // refine this 
         this.getType = function () {
            
             var types = this._backing[values.type];
-            //console.log("types of : " + this.getName());
-            
-//            console.log ("types = " + Object.keys(this._backing));
-            // remove named indivdual from this 
-            /*var index = types.indexOf(values.namedIndividual);
-            if (index > -1)
-                types.splice(index, 1);*/
             
             var arr = map_(types, function (type) {
-                            type = type.value;
-                            
-                           // console.log("-  " + type + "\n");
-                            return type; 
-                        });
-            //console.log("types of " + this.name + ": " + arr.toString());
+                type = type.value;
+
+                return type; 
+             });
             
             var index = arr.indexOf("http://www.w3.org/2002/07/owl#NamedIndividual");
-            //console.log ("index: " + index);
             if (index > -1)
                 arr.splice(index, 1);
-            //console.log ("true type: " + arr[0] + "\n");
             return arr[0].split("#")[1];
         };
         
         this.populateProperties = function (tree) {
             for (var key in this._backing) {
-//                            console.log("~~~~~~");
-//                             console.log("ekey: " + key);
                              if (key === "name") continue;
 
-                console.log("key in populateProperties: " + key);
                 var elements = this._backing[key];
                 map_(elements, function (element){
                     var errorVal = element.value;
-//                                console.log("element type: " + element.type);
-//                                console.log("JSON.stringify(element, null, 2): " + JSON.stringify(element, null, 2));
                      if (errorVal.substring(0,3) === "urn") return 0;
 
                     var name = key.split("#")[1];
                         if (key === "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"){
-                            console.log("error val before; " + errorVal);
                             if (errorVal === "http://www.w3.org/2002/07/owl#NamedIndividual")
                                 return 0;
                             else if (errorVal.indexOf("#") !== -1)
                                 errorVal = errorVal.split("#")[1];
                         }
                         tree.addChild(key.split("#")[1] + " : " + errorVal, "Property");
-                        console.log("name: " + key.split("#")[1] + " value: " + errorVal);
-//                                    console.log("errorVal's key: " + key);
-//                                    console.log("my name: " + src_element.getName());
-//                                    console.log("errorVal: " + errorVal);
                     }
                 ); 
-//                            console.log("~~~~~~~");
             }            
 
         };
