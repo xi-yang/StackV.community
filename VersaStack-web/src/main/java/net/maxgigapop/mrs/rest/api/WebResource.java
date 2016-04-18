@@ -601,7 +601,9 @@ public class WebResource {
         URL url = new URL(String.format("%s/service/%s/revert", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
-        return result.equalsIgnoreCase("COMMITTED-PARTIAL");
+        
+        // Revert now returns service delta UUID; pending changes.
+        return true;
     }
 
     private String delete(String refUuid) throws MalformedURLException, IOException {
