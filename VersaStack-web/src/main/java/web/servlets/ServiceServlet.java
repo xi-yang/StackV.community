@@ -553,8 +553,8 @@ public class ServiceServlet extends HttpServlet {
                                     VMString += "& ";
                                 }
 
-                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "security")) {
-                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "security");
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-security")) {
+                                    VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-security");
                                 } else {
                                     VMString += "& ";
                                 }
