@@ -120,6 +120,7 @@ public class OpenStackPush {
         List<JSONObject> requests = new ArrayList();
 
         //get all the requests
+        requests.addAll(cephStorageRequests(modelRef, modelReduct, false));
         requests.addAll(virtualRouterRequests(modelRef, modelReduct, false));
         requests.addAll(sriovRequests(modelRef, modelReduct, false));
         requests.addAll(portAttachmentRequests(modelRef, modelReduct, false));
@@ -144,6 +145,7 @@ public class OpenStackPush {
         requests.addAll(isAliasRequest(modelRef, modelAdd, true));
         requests.addAll(sriovRequests(modelRef, modelAdd, true));
         requests.addAll(virtualRouterRequests(modelRef, modelAdd, true));
+        requests.addAll(cephStorageRequests(modelRef, modelAdd, true));
 
         return requests;
     }
@@ -891,7 +893,15 @@ public class OpenStackPush {
                     // set metadata: "sriov_vnic:status": "do_detach"
                     client.setMetadata(servername, "sriov_vnic:status", "do_detach");
                 }
-            }
+            } else if (o.get("request").toString().equals("CephStorageRequest")) {
+                String servername = (String) o.get("server name");
+                String volumeName = (String) o.get("volume name");
+                String diskSize = (String) o.get("disk size");
+                String mountPoint = (String) o.get("mount point");
+                String deviceId =  (String) o.get("device id");
+                String status =  (String) o.get("status");
+                client.setMetadata(servername, "ceph_rbd:"+deviceId, String.format("{'volume':'%s','size':'%s','mount':'%s','status':'%s'}", volumeName, diskSize, mountPoint, status));
+            } 
         }
     }
 
@@ -1142,7 +1152,9 @@ public class OpenStackPush {
         String query;
 
         //1 check if any operation needs to be done with a volume
-        query = "SELECT ?volume WHERE {?volume a mrs:Volume}";
+        query = "SELECT ?volume WHERE {"
+                + "?volume a mrs:Volume. "
+                + "}";
         ResultSet r = executeQuery(query, emptyModel, model);
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
@@ -1157,14 +1169,18 @@ public class OpenStackPush {
                 if (creation == true) {
                     throw new EJBException(String.format("Volume %s already exists", v));
                 } else {
-                    throw new EJBException(String.format("Volume %s does not exist, cannot be deleted", v));
+                    //throw new EJBException(String.format("Volume %s does not exist, cannot be deleted", v));                  
+                    log.warning(String.format("Volume %s does not exist, no need to delete", volumeName));        
                 }
             } else {
                 //1.2 check what service is providing the volume
-                query = "SELECT ?service WHERE {?service mrs:providesVolume <" + volume.asResource() + ">}";
-                ResultSet r1 = executeQuery(query, modelRef, model);
+                query = "SELECT ?service WHERE {?service mrs:providesVolume <" + volume.asResource() + ">"
+                        + " FILTER (not exists {?service mrs:type \"ceph-rbd\". })"
+                        + "}";
+                ResultSet r1 = executeQueryUnion(query, modelRef, model);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model does not specify service that provides volume: %s", volume));
+                    //throw new EJBException(String.format("model does not specify service that provides volume: %s", volume));
+                    continue;
                 }
                 QuerySolution q1 = r1.next();
                 RDFNode service = q1.get("service");
@@ -1662,8 +1678,8 @@ public class OpenStackPush {
         String query;
 
         //1 check for new association between intsnce and volume
-        query = "SELECT  ?node ?volume  WHERE {?node  mrs:hasVolume  ?volume}";
-
+        query = "SELECT  ?node ?volume  WHERE {?node  mrs:hasVolume  ?volume. "
+                + "}";
         ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
         while (r1.hasNext()) {
             QuerySolution querySolution1 = r1.next();
@@ -1675,10 +1691,13 @@ public class OpenStackPush {
             volumeName = ResourceTool.getResourceName(volumeName, OpenstackPrefix.volume);
 
             //1.1 find the device name of the volume
-            query = "SELECT ?deviceName WHERE{<" + volume.asResource() + "> mrs:target_device ?deviceName}";
-            ResultSet r2 = executeQuery(query, modelRef, modelDelta);
+            query = "SELECT ?deviceName WHERE{<" + volume.asResource() + "> mrs:target_device ?deviceName. "
+                    + String.format(" FILTER (not exists {?svc mrs:providesVolume <%s>. ?svc mrs:type \"ceph-rbd\". })", volume.asResource())
+                    + "}";
+            ResultSet r2 = executeQueryUnion(query, modelRef, modelDelta);
             if (!r2.hasNext()) {
-                throw new EJBException(String.format("volume device name is not specified for volume %s in the model delta", volume));
+                //throw new EJBException(String.format("volume device name is not specified for volume %s in the model delta", volume));
+                continue;
             }
             QuerySolution querySolution2 = r2.next();
             RDFNode deviceName = querySolution2.get("deviceName");
@@ -2361,6 +2380,58 @@ public class OpenStackPush {
             } else {
                 JO.put("request", "DeleteVirtualRouterRequest");
             }
+            requests.add(JO);
+        }
+        return requests;
+    }
+
+    private List<JSONObject> cephStorageRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+        List<JSONObject> requests = new ArrayList();
+        String query = "SELECT ?vol ?vm ?size ?mount  WHERE {"
+                + "?vm mrs:hasVolume ?vol. "
+                + "OPTIONAL {?vol mrs:disk_gb ?size.}. "
+                + "OPTIONAL {?vol mrs:mount_point ?mount.} "
+                + "}";
+        ResultSet r = executeQuery(query, emptyModel, modelDelta);
+        int numRdb = 0;
+        while (r.hasNext()) {
+            query = "SELECT ?vol WHERE {"
+                    + "?cephrbd a mrs:BlockStorageService. "
+                    + "?cephrbd mrs:type \"ceph-rbd\". "
+                    + "?cephrbd mrs:providesVolume ?vol. "
+                    + "}";
+            ResultSet r2 = executeQueryUnion(query, modelRef, modelDelta);
+            if (!r2.hasNext()) {
+                continue;
+            }
+            QuerySolution q = r.next();
+            numRdb++;
+            //@TODO: configurable as drvier_instance_property
+            // default size = 100GB (102400 MB)
+            String diskSize = "102400"; // 
+            // default mount = /mnt/ceph
+            String mountPoint = "/mnt/ceph"+numRdb;            
+            JSONObject JO = new JSONObject();
+            if (q.contains("size")) {
+                diskSize = q.get("size").toString();
+            }
+            if (q.contains("mount")) {
+                mountPoint = q.get("mount").toString();
+            }
+            Resource resVolume = q.getResource("vol");
+            Resource resVM = q.getResource("vm");
+            JO.put("request", "CephStorageRequest");
+            if (creation == true) {
+                JO.put("status", "up");
+            } else {
+                JO.put("status", "down");
+            }
+            String serverName = ResourceTool.getResourceName(resVM.getURI(), OpenstackPrefix.vm);
+            JO.put("volume name", resVolume.getURI());
+            JO.put("server name", serverName);
+            JO.put("disk size", diskSize);
+            JO.put("mount point", mountPoint);
+            JO.put("device id", Integer.toString(numRdb));
             requests.add(JO);
         }
         return requests;
