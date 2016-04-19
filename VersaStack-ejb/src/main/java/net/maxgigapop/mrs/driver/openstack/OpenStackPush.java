@@ -901,6 +901,9 @@ public class OpenStackPush {
                 String deviceId =  (String) o.get("device id");
                 String status =  (String) o.get("status");
                 client.setMetadata(servername, "ceph_rbd:"+deviceId, String.format("{'volume':'%s','size':'%s','mount':'%s','status':'%s'}", volumeName, diskSize, mountPoint, status));
+                if (status.equals("delete")) {
+                    CephRbdDeletionCheck(servername, deviceId);
+                }
             } 
         }
     }
@@ -2422,9 +2425,9 @@ public class OpenStackPush {
             Resource resVM = q.getResource("vm");
             JO.put("request", "CephStorageRequest");
             if (creation == true) {
-                JO.put("status", "up");
+                JO.put("status", "create");
             } else {
-                JO.put("status", "down");
+                JO.put("status", "delete");
             }
             String serverName = ResourceTool.getResourceName(resVM.getURI(), OpenstackPrefix.vm);
             JO.put("volume name", resVolume.getURI());
@@ -2762,4 +2765,23 @@ public class OpenStackPush {
         }
     }
 
+    
+    public void CephRbdDeletionCheck(String serverId, String deviceId) {
+        int maxTries = 20; // up to 10 minutes
+        while ((maxTries--) > 0) {
+            try {
+                Server s = client.getServer(serverId);                
+                String metadata = client.getMetadata(s, "ceph_rbd:"+deviceId);
+                if (metadata == null || metadata.contains("'status': 'down'")) {
+                    break;
+                }
+            } catch (Exception e) {
+            }
+            try {
+                Thread.sleep(30000);  // sleep 30 secs 
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
 }
