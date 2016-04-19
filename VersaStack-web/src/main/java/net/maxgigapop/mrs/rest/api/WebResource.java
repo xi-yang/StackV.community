@@ -213,6 +213,18 @@ public class WebResource {
             prep.setString(4, refUuid);
             prep.setInt(5, 1);
             prep.executeUpdate();
+            
+            int instanceID = servBean.getInstanceID(refUuid);
+            
+            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_history` "
+                    + "(`service_history_id`, `service_state_id`, `service_instance_id`) VALUES (1, 1, ?)");
+            prep.setInt(1, instanceID);
+            prep.executeUpdate();
+            
+            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_verification` "
+                    + "(`service_instance_id`, `verification_state`) VALUES (?, NULL)");
+            prep.setInt(1, instanceID);
+            prep.executeUpdate();
 
             // Replicate properties into DB.
             for (String key : paraMap.keySet()) {
@@ -236,6 +248,13 @@ public class WebResource {
                     break;
                 default:
             }
+            
+            // Verify Creation.
+            try {
+                verify(refUuid);
+            } catch (InterruptedException ex) {
+                Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+            }
 
             long endTime = System.currentTimeMillis();
             System.out.println("Service API End::Name="
@@ -256,6 +275,7 @@ public class WebResource {
         System.out.println("Async API Operate Start::Name="
                 + Thread.currentThread().getName() + "::ID="
                 + Thread.currentThread().getId());
+        long endTime;
 
         try {
             switch (action) {
@@ -283,23 +303,35 @@ public class WebResource {
                 case "delete":
                     deleteInstance(refUuid);
 
-                    long endTime = System.currentTimeMillis();
+                    endTime = System.currentTimeMillis();
                     System.out.println("Async API Operate End::Name="
                             + Thread.currentThread().getName() + "::ID="
                             + Thread.currentThread().getId() + "::Time Taken="
                             + (endTime - startTime) + " ms.");
                     return "Deletion Complete.\r\n";
+
+                case "verify":
+                    verify(refUuid);
+
+                    endTime = System.currentTimeMillis();
+                    System.out.println("Async API Operate End::Name="
+                            + Thread.currentThread().getName() + "::ID="
+                            + Thread.currentThread().getId() + "::Time Taken="
+                            + (endTime - startTime) + " ms.");
+                    return "Verification Complete.\r\n";
+
                 default:
-                    return "Error! Invalid Action\n";
+                    return "Error! Invalid Action.\r\n";
             }
-            long endTime = System.currentTimeMillis();
+            
+            endTime = System.currentTimeMillis();
             System.out.println("Async API Operate End::Name="
                     + Thread.currentThread().getName() + "::ID="
                     + Thread.currentThread().getId() + "::Time Taken="
                     + (endTime - startTime) + " ms.");
 
             return superStatus(refUuid) + " - " + status(refUuid) + "\r\n";
-        } catch (IOException | SQLException ex) {
+        } catch (IOException | SQLException | InterruptedException ex) {
             return "Operation Error: " + ex.getMessage() + "\r\n";
         }
     }
@@ -369,22 +401,16 @@ public class WebResource {
 
             while (true) {
                 instanceState = status(refUuid);
-                if (instanceState.equals("READY")) {
-                    /*
-                     result = verify(refUuid);
-                     if (result) {
-                     return 0;
-                     }
-                     else {
-                        
-                     }
-                     */
+                if (instanceState.equals("READY")) {                    
+                    verify(refUuid);
+                   
                     return 0;
                 } else if (!instanceState.equals("COMMITTED")) {
                     return 5;
                 }
                 Thread.sleep(5000);
             }
+            
 
         } catch (IOException | InterruptedException ex) {
             Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
@@ -581,6 +607,14 @@ public class WebResource {
         prep.setInt(1, superStateId);
         prep.setString(2, refUuid);
         prep.executeUpdate();
+        
+        int instanceID = servBean.getInstanceID(refUuid);
+                       
+        prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_history` (`service_state_id`, `service_instance_id`) "
+                + "VALUES (?, ?)");
+        prep.setInt(1, superStateId);
+        prep.setInt(2, instanceID);
+        prep.executeUpdate();
     }
 
     private boolean propagate(String refUuid) throws MalformedURLException, IOException {
@@ -614,33 +648,68 @@ public class WebResource {
         return result;
     }
 
-    private boolean verify(String refUuid) throws MalformedURLException, IOException, InterruptedException {
+    private boolean verify(String refUuid) throws MalformedURLException, IOException, InterruptedException, SQLException {
+        int instanceID = servBean.getInstanceID(refUuid);
+
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+        PreparedStatement prep;
+
         for (int i = 0; i < 5; i++) {
+            boolean redVerified = false, addVerified = false;
             URL url = new URL(String.format("%s/service/verify/%s", host, refUuid));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            String result = servBean.executeHttpMethod(url, conn, "PUT", null);
+            String result = servBean.executeHttpMethod(url, conn, "GET", null);
             /*
-            { 
-                referenceUUID = service_delta_uuid,
-                creationTime = date / time string,
-                verifiedModelReduction = verified_model in string,
-                unverifiedModelReduction = verified_model in string,
-                reductionVerified = "true" or "false" in string,
-                verifiedModelAddition = verified_model in string,
-                unverifiedModelAddition = verified_model in string,
-                additionVerified = "true" or "false" in string,
+             { 
+             referenceUUID = service_delta_uuid,
+             creationTime = date / time string,
+             verifiedModelReduction = verified_model in string,
+             unverifiedModelReduction = verified_model in string,
+             reductionVerified = "true" or "false" in string,
+             verifiedModelAddition = verified_model in string,
+             unverifiedModelAddition = verified_model in string,
+             additionVerified = "true" or "false" in string,
+             }
+             */
+            
+            // Pull data from JSON.
+            JSONObject verifyJSON = new JSONObject();
+            try {
+                Object obj = parser.parse(result);
+                verifyJSON = (JSONObject) obj;
+            } catch (ParseException ex) {
+                Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
             }
-            */
-            boolean redVerified = false, addVerified = false;
-            
-            
-            
+
+            if (((String) verifyJSON.get("reductionVerified")).equals("true"))
+                redVerified = true;
+            if (((String) verifyJSON.get("additionVerified")).equals("true"))
+                addVerified = true;
+
             //System.out.println("Verify Result: " + result + "\r\n");
             if (redVerified && addVerified) {
+                prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '1' WHERE `service_verification`.`service_instance_id` = ?");
+                prep.setInt(1, instanceID);
+                prep.executeUpdate();
+
                 return true;
             }
+
+            prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '0' WHERE `service_verification`.`service_instance_id` = ?");
+            prep.setInt(1, instanceID);
+            prep.executeUpdate();
+
             Thread.sleep(60000);
         }
+
+        prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '-1' WHERE `service_verification`.`service_instance_id` = ?");
+        prep.setInt(1, instanceID);
+        prep.executeUpdate();
 
         return false;
     }

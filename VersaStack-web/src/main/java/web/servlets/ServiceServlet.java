@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 import javax.servlet.AsyncContext;
 import javax.servlet.annotation.WebServlet;
+import net.maxgigapop.mrs.rest.api.WebResource;
 import web.async.AppAsyncListener;
 import web.async.DNCWorker;
 import web.async.FL2PWorker;
@@ -117,6 +118,11 @@ public class ServiceServlet extends HttpServlet {
                     + "(`service_history_id`, `service_state_id`, `service_instance_id`) VALUES (1, 1, ?)");
             prep.setInt(1, instanceID);
             prep.executeUpdate();
+            
+            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_verification` "
+                    + "(`service_instance_id`, `verification_state`) VALUES (?, NULL)");
+            prep.setInt(1, instanceID);
+            prep.executeUpdate();
 
             // Create paraMap.
             while (paramNames.hasMoreElements()) {
@@ -154,12 +160,16 @@ public class ServiceServlet extends HttpServlet {
             } else if (serviceString.equals("dnc")) {
                 //System.out.println("Im inside dnc");
                 response.sendRedirect(createConnection(request, paraMap));
-            } else if (serviceString.equals("fl2p")){
-               response.sendRedirect(createFlow(request, paraMap)); 
-            }
-            else {
+            } else if (serviceString.equals("fl2p")) {
+                response.sendRedirect(createFlow(request, paraMap));
+            } else {
                 response.sendRedirect("/VersaStack-web/errorPage.jsp");
             }
+
+            url = new URL(String.format("%s/app/service/%s/verify", host, refUuid));
+            HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+            String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
+
         } catch (SQLException ex) {
             Logger.getLogger(ServiceServlet.class.getName()).log(Level.SEVERE, null, ex);
         }

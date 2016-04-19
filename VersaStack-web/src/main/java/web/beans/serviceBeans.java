@@ -736,7 +736,7 @@ public class serviceBeans {
             if (!result.contains("referenceVersion")) {
                 return 2;//Error occurs when interacting with back-end system
             }
-
+            
             // Cache System Delta
             cacheSystemDelta(instanceID, historyID, result);
 
@@ -1077,6 +1077,11 @@ public class serviceBeans {
             front_connectionProps.put("user", "root");
             front_connectionProps.put("password", "root");
 
+            // Retrieve UUID from delta
+            /*
+            
+            */
+            
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
