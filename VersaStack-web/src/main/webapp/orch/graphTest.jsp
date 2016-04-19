@@ -95,7 +95,9 @@
                     "local/versastack/topology/render",
                     "local/d3",
                     "local/versastack/utils",
-                    "local/versastack/topology/DropDownTree"],
+                    "local/versastack/topology/DropDownTree"//,
+                //    "local/versastack/topology/ContextMenu"
+                ],
                         function (m, l, r, d3_, utils_, tree) {
                             ModelConstructor = m;
                             model = new ModelConstructor();
@@ -106,7 +108,9 @@
                             utils = utils_;
                             map_ = utils.map_;
                             DropDownTree = tree;
-
+                            //ContextMenu = c; @
+                            
+                           // c.init(); @
                             outputApi = new outputApi_(render.API);
                         });
 
@@ -161,8 +165,11 @@
                     layout.doLayout(model, null, width, height);
                     layout.doLayout(model, null, width, height);
                     
+                    //layout.force().gravity(1).charge(-900).start();
+                    layout.testLayout(model, null, width, height);  //@
+                    layout.testLayout(model, null, width, height);                    
                     render.doRender(outputApi, model);
-                    outputApi.renderApi.selectElement(null, model);
+                    outputApi.renderApi.selectElement(null);
                 }, null);
 
 //                var request = new XMLHttpRequest();
@@ -216,7 +223,34 @@
                 $("#viz").attr("class", "");
             }
 
-            function buttonInit() {
+            function buttonInit() { //@
+                $("#testButton").click(function (evt) {
+                    outputApi.resetZoom();
+                    var width = document.documentElement.clientWidth / outputApi.getZoom();
+                    var height = document.documentElement.clientHeight / outputApi.getZoom();
+                    //TODO, figure out why we need to call this twice
+                    //If we do not, the layout does to converge as nicely, even if we double the number of iterations
+//                    layout.doLayout(model, null, width, height);
+//                    layout.doLayout(model, null, width, height);
+                    layout.stop();
+                    //layout.force().gravity(1).charge(-900).start();
+                    layout.testLayout(model, null, width, height);
+                    layout.testLayout(model, null, width, height); 
+
+//                    var zoom = d3.behavior.zoom();
+//                    var viewCenter = [];
+//
+//                    viewCenter[0] = (-1)*zoom.translate()[0] + (0.5) * (  width/zoom.scale() );
+//                    viewCenter[1] = (-1)*zoom.translate()[1] + (0.5) * ( height/zoom.scale() );
+        
+                    outputApi.resetZoom();
+                    render.doRender(outputApi, model);
+                    
+                    evt.preventDefault();
+                });
+                $("#stopButton").click(function (evt) {
+                   layout.stop(); 
+                });
                 $("#cancelButton").click(function (evt) {
                     $("#actionForm").empty();
 
@@ -366,7 +400,13 @@
                     document.getElementById("hoverdiv").style.visibility = vis ? "visible" : "hidden";
                 };
 
-
+                this.resetZoom = function () {   // @
+                    zoomFactor = settings.INIT_ZOOM;
+                    offsetX = 0;
+                    offsetY = 0;                    
+                    this._updateTransform();
+                };
+    
                 var svg = document.getElementById("viz");
                 svg.addEventListener("mousewheel", function (e) {
                     e.preventDefault();
@@ -503,6 +543,8 @@
                 <button id="refreshButton">Refresh</button>
                 <button id="modelButton">Display Model</button>
                 <button id="fullDiaplayButton">Toggle Full Model</button>
+                <button id="testButton">test</button> <!-- @ -->
+                <button id="stopButton">stop</button> <!-- @ -->
                 <div id="displayName"></div>
                 <div id="treeMenu"></div>                
             </div>

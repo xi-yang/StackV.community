@@ -104,7 +104,6 @@ define([
                 that.subnetMap = {};
                 that.volumeMap = {};
                 that.elementMap = {};
-                that.versionID = versionID;
                 for (var key in map) {
                     var val = map[key];
                     val.name = key;

@@ -57,7 +57,6 @@ define([
 
         document.getElementById("URISearchSubmit").onclick = function() {
             var uri = document.getElementById("URISearchInput").value;
-                //alert("i'm here");
             that.renderApi.clickNode(uri, "Element");
         };
         

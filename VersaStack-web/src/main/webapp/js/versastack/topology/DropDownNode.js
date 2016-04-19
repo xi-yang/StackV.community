@@ -82,13 +82,13 @@ define([
                         child.style.display = disp;
                     });
                     text.innerHTML = _getText();
-                    map_(that.children, function (child) {
-                        console.log("only on click");
-                        var toAdd = child.getHTML();
-                        toAdd.style.display = isExpanded ? "inherit" : "none";
-                        childNodes.push(toAdd);
-                        content.appendChild(toAdd);
-                    });                    
+//                    map_(that.children, function (child) {
+//                        console.log("only on click");
+//                        var toAdd = child.getHTML();
+//                        toAdd.style.display = isExpanded ? "inherit" : "none";
+//                        childNodes.push(toAdd);
+//                        content.appendChild(toAdd);
+//                    });                    
                 };            
             }
             
@@ -157,12 +157,13 @@ define([
                 content.appendChild(line);
             }
 
-//            map_(this.children, function (child) {
-//                var toAdd = child.getHTML();
-//                toAdd.style.display = isExpanded ? "inherit" : "none";
-//                childNodes.push(toAdd);
-//                content.appendChild(toAdd);
-//            });
+            // this was a new changed, forgot what the point of htis was ... @
+            map_(this.children, function (child) {
+                var toAdd = child.getHTML();
+                toAdd.style.display = isExpanded ? "inherit" : "none";
+                childNodes.push(toAdd);
+                content.appendChild(toAdd);
+            });
             ans.appendChild(content);
 
             return ans;
