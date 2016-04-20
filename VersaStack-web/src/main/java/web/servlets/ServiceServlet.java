@@ -166,9 +166,11 @@ public class ServiceServlet extends HttpServlet {
                 response.sendRedirect("/VersaStack-web/errorPage.jsp");
             }
 
-            url = new URL(String.format("%s/app/service/%s/verify", host, refUuid));
-            HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-            String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
+            if (!serviceString.equals("driver")) {
+                url = new URL(String.format("%s/app/service/%s/verify", host, refUuid));
+                HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+                String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
+            }
 
         } catch (SQLException ex) {
             Logger.getLogger(ServiceServlet.class.getName()).log(Level.SEVERE, null, ex);

@@ -660,7 +660,7 @@ public class WebResource {
         PreparedStatement prep;
 
         for (int i = 0; i < 5; i++) {
-            boolean redVerified = false, addVerified = false;
+            boolean redVerified = true, addVerified = true;
             URL url = new URL(String.format("%s/service/verify/%s", host, refUuid));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String result = servBean.executeHttpMethod(url, conn, "GET", null);
@@ -684,12 +684,12 @@ public class WebResource {
                 verifyJSON = (JSONObject) obj;
             } catch (ParseException ex) {
                 Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
-            }
-
-            if (((String) verifyJSON.get("reductionVerified")).equals("true"))
-                redVerified = true;
-            if (((String) verifyJSON.get("additionVerified")).equals("true"))
-                addVerified = true;
+            }           
+            
+            if (verifyJSON.containsKey("reductionVerified") && ((String) verifyJSON.get("reductionVerified")).equals("false"))
+                redVerified = false;
+            if (verifyJSON.containsKey("additionVerified") && ((String) verifyJSON.get("additionVerified")).equals("false"))
+                addVerified = false;
 
             //System.out.println("Verify Result: " + result + "\r\n");
             if (redVerified && addVerified) {
