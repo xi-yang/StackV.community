@@ -9,6 +9,7 @@ import javax.ejb.EJBException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
+import org.json.simple.JSONObject;
 
 /**
  *
@@ -17,12 +18,30 @@ import javax.ws.rs.ext.Provider;
 @Provider
 public class EJBExceptionMapper implements ExceptionMapper<EJBException> {
     public Response toResponse(EJBException exception) {
-        String errResponse = "";
-        if (exception.getCausedByException() == null) {
-            errResponse = exception.getMessage();
+        JSONObject jsonErrResponse = new JSONObject();
+        jsonErrResponse.put("exception", exception.getMessage());
+        StackTraceElement[] stackTrace = null;
+        if (exception.getCausedByException() != null) {
+            String causedMessage = exception.getCausedByException().getMessage();
+            if (causedMessage != null && !causedMessage.isEmpty()) {
+                jsonErrResponse.put("causedby", causedMessage);
+            }
+            // get stack trace for causedby
+            stackTrace = exception.getCausedByException().getStackTrace();
         } else {
-            errResponse = exception.getCausedByException().getMessage();
+            // get stack trace for exception
+            stackTrace = exception.getStackTrace();
         }
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(errResponse).build();
+        if (stackTrace != null) {
+            String trace = "";
+            for (StackTraceElement elem: stackTrace) {
+                if (!trace.isEmpty()) {
+                    trace += ";";
+                }
+                trace += elem.toString();
+            }
+            jsonErrResponse.put("stacktrace", trace);
+        }
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(jsonErrResponse.toJSONString()).build();
     }
 }
