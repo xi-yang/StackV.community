@@ -545,7 +545,8 @@ function revertInstance(uuid) {
         }
     });
 
-    window.location.reload(true);
+    //window.location.reload(true);
+    window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
 function cancelInstance(uuid) {
@@ -558,7 +559,8 @@ function cancelInstance(uuid) {
         }
     });
 
-    window.location.reload(true);
+    //window.location.reload(true);
+    window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
 function reinstateInstance(uuid) {
@@ -571,7 +573,8 @@ function reinstateInstance(uuid) {
         }
     });
 
-    window.location.reload(true);
+    //window.location.reload(true);
+    window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
 function deleteInstance(uuid) {
@@ -582,20 +585,6 @@ function deleteInstance(uuid) {
         type: 'PUT',
         success: function (result) {
             console.log("DELETION SUCCESS?!");
-        }
-    });
-
-    window.location.replace('/VersaStack-web/ops/catalog.jsp');
-}
-
-function reinstateInstance(uuid) {
-
-    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/reinstate';
-    $.ajax({
-        url: apiUrl,
-        type: 'PUT',
-        success: function (result) {
-            console.log("RE-INITAILIZATION SUCCESS?!");
         }
     });
 

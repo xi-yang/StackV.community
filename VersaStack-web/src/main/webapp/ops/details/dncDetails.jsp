@@ -41,8 +41,8 @@
         <!-- MAIN PANEL -->
         <div id="main-pane">      
             <button type="button" id="button-service-return">Back to Catalog</button>
-            <sql:query dataSource="${front_conn}" sql="SELECT S.name, X.super_state FROM service S, service_instance I, service_state X
-                       WHERE referenceUUID = ? AND S.service_id = I.service_id AND X.service_state_id = I.service_state_id" var="instancelist">
+            <sql:query dataSource="${front_conn}" sql="SELECT S.name, X.super_state, V.verification_state FROM service S, service_instance I, service_state X, service_verification V
+                       WHERE I.referenceUUID = ? AND I.service_instance_id = V.service_instance_id AND S.service_id = I.service_id AND X.service_state_id = I.service_state_id" var="instancelist">
                 <sql:param value="${param.uuid}" />
             </sql:query>
 
@@ -67,6 +67,22 @@
                             <tr>
                                 <td>Operation Status</td>
                                 <td id="instance-substate">${serv.detailsStatus(param.uuid)}</td>
+                            </tr>
+                            <tr>
+                                <td>Last Verification State</td>
+                                <td id="instance-verification">
+                                    <c:choose>
+                                        <c:when test="${instance.verification_state == -1}">
+                                            FAILED
+                                        </c:when>
+                                        <c:when test="${instance.verification_state == 0}">
+                                            PENDING
+                                        </c:when>
+                                        <c:when test="${instance.verification_state == 1}">
+                                            SUCCESS
+                                        </c:when>                                
+                                    </c:choose>
+                                </td>
                             </tr>
                             <tr>
                                 <td></td>

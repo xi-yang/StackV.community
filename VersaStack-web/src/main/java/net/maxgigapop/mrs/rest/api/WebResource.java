@@ -247,14 +247,7 @@ public class WebResource {
                     servBean.createflow(paraMap);
                     break;
                 default:
-            }
-            
-            // Verify Creation.
-            try {
-                verify(refUuid);
-            } catch (InterruptedException ex) {
-                Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            }                       
 
             long endTime = System.currentTimeMillis();
             System.out.println("Service API End::Name="
