@@ -2396,24 +2396,32 @@ public class OpenStackPush {
                 + "OPTIONAL {?vol mrs:mount_point ?mount.} "
                 + "}";
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
-        int numRdb = 0;
+        Map<Resource, Integer> vmRbdMap = new HashMap<>();
         while (r.hasNext()) {
-            query = "SELECT ?vol WHERE {"
+            QuerySolution q = r.next();
+            query = "SELECT ?vm WHERE {"
+                    + "?vm mrs:hasVolume ?vol. "
                     + "?cephrbd a mrs:BlockStorageService. "
                     + "?cephrbd mrs:type \"ceph-rbd\". "
                     + "?cephrbd mrs:providesVolume ?vol. "
+                    + String.format("FILTER (?vol = <%s>)", q.getResource("vol").getURI())
                     + "}";
             ResultSet r2 = executeQueryUnion(query, modelRef, modelDelta);
             if (!r2.hasNext()) {
                 continue;
             }
-            QuerySolution q = r.next();
-            numRdb++;
+            Resource resVolume = q.getResource("vol");
+            Resource resVM = q.getResource("vm");
+            Integer numRbd = 1;
+            if (vmRbdMap.containsKey(resVM)) {
+                numRbd = vmRbdMap.get(resVM) + 1;
+            }
+            vmRbdMap.put(resVM, numRbd);
             //@TODO: configurable as drvier_instance_property
             // default size = 100GB (102400 MB)
             String diskSize = "102400"; // 
             // default mount = /mnt/ceph
-            String mountPoint = "/mnt/ceph"+numRdb;            
+            String mountPoint = "/mnt/ceph"+numRbd;            
             JSONObject JO = new JSONObject();
             if (q.contains("size")) {
                 diskSize = q.get("size").toString();
@@ -2421,8 +2429,6 @@ public class OpenStackPush {
             if (q.contains("mount")) {
                 mountPoint = q.get("mount").toString();
             }
-            Resource resVolume = q.getResource("vol");
-            Resource resVM = q.getResource("vm");
             JO.put("request", "CephStorageRequest");
             if (creation == true) {
                 JO.put("status", "create");
@@ -2434,7 +2440,7 @@ public class OpenStackPush {
             JO.put("server name", serverName);
             JO.put("disk size", diskSize);
             JO.put("mount point", mountPoint);
-            JO.put("device id", Integer.toString(numRdb));
+            JO.put("device id", numRbd.toString());
             requests.add(JO);
         }
         return requests;
