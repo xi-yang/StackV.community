@@ -21,11 +21,14 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.net.MalformedURLException;
 import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 import javax.servlet.AsyncContext;
 import javax.servlet.annotation.WebServlet;
 import net.maxgigapop.mrs.rest.api.WebResource;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 import web.async.AppAsyncListener;
 import web.async.DNCWorker;
 import web.async.FL2PWorker;
@@ -36,6 +39,7 @@ import web.async.NetCreateWorker;
 public class ServiceServlet extends HttpServlet {
 
     serviceBeans servBean = new serviceBeans();
+    String host = "http://localhost:8080/VersaStack-web/restapi";
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -62,21 +66,7 @@ public class ServiceServlet extends HttpServlet {
             // Instance Creation
             String serviceString = "";
             HashMap<String, String> paraMap = new HashMap<>();
-            Enumeration paramNames = request.getParameterNames();
-            String host = "http://localhost:8080/VersaStack-web/restapi";
-
-            URL url = new URL(String.format("%s/service/instance", host));
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            String refUuid = servBean.executeHttpMethod(url, connection, "GET", null);
-            paraMap.put("instanceUUID", refUuid);
-
-            Connection front_conn;
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", "front_view");
-            front_connectionProps.put("password", "frontuser");
-
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            Enumeration paramNames = request.getParameterNames();            
 
             // Select the correct service.
             if (request.getParameter("driverID") != null) { // Driver
@@ -93,36 +83,6 @@ public class ServiceServlet extends HttpServlet {
             else {
                 response.sendRedirect("/VersaStack-web/errorPage.jsp");
             }
-
-            PreparedStatement prep = front_conn.prepareStatement("SELECT service_id"
-                    + " FROM service WHERE filename = ?");
-            prep.setString(1, serviceString);
-            ResultSet rs1 = prep.executeQuery();
-            rs1.next();
-            int serviceID = rs1.getInt(1);
-            Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
-
-            // Install Instance into DB.
-            prep = front_conn.prepareStatement("INSERT INTO frontend.service_instance "
-                    + "(`service_id`, `user_id`, `creation_time`, `referenceUUID`, `service_state_id`) VALUES (?, ?, ?, ?, ?)");
-            prep.setInt(1, serviceID);
-            prep.setString(2, request.getParameter("userID"));
-            prep.setTimestamp(3, timeStamp);
-            prep.setString(4, refUuid);
-            prep.setInt(5, 1);
-            prep.executeUpdate();
-            
-            int instanceID = servBean.getInstanceID(refUuid);
-            
-            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_history` "
-                    + "(`service_history_id`, `service_state_id`, `service_instance_id`) VALUES (1, 1, ?)");
-            prep.setInt(1, instanceID);
-            prep.executeUpdate();
-            
-            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_verification` "
-                    + "(`service_instance_id`, `verification_state`) VALUES (?, NULL)");
-            prep.setInt(1, instanceID);
-            prep.executeUpdate();
 
             // Create paraMap.
             while (paramNames.hasMoreElements()) {
@@ -141,35 +101,19 @@ public class ServiceServlet extends HttpServlet {
                 }
             }
 
-            // Replicate properties into DB.
-            for (String key : paraMap.keySet()) {
-                if (!paraMap.get(key).isEmpty()) {
-                    url = new URL(String.format("%s/service/property/%s/%s/", host, refUuid, key));
-                    connection = (HttpURLConnection) url.openConnection();
-                    servBean.executeHttpMethod(url, connection, "POST", paraMap.get(key));
-                }
-            }
-
-            // Execute service Creation.
+            // Parse Service.
             if (serviceString.equals("driver")) { // Driver
                 response.sendRedirect(createDriverInstance(request, paraMap));
             } else if (serviceString.equals("vmadd")) { // VM
                 response.sendRedirect(createVMInstance(paraMap));
             } else if (serviceString.equals("netcreate")) { // Network Creation
-                response.sendRedirect(createFullNetwork(request, paraMap));
+                response.sendRedirect(parseFullNetwork(request, paraMap));
             } else if (serviceString.equals("dnc")) {
-                //System.out.println("Im inside dnc");
-                response.sendRedirect(createConnection(request, paraMap));
+                response.sendRedirect(parseConnection(request, paraMap));
             } else if (serviceString.equals("fl2p")) {
                 response.sendRedirect(createFlow(request, paraMap));
             } else {
                 response.sendRedirect("/VersaStack-web/errorPage.jsp");
-            }
-
-            if (!serviceString.equals("driver")) {
-                url = new URL(String.format("%s/app/service/%s/verify", host, refUuid));
-                HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-                String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
             }
 
         } catch (SQLException ex) {
@@ -334,14 +278,14 @@ public class ServiceServlet extends HttpServlet {
         return ("/VersaStack-web/ops/srvc/vmadd.jsp?ret=" + retCode);
     }
 
-    public String createFullNetwork(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {
-        int retCode;
-
+    public String parseFullNetwork(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {
         for (Object key : paraMap.keySet().toArray()) {
             if (paraMap.get((String) key).isEmpty()) {
                 paraMap.remove((String) key);
             }
         }
+        
+        
 
         Connection rains_conn;
         Properties rains_connectionProps = new Properties();
@@ -773,102 +717,84 @@ public class ServiceServlet extends HttpServlet {
         
     }
 
-    public String createConnection(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {
+    public String parseConnection(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException, IOException {
         for (Object key : paraMap.keySet().toArray()) {
             if (paraMap.get((String) key).isEmpty()) {
                 paraMap.remove((String) key);
             }
         }
+
+        JSONObject inputJSON = new JSONObject();
+        JSONObject dataJSON = new JSONObject();
+        inputJSON.put("user", paraMap.get("username"));
+        inputJSON.put("type", "dnc");
         
-        Connection rains_conn;
-        Properties rains_connectionProps = new Properties();
-        rains_connectionProps.put("user","root");
-        rains_connectionProps.put("password","root");
         
-        rains_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/rainsdb",
-                rains_connectionProps);
-        
-        if (paraMap.containsKey("template1")) {
-            //paraMap.put("driverType", "aws");
-            paraMap.put("linkUri1", "urn:ogf:network:vo1.maxgigapop.net:link=conn1");
-            paraMap.put("conn1", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029");
+        //Process each link
+        JSONArray linkArr = new JSONArray();
+        for (int i = 1; i < 10; i++) {
+            if (paraMap.containsKey("linkUri" + i)) {
+                JSONObject linkJSON = new JSONObject();
+                linkJSON.put("name", paraMap.get("linkUri" + i));
 
-            paraMap.remove("template1");
-            paraMap.remove("dncCreate");
-            
-            servBean.createConnection(paraMap);
-
-        } else if (paraMap.containsKey("template2")) {
-            //paraMap.put("driverType", "aws");
-            paraMap.put("linkUri1", "urn:ogf:network:vo1.maxgigapop.net:link=conn1");
-            paraMap.put("conn1", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*& vlan_tag+3021-3029\r\nc&vlan_tag+3021-3029");
-            paraMap.put("linkUri2", "urn:ogf:network:vo1.maxgigapop.net:link=conn2");
-            paraMap.put("conn2", "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*& vlan_tag+3021-3029\r\nurn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029");
-
-            paraMap.remove("template2");
-            paraMap.remove("dncCreate");
-            
-            servBean.createConnection(paraMap);
-
-        } 
-        else {
-            //Process each link
-                for (int i = 1; i < 10; i++) {
-                    //if(paraMap.containsKey("linkUri"+i))
-                    if(paraMap.containsKey("link"+ i +"-src")){
-                    String linkString = "";
-                    if (paraMap.containsKey("link" + i + "-src")) {
-                        linkString = paraMap.get("link" + i + "-src") + "&";
-                     }
-                    if (paraMap.containsKey("link" + i + "-src-vlan")) {
-                        linkString += "vlan_tag+"+paraMap.get("link" + i + "-src-vlan");
-                    }
-                    if (paraMap.containsKey("link" + i + "-des")) {
-                        linkString += "\r\n" + paraMap.get("link" + i + "-des") + "&";
-                    }
-                    if (paraMap.containsKey("link" + i + "-des-vlan")) {
-                        linkString += "vlan_tag+"+paraMap.get("link" + i + "-des-vlan");
-                    }
-
-                    paraMap.remove("link" + i + "-src");
-                    paraMap.remove("link" + i + "-src-vlan");
-                    paraMap.remove("link" + i + "-des");
-                    paraMap.remove("link" + i + "-des-vlan");
-
-                    paraMap.put("conn" + i, linkString);
+                if (paraMap.containsKey("link" + i + "-src")) {
+                    linkJSON.put("src", paraMap.get("link" + i + "-src"));
                 }
+                if (paraMap.containsKey("link" + i + "-src-vlan")) {
+                    linkJSON.put("src-vlan", paraMap.get("link" + i + "-src-vlan"));
                 }
-        
-                paraMap.remove("userID");
-                paraMap.remove("custom");
-                paraMap.remove("dncCreate");
-                
-                for(Map.Entry<String,String>entry : paraMap.entrySet())
-                {
-                    System.out.println(entry.getKey()+entry.getValue());
+                if (paraMap.containsKey("link" + i + "-des")) {
+                    linkJSON.put("des", paraMap.get("link" + i + "-des"));
+                }
+                if (paraMap.containsKey("link" + i + "-des-vlan")) {
+                    linkJSON.put("des-vlan", paraMap.get("link" + i + "-des-vlan"));
                 }
 
-        // Async setup 
-                request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
-                AsyncContext asyncCtx = request.startAsync();
-                asyncCtx.addListener(new AppAsyncListener());
-                asyncCtx.setTimeout(60000);
-
-                ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
-
-                executor.execute(new DNCWorker(asyncCtx, paraMap));
+                linkArr.add(linkJSON);
+            }
         }
-        return ("/VersaStack-web/ops/srvc/dnc.jsp?ret=0");
-        
 
-        
+        dataJSON.put("links", linkArr);
+        inputJSON.put("data", dataJSON);
+
+        request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
+        AsyncContext asyncCtx = request.startAsync();
+        asyncCtx.addListener(new AppAsyncListener());
+        asyncCtx.setTimeout(300000);
+
+        ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
+        executor.execute(new APIRunner(inputJSON));
+
+        return ("/VersaStack-web/ops/srvc/dnc.jsp?ret=0");
+
     }
-    
+
 }
 
+class APIRunner implements Runnable {
+    JSONObject inputJSON;
+    serviceBeans servBean = new serviceBeans();
+    String host = "http://localhost:8080/VersaStack-web/restapi";
+    
+    public APIRunner(JSONObject input) {
+        inputJSON = input;
+    }
+    
+    @Override
+    public void run() {
+        try {
+            System.out.println("API Runner Engaged!");
+            URL url = new URL(String.format("%s/app/service/", host));
+            HttpURLConnection create = (HttpURLConnection) url.openConnection();
+            String result = servBean.executeHttpMethod(url, create, "POST", inputJSON.toJSONString());
+        } catch (IOException ex) {
+            Logger.getLogger(ServiceServlet.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+}
 /*
 
-TEMPLATE SERVICE METHOD - REPLACE ___ PREFIXED NAMES
+ TEMPLATE SERVICE METHOD - REPLACE ___ PREFIXED NAMES
     private String [___servicename](HttpServletRequest request, HashMap<String, String> paraMap) {        
         for (Object key : paraMap.keySet().toArray()) {
             if (paraMap.get((String) key).isEmpty()) {

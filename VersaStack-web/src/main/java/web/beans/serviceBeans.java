@@ -241,7 +241,7 @@ public class serviceBeans {
             if (!result.equals("COMMITTED")) {
                 return 2;//Error occurs when interacting with back-end system
             }
-            url = new URL(String.format("%s//%s/status", host, refUuid));
+            url = new URL(String.format("%s/%s/status", host, refUuid));
             while (true) {
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
                 result = this.executeHttpMethod(url, status, "GET", null);
@@ -377,17 +377,21 @@ public class serviceBeans {
             if (!result.equals("COMMITTED")) {
                 return 2;//Error occurs when interacting with back-end system
             }
-            url = new URL(String.format("%s//%s/status", host, refUuid));
-            while (true) {
+            url = new URL(String.format("%s/service/%s/status", host, refUuid));
+            while (!result.equals("READY")) {
+                sleep(5000);//wait for 5 seconds and check again later
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
                 result = this.executeHttpMethod(url, status, "GET", null);
-                if (result.equals("READY")) {
-                    return 0;//create network successfully
-                } else if (!result.equals("COMMITTED")) {
+                if (!result.equals("COMMITTED")) {
                     return 3;//Fail to create network
-                }
-                sleep(5000);//wait for 5 seconds and check again later
+                }                
             }
+            
+            url = new URL(String.format("%s/app/service/%s/verify", host, refUuid));
+            HttpURLConnection verify = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, verify, "PUT", null);
+            
+            return 0;
         } catch (Exception e) {
             return 1;//connection error
         }
@@ -1023,7 +1027,7 @@ public class serviceBeans {
      * @param refUuid instance UUID
      * @return formatted URN.
      */
-    private String urnBuilder(String serviceType, String name, String refUuid) {
+    public String urnBuilder(String serviceType, String name, String refUuid) {
         switch (serviceType) {
             case "dnc":
                 return "urn:ogf:network:service+" + refUuid + ":resource+links:tag+" + name;
@@ -1104,7 +1108,7 @@ public class serviceBeans {
         } catch (SQLException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }
+    }      
 
 // ------------------------- DEPRECATED SERVICES -------------------------------
     /**

@@ -425,8 +425,8 @@ public class WebResource {
             String des = (String) linksJSON.get("des");
             String desVlan = (String) linksJSON.get("des-vlan");
 
-            String linkUrn = urnBuilder("dnc", name, refUuid);
-            String connString = src + "&vlan_tag+" + srcVlan + "\r\n" + des + "&vlan_tag" + desVlan;
+            String linkUrn = servBean.urnBuilder("dnc", name, refUuid);
+            String connString = src + "&vlan_tag+" + srcVlan + "\r\n" + des + "&vlan_tag+" + desVlan;
 
             paraMap.put("linkUri" + (i + 1), linkUrn);
             paraMap.put("conn" + (i + 1), connString);
@@ -557,7 +557,7 @@ public class WebResource {
         String src = (String) flowJSON.get("src");
         String des = (String) flowJSON.get("des");
 
-        String flowUrn = urnBuilder("flow", name, refUuid);
+        String flowUrn = servBean.urnBuilder("flow", name, refUuid);
         paraMap.put("topUri", flowUrn);
         paraMap.put("eth_src", src);
         paraMap.put("eth_des", des);
@@ -574,18 +574,6 @@ public class WebResource {
      }
     
      */
-    private String urnBuilder(String serviceType, String name, String refUuid) {
-        switch (serviceType) {
-            case "dnc":
-                return "urn:ogf:network:service+" + refUuid + ":resource+links:tag+" + name;
-            case "netcreate":
-                return "urn:ogf:network:service+" + refUuid + ":resource+virtual_clouds:tag+" + name;
-            case "flow":
-                return "urn:ogf:network:service+" + refUuid + ":resource+flow:tag+" + name;
-            default:
-                return "ERROR";
-        }
-    }
 
     private void setSuperState(String refUuid, int superStateId) throws SQLException {
         Connection front_conn;
