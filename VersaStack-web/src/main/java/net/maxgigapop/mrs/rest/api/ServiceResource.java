@@ -220,7 +220,7 @@ public class ServiceResource {
                     if (retryDelay == 2000L) {
                         return serviceCallHandler.propagateDeltas(svcInstanceUUID, false);
                     } else {
-                        return serviceCallHandler.propagateRetry(svcInstanceUUID, false);
+                        return serviceCallHandler.propagateRetry(svcInstanceUUID, true);
                     }   
                 } catch (EJBException ejbEx) {
                     String errMsg = ejbEx.getMessage();
@@ -241,7 +241,11 @@ public class ServiceResource {
             while (true) {
                 retryDelay *= 2; // retry up to 4 times at 2, 4, 8, 16 secs
                 try {
-                    return serviceCallHandler.propagateRetry(svcInstanceUUID, false);
+                    if (retryDelay == 2000L) {
+                        return serviceCallHandler.propagateRetry(svcInstanceUUID, false);
+                    } else {
+                        return serviceCallHandler.propagateRetry(svcInstanceUUID, true);
+                    }   
                 } catch (EJBException ejbEx) {
                     String errMsg = ejbEx.getMessage();
                     log.warning("Caught+Retry: " + errMsg);
