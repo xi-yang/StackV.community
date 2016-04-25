@@ -206,17 +206,7 @@ public class serviceBeans {
             rs1.next();
             int instanceId = rs1.getInt(1);
             int stateId = rs1.getInt(2);
-
-            String formatDelta = delta.replaceAll("<", "&lt;");
-            formatDelta = formatDelta.replaceAll(">", "&gt;");
-
-            prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
-                    + "(`service_instance_id`, `service_state_id`, `delta`) "
-                    + "VALUES (?, ?, ?)");
-            prep.setInt(1, instanceId);
-            prep.setInt(2, stateId);
-            prep.setString(3, formatDelta);
-            prep.executeUpdate();
+           
 
         } catch (SQLException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
@@ -1064,8 +1054,8 @@ public class serviceBeans {
             formatDelta = formatDelta.replaceAll(">", "&gt;");
 
             prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
-                    + "(`service_instance_id`, `service_history_id`, `referenceUUID`, `delta`) "
-                    + "VALUES (?, ?, ?, ?)");
+                    + "(`service_instance_id`, `service_history_id`, `type`, `referenceUUID`, `delta`) "
+                    + "VALUES (?, ?, 'Service', ?, ?)");
             prep.setInt(1, instanceID);
             prep.setInt(2, historyID);
             prep.setString(3, deltaUUID);
@@ -1098,8 +1088,8 @@ public class serviceBeans {
             formatDelta = formatDelta.replaceAll(">", "&gt;");
 
             PreparedStatement prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
-                    + "(`service_instance_id`, `service_history_id`, `delta`) "
-                    + "VALUES (?, ?, ?)");
+                    + "(`service_instance_id`, `service_history_id`, `type`, `delta`) "
+                    + "VALUES (?, ?, 'System', ?)");
             prep.setInt(1, instanceID);
             prep.setInt(2, historyID);
             prep.setString(3, formatDelta);

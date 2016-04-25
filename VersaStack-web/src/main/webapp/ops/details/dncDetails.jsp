@@ -99,7 +99,7 @@
                     </table>
 
 
-                    <sql:query dataSource="${front_conn}" sql="SELECT D.delta, S.super_state FROM service_delta D, service_instance I, service_state S, service_history H 
+                    <sql:query dataSource="${front_conn}" sql="SELECT D.delta, D.type, S.super_state FROM service_delta D, service_instance I, service_state S, service_history H 
                                WHERE I.referenceUUID = ? AND I.service_instance_id = D.service_instance_id AND D.service_history_id = H.service_history_id 
                                AND D.service_instance_id = H.service_instance_id AND H.service_state_id = S.service_state_id" var="deltalist">
                         <sql:param value="${param.uuid}" />
@@ -117,6 +117,10 @@
                                 <tr>
                                     <td>Delta State</td>
                                     <td>${delta.super_state}</td>
+                                </tr>
+                                <tr>
+                                    <td>Delta Type</td>
+                                    <td>${delta.type}</td>
                                 </tr>
                                 <tr>
                                     <td></td>

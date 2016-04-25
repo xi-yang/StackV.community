@@ -461,6 +461,7 @@ public class WebResource {
             String subName = (String) subJSON.get("name");
             String subCidr = (String) subJSON.get("cidr");
 
+            // Parse VMs.
             JSONArray vmArr = (JSONArray) subJSON.get("virtual_machines");
             if (vmArr != null) {
                 for (Object vmEle : vmArr) {
@@ -535,12 +536,15 @@ public class WebResource {
 
         // Parse Direct Connect.
         JSONArray gateArr = (JSONArray) vcnJSON.get("gateways");
-        if (gateArr != null) {
-            JSONObject gateJSON = (JSONObject) gateArr.get(0);
-            JSONArray destArr = (JSONArray) gateJSON.get("to");
-            if (destArr != null) {
-                JSONObject destJSON = (JSONObject) destArr.get(0);
-                paraMap.put("directConn", (String) destJSON.get("value"));
+        for (Object gateEle : gateArr) {
+            JSONObject gateJSON = (JSONObject) gateEle;
+            
+            if (((String) gateJSON.get("type")).contains("direct_connect")) {
+                JSONArray destArr = (JSONArray) gateJSON.get("to");
+                if (destArr != null) {
+                    JSONObject destJSON = (JSONObject) destArr.get(0);
+                    paraMap.put("directConn", (String) destJSON.get("value"));
+                }
             }
 
         }
