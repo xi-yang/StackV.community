@@ -5,9 +5,12 @@
  */
 "use strict";
 define([], function () {
-    function ContextMenu() {
+    function ContextMenu(d3, renderApi, taggingDialog) {
 
-
+        var d3 = d3; // d3 context 
+        var renderApi = renderApi;
+        var that = this;
+        var taggingDialog = taggingDialog;
         //////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////
         //
@@ -50,16 +53,20 @@ define([], function () {
           var posx = 0;
           var posy = 0;
 
-          if (!e) var e = window.event;
-
+         if (!e) { 
+              var e = window.event;
+              console.log("ContextMenu: getPosition: e passed in is null. ");
+         }
+         
           if (e.pageX || e.pageY) {
             posx = e.pageX;
             posy = e.pageY;
+            console.log("I'm in ContextMenu: GetPosition , we used e.pageX and e.pageY");
           } else if (e.clientX || e.clientY) {
             posx = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
             posy = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
           }
-
+          console.log("I'm in ContextMenu: GetPostion: posx: " + posx + " , posy: " + posy); 
           return {
             x: posx,
             y: posy
@@ -105,11 +112,10 @@ define([], function () {
          * Initialise our application's code.
          */
         this.init = function() {
-            alert("I'm alive.");
-//          contextListener();
-//          clickListener();
-//          keyupListener();
-//          resizeListener();
+            //contextListener();
+            clickListener();
+            keyupListener();
+            resizeListener();
         };
 
         /**
@@ -152,14 +158,24 @@ define([], function () {
               toggleMenuOff(); 
           });
         }
-
-        this.setContextListener = function(e,o) {
-          this.selectedDataObject = o;
+        
+        // different one for display menu 
+        this.setContextListenerRendered = function(o) {
+          that.selectedObject = o;
+          d3.event.preventDefault();
+          toggleMenuOn();
+          positionMenu(d3.event);
+          renderApi.selectElement(o);
+        };
+        
+        this.setContextListenerPanelObj = function(e, o) {
+          that.selectedObject = o;
           e.preventDefault();
           toggleMenuOn();
           positionMenu(e);
+          // probably not what we want here 
+          //if (o.getType() !== "Property") renderApi.selectElement(o);
         };
-
         /**
          * Listens for click events.
          */
@@ -206,6 +222,7 @@ define([], function () {
           if ( menuState !== 1 ) {
             menuState = 1;
             menu.classList.add( contextMenuActive );
+            console.log("i'm here\n\n");
           }
         }
 
@@ -216,6 +233,7 @@ define([], function () {
           if ( menuState !== 0 ) {
             menuState = 0;
             menu.classList.remove( contextMenuActive );
+            console.log("i'm here \n\n");
           }
         }
 
@@ -231,7 +249,7 @@ define([], function () {
 
           menuWidth = menu.offsetWidth + 4;
           menuHeight = menu.offsetHeight + 4;
-
+          
           windowWidth = window.innerWidth;
           windowHeight = window.innerHeight;
 
@@ -240,12 +258,14 @@ define([], function () {
           } else {
             menu.style.left = clickCoordsX + "px";
           }
-
+          
           if ( (windowHeight - clickCoordsY) < menuHeight ) {
             menu.style.top = windowHeight - menuHeight + "px";
           } else {
             menu.style.top = clickCoordsY + "px";
           }
+          
+          console.log("in positionMenu: menu.style.left: " + menu.style.left + " , menu.style.top: " + menu.style.top);
         }
 
         /**
@@ -255,7 +275,13 @@ define([], function () {
          */
         function menuItemListener( link ) {
           //console.log( "Task ID - " + this.selectedObject.getAttribute("data-id") + ", Task action - " + link.getAttribute("data-action"));
-          toggleMenuOff();
+            //alert("type: " + that.selectedObject.getType());
+          // Testing if this is an Element or a property 
+            if (typeof that.selectedObject.getName === 'function') 
+              taggingDialog.openDialog(that.selectedObject.getName());  
+            else 
+              taggingDialog.openDialog(that.selectedObject);  
+            toggleMenuOff();
         }
 
         /**

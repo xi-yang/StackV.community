@@ -577,7 +577,29 @@ define([
             return ans;
         };
 
-
+        this.listPorts = function() {
+            var ports = [];
+            for (var key in that.portMap) ports.push(that.portMap[key]);
+            return ports;
+        };
+        
+        this.listServices = function() {
+            var services = [];
+            for (var key in that.serviceMap) services.push(that.serviceMap[key]);  
+            return services;            
+        };
+        
+        this.listSubnets = function() {
+            var subnets = [];
+            for (var key in that.subnetMap) subnets.push(that.subnetMap[key]);   
+            return subnets;
+        };
+        
+        this.listVolumes = function() {
+            var volumes = [];
+            for (var key in that.volumeMap) volumes.push(that.volumeMap[key]);  
+            return volumes;
+        };
 
         /**Begin debug functions**/
         this.listNodesPretty = function () {

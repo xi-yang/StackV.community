@@ -64,7 +64,7 @@ define(["local/versastack/topology/modelConstants"], function (values) {
                             else if (errorVal.indexOf("#") !== -1)
                                 errorVal = errorVal.split("#")[1];
                         }
-                        tree.addChild(key.split("#")[1] + " : " + errorVal, "Property");
+                        tree.addChild(key.split("#")[1] + " : " + errorVal, "Property", errorVal);
                     }
                 ); 
             }            
@@ -90,7 +90,7 @@ define(["local/versastack/topology/modelConstants"], function (values) {
                     if (displayed.indexOf(el) === -1 && el.getName() !== undefined) {
                         var type = el.relationship_to[this.getName()];
                         //type = type.split("#");
-                        var elementsNode = tree.addChild(type === undefined?"undefined":type, "Type");
+                        var elementsNode = tree.addChild(type === undefined?"undefined":type, "Type", null);
                         //displayed.push(el);
                         for (var o in this.misc_elements) {
                             //if(this.misc_elements[o].misc_elements.indexOf(this) !== -1) continue;
@@ -99,7 +99,7 @@ define(["local/versastack/topology/modelConstants"], function (values) {
                                     this.misc_elements[o].relationship_to[this.getName()] === type
                                     && this.misc_elements[o].getName() !== undefined) {
                                 //console.log ("name of thing: " + this.misc_elements[o].getName());
-                                var elementNode = elementsNode.addChild(this.misc_elements[o].getName(), "Element");;
+                                var elementNode = elementsNode.addChild(this.misc_elements[o].getName(), "Element", this.misc_elements[o]);
 //                                                            console.log("I got this far789789");
 
                                 displayed.push(this.misc_elements[o]);
@@ -120,11 +120,11 @@ define(["local/versastack/topology/modelConstants"], function (values) {
         
         this.showRelationships = function(tree) {
             if (Object.keys(this.relationship_to).length > 0) {
-                tree.addChild("", "Separator");
-                tree.addChild("Element Used By", "Title");
+                tree.addChild("", "Separator", null);
+                tree.addChild("Element Used By", "Title", null);
 
                 Object.keys(this.relationship_to).forEach(function (key) {
-                    tree.addChild(key + "(*)" + that.relationship_to[key], "Relationship");   
+                    tree.addChild(key + "(*)" + that.relationship_to[key], "Relationship", null);   
                 });   
             }
         };

@@ -629,7 +629,7 @@ define([
             e.populateProperties(displayTree);
             
             if (e.misc_elements.length > 0 )
-                displayTree.addChild("", "Separator");
+                displayTree.addChild("", "Separator", null);
 
             e.populateTreeMenu(displayTree);
             displayTree.addToHistory(e.getName(), "Node");
@@ -644,6 +644,8 @@ define([
             if (n.volumes.length !== 0)
                  n.volumePopup.toggleVisible();
             drawPopups();
+            outputApi.initD3MenuPortEvents(n.ports);
+            outputApi.initD3MenuVolumeEvents(n.volumes);
             map_(edgeList, updateSvgChoordsEdge);
             selectElement(n);
             selectedNode = n;
@@ -673,7 +675,7 @@ define([
             e.populateProperties(displayTree);
             
             if (e.misc_elements.length > 0 )
-             displayTree.addChild("", "Separator");
+             displayTree.addChild("", "Separator", null);
 
             e.populateTreeMenu(displayTree);
             displayTree.addToHistory(e.getName(), "Service");
@@ -735,7 +737,7 @@ define([
                             var e = model.elementMap[key];
                             if (e.getType() === "Topology" && e.topLevel) {
                                 topLevelTopologies.push(e);                                
-                                var child = displayTree.addChild(e.getName(), "Element");
+                                var child = displayTree.addChild(e.getName(), "Element", e);
                                 e.populateTreeMenu(child);
                             }
                         }
@@ -760,7 +762,7 @@ define([
                 e.populateProperties(displayTree);
                 
                 if (e.misc_elements.length > 0 )
-                    displayTree.addChild("", "Separator");
+                    displayTree.addChild("", "Separator", null);
 
                 e.populateTreeMenu(displayTree);
                 e.showRelationships(displayTree);
