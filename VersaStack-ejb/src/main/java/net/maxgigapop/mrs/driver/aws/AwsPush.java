@@ -2893,6 +2893,8 @@ public class AwsPush {
     public String acceptRejectVirtualInterfaceRequests(OntModel model, OntModel modelAdd) {
         String requests = "";
 
+        //@TODO: public VLAN with hasLabel in delta model will be intepreted as "Accept" request
+        
         //check for aliasing of an interface
         String query = "SELECT  ?x ?y  WHERE {?x  nml:isAlias  ?y}";
         ResultSet r = executeQuery(query, emptyModel, modelAdd);
@@ -2957,6 +2959,8 @@ public class AwsPush {
     public String deleteVirtualInterfaceRequests(OntModel model, OntModel modelReduct) {
         String requests = "";
 
+        //@TODO: public VLAN with hasLabel in delta model will be intepreted as "Delete" request
+        
         //check for aliasing of an interface
         String query = "SELECT  ?x ?y  WHERE {?x  nml:isAlias  ?y}";
         ResultSet r = executeQuery(query, emptyModel, modelReduct);

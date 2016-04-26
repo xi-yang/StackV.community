@@ -93,8 +93,12 @@
                                         </c:if>
                                         <c:if test="${param.networkType == 'ops'}">    
                                             <tr>
-                                                <td>VM Test</td>
+                                                <td>Basic VM</td>
                                                 <td><button onclick="applyNetTemplate(4)">Apply</button></td>
+                                            </tr>
+                                            <tr>
+                                                <td>VM with type details and SRIOV connection</td>
+                                                <td><button onclick="applyNetTemplate(5)">Apply</button></td>
                                             </tr>
                                         </c:if>
                                     </tbody>
@@ -115,7 +119,7 @@
                                                 <tr>
                                                     <td>Topology URI</td>
                                                     <td>
-                                                        <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance" var="driverlist" />
+                                                        <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance WHERE driverEjbPath='java:module/AwsDriver'" var="driverlist" />
                                                         <select name="topoUri" required>
                                                             <option></option>
                                                             <c:forEach var="driver" items="${driverlist.rows}">
@@ -200,7 +204,7 @@
                                                 <tr>
                                                     <td>Topology URI</td>
                                                     <td>
-                                                        <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance" var="driverlist" />
+                                                        <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance WHERE driverEjbPath='java:module/OpenStackDriver'" var="driverlist" />
                                                         <select name="topoUri" required>
                                                             <option></option>
                                                             <c:forEach var="driver" items="${driverlist.rows}">
@@ -250,7 +254,7 @@
                                                                 </div>
                                                             </div>
                                                             <div>
-                                                                <input type="checkbox" name="subnet1-route-prop" value="true"/>   Enable Default Routing
+                                                                <input type="checkbox" name="subnet1-route-default" value="true"/>   Enable Default Routing
                                                             </div>
                                                             <div>
                                                                 <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">
@@ -264,7 +268,18 @@
                                                                     <input type="text" name="subnet1-vm1-instance" placeholder="Instance Type">
                                                                     <input type="text" name="subnet1-vm1-host" placeholder="VM Host">
                                                                     <input type="text" name="subnet1-vm1-floating" placeholder="Floating IP">
-                                                                    <input type="text" name="subnet1-vm1-sriov" placeholder="SRIOV Connection">
+                                                                    <input type="text" name="subnet1-vm1-sriov-dest" placeholder="SRIOV Destination">
+                                                                    <input type="text" name="subnet1-vm1-sriov-mac" placeholder="SRIOV MAC Address">
+                                                                    <input type="text" name="subnet1-vm1-sriov-ip" placeholder="SRIOV IP Address">
+                                                                    <div>
+                                                                        <input type="text" name="subnet1-vm1-route1-from" placeholder="From"/>
+                                                                        <input type="text" name="subnet1-vm1-route1-to" placeholder="To"/>
+                                                                        <input type="text" name="subnet1-vm1-route1-next" placeholder="Next Hop"/>
+                                                                    </div><div>
+                                                                        <input type="text" name="subnet1-vm1-route2-from" placeholder="From"/>
+                                                                        <input type="text" name="subnet1-vm1-route2-to" placeholder="To"/>
+                                                                        <input type="text" name="subnet1-vm1-route2-next" placeholder="Next Hop"/>                                                                    
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                             <div>
@@ -273,10 +288,10 @@
                                                         </div>
                                                     </td>
                                                 </tr>
-                                                <tr>
+<!--                                                <tr>
                                                     <td>Direct Connect</td>
                                                     <td><input type="text" name="conn-dest" placeholder="Destination" size="60" /><input type="text" name="conn-vlan" placeholder="VLAN" size="8" /></td>
-                                                </tr>
+                                                </tr>-->
                                                 <tr>
                                                     <td></td>
                                                     <td><input type="submit" name="custom" value="Submit" /><input class="button-register" type="button" value="Add Subnet" onClick="addSubnet('ops')"></td>

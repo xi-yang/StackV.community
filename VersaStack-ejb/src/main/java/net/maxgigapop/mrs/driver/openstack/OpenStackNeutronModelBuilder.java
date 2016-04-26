@@ -36,6 +36,7 @@ import org.json.simple.parser.ParseException;
 import org.openstack4j.api.OSClient;
 import org.openstack4j.api.networking.RouterService;
 import org.openstack4j.model.compute.Server;
+import org.openstack4j.model.compute.ext.Hypervisor;
 import org.openstack4j.model.network.AllowedAddressPair;
 import org.openstack4j.model.network.HostRoute;
 import org.openstack4j.model.network.IP;
@@ -140,7 +141,16 @@ public class OpenStackNeutronModelBuilder {
         model.add(model.createStatement(OpenstackTopology, hasService, networkService));
         model.add(model.createStatement(OpenstackTopology, hasService, cinderService));
 
-        //Left part
+        for (Hypervisor hv : openstackget.getHypervisors()) {
+            //@TODO: hypervisor to host mapping by naming convention or configuration
+            String hypervisorName = hv.getHypervisorHostname(); 
+            String hostName = hypervisorName.split("\\.")[0]; 
+            Resource HOST = RdfOwl.createResource(model, topologyURI + ":" + "host+" + hostName, Nml.Node);
+            Resource HYPERVISOR = RdfOwl.createResource(model, topologyURI + ":" + "hypervisor+" + hypervisorName, Mrs.HypervisorService);
+            model.add(model.createStatement(OpenstackTopology, hasNode, HOST));
+            model.add(model.createStatement(HOST, hasService, HYPERVISOR));
+        }
+        
         for (Port p : openstackget.getPorts()) {
             String PortID = openstackget.getResourceName(p);
             Resource PORT = RdfOwl.createResource(model, ResourceTool.getResourceUri(PortID, OpenstackPrefix.PORT, PortID), biPort);
@@ -174,7 +184,7 @@ public class OpenStackNeutronModelBuilder {
 
             Resource HOST = RdfOwl.createResource(model, topologyURI + ":" + "host+" + hostID, node);
 
-            Resource HYPERVISOR = RdfOwl.createResource(model, topologyURI + ":" + "hypervisor+" + hypervisorname, hypervisorService);//need to update here
+            Resource HYPERVISOR = RdfOwl.createResource(model, topologyURI + ":" + "hypervisor+" + hypervisorname, hypervisorService);
             Resource VM = RdfOwl.createResource(model, ResourceTool.getResourceUri(server_name, OpenstackPrefix.vm, server_name), node);
 
             model.add(model.createStatement(OpenstackTopology, hasNode, HOST));

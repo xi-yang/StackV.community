@@ -206,17 +206,7 @@ public class serviceBeans {
             rs1.next();
             int instanceId = rs1.getInt(1);
             int stateId = rs1.getInt(2);
-
-            String formatDelta = delta.replaceAll("<", "&lt;");
-            formatDelta = formatDelta.replaceAll(">", "&gt;");
-
-            prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
-                    + "(`service_instance_id`, `service_state_id`, `delta`) "
-                    + "VALUES (?, ?, ?)");
-            prep.setInt(1, instanceId);
-            prep.setInt(2, stateId);
-            prep.setString(3, formatDelta);
-            prep.executeUpdate();
+           
 
         } catch (SQLException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
@@ -241,7 +231,7 @@ public class serviceBeans {
             if (!result.equals("COMMITTED")) {
                 return 2;//Error occurs when interacting with back-end system
             }
-            url = new URL(String.format("%s//%s/status", host, refUuid));
+            url = new URL(String.format("%s/%s/status", host, refUuid));
             while (true) {
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
                 result = this.executeHttpMethod(url, status, "GET", null);
@@ -350,37 +340,9 @@ public class serviceBeans {
         String result;
 
         // Cache serviceDelta.
-        try {
-            Connection front_conn;
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", "root");
-            front_connectionProps.put("password", "root");
-
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
-
-            PreparedStatement prep = front_conn.prepareStatement("SELECT service_instance_id, service_state_id"
-                    + " FROM service_instance WHERE referenceUUID = ?");
-            prep.setString(1, refUuid);
-            ResultSet rs1 = prep.executeQuery();
-            rs1.next();
-            int instanceId = rs1.getInt(1);
-            int stateId = rs1.getInt(2);
-
-            String formatDelta = delta.replaceAll("<", "&lt;");
-            formatDelta = formatDelta.replaceAll(">", "&gt;");
-
-            prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
-                    + "(`service_instance_id`, `service_state_id`, `delta`) "
-                    + "VALUES (?, ?, ?)");
-            prep.setInt(1, instanceId);
-            prep.setInt(2, stateId);
-            prep.setString(3, formatDelta);
-            prep.executeUpdate();
-
-        } catch (SQLException ex) {
-            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        int[] results = cacheServiceDelta(refUuid, deltaUUID, delta);
+        int instanceID = results[0];
+        int historyID = results[1];
 
         try {
             URL url = new URL(String.format("%s/service/%s", host, refUuid));
@@ -389,6 +351,10 @@ public class serviceBeans {
             if (!result.contains("referenceVersion")) {
                 return 2;//Error occurs when interacting with back-end system
             }
+            
+            // Cache System Delta
+            cacheSystemDelta(instanceID, historyID, result);
+            
             url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
             HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, propagate, "PUT", null);
@@ -401,17 +367,21 @@ public class serviceBeans {
             if (!result.equals("COMMITTED")) {
                 return 2;//Error occurs when interacting with back-end system
             }
-            url = new URL(String.format("%s//%s/status", host, refUuid));
-            while (true) {
+            url = new URL(String.format("%s/service/%s/status", host, refUuid));
+            while (!result.equals("READY")) {
+                sleep(5000);//wait for 5 seconds and check again later
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
                 result = this.executeHttpMethod(url, status, "GET", null);
-                if (result.equals("READY")) {
-                    return 0;//create network successfully
-                } else if (!result.equals("COMMITTED")) {
+                if (!result.equals("COMMITTED")) {
                     return 3;//Fail to create network
-                }
-                sleep(5000);//wait for 5 seconds and check again later
+                }                
             }
+            
+            url = new URL(String.format("%s/app/service/%s/verify", host, refUuid));
+            HttpURLConnection verify = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, verify, "PUT", null);
+            
+            return 0;
         } catch (Exception e) {
             return 1;//connection error
         }
@@ -431,9 +401,9 @@ public class serviceBeans {
         for (Map.Entry<String, String> entry : paraMap.entrySet()) {
             if (entry.getKey().equalsIgnoreCase("topoUri")) {
                 topoUri = entry.getValue();
-            } else if (entry.getKey().equalsIgnoreCase("driverType")) {
+            }else if (entry.getKey().equalsIgnoreCase("driverType")) {
                 driverType = entry.getValue();
-            } else if (entry.getKey().equalsIgnoreCase("netCidr")) {
+            }else if (entry.getKey().equalsIgnoreCase("netCidr")) {
                 netCidr = entry.getValue();
             } else if (entry.getKey().equalsIgnoreCase("instanceUUID")) {
                 refUuid = entry.getValue();
@@ -500,9 +470,9 @@ public class serviceBeans {
             gatewaysJson.add(gatewayValue);
         }
         network.put("gateways", gatewaysJson);
-
+   
         String deltaUUID = UUID.randomUUID().toString();
-
+        
         String svcDelta = "<serviceDelta>\n<uuid>" + deltaUUID
                 + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
                 + "\n\n<modelAddition>\n"
@@ -515,19 +485,19 @@ public class serviceBeans {
                 + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n"
                 + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_clouds:tag+vpc1&gt;\n"
                 + "    a                         nml:Topology ;\n";
-
+        
         String exportTo = "";
-        if (driverType.equals("aws") && directConn != null) {
+        if(driverType.equals("aws") && directConn != null){
             String dest = directConn.contains("?vlan") ? directConn.substring(0, directConn.indexOf("?vlan")) : directConn;
-            String vlan = directConn.contains("?vlan") ? directConn.substring(directConn.indexOf("?vlan") + 6) : "any";
+            String vlan = directConn.contains("?vlan") ? directConn.substring(directConn.indexOf("?vlan")+6): "any";
             exportTo += "&lt;x-policy-annotation:data:vpc-export&gt;, ";
             svcDelta += "    spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt;"
                     + ", &lt;x-policy-annotation:action:create-mce_dc1&gt; .\n\n"
-                    + "&lt;urn:ogf:network:vo1_maxgigapop_net:link=conn1&gt;\n"
+                    + "&lt;urn:ogf:network:vo1_maxgigapop_net:link=conn1&gt;\n" 
                     + "    a            mrs:SwitchingSubnet;\n"
-                    + "    spa:type     spa:Abstraction;\n"
+                    + "    spa:type     spa:Abstraction;\n" 
                     + "    spa:dependOn &lt;x-policy-annotation:action:create-path&gt;.\n\n"
-                    + "&lt;x-policy-annotation:action:create-path&gt;\n"
+                    + "&lt;x-policy-annotation:action:create-path&gt;\n" 
                     + "    a            spa:PolicyAction ;\n"
                     + "    spa:type     \"MCE_MPVlanConnection\" ;\n"
                     + "    spa:importFrom &lt;x-policy-annotation:data:conn-criteria1&gt; ;\n"
@@ -555,120 +525,181 @@ public class serviceBeans {
                     + "    spa:type     \"JSON\";\n"
                     + "    spa:value    \"\"\"{\n"
                     + "        \"urn:ogf:network:vo1_maxgigapop_net:link=conn1\":"
-                    + "{ \"" + dest + "\":{\"vlan_tag\":\"" + vlan + "\"},\n"
-                    + "        \"" + topoUri + "\":{\"vlan_tag\":\"" + vlan + "\"}\n"
+                    + "{ \""+ dest +"\":{\"vlan_tag\":\""+ vlan +"\"},\n"
+                    + "        \"" + topoUri + "\":{\"vlan_tag\":\""+ vlan +"\"}\n"
                     + "        }\n"
-                    + "    }\"\"\".\n\n";
-        } else {
+                    + "    }\"\"\".\n\n";            
+        } else
             svcDelta += "    spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; .\n\n";
-        }
 
         if (!vmList.isEmpty()) {
-            if (driverType.equals("aws")) {
-                for (String vm : vmList) {
-                    String[] vmPara = vm.split("&");
-                    //0:vm name.
-                    //1:subnet #
-                    //2:image type
-                    //3:instance type
-                    //4:keypair name
-                    //5:security group name
-                    svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n"
-                            + "    a                         nml:Node ;\n";
-                    String typeDetail = (vmPara[2].equals(" ") ? "" : "\"image+" + vmPara[2] + "\",")
-                            + (vmPara[3].equals(" ") ? "" : "\"instance+" + vmPara[3] + "\",")
-                            + (vmPara[4].equals(" ") ? "" : "\"keypair+" + vmPara[4] + "\",")
-                            + (vmPara[5].equals(" ") ? "" : "\"secgroup+" + vmPara[5] + "\",");
-
-                    svcDelta += (typeDetail.isEmpty() ? "" : "    mrs:type       " + typeDetail.substring(0, typeDetail.length() - 1) + ";\n")
-                            + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt; ;\n"
-                            + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;.\n\n"
-                            + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt;\n"
-                            + "    a            nml:BidirectionalPort;\n"
-                            + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;.\n\n"
-                            + "&lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;\n"
-                            + "    a            spa:PolicyAction ;\n"
-                            + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
-                            + "    spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;\n"
-                            + "    spa:importFrom ";
-                    String subnetCriteria = "&lt;x-policy-annotation:data:vpc-subnet-" + vmPara[0] + "-criteria&gt;";
-                    exportTo += subnetCriteria + ", ";
-                    int sub = Integer.valueOf(vmPara[1]) - 1;
-                    svcDelta += subnetCriteria + ".\n\n"
-                            + subnetCriteria + "\n    a            spa:PolicyData;\n"
-                            + "    spa:type     \"JSON\";\n    spa:format    \"\"\"{ "
-                            + "\"place_into\": \"%$.subnets[" + sub + "].uri%\"}\"\"\" .\n\n";
-                }
-            } else {
-                for (String vm : vmList) {
-                    String[] vmPara = vm.split("&");
-                    //0:vm name.
-                    //1:subnet #
-                    //2:image type
-                    //3:instance type
-                    //4:keypair name
-                    //5:security group name
-                    //6:vm host
-                    //7:floating IP
-                    svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n"
-                            + "    a                         nml:Node ;\n";
-                    String typeDetail = (vmPara[2].equals(" ") ? "" : "\"image+" + vmPara[2] + "\",")
-                            + (vmPara[3].equals(" ") ? "" : "\"instance+" + vmPara[3] + "\",")
-                            + (vmPara[4].equals(" ") ? "" : "\"keypair+" + vmPara[4] + "\",")
-                            + (vmPara[5].equals(" ") ? "" : "\"secgroup+" + vmPara[5] + "\",");
-
-                    svcDelta += (typeDetail.isEmpty() ? "" : "    mrs:type       " + typeDetail.substring(0, typeDetail.length() - 1) + ";\n")
-                            + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt; ;\n"
-                            + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;.\n\n";
-                    if (vmPara[7].equals(" ")) {
-                        svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt;\n"
-                                + "    a            nml:BidirectionalPort;\n"
-                                + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "-eth0&gt;.\n\n";
-                    } else {
-                        svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt;\n"
-                                + "    a            nml:BidirectionalPort;\n"
-                                + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "-eth0&gt;.\n\n"
-                                + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0:floating&gt;\n"
-                                + "    a            mrs:NetworkAddress;\n    mrs:type     \"floating-ip\";\n"
-                                + "    mrs:value     \"" + vmPara[7] + "\".";
+            if(driverType.equals("aws")){
+            for (String vm : vmList) {
+                String[] vmPara = vm.split("&");
+                //0:vm name.
+                //1:subnet #
+                //2:image type
+                //3:instance type
+                //4:keypair name
+                //5:security group name
+                svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n"
+                        + "    a                         nml:Node ;\n";
+                String typeDetail = (vmPara[2].equals(" ")?"":"\"image+"+ vmPara[2] +"\",")
+                        + (vmPara[3].equals(" ")?"":"\"instance+"+ vmPara[3] +"\",")
+                        + (vmPara[4].equals(" ")?"":"\"keypair+"+ vmPara[4] +"\",")
+                        + (vmPara[5].equals(" ")?"":"\"secgroup+"+ vmPara[5] +"\",");
+                
+                svcDelta += (typeDetail.isEmpty()? "": "    mrs:type       " + typeDetail.substring(0, typeDetail.length()-1) + ";\n")
+                        + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt; ;\n"
+                        + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;.\n\n"
+                        + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt;\n"
+                        + "    a            nml:BidirectionalPort;\n"
+                        + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;.\n\n"
+                        + "&lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;\n"
+                        + "    a            spa:PolicyAction ;\n"
+                        + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
+                        + "    spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;\n"
+                        + "    spa:importFrom ";
+                String subnetCriteria = "&lt;x-policy-annotation:data:vpc-subnet-" + vmPara[0] + "-criteria&gt;";
+                exportTo += subnetCriteria + ", ";
+                int sub = Integer.valueOf(vmPara[1]) - 1;
+                svcDelta += subnetCriteria + ".\n\n"
+                        + subnetCriteria + "\n    a            spa:PolicyData;\n"
+                        + "    spa:type     \"JSON\";\n    spa:format    \"\"\"{ "
+                        + "\"place_into\": \"%$.subnets[" + sub + "].uri%\"}\"\"\" .\n\n";
+            }                
+            }
+            else if(driverType.equals("ops")){
+            for (String vm : vmList) {
+                String[] vmPara = vm.split("&");
+                //0:vm name.
+                //1:subnet #
+                //2:image type
+                //3:instance type
+                //4:keypair name
+                //5:security group name
+                //6:vm host
+                //7:floating IP
+                //8:sriov destination
+                //9:sriov mac_address
+                //10:sriov ip_address
+                //11:sriov routes
+                svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n"
+                        + "    a                         nml:Node ;\n";
+                String typeDetail = (vmPara[2].equals(" ")?"":"\"image+"+ vmPara[2] +"\",")
+                        + (vmPara[3].equals(" ")?"":"\"instance+"+ vmPara[3] +"\",")
+                        + (vmPara[4].equals(" ")?"":"\"keypair+"+ vmPara[4] +"\",")
+                        + (vmPara[5].equals(" ")?"":"\"secgroup+"+ vmPara[5] +"\",");
+                
+                svcDelta += (typeDetail.isEmpty()? "": "    mrs:type       " + typeDetail.substring(0, typeDetail.length()-1) + ";\n")
+                        + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt; ;\n"
+                        + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;.\n\n"
+                        + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt;\n"
+                        + "    a            nml:BidirectionalPort;\n"
+                        + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "-eth0&gt;";
+                if(vmPara[7].equals(" ")){
+                    svcDelta += ".\n\n";
+                }else{
+                    svcDelta += ";\n    mrs:hasNetworkAddress   "
+                        + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0:floating&gt;.\n\n"
+                        + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0:floating&gt;\n"
+                        + "    a            mrs:NetworkAddress;\n    mrs:type     \"floating-ip\";\n"
+                        + "    mrs:value     \""+ vmPara[7] + "\".";
+                    if(!vmPara[8].equals(" ")){
+                        String dest = vmPara[8].contains("?vlan") ? vmPara[8].substring(0, vmPara[8].indexOf("?vlan")) : vmPara[8]; 
+                        String vlan = vmPara[8].contains("?vlan") ? vmPara[8].substring(vmPara[8].indexOf("?vlan")+6): "any";
+                        String[] route = vmPara[11].split("\r\n");
+                        JSONArray routesArray = new JSONArray();
+                        for (String r : route) {
+                            String[] routePara = r.split(",");
+                            JSONObject jsonRoute = new JSONObject();
+                            for (String rp : routePara) {
+                                String[] keyValue = rp.split("\\+");
+                                jsonRoute.put(keyValue[0], keyValue[1]);
+                            }
+                            routesArray.add(jsonRoute);
+                        }
+                        
+                        svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+ucs_sriov:tag+" + vmPara[0] + "&gt;\n"
+                                + "   a  nml:Topology;\n"
+                                + "   spa:type spa:Abstraction;\n"
+                                + "   spa:dependOn  &lt;x-policy-annotation:action:ucs-sviov-stitch-" + vmPara[0] + "&gt;.\n\n"
+                                + "&lt;x-policy-annotation:action:ucs-sviov-stitch-" + vmPara[0] + "&gt;\n"
+                                + "    a            spa:PolicyAction ;\n"
+                                + "    spa:type     \"MCE_UcsSriovStitching\" ;\n"
+                                + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;, "
+                                + "&lt;x-policy-annotation:action:create-path-" + vmPara[0] + "&gt;;\n"
+                                + "    spa:importFrom &lt;x-policy-annotation:data:sriov-criteria-" + vmPara[0] + "&gt;, "
+                                + "&lt;x-policy-annotation:data:conn-criteriaexport-" + vmPara[0] + "&gt; .\n\n"
+                                + "&lt;x-policy-annotation:data:sriov-criteria-" + vmPara[0] + "&gt;\n"
+                                + "    a            spa:PolicyData;\n" 
+                                + "    spa:type     \"JSON\";\n"
+                                + "    spa:value    \"\"\"{\n"
+                                + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "\",\n"
+                                + (vmPara[9].equals(" ")? "":"       \"mac_address\": \"" + vmPara[9] + "\",\n")
+                                + "       \"ip_address\": \"" + vmPara[10] + "\",\n"
+                                + "       \"routes\": " + routesArray.toString().replace("\\", "") + "\n"
+                                + "    }\"\"\" .\n\n"
+                                + "&lt;x-policy-annotation:action:create-path-" + vmPara[0] + "&gt;\n"
+                                + "    a            spa:PolicyAction ;\n"
+                                + "    spa:type     \"MCE_MPVlanConnection\" ;\n"
+                                + "    spa:importFrom &lt;x-policy-annotation:data:conn-criteria-" + vmPara[0] + "&gt; ;\n"
+                                + "    spa:exportTo &lt;x-policy-annotation:data:conn-criteriaexport-" + vmPara[0] + "&gt; .\n\n"
+                                + "&lt;x-policy-annotation:data:conn-criteria-" + vmPara[0] + "&gt;\n"
+                                + "    a            spa:PolicyData;\n"
+                                + "    spa:type     \"JSON\";\n"
+                                + "    spa:value    \"\"\"{\n"
+                                + "        \"urn:ogf:network:vo1_maxgigapop_net:link=conn-" + vmPara[0] + "\": {\n"
+                                + "        \""+ dest +"\":{\"vlan_tag\":\""+ vlan +"\"},\n"
+                                + "        \"" + topoUri + "\":{\"vlan_tag\":\""+ vlan +"\"}\n"
+                                + "        }\n"
+                                + "    }\"\"\".\n\n"
+                                + "&lt;x-policy-annotation:data:conn-criteriaexport-" + vmPara[0] + "&gt;\n"
+                                + "    a            spa:PolicyData;\n"
+                                + "    spa:type     \"JSON\" ;\n"
+                                + "    spa:format   \"\"\"{\n"
+                                + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn-" + vmPara[0] + "%\n"
+                                + "    }\"\"\" .\n\n";
                     }
+                }                
                     svcDelta += "&lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;\n"
-                            + "    a            spa:PolicyAction ;\n"
-                            + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
-                            + "    spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;\n"
-                            + "    spa:importFrom &lt;x-policy-annotation:data:" + vmPara[0] + "-host-criteria&gt;.\n\n"
-                            + "&lt;x-policy-annotation:data:" + vmPara[0] + "-host-criteria&gt;\n"
-                            + "    a            spa:PolicyData;\n    spa:type     \"JSON\";\n"
-                            + "    spa:value    \"\"\"{\n"
-                            + "       \"place_into\": \"urn:ogf:network:openstack.com:openstack-cloud:host+" + vmPara[6] + "\"\n"
-                            + "    }\"\"\" .\n\n"
-                            + "&lt;x-policy-annotation:action:create-" + vmPara[0] + "-eth0&gt;\n"
-                            + "    a            spa:PolicyAction ;\n"
-                            + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
-                            + "    spa:importFrom ";
-                    String subnetCriteria = "&lt;x-policy-annotation:data:vpc-subnet-" + vmPara[0] + "-criteria&gt;";
-                    exportTo += subnetCriteria + ", ";
-                    int sub = Integer.valueOf(vmPara[1]) - 1;
-                    svcDelta += subnetCriteria + ".\n\n"
-                            + subnetCriteria + "\n    a            spa:PolicyData;\n"
-                            + "    spa:type     \"JSON\";\n    spa:format    \"\"\"{ "
-                            + "\"place_into\": \"%$.subnets[" + sub + "].uri%\"}\"\"\" .\n\n";
-                }
+                        + "    a            spa:PolicyAction ;\n"
+                        + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
+                        + "    spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;\n"
+                        + "    spa:importFrom &lt;x-policy-annotation:data:" + vmPara[0] + "-host-criteria&gt;.\n\n"
+                        + "&lt;x-policy-annotation:data:" + vmPara[0] + "-host-criteria&gt;\n"
+                        + "    a            spa:PolicyData;\n    spa:type     \"JSON\";\n"
+                        + "    spa:value    \"\"\"{\n"
+                        + "       \"place_into\": \"urn:ogf:network:openstack.com:openstack-cloud:host+" + vmPara[6] + "\"\n"
+                        + "    }\"\"\" .\n\n"    
+                        + "&lt;x-policy-annotation:action:create-" + vmPara[0] + "-eth0&gt;\n"
+                        + "    a            spa:PolicyAction ;\n"
+                        + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
+                        + "    spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;\n"
+                        + "    spa:importFrom ";
+                String subnetCriteria = "&lt;x-policy-annotation:data:vpc-subnet-" + vmPara[0] + "-criteria&gt;";
+                exportTo += subnetCriteria + ", ";
+                int sub = Integer.valueOf(vmPara[1]) - 1;
+                svcDelta += subnetCriteria + ".\n\n"
+                        + subnetCriteria + "\n    a            spa:PolicyData;\n"
+                        + "    spa:type     \"JSON\";\n    spa:format    \"\"\"{ "
+                        + "\"place_into\": \"%$.subnets[" + sub + "].uri%\"}\"\"\" .\n\n";
+            }
             }
         }
         svcDelta += "&lt;x-policy-annotation:action:create-vpc&gt;\n"
                 + "    a           spa:PolicyAction ;\n"
                 + "    spa:type     \"MCE_VirtualNetworkCreation\" ;\n"
                 + "    spa:importFrom &lt;x-policy-annotation:data:vpc-criteria&gt; ";
-        svcDelta += exportTo.isEmpty() ? ".\n\n" : ";\n    spa:exportTo " + exportTo.substring(0, (exportTo.length() - 2)) + " .\n\n";
-
+        svcDelta += exportTo.isEmpty() ? ".\n\n":";\n    spa:exportTo " + exportTo.substring(0, (exportTo.length() - 2)) + " .\n\n";
+        
         svcDelta += "&lt;x-policy-annotation:data:vpc-criteria&gt;\n"
-                + "    a            spa:PolicyData;\n"
-                + "    spa:type     nml:Topology;\n"
-                + "    spa:value    \"\"\"" + network.toString().replace("\\", "")
-                + "\"\"\".\n\n"
-                + "</modelAddition>\n\n"
-                + "</serviceDelta>";
+                    + "    a            spa:PolicyData;\n"
+                    + "    spa:type     nml:Topology;\n"
+                    + "    spa:value    \"\"\"" + network.toString().replace("\\", "")
+                    + "\"\"\".\n\n"
+                    + "</modelAddition>\n\n"
+                    + "</serviceDelta>";
 
         try {
             PrintWriter out = new PrintWriter("/Users/rikenavadur/test.ttl");
@@ -699,7 +730,7 @@ public class serviceBeans {
             if (!result.contains("referenceVersion")) {
                 return 2;//Error occurs when interacting with back-end system
             }
-
+            
             // Cache System Delta
             cacheSystemDelta(instanceID, historyID, result);
 
@@ -716,16 +747,21 @@ public class serviceBeans {
                 return 2;//Error occurs when interacting with back-end system
             }
             url = new URL(String.format("%s/service/%s/status", host, refUuid));
-            while (true) {
+            while (!result.equals("READY")) {
+                sleep(5000);//wait for 5 seconds and check again later
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
                 result = this.executeHttpMethod(url, status, "GET", null);
-                if (result.equals("READY")) {
-                    return 0;//create network successfully
-                } else if (!result.equals("COMMITTED")) {
+                if (!result.equals("COMMITTED")) {
                     return 3;//Fail to create network
-                }
-                sleep(5000);//wait for 5 seconds and check again later
+                }                
             }
+            
+            url = new URL(String.format("%s/app/service/%s/verify", host, refUuid));
+            HttpURLConnection verify = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, verify, "PUT", null);
+            
+            return 0;
+            
         } catch (Exception e) {
             return 1;//connection error
         }
@@ -961,18 +997,17 @@ public class serviceBeans {
     public int currentHistoryID(int instanceID) throws SQLException {
         Connection front_conn;
         Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
+        front_connectionProps.put("user", "root");
+        front_connectionProps.put("password", "root");
 
         front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
-        PreparedStatement prep = front_conn.prepareStatement("SELECT service_history_id FROM service_history "
-                + "WHERE service_instance_id = ? ORDER BY service_history_id DESC LIMIT 0, 1");
+        PreparedStatement prep = front_conn.prepareStatement("SELECT service_history_id FROM service_history WHERE `service_instance_id` = ? ORDER BY service_history_id DESC LIMIT 0, 1");
         prep.setInt(1, instanceID);
         ResultSet rs1 = prep.executeQuery();
         rs1.next();
-        return rs1.getInt("service_instance_id");
+        return rs1.getInt(1);
     }
 
     /**
@@ -982,7 +1017,7 @@ public class serviceBeans {
      * @param refUuid instance UUID
      * @return formatted URN.
      */
-    private String urnBuilder(String serviceType, String name, String refUuid) {
+    public String urnBuilder(String serviceType, String name, String refUuid) {
         switch (serviceType) {
             case "dnc":
                 return "urn:ogf:network:service+" + refUuid + ":resource+links:tag+" + name;
@@ -1019,8 +1054,8 @@ public class serviceBeans {
             formatDelta = formatDelta.replaceAll(">", "&gt;");
 
             prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
-                    + "(`service_instance_id`, `service_history_id`, `referenceUUID`, `delta`) "
-                    + "VALUES (?, ?, ?, ?)");
+                    + "(`service_instance_id`, `service_history_id`, `type`, `referenceUUID`, `delta`) "
+                    + "VALUES (?, ?, 'Service', ?, ?)");
             prep.setInt(1, instanceID);
             prep.setInt(2, historyID);
             prep.setString(3, deltaUUID);
@@ -1041,6 +1076,11 @@ public class serviceBeans {
             front_connectionProps.put("user", "root");
             front_connectionProps.put("password", "root");
 
+            // Retrieve UUID from delta
+            /*
+            
+            */
+            
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
@@ -1048,8 +1088,8 @@ public class serviceBeans {
             formatDelta = formatDelta.replaceAll(">", "&gt;");
 
             PreparedStatement prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
-                    + "(`service_instance_id`, `service_history_id`, `delta`) "
-                    + "VALUES (?, ?, ?)");
+                    + "(`service_instance_id`, `service_history_id`, `type`, `delta`) "
+                    + "VALUES (?, ?, 'System', ?)");
             prep.setInt(1, instanceID);
             prep.setInt(2, historyID);
             prep.setString(3, formatDelta);
@@ -1058,7 +1098,7 @@ public class serviceBeans {
         } catch (SQLException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }
+    }      
 
 // ------------------------- DEPRECATED SERVICES -------------------------------
     /**

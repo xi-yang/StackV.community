@@ -317,8 +317,9 @@ public class OpenStackPush {
                 InterfaceServiceImpl portService = new InterfaceServiceImpl();
                 String serverId = client.getServer(o.get("server name").toString()).getId();
                 String portId = client.getPort(o.get("port name").toString()).getId();
-
+                
                 portService.detach(serverId, portId);
+                PortDetachCheck(portId, url, NATServer, username, password, tenantName, topologyUri);
             } else if (o.get("request").toString().equals("CreateRotingInfoRequest")) {
                 String routerName = "";
                 String routerid = "";
@@ -589,7 +590,7 @@ public class OpenStackPush {
                 PortCreationCheck(portname, url, NATServer, username, password, tenantName, topologyUri);
             } else if (o.get("request").toString().equals("DeleteNetworkInterfaceRequest")) {
                 Port port = client.getPort(o.get("port name").toString());
-                if (port.getDeviceOwner().equals("")) { //this is for delete port have no device owner, if the port has a device owner, it cannot delete it at here besides it will delete at elsewhere.
+                if (port != null && port.getDeviceOwner().equals("")) { //this is for delete port have no device owner, if the port has a device owner, it cannot delete it at here besides it will delete at elsewhere.
                     osClient.networking().port().delete(port.getId());
                 }
 
@@ -2479,10 +2480,6 @@ public class OpenStackPush {
     }
 
     public void PortDeletionCheck(String id, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
-        /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
-         request.withNetworkInterfaceIds(id);
-         */
-        //OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
         int maxTries = 30;
         while ((maxTries--) > 0) {
             try {
@@ -2490,6 +2487,23 @@ public class OpenStackPush {
                 //client.updateResources("Port");
                 Port resource = client.getPort(id);
                 if (resource == null) {
+                    break;
+                }
+            } catch (Exception e) {
+            }
+        }
+    }
+    
+    public void PortDetachCheck(String id, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
+        int maxTries = 30;
+        while ((maxTries--) > 0) {
+            try {
+                OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+                Port port = client.getPort(id);
+                if (port == null) {
+                    break;
+                }
+                if (port.getDeviceOwner().isEmpty()) {
                     break;
                 }
             } catch (Exception e) {

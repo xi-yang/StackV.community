@@ -44,6 +44,10 @@ $(function () {
     $(".clickable-row").click(function () {
         window.document.location = $(this).data("href");
     });
+    
+    $("#delta-table-header").click(function () {
+       $("#delta-table-body").toggleClass("hide"); 
+    });
 
     clearCounters();
 });
@@ -333,7 +337,18 @@ function addVM(type, subnetID) {
                 '<input type="text" name="' + subnetID + VMCounter + '-instance" placeholder="Instance Type">' +
                 '<input type="text" name="' + subnetID + VMCounter + '-host" placeholder="VM Host">' +
                 '<input type="text" name="' + subnetID + VMCounter + '-floating" placeholder="Floating IP">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-sriov" placeholder="SRIOV Connection">' +
+                '<input type="text" name="' + subnetID + VMCounter + '-sriov-dest" placeholder="SRIOV Destination">' +
+                '<input type="text" name="' + subnetID + VMCounter + '-sriov-mac" placeholder="SRIOV MAC Address">' +
+                '<input type="text" name="' + subnetID + VMCounter + '-sriov-ip" placeholder="SRIOV IP Address">' +
+                '<div>' +
+                '<input type="text" name="' + subnetID + VMCounter + '-route1-from" placeholder="From">' +                
+                '<input type="text" name="' + subnetID + VMCounter + '-route1-to" placeholder="To">' +        
+                '<input type="text" name="' + subnetID + VMCounter + '-route1-next" placeholder="Next Hop">' +
+                '</div><div>' +
+                '<input type="text" name="' + subnetID + VMCounter + '-route2-from" placeholder="From">' +                
+                '<input type="text" name="' + subnetID + VMCounter + '-route2-to" placeholder="To">' +        
+                '<input type="text" name="' + subnetID + VMCounter + '-route2-next" placeholder="Next Hop">' +                
+                '</div>' +
                 '</div>';
     }
 }
@@ -531,6 +546,7 @@ function revertInstance(uuid) {
     });
 
     window.location.reload(true);
+    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
 function cancelInstance(uuid) {
@@ -544,6 +560,7 @@ function cancelInstance(uuid) {
     });
 
     window.location.reload(true);
+    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
 function reinstateInstance(uuid) {
@@ -557,6 +574,21 @@ function reinstateInstance(uuid) {
     });
 
     window.location.reload(true);
+    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
+}
+
+function verifyInstance(uuid) {
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/verify';
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        success: function (result) {
+            // Do something with the result
+        }
+    });
+
+    window.location.reload(true);
+    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
 function deleteInstance(uuid) {
@@ -567,20 +599,6 @@ function deleteInstance(uuid) {
         type: 'PUT',
         success: function (result) {
             console.log("DELETION SUCCESS?!");
-        }
-    });
-
-    window.location.replace('/VersaStack-web/ops/catalog.jsp');
-}
-
-function reinstateInstance(uuid) {
-
-    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/reinstate';
-    $.ajax({
-        url: apiUrl,
-        type: 'PUT',
-        success: function (result) {
-            console.log("RE-INITAILIZATION SUCCESS?!");
         }
     });
 
@@ -643,7 +661,7 @@ function applyNetTemplate(code) {
             form.elements['subnet2-vm2'].value = 'vm2';
             
             form.elements['conn-dest'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*';
-            form.elements['conn-vlan'].value = '3023';
+            form.elements['conn-vlan'].value = 'any';
 
             break;
             
@@ -686,31 +704,71 @@ function applyNetTemplate(code) {
             form.elements['netType'].value = 'internal';
             form.elements['netCidr'].value = '10.1.0.0/16';
             
-            if (subRouteCounter === 1) {
-                addSubnetRoute('subnet1-route');
-            }
-            if (subnetCounter === 1) {
-                addSubnet('ops');
-            }
+//            if (subRouteCounter === 1) {
+//                addSubnetRoute('subnet1-route');
+//            }
+//            if (subnetCounter === 1) {
+//                addSubnet('ops');
+//            }
 
             form.elements['subnet1-name'].value = '';
             form.elements['subnet1-cidr'].value = '10.1.0.0/24';
             
-            form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
-            form.elements['subnet1-route1-next'].value = 'internet';
-            form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
-            form.elements['subnet1-route2-next'].value = 'vpn';
-            form.elements['subnet1-route-prop'].checked = true;
+//            form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
+//            form.elements['subnet1-route1-next'].value = 'internet';
+//            form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
+//            form.elements['subnet1-route2-next'].value = 'vpn';
+            form.elements['subnet1-route-default'].checked = true;
             
             form.elements['subnet1-vm1'].value = 'vm_OPS';
-            form.elements['subnet1-vm1-instance'].value = 'm1.medium';
+//            form.elements['subnet1-vm1-instance'].value = 'm1.medium';
+//            form.elements['subnet1-vm1-keypair'].value = 'icecube_key';
+//            form.elements['subnet1-vm1-security'].value = 'rains';
+            form.elements['subnet1-vm1-host'].value = 'msx1';
+            
+//            form.elements['subnet2-name'].value = '';
+//            form.elements['subnet2-cidr'].value = '10.1.1.0/24';
+//            
+            break;
+            
+        case 5:    
+            form.elements['netType'].value = 'internal';
+            form.elements['netCidr'].value = '10.1.0.0/16';
+            
+//            if (subRouteCounter === 1) {
+//                addSubnetRoute('subnet1-route');
+//            }
+//            if (subnetCounter === 1) {
+//                addSubnet('ops');
+//            }
+
+            form.elements['subnet1-name'].value = '';
+            form.elements['subnet1-cidr'].value = '10.1.0.0/24';
+            
+//            form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
+//            form.elements['subnet1-route1-next'].value = 'internet';
+//            form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
+//            form.elements['subnet1-route2-next'].value = 'vpn';
+            form.elements['subnet1-route-default'].checked = true;
+            
+            form.elements['subnet1-vm1'].value = 'vm_OPS';
+            form.elements['subnet1-vm1-instance'].value = '4';
+            form.elements['subnet1-vm1-image'].value = '77817b73-baa2-424b-b890-e1a95af1fdf9';
             form.elements['subnet1-vm1-keypair'].value = 'icecube_key';
             form.elements['subnet1-vm1-security'].value = 'rains';
             form.elements['subnet1-vm1-host'].value = 'msx1';
-            
-            form.elements['subnet2-name'].value = '';
-            form.elements['subnet2-cidr'].value = '10.1.1.0/24';
-            
+            form.elements['subnet1-vm1-floating'].value = '206.196.180.148';
+            form.elements['subnet1-vm1-sriov-dest'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
+            form.elements['subnet1-vm1-sriov-mac'].value = 'aa:bb:cc:00:00:12';
+            form.elements['subnet1-vm1-sriov-ip'].value = '10.10.0.1/30';
+            form.elements['subnet1-vm1-route1-to'].value = '192.168.0.0/24';
+            form.elements['subnet1-vm1-route1-next'].value = '10.10.0.2';
+            form.elements['subnet1-vm1-route2-to'].value = '206.196.179.0/24';
+            form.elements['subnet1-vm1-route2-next'].value = '10.10.0.2';
+
+//            form.elements['subnet2-name'].value = '';
+//            form.elements['subnet2-cidr'].value = '10.1.1.0/24';
+
             break;
     }
 }
