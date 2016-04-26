@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost:3306
--- Generation Time: Apr 19, 2016 at 04:36 PM
+-- Generation Time: Apr 26, 2016 at 03:58 PM
 -- Server version: 5.5.42
 -- PHP Version: 5.6.7
 
@@ -102,6 +102,20 @@ INSERT INTO `acl_entry_user` (`acl_id`, `user_id`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `label`
+--
+
+DROP TABLE IF EXISTS `label`;
+CREATE TABLE `label` (
+  `identifier` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `username` varchar(40) COLLATE utf8_unicode_ci NOT NULL,
+  `label` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `color` varchar(25) COLLATE utf8_unicode_ci DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `service`
 --
 
@@ -141,16 +155,10 @@ CREATE TABLE `service_delta` (
   `service_delta_id` int(11) NOT NULL,
   `service_instance_id` int(11) NOT NULL,
   `service_history_id` int(11) NOT NULL,
+  `type` varchar(60) COLLATE utf8_unicode_ci NOT NULL,
   `referenceUUID` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `delta` longtext COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=89 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
---
--- Dumping data for table `service_delta`
---
-
-INSERT INTO `service_delta` (`service_delta_id`, `service_instance_id`, `service_history_id`, `referenceUUID`, `delta`) VALUES
-(88, 282, 1, NULL, 'blah');
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -163,21 +171,7 @@ CREATE TABLE `service_history` (
   `service_history_id` int(11) NOT NULL,
   `service_instance_id` int(11) NOT NULL,
   `service_state_id` int(11) NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
---
--- Dumping data for table `service_history`
---
-
-INSERT INTO `service_history` (`service_history_id`, `service_instance_id`, `service_state_id`) VALUES
-(1, 271, 1),
-(1, 274, 1),
-(1, 275, 1),
-(1, 276, 1),
-(1, 277, 1),
-(1, 279, 1),
-(1, 281, 1),
-(1, 282, 1);
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -193,21 +187,7 @@ CREATE TABLE `service_instance` (
   `creation_time` datetime DEFAULT NULL,
   `referenceUUID` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `service_state_id` int(11) DEFAULT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=286 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
---
--- Dumping data for table `service_instance`
---
-
-INSERT INTO `service_instance` (`service_instance_id`, `service_id`, `user_id`, `creation_time`, `referenceUUID`, `service_state_id`) VALUES
-(271, 7, 1, '2016-04-18 14:32:50', '018bcf64-4edd-4cdb-82dd-e16fa5a8dc64', 1),
-(274, 11, 1, '2016-04-18 14:53:53', '3b4c5a65-c5a0-4814-882d-a06f6e78300f', 1),
-(275, 7, 1, '2016-04-18 14:57:48', '75279941-b441-4731-b613-37cd43e2cbe4', 1),
-(276, 11, 1, '2016-04-18 14:58:21', '98d723f7-1227-4c68-a623-9c7c85dfc59d', 1),
-(277, 11, 1, '2016-04-18 14:58:33', 'f21351bd-f1f0-46bc-a205-969206e41b09', 1),
-(279, 7, 1, '2016-04-18 15:06:03', '7603200f-4a94-436f-bb97-502cbd503885', 1),
-(281, 11, 1, '2016-04-18 15:11:47', 'a4d9c05f-2391-4867-90c6-a38a2f4924ef', 2),
-(282, 7, 1, '2016-04-18 15:21:55', 'f60dca25-0ab8-485a-9d15-222e84bc5181', 1);
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -231,6 +211,18 @@ INSERT INTO `service_state` (`service_state_id`, `super_state`) VALUES
 (5, 'Delete'),
 (3, 'Modify'),
 (4, 'Reinstate');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `service_verification`
+--
+
+DROP TABLE IF EXISTS `service_verification`;
+CREATE TABLE `service_verification` (
+  `service_instance_id` int(11) NOT NULL,
+  `verification_state` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -266,7 +258,7 @@ INSERT INTO `user_belongs` (`user_id`, `usergroup_id`) VALUES
 DROP TABLE IF EXISTS `user_info`;
 CREATE TABLE `user_info` (
   `user_id` int(11) NOT NULL,
-  `username` varchar(20) COLLATE utf8_unicode_ci NOT NULL,
+  `username` varchar(40) COLLATE utf8_unicode_ci NOT NULL,
   `email` varchar(45) COLLATE utf8_unicode_ci DEFAULT NULL,
   `active_usergroup` int(11) DEFAULT '2',
   `first_name` varchar(20) COLLATE utf8_unicode_ci NOT NULL,
@@ -332,6 +324,12 @@ ALTER TABLE `acl_entry_user`
   ADD KEY `acl_entry_user-user_info_idx` (`user_id`);
 
 --
+-- Indexes for table `label`
+--
+ALTER TABLE `label`
+  ADD PRIMARY KEY (`identifier`);
+
+--
 -- Indexes for table `service`
 --
 ALTER TABLE `service`
@@ -368,6 +366,12 @@ ALTER TABLE `service_instance`
 ALTER TABLE `service_state`
   ADD PRIMARY KEY (`service_state_id`),
   ADD UNIQUE KEY `super_state_UNIQUE` (`super_state`);
+
+--
+-- Indexes for table `service_verification`
+--
+ALTER TABLE `service_verification`
+  ADD PRIMARY KEY (`service_instance_id`);
 
 --
 -- Indexes for table `user_belongs`
@@ -409,17 +413,17 @@ ALTER TABLE `service`
 -- AUTO_INCREMENT for table `service_delta`
 --
 ALTER TABLE `service_delta`
-  MODIFY `service_delta_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=89;
+  MODIFY `service_delta_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=3;
 --
 -- AUTO_INCREMENT for table `service_history`
 --
 ALTER TABLE `service_history`
-  MODIFY `service_history_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=2;
+  MODIFY `service_history_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=3;
 --
 -- AUTO_INCREMENT for table `service_instance`
 --
 ALTER TABLE `service_instance`
-  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=286;
+  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=5;
 --
 -- AUTO_INCREMENT for table `service_state`
 --
@@ -463,8 +467,8 @@ ALTER TABLE `acl_entry_user`
 -- Constraints for table `service_delta`
 --
 ALTER TABLE `service_delta`
-  ADD CONSTRAINT `service_delta-service_instance` FOREIGN KEY (`service_instance_id`) REFERENCES `service_instance` (`service_instance_id`) ON DELETE CASCADE ON UPDATE NO ACTION,
-  ADD CONSTRAINT `service_delta-service_history` FOREIGN KEY (`service_history_id`) REFERENCES `service_history` (`service_history_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
+  ADD CONSTRAINT `service_delta-service_history` FOREIGN KEY (`service_history_id`) REFERENCES `service_history` (`service_history_id`) ON DELETE CASCADE ON UPDATE NO ACTION,
+  ADD CONSTRAINT `service_delta-service_instance` FOREIGN KEY (`service_instance_id`) REFERENCES `service_instance` (`service_instance_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 --
 -- Constraints for table `service_history`
@@ -477,9 +481,15 @@ ALTER TABLE `service_history`
 -- Constraints for table `service_instance`
 --
 ALTER TABLE `service_instance`
-  ADD CONSTRAINT `service_instance-service_state` FOREIGN KEY (`service_state_id`) REFERENCES `service_state` (`service_state_id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   ADD CONSTRAINT `service_instance-service` FOREIGN KEY (`service_id`) REFERENCES `service` (`service_id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT `service_instance-service_state` FOREIGN KEY (`service_state_id`) REFERENCES `service_state` (`service_state_id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   ADD CONSTRAINT `service_instance-user_info` FOREIGN KEY (`user_id`) REFERENCES `user_info` (`user_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Constraints for table `service_verification`
+--
+ALTER TABLE `service_verification`
+  ADD CONSTRAINT `service_verification-service_instance` FOREIGN KEY (`service_instance_id`) REFERENCES `service_instance` (`service_instance_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 --
 -- Constraints for table `user_belongs`

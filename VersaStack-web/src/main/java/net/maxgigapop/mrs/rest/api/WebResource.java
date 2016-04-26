@@ -96,6 +96,43 @@ public class WebResource {
 
         return retList;
     }
+        
+    @PUT
+    @Path(value = "/label")
+    @Consumes(value = {"application/json", "application/xml"})
+    public String label(final String inputString) {
+        JSONObject inputJSON = new JSONObject();
+        try {
+            Object obj = parser.parse(inputString);
+            inputJSON = (JSONObject) obj;
+
+        } catch (ParseException ex) {
+            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        String user = (String) inputJSON.get("user");
+        String identifier = (String) inputJSON.get("identifier");
+        String label = (String) inputJSON.get("label");
+        String color = (String) inputJSON.get("color");
+
+        try {
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("INSERT INTO `frontend`.`label` (`identifier`, `username`, `label`, `color`) VALUES (?, ?, ?, ?)");
+            prep.setString(1, identifier);
+            prep.setString(2, user);
+            prep.setString(3, label);
+            prep.setString(4, color);
+            prep.executeUpdate();
+        } catch (SQLException ex) {
+            return "<<<Failed - " + ex.getMessage() + " - " + ex.getSQLState();
+        }
+        return "Added";
+    }
 
     @GET
     @Path("/service/{siUUID}/status")
