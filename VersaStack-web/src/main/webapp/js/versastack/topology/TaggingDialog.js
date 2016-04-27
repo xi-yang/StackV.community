@@ -41,6 +41,12 @@ define([], function () {
 
             document.getElementById("taggingDialogOK").onclick = function() {
                 that.label = document.getElementById("taggingDialogColorInputLabel").value;
+                var serializedData = JSON.stringify({
+                        user:  that.username,
+                        identifier: that.sendData,
+                        label: that.label,
+                        color: that.currentColor
+                    });
                 // do only if data is valid 
                 $.ajax({
                     headers: { 
@@ -50,12 +56,8 @@ define([], function () {
 
                     type: "PUT",
                     url: "/VersaStack-web/restapi/app/label",
-                    data: {
-                        user:  that.username,
-                        identifier: that.sendData,
-                        label: that.label,
-                        color: that.currentColor
-                    },
+                    data: serializedData,
+                    
                     success: function (data) {
                        alert("Success");
 
