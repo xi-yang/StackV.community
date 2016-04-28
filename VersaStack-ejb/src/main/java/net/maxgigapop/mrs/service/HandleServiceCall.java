@@ -147,7 +147,7 @@ public class HandleServiceCall {
         } catch (EJBException ex) {
             serviceInstance.setStatus("FAILED");
             ServiceInstancePersistenceManager.merge(serviceInstance);
-            return null;
+            throw ex;
         }
         // save serviceInstance, spaDelta and systemDelta
         SystemDelta resultDelta = worker.getResultModelDelta();

@@ -421,27 +421,6 @@ public class HandleSystemCall {
 
         this.propagateDelta(systemInstance, sysDelta, useUpdatedVG);
     }
-
-    /*
-    @Asynchronous
-    public Future<String> commitDelta(String sysInstanceUUID) {
-        SystemInstance systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(sysInstanceUUID);
-        if (systemInstance == null) {
-            throw new EJBException("commitDelta encounters unknown systemInstance with referenceUUID=" + sysInstanceUUID);
-        }
-        if (systemInstance.getCommitStatus() != null) {
-            throw new EJBException("commitDelta has already been done once with systemInstance with referenceUUID=" + sysInstanceUUID);
-        }
-        try{
-            Future<String> commitStatus = this.commitDelta(systemInstance);
-            systemInstance.setCommitStatus(commitStatus);            
-        }catch(EJBException ex){
-            systemInstance.setCommitStatus(new AsyncResult<>(ex.getMessage()));                                    
-        }
-        systemInstance.setCommitFlag(true);
-        return systemInstance.getCommitStatus();
-    }
-    */
     
     public void plugDriverInstance(Map<String, String> properties) {
         if (!properties.containsKey("topologyUri") || !properties.containsKey("driverEjbPath")) {

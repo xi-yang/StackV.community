@@ -127,7 +127,7 @@ public class ServiceResource {
         String workerClassPath = svcApiDelta.getWorkerClassPath();
         SystemDelta sysDelta = serviceCallHandler.compileAddDelta(svcInstanceUUID, workerClassPath, svcApiDelta.getUuid(), svcApiDelta.getModelAddition(), svcApiDelta.getModelReduction());
         if (sysDelta == null) {
-            throw new ProcessingException("Failed to compile service delta");
+            throw new EJBException("Failed to compile service delta");
         }
         ApiDeltaBase apiSysDelta = new ApiDeltaBase();
         apiSysDelta.setId(sysDelta.getId().toString());
@@ -159,7 +159,7 @@ public class ServiceResource {
         String workerClassPath = svcApiDelta.getWorkerClassPath();
         SystemDelta sysDelta = serviceCallHandler.compileAddDelta(svcInstanceUUID, workerClassPath, svcApiDelta.getUuid(), svcApiDelta.getModelAddition(), svcApiDelta.getModelReduction());
         if (sysDelta == null) {
-            throw new ProcessingException("Failed to compile service delta");
+            throw new EJBException("Failed to compile service delta");
         }
         ApiDeltaBase apiSysDelta = new ApiDeltaBase();
         apiSysDelta.setId(sysDelta.getId().toString());
