@@ -8,13 +8,13 @@ define([], function () {
     function TaggingDialog (userName) {
         this.currentColor = "Red";
         this.label = "";
-        this.sentData = "fakeURN";
+        this.sentData = "";
         this.currentCMObj = null;
         this.username = userName;
         this.selectedColorBox = null;
         // need variable for dialog activiated 
         var that = this;
-        var dialog = document.querySelector("#taggingDialog");
+        that.dialog = document.querySelector("#taggingDialog");
                 
         var colorBoxes = document.getElementsByClassName("colorBox");
         
@@ -40,51 +40,87 @@ define([], function () {
             
 
             document.getElementById("taggingDialogOK").onclick = function() {
-                that.label = document.getElementById("taggingDialogColorInputLabel").value;
+                that.label = document.getElementById("taggingDialogLabelInput").value;
                 var serializedData = JSON.stringify({
                         user:  that.username,
-                        identifier: that.sendData,
+                        identifier: that.sentData,
                         label: that.label,
                         color: that.currentColor
                     });
+//                    alert("user: " + that.username + "\n" + 
+//                        "identifier:" + that.sentData + "\n" +
+//                        "label:" +  that.label + "\n" +
+//                        "color:"+  that.currentColor);
+
+                    //alert(serializedData);
                 // do only if data is valid 
                 $.ajax({
                     headers: { 
                         'Accept': 'application/json',
                         'Content-Type': 'application/json' 
                     },
-
                     type: "PUT",
                     url: "/VersaStack-web/restapi/app/label",
                     data: serializedData,
-                    
+
                     success: function (data) {
                        alert("Success");
 
                     },
-                    error: function () {
+                    error: function(jqXHR, textStatus, errorThrown ) {
 //                    var labelInput = document.getElementById("taggingDialogColorInputLabel");
 //                    labelInput.vallue = ""; 
 //                    that.closeDialog();
 //                    that.label = ""; 
+                       alert(errorThrown + "\n"+textStatus);
+                       
+                       //temporary code
+                       
+                        var tagList = document.querySelector("#labelList1");
+                        var tag = document.createElement("li");
+                        tag.classList.add("taggingPanel-labelItem");
+                        tag.classList.add("label-color-" + that.currentColor.toLowerCase());
+                        tag.innerHTML = that.label;
+                        tag.setAttribute('data-sentData', that.sentData);
+                        tag.onclick = function() {
+                            var textField = document.createElement('textarea');
+                            textField.innerText = that.getSentData();
+                            document.body.appendChild(textField);
+                            textField.select();
+                            document.execCommand('copy');
+                            $(textField).remove();                    
+                        };
+                        tagList.appendChild(tag);
+                                            this.closeDialog();
+
                     }
                     
                 });
-                     var labelInput = document.getElementById("taggingDialogColorInputLabel");
-                    labelInput.vallue = ""; 
+                     var labelInput = document.getElementById("taggingDialogLabelInput");
+                    $('#taggingDialogLabelInput').val("");
 
+                    labelInput.vallue = ""; 
            };            
         };
 
         this.closeDialog = function() {
-            dialog.classList.remove( "taggingDialog-active");
+            $('#taggingDialogLabelInput').removeAttr('value');
+            that.dialog.classList.remove( "taggingDialog-active");
         };
         
         this.openDialog = function(o) {
-            dialog.classList.add( "taggingDialog-active");
+            that.dialog.classList.add( "taggingDialog-active");
             that.currentCMObj = o;
+            if (typeof that.currentCMObj.getName === 'function') {
+                that.sentData = that.currentCMObj.getName();
+            } else {
+                that.sentData = that.currentCMObj;
+            }
         };
-        
+        this.getSentData = function() {
+            //alert(that.sentData);
+            return that.sentData;
+        };
     }
     return TaggingDialog;
 });

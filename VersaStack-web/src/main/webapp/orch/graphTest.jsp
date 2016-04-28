@@ -595,24 +595,32 @@
             </div>
             <div id ="taggingsPanel-contents">
                 <div id="taggingPanel-colorPanel">
-                    <div style="margin-left:5px;">Colors</div>
-                    <div></div>
+                    <div id="taggingPanel-colorPanelTitle"> Filter Colors</div>
+           <div id="taggingPanelColorSelectionTab" style=" float:left;">
+                <span class="filteredColorBox" id="boxRed"> 
+                </span>
+                <span class="filteredColorBox" id="boxOrange">
+                </span>
+                <span class="filteredColorBox" id="boxYellow">
+                </span>
+                <span class="filteredColorBox" id="boxGreen">
+                </span>
+                <span class="filteredColorBox" id="boxBlue">
+                </span>
+                <span class="filteredColorBox" id="boxPurple">
+                </span>
+                   
+                    </div>
                 </div>
                 <div id="taggingPanel-labelPanel">
-                    <div style="margin-left:5px;">Labels</div>
-                    <ul class="taggingPanel-labelList">
-                      <li class="taggingPanel-labelItem label-color-red"> Label</li>
+                    <div id="taggingPanel-labelPanelTitle">Labels</div>
+                    <ul class="taggingPanel-labelList" id="labelList1">
+<!--                      <li class="taggingPanel-labelItem label-color-red"> Label</li>
                       <li class="taggingPanel-labelItem label-color-blue"> Label</li>
                       <li class="taggingPanel-labelItem label-color-orange"> Label </li>
-                      <li class="taggingPanel-labelItem label-color-purple"> Label </li>
+                      <li class="taggingPanel-labelItem label-color-purple"> Label </li>-->
+                      
                     </ul>
-                    <ul class="pagination" id ="tagPagination">
-                      <li><a href="#">1</a></li>
-                      <li><a href="#">2</a></li>
-                      <li><a href="#">3</a></li>
-                      <li><a href="#">4</a></li>
-                      <li><a href="#">5</a></li>
-                    </ul>       
                 </div>
              </div>
         </div>
@@ -708,7 +716,7 @@
 <div id="taggingDialog">
   <div id="taggingDialogBar">
     <div id="taggingDialogCloser">
-    x
+<i class="fa fa-times" aria-hidden="true"></i>
     </div>
   </div>
   
@@ -723,7 +731,8 @@
       </div>
       
       <div id="taggingDialogColorSelectionTab">
-        <span class="colorBox" id="boxRed">
+
+        <span class="colorBox" id="boxRed"> 
         </span>
         <span class="colorBox" id="boxOrange">
         </span>
@@ -749,6 +758,52 @@
     </div>
   </div>
 </div>    
+    
+    <script>
+       (function() {
+            var tags = []; // stores tag objects {color, data, label}
+            var selectedColors = []; // colors selected for filtering
+            
+            var colorBoxes = document.getElementsByClassName("filteredColorBox");
+            var tagHTMLs = document.getElementsByClassName("taggingPanel-labelItem");
+            var that = this;
+            
+            this.init = function() {
+                for (var i = 0; i < colorBoxes.length;  i++) {
+                    //var cb = colorBoxes[i].id;
+                    colorBoxes[i].onclick = function() {
+                        var selectedColor = this.id.split("box")[1].toLowerCase();
+                        var selectedIndex = selectedColors.indexOf(selectedColor);
+                        if (selectedIndex === -1) {
+                            selectedColors.push(selectedColor);
+                            this.classList.add( "colorBox-highlighted");
+                        } else {
+                            selectedColors.splice(selectedIndex, 1);
+                            this.classList.remove("colorBox-highlighted");
+                        }      
+                        
+                        that.updateTagList();
+                    };
+                }
+            };  
+            
+            this.updateTagList = function() {
+               var tagHTMLs = document.getElementsByClassName("taggingPanel-labelItem");
+               for( var i = 0; i < tagHTMLs.length; i++){
+                   var curTag = tagHTMLs.item(i);
+                   var curColor = curTag.classList.item(1).split("label-color-")[1];
+                   if (selectedColors.length === 0) {
+                       curTag.classList.remove("hide");
+                   } else if (selectedColors.indexOf(curColor) === -1){
+                       curTag.classList.add("hide");
+                   } else {
+                       curTag.classList.remove("hide");
+                   }
+               }
+            };
+            this.init();
+        })();
+    </script>
 </body>
 
 </html>

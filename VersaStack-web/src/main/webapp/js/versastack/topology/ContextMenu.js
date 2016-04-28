@@ -277,10 +277,7 @@ define([], function () {
           //console.log( "Task ID - " + this.selectedObject.getAttribute("data-id") + ", Task action - " + link.getAttribute("data-action"));
             //alert("type: " + that.selectedObject.getType());
           // Testing if this is an Element or a property 
-            if (typeof that.selectedObject.getName === 'function') 
-              taggingDialog.openDialog(that.selectedObject.getName());  
-            else 
-              taggingDialog.openDialog(that.selectedObject);  
+            taggingDialog.openDialog(that.selectedObject);  
             toggleMenuOff();
         }
 

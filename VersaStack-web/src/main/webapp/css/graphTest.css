@@ -194,7 +194,7 @@ body{
 }
 
 #taggingsPanel.closed {
-    bottom: calc(-20% + 20px);
+    bottom: calc(-2% + 60px);
     
     -webkit-transition: bottom 0.5s ease-in-out;
     transition: bottom 0.5s ease-in-out;
@@ -217,24 +217,46 @@ body{
 #taggingPanel-colorPanel{
     text-align:left;
 }
+
+#taggingPanel-colorPanelTitle {
+    margin-left:5px;
+}
+
 #tagPagination {
     text-align: center;
 }
 /*tagging panel list stuff */
 
+#taggingPanel-labelPanel{
+    border: 1px rgba(0, 0, 0, .075) solid;    
+}
+
+#taggingPanel-labelPanelTitle {
+    margin-left: 5px;
+    text-align: left;
+}
  .taggingPanel-labelList{
      text-align:left;
    padding-left: 0;
   margin-bottom: 20px;
  }
  .taggingPanel-labelItem {
-   position: relative;
+    position: relative;
+    color: white;
+    display: block;
+    /* padding: 10px 15px; */
+    padding-left: 20px;
+    margin-bottom: -1px;
+    border: 1px solid #ddd;
+    font-weight: bold;
+    font-family:Trebuchet MS;
+     
+/*   position: relative;
   display: block;
   padding: 10px 15px;
   margin-bottom: -1px;
-  background-color: #fff;
-  border: 1px solid #ddd;
-    
+  background-color: #fff;*/
+ /* border: 1px solid #ddd;*/
  }
 
 /*****for tagging dialog *******/
@@ -271,7 +293,6 @@ body{
 
 }
 .colorBox {
-  background-color:red;
   margin-right: 0px; 
   float:left;
   width:15px;
@@ -286,3 +307,19 @@ body{
 #boxPurple {background-color:purple;}
 #taggingDialog.taggingDialog-active {display:block;}
 .colorBox-highlighted {    border: 2px solid black;}
+
+
+#taggingPanelColorSelectionTab{
+    margin-left: 15px;
+   
+}
+.filteredColorBox{
+    margin-right: 1px;
+    float: left;
+    width: 15px;
+    height: 15px;
+}
+#taggingPanel-colorPanel{
+    padding-bottom: 20px;
+    border: 1px rgba(0, 0, 0, .075) solid;
+}
