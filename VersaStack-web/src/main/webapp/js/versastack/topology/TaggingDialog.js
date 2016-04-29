@@ -55,27 +55,18 @@ define([], function () {
                     //alert(serializedData);
                 // do only if data is valid 
                 $.ajax({
-                    headers: { 
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json' 
-                    },
+//                    headers: { 
+//                        'Accept': 'application/json',
+//                        'Content-Type': 'application/json' 
+//                    },
+                    crossDomain: true,
                     type: "PUT",
                     url: "/VersaStack-web/restapi/app/label",
                     data: serializedData,
-
-                    success: function (data) {
-                       alert("Success");
-
-                    },
-                    error: function(jqXHR, textStatus, errorThrown ) {
-//                    var labelInput = document.getElementById("taggingDialogColorInputLabel");
-//                    labelInput.vallue = ""; 
-//                    that.closeDialog();
-//                    that.label = ""; 
-                       alert(errorThrown + "\n"+textStatus);
-                       
-                       //temporary code
-                       
+                    contentType: "application/json", 
+                    
+                    success: function(data,  textStatus,  jqXHR ) {
+                        //alert("Success\n" + data + "\n" + textStatus);
                         var tagList = document.querySelector("#labelList1");
                         var tag = document.createElement("li");
                         tag.classList.add("taggingPanel-labelItem");
@@ -91,8 +82,12 @@ define([], function () {
                             $(textField).remove();                    
                         };
                         tagList.appendChild(tag);
-                                            this.closeDialog();
-
+                        that.closeDialog();
+                    },
+                    error: function(jqXHR, textStatus, errorThrown ) {
+                       //alert(errorThrown + "\n"+textStatus);
+                       alert("Error adding tag.");
+                       that.closeDialog();
                     }
                     
                 });
