@@ -96,6 +96,39 @@ public class WebResource {
 
         return retList;
     }
+    
+    @GET
+    @Path("/label/{user}")
+    @Produces("application/json")
+    public ArrayList<ArrayList<String>> getLabels(@PathParam("user") String username) {        
+        ArrayList<ArrayList<String>> retList = new ArrayList<>();
+        try {            
+            
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+            
+            PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM label WHERE username = ?");
+            prep.setString(1, username);
+            ResultSet rs1 = prep.executeQuery();
+            while (rs1.next()) {
+                ArrayList<String> labelList = new ArrayList<>();
+                
+                labelList.add(rs1.getString("identifier"));
+                labelList.add(rs1.getString("label"));
+                labelList.add(rs1.getString("color"));
+                
+                retList.add(labelList);
+            }
+            
+            return retList;
+        } catch (SQLException e) {
+            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+            return null;
+        }
+    }
         
     @PUT
     @Path(value = "/label")
