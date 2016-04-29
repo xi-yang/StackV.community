@@ -406,6 +406,7 @@ public class ServiceServlet extends HttpServlet {
                         JSONObject vmJSON = new JSONObject();
                         if (paraMap.containsKey("subnet" + i + "-vm" + j)) {
                             vmJSON.put("name", paraMap.get("subnet" + i + "-vm" + j));
+                            vmJSON.put("host", paraMap.get("subnet" + i + "-vm" + j + "-host"));
 
                             // Parse Types.
                             String vmString = "";
@@ -427,105 +428,53 @@ public class ServiceServlet extends HttpServlet {
                             vmJSON.put("type", vmString);
 
                             JSONArray interfaceArr = new JSONArray();
-                            if (true) {
-                                JSONObject interfaceJSON = new JSONObject();
+                            if (paraMap.containsKey("subnet" + i + "-vm" + j + "-floating")) {
+                            JSONObject interfaceJSON = new JSONObject();
+                                    interfaceJSON.put("type", "Ethernet");
+                                    interfaceJSON.put("address", "ipv4+" + paraMap.get("subnet" + i + "-vm" + j + "-floating") + "/255.255.255.0");
+                                    interfaceArr.add(interfaceJSON);                                
+                            }
+                            
+                            for (int k = 1; k <= 10; k++) {
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-sriov" + k + "-dest")) {
+                                    JSONObject interfaceJSON = new JSONObject();
+                                    interfaceJSON.put("type", "SRIOV");
+                                    
+                                    interfaceArr.add(interfaceJSON);
+                                }
 
-                                interfaceArr.add(interfaceJSON);
                             }
                             vmJSON.put("interfaces", interfaceArr);
 
-                            /*
-                             if (paraMap.containsKey("subnet" + i + "-vm" + j + "-image")) {
-                             VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-image");
-                             } else {
-                             VMString += "& ";
-                             }
-
-                             if (paraMap.containsKey("subnet" + i + "-vm" + j + "-instance")) {
-                             VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-instance");
-                             } else {
-                             VMString += "& ";
-                             }
-
-                             if (paraMap.containsKey("subnet" + i + "-vm" + j + "-keypair")) {
-                             VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-keypair");
-                             } else {
-                             VMString += "& ";
-                             }
-
-                             if (paraMap.containsKey("subnet" + i + "-vm" + j + "-security")) {
-                             VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-security");
-                             } else {
-                             VMString += "& ";
-                             }
-
-                             if (paraMap.containsKey("subnet" + i + "-vm" + j + "-host")) {
-                             VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-host");
-                             } else {
-                             VMString += "& ";
-                             }
-
-                             if (paraMap.containsKey("subnet" + i + "-vm" + j + "-floating")) {
-                             VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-floating");
-                             } else {
-                             VMString += "& ";
-                             }
-
-                             if (paraMap.containsKey("subnet" + i + "-vm" + j + "-sriov-dest")) {
-                             VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-sriov-dest");
-                             } else {
-                             VMString += "& ";
-                             }
-
-                             if (paraMap.containsKey("subnet" + i + "-vm" + j + "-sriov-mac")) {
-                             VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-sriov-mac");
-                             } else {
-                             VMString += "& ";
-                             }
-
-                             if (paraMap.containsKey("subnet" + i + "-vm" + j + "-sriov-ip")) {
-                             VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-sriov-ip");
-                             } else {
-                             VMString += "& ";
-                             }
-
-                             String vmRouteString = "";
-                             for (int k = 1; k < 5; k++) {
-
-                             //                                    if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k)) {
-                             //                                        VMString += "&" + paraMap.get("subnet" + i + "-vm" + j + "-");
-                             //                                    } else {
-                             //                                        VMString += "& ";
-                             //                                    }
-                             if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k + "-to")) {
-                             vmRouteString += "to+" + paraMap.get("subnet" + i + "-vm" + j + "-route" + k + "-to") + ",";
-
-                             if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k + "-from")) {
-                             vmRouteString += "from+" + paraMap.get("subnet" + i + "-vm" + j + "-route" + k + "-from") + ",";
-                             }
-                             if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k + "-next")) {
-                             vmRouteString += "next_hop+" + paraMap.get("subnet" + i + "-vm" + j + "-route" + k + "-next");
-                             }
-                             vmRouteString += "\r\n";
-                             }
-
-                             paraMap.remove("subnet" + i + "-vm" + j + "-route" + k + "-to");
-                             paraMap.remove("subnet" + i + "-vm" + j + "-route" + k + "-from");
-                             paraMap.remove("subnet" + i + "-vm" + j + "-route" + k + "-next");
-                             }
-
-                             if (!vmRouteString.isEmpty()) {
-                             VMString += "&" + vmRouteString;
-                             } else {
-                             VMString += "& ";
-                             }
-
-                             paraMap.put("vm" + j, VMString);
-                             */
+                            JSONArray vmRouteArr = new JSONArray();
+                            for (int k = 1; k <= 10; k++) {
+                                if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k + "-to")) {
+                                    JSONObject vmRouteJSON = new JSONObject();
+                        
+                                    JSONObject toJSON = new JSONObject();
+                                    toJSON.put("value", paraMap.get("subnet" + i + "-vm" + j + "-route" + k + "-to"));
+                                    vmRouteJSON.put("to", toJSON);
+                                
+                                    if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k + "-from")) {
+                                        JSONObject fromJSON = new JSONObject();
+                                        fromJSON.put("value", paraMap.get("subnet" + i + "-vm" + j + "-route" + k + "-from"));
+                                        vmRouteJSON.put("from", fromJSON);
+                                    }
+                                    
+                                    if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k + "-next")) {
+                                        JSONObject nextJSON = new JSONObject();
+                                        nextJSON.put("value", paraMap.get("subnet" + i + "-vm" + j + "-route" + k + "-next"));
+                                        vmRouteJSON.put("next_hop", nextJSON);
+                                    }
+                                }
+                            }
+                            vmJSON.put("routes", vmRouteArr);
+                            
+                            
                         }
                     }
                 }
-
+                subnetJSON.put("virtual_machines", vmArr);
                 subnetArr.add(subnetJSON);
             }
         }
