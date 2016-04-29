@@ -96,6 +96,39 @@ public class WebResource {
 
         return retList;
     }
+    
+    @GET
+    @Path("/label/{user}")
+    @Produces("application/json")
+    public ArrayList<ArrayList<String>> getLabels(@PathParam("user") String username) {        
+        ArrayList<ArrayList<String>> retList = new ArrayList<>();
+        try {            
+            
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+            
+            PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM label WHERE username = ?");
+            prep.setString(1, username);
+            ResultSet rs1 = prep.executeQuery();
+            while (rs1.next()) {
+                ArrayList<String> labelList = new ArrayList<>();
+                
+                labelList.add(rs1.getString("identifier"));
+                labelList.add(rs1.getString("label"));
+                labelList.add(rs1.getString("color"));
+                
+                retList.add(labelList);
+            }
+            
+            return retList;
+        } catch (SQLException e) {
+            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+            return null;
+        }
+    }
         
     @PUT
     @Path(value = "/label")
@@ -472,6 +505,16 @@ public class WebResource {
         return paraMap;
     }
 
+    
+    /*
+     paraMap.put("topoUri", "urn:ogf:network:openstack.com:openstack-cloud");
+     paraMap.put("netCidr", "10.1.0.0/16");
+     paraMap.put("driverType","ops");
+     paraMap.put("subnet1", "name+ &cidr+10.0.0.0/24&routesto+0.0.0.0/0,nextHop+internet");
+     paraMap.put("subnet2", "name+ &cidr+10.1.1.0/24");
+     paraMap.put("vm1", "vm_OPS&1& &m1.medium&icecube_key&rains&msx1&206.196.180.148&urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&aa:bb:cc:00:00:12&10.10.0.1/30&to+192.168.0.0/24,next_hop+10.10.0.2\r\nto+206.196.179.0/24,next_hop+10.10.0.2");
+     //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name&host&floating_IP&sriov_destination&sriov_mac_address&sriov_ip_address&sriov_routes"
+     */
     private HashMap<String, String> parseNet(JSONObject dataJSON, String refUuid) {
         HashMap<String, String> paraMap = new HashMap<>();
         paraMap.put("instanceUUID", refUuid);
@@ -489,7 +532,7 @@ public class WebResource {
             paraMap.put("driverType", "os");
         }
 
-        int VMCounter = 1;
+        int vmCounter = 1;
         // Parse Subnets.
         JSONArray subArr = (JSONArray) vcnJSON.get("subnets");
         for (int i = 0; i < subArr.size(); i++) {
@@ -502,9 +545,87 @@ public class WebResource {
             JSONArray vmArr = (JSONArray) subJSON.get("virtual_machines");
             if (vmArr != null) {
                 for (Object vmEle : vmArr) {
+                    //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name&host&floating_IP&sriov_destination&sriov_mac_address&sriov_ip_address&sriov_routes"
                     JSONObject vmJSON = (JSONObject) vmEle;
-                    String VMString = (String) vmJSON.get("name") + "&" + (i + 1);
-                    paraMap.put("vm" + VMCounter++, VMString);
+                                                                                
+                    // Name
+                    String vmString = (String) vmJSON.get("name");
+                    // Subnet Index
+                    vmString += "&" + (i + 1);
+
+                    // Image Type                   
+                    if (vmJSON.containsKey("image")) {
+
+                    } else {
+                        vmString += "& ";
+                    }
+
+                    // TYPES
+                    if (vmJSON.containsKey("type")) {
+                        String typeString = (String) vmJSON.get("type");
+                        String typeArr[] = typeString.split(",");
+                        HashMap<String, String> typeMap = new HashMap<>();
+                        for (String type : typeArr) {
+                            String typeTemp[] = type.split("/+");
+                            typeMap.put(typeTemp[0], typeTemp[1]);
+                        }
+
+                        // Instance Type
+                        if (typeMap.containsKey("instance")) {
+                            vmString += "&" + typeMap.get("instance");
+                        } else {
+                            vmString += "& ";
+                        }
+
+                        // Keypair Names
+                        if (typeMap.containsKey("keypair")) {
+                            vmString += "&" + typeMap.get("keypair");
+                        } else {
+                            vmString += "& ";
+                        }
+
+                        // Security Name
+                        if (typeMap.containsKey("secgroup")) {
+                            vmString += "&" + typeMap.get("secgroup");
+                        } else {
+                            vmString += "& ";
+                        }
+                    } else {
+                        vmString += "& & & ";
+                    }
+
+                    // VM Host
+                    if (vmJSON.containsKey("host")) {
+
+                    } else {
+                        vmString += "& ";
+                    }
+                    
+                    // INTERFACES
+                    HashMap<String, String> interfaceMap = new HashMap<>();
+                    int SRIOVCounter = 1;
+                    if (vmJSON.containsKey("interfaces")) {
+                        JSONArray interfaceArr = (JSONArray) vmJSON.get("interfaces");
+                        for (Object obj : interfaceArr) {
+                            JSONObject interfaceJSON = (JSONObject) obj;
+                            
+                            String typeString = (String) interfaceJSON.get("type");
+                            if (typeString.equalsIgnoreCase("Ethernet")) {
+                                interfaceMap.put("float", typeString.split("/+")[1]);
+                            } else if (typeString.equalsIgnoreCase("SRIOV")) {
+                                
+                            }                            
+                        }                        
+                    }
+                    
+                    // Floating IP
+                    if (interfaceMap.containsKey("float")) {
+                        vmString += "&" + interfaceMap.get("float");
+                    } else {
+                        vmString += "& ";
+                    }
+                    
+                    paraMap.put("vm" + vmCounter++, vmString);
                 }
             }
 
