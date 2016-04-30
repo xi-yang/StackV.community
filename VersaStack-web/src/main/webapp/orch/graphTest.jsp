@@ -769,8 +769,27 @@
             var that = this;
             
             this.init = function() {
+                var userName = "${user.getUsername()}";
+                $.ajax({
+                    crossDomain: true,
+                    type: "GET",
+                    url: "/VersaStack-web/restapi/app/label/" + userName,
+                    dataType: "json",
+        
+                    success: function(data,  textStatus,  jqXHR ) {
+                        for (var i = 0, len = data.length; i < len; i++) {
+                            var dataRow = data[i];
+                            that.createTag(dataRow[0], dataRow[1], dataRow[2]);
+                        }
+                    },
+                    
+                    error: function(jqXHR, textStatus, errorThrown ) {
+                       alert(errorThrown + "\n"+textStatus);
+                       alert("Error retrieving tags.");
+                    }                  
+                });
+
                 for (var i = 0; i < colorBoxes.length;  i++) {
-                    //var cb = colorBoxes[i].id;
                     colorBoxes[i].onclick = function() {
                         var selectedColor = this.id.split("box")[1].toLowerCase();
                         var selectedIndex = selectedColors.indexOf(selectedColor);
@@ -801,6 +820,24 @@
                    }
                }
             };
+            
+            this.createTag = function(label, data, color) {
+                var tagList = document.querySelector("#labelList1");
+                var tag = document.createElement("li");
+                tag.classList.add("taggingPanel-labelItem");
+                tag.classList.add("label-color-" + color.toLowerCase());
+                tag.innerHTML = label;
+                tag.onclick = function() {
+                    var textField = document.createElement('textarea');
+                    textField.innerText = data;
+                    document.body.appendChild(textField);
+                    textField.select();
+                    document.execCommand('copy');
+                    $(textField).remove();                    
+                };
+                tagList.appendChild(tag);
+            };
+    
             this.init();
         })();
     </script>

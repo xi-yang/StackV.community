@@ -20,7 +20,6 @@ define([], function () {
         
         this.init = function() {
             for (var i = 0; i < colorBoxes.length;  i++) {
-                //var cb = colorBoxes[i].id;
                 colorBoxes[i].onclick = function() {
                     if (that.selectedColorBox) {
                          that.selectedColorBox.classList.remove("colorBox-highlighted");
@@ -41,24 +40,20 @@ define([], function () {
 
             document.getElementById("taggingDialogOK").onclick = function() {
                 that.label = document.getElementById("taggingDialogLabelInput").value;
+                
+                if (that.username === ""){
+                    alert("Error: Please log in to submit tags. ");
+                    that.closeDialog();
+                }
+                
+                
                 var serializedData = JSON.stringify({
                         user:  that.username,
-                        identifier: that.sentData,
-                        label: that.label,
-                        color: that.currentColor
-                    });
-//                    alert("user: " + that.username + "\n" + 
-//                        "identifier:" + that.sentData + "\n" +
-//                        "label:" +  that.label + "\n" +
-//                        "color:"+  that.currentColor);
-
-                    //alert(serializedData);
-                // do only if data is valid 
+                        identifier: that.label,
+                        label: that.sentData,
+                        color: that.currentColor.toLowerCase()
+                });
                 $.ajax({
-//                    headers: { 
-//                        'Accept': 'application/json',
-//                        'Content-Type': 'application/json' 
-//                    },
                     crossDomain: true,
                     type: "PUT",
                     url: "/VersaStack-web/restapi/app/label",
@@ -91,7 +86,7 @@ define([], function () {
                     }
                     
                 });
-                     var labelInput = document.getElementById("taggingDialogLabelInput");
+                    var labelInput = document.getElementById("taggingDialogLabelInput");
                     $('#taggingDialogLabelInput').val("");
 
                     labelInput.vallue = ""; 
