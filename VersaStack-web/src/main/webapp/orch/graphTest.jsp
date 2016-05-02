@@ -99,7 +99,7 @@
                     "local/versastack/utils",
                     "local/versastack/topology/DropDownTree",
                     "local/versastack/topology/ContextMenu",
-                    "local/versastack/topology/TaggingDialog"
+                    "local/versastack/topology/TagDialog"
                 ],
                         function (m, l, r, d3_, utils_, tree, c, td) {
                             ModelConstructor = m;
@@ -112,12 +112,12 @@
                             map_ = utils.map_;
                             DropDownTree = tree;
                             ContextMenu = c; 
-                            TaggingDialog = td;
-                            taggingDialog = new TaggingDialog("${user.getUsername()}");
+                            TagDialog = td;
+                            tagDialog = new TagDialog("${user.getUsername()}");
                             
-                            taggingDialog.init();
+                            tagDialog.init();
                             // possibly pass in map here later for all possible dialogs 
-                            contextMenu = new ContextMenu(d3, render.API, taggingDialog);//, taggingDialog);
+                            contextMenu = new ContextMenu(d3, render.API, tagDialog);//, tagDialog);
                             contextMenu.init();
                             outputApi = new outputApi_(render.API, contextMenu);
                         });
@@ -305,9 +305,9 @@
                     evt.preventDefault();
                 });
             
-                $("#taggingPanel-tab").click(function (evt) {
-                    $("#taggingPanel").toggleClass("closed");
-
+                $("#tagPanel-tab").click(function (evt) {
+                   $("#tagPanel").toggleClass("closed");
+                   
                     evt.preventDefault();
                 });
                 
@@ -317,11 +317,11 @@
                     evt.preventDefault();
                 });
                 
-                $("#taggingsPanel-tab").click(function (evt) {
-                    $("#taggingsPanel").toggleClass("closed");
-
-                    evt.preventDefault();
-                });
+//                $("#tagPanel-tab").click(function (evt) {
+//                    $("#tagPanel").toggleClass("closed");
+//
+//                    evt.preventDefault();
+//                });
 
             }
 
@@ -589,14 +589,14 @@
             </div>
         </div>
 
-        <div class="closed" id="taggingsPanel">
-            <div id="taggingsPanel-tab">
+        <div class="closed" id="tagPanel">
+            <div id="tagPanel-tab">
                 Tags
             </div>
-            <div id ="taggingsPanel-contents">
-                <div id="taggingPanel-colorPanel">
-                    <div id="taggingPanel-colorPanelTitle"> Filter Colors</div>
-           <div id="taggingPanelColorSelectionTab" style=" float:left;">
+            <div id ="tagPanel-contents">
+                <div id="tagPanel-colorPanel">
+                    <div id="tagPanel-colorPanelTitle"> Filter Colors</div>
+           <div id="tagPanelColorSelectionTab" style=" float:left;">
                 <span class="filteredColorBox" id="boxRed"> 
                 </span>
                 <span class="filteredColorBox" id="boxOrange">
@@ -612,15 +612,17 @@
                    
                     </div>
                 </div>
-                <div id="taggingPanel-labelPanel">
-                    <div id="taggingPanel-labelPanelTitle">Labels</div>
-                    <ul class="taggingPanel-labelList" id="labelList1">
-<!--                      <li class="taggingPanel-labelItem label-color-red"> Label</li>
-                      <li class="taggingPanel-labelItem label-color-blue"> Label</li>
-                      <li class="taggingPanel-labelItem label-color-orange"> Label </li>
-                      <li class="taggingPanel-labelItem label-color-purple"> Label </li>-->
+                <div id="tagPanel-labelPanel">
+                    <div id="tagPanel-labelPanelTitle">Labels</div>
+                    <div id="labelList-container"> 
+                    <ul class="tagPanel-labelList" id="labelList1">
+<!--                      <li class="tagPanel-labelItem label-color-red"> Label</li>
+                      <li class="tagPanel-labelItem label-color-blue"> Label</li>
+                      <li class="tagPanel-labelItem label-color-orange"> Label </li>
+                      <li class="tagPanel-labelItem label-color-purple"> Label </li>-->
                       
                     </ul>
+                    </div>
                 </div>
              </div>
         </div>
@@ -713,24 +715,24 @@
       </ul>
     </nav>
 
-<div id="taggingDialog">
-  <div id="taggingDialogBar">
-    <div id="taggingDialogCloser">
+<div id="tagDialog">
+  <div id="tagDialogBar">
+    <div id="tagDialogCloser">
 <i class="fa fa-times" aria-hidden="true"></i>
     </div>
   </div>
   
-  <div id="taggingDialogContent">
-    <div id="taggingDialogLabelInputContainter">
-    <input type="text" name="labelInput" id="taggingDialogLabelInput" placeholder="Enter label.">
+  <div id="tagDialogContent">
+    <div id="tagDialogLabelInputContainter">
+    <input type="text" name="labelInput" id="tagDialogLabelInput" placeholder="Enter label.">
     </div>
     
-    <div id="taggingDialogColorInputContainer">
-      <div id="taggingDialogColorInputLabel">
+    <div id="tagDialogColorInputContainer">
+      <div id="tagDialogColorInputLabel">
         Select Color
       </div>
       
-      <div id="taggingDialogColorSelectionTab">
+      <div id="tagDialogColorSelectionTab">
 
         <span class="colorBox" id="boxRed"> 
         </span>
@@ -747,12 +749,12 @@
       </div>
     </div>
     
-    <div id="taggingDialogButtonContainer">
-      <button id="taggingDialogCancel">
+    <div id="tagDialogButtonContainer">
+      <button id="tagDialogCancel">
         Cancel
       </button>
       
-      <button id="taggingDialogOK">
+      <button id="tagDialogOK">
         Ok 
       </button>
     </div>
@@ -765,30 +767,33 @@
             var selectedColors = []; // colors selected for filtering
             
             var colorBoxes = document.getElementsByClassName("filteredColorBox");
-            var tagHTMLs = document.getElementsByClassName("taggingPanel-labelItem");
+            var tagHTMLs = document.getElementsByClassName("tagPanel-labelItem");
             var that = this;
             
             this.init = function() {
                 var userName = "${user.getUsername()}";
-                $.ajax({
-                    crossDomain: true,
-                    type: "GET",
-                    url: "/VersaStack-web/restapi/app/label/" + userName,
-                    dataType: "json",
-        
-                    success: function(data,  textStatus,  jqXHR ) {
-                        for (var i = 0, len = data.length; i < len; i++) {
-                            var dataRow = data[i];
-                            that.createTag(dataRow[0], dataRow[1], dataRow[2]);
-                        }
-                    },
-                    
-                    error: function(jqXHR, textStatus, errorThrown ) {
-                       alert(errorThrown + "\n"+textStatus);
-                       alert("Error retrieving tags.");
-                    }                  
-                });
+                // only do this if the user is logged in 
+                if(userName !== "") {
+                    $.ajax({
+                        crossDomain: true,
+                        type: "GET",
+                        url: "/VersaStack-web/restapi/app/label/" + userName,
+                        dataType: "json",
 
+                        success: function(data,  textStatus,  jqXHR ) {
+                            for (var i = 0, len = data.length; i < len; i++) {
+                                var dataRow = data[i];
+                                that.createTag(dataRow[0], dataRow[1], dataRow[2]);
+                            }
+                        },
+
+                        error: function(jqXHR, textStatus, errorThrown ) {
+                           alert(errorThrown + "\n"+textStatus);
+                           alert("Error retrieving tags.");
+                        }                  
+                    });
+                }
+                
                 for (var i = 0; i < colorBoxes.length;  i++) {
                     colorBoxes[i].onclick = function() {
                         var selectedColor = this.id.split("box")[1].toLowerCase();
@@ -807,7 +812,7 @@
             };  
             
             this.updateTagList = function() {
-               var tagHTMLs = document.getElementsByClassName("taggingPanel-labelItem");
+               var tagHTMLs = document.getElementsByClassName("tagPanel-labelItem");
                for( var i = 0; i < tagHTMLs.length; i++){
                    var curTag = tagHTMLs.item(i);
                    var curColor = curTag.classList.item(1).split("label-color-")[1];
@@ -824,7 +829,7 @@
             this.createTag = function(label, data, color) {
                 var tagList = document.querySelector("#labelList1");
                 var tag = document.createElement("li");
-                tag.classList.add("taggingPanel-labelItem");
+                tag.classList.add("tagPanel-labelItem");
                 tag.classList.add("label-color-" + color.toLowerCase());
                 tag.innerHTML = label;
                 tag.onclick = function() {

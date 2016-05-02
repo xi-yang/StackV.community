@@ -5,7 +5,7 @@
  */
 "use strict";
 define([], function () {
-    function TaggingDialog (userName) {
+    function TagDialog (userName) {
         this.currentColor = "Red";
         this.label = "";
         this.sentData = "";
@@ -14,7 +14,7 @@ define([], function () {
         this.selectedColorBox = null;
         // need variable for dialog activiated 
         var that = this;
-        that.dialog = document.querySelector("#taggingDialog");
+        that.dialog = document.querySelector("#tagDialog");
                 
         var colorBoxes = document.getElementsByClassName("colorBox");
         
@@ -30,16 +30,16 @@ define([], function () {
                  };
             }
             
-            document.getElementById("taggingDialogCloser").onclick = function() {
+            document.getElementById("tagDialogCloser").onclick = function() {
                 that.closeDialog();
             };
-            document.getElementById("taggingDialogCancel").onclick = function() { 
+            document.getElementById("tagDialogCancel").onclick = function() { 
                 that.closeDialog();
             };
             
 
-            document.getElementById("taggingDialogOK").onclick = function() {
-                that.label = document.getElementById("taggingDialogLabelInput").value;
+            document.getElementById("tagDialogOK").onclick = function() {
+                that.label = document.getElementById("tagDialogLabelInput").value;
                 
                 if (that.username === ""){
                     alert("Error: Please log in to submit tags. ");
@@ -64,7 +64,7 @@ define([], function () {
                         //alert("Success\n" + data + "\n" + textStatus);
                         var tagList = document.querySelector("#labelList1");
                         var tag = document.createElement("li");
-                        tag.classList.add("taggingPanel-labelItem");
+                        tag.classList.add("tagPanel-labelItem");
                         tag.classList.add("label-color-" + that.currentColor.toLowerCase());
                         tag.innerHTML = that.label;
                         tag.setAttribute('data-sentData', that.sentData);
@@ -86,20 +86,20 @@ define([], function () {
                     }
                     
                 });
-                    var labelInput = document.getElementById("taggingDialogLabelInput");
-                    $('#taggingDialogLabelInput').val("");
+                    var labelInput = document.getElementById("tagDialogLabelInput");
+                    $('#tagDialogLabelInput').val("");
 
                     labelInput.vallue = ""; 
            };            
         };
 
         this.closeDialog = function() {
-            $('#taggingDialogLabelInput').removeAttr('value');
-            that.dialog.classList.remove( "taggingDialog-active");
+            $('#tagDialogLabelInput').removeAttr('value');
+            that.dialog.classList.remove( "tagDialog-active");
         };
         
         this.openDialog = function(o) {
-            that.dialog.classList.add( "taggingDialog-active");
+            that.dialog.classList.add( "tagDialog-active");
             that.currentCMObj = o;
             if (typeof that.currentCMObj.getName === 'function') {
                 that.sentData = that.currentCMObj.getName();
@@ -112,6 +112,6 @@ define([], function () {
             return that.sentData;
         };
     }
-    return TaggingDialog;
+    return TagDialog;
 });
 
