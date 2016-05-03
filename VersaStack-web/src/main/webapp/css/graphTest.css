@@ -181,25 +181,20 @@ body{
 
 #tagPanel {
     background-color: #e9e9e9;
-    position: absolute;
+    position: fixed;
     bottom: 0;
-    left: calc(50% - 66px);   
+    left: calc(50% - 66px);
     z-index: 2;
-    min-width: 10%;/*30%; */
-    min-height: 20%;
+    min-width: 10%;
     border: 2px solid rgba(0, 0, 0, .05);
-    
     -webkit-transition: bottom 0.5s ease-in-out;
     transition: bottom 0.5s ease-in-out;
-    
-    
+    height: 50%;
+    width: 15%;
 }
 
 #tagPanel.closed {
-    /*bottom: calc(-2% + 60px);*/
-/*        bottom: calc(-20% + 20px);*/
-    bottom: calc(-36% + 40px);
-
+    bottom: calc(-52% + 40px);
     -webkit-transition: bottom 0.5s ease-in-out;
     transition: bottom 0.5s ease-in-out;
 }
@@ -208,7 +203,7 @@ body{
     background-color: #d0d0d0;
 }
 
-#tagPanel-contents {max-height: 350px;}
+#tagPanel-contents {height: 100%;}
 
 
 .label-color-red {background-color:#DC143C;}
@@ -233,6 +228,9 @@ body{
 
 #tagPanel-labelPanel{
     border: 1px rgba(0, 0, 0, .075) solid;    
+    
+    height: 100%;
+    width: 100%;
 }
 
 #tagPanel-labelPanelTitle {
@@ -329,11 +327,9 @@ body{
 }
 
 #labelList-container {
-    max-width: 200px;
     word-wrap: break-word;
-    min-height: 10px;
-    max-height: 220px;
     overflow-y: scroll;
+    height: 75%;
 }
 
 .hide {display:none;}
