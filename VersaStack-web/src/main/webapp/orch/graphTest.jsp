@@ -365,7 +365,9 @@
                 this.initD3MenuEvents = function() {
                     var ns = model.listNodes();
                     for (var i in ns) {
-                        ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                        if (ns[i].svgNode) {
+                            ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                        }
                         if (ns[i].svgNodeAnchor) {
                             ns[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
                         }
@@ -373,8 +375,11 @@
 
                     var ns = model.listServices();
                     for (var i in ns) {
-                        if (!ns[i].svgNode) console.log("graphTest.jsp: initD3MenuEvnts: name of service  with null svgNode: " + ns[i].getName());
-                        ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                        if (ns[i].svgNode) {
+                            ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                        } else {
+                            console.log("graphTest.jsp: initD3MenuEvnts: name of service  with null svgNode: " + ns[i].getName());
+                        }
                         if (ns[i].svgNodeAnchor) {
                             ns[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
                         }
@@ -382,7 +387,9 @@
 
                     var ns = model.listSubnets();
                     for (var i in ns) {
-                        ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                        if (ns[i].svgNode) {
+                            ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                        }
                         if (ns[i].svgNodeAnchor) {
                             ns[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
                         }
@@ -393,7 +400,9 @@
 
                 this.initD3MenuPortEvents = function(ports) {
                     for (var i in ports) {
-                        ports[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ports[i]));
+                        if (ports[i].svgNode) {
+                            ports[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ports[i]));
+                        }    
                         if (ports[i].svgNodeAnchor) {
                             ports[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ports[i]));
                         }
@@ -402,7 +411,9 @@
 
                 this.initD3MenuVolumeEvents = function(volumes) {
                     for (var i in volumes) {
-                        volumes[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, volumes[i]));
+                        if (volumes[i].svgNode) {
+                            volumes[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, volumes[i]));
+                        }    
                         if (volumes[i].svgNodeAnchor) {
                             volumes[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, volumes[i]));
                         }
