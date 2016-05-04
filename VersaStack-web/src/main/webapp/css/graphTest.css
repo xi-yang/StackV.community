@@ -268,7 +268,10 @@ body{
 #tagDialogCloser{
   color:grey;
   cursor:pointer;
-  padding-left:80%;
+}
+
+#tagDialogCloserBar{
+  padding-left:80%;    
 }
 #tagDialogContent {
   margin:auto;
@@ -286,7 +289,7 @@ body{
   margin-top: -50px;
   margin-left: -50px;
   border: 1px inset #B5B1B1;
-
+  z-index:1;
 }
 #tagDialogButtonContainer {margin-top:18px;}
 #tagDialogColorSelectionTab{
@@ -313,7 +316,7 @@ body{
 
 #tagPanelColorSelectionTab{
     margin-left: 15px;
-   
+   float:left;
 }
 .filteredColorBox{
     margin-right: 1px;

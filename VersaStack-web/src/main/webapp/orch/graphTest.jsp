@@ -317,12 +317,39 @@
                     evt.preventDefault();
                 });
                 
-//                $("#tagPanel-tab").click(function (evt) {
-//                    $("#tagPanel").toggleClass("closed");
-//
-//                    evt.preventDefault();
-//                });
-
+               // Brings tagPanel or tagDialog to the foreground if one is 
+               // clicked and behind the other. Will probably need to be 
+               // generalized soon. 
+               function bringToForeground(current) {
+                   var tagDialogElement = document.querySelector("#tagDialog");
+                   var tagPanelElement = document.querySelector("#tagPanel");
+                   if (!tagPanelElement.classList.contains("closed") && 
+                       tagDialogElement.classList.contains("tagDialog-active")) 
+                   {
+                       var tagDialog = document.getElementById("tagDialog");
+                       var tagPanel = document.getElementById("tagPanel");
+                       var tdz = parseInt(window.getComputedStyle(tagDialog, null).zIndex);
+                       var tpz = parseInt(window.getComputedStyle(tagPanel, null).zIndex);
+                       
+                       if (( (current === "tagDialog") && (tdz < tpz) ) ||
+                           ( (current === "tagPanel") &&  (tpz < tdz) ) ) {
+                            tagDialog.style.zIndex = tpz;
+                            tagPanel.style.zIndex = tdz;
+                       }
+                   }
+               }
+               
+                $("#tagDialog").click(function (evt) {
+                    bringToForeground("tagDialog");
+                    evt.preventDefault();
+                });
+                
+                $("#tagPanel").click(function (evt) {
+                    bringToForeground("tagPanel");
+                    evt.preventDefault();
+                });
+                
+               
             }
 
             //animStart and animStop are primarily intended as debug functions
@@ -607,37 +634,25 @@
             <div id ="tagPanel-contents">
                 <div id="tagPanel-colorPanel">
                     <div id="tagPanel-colorPanelTitle"> Filter Colors</div>
-           <div id="tagPanelColorSelectionTab" style=" float:left;">
-                <span class="filteredColorBox" id="boxRed"> 
-                </span>
-                <span class="filteredColorBox" id="boxOrange">
-                </span>
-                <span class="filteredColorBox" id="boxYellow">
-                </span>
-                <span class="filteredColorBox" id="boxGreen">
-                </span>
-                <span class="filteredColorBox" id="boxBlue">
-                </span>
-                <span class="filteredColorBox" id="boxPurple">
-                </span>
-                   
+                    <div id="tagPanelColorSelectionTab">
+                        <span class="filteredColorBox" id="boxRed"></span>
+                        <span class="filteredColorBox" id="boxOrange"></span>
+                        <span class="filteredColorBox" id="boxYellow"></span>
+                        <span class="filteredColorBox" id="boxGreen"></span>
+                        <span class="filteredColorBox" id="boxBlue"></span>
+                        <span class="filteredColorBox" id="boxPurple"></span>
                     </div>
                 </div>
                 <div id="tagPanel-labelPanel">
                     <div id="tagPanel-labelPanelTitle">Labels</div>
-                    <div id="labelList-container"> 
-                    <ul class="tagPanel-labelList" id="labelList1">
-<!--                      <li class="tagPanel-labelItem label-color-red"> Label</li>
-                      <li class="tagPanel-labelItem label-color-blue"> Label</li>
-                      <li class="tagPanel-labelItem label-color-orange"> Label </li>
-                      <li class="tagPanel-labelItem label-color-purple"> Label </li>-->
-                      
-                    </ul>
+                    <div id="labelList-container">
+                        <ul class="tagPanel-labelList" id="labelList1">
+                        </ul>
                     </div>
                 </div>
-             </div>
+            </div>
         </div>
-
+            
         <div id="loadingPanel"></div>
         <div class="closed" id="displayPanel">
             <div id="displayPanel-contents">
@@ -721,15 +736,15 @@
   <nav id="context-menu" class="context-menu">
       <ul class="context-menu__items">
         <li class="context-menu__item">
-          <a href="#" class="context-menu__link" data-action="View"><i class="fa fa-eye"></i> Add Tag</a>
+          <a href="#" class="context-menu__link" data-action="Tag"><i class="fa  fa-tag"></i> Add Tag</a>
         </li>
       </ul>
     </nav>
 
 <div id="tagDialog">
   <div id="tagDialogBar">
-    <div id="tagDialogCloser">
-<i class="fa fa-times" aria-hidden="true"></i>
+    <div id="tagDialogCloserBar">
+        <i id="tagDialogCloser" class="fa fa-times" aria-hidden="true"></i>
     </div>
   </div>
   
