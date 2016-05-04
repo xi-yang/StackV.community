@@ -431,8 +431,9 @@ public class AwsModelBuilder {
                         // if this ROUTINGTABLE has VPN propagation=yes add 0.0.0.0/0 routeto with nexthop=routefrom=propagatingVgw
                         if (t.getPropagatingVgws() != null && !t.getPropagatingVgws().isEmpty()) {
                             PropagatingVgw vgw = t.getPropagatingVgws().get(0);
-                            String vpnGatewayId = vgw.getGatewayId();
-                            Resource propagatingVGW = model.getResource(ResourceTool.getResourceUri(vpnGatewayId,AwsPrefix.gateway,vpnGatewayId));
+                            String vpnGatewayId =ec2Client.getIdTag(vgw.getGatewayId());
+                            String resourceUri = ResourceTool.getResourceUri(vpnGatewayId,AwsPrefix.gateway,vpnGatewayId);
+                            Resource propagatingVGW = model.getResource(resourceUri);
                             Resource propagatingRoute = RdfOwl.createResource(model, ROUTINGTABLE.getURI()+":route-0.0.0.00", Mrs.Route);
                             Resource propagatingRouteTo = RdfOwl.createResource(model, ROUTINGTABLE.getURI()+":route-0.0.0.00:routeto", Mrs.NetworkAddress);
                             model.add(model.createStatement(propagatingRouteTo, Mrs.type, "ipv4-prefix"));
