@@ -260,25 +260,31 @@
                                                                 <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">
                                                             </div>
                                                             <div id="subnet1-vm-block">
-                                                                <div>VM 1   
-                                                                    <input type="text" name="subnet1-vm1" placeholder="VM Name">
-                                                                    <input type="text" name="subnet1-vm1-keypair" placeholder="Keypair Name">
-                                                                    <input type="text" name="subnet1-vm1-security" placeholder="Security Name">
-                                                                    <input type="text" name="subnet1-vm1-image" placeholder="Image Type">
-                                                                    <input type="text" name="subnet1-vm1-instance" placeholder="Instance Type">
-                                                                    <input type="text" name="subnet1-vm1-host" placeholder="VM Host">
-                                                                    <input type="text" name="subnet1-vm1-floating" placeholder="Floating IP">
-                                                                    <input type="text" name="subnet1-vm1-sriov-dest" placeholder="SRIOV Destination">
-                                                                    <input type="text" name="subnet1-vm1-sriov-mac" placeholder="SRIOV MAC Address">
-                                                                    <input type="text" name="subnet1-vm1-sriov-ip" placeholder="SRIOV IP Address">
+                                                                <div>VM 1
                                                                     <div>
-                                                                        <input type="text" name="subnet1-vm1-route1-from" placeholder="From"/>
-                                                                        <input type="text" name="subnet1-vm1-route1-to" placeholder="To"/>
-                                                                        <input type="text" name="subnet1-vm1-route1-next" placeholder="Next Hop"/>
-                                                                    </div><div>
-                                                                        <input type="text" name="subnet1-vm1-route2-from" placeholder="From"/>
-                                                                        <input type="text" name="subnet1-vm1-route2-to" placeholder="To"/>
-                                                                        <input type="text" name="subnet1-vm1-route2-next" placeholder="Next Hop"/>                                                                    
+                                                                        <input type="text" name="subnet1-vm1" placeholder="VM Name">
+                                                                        <input type="text" name="subnet1-vm1-keypair" placeholder="Keypair Name">
+                                                                        <input type="text" name="subnet1-vm1-security" placeholder="Security Name">
+                                                                        <input type="text" name="subnet1-vm1-image" placeholder="Image Type">
+                                                                        <input type="text" name="subnet1-vm1-instance" placeholder="Instance Type">
+                                                                        <input type="text" name="subnet1-vm1-host" placeholder="VM Host">
+                                                                        <input type="text" name="subnet1-vm1-floating" placeholder="Floating IP">
+                                                                        <div id="subnet1-vm1-sriov">
+                                                                            <div>SRIOV 1
+                                                                                <input type="text" name="subnet1-vm1-sriov1-dest" placeholder="SRIOV Destination">
+                                                                                <input type="text" name="subnet1-vm1-sriov1-mac" placeholder="SRIOV MAC Address">
+                                                                                <input type="text" name="subnet1-vm1-sriov1-ip" placeholder="SRIOV IP Address">
+                                                                            </div>
+                                                                            <div id="subnet1-vm1-sriov1-route">
+                                                                                <div>
+                                                                                    <input type="text" name="subnet1-vm1-sriov1-route1-from" placeholder="From"/>
+                                                                                    <input type="text" name="subnet1-vm1-sriov1-route1-to" placeholder="To"/>
+                                                                                    <input type="text" name="subnet1-vm1-sriov1-route1-next" placeholder="Next Hop"/>
+                                                                                    <input class="button-register" id="subnet1-vm1-sriov1" type="button" value="Add Route" onClick="addSriovRoute(this.id)">                                                                                    
+                                                                                </div>
+                                                                            </div>                                                                            
+                                                                        </div>
+                                                                        <input class="button-register" id="subnet1-vm1" type="button" value="Add SRIOV" onClick="addSriov(this.id)">                                                                        
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -288,10 +294,6 @@
                                                         </div>
                                                     </td>
                                                 </tr>
-<!--                                                <tr>
-                                                    <td>Direct Connect</td>
-                                                    <td><input type="text" name="conn-dest" placeholder="Destination" size="60" /><input type="text" name="conn-vlan" placeholder="VLAN" size="8" /></td>
-                                                </tr>-->
                                                 <tr>
                                                     <td></td>
                                                     <td><input type="submit" name="custom" value="Submit" /><input class="button-register" type="button" value="Add Subnet" onClick="addSubnet('ops')"></td>
