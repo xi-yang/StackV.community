@@ -197,8 +197,8 @@ body{
 
 #tagPanel.closed {
     /*bottom: calc(-2% + 60px);*/
-/*        bottom: calc(-20% + 20px);*/
-    bottom: calc(-36% + 40px);
+        bottom: calc(-20% + 20px);
+    /* bottom: calc(-36% + 40px); */
 
     -webkit-transition: bottom 0.5s ease-in-out;
     transition: bottom 0.5s ease-in-out;

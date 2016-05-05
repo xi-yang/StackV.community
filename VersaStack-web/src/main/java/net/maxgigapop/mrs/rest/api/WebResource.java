@@ -231,7 +231,7 @@ public class WebResource {
             } catch (InstantiationException | IllegalAccessException | ClassNotFoundException ex) {
                 Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
             }
-
+            
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
@@ -329,7 +329,7 @@ public class WebResource {
             return refUuid;
 
         } catch (EJBException | SQLException | IOException e) {
-            return e.getMessage();
+            return "<<<CREATION ERROR: " + e.getMessage();
         }
     }
 
@@ -395,7 +395,7 @@ public class WebResource {
 
             return superStatus(refUuid) + " - " + status(refUuid) + "\r\n";
         } catch (IOException | SQLException | InterruptedException ex) {
-            return "Operation Error: " + ex.getMessage() + "\r\n";
+            return "<<<OPERATION ERROR: " + ex.getMessage() + "\r\n";
         }
     }
 
@@ -566,7 +566,7 @@ public class WebResource {
                         String typeArr[] = typeString.split(",");
                         HashMap<String, String> typeMap = new HashMap<>();
                         for (String type : typeArr) {
-                            String typeTemp[] = type.split("/+");
+                            String typeTemp[] = type.split("\\+");
                             typeMap.put(typeTemp[0], typeTemp[1]);
                         }
 
@@ -610,8 +610,9 @@ public class WebResource {
                             JSONObject interfaceJSON = (JSONObject) obj;
                             
                             String typeString = (String) interfaceJSON.get("type");
+                            String addressString = (String) interfaceJSON.get("address");
                             if (typeString.equalsIgnoreCase("Ethernet")) {
-                                interfaceMap.put("float", typeString.split("/+")[1]);
+                                interfaceMap.put("float", addressString.split("\\+")[1]);
                             } else if (typeString.equalsIgnoreCase("SRIOV")) {
                                 
                             }                            
