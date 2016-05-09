@@ -89,7 +89,9 @@ public class HandleServiceCall {
                         }
                     }
                     SystemInstance systemInstance = SystemInstancePersistenceManager.findBySystemDelta(svcDelta.getSystemDelta());
-                    SystemInstancePersistenceManager.delete(systemInstance);
+                    if (systemInstance != null) {
+                        SystemInstancePersistenceManager.delete(systemInstance);
+                    }
                     DeltaPersistenceManager.delete(svcDelta.getSystemDelta());
                 }
                 svcDeltaIt.remove();

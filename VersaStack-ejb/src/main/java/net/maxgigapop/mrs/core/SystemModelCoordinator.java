@@ -50,7 +50,7 @@ public class SystemModelCoordinator {
             return;
         }
         for (DriverInstance di : ditMap.values()) {
-            synchronized (di) {
+            synchronized (di) { 
                 if (di.getHeadVersionItem() == null) {
                     return;
                 }
