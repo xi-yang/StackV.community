@@ -47,10 +47,7 @@
                     }
                 });
                 
-                $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", function() {
-                    var tpc = document.querySelector("#tagPanel.closed");
-                    //tpc.style.bottom = "calc(-53% + 47px)";
-                    
+                $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", function() {                    
                     var tp = document.querySelector("#tagPanel");
                     tp.style.left = "calc(40% - 66px)";
                 });                        
