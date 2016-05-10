@@ -79,11 +79,11 @@
                                     <tbody>
                                         <c:if test="${param.networkType == 'aws'}">
                                             <tr>
-                                                <td>No VM</td>
+                                                <td>Basic Cloud</td>
                                                 <td><button onclick="applyNetTemplate(1)">Apply</button></td>
                                             </tr>                                            
                                             <tr>
-                                                <td>Basic VM</td>
+                                                <td>Basic VM in each subnet and Direct Connection</td>
                                                 <td><button onclick="applyNetTemplate(2)">Apply</button></td>
                                             </tr>
                                             <tr>
