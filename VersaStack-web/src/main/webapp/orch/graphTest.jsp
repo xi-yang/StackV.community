@@ -349,7 +349,10 @@
                     evt.preventDefault();
                 });
                 
-               
+                $("#servicePanel-tab").click(function (evt) {
+                    $("#servicePanel").toggleClass("closed");
+                    evt.preventDefault();
+                });               
             }
 
             //animStart and animStop are primarily intended as debug functions
@@ -624,6 +627,30 @@
                     </c:if>
                 </c:forEach>
                 ${jobs}
+            </div>
+        </div>
+            
+        <div class="closed" id="servicePanel">
+            <div id="servicePanel-tab">
+                Jobs
+            </div>
+            <div id ="servicePanel-contents">
+                <table class="management-table" id="jobs-table">
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <c:forEach items="${serv.getJobStatuses()}" var="job">
+                            <tr>
+                                <td>${job.key}</td>
+                                <td>${job.value}</td>
+                            </tr>
+                        </c:forEach>
+                    </tbody>
+                </table>
             </div>
         </div>
 
