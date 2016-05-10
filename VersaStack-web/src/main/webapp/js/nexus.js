@@ -368,15 +368,16 @@ function addVM(type, subnetID) {
     else if (type === 'aws') {
         VMCounter++;
         var block = document.getElementById(subnetID + '-block');
-
+        
         block.innerHTML = block.innerHTML +
-                '<div>VM ' + VMCounter + 
-                '<input type="text" name="' + subnetID + VMCounter + '" placeholder="VM Name">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-keypair" placeholder="Keypair Name">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-security" placeholder="Security Name">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-image" placeholder="Image Type">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-instance" placeholder="Instance Type">' +
-                '</div>';
+                '<table id="subnet' + subnetID + '-vm' + VMCounter + '-table">' +
+                '<tbody>' +
+                '<tr><td>VM Name</td><td><input type="text" name="subnet' + subnetID + VMCounter + '"></td></tr>' +
+                '<tr><td><input type="text" name="' + subnetID + VMCounter + '-keypair" placeholder="Keypair Name"></td>' + 
+                '<td><input type="text" name="' + subnetID + VMCounter + '-security" placeholder="Security Name"></td></tr>' +
+                '<tr><td><input type="text" name="' + subnetID + VMCounter + '-image" placeholder="Image Type"></td>' + 
+                '<td><input type="text" name="' + subnetID + VMCounter + '-instance" placeholder="Instance Type"></td></tr>' +
+                '</tbody></table>';
     }
     else if (type === 'ops') {
         VMCounter++;
@@ -385,7 +386,7 @@ function addVM(type, subnetID) {
         block.innerHTML = block.innerHTML +
                 '<table id="subnet' + subnetID + '-vm' + VMCounter + '-table">' +
                 '<tbody>' +
-                '<tr><td>VM Name</td><td><input type="text" name="subnet' + subnetID + '-vm' + VMCounter + '"></td></td>' +
+                '<tr><td>VM Name</td><td><input type="text" name="subnet' + subnetID + VMCounter + '"></td></tr>' +
                 '<tr><td><input type="text" name="' + subnetID + VMCounter + '-keypair" placeholder="Keypair Name"></td>' + 
                 '<td><input type="text" name="' + subnetID + VMCounter + '-security" placeholder="Security Name"></td></tr>' +
                 '<tr><td><input type="text" name="' + subnetID + VMCounter + '-image" placeholder="Image Type"></td>' + 
@@ -415,38 +416,6 @@ function addSubnet(type) {
         subnetCounter++;
         VMCounter++;       
 
-        var row = table.insertRow(tableHeight - 1);
-        row.id = 'subnet' + subnetCounter;
-
-        var cell1 = row.insertCell(0);
-        cell1.innerHTML = 'Subnet ' + subnetCounter;
-        var cell2 = row.insertCell(1);
-        cell2.innerHTML = '<div>' +
-                '<input type="text" name="subnet' + subnetCounter + '-name" placeholder="Name"/>' +
-                '<input type="text" name="subnet' + subnetCounter + '-cidr" placeholder="CIDR Block"/>' +
-                '<div id="subnet' + subnetCounter + '-route-block">' +                
-                '</div>' +
-                '<div>' +
-                '<input type="checkbox" name="subnet' + subnetCounter + '-route-prop" value="true"/>   Enable VPN Routes Propogation' +
-                '</div>' +
-                '<div>' +
-                '<input class="button-register" id="subnet' + subnetCounter + '-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">' +
-                '</div>' +
-                '</div>' +
-                '<div id="subnet' + subnetCounter + '-vm-block">' +                
-                '<div>' +
-                '<input class="button-register" id="subnet' + subnetCounter + '-vm" type="button" value="Add VM" onClick="addVM(\'aws\', this.id)">' +
-                '</div>';
-        
-        addSubnetRoute(subnetCounter);
-        addVM('ops', subnetCounter);
-    }
-        else if (type === 'ops') {
-        var table = document.getElementById("net-custom-form");
-        var tableHeight = table.rows.length;
-        subnetCounter++;
-        VMCounter++;
-
         var row = table.insertRow(tableHeight - 2);
         row.id = 'subnet' + subnetCounter;
 
@@ -456,18 +425,48 @@ function addSubnet(type) {
         cell2.innerHTML = '<div>' +
                 '<input type="text" name="subnet' + subnetCounter + '-name" placeholder="Name"/>' +
                 '<input type="text" name="subnet' + subnetCounter + '-cidr" placeholder="CIDR Block"/>' +
-                '<div id="subnet' + subnetCounter + '-route-block">' +                
-                '</div>' +
+                '<div id="subnet' + subnetCounter + '-route-block"></div>' +                
                 '<div>' +
                 '<input type="checkbox" name="subnet' + subnetCounter + '-route-prop" value="true"/>   Enable VPN Routes Propogation' +
                 '</div>' +
                 '<div>' +
                 '<input class="button-register" id="subnet' + subnetCounter + '-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">' +
+                '</div><br>' +
+                '<div id="subnet' + subnetCounter + '-vm-block"></div>' +                
+                '<div>' + 
+                '<input class="button-register" id="subnet' + subnetCounter + '-vm" type="button" value="Add VM" onClick="addVM(\'aws\', this.id)">' + 
                 '</div>' +
-                '</div>' +
-                '<div id="subnet' + subnetCounter + '-vm-block">' +
+                '</div>';
+        
+        addSubnetRoute('subnet' + subnetCounter + '-route');
+        addVM('aws', 'subnet' + subnetCounter + '-vm');
+    }
+        else if (type === 'ops') {
+        var table = document.getElementById("net-custom-form");
+        var tableHeight = table.rows.length;
+        subnetCounter++;
+        VMCounter++;
+
+        var row = table.insertRow(tableHeight - 1);
+        row.id = 'subnet' + subnetCounter;
+
+        var cell1 = row.insertCell(0);
+        cell1.innerHTML = 'Subnet ' + subnetCounter;
+        var cell2 = row.insertCell(1);
+        cell2.innerHTML = '<div>' +
+                '<input type="text" name="subnet' + subnetCounter + '-name" placeholder="Name"/>' +
+                '<input type="text" name="subnet' + subnetCounter + '-cidr" placeholder="CIDR Block"/>' +
+                '<div id="subnet' + subnetCounter + '-route-block"></div>' +                
                 '<div>' +
-                '<input class="button-register" id="subnet' + subnetCounter + '-vm" type="button" value="Add VM" onClick="addVM(\'ops\', this.id)">' +
+                '<input type="checkbox" name="subnet' + subnetCounter + '-route-prop" value="true"/>   Enable VPN Routes Propogation' +
+                '</div>' +
+                '<div>' +
+                '<input class="button-register" id="subnet' + subnetCounter + '-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">' +
+                '</div><br>' +                
+                '<div id="subnet' + subnetCounter + '-vm-block"></div>' +
+                '<div>' + 
+                '<input class="button-register" id="subnet' + subnetCounter + '-vm" type="button" value="Add VM" onClick="addVM(\'ops\', this.id)">' + 
+                '</div>' +
                 '</div>';
 
         addSubnetRoute('subnet' + subnetCounter + '-route');

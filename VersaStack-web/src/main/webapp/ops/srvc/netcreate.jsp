@@ -175,13 +175,23 @@
                                                                 <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">
                                                             </div>
                                                             <div id="subnet1-vm-block">
-                                                                <div>VM 1   
-                                                                    <input type="text" name="subnet1-vm1" placeholder="VM Name">
-                                                                    <input type="text" name="subnet1-vm1-keypair" placeholder="Keypair Name">
-                                                                    <input type="text" name="subnet1-vm1-security" placeholder="Security Name">
-                                                                    <input type="text" name="subnet1-vm1-image" placeholder="Image Type">
-                                                                    <input type="text" name="subnet1-vm1-instance" placeholder="Instance Type">
-                                                                </div>
+                                                                <br>
+                                                                <table id="subnet1-vm1-table">                                                                    
+                                                                    <tbody>
+                                                                        <tr>
+                                                                            <td>VM Name</th>
+                                                                            <td><input type="text" name="subnet1-vm1"></td>
+                                                                        </tr>
+                                                                        <tr>
+                                                                            <td><input type="text" name="subnet1-vm1-keypair" placeholder="Keypair Name"></td>
+                                                                            <td><input type="text" name="subnet1-vm1-security" placeholder="Security Name"></td>
+                                                                        </tr>
+                                                                        <tr>
+                                                                            <td><input type="text" name="subnet1-vm1-image" placeholder="Image Type"></td>
+                                                                            <td><input type="text" name="subnet1-vm1-instance" placeholder="Instance Type"></td>
+                                                                        </tr>                                                                        
+                                                                    </tbody>                                                                    
+                                                                </table>
                                                             </div>
                                                             <div>
                                                                 <input class="button-register" id="subnet1-vm" type="button" value="Add VM" onClick="addVM('aws', this.id)">
