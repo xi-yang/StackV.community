@@ -19,6 +19,7 @@ import javax.ejb.Startup;
 import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
+import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
@@ -30,13 +31,15 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
 @Startup
 @AccessTimeout(value = 10000) // 10 seconds
 public class SystemModelCoordinator {
-
+    boolean isBootStrapped = false;
+        
     @EJB
     HandleSystemCall systemCallHandler;
 
     // current VG with cached union ModelBase
     VersionGroup systemVersionGroup = null;
 
+    @Lock(LockType.READ)
     public VersionGroup getSystemVersionGroup() {
         return systemVersionGroup;
     }
@@ -67,6 +70,11 @@ public class SystemModelCoordinator {
                 this.systemVersionGroup = newVersionGroup;
                 this.systemVersionGroup.createUnionModel();
             }
+        }
+        if (!isBootStrapped) {
+            // cleanning up from recovery
+            VersionGroupPersistenceManager.cleanupAndUpdateAll();
+            isBootStrapped = true;
         }
     }
 

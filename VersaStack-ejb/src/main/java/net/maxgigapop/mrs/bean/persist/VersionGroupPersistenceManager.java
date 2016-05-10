@@ -7,6 +7,7 @@ package net.maxgigapop.mrs.bean.persist;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import javax.ejb.EJBException;
@@ -91,4 +92,27 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
         }
         return vg;
     }
+    
+    public static void cleanupAndUpdateAll() {
+        try {
+            Query q = createQuery(String.format("FROM %s", VersionGroup.class.getSimpleName()));
+            List<VersionGroup> listVG = (List<VersionGroup>) q.getResultList();
+            if (listVG == null) {
+                return;
+            }
+            Iterator<VersionGroup> it = listVG.iterator();
+            while (it.hasNext()) {
+                VersionGroup vg = it.next();
+                if (vg.getVersionItems() == null || vg.getVersionItems().isEmpty()) {
+                    it.remove();
+                } else {
+                    refreshToHead(vg, true);
+                }
+                
+            }
+        } catch (Exception e) {
+            ;
+        }
+    }
+
 }

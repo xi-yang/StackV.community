@@ -13,4 +13,16 @@
             <skipTests>true</skipTests>
         </properties>
     </action>
+    <action>
+            <actionName>CUSTOM-Clean and Build nuke</actionName>
+            <displayName>Clean and Build nuke</displayName>
+            <goals>
+                <goal>clean</goal>
+                <goal>install</goal>
+                <goal>-Pdeploy-nuke</goal>
+            </goals>
+            <properties>
+                <skipTests>true</skipTests>
+            </properties>
+        </action>
 </actions>
