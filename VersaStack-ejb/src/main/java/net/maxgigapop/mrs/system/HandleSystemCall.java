@@ -294,6 +294,7 @@ public class HandleSystemCall {
                 throw new EJBException(String.format("%s cannot find a dirverInstance for topology: %s", systemInstance, driverSystemTopoUri));
             }
             // prepare to dispatch to driverInstance
+            driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
             targetDSD.setDriverInstance(driverInstance);
             targetDriverSystemDeltas.add(targetDSD);
             // Save targetDSD modelA and modelR.

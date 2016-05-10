@@ -83,7 +83,8 @@ public class HandleServiceCall {
                     if (svcDelta.getSystemDelta().getDriverSystemDeltas() != null) {
                         for (Iterator<DriverSystemDelta> dsdIt = svcDelta.getSystemDelta().getDriverSystemDeltas().iterator(); dsdIt.hasNext();) {
                             DriverSystemDelta dsd = dsdIt.next();
-                            DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(dsd.getDriverInstance().getTopologyUri());
+                            //DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(dsd.getDriverInstance().getTopologyUri());
+                            DriverInstance driverInstance = dsd.getDriverInstance();
                             driverInstance.getDriverSystemDeltas().remove(dsd);
                             DeltaPersistenceManager.delete(dsd);
                         }
