@@ -65,6 +65,13 @@ public class ServiceResource {
     }
 
     @GET
+    @Path("/ready")
+    @Produces({"application/xml", "application/json"})
+    public String ready() {
+        return (serviceCallHandler.hasSystemBootStrapped() ? "true" : "false");
+    }
+    
+    @GET
     @Path("/instance")
     @Produces({"application/xml", "application/json"})
     public String create() {

@@ -31,7 +31,7 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
 @Startup
 @AccessTimeout(value = 10000) // 10 seconds
 public class SystemModelCoordinator {
-    boolean isBootStrapped = false;
+    boolean bootStrapped = false;
         
     @EJB
     HandleSystemCall systemCallHandler;
@@ -40,6 +40,11 @@ public class SystemModelCoordinator {
     VersionGroup systemVersionGroup = null;
 
     @Lock(LockType.READ)
+    public boolean isBootStrapped() {
+        return bootStrapped;
+    }
+
+    @Lock(LockType.WRITE)
     public VersionGroup getSystemVersionGroup() {
         return systemVersionGroup;
     }
@@ -71,10 +76,10 @@ public class SystemModelCoordinator {
                 this.systemVersionGroup.createUnionModel();
             }
         }
-        if (!isBootStrapped) {
+        if (!bootStrapped) {
             // cleanning up from recovery
             VersionGroupPersistenceManager.cleanupAndUpdateAll();
-            isBootStrapped = true;
+            bootStrapped = true;
         }
     }
 
