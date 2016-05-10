@@ -104,9 +104,10 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
             while (it.hasNext()) {
                 VersionGroup vg = it.next();
                 if (vg.getVersionItems() == null || vg.getVersionItems().isEmpty()) {
+                    VersionGroupPersistenceManager.delete(vg);
                     it.remove();
                 } else {
-                    refreshToHead(vg, true);
+                    VersionGroupPersistenceManager.refreshToHead(vg, true);
                 }
                 
             }
