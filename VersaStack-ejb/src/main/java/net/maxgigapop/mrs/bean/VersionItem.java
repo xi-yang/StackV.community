@@ -36,7 +36,7 @@ public class VersionItem extends PersistentEntity implements Serializable {
     // reference ID for the callee
     private String referenceUUID = null;
 
-    @ManyToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
+    @ManyToMany(cascade = {CascadeType.ALL})
     @JoinTable(
             name = "version_group_item",
             joinColumns = {
@@ -45,7 +45,7 @@ public class VersionItem extends PersistentEntity implements Serializable {
                 @JoinColumn(name = "group_id", referencedColumnName = "id")})
     private List<VersionGroup> versionGroups = null;
 
-    @OneToOne
+    @OneToOne(cascade = {CascadeType.ALL})
     @JoinColumn(name = "modelRefId")
     private ModelBase modelRef = null;
 

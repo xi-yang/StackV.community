@@ -30,12 +30,12 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
 @LocalBean
 @Startup
 @AccessTimeout(value = 10000) // 10 seconds
-public class SystemModelCoordinator {
-    boolean bootStrapped = false;
-        
+public class SystemModelCoordinator {        
     @EJB
     HandleSystemCall systemCallHandler;
 
+    // indicator of system being ready for service
+    boolean bootStrapped = false;
     // current VG with cached union ModelBase
     VersionGroup systemVersionGroup = null;
 
@@ -52,14 +52,18 @@ public class SystemModelCoordinator {
     @Lock(LockType.WRITE)
     @Schedule(minute = "*", hour = "*", persistent = false)
     public void autoUpdate() {
-        //check driverInstances 
+        //check driverInstances (catch: if someone unplug and plug a driver within a minute, we will have problem)
         Map<String, DriverInstance> ditMap = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
         if (ditMap == null || ditMap.isEmpty()) {
+            bootStrapped = false;
+            systemVersionGroup = null;
             return;
         }
         for (DriverInstance di : ditMap.values()) {
             synchronized (di) { 
                 if (di.getHeadVersionItem() == null) {
+                    bootStrapped = false;
+                    systemVersionGroup = null;
                     return;
                 }
             }

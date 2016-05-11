@@ -5,6 +5,7 @@
  */
 package net.maxgigapop.mrs.bean.persist;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.List;
 import javax.ejb.EJBException;
@@ -68,10 +69,14 @@ public class VersionItemPersistenceManager extends PersistenceManager {
 
     public static void deleteByDriverInstance(DriverInstance di) {
         try {
-            Query q = createQuery(String.format("DELETE FROM %s WHERE driverInstanceId=%d",
+            Query q = createQuery(String.format("FROM %s WHERE driverInstanceId=%d",
                     VersionItem.class.getSimpleName(), di.getId()));
-            q.executeUpdate();
-            entityManager.flush();
+            List<VersionItem> listVI = (List<VersionItem>) q.getResultList();
+            Iterator<VersionItem> it = listVI.iterator();
+            while (it.hasNext()) {
+                VersionItem vi = it.next();
+                VersionItemPersistenceManager.delete(vi);
+            }
         } catch (Exception e) {
             throw new EJBException(String.format("VersionItemPersistenceManager::getHeadByDriverInstance raised exception: %s", e.getMessage()));
         }
