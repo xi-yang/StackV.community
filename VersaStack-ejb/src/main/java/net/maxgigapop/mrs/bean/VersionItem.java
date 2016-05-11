@@ -36,7 +36,7 @@ public class VersionItem extends PersistentEntity implements Serializable {
     // reference ID for the callee
     private String referenceUUID = null;
 
-    @ManyToMany(cascade = {CascadeType.ALL})
+    @ManyToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
     @JoinTable(
             name = "version_group_item",
             joinColumns = {

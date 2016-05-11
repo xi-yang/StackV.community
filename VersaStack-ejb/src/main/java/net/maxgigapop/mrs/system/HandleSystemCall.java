@@ -40,6 +40,7 @@ import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.core.SystemModelCoordinator;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 
 /**
@@ -444,7 +445,20 @@ public class HandleSystemCall {
         }
         // remove all related versionItems
         VersionItemPersistenceManager.deleteByDriverInstance(di);
+        // remove all empty versionGroups
+        VersionGroupPersistenceManager.cleanupAll();
+        // delete this driverInstance from db
         DriverInstancePersistenceManager.delete(di);
+        // set system ready status to false and rebootstrap
+        if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().isEmpty()) {
+            try {
+                Context ejbCxt = new InitialContext();
+                SystemModelCoordinator systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
+                systemModelCoordinator.setBootStrapped(false);
+            } catch (Exception ex) {
+                throw new EJBException(this.getClass().getName() + " failed to re-bootstrap systemModelCoordinator", ex);
+            }
+        } 
     }
 
     public DriverInstance retrieveDriverInstance(String topoUri) {

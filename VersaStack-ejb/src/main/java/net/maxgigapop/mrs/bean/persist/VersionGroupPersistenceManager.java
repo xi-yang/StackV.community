@@ -92,6 +92,25 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
         }
         return vg;
     }
+
+    public static void cleanupAll() {
+        try {
+            Query q = createQuery(String.format("FROM %s", VersionGroup.class.getSimpleName()));
+            List<VersionGroup> listVG = (List<VersionGroup>) q.getResultList();
+            if (listVG == null) {
+                return;
+            }
+            Iterator<VersionGroup> it = listVG.iterator();
+            while (it.hasNext()) {
+                VersionGroup vg = it.next();
+                if (vg.getVersionItems() == null || vg.getVersionItems().isEmpty()) {
+                    VersionGroupPersistenceManager.delete(vg);
+                }
+            }
+        } catch (Exception e) {
+            ;
+        }
+    }
     
     public static void cleanupAndUpdateAll() {
         try {

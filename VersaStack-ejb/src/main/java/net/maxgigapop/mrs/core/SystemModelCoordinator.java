@@ -43,7 +43,15 @@ public class SystemModelCoordinator {
     public boolean isBootStrapped() {
         return bootStrapped;
     }
-
+    
+    @Lock(LockType.READ)
+    public void setBootStrapped(boolean bl) {
+        bootStrapped = bl;
+        if (bootStrapped == false) {
+            systemVersionGroup = null;
+        }
+    }
+    
     @Lock(LockType.WRITE)
     public VersionGroup getSystemVersionGroup() {
         return systemVersionGroup;
