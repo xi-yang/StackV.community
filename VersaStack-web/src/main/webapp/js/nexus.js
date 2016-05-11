@@ -743,7 +743,7 @@ function applyNetTemplate(code) {
 //            
             break;
             
-        case 5:    
+        case 5:                 
             form.elements['netType'].value = 'internal';
             form.elements['netCidr'].value = '10.1.0.0/16';
             
