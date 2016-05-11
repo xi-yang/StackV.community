@@ -354,6 +354,14 @@ public class HandleServiceCall {
             throw new EJBException(HandleServiceCall.class.getName() + ".revertDeltas needs  status='PROPAGATED' or 'COMMITTED' or 'READY' by " + serviceInstance + ", the actual status=" + serviceInstance.getStatus());
         }
         Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
+        List<ServiceDelta> reversableServiceDeltas = new ArrayList<>();
+        while (itSD.hasNext()) {
+            ServiceDelta svcDelta = itSD.next();
+            if (svcDelta.getStatus().equalsIgnoreCase("READY") || svcDelta.getStatus().equalsIgnoreCase("COMMITTED")) {
+                reversableServiceDeltas.add(svcDelta);
+            }
+        }
+        itSD = reversableServiceDeltas.iterator();
         if (!itSD.hasNext()) {
             throw new EJBException(HandleServiceCall.class.getName() + ".revertDeltas (by " + serviceInstance + ",  in status=" + serviceInstance.getStatus() + ") has none delta to commit.");
         }
@@ -458,6 +466,8 @@ public class HandleServiceCall {
                 }
             }
         }
+        //@TODO: if (canRevertAll and reversableServiceDeltas.size() > 1) {
+            // remove overlap between reverseSysDelta.getModelAddition().getOntModel() and reverseSysDelta.getModelReduction().getOntModel()
         serviceInstance.getServiceDeltas().add(reverseSvcDelta);
         DeltaPersistenceManager.save(reverseSvcDelta);
         //serviceInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
