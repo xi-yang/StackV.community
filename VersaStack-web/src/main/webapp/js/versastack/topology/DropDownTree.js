@@ -9,6 +9,7 @@ define([
         this.rootNodes = [];
         this.containerDiv = containerDiv;
         this.renderApi = null;
+        this.contextMenu = null;
         this.history = [];
         this.topViewShown = false;
         var currentIndex = -1;
@@ -57,7 +58,6 @@ define([
 
         document.getElementById("URISearchSubmit").onclick = function() {
             var uri = document.getElementById("URISearchInput").value;
-                //alert("i'm here");
             that.renderApi.clickNode(uri, "Element");
         };
         
@@ -90,14 +90,14 @@ define([
                 node.renderApi = that.renderApi;
             });
             if (this.rootNodes.length === 0) {
-                this.addChild("test", "");
+                this.addChild("test", "", null);
             }
             //("i'm here"); was for seeig where the start is 
         };
 
         //We use the same method name as DropDownNode.addChild to enable polymorphism
-        this.addChild = function (name, type) {
-            var ans = new DropDownNode(name, that.renderApi, type);
+        this.addChild = function (name, type, data) {
+            var ans = new DropDownNode(name, that.renderApi, type, data, that.contextMenu);
             this.rootNodes.push(ans);
             return ans;
         };

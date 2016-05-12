@@ -305,6 +305,60 @@ function addRoute() {
     }
 }
 
+var subRouteCounter = 1;
+var subRouteLimit = 10;
+function addSubnetRoute(subnetID) {
+    if (subRouteCounter === subRouteLimit) {
+        alert("You have reached the limit of routes.");
+    }
+
+    subRouteCounter++;
+    var block = document.getElementById(subnetID + '-block');
+
+    block.innerHTML = block.innerHTML +
+            '<div>' +
+            '<input type="text" name="' + subnetID + subRouteCounter + '-from" placeholder="From"/>' +
+            '<input type="text" name="' + subnetID + subRouteCounter + '-to" placeholder="To"/>' +
+            '<input type="text" name="' + subnetID + subRouteCounter + '-next" placeholder="Next Hop"/>' +
+            '</div>';
+}
+
+var VMRouteCounter = 1;
+var VMRouteLimit = 10;
+function addVMRoute(VMID) {
+    if (VMRouteCounter === VMRouteLimit) {
+        alert("You have reached the limit of routes.");
+    }
+
+    VMRouteCounter++;
+    var block = document.getElementById(VMID + '-block');
+
+    block.innerHTML = block.innerHTML +
+            '<div>' +
+            '<input type="text" name="' + VMID + VMRouteCounter + '-from" placeholder="From"/>' +
+            '<input type="text" name="' + VMID + VMRouteCounter + '-to" placeholder="To"/>' +
+            '<input type="text" name="' + VMID + VMRouteCounter + '-next" placeholder="Next Hop"/>' +
+            '</div>';
+}
+
+var SRIOVCounter = 1;
+var SRIOVLimit = 10;
+function addSRIOV(VMID) {
+    if (SRIOVCounter === SRIOVLimit) {
+        alert("You have reached the limit of SRIOV connections.");
+    }
+
+    SRIOVCounter++;
+    var block = document.getElementById(VMID + '-block');
+
+    block.innerHTML = block.innerHTML +
+            '<div>' +
+            '<input type="text" name="' + VMID + SRIOVCounter + '-dest" placeholder="SRIOV Destination">' +
+            '<input type="text" name="' + VMID + SRIOVCounter + '-sriov-mac" placeholder="SRIOV MAC Address">' +
+            '<input type="text" name="' + VMID + SRIOVCounter + '-sriov-ip" placeholder="SRIOV IP Address">' +
+            '</div>';
+}
+
 var VMCounter = 1;
 var VMLimit = 10;
 function addVM(type, subnetID) {
@@ -314,15 +368,16 @@ function addVM(type, subnetID) {
     else if (type === 'aws') {
         VMCounter++;
         var block = document.getElementById(subnetID + '-block');
-
+        
         block.innerHTML = block.innerHTML +
-                '<div>VM ' + VMCounter + 
-                '<input type="text" name="' + subnetID + VMCounter + '" placeholder="VM Name">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-keypair" placeholder="Keypair Name">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-security" placeholder="Security Name">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-image" placeholder="Image Type">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-instance" placeholder="Instance Type">' +
-                '</div>';
+                '<table id="subnet' + subnetID + '-vm' + VMCounter + '-table">' +
+                '<tbody>' +
+                '<tr><td>VM Name</td><td><input type="text" name="subnet' + subnetID + VMCounter + '"></td></tr>' +
+                '<tr><td><input type="text" name="' + subnetID + VMCounter + '-keypair" placeholder="Keypair Name"></td>' + 
+                '<td><input type="text" name="' + subnetID + VMCounter + '-security" placeholder="Security Name"></td></tr>' +
+                '<tr><td><input type="text" name="' + subnetID + VMCounter + '-image" placeholder="Image Type"></td>' + 
+                '<td><input type="text" name="' + subnetID + VMCounter + '-instance" placeholder="Instance Type"></td></tr>' +
+                '</tbody></table>';
     }
     else if (type === 'ops') {
         VMCounter++;
@@ -330,26 +385,23 @@ function addVM(type, subnetID) {
         var block = document.getElementById(subnetID + '-block');
 
         block.innerHTML = block.innerHTML +
-                '<div>VM ' + VMCounter + '<div>' + 
-                '<input type="text" name="' + subnetID + VMCounter + '" placeholder="VM Name">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-keypair" placeholder="Keypair Name">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-security" placeholder="Security Name">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-image" placeholder="Image Type">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-instance" placeholder="Instance Type">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-host" placeholder="VM Host">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-floating" placeholder="Floating IP">' +
-                '<div id="' + subnetID + VMCounter + '-sriov"><div>SRIOV ' + sriovCounter + 
-                '<input type="text" name="' + subnetID + VMCounter + '-sriov1-dest" placeholder="SRIOV Destination">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-sriov1-mac" placeholder="SRIOV MAC Address">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-sriov1-ip" placeholder="SRIOV IP Address">' +
-                '</div><div id="' + subnetID + VMCounter + '-sriov1-route"><div>' +
-                '<input type="text" name="' + subnetID + VMCounter + '-sriov1-route1-from" placeholder="From">' +                
-                '<input type="text" name="' + subnetID + VMCounter + '-sriov1-route1-to" placeholder="To">' +        
-                '<input type="text" name="' + subnetID + VMCounter + '-sriov1-route1-next" placeholder="Next Hop">' +
-                '<input class="button-register" id="'+ subnetID + VMCounter + '-sriov1" type="button" value="Add Route" onClick="addSriovRoute(this.id)">' +
-                '</div></div></div>' +
-                '<input class="button-register" id="'+ subnetID + VMCounter + '" type="button" value="Add SRIOV" onClick="addSriov(this.id)">' +
-                '</div></div>';
+                '<table id="subnet' + subnetID + '-vm' + VMCounter + '-table">' +
+                '<tbody>' +
+                '<tr><td>VM Name</td><td><input type="text" name="subnet' + subnetID + VMCounter + '"></td></tr>' +
+                '<tr><td><input type="text" name="' + subnetID + VMCounter + '-keypair" placeholder="Keypair Name"></td>' + 
+                '<td><input type="text" name="' + subnetID + VMCounter + '-security" placeholder="Security Name"></td></tr>' +
+                '<tr><td><input type="text" name="' + subnetID + VMCounter + '-image" placeholder="Image Type"></td>' + 
+                '<td><input type="text" name="' + subnetID + VMCounter + '-instance" placeholder="Instance Type"></td></tr>' +
+                '<tr><td><input type="text" name="' + subnetID + VMCounter + '-host" placeholder="VM Host"></td>' +
+                '<td><input type="text" name="' + subnetID + VMCounter + '-floating" placeholder="Floating IP"></td></tr>' +
+                '<tr><td>SRIOV</td><td>' + 
+                '<div id="' + subnetID + VMCounter + '-sriov-block">' +                
+                '</div><div><input class="button-register" id="' + subnetID + VMCounter + '-sriov" type="button" value="Add SRIOV" onClick="addSRIOV(this.id)"></div>' + 
+                '</td></tr><tr><td>Routes</td><td><div id="' + subnetID + VMCounter + '-route-block">' +                
+                '</div><div><input class="button-register" id="subnet' + subnetID + VMCounter + '-route" type="button" value="Add VM Route" onClick="addVMRoute(this.id)"></div></td></tr></tbody></table>';
+        
+        addVMRoute(subnetID + VMCounter + '-route');
+        addSRIOV(subnetID + VMCounter + '-sriov');
     }
 }
 
@@ -374,40 +426,29 @@ function addSubnet(type) {
         cell2.innerHTML = '<div>' +
                 '<input type="text" name="subnet' + subnetCounter + '-name" placeholder="Name"/>' +
                 '<input type="text" name="subnet' + subnetCounter + '-cidr" placeholder="CIDR Block"/>' +
-                '<div id="subnet' + subnetCounter + '-route-block">' +
-                '<div>' +
-                '<input type="text" name="subnet' + subnetCounter + '-route1-from" placeholder="From"/>\n' +
-                '<input type="text" name="subnet' + subnetCounter + '-route1-to" placeholder="To"/>\n' +
-                '<input type="text" name="subnet' + subnetCounter + '-route1-next" placeholder="Next Hop"/>\n' +
-                '</div>' +
-                '</div>' +
+                '<div id="subnet' + subnetCounter + '-route-block"></div>' +                
                 '<div>' +
                 '<input type="checkbox" name="subnet' + subnetCounter + '-route-prop" value="true"/>   Enable VPN Routes Propogation' +
                 '</div>' +
                 '<div>' +
                 '<input class="button-register" id="subnet' + subnetCounter + '-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">' +
+                '</div><br>' +
+                '<div id="subnet' + subnetCounter + '-vm-block"></div>' +                
+                '<div>' + 
+                '<input class="button-register" id="subnet' + subnetCounter + '-vm" type="button" value="Add VM" onClick="addVM(\'aws\', this.id)">' + 
                 '</div>' +
-                '</div>' +
-                '<div id="subnet' + subnetCounter + '-vm-block">' +
-                '<div>VM ' + VMCounter + 
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '" placeholder="VM Name">' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-keypair" placeholder="Keypair Name">' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-security" placeholder="Security Name">' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-image" placeholder="Image Type">' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-instance" placeholder="Instance Type">' +
-                '</div>' +
-                '<div>' +
-                '<input class="button-register" id="subnet' + subnetCounter + '-vm" type="button" value="Add VM" onClick="addVM(\'aws\', this.id)">' +
                 '</div>';
+        
+        addSubnetRoute('subnet' + subnetCounter + '-route');
+        addVM('aws', 'subnet' + subnetCounter + '-vm');
     }
         else if (type === 'ops') {
         var table = document.getElementById("net-custom-form");
         var tableHeight = table.rows.length;
         subnetCounter++;
-        VMCounter++;       
-        sriovCounter++;
+        VMCounter++;
 
-        var row = table.insertRow(tableHeight - 2);
+        var row = table.insertRow(tableHeight - 1);
         row.id = 'subnet' + subnetCounter;
 
         var cell1 = row.insertCell(0);
@@ -416,105 +457,22 @@ function addSubnet(type) {
         cell2.innerHTML = '<div>' +
                 '<input type="text" name="subnet' + subnetCounter + '-name" placeholder="Name"/>' +
                 '<input type="text" name="subnet' + subnetCounter + '-cidr" placeholder="CIDR Block"/>' +
-                '<div id="subnet' + subnetCounter + '-route-block">' +
-                '<div>' +
-                '<input type="text" name="subnet' + subnetCounter + '-route1-from" placeholder="From"/>\n' +
-                '<input type="text" name="subnet' + subnetCounter + '-route1-to" placeholder="To"/>\n' +
-                '<input type="text" name="subnet' + subnetCounter + '-route1-next" placeholder="Next Hop"/>\n' +
-                '</div>' +
-                '</div>' +
+                '<div id="subnet' + subnetCounter + '-route-block"></div>' +                
                 '<div>' +
                 '<input type="checkbox" name="subnet' + subnetCounter + '-route-prop" value="true"/>   Enable VPN Routes Propogation' +
                 '</div>' +
                 '<div>' +
                 '<input class="button-register" id="subnet' + subnetCounter + '-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">' +
+                '</div><br>' +                
+                '<div id="subnet' + subnetCounter + '-vm-block"></div>' +
+                '<div>' + 
+                '<input class="button-register" id="subnet' + subnetCounter + '-vm" type="button" value="Add VM" onClick="addVM(\'ops\', this.id)">' + 
                 '</div>' +
-                '<div id="subnet' + subnetCounter + '-vm-block">' +
-                '<div>VM ' + VMCounter + '<div>' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '" placeholder="VM Name">' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-keypair" placeholder="Keypair Name">' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-security" placeholder="Security Name">' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-image" placeholder="Image Type">' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-instance" placeholder="Instance Type">' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-host" placeholder="VM Host">' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-floating" placeholder="Floating IP">' +
-                '<div id="subnet' + subnetCounter + '-vm' + VMCounter + '-sriov"><div>SRIOV ' + sriovCounter + 
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-sriov1-dest" placeholder="SRIOV Destination">' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-sriov1-mac" placeholder="SRIOV MAC Address">' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-sriov1-ip" placeholder="SRIOV IP Address">' +
-                '</div><div id="subnet' + subnetCounter + '-vm' + VMCounter + '-sriov1-route"><div>' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-sriov1-route1-from" placeholder="From">' +                
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-sriov1-route1-to" placeholder="To">' +        
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-sriov1-route1-next" placeholder="Next Hop">' +
-                '<input class="button-register" id="subnet' + subnetCounter + '-vm' + VMCounter + '-sriov1" type="button" value="Add Route" onClick="addSriovRoute(this.id)">' +
-                '</div></div></div>' +
-                '<input class="button-register" id="subnet' + subnetCounter + '-vm' + VMCounter + '" type="button" value="Add SRIOV" onClick="addSriov(this.id)">' +
-                '</div></div></div><div>' +
-                '<input class="button-register" id="subnet' + subnetCounter + '-vm" type="button" value="Add VM" onClick="addVM(\'ops\',this.id)">' +
-                '</div></div>' ;
-        
+                '</div>';
+
+        addSubnetRoute('subnet' + subnetCounter + '-route');
+        addVM('ops', 'subnet' + subnetCounter + '-vm');
     }
-}
-
-var subRouteCounter = 1;
-var subRouteLimit = 10;
-function addSubnetRoute(subnetID) {
-    if (subRouteCounter === subRouteLimit) {
-        alert("You have reached the limit of routes.");
-    }
-
-    subRouteCounter++;
-    var block = document.getElementById(subnetID + '-block');
-
-    block.innerHTML = block.innerHTML +
-            '<div>' +
-            '<input type="text" name="' + subnetID + subRouteCounter + '-from" placeholder="From"/>' +
-            '<input type="text" name="' + subnetID + subRouteCounter + '-to" placeholder="To"/>' +
-            '<input type="text" name="' + subnetID + subRouteCounter + '-next" placeholder="Next Hop"/>' +
-            '</div>';
-
-
-}
-
-var sriovRouteCounter = 1;
-var sriovRouteLimit = 15;
-function addSriovRoute(sriovID) {
-    if (sriovRouteCounter === sriovRouteLimit) {
-        alert("You have reached the limit of routes.");
-    }
-
-    sriovRouteCounter++;
-    var block = document.getElementById(sriovID + '-route');
-
-    block.innerHTML = block.innerHTML +
-            '<div>' +
-            '<input type="text" name="' + sriovID + '-route' + sriovRouteCounter + '-from" placeholder="From"/>' +
-            '<input type="text" name="' + sriovID + '-route' + sriovRouteCounter + '-to" placeholder="To"/>' +
-            '<input type="text" name="' + sriovID + '-route' + sriovRouteCounter + '-next" placeholder="Next Hop"/>' +
-            '</div>';
-}
-
-var sriovCounter = 1;
-var sriovLimit = 10;
-function addSriov(vmID) {
-    if (sriovCounter === sriovLimit) {
-        alert("You have reached the limit of SRIOVs.");
-    }
-
-    sriovCounter++;
-    var block = document.getElementById(vmID + '-sriov');
-
-    block.innerHTML = block.innerHTML +
-            '<div>SRIOV ' + sriovCounter +
-            '<input type="text" name="' + vmID + '-sriov' + sriovCounter + '-dest" placeholder="SRIOV Destination"/>' +
-            '<input type="text" name="' + vmID + '-sriov' + sriovCounter + '-mac" placeholder="SRIOV MAC Address"/>' +
-            '<input type="text" name="' + vmID + '-sriov' + sriovCounter + '-ip" placeholder="SRIOV IP Address"/>' +
-            '</div><div id = "' + vmID + '-sriov' + sriovCounter + '-route"><div>' +
-            '<input type="text" name="' + vmID + '-sriov' + sriovCounter + '-route1-from" placeholder="From"/>' +
-            '<input type="text" name="' + vmID + '-sriov' + sriovCounter + '-route1-to" placeholder="To"/>' +
-            '<input type="text" name="' + vmID + '-sriov' + sriovCounter + '-route1-next" placeholder="Next Hop"/>' +
-            '<input class="button-register" id="'+vmID + '-sriov' + sriovCounter +'" type="button" value="Add Route" onClick="addSriovRoute(this.id)">' +
-            '</div></div>';
 }
 
 var linkCounter = 1;
@@ -547,6 +505,8 @@ function addLink() {
                 '</div>';
     }
 }
+
+// API CALLS
 
 function checkInstance(uuid) {
     var apiUrl = baseUrl + '/VersaStack-web/restapi/service/' + uuid + '/status';
@@ -597,6 +557,7 @@ function revertInstance(uuid) {
     });
 
     window.location.reload(true);
+    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
 function cancelInstance(uuid) {
@@ -610,6 +571,7 @@ function cancelInstance(uuid) {
     });
 
     window.location.reload(true);
+    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
 function reinstateInstance(uuid) {
@@ -623,6 +585,21 @@ function reinstateInstance(uuid) {
     });
 
     window.location.reload(true);
+    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
+}
+
+function verifyInstance(uuid) {
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/verify';
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        success: function (result) {
+            // Do something with the result
+        }
+    });
+
+    window.location.reload(true);
+    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
 function deleteInstance(uuid) {
@@ -639,19 +616,7 @@ function deleteInstance(uuid) {
     window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
-function reinstateInstance(uuid) {
-
-    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/reinstate';
-    $.ajax({
-        url: apiUrl,
-        type: 'PUT',
-        success: function (result) {
-            console.log("RE-INITAILIZATION SUCCESS?!");
-        }
-    });
-
-    window.location.replace('/VersaStack-web/ops/catalog.jsp');
-}
+// TEMPLATING
 
 function applyNetTemplate(code) {
     var form = document.getElementById('custom-form');
@@ -779,16 +744,13 @@ function applyNetTemplate(code) {
 //            
             break;
             
-        case 5:    
+        case 5:                 
             form.elements['netType'].value = 'internal';
             form.elements['netCidr'].value = '10.1.0.0/16';
             
-//            if (subRouteCounter === 1) {
-//                addSubnetRoute('subnet1-route');
-//            }
-//            if (subnetCounter === 1) {
-//                addSubnet('ops');
-//            }
+            if (VMRouteCounter === 1) {
+                addVMRoute('subnet1-vm1-route');
+            }
 
             form.elements['subnet1-name'].value = '';
             form.elements['subnet1-cidr'].value = '10.1.0.0/24';
@@ -806,9 +768,9 @@ function applyNetTemplate(code) {
             form.elements['subnet1-vm1-security'].value = 'rains';
             form.elements['subnet1-vm1-host'].value = 'msx1';
             form.elements['subnet1-vm1-floating'].value = '206.196.180.148';
-            form.elements['subnet1-vm1-sriov-dest'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
-            form.elements['subnet1-vm1-sriov-mac'].value = 'aa:bb:cc:00:00:12';
-            form.elements['subnet1-vm1-sriov-ip'].value = '10.10.0.1/30';
+            form.elements['subnet1-vm1-sriov1-dest'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
+            form.elements['subnet1-vm1-sriov1-mac'].value = 'aa:bb:cc:00:00:12';
+            form.elements['subnet1-vm1-sriov1-ip'].value = '10.10.0.1/30';
             form.elements['subnet1-vm1-route1-to'].value = '192.168.0.0/24';
             form.elements['subnet1-vm1-route1-next'].value = '10.10.0.2';
             form.elements['subnet1-vm1-route2-to'].value = '206.196.179.0/24';
@@ -1045,6 +1007,8 @@ function clearCounters() {
     sriovCounter = 1;
     sriovRouteCounter = 1;
     VMCounter = 1;
+    VMRouteCounter = 1;
+    SRIOVCounter = 1;
     subRouteCounter = 1;
     linkCounter = 1;
 }
