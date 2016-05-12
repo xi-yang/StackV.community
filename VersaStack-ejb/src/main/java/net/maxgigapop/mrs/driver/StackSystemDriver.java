@@ -209,7 +209,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall {
                 } else {
                     // pull model from REST API
                     URL url = new URL(subsystemBaseUrl + "/model");
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     String responseStr = this.executeHttpMethod(url, conn, "GET", null);
                     JSONObject responseJSON = (JSONObject) JSONValue.parseWithException(responseStr);
                     creationTime = responseJSON.get("creationTime").toString();
@@ -273,6 +273,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall {
     }
 
     private String executeHttpMethod(URL url, HttpURLConnection conn, String method, String body) throws IOException {
+        conn.setConnectTimeout(5*1000);
         conn.setRequestMethod(method);
         conn.setRequestProperty("Content-type", "application/json");
         conn.setRequestProperty("Accept", "application/json");

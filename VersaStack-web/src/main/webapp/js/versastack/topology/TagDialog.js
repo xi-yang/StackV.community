@@ -6,13 +6,13 @@
 "use strict";
 define([], function () {
     function TagDialog (userName) {
-        this.currentColor = "Red";
-        this.label = "";
-        this.sentData = "";
+        this.currentColor = null;
+        this.label = null;
+        this.sentData = null;
         this.currentCMObj = null;
         this.username = userName;
         this.selectedColorBox = null;
-        // need variable for dialog activiated 
+
         var that = this;
         that.dialog = document.querySelector("#tagDialog");
                 

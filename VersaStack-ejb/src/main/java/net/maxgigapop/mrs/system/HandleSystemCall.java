@@ -40,6 +40,7 @@ import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.core.SystemModelCoordinator;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 
 /**
@@ -294,6 +295,7 @@ public class HandleSystemCall {
                 throw new EJBException(String.format("%s cannot find a dirverInstance for topology: %s", systemInstance, driverSystemTopoUri));
             }
             // prepare to dispatch to driverInstance
+            driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
             targetDSD.setDriverInstance(driverInstance);
             targetDriverSystemDeltas.add(targetDSD);
             // Save targetDSD modelA and modelR.
@@ -421,27 +423,6 @@ public class HandleSystemCall {
 
         this.propagateDelta(systemInstance, sysDelta, useUpdatedVG);
     }
-
-    /*
-    @Asynchronous
-    public Future<String> commitDelta(String sysInstanceUUID) {
-        SystemInstance systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(sysInstanceUUID);
-        if (systemInstance == null) {
-            throw new EJBException("commitDelta encounters unknown systemInstance with referenceUUID=" + sysInstanceUUID);
-        }
-        if (systemInstance.getCommitStatus() != null) {
-            throw new EJBException("commitDelta has already been done once with systemInstance with referenceUUID=" + sysInstanceUUID);
-        }
-        try{
-            Future<String> commitStatus = this.commitDelta(systemInstance);
-            systemInstance.setCommitStatus(commitStatus);            
-        }catch(EJBException ex){
-            systemInstance.setCommitStatus(new AsyncResult<>(ex.getMessage()));                                    
-        }
-        systemInstance.setCommitFlag(true);
-        return systemInstance.getCommitStatus();
-    }
-    */
     
     public void plugDriverInstance(Map<String, String> properties) {
         if (!properties.containsKey("topologyUri") || !properties.containsKey("driverEjbPath")) {
@@ -464,7 +445,20 @@ public class HandleSystemCall {
         }
         // remove all related versionItems
         VersionItemPersistenceManager.deleteByDriverInstance(di);
+        // remove all empty versionGroups
+        VersionGroupPersistenceManager.cleanupAll();
+        // delete this driverInstance from db
         DriverInstancePersistenceManager.delete(di);
+        // set system ready status to false and rebootstrap
+        if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().isEmpty()) {
+            try {
+                Context ejbCxt = new InitialContext();
+                SystemModelCoordinator systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
+                systemModelCoordinator.setBootStrapped(false);
+            } catch (Exception ex) {
+                throw new EJBException(this.getClass().getName() + " failed to re-bootstrap systemModelCoordinator", ex);
+            }
+        } 
     }
 
     public DriverInstance retrieveDriverInstance(String topoUri) {

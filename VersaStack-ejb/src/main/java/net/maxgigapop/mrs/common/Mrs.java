@@ -139,6 +139,8 @@ public class Mrs {
 
     public static final Property target_device = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#target_device");
 
+    public static final Property mount_point = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#mount_point");
+
     public static final Property type = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#type");
 
     public static final Property value = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#value");

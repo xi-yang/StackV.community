@@ -229,6 +229,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
     }
 
     private String executeHttpMethod(URL url, HttpURLConnection conn, String method, String body) throws IOException {
+        conn.setConnectTimeout(5*1000);
         conn.setRequestMethod(method);
         conn.setRequestProperty("Content-type", "application/json");
         conn.setRequestProperty("Accept", "application/json");

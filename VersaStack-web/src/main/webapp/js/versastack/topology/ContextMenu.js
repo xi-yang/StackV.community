@@ -55,22 +55,22 @@ define([], function () {
 
          if (!e) { 
               var e = window.event;
-              console.log("ContextMenu: getPosition: e passed in is null. ");
+              //console.log("ContextMenu: getPosition: e passed in is null. ");
          }
          
           if (e.pageX || e.pageY) {
             posx = e.pageX;
             posy = e.pageY;
-            console.log("I'm in ContextMenu: GetPosition , we used e.pageX and e.pageY");
+            //console.log("I'm in ContextMenu: GetPosition , we used e.pageX and e.pageY");
           } else if (e.clientX || e.clientY) {
             posx = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
             posy = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
           }
-          console.log("I'm in ContextMenu: GetPostion: posx: " + posx + " , posy: " + posy); 
+          //console.log("I'm in ContextMenu: GetPostion: posx: " + posx + " , posy: " + posy); 
           return {
             x: posx,
             y: posy
-          }
+          };
         }
 
         //////////////////////////////////////////////////////////////////////////////
@@ -150,13 +150,12 @@ define([], function () {
          * just need to change nodes and get this working with dojo 
          */
         function contextListener() {
-         document.addEventListener( "contextmenu", function(e) {
-            //taskItemInContext = clickInsideElement( e, taskItemClassName );
-              this.selectedDataObject = null; //maybe we don't want this to become null maybe someone is using this
-                                              // when we close the menu... , maybe it doesn't matter and we don't have
-                                              // to set it null 
-              toggleMenuOff(); 
-          });
+            document.addEventListener( "contextmenu", function(e) {
+               this.selectedDataObject = null; //maybe we don't want this to become null maybe someone is using this
+                                               // when we close the menu... , maybe it doesn't matter and we don't have
+                                               // to set it null 
+               toggleMenuOff(); 
+             });
         }
         
         // different one for display menu 
@@ -173,9 +172,8 @@ define([], function () {
           e.preventDefault();
           toggleMenuOn();
           positionMenu(e);
-          // probably not what we want here 
-          //if (o.getType() !== "Property") renderApi.selectElement(o);
         };
+        
         /**
          * Listens for click events.
          */
@@ -222,7 +220,6 @@ define([], function () {
           if ( menuState !== 1 ) {
             menuState = 1;
             menu.classList.add( contextMenuActive );
-            console.log("i'm here\n\n");
           }
         }
 
@@ -233,7 +230,6 @@ define([], function () {
           if ( menuState !== 0 ) {
             menuState = 0;
             menu.classList.remove( contextMenuActive );
-            console.log("i'm here \n\n");
           }
         }
 
@@ -265,27 +261,20 @@ define([], function () {
             menu.style.top = clickCoordsY + "px";
           }
           
-          console.log("in positionMenu: menu.style.left: " + menu.style.left + " , menu.style.top: " + menu.style.top);
+          //console.log("in positionMenu: menu.style.left: " + menu.style.left + " , menu.style.top: " + menu.style.top);
         }
 
         /**
-         * Dummy action function that logs an action when a menu item link is clicked
          * 
          * @param {HTMLElement} link The link that was clicked
          */
         function menuItemListener( link ) {
-          //console.log( "Task ID - " + this.selectedObject.getAttribute("data-id") + ", Task action - " + link.getAttribute("data-action"));
-            //alert("type: " + that.selectedObject.getType());
-          // Testing if this is an Element or a property 
-            tagDialog.openDialog(that.selectedObject);  
+            switch(link.getAttribute("data-action")) {
+                case "Tag": tagDialog.openDialog(that.selectedObject); break;
+            }
             toggleMenuOff();
         }
 
-        /**
-         * Run the app.
-         */
-        // init(); // call this is graph.topo 
-
-          }
-          return ContextMenu;    
+    }
+    return ContextMenu;    
 });

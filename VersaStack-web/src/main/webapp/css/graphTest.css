@@ -179,89 +179,6 @@ body{
     height: calc(100% - 20px);
 }
 
-#tagPanel {
-    background-color: #e9e9e9;
-    position: absolute;
-    bottom: 0;
-    left: calc(50% - 66px);   
-    z-index: 2;
-    min-width: 10%;/*30%; */
-    min-height: 20%;
-    border: 2px solid rgba(0, 0, 0, .05);
-    
-    -webkit-transition: bottom 0.5s ease-in-out;
-    transition: bottom 0.5s ease-in-out;
-    
-    
-}
-
-#tagPanel.closed {
-    /*bottom: calc(-2% + 60px);*/
-        bottom: calc(-20% + 20px);
-    /* bottom: calc(-36% + 40px); */
-
-    -webkit-transition: bottom 0.5s ease-in-out;
-    transition: bottom 0.5s ease-in-out;
-}
-
-#tagPanel-tab {
-    background-color: #d0d0d0;
-}
-
-#tagPanel-contents {max-height: 350px;}
-
-
-.label-color-red {background-color:#DC143C;}
-.label-color-orange {background-color:#FFA500;}
-.label-color-yellow {background-color:#FFD700}
-.label-color-blue {background-color:#4169E1;}
-.label-color-green {background-color:#98FB98;}
-.label-color-purple {background-color:#663399;}
-
-#tagPanel-colorPanel{
-    text-align:left;
-}
-
-#tagPanel-colorPanelTitle {
-    margin-left:5px;
-}
-
-#tagPagination {
-    text-align: center;
-}
-/*tag panel list stuff */
-
-#tagPanel-labelPanel{
-    border: 1px rgba(0, 0, 0, .075) solid;    
-}
-
-#tagPanel-labelPanelTitle {
-    margin-left: 5px;
-    text-align: left;
-}
- .tagPanel-labelList{
-     text-align:left;
-   padding-left: 0;
-  margin-bottom: 20px;
- }
- .tagPanel-labelItem {
-    position: relative;
-    color: white;
-    display: block;
-    /* padding: 10px 15px; */
-    padding-left: 20px;
-    margin-bottom: -1px;
-    border: 1px solid #ddd;
-    font-weight: bold;
-    font-family:Trebuchet MS;
-     
-/*   position: relative;
-  display: block;
-  padding: 10px 15px;
-  margin-bottom: -1px;
-  background-color: #fff;*/
- /* border: 1px solid #ddd;*/
- }
 
 /*****for tag dialog *******/
 #tagDialogBar {
@@ -270,7 +187,10 @@ body{
 #tagDialogCloser{
   color:grey;
   cursor:pointer;
-  padding-left:80%;
+}
+
+#tagDialogCloserBar{
+  padding-left:80%;    
 }
 #tagDialogContent {
   margin:auto;
@@ -288,7 +208,7 @@ body{
   margin-top: -50px;
   margin-left: -50px;
   border: 1px inset #B5B1B1;
-
+  z-index:1;
 }
 #tagDialogButtonContainer {margin-top:18px;}
 #tagDialogColorSelectionTab{
@@ -313,27 +233,36 @@ body{
 .colorBox-highlighted {    border: 2px solid black;}
 
 
-#tagPanelColorSelectionTab{
-    margin-left: 15px;
-   
-}
-.filteredColorBox{
-    margin-right: 1px;
-    float: left;
-    width: 15px;
-    height: 15px;
-}
-#tagPanel-colorPanel{
-    padding-bottom: 20px;
-    border: 1px rgba(0, 0, 0, .075) solid;
+
+/* service panel */
+#servicePanel {
+    background-color: #e9e9e9;
+    /*position: absolute;*/
+    position: fixed;
+
+    bottom: 0;
+    left: calc(56% - 66px);   
+    z-index: 2;
+    min-width: 30%;
+    min-height: 20%;
+    border: 2px solid rgba(0, 0, 0, .05);
+    
+    -webkit-transition: bottom 0.5s ease-in-out;
+    transition: bottom 0.5s ease-in-out;
 }
 
-#labelList-container {
-    max-width: 200px;
-    word-wrap: break-word;
-    min-height: 10px;
-    max-height: 220px;
-    overflow-y: scroll;
+#servicePanel.closed {
+    bottom: calc(-19% + 13px);
+    
+    -webkit-transition: bottom 0.5s ease-in-out;
+    transition: bottom 0.5s ease-in-out;
 }
 
-.hide {display:none;}
+#servicePanel-tab {
+    text-align: center;
+    background-color: #d0d0d0;
+}
+
+#servicePanel-contents {
+    
+}
