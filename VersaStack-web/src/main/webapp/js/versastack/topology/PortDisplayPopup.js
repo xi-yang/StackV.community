@@ -278,8 +278,16 @@ define(["local/d3", "local/versastack/utils"],
                             .attr("x", anchor.x + this.dx - width / 2)
                             .attr("y", anchor.y + this.dy - height - this.bevel / 2)
                             .attr("height", height + this.bevel / 2)
-                            .attr("width", width)
-
+                            .attr("width", width);
+                    // new chane, added debugging @
+                    console.log("\n]nEntering PortDisplayPopup updateSvgChoords");
+                    console.log("x: " + (anchor.x + this.dx - width / 2));
+                    console.log("y: " + (anchor.y + this.dy - height - this.bevel / 2));
+                    console.log("anchor.x: " + anchor.x);
+                    console.log("anchor.y: " + anchor.y);
+                    console.log("this.dx: " + this.dx);
+                    console.log("this.dy: " + this.dy);
+                    console.log("\nLeaving  PortDisplayPopup updateSvgChoords \n\n");
                     //connect the box to the node;
                     var dst = this.hostNode.getCenterOfMass();
                     this.svgLine

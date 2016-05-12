@@ -79,11 +79,11 @@
                                     <tbody>
                                         <c:if test="${param.networkType == 'aws'}">
                                             <tr>
-                                                <td>No VM</td>
+                                                <td>Basic Cloud</td>
                                                 <td><button onclick="applyNetTemplate(1)">Apply</button></td>
                                             </tr>                                            
                                             <tr>
-                                                <td>Basic VM</td>
+                                                <td>Basic VM in each subnet and Direct Connection</td>
                                                 <td><button onclick="applyNetTemplate(2)">Apply</button></td>
                                             </tr>
                                             <tr>
@@ -105,7 +105,8 @@
                                 </table>    
 
                                 <form id="custom-form" action="/VersaStack-web/ServiceServlet" method="post">
-                                    <input type="hidden" name="userID" value="${user.getId()}"/>    
+                                    <input type="hidden" name="username" value="${user.getUsername()}"/>
+                                    <input type="hidden" name="driverType" value="${param.networkType}"/>  
                                     <table class="management-table" id="net-custom-form">
                                         <thead>
                                             <tr>
@@ -175,13 +176,23 @@
                                                                 <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">
                                                             </div>
                                                             <div id="subnet1-vm-block">
-                                                                <div>VM 1   
-                                                                    <input type="text" name="subnet1-vm1" placeholder="VM Name">
-                                                                    <input type="text" name="subnet1-vm1-keypair" placeholder="Keypair Name">
-                                                                    <input type="text" name="subnet1-vm1-security" placeholder="Security Name">
-                                                                    <input type="text" name="subnet1-vm1-image" placeholder="Image Type">
-                                                                    <input type="text" name="subnet1-vm1-instance" placeholder="Instance Type">
-                                                                </div>
+                                                                <br>
+                                                                <table id="subnet1-vm1-table">                                                                    
+                                                                    <tbody>
+                                                                        <tr>
+                                                                            <td>VM Name</th>
+                                                                            <td><input type="text" name="subnet1-vm1"></td>
+                                                                        </tr>
+                                                                        <tr>
+                                                                            <td><input type="text" name="subnet1-vm1-keypair" placeholder="Keypair Name"></td>
+                                                                            <td><input type="text" name="subnet1-vm1-security" placeholder="Security Name"></td>
+                                                                        </tr>
+                                                                        <tr>
+                                                                            <td><input type="text" name="subnet1-vm1-image" placeholder="Image Type"></td>
+                                                                            <td><input type="text" name="subnet1-vm1-instance" placeholder="Instance Type"></td>
+                                                                        </tr>                                                                        
+                                                                    </tbody>                                                                    
+                                                                </table>
                                                             </div>
                                                             <div>
                                                                 <input class="button-register" id="subnet1-vm" type="button" value="Add VM" onClick="addVM('aws', this.id)">
@@ -260,27 +271,57 @@
                                                                 <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">
                                                             </div>
                                                             <div id="subnet1-vm-block">
-                                                                <div>VM 1   
-                                                                    <input type="text" name="subnet1-vm1" placeholder="VM Name">
-                                                                    <input type="text" name="subnet1-vm1-keypair" placeholder="Keypair Name">
-                                                                    <input type="text" name="subnet1-vm1-security" placeholder="Security Name">
-                                                                    <input type="text" name="subnet1-vm1-image" placeholder="Image Type">
-                                                                    <input type="text" name="subnet1-vm1-instance" placeholder="Instance Type">
-                                                                    <input type="text" name="subnet1-vm1-host" placeholder="VM Host">
-                                                                    <input type="text" name="subnet1-vm1-floating" placeholder="Floating IP">
-                                                                    <input type="text" name="subnet1-vm1-sriov-dest" placeholder="SRIOV Destination">
-                                                                    <input type="text" name="subnet1-vm1-sriov-mac" placeholder="SRIOV MAC Address">
-                                                                    <input type="text" name="subnet1-vm1-sriov-ip" placeholder="SRIOV IP Address">
-                                                                    <div>
-                                                                        <input type="text" name="subnet1-vm1-route1-from" placeholder="From"/>
-                                                                        <input type="text" name="subnet1-vm1-route1-to" placeholder="To"/>
-                                                                        <input type="text" name="subnet1-vm1-route1-next" placeholder="Next Hop"/>
-                                                                    </div><div>
-                                                                        <input type="text" name="subnet1-vm1-route2-from" placeholder="From"/>
-                                                                        <input type="text" name="subnet1-vm1-route2-to" placeholder="To"/>
-                                                                        <input type="text" name="subnet1-vm1-route2-next" placeholder="Next Hop"/>                                                                    
-                                                                    </div>
-                                                                </div>
+                                                                <br>
+                                                                <table id="subnet1-vm1-table">                                                                    
+                                                                    <tbody>
+                                                                        <tr>
+                                                                            <td>VM Name</th>
+                                                                            <td><input type="text" name="subnet1-vm1"></td>
+                                                                        </tr>
+                                                                        <tr>
+                                                                            <td><input type="text" name="subnet1-vm1-keypair" placeholder="Keypair Name"></td>
+                                                                            <td><input type="text" name="subnet1-vm1-security" placeholder="Security Name"></td>
+                                                                        </tr>
+                                                                        <tr>
+                                                                            <td><input type="text" name="subnet1-vm1-image" placeholder="Image Type"></td>
+                                                                            <td><input type="text" name="subnet1-vm1-instance" placeholder="Instance Type"></td>
+                                                                        </tr>
+                                                                        <tr>
+                                                                            <td><input type="text" name="subnet1-vm1-host" placeholder="VM Host"></td>
+                                                                            <td><input type="text" name="subnet1-vm1-floating" placeholder="Floating IP"></td>
+                                                                        </tr>
+                                                                        <tr>
+                                                                            <td>SRIOV</td>
+                                                                            <td>
+                                                                                <div id="subnet1-vm1-sriov-block">
+                                                                                    <div>
+                                                                                        <input type="text" name="subnet1-vm1-sriov1-dest" placeholder="SRIOV Destination">
+                                                                                        <input type="text" name="subnet1-vm1-sriov1-mac" placeholder="SRIOV MAC Address">
+                                                                                        <input type="text" name="subnet1-vm1-sriov1-ip" placeholder="SRIOV IP Address">
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <input class="button-register" id="subnet1-vm1-sriov" type="button" value="Add SRIOV" onClick="addSRIOV(this.id)">
+                                                                                </div>
+                                                                            </td>
+                                                                        </tr>
+                                                                        <tr>
+                                                                            <td>Routes</td>
+                                                                            <td>
+                                                                                <div id="subnet1-vm1-route-block">
+                                                                                    <div>
+                                                                                        <input type="text" name="subnet1-vm1-route1-from" placeholder="From"/>
+                                                                                        <input type="text" name="subnet1-vm1-route1-to" placeholder="To"/>
+                                                                                        <input type="text" name="subnet1-vm1-route1-next" placeholder="Next Hop"/>
+                                                                                    </div>                                                                                
+                                                                                </div>
+                                                                                <div>
+                                                                                    <input class="button-register" id="subnet1-vm1-route" type="button" value="Add VM Route" onClick="addVMRoute(this.id)">
+                                                                                </div>
+                                                                            </td>
+                                                                        </tr>
+                                                                    </tbody>                                                                    
+                                                                </table>
                                                             </div>
                                                             <div>
                                                                 <input class="button-register" id="subnet1-vm" type="button" value="Add VM" onClick="addVM('ops', this.id)">
@@ -288,10 +329,10 @@
                                                         </div>
                                                     </td>
                                                 </tr>
-<!--                                                <tr>
-                                                    <td>Direct Connect</td>
-                                                    <td><input type="text" name="conn-dest" placeholder="Destination" size="60" /><input type="text" name="conn-vlan" placeholder="VLAN" size="8" /></td>
-                                                </tr>-->
+                                                <!--                                                <tr>
+                                                                                                    <td>Direct Connect</td>
+                                                                                                    <td><input type="text" name="conn-dest" placeholder="Destination" size="60" /><input type="text" name="conn-vlan" placeholder="VLAN" size="8" /></td>
+                                                                                                </tr>-->
                                                 <tr>
                                                     <td></td>
                                                     <td><input type="submit" name="custom" value="Submit" /><input class="button-register" type="button" value="Add Subnet" onClick="addSubnet('ops')"></td>

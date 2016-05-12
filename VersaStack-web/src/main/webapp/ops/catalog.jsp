@@ -98,6 +98,8 @@
             <div id="service-specific">                
             </div>
         </div>        
+        <div id="tag-panel"> 
+        </div>
         <!-- JS -->
         <script>
             $(function () {
@@ -119,8 +121,8 @@
                         element.classList.remove("hide");
                     }
                 });
+                $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", null);        
             });
-
-        </script>        
+        </script>    
     </body>
 </html>
