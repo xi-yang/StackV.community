@@ -19,6 +19,7 @@ import javax.ejb.Startup;
 import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
+import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
@@ -29,14 +30,29 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
 @LocalBean
 @Startup
 @AccessTimeout(value = 10000) // 10 seconds
-public class SystemModelCoordinator {
-
+public class SystemModelCoordinator {        
     @EJB
     HandleSystemCall systemCallHandler;
 
+    // indicator of system being ready for service
+    boolean bootStrapped = false;
     // current VG with cached union ModelBase
     VersionGroup systemVersionGroup = null;
 
+    @Lock(LockType.READ)
+    public boolean isBootStrapped() {
+        return bootStrapped;
+    }
+    
+    @Lock(LockType.READ)
+    public void setBootStrapped(boolean bl) {
+        bootStrapped = bl;
+        if (bootStrapped == false) {
+            systemVersionGroup = null;
+        }
+    }
+    
+    @Lock(LockType.WRITE)
     public VersionGroup getSystemVersionGroup() {
         return systemVersionGroup;
     }
@@ -44,14 +60,18 @@ public class SystemModelCoordinator {
     @Lock(LockType.WRITE)
     @Schedule(minute = "*", hour = "*", persistent = false)
     public void autoUpdate() {
-        //check driverInstances 
+        //check driverInstances (catch: if someone unplug and plug a driver within a minute, we will have problem)
         Map<String, DriverInstance> ditMap = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
         if (ditMap == null || ditMap.isEmpty()) {
+            bootStrapped = false;
+            systemVersionGroup = null;
             return;
         }
         for (DriverInstance di : ditMap.values()) {
-            synchronized (di) {
+            synchronized (di) { 
                 if (di.getHeadVersionItem() == null) {
+                    bootStrapped = false;
+                    systemVersionGroup = null;
                     return;
                 }
             }
@@ -67,6 +87,11 @@ public class SystemModelCoordinator {
                 this.systemVersionGroup = newVersionGroup;
                 this.systemVersionGroup.createUnionModel();
             }
+        }
+        if (!bootStrapped) {
+            // cleanning up from recovery
+            VersionGroupPersistenceManager.cleanupAndUpdateAll();
+            bootStrapped = true;
         }
     }
 

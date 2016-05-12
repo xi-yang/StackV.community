@@ -374,6 +374,48 @@ public class OpenStackNeutronModelBuilder {
                     sriovVnicNum++;
                 }
             }
+            // Ceph RBD block storage / volumes
+            int cephRbdNum = 1;
+            while (metadata != null && metadata.containsKey("ceph_rbd:" + cephRbdNum)) {
+                String cephRbdKey = "ceph_rbd:" + cephRbdNum;
+                cephRbdNum++;
+                String cephRbdJson = metadata.get(cephRbdKey);
+                JSONParser parser = new JSONParser();
+                try {
+                    cephRbdJson = cephRbdJson.replaceAll("'", "\""); // tolerate single quotes
+                    JSONObject jsonObj = (JSONObject) parser.parse(cephRbdJson);
+                    if (!jsonObj.containsKey("volume") || !jsonObj.containsKey("size")) {
+                        Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING,
+                                String.format("OpenStack driver model server '%s' Ceph RBD requires both 'volume' and 'size' parameters in metadata ''%s'", server_name, cephRbdKey));
+                        continue;
+                    }
+                    // the VM server hasVolume
+                    String volumeName = (String) jsonObj.get("volume");
+                    String diskSize =  (String) jsonObj.get("size");
+                    String mountPoint =  (String) jsonObj.get("mount");
+                    Resource resVolume = RdfOwl.createResource(model, ResourceTool.getResourceUri(volumeName, OpenstackPrefix.volume, volumeName), Mrs.Volume);
+                    model.add(model.createStatement(VM, Mrs.hasVolume, resVolume));
+                    if (diskSize != null) {
+                        model.add(model.createStatement(resVolume, Mrs.disk_gb, diskSize));
+                    }
+                    if (mountPoint != null) {
+                        model.add(model.createStatement(resVolume, Mrs.mount_point, mountPoint));
+                    }
+                    // find the ceph blockstorage service that providesVolume
+                    String sparql = "SELECT ?cephrbd WHERE {"
+                            + "?cephrbd a mrs:BlockStorageService. "
+                            + "?cephrbd mrs:type  \"ceph-rbd\". "
+                            + "}";
+                    ResultSet r = ModelUtil.sparqlQuery(modelExt, sparql);
+                    if (r.hasNext()) {
+                        Resource resCephRbd = r.next().getResource("cephrbd");
+                        model.add(model.createStatement(resCephRbd, Mrs.providesVolume, resVolume));
+                    }
+                } catch (ParseException e) {
+                    Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING,
+                            String.format("OpenStack driver cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), cephRbdJson, cephRbdKey));
+                }
+            }
         }
 
         for (NetFloatingIP f : openstackget.getFloatingIp()) {

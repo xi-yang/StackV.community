@@ -6,8 +6,12 @@
 package net.maxgigapop.mrs.rest.api;
 
 import java.util.Set;
+import javax.ejb.EJBException;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Application;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.ExceptionMapper;
+import javax.ws.rs.ext.Provider;
 
 /**
  *
@@ -20,20 +24,21 @@ public class ApplicationConfig extends Application {
     public Set<Class<?>> getClasses() {
         Set<Class<?>> resources = new java.util.HashSet<>();
         addRestResourceClasses(resources);
+        addExceptionMapperClasses(resources);
         return resources;
     }
 
-    /**
-     * Do not modify addRestResourceClasses() method. It is automatically
-     * populated with all resources defined in the project. If required, comment
-     * out calling this method in getClasses().
-     */
-    private void addRestResourceClasses(Set<Class<?>> resources) {        
+
+    private void addExceptionMapperClasses(Set<Class<?>> resources) {
+        resources.add(net.maxgigapop.mrs.rest.api.EJBExceptionMapper.class);
+    }
+
+    private void addRestResourceClasses(Set<Class<?>> resources) {
         resources.add(net.maxgigapop.mrs.rest.api.DeltaResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.DriverResource.class);
+        resources.add(net.maxgigapop.mrs.rest.api.EJBExceptionMapper.class);
         resources.add(net.maxgigapop.mrs.rest.api.ModelResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.ServiceResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.WebResource.class);
     }
-
 }

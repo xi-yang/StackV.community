@@ -136,12 +136,8 @@ public class ModelResource {
     @DELETE
     @Path("/systeminstance/{refUUID}")
     public String terminate(@PathParam("refUUID") String refUUID) {
-        try {
-            systemCallHandler.terminateInstance(refUUID);
-            return "Successfully terminated";
-        } catch (EJBException e) {
-            return (e.getMessage());
-        }
+        systemCallHandler.terminateInstance(refUUID);
+        return "Successfully terminated";
     }
 
     @POST

@@ -105,7 +105,8 @@
                                 </table>    
 
                                 <form id="custom-form" action="/VersaStack-web/ServiceServlet" method="post">
-                                    <input type="hidden" name="userID" value="${user.getId()}"/>    
+                                    <input type="hidden" name="username" value="${user.getUsername()}"/>
+                                    <input type="hidden" name="driverType" value="${param.networkType}"/>  
                                     <table class="management-table" id="net-custom-form">
                                         <thead>
                                             <tr>
