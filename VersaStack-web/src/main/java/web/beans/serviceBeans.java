@@ -377,10 +377,6 @@ public class serviceBeans {
                 }                
             }
             
-            url = new URL(String.format("%s/app/service/%s/verify", host, refUuid));
-            HttpURLConnection verify = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, verify, "PUT", null);
-            
             return 0;
         } catch (Exception e) {
             return 1;//connection error
@@ -755,11 +751,7 @@ public class serviceBeans {
                     return 3;//Fail to create network
                 }                
             }
-            
-            url = new URL(String.format("%s/app/service/%s/verify", host, refUuid));
-            HttpURLConnection verify = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, verify, "PUT", null);
-            
+
             return 0;
             
         } catch (Exception e) {

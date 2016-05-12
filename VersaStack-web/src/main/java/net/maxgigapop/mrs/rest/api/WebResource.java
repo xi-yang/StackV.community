@@ -231,7 +231,7 @@ public class WebResource {
             } catch (InstantiationException | IllegalAccessException | ClassNotFoundException ex) {
                 Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
             }
-
+            
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
@@ -292,7 +292,7 @@ public class WebResource {
             prep.executeUpdate();
             
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_verification` "
-                    + "(`service_instance_id`, `verification_state`) VALUES (?, NULL)");
+                    + "(`service_instance_id`) VALUES (?)");
             prep.setInt(1, instanceID);
             prep.executeUpdate();
 
@@ -305,7 +305,7 @@ public class WebResource {
                 }
             }
 
-            // Execute service Creation.
+            // Execute service creation.
             switch (serviceType) {
                 case "dnc":
                     servBean.createConnection(paraMap);
@@ -317,7 +317,10 @@ public class WebResource {
                     servBean.createflow(paraMap);
                     break;
                 default:
-            }                       
+            }
+            
+            // Verify creation.
+            verify(refUuid);
 
             long endTime = System.currentTimeMillis();
             System.out.println("Service API End::Name="
@@ -328,8 +331,8 @@ public class WebResource {
             // Return instance UUID
             return refUuid;
 
-        } catch (EJBException | SQLException | IOException e) {
-            return e.getMessage();
+        } catch (EJBException | SQLException | IOException | InterruptedException e) {
+            return "<<<CREATION ERROR: " + e.getMessage();
         }
     }
 
@@ -395,7 +398,66 @@ public class WebResource {
 
             return superStatus(refUuid) + " - " + status(refUuid) + "\r\n";
         } catch (IOException | SQLException | InterruptedException ex) {
-            return "Operation Error: " + ex.getMessage() + "\r\n";
+            return "<<<OPERATION ERROR: " + ex.getMessage() + "\r\n";
+        }
+    }
+
+    @GET
+    @Path("/service/delta/{siUUID}")
+    @Produces("application/json")
+    public ArrayList<String> getDeltas(@PathParam("siUUID") String serviceUUID) {
+        try {
+            ArrayList<String> retList = new ArrayList<>();
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("SELECT delta FROM service_instance I, service_delta D WHERE I.referenceUUID = ? AND D.service_instance_id = I.service_instance_id");
+            prep.setString(1, serviceUUID);
+            ResultSet rs1 = prep.executeQuery();
+            while (rs1.next()) {
+                retList.add(rs1.getString("delta"));
+            }
+
+            return retList;
+        } catch (SQLException e) {
+            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+            return null;
+        }
+    }
+    
+    @GET
+    @Path("/service/lastverify/{siUUID}")
+    @Produces("application/json")
+    public HashMap<String, String> getVerificationResults(@PathParam("siUUID") String serviceUUID) {
+        try {
+            HashMap<String, String> retMap = new HashMap<>();
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("SELECT V.* FROM service_instance I, service_verification V WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
+            prep.setString(1, serviceUUID);
+            ResultSet rs1 = prep.executeQuery();
+            while (rs1.next()) {
+                retMap.put("delta_uuid", rs1.getString("delta_uuid"));
+                retMap.put("creation_time", rs1.getString("creation_time"));
+                retMap.put("verified_reduction", rs1.getString("verified_reduction"));
+                retMap.put("verified_addition", rs1.getString("verified_addition"));
+                retMap.put("unverified_reduction", rs1.getString("unverified_reduction"));
+                retMap.put("unverified_addition", rs1.getString("unverified_addition"));
+                retMap.put("reduction", rs1.getString("reduction"));
+                retMap.put("addition", rs1.getString("addition"));
+            }
+
+            return retMap;
+        } catch (SQLException e) {
+            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+            return null;
         }
     }
 
@@ -566,7 +628,7 @@ public class WebResource {
                         String typeArr[] = typeString.split(",");
                         HashMap<String, String> typeMap = new HashMap<>();
                         for (String type : typeArr) {
-                            String typeTemp[] = type.split("/+");
+                            String typeTemp[] = type.split("\\+");
                             typeMap.put(typeTemp[0], typeTemp[1]);
                         }
 
@@ -610,8 +672,9 @@ public class WebResource {
                             JSONObject interfaceJSON = (JSONObject) obj;
                             
                             String typeString = (String) interfaceJSON.get("type");
+                            String addressString = (String) interfaceJSON.get("address");
                             if (typeString.equalsIgnoreCase("Ethernet")) {
-                                interfaceMap.put("float", typeString.split("/+")[1]);
+                                interfaceMap.put("float", addressString.split("\\+")[1]);
                             } else if (typeString.equalsIgnoreCase("SRIOV")) {
                                 
                             }                            
@@ -829,6 +892,20 @@ public class WebResource {
                 Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
             }           
             
+            // Update verification results cache.
+            prep = front_conn.prepareStatement("UPDATE `service_verification` SET `delta_uuid`=?,`creation_time`=?,`verified_reduction`=?,`verified_addition`=?,`unverified_reduction`=?,`unverified_addition`=?,`reduction`=?,`addition`=? WHERE `service_instance_id`=?");
+            prep.setString(1, (String) verifyJSON.get("referenceUUID"));
+            prep.setString(2, (String) verifyJSON.get("creationTime"));
+            prep.setString(3, (String) verifyJSON.get("verifiedModelReduction"));
+            prep.setString(4, (String) verifyJSON.get("verifiedModelAddition"));
+            prep.setString(5, (String) verifyJSON.get("unverifiedModelReduction"));
+            prep.setString(6, (String) verifyJSON.get("unverifiedModelAddition"));
+            prep.setString(7, (String) verifyJSON.get("reductionVerified"));
+            prep.setString(8, (String) verifyJSON.get("additionVerified"));
+            prep.setInt(9, instanceID);
+            prep.executeUpdate();
+
+
             if (verifyJSON.containsKey("reductionVerified") && ((String) verifyJSON.get("reductionVerified")).equals("false"))
                 redVerified = false;
             if (verifyJSON.containsKey("additionVerified") && ((String) verifyJSON.get("additionVerified")).equals("false"))
