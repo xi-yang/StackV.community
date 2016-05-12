@@ -595,6 +595,7 @@ public class HandleServiceCall {
                     for (Iterator<DriverSystemDelta> dsdIt = systemInstance.getSystemDelta().getDriverSystemDeltas().iterator(); dsdIt.hasNext();) {
                         DriverSystemDelta dsd = dsdIt.next();
                         DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(dsd.getDriverInstance().getTopologyUri());
+                        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
                         driverInstance.getDriverSystemDeltas().remove(dsd);
                         if (serviceDelta.getSystemDelta() != null && serviceDelta.getSystemDelta().getDriverSystemDeltas() != null
                                 && serviceDelta.getSystemDelta().getDriverSystemDeltas().contains(dsd)) {
