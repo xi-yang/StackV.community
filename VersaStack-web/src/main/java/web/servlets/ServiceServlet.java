@@ -71,12 +71,12 @@ public class ServiceServlet extends HttpServlet {
             // Select the correct service.
             if (request.getParameter("driverID") != null) { // Driver
                 serviceString = "driver";
-            } else if (request.getParameter("driverType") != null) { // VM
-                serviceString = "vmadd";
             } else if (request.getParameter("netCreate") != null) { // Network Creation
                 serviceString = "netcreate";
             } else if (request.getParameter("dncCreate") != null) {
                 serviceString = "dnc";
+            } else if (request.getParameter("driverType") != null) { // VM
+                serviceString = "vmadd";
             } else if (request.getParameter("fl2pCreate") != null) {
                 serviceString = "fl2p";
             } else {
@@ -287,7 +287,7 @@ public class ServiceServlet extends HttpServlet {
         JSONObject inputJSON = new JSONObject();
         JSONObject dataJSON = new JSONObject();
         inputJSON.put("user", paraMap.get("username"));
-        inputJSON.put("type", "dnc");
+        inputJSON.put("type", "netcreate");
 
         JSONArray cloudArr = new JSONArray();
         JSONObject cloudJSON = new JSONObject();
@@ -309,10 +309,10 @@ public class ServiceServlet extends HttpServlet {
 
                 // Process each routes.
                 JSONArray routeArr = new JSONArray();
-                for (int j = 1; j < 10; j++) {
-                    JSONObject routeJSON = new JSONObject();
+                for (int j = 1; j < 10; j++) {                    
                     // Check for subroute existence.
                     if (paraMap.containsKey("subnet" + i + "-route" + j + "-to")) {
+                        JSONObject routeJSON = new JSONObject();
                         JSONObject toJSON = new JSONObject();
                         toJSON.put("value", paraMap.get("subnet" + i + "-route" + j + "-to"));
                         routeJSON.put("to", toJSON);
@@ -327,9 +327,9 @@ public class ServiceServlet extends HttpServlet {
                             nextJSON.put("value", paraMap.get("subnet" + i + "-route" + j + "-next"));
                             routeJSON.put("next_hop", nextJSON);
                         }
-                    }
 
-                    routeArr.add(routeJSON);
+                        routeArr.add(routeJSON);
+                    }
                 }
 
                 // Apply route propagation

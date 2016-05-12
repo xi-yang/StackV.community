@@ -1,4 +1,4 @@
-/*
+    /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
@@ -295,7 +295,7 @@ public class WebResource {
                     + "(`service_instance_id`) VALUES (?)");
             prep.setInt(1, instanceID);
             prep.executeUpdate();
-
+            
             // Replicate properties into DB.
             for (String key : paraMap.keySet()) {
                 if (!paraMap.get(key).isEmpty()) {
@@ -304,7 +304,7 @@ public class WebResource {
                     servBean.executeHttpMethod(url, connection, "POST", paraMap.get(key));
                 }
             }
-
+            
             // Execute service creation.
             switch (serviceType) {
                 case "dnc":
@@ -346,14 +346,13 @@ public class WebResource {
         try {
             switch (action) {
                 case "propagate":
-                    propagate(refUuid);
+                    propagate(refUuid, 0);
                     break;
                 case "commit":
-                    commit(refUuid);
+                    commit(refUuid, 0);
                     break;
                 case "revert":
-                    setSuperState(refUuid, 2);
-                    revert(refUuid);
+                    revert(refUuid, 0);
                     break;
 
                 case "cancel":
@@ -511,15 +510,15 @@ public class WebResource {
                 return 1;
             }
 
-            result = revert(refUuid);
+            result = revert(refUuid, 2);
             if (!result) {
                 return 2;
             }
-            result = propagate(refUuid);
+            result = propagate(refUuid, 2);
             if (!result) {
                 return 3;
             }
-            result = commit(refUuid);
+            result = commit(refUuid, 2);
             if (!result) {
                 return 4;
             }
@@ -717,14 +716,17 @@ public class WebResource {
 
                     routeString += "\r\n";
                 }
-
-                routeString = routeString.substring(0, routeString.length() - 2);
+                
+                if (!routeString.equals("routes")) {
+                    routeString = routeString.substring(0, routeString.length() - 2);
+                }
             }
 
             String subString = "name+" + subName + "&cidr+" + subCidr;
-            if (!routeString.isEmpty()) {
+            if (!routeString.equals("routes")) {
                 subString += "&" + routeString;
             }
+            
             paraMap.put("subnet" + (i + 1), subString);
         }
 
@@ -823,21 +825,21 @@ public class WebResource {
         prep.executeUpdate();
     }
 
-    private boolean propagate(String refUuid) throws MalformedURLException, IOException {
+    private boolean propagate(String refUuid, int stateId) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
         return result.equalsIgnoreCase("PROPAGATED");
     }
 
-    private boolean commit(String refUuid) throws MalformedURLException, IOException {
+    private boolean commit(String refUuid, int stateId) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
         return result.equalsIgnoreCase("COMMITTED");
     }
 
-    private boolean revert(String refUuid) throws MalformedURLException, IOException {
+    private boolean revert(String refUuid, int stateId) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/revert", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
