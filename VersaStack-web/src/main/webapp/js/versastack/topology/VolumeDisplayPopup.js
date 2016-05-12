@@ -9,7 +9,7 @@ define(["local/d3", "local/versastack/utils"],
                 this.dy = 0;
                 this.minWidth = 0;
                 this.minHeight = 0;
-                this.bevel = 0;
+                this.bevel = 10;
                 this.svgLine = null;
                 this.svgBubble = null;
                 this.color = "";
@@ -47,8 +47,6 @@ define(["local/d3", "local/versastack/utils"],
                 };
                 this.setColor = function (color) {
                     this.color = color;
-                    //alert("color: " + color +"\nthis.color: " + this.color);
-
                     return this;
                 };
                 this.setOpacity = function (opacity) {

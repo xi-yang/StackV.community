@@ -206,17 +206,7 @@ public class serviceBeans {
             rs1.next();
             int instanceId = rs1.getInt(1);
             int stateId = rs1.getInt(2);
-
-            String formatDelta = delta.replaceAll("<", "&lt;");
-            formatDelta = formatDelta.replaceAll(">", "&gt;");
-
-            prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
-                    + "(`service_instance_id`, `service_state_id`, `delta`) "
-                    + "VALUES (?, ?, ?)");
-            prep.setInt(1, instanceId);
-            prep.setInt(2, stateId);
-            prep.setString(3, formatDelta);
-            prep.executeUpdate();
+           
 
         } catch (SQLException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
@@ -241,7 +231,7 @@ public class serviceBeans {
             if (!result.equals("COMMITTED")) {
                 return 2;//Error occurs when interacting with back-end system
             }
-            url = new URL(String.format("%s//%s/status", host, refUuid));
+            url = new URL(String.format("%s/%s/status", host, refUuid));
             while (true) {
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
                 result = this.executeHttpMethod(url, status, "GET", null);
@@ -377,17 +367,17 @@ public class serviceBeans {
             if (!result.equals("COMMITTED")) {
                 return 2;//Error occurs when interacting with back-end system
             }
-            url = new URL(String.format("%s//%s/status", host, refUuid));
-            while (true) {
+            url = new URL(String.format("%s/service/%s/status", host, refUuid));
+            while (!result.equals("READY")) {
+                sleep(5000);//wait for 5 seconds and check again later
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
                 result = this.executeHttpMethod(url, status, "GET", null);
-                if (result.equals("READY")) {
-                    return 0;//create network successfully
-                } else if (!result.equals("COMMITTED")) {
+                if (!result.equals("COMMITTED")) {
                     return 3;//Fail to create network
-                }
-                sleep(5000);//wait for 5 seconds and check again later
+                }                
             }
+            
+            return 0;
         } catch (Exception e) {
             return 1;//connection error
         }
@@ -736,7 +726,7 @@ public class serviceBeans {
             if (!result.contains("referenceVersion")) {
                 return 2;//Error occurs when interacting with back-end system
             }
-
+            
             // Cache System Delta
             cacheSystemDelta(instanceID, historyID, result);
 
@@ -753,16 +743,17 @@ public class serviceBeans {
                 return 2;//Error occurs when interacting with back-end system
             }
             url = new URL(String.format("%s/service/%s/status", host, refUuid));
-            while (true) {
+            while (!result.equals("READY")) {
+                sleep(5000);//wait for 5 seconds and check again later
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
                 result = this.executeHttpMethod(url, status, "GET", null);
-                if (result.equals("READY")) {
-                    return 0;//create network successfully
-                } else if (!result.equals("COMMITTED")) {
+                if (!result.equals("COMMITTED")) {
                     return 3;//Fail to create network
-                }
-                sleep(5000);//wait for 5 seconds and check again later
+                }                
             }
+
+            return 0;
+            
         } catch (Exception e) {
             return 1;//connection error
         }
@@ -1018,7 +1009,7 @@ public class serviceBeans {
      * @param refUuid instance UUID
      * @return formatted URN.
      */
-    private String urnBuilder(String serviceType, String name, String refUuid) {
+    public String urnBuilder(String serviceType, String name, String refUuid) {
         switch (serviceType) {
             case "dnc":
                 return "urn:ogf:network:service+" + refUuid + ":resource+links:tag+" + name;
@@ -1055,8 +1046,8 @@ public class serviceBeans {
             formatDelta = formatDelta.replaceAll(">", "&gt;");
 
             prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
-                    + "(`service_instance_id`, `service_history_id`, `referenceUUID`, `delta`) "
-                    + "VALUES (?, ?, ?, ?)");
+                    + "(`service_instance_id`, `service_history_id`, `type`, `referenceUUID`, `delta`) "
+                    + "VALUES (?, ?, 'Service', ?, ?)");
             prep.setInt(1, instanceID);
             prep.setInt(2, historyID);
             prep.setString(3, deltaUUID);
@@ -1077,6 +1068,11 @@ public class serviceBeans {
             front_connectionProps.put("user", "root");
             front_connectionProps.put("password", "root");
 
+            // Retrieve UUID from delta
+            /*
+            
+            */
+            
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
@@ -1084,8 +1080,8 @@ public class serviceBeans {
             formatDelta = formatDelta.replaceAll(">", "&gt;");
 
             PreparedStatement prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
-                    + "(`service_instance_id`, `service_history_id`, `delta`) "
-                    + "VALUES (?, ?, ?)");
+                    + "(`service_instance_id`, `service_history_id`, `type`, `delta`) "
+                    + "VALUES (?, ?, 'System', ?)");
             prep.setInt(1, instanceID);
             prep.setInt(2, historyID);
             prep.setString(3, formatDelta);
@@ -1094,7 +1090,7 @@ public class serviceBeans {
         } catch (SQLException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }
+    }      
 
 // ------------------------- DEPRECATED SERVICES -------------------------------
     /**

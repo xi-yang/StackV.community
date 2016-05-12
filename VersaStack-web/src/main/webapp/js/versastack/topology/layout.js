@@ -40,7 +40,7 @@ define([
                 .friction(0.9)
                 .linkDistance(10)
                 .charge(-1000)
-                .gravity(.5)
+                .gravity(0.5)
                 .theta(0.8)
                 .alpha(0.1);
         force.on("tick", function () {
@@ -74,6 +74,57 @@ define([
         force.stop();
     }
 
+    function testLayout(model, lockNodes, width, height) { //@
+        var nodes = model.listNodes();
+        var edges = model.listEdges();
+
+        if (lockNodes) {
+            map_(lockNodes, function (node) {
+                if (node.isLeaf()) {
+                    node.fixed = true;
+                    node.px = node.x;
+                    node.py = node.y;
+                }
+            });
+        }
+
+        //To encourage topologies to clump, we add edges between topolgies and 
+        //their children
+        map_(nodes, /**@param {Node} n**/function (n) {
+            map_(n.children, function (child) {
+                edges.push({source: n, target: child});
+            });
+        });
+        force = d3.layout.force()
+                .nodes(nodes)
+                .links(edges)
+                .size([width, height])
+                .linkStrength(10)
+                .friction(0.5)
+                .linkDistance(10)
+                .charge(-700)
+                .gravity(1)
+                .theta(0.8)
+                .alpha(0.1);
+        force.on("tick", function () {
+            //Make a nodes coordinates equal to its center of mass.
+            //This is significant for topologies
+            map_(nodes, function (node) {
+                var choords = node.getCenterOfMass();
+                node.x = choords.x;
+                node.y = choords.y;
+                if (isNaN(choords.x) || isNaN(choords.y)) console.log("It's NAN in doLayout\n");
+            });
+        });
+        force.start();
+        for (var i = 0; i < 100; i++) {
+            force.alpha(0.1).tick();
+        }
+        force.stop();
+        forceGlobal = force;
+
+    }
+
     /** PUBLIC INTERFACE **/
     return {
         doLayout: doLayout,
@@ -82,7 +133,8 @@ define([
         //Debug functions
         force: function () {
             return force;
-        }
+        },
+        testLayout: testLayout
     };
     /** END PUBLIC INTERFACE **/
 });

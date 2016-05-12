@@ -20,6 +20,9 @@
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/VersaStack-web/css/bootstrap.css">
         <link rel="stylesheet" href="/VersaStack-web/css/style.css">       
+      <link rel="stylesheet" href="/VersaStack-web/css/contextMenu.css">   
+      <!-- font awesome icons won't show up otherwise --->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
 
         <script>
             $(document).ready(function () {
@@ -43,6 +46,11 @@
                         element.classList.remove("hide");
                     }
                 });
+                
+                $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", function() {                    
+                    var tp = document.querySelector("#tagPanel");
+                    tp.style.left = "calc(40% - 66px)";
+                });                        
             });
         </script> 
 
@@ -94,8 +102,11 @@
                     "local/versastack/topology/render",
                     "local/d3",
                     "local/versastack/utils",
-                    "local/versastack/topology/DropDownTree"],
-                        function (m, l, r, d3_, utils_, tree) {
+                    "local/versastack/topology/DropDownTree",
+                    "local/versastack/topology/ContextMenu",
+                    "local/versastack/topology/TagDialog"
+                ],
+                        function (m, l, r, d3_, utils_, tree, c, td) {
                             ModelConstructor = m;
                             model = new ModelConstructor();
                             model.init(1, drawGraph, null);
@@ -105,8 +116,15 @@
                             utils = utils_;
                             map_ = utils.map_;
                             DropDownTree = tree;
-
-                            outputApi = new outputApi_(render.API);
+                            ContextMenu = c; 
+                            TagDialog = td;
+                            tagDialog = new TagDialog("${user.getUsername()}");
+                            
+                            tagDialog.init();
+                            // possibly pass in map here later for all possible dialogs 
+                            contextMenu = new ContextMenu(d3, render.API, tagDialog);//, tagDialog);
+                            contextMenu.init();
+                            outputApi = new outputApi_(render.API, contextMenu);
                         });
 
                 var request = new XMLHttpRequest();
@@ -133,6 +151,7 @@
                 
                 buttonInit();
             }
+            
             function drawGraph() {
                 var width = document.documentElement.clientWidth / settings.INIT_ZOOM;
                 var height = document.documentElement.clientHeight / settings.INIT_ZOOM;
@@ -142,6 +161,15 @@
                 layout.doLayout(model, null, width, height);
 
                 render.doRender(outputApi, model);
+                
+//                var ns = model.listNodes();
+//                for (var i in ns) {
+//                    ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+//                    if (ns[i].svgNodeAnchor) {
+//                        ns[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+//                    }
+//                }
+                  outputApi.initD3MenuEvents();
 //                animStart(30);
             }
             function reload() {
@@ -160,9 +188,13 @@
                     layout.doLayout(model, null, width, height);
                     layout.doLayout(model, null, width, height);
                     
-                    outputApi = new outputApi_(render.API);
+                    //layout.force().gravity(1).charge(-900).start();
+                    //commented this out for demo 0421106
+//                    layout.testLayout(model, null, width, height);  //@
+//                    layout.testLayout(model, null, width, height);                    
                     render.doRender(outputApi, model);
-                    outputApi.renderApi.selectElement(null, model);
+                     outputApi.initD3MenuEvents();
+                    outputApi.renderApi.selectElement(null);
                 }, null);
 
 //                var request = new XMLHttpRequest();
@@ -182,7 +214,7 @@
 //                    });
 //                };
 //                request.send();
-//
+
                 $("#loadingPanel").addClass("hide");
                 $("#hoverdiv").removeClass("hide");
                 $("#viz").attr("class", "");
@@ -216,7 +248,35 @@
                 $("#viz").attr("class", "");
             }
 
-            function buttonInit() {
+            function buttonInit() { //@
+                $("#testButton").click(function (evt) {
+                    outputApi.resetZoom();
+                    var width = document.documentElement.clientWidth / outputApi.getZoom();
+                    var height = document.documentElement.clientHeight / outputApi.getZoom();
+                    //TODO, figure out why we need to call this twice
+                    //If we do not, the layout does to converge as nicely, even if we double the number of iterations
+//                    layout.doLayout(model, null, width, height);
+//                    layout.doLayout(model, null, width, height);
+                    layout.stop();
+                    //layout.force().gravity(1).charge(-900).start();
+                    layout.testLayout(model, null, width, height);
+                    layout.testLayout(model, null, width, height); 
+                    
+//                    var zoom = d3.behavior.zoom();
+//                    var viewCenter = [];
+//
+//                    viewCenter[0] = (-1)*zoom.translate()[0] + (0.5) * (  width/zoom.scale() );
+//                    viewCenter[1] = (-1)*zoom.translate()[1] + (0.5) * ( height/zoom.scale() );
+        
+                    outputApi.resetZoom();
+                    render.doRender(outputApi, model);
+                    outputApi.initD3MenuEvents();
+
+                    evt.preventDefault();
+                });
+                $("#stopButton").click(function (evt) {
+                   layout.stop(); 
+                });
                 $("#cancelButton").click(function (evt) {
                     $("#actionForm").empty();
 
@@ -249,19 +309,49 @@
 
                     evt.preventDefault();
                 });
-            
+                
                 $("#displayPanel-tab").click(function (evt) {
                     $("#displayPanel").toggleClass("closed");
 
                     evt.preventDefault();
                 });
-
-                $("#jobsPanel-tab").click(function (evt) {
-                    $("#jobsPanel").toggleClass("closed");
-
+                
+               // Brings tagPanel or tagDialog to the foreground if one is 
+               // clicked and behind the other. Will probably need to be 
+               // generalized soon. 
+               function bringToForeground(current) {
+                   var tagDialogElement = document.querySelector("#tagDialog");
+                   var tagPanelElement = document.querySelector("#tagPanel");
+                   if (!tagPanelElement.classList.contains("closed") && 
+                       tagDialogElement.classList.contains("tagDialog-active")) 
+                   {
+                       var tagDialog = document.getElementById("tagDialog");
+                       var tagPanel = document.getElementById("tagPanel");
+                       var tdz = parseInt(window.getComputedStyle(tagDialog, null).zIndex);
+                       var tpz = parseInt(window.getComputedStyle(tagPanel, null).zIndex);
+                       
+                       if (( (current === "tagDialog") && (tdz < tpz) ) ||
+                           ( (current === "tagPanel") &&  (tpz < tdz) ) ) {
+                            tagDialog.style.zIndex = tpz;
+                            tagPanel.style.zIndex = tdz;
+                       }
+                   }
+               }
+               
+                $("#tagDialog").click(function (evt) {
+                    bringToForeground("tagDialog");
                     evt.preventDefault();
                 });
-
+                
+                $("#tagPanel").click(function (evt) {
+                    bringToForeground("tagPanel");
+                    evt.preventDefault();
+                });
+                
+                $("#servicePanel-tab").click(function (evt) {
+                    $("#servicePanel").toggleClass("closed");
+                    evt.preventDefault();
+                });               
             }
 
             //animStart and animStop are primarily intended as debug functions
@@ -280,16 +370,19 @@
             }
 
 
-            function outputApi_(renderAPI) {
+            function outputApi_(renderAPI, contextMenu) {
                 var that = this;
                 this.renderApi = renderAPI;
-
+                this.contextMenu = contextMenu;
+                
                 this.getSvgContainer = function () {
                     return d3.select("#viz");
                 };
 
                 var displayTree = new DropDownTree(document.getElementById("treeMenu"));
                 displayTree.renderApi = this.renderApi;
+                displayTree.contextMenu = this.contextMenu;
+                
                 this.getDisplayTree = function () {
                     return displayTree;
                 };
@@ -298,8 +391,64 @@
                     document.getElementById("displayName").innerText = name;
                 };
 
+                this.initD3MenuEvents = function() {
+                    var ns = model.listNodes();
+                    for (var i in ns) {
+                        if (ns[i].svgNode) {
+                            ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                        }
+                        if (ns[i].svgNodeAnchor) {
+                            ns[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                        }
+                    }
+
+                    var ns = model.listServices();
+                    for (var i in ns) {
+                        if (ns[i].svgNode) {
+                            ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                        } else {
+                            console.log("graphTest.jsp: initD3MenuEvnts: name of service  with null svgNode: " + ns[i].getName());
+                        }
+                        if (ns[i].svgNodeAnchor) {
+                            ns[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                        }
+                    }
+
+                    var ns = model.listSubnets();
+                    for (var i in ns) {
+                        if (ns[i].svgNode) {
+                            ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                        }
+                        if (ns[i].svgNodeAnchor) {
+                            ns[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                        }
+                    }
 
 
+                };
+
+                this.initD3MenuPortEvents = function(ports) {
+                    for (var i in ports) {
+                        if (ports[i].svgNode) {
+                            ports[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ports[i]));
+                        }    
+                        if (ports[i].svgNodeAnchor) {
+                            ports[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ports[i]));
+                        }
+                    }                
+                };
+
+                this.initD3MenuVolumeEvents = function(volumes) {
+                    for (var i in volumes) {
+                        if (volumes[i].svgNode) {
+                            volumes[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, volumes[i]));
+                        }    
+                        if (volumes[i].svgNodeAnchor) {
+                            volumes[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, volumes[i]));
+                        }
+                    }            
+                };
+        
                 var zoomFactor = settings.INIT_ZOOM;
                 var offsetX = 0, offsetY = 0;
                 this.zoom = function (amount, mouseX, mouseY) {
@@ -366,7 +515,13 @@
                     document.getElementById("hoverdiv").style.visibility = vis ? "visible" : "hidden";
                 };
 
-
+                this.resetZoom = function () {   // @
+                    zoomFactor = settings.INIT_ZOOM;
+                    offsetX = 0;
+                    offsetY = 0;                    
+                    this._updateTransform();
+                };
+    
                 var svg = document.getElementById("viz");
                 svg.addEventListener("mousewheel", function (e) {
                     e.preventDefault();
@@ -438,7 +593,8 @@
                     isPanning = true;
                 });
                 svg.addEventListener("mousemove", function (e) {
-                    if (isPanning && panningEnabled) {
+                    // && (e.which ==== 1) stops d3 bug of dragging to enable on context menu 
+                    if (isPanning && panningEnabled && (e.which === 1) )   {
                         moved = true;
                         that.scroll(e.movementX, e.movementY);
                     }
@@ -472,12 +628,12 @@
                 ${jobs}
             </div>
         </div>
-
-        <div class="closed" id="jobsPanel">
-            <div id="jobsPanel-tab">
+            
+        <div class="closed" id="servicePanel">
+            <div id="servicePanel-tab">
                 Jobs
             </div>
-            <div id ="jobsPanel-contents">
+            <div id ="servicePanel-contents">
                 <table class="management-table" id="jobs-table">
                     <thead>
                         <tr>
@@ -497,12 +653,17 @@
             </div>
         </div>
 
+        <div id="tag-panel"> 
+        </div>
+            
         <div id="loadingPanel"></div>
         <div class="closed" id="displayPanel">
             <div id="displayPanel-contents">
                 <button id="refreshButton">Refresh</button>
                 <button id="modelButton">Display Model</button>
                 <button id="fullDiaplayButton">Toggle Full Model</button>
+                <button id="testButton">test</button> <!-- @ -->
+                <button id="stopButton">stop</button> <!-- @ -->
                 <div id="displayName"></div>
                 <div id="treeMenu"></div>                
             </div>
@@ -520,7 +681,7 @@
             </div>
             <div id="displayPanel-tab">^^^^^</div>
             </div>
-        </div>
+        </div>        
         <div class="hide" id="hoverdiv"></div>        
 
         <svg class="loading" id="viz">
@@ -574,7 +735,61 @@
 
     </g>
     </svg>
+    
+  <nav id="context-menu" class="context-menu">
+      <ul class="context-menu__items">
+        <li class="context-menu__item">
+          <a href="#" class="context-menu__link" data-action="Tag"><i class="fa  fa-tag"></i> Add Tag</a>
+        </li>
+      </ul>
+    </nav>
 
+<div id="tagDialog">
+  <div id="tagDialogBar">
+    <div id="tagDialogCloserBar">
+        <i id="tagDialogCloser" class="fa fa-times" aria-hidden="true"></i>
+    </div>
+  </div>
+  
+  <div id="tagDialogContent">
+    <div id="tagDialogLabelInputContainter">
+    <input type="text" name="labelInput" id="tagDialogLabelInput" placeholder="Enter label.">
+    </div>
+    
+    <div id="tagDialogColorInputContainer">
+      <div id="tagDialogColorInputLabel">
+        Select Color
+      </div>
+      
+      <div id="tagDialogColorSelectionTab">
+
+        <span class="colorBox" id="boxRed"> 
+        </span>
+        <span class="colorBox" id="boxOrange">
+        </span>
+        <span class="colorBox" id="boxYellow">
+        </span>
+        <span class="colorBox" id="boxGreen">
+        </span>
+        <span class="colorBox" id="boxBlue">
+        </span>
+        <span class="colorBox" id="boxPurple">
+        </span>
+      </div>
+    </div>
+    
+    <div id="tagDialogButtonContainer">
+      <button id="tagDialogCancel">
+        Cancel
+      </button>
+      
+      <button id="tagDialogOK">
+        Ok 
+      </button>
+    </div>
+  </div>
+</div>    
+    
 </body>
 
 </html>
