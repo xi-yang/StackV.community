@@ -46,7 +46,7 @@ public class SystemModelCoordinator {
         return bootStrapped;
     }
     
-    @Lock(LockType.READ)
+    @Lock(LockType.WRITE)
     public void setBootStrapped(boolean bl) {
         bootStrapped = bl;
         if (bootStrapped == false) {

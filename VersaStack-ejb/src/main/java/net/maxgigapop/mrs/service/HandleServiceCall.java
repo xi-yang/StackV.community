@@ -806,6 +806,17 @@ public class HandleServiceCall {
         return systemModelCoordinator.isBootStrapped();
     }
     
+    public void resetSystemBootStrapped() {
+        SystemModelCoordinator systemModelCoordinator = null;
+        try {
+            Context ejbCxt = new InitialContext();
+            systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
+        } catch (NamingException ex) {
+            throw new EJBException(this.getClass().getName() + " failed to inject systemModelCoordinator", ex);
+        }
+        systemModelCoordinator.setBootStrapped(false);
+    }
+    
     private OntModel fetchReferenceModel() {
         SystemModelCoordinator systemModelCoordinator = null;
         try {

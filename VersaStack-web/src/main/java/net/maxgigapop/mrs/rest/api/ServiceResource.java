@@ -71,6 +71,13 @@ public class ServiceResource {
         return (serviceCallHandler.hasSystemBootStrapped() ? "true" : "false");
     }
     
+    @PUT
+    @Path("/ready/reset")
+    @Produces({"application/xml", "application/json"})
+    public void reset() {
+        serviceCallHandler.resetSystemBootStrapped();
+    }
+    
     @GET
     @Path("/instance")
     @Produces({"application/xml", "application/json"})
