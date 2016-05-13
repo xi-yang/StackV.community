@@ -5,12 +5,16 @@
  */
 package net.maxgigapop.mrs.bean.persist;
 
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.List;
 import javax.ejb.EJBException;
 import javax.persistence.Query;
+import javax.persistence.TemporalType;
 import net.maxgigapop.mrs.bean.DriverInstance;
+import net.maxgigapop.mrs.bean.DriverSystemDelta;
+import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.bean.VersionItem;
 import static net.maxgigapop.mrs.bean.persist.PersistenceManager.createQuery;
@@ -76,6 +80,28 @@ public class VersionItemPersistenceManager extends PersistenceManager {
             while (it.hasNext()) {
                 VersionItem vi = it.next();
                 VersionItemPersistenceManager.delete(vi);
+            }
+        } catch (Exception e) {
+            throw new EJBException(String.format("VersionItemPersistenceManager::getHeadByDriverInstance raised exception: %s", e.getMessage()));
+        }
+    }
+    
+    public static void cleanupAllBefore(Date before) {
+        try {
+            Query q = createQuery(String.format("FROM %s vi WHERE vi.modelRef.creationTime < :before AND "
+                    + "NOT EXISTS (FROM %s as delta WHERE delta.referenceVersionItem = vi)", 
+                    VersionItem.class.getSimpleName(), DriverSystemDelta.class.getSimpleName()));
+            q.setParameter("before", before, TemporalType.TIMESTAMP);
+            List<VersionItem> listVI = (List<VersionItem>) q.getResultList();
+            if (listVI == null) {
+                return;
+            }
+            Iterator<VersionItem> it = listVI.iterator();
+            while (it.hasNext()) {
+                VersionItem vi = it.next();
+                if (vi.getVersionGroups() == null || vi.getVersionGroups().isEmpty()) {
+                    VersionItemPersistenceManager.delete(vi);
+                }
             }
         } catch (Exception e) {
             throw new EJBException(String.format("VersionItemPersistenceManager::getHeadByDriverInstance raised exception: %s", e.getMessage()));

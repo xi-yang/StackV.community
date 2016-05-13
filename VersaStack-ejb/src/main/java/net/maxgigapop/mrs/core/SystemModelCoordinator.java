@@ -6,6 +6,7 @@
 package net.maxgigapop.mrs.core;
 
 import com.hp.hpl.jena.ontology.OntModel;
+import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 import javax.ejb.AccessTimeout;
@@ -20,6 +21,7 @@ import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
+import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
@@ -91,6 +93,8 @@ public class SystemModelCoordinator {
         if (!bootStrapped) {
             // cleanning up from recovery
             VersionGroupPersistenceManager.cleanupAndUpdateAll();
+            Date before24h = new Date(System.currentTimeMillis()-24*60*60*1000);
+            VersionItemPersistenceManager.cleanupAllBefore(before24h);
             bootStrapped = true;
         }
     }
