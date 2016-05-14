@@ -179,7 +179,7 @@ define(["local/d3", "local/versastack/utils"],
                                         renderApi.drawHighlight();
                                         renderApi.layoutEdges();
                                     })
-                                    .on("contextmenu", that.outputApi.contextMenu.setContextListenerRendered.bind(undefined, volume))                                    
+                                    .on("contextmenu", that.outputApi.contextMenu.renderedElemContextListener.bind(undefined, volume))                                    
                                     .call(dragBehaviour);
                         })();
                     }

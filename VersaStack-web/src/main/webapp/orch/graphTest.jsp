@@ -164,9 +164,9 @@
                 
 //                var ns = model.listNodes();
 //                for (var i in ns) {
-//                    ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+//                    ns[i].svgNode.on("contextmenu", contextMenu.renderedElemContextListener.bind(undefined, ns[i]));
 //                    if (ns[i].svgNodeAnchor) {
-//                        ns[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+//                        ns[i].svgNodeAnchor.on("contextmenu", contextMenu.renderedElemContextListener.bind(undefined, ns[i]));
 //                    }
 //                }
                   outputApi.initD3MenuEvents();
@@ -395,32 +395,32 @@
                     var ns = model.listNodes();
                     for (var i in ns) {
                         if (ns[i].svgNode) {
-                            ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                            ns[i].svgNode.on("contextmenu", contextMenu.renderedElemContextListener.bind(undefined, ns[i]));
                         }
                         if (ns[i].svgNodeAnchor) {
-                            ns[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                            ns[i].svgNodeAnchor.on("contextmenu", contextMenu.renderedElemContextListener.bind(undefined, ns[i]));
                         }
                     }
 
                     var ns = model.listServices();
                     for (var i in ns) {
                         if (ns[i].svgNode) {
-                            ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                            ns[i].svgNode.on("contextmenu", contextMenu.renderedElemContextListener.bind(undefined, ns[i]));
                         } else {
                             console.log("graphTest.jsp: initD3MenuEvnts: name of service  with null svgNode: " + ns[i].getName());
                         }
                         if (ns[i].svgNodeAnchor) {
-                            ns[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                            ns[i].svgNodeAnchor.on("contextmenu", contextMenu.renderedElemContextListener.bind(undefined, ns[i]));
                         }
                     }
 
                     var ns = model.listSubnets();
                     for (var i in ns) {
                         if (ns[i].svgNode) {
-                            ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                            ns[i].svgNode.on("contextmenu", contextMenu.renderedElemContextListener.bind(undefined, ns[i]));
                         }
                         if (ns[i].svgNodeAnchor) {
-                            ns[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                            ns[i].svgNodeAnchor.on("contextmenu", contextMenu.renderedElemContextListener.bind(undefined, ns[i]));
                         }
                     }
 
