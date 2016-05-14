@@ -644,8 +644,6 @@ define([
             if (n.volumes.length !== 0)
                  n.volumePopup.toggleVisible();
             drawPopups();
-            outputApi.initD3MenuPortEvents(n.ports);
-            outputApi.initD3MenuVolumeEvents(n.volumes);
             map_(edgeList, updateSvgChoordsEdge);
             selectElement(n);
             selectedNode = n;

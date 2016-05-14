@@ -426,28 +426,6 @@
 
 
                 };
-
-                this.initD3MenuPortEvents = function(ports) {
-                    for (var i in ports) {
-                        if (ports[i].svgNode) {
-                            ports[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ports[i]));
-                        }    
-                        if (ports[i].svgNodeAnchor) {
-                            ports[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ports[i]));
-                        }
-                    }                
-                };
-
-                this.initD3MenuVolumeEvents = function(volumes) {
-                    for (var i in volumes) {
-                        if (volumes[i].svgNode) {
-                            volumes[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, volumes[i]));
-                        }    
-                        if (volumes[i].svgNodeAnchor) {
-                            volumes[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, volumes[i]));
-                        }
-                    }            
-                };
         
                 var zoomFactor = settings.INIT_ZOOM;
                 var offsetX = 0, offsetY = 0;
