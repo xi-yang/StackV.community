@@ -162,14 +162,7 @@
 
                 render.doRender(outputApi, model);
                 
-//                var ns = model.listNodes();
-//                for (var i in ns) {
-//                    ns[i].svgNode.on("contextmenu", contextMenu.renderedElemContextListener.bind(undefined, ns[i]));
-//                    if (ns[i].svgNodeAnchor) {
-//                        ns[i].svgNodeAnchor.on("contextmenu", contextMenu.renderedElemContextListener.bind(undefined, ns[i]));
-//                    }
-//                }
-                  outputApi.initD3MenuEvents();
+
 //                animStart(30);
             }
             function reload() {
@@ -193,7 +186,6 @@
 //                    layout.testLayout(model, null, width, height);  //@
 //                    layout.testLayout(model, null, width, height);                    
                     render.doRender(outputApi, model);
-                     outputApi.initD3MenuEvents();
                     outputApi.renderApi.selectElement(null);
                 }, null);
 
@@ -270,7 +262,6 @@
         
                     outputApi.resetZoom();
                     render.doRender(outputApi, model);
-                    outputApi.initD3MenuEvents();
 
                     evt.preventDefault();
                 });
@@ -391,42 +382,6 @@
                     document.getElementById("displayName").innerText = name;
                 };
 
-                this.initD3MenuEvents = function() {
-                    var ns = model.listNodes();
-                    for (var i in ns) {
-                        if (ns[i].svgNode) {
-                            ns[i].svgNode.on("contextmenu", contextMenu.renderedElemContextListener.bind(undefined, ns[i]));
-                        }
-                        if (ns[i].svgNodeAnchor) {
-                            ns[i].svgNodeAnchor.on("contextmenu", contextMenu.renderedElemContextListener.bind(undefined, ns[i]));
-                        }
-                    }
-
-                    var ns = model.listServices();
-                    for (var i in ns) {
-                        if (ns[i].svgNode) {
-                            ns[i].svgNode.on("contextmenu", contextMenu.renderedElemContextListener.bind(undefined, ns[i]));
-                        } else {
-                            console.log("graphTest.jsp: initD3MenuEvnts: name of service  with null svgNode: " + ns[i].getName());
-                        }
-                        if (ns[i].svgNodeAnchor) {
-                            ns[i].svgNodeAnchor.on("contextmenu", contextMenu.renderedElemContextListener.bind(undefined, ns[i]));
-                        }
-                    }
-
-                    var ns = model.listSubnets();
-                    for (var i in ns) {
-                        if (ns[i].svgNode) {
-                            ns[i].svgNode.on("contextmenu", contextMenu.renderedElemContextListener.bind(undefined, ns[i]));
-                        }
-                        if (ns[i].svgNodeAnchor) {
-                            ns[i].svgNodeAnchor.on("contextmenu", contextMenu.renderedElemContextListener.bind(undefined, ns[i]));
-                        }
-                    }
-
-
-                };
-        
                 var zoomFactor = settings.INIT_ZOOM;
                 var offsetX = 0, offsetY = 0;
                 this.zoom = function (amount, mouseX, mouseY) {

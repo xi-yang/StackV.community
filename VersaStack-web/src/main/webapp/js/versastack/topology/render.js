@@ -230,6 +230,7 @@ define([
                             .on("dblclick", onNodeDblClick.bind(undefined, n))
                             .on("mousemove", onNodeMouseMove.bind(undefined, n))
                             .on("mouseleave", onNodeMouseLeave.bind(undefined, n))
+                            .on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n))
                             .call(makeDragBehaviour(n));
                     setElementSize(n, false);
                     drawServices(n);
@@ -264,6 +265,7 @@ define([
                         .on("dblclick", onNodeDblClick.bind(undefined, n))
                         .on("mousemove", onNodeMouseMove.bind(undefined, n))
                         .on("mouseleave", onNodeMouseLeave.bind(undefined, n))
+                        .on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n))       
                         .call(makeDragBehaviour(n));
                 n.svgNodeAnchor = svgContainer.select("#anchor").append("rect")
                         .style("fill", "white")
@@ -273,6 +275,7 @@ define([
                         .on("dblclick", onNodeDblClick.bind(undefined, n))
                         .on("mousemove", onNodeMouseMove.bind(undefined, n))
                         .on("mouseleave", onNodeMouseLeave.bind(undefined, n))
+                        .on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n))                
                         .call(makeDragBehaviour(n));
                 setElementSize(n, false);
                 drawServices(n);
@@ -303,6 +306,7 @@ define([
                         .on("dblclick", onNodeDblClick.bind(undefined, n))
                         .on("mousemove", onNodeMouseMove.bind(undefined, service))
                         .on("mouseleave", onNodeMouseLeave.bind(undefined, service))
+                        .on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, service))             
                         .call(makeDragBehaviour(n));
                 setElementSize(service, false);
             });
