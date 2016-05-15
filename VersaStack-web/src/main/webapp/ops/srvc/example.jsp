@@ -78,6 +78,8 @@
                     </div>
                 </c:otherwise>
             </c:choose>
+        </div>  
+        <div id="tag-panel"> 
         </div>        
         <!-- JS -->
         <script>
@@ -100,6 +102,7 @@
                         element.classList.remove("hide");
                     }
                 });
+                $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", null);
             });
         </script>        
     </body>
