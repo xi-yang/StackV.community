@@ -11,7 +11,7 @@
 <jsp:setProperty name="user" property="*" />  
 
         <link rel="stylesheet" href="/VersaStack-web/css/tagPanel.css">       
-        <div class="closed" id="tagPanel" data-toggle="popover"  data-placement="top" data-trigger="manual" data-content="Data copied to clipboard.">
+        <div class="closed" id="tagPanel" data-toggle="popover">
             <div id="tagPanel-tab">
                 Tags
             </div>
@@ -122,10 +122,10 @@
                     document.execCommand('copy');
                     $(textField).remove();   
                     
-
+                    $("#tagPanel").popover({content: "Data copied to clipboard", placement: "top", trigger: "manual"});
                     $("#tagPanel").popover("show");
                     setTimeout(
-                      function(){$("#tagPanel").popover('hide');$("#tagPanel").popover('dispose');}, 
+                      function(){$("#tagPanel").popover('hide');$("#tagPanel").popover('destroy');}, 
                     1000);          
                 };
                 tagList.appendChild(tag);
