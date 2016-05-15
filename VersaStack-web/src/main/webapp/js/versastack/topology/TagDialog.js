@@ -74,7 +74,12 @@ define([], function () {
                             document.body.appendChild(textField);
                             textField.select();
                             document.execCommand('copy');
-                            $(textField).remove();                    
+                            $(textField).remove();     
+                            
+                            $("#tagPanel").popover("show");
+                            setTimeout(
+                              function(){$("#tagPanel").popover('hide');$("#tagPanel").popover('dispose');}, 
+                            1000);                             
                         };
                         tagList.appendChild(tag);
                         that.closeDialog();
