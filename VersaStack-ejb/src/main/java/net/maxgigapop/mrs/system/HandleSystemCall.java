@@ -436,6 +436,13 @@ public class HandleSystemCall {
         newDI.setTopologyUri(properties.get("topologyUri"));
         newDI.setDriverEjbPath(properties.get("driverEjbPath"));
         DriverInstancePersistenceManager.save(newDI);
+        try {
+            Context ejbCxt = new InitialContext();
+            SystemModelCoordinator systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
+            systemModelCoordinator.setBootStrapped(false);
+        } catch (Exception ex) {
+            throw new EJBException(this.getClass().getName() + " failed to re-bootstrap systemModelCoordinator", ex);
+        }
     }
 
     public void unplugDriverInstance(String topoUri) {
