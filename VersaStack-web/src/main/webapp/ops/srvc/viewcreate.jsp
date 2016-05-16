@@ -226,6 +226,7 @@
                 </c:choose>
             </div>       
         </div>
+        <!-- TAG PANEL -->
         <div id="tag-panel"> 
         </div>                      
         <!-- JS -->

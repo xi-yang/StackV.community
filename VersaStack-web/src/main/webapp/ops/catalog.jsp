@@ -98,6 +98,7 @@
             <div id="service-specific">                
             </div>
         </div>        
+        <!-- TAG PANEL -->
         <div id="tag-panel"> 
         </div>
         <!-- JS -->

@@ -64,6 +64,7 @@
             </c:forEach>
 
         </div>      
+        <!-- TAG PANEL -->    
         <div id="tag-panel"> 
         </div>        
         <!-- JS -->

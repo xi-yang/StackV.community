@@ -79,6 +79,7 @@
                 </c:otherwise>
             </c:choose>
         </div>  
+        <!-- TAG PANEL -->
         <div id="tag-panel"> 
         </div>        
         <!-- JS -->
