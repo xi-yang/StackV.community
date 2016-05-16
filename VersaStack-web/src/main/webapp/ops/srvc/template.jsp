@@ -117,7 +117,7 @@
                         element.classList.remove("hide");
                     }
                 });
-                //$("#tag-panel").load("/VersaStack-web/tagPanel.jsp", null);
+                $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", null);
             });
         </script>        
     </body>
