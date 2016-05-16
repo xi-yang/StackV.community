@@ -193,7 +193,7 @@
                   
                 if (superState === 'Create') {                       
                     // State 1 - Ready & Verifying
-                    else if (subState === 'READY' && verificationState === '0') {
+                    if (subState === 'READY' && verificationState === '0') {
                         
                     }
                     // State 2 - Ready & Verified
@@ -224,7 +224,7 @@
                 }
                 else if (superState === 'Cancel') {                      
                     // State 1 - Ready & Verifying
-                    else if (subState === 'READY' && verificationState === '0') {
+                    if (subState === 'READY' && verificationState === '0') {
                         
                     }
                     // State 2 - Ready & Verified
