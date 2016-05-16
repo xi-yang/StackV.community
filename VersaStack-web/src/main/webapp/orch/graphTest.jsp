@@ -585,9 +585,6 @@
                 </table>
             </div>
         </div>
-
-        <div id="tag-panel"> 
-        </div>
             
         <div id="loadingPanel"></div>
         <div class="closed" id="displayPanel">
@@ -722,7 +719,8 @@
     </div>
   </div>
 </div>    
-    
+<div id="tag-panel"> 
+</div>    
 </body>
 
 </html>
