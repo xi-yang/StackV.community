@@ -47,7 +47,8 @@
             </sql:query>
 
             <div id="instance-pane">
-                <c:forEach var="instance" items="${instancelist.rows}">            
+                <c:forEach var="instance" items="${instancelist.rows}"> 
+                    <div id="instance-verification" class="hide">${instance.verification_state}</div>
                     <table class="management-table" id="details-table">
                         <thead>
                             <tr>
@@ -69,29 +70,20 @@
                                 <td id="instance-substate">${serv.detailsStatus(param.uuid)}</td>
                             </tr>
                             <tr>
-                                <td>Last Verification State</td>
-                                <td id="instance-verification">
-                                    <c:choose>
-                                        <c:when test="${instance.verification_state == -1}">
-                                            FAILED
-                                        </c:when>
-                                        <c:when test="${instance.verification_state == 0}">
-                                            PENDING
-                                        </c:when>
-                                        <c:when test="${instance.verification_state == 1}">
-                                            SUCCESS
-                                        </c:when>                                
-                                    </c:choose>
-                                </td>
+                                <td><div id="instruction-block"></div></td>
                             </tr>
                             <tr>
                                 <td></td>
                                 <td>
                                     <div class="service-instance-panel">
+                                        <button class="hide" id="instance-reinstate" onClick="reinstateInstance('${param.uuid}')">Reinstate</button>
                                         <button class="hide" id="instance-cancel" onClick="cancelInstance('${param.uuid}')">Cancel</button>
+                                        <button class="hide" id="instance-fcancel" onClick="forceCancelInstance('${param.uuid}')">Force Cancel</button>
+                                        <button class="hide" id="instance-fretry" onClick="">Force Retry</button>
+                                        <button class="hide" id="instance-modify" onClick="">Modify</button>
+                                        <button class="hide" id="instance-fmodify" onClick="">Force Modify</button>
+                                        <button class="hide" id="instance-reverify" onClick="">Re-Verify</button>
                                         <button class="hide" id="instance-delete" onClick="deleteInstance('${param.uuid}')">Delete</button>
-                                        <button class="hide" id="instance-fprop" onClick="forcePropInstance('${param.uuid}')">Force Propagate</button>
-                                        <button class="hide" id="instance-frevert" onClick="forceRevertInstance('${param.uuid}')">Force Revert</button>
                                     </div>
                                 </td>
                             </tr>
@@ -134,7 +126,8 @@
         <!-- JS -->
         <script>
             $(function () {
-                templateModerate();
+                instructionModerate();
+                buttonModerate();
 
                 $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
                     if (${user.isAllowed(1)}) {
@@ -155,6 +148,113 @@
                     }
                 });
             });
+            
+            function instructionModerate() {
+                var subState = document.getElementById("instance-substate").innerHTML;
+                var verificationState = document.getElementById("instance-verification").innerHTML;
+                var blockString = "";
+
+                // State 0 - Before Verify
+                if (subState !== 'READY' && subState !== 'FAILED') {
+                    blockString = "Service is still processing. Please hold for further instructions.";
+                }                        
+                // State 1 - Ready & Verifying
+                else if (subState === 'READY' && verificationState === '0') {
+                    blockString = "Service is still verifying.";
+                }
+                // State 2 - Ready & Verified
+                else if (subState === 'READY' && verificationState === '1') {
+                    blockString = "Service has been successfully verified.";
+                }
+                // State 3 - Ready & Unverified
+                else if (subState === 'READY' && verificationState === '-1') {
+                    blockString = "Service was not able to be verified.";
+                }
+                // State 4 - Failed & Verifying
+                else if (subState === 'FAILED' && verificationState === '0') {
+                    blockString = "Service is still verifying.";
+                }
+                // State 5 - Failed & Verified
+                else if (subState === 'FAILED' && verificationState === '1') {
+                    blockString = "Service has been successfully verified.";
+                }
+                // State 6 - Failed & Unverified
+                else if (subState === 'FAILED' && verificationState === '-1') {
+                    blockString = "Service was not able to be verified.";
+                }
+                
+                document.getElementById("instruction-block").innerHTML = blockString;
+            }
+            
+            function buttonModerate() {
+                var superState = document.getElementById("instance-superstate").innerHTML;
+                var subState = document.getElementById("instance-substate").innerHTML;
+                var verificationState = document.getElementById("instance-verification").innerHTML;
+                  
+                if (superState === 'Create') {                       
+                    // State 1 - Ready & Verifying
+                    else if (subState === 'READY' && verificationState === '0') {
+                        
+                    }
+                    // State 2 - Ready & Verified
+                    else if (subState === 'READY' && verificationState === '1') {
+                        $("#instance-cancel").toggleClass("hide");
+                        $("#instance-modify").toggleClass("hide");
+                    }
+                    // State 3 - Ready & Unverified
+                    else if (subState === 'READY' && verificationState === '-1') {
+                        $("#instance-fcancel").toggleClass("hide");
+                        $("#instance-reverify").toggleClass("hide");
+                    }
+                    // State 4 - Failed & Verifying
+                    else if (subState === 'FAILED' && verificationState === '0') {
+                        
+                    }
+                    // State 5 - Failed & Verified
+                    else if (subState === 'FAILED' && verificationState === '1') {
+                        $("#instance-fcancel").toggleClass("hide");
+                        $("#instance-fmodify").toggleClass("hide");
+                    }
+                    // State 6 - Failed & Unverified
+                    else if (subState === 'FAILED' && verificationState === '-1') {
+                        $("#instance-fcancel").toggleClass("hide");
+                        $("#instance-fretry").toggleClass("hide");
+                        $("#instance-reverify").toggleClass("hide");
+                    }
+                }
+                else if (superState === 'Cancel') {                      
+                    // State 1 - Ready & Verifying
+                    else if (subState === 'READY' && verificationState === '0') {
+                        
+                    }
+                    // State 2 - Ready & Verified
+                    else if (subState === 'READY' && verificationState === '1') {
+                        $("#instance-reinstate").toggleClass("hide");
+                        $("#instance-modify").toggleClass("hide");
+                        $("#instance-delete").toggleClass("hide");
+                    }
+                    // State 3 - Ready & Unverified
+                    else if (subState === 'READY' && verificationState === '-1') {
+                        $("#instance-fcancel").toggleClass("hide");
+                        $("#instance-reverify").toggleClass("hide");
+                    }
+                    // State 4 - Failed & Verifying
+                    else if (subState === 'FAILED' && verificationState === '0') {
+                        
+                    }
+                    // State 5 - Failed & Verified
+                    else if (subState === 'FAILED' && verificationState === '1') {
+                        $("#instance-fcancel").toggleClass("hide");        
+                        $("#instance-fmodify").toggleClass("hide");
+                    }
+                    // State 6 - Failed & Unverified
+                    else if (subState === 'FAILED' && verificationState === '-1') {
+                        $("#instance-fcancel").toggleClass("hide");
+                        $("#instance-fretry").toggleClass("hide");
+                        $("#instance-reverify").toggleClass("hide");
+                    }
+                }
+            }
 
         </script>        
     </body>

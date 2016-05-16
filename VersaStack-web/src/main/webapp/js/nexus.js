@@ -8,6 +8,11 @@
 
 $(function () {
     $("#nav").load("/VersaStack-web/navbar.html");
+   
+    if (systemReady()) {
+        document.getElementById("server-status").src="/VersaStack-web/img/online.png";
+        document.getElementById("server-status").alt="Ready";
+    }
 
     $(".button-service-select").click(function (evt) {
         $ref = "srvc/" + this.id.toLowerCase() + ".jsp #service-specific";
@@ -914,37 +919,7 @@ function fl2pModerate(uuid){
 
 //**
 
-function templateModerate() {
-    var superstate = document.getElementById("instance-superstate").innerHTML;
-    var substate = document.getElementById("instance-substate").innerHTML;
 
-    if (superstate === 'Create') {
-        switch (substate) {
-            case 'READY':
-                $("#instance-cancel").toggleClass("hide");
-                break;
-
-            case 'INIT':
-                $("#instance-delete").toggleClass("hide");
-                break;
-
-            case 'FAILED':
-                $("#instance-delete").toggleClass("hide");
-                break;
-        }
-    }
-    if (superstate === 'Cancel') {
-        switch (substate) {
-            case 'READY':
-                $("#instance-delete").toggleClass("hide");
-                break;
-                
-            case 'FAILED':
-                $("#instance-delete").toggleClass("hide");
-                break;
-        }
-    }
-}
 
 /*
  
@@ -1014,7 +989,16 @@ function reloadPage() {
     window.location.reload(true);
 }
 
-
+function systemReady() {
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/service/ready';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        success: function (result) {
+            return result;
+        }
+    });
+}
 
 var getUrlParameter = function getUrlParameter(sParam) {
     var sPageURL = decodeURIComponent(window.location.search.substring(1)),
