@@ -666,6 +666,7 @@
     </g>
     </svg>
     
+ <!-- CONTEXT MENU -->
   <nav id="context-menu" class="context-menu">
       <ul class="context-menu__items">
         <li class="context-menu__item">
@@ -674,6 +675,7 @@
       </ul>
     </nav>
 
+<!-- TAG DIALOG -->
 <div id="tagDialog">
   <div id="tagDialogBar">
     <div id="tagDialogCloserBar">
@@ -718,7 +720,9 @@
       </button>
     </div>
   </div>
-</div>    
+</div>  
+
+<!-- TAG PANEL -->
 <div id="tag-panel"> 
 </div>    
 </body>
