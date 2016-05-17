@@ -8,6 +8,11 @@
 
 $(function () {
     $("#nav").load("/VersaStack-web/navbar.html");
+   
+    if (systemReady()) {
+        document.getElementById("server-status").src="/VersaStack-web/img/online.png";
+        document.getElementById("server-status").alt="Ready";
+    }
 
     $(".button-service-select").click(function (evt) {
         $ref = "srvc/" + this.id.toLowerCase() + ".jsp #service-specific";
@@ -45,8 +50,8 @@ $(function () {
         window.document.location = $(this).data("href");
     });
     
-    $("#delta-table-header").click(function () {
-       $("#delta-table-body").toggleClass("hide"); 
+    $(".delta-table-header").click(function () {
+       $("#body-" + this.id).toggleClass("hide"); 
     });
 
     clearCounters();
@@ -507,6 +512,18 @@ function addLink() {
 
 // API CALLS
 
+
+function systemReady() {
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/service/ready';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        complete: function (result) {
+            return result;
+        }
+    });
+}
+
 function checkInstance(uuid) {
     var apiUrl = baseUrl + '/VersaStack-web/restapi/service/' + uuid + '/status';
     $.ajax({
@@ -914,37 +931,7 @@ function fl2pModerate(uuid){
 
 //**
 
-function templateModerate() {
-    var superstate = document.getElementById("instance-superstate").innerHTML;
-    var substate = document.getElementById("instance-substate").innerHTML;
 
-    if (superstate === 'Create') {
-        switch (substate) {
-            case 'READY':
-                $("#instance-cancel").toggleClass("hide");
-                break;
-
-            case 'INIT':
-                $("#instance-delete").toggleClass("hide");
-                break;
-
-            case 'FAILED':
-                $("#instance-delete").toggleClass("hide");
-                break;
-        }
-    }
-    if (superstate === 'Cancel') {
-        switch (substate) {
-            case 'READY':
-                $("#instance-delete").toggleClass("hide");
-                break;
-                
-            case 'FAILED':
-                $("#instance-delete").toggleClass("hide");
-                break;
-        }
-    }
-}
 
 /*
  
@@ -1014,7 +1001,9 @@ function reloadPage() {
     window.location.reload(true);
 }
 
-
+function reloadPanel(panelId) {
+    $('#' + panelId).load(document.URL +  ' #' + panelId);
+}
 
 var getUrlParameter = function getUrlParameter(sParam) {
     var sPageURL = decodeURIComponent(window.location.search.substring(1)),
