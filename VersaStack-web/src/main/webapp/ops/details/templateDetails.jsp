@@ -90,21 +90,21 @@
                         </tbody>
                     </table>
 
-                    <sql:query dataSource="${front_conn}" sql="SELECT D.delta, D.type, S.super_state FROM service_delta D, service_instance I, service_state S, service_history H 
+                    <sql:query dataSource="${front_conn}" sql="SELECT D.service_delta_id, D.delta, D.type, S.super_state FROM service_delta D, service_instance I, service_state S, service_history H 
                                WHERE I.referenceUUID = ? AND I.service_instance_id = D.service_instance_id AND D.service_history_id = H.service_history_id 
                                AND D.service_instance_id = H.service_instance_id AND H.service_state_id = S.service_state_id" var="deltalist">
                         <sql:param value="${param.uuid}" />
                     </sql:query>
 
-                    <table class="management-table" id="delta-table">
-                        <thead id="delta-table-header">
-                            <tr>
-                                <th>Delta Details</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody id="delta-table-body">
-                            <c:forEach var="delta" items="${deltalist.rows}">
+                    <c:forEach var="delta" items="${deltalist.rows}">
+                        <table class="management-table delta-table" id="delta-${delta.type}">
+                            <thead class="delta-table-header" id="delta-${delta.service_delta_id}">
+                                <tr>
+                                    <th>Delta Details</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody class="delta-table-body" id="body-delta-${delta.service_delta_id}">
                                 <tr>
                                     <td>Delta State</td>
                                     <td>${delta.super_state}</td>
@@ -117,17 +117,50 @@
                                     <td></td>
                                     <td>${delta.delta}</td>
                                 </tr>
-                            </c:forEach>
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </c:forEach>
+
+                    <sql:query dataSource="${front_conn}" sql="SELECT V.service_instance_id, V.creation_time, V.addition, V.reduction, V.verified_reduction, V.verified_addition, V.unverified_reduction, V.unverified_addition
+                               FROM service_verification V, service_instance I WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id" var="verificationlist">
+                        <sql:param value="${param.uuid}" />
+                    </sql:query>
+
+                    <c:forEach var="verification" items="${verificationlist.rows}">
+                        <div id="verification-time" class="hide">${verification.creation_time}</div>
+                        <div id="verification-addition" class="hide">${verification.addition}</div>
+                        <div id="verification-reduction" class="hide">${verification.reduction}</div>
+                        <table class="management-table hide verification-table">
+                            <thead class="delta-table-header" id="delta-${verification.service_instance_id}">
+                                <tr>
+                                    <th></th>
+                                    <th>Verified</th>
+                                    <th>Unverified</th>
+                                </tr>
+                            </thead>
+                            <tbody class="delta-table-body" id="body-delta-${verification.service_instance_id}">
+                                <tr id="verification-addition-row">
+                                    <td>Addition</td>
+                                    <td>${verification.verified_addition}</td>
+                                    <td>${verification.unverified_addition}</td>
+                                </tr>
+                                <tr id="verification-reduction-row">
+                                    <td>Reduction</td>
+                                    <td>${verification.verified_reduction}</td>
+                                    <td>${verification.unverified_reduction}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </c:forEach>
                 </c:forEach>
             </div>  
         </div>        
         <!-- JS -->
         <script>
             $(function () {
+                deltaModerate();        
                 instructionModerate();
-                buttonModerate();
+                buttonModerate();                
 
                 $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
                     if (${user.isAllowed(1)}) {
@@ -149,6 +182,24 @@
                 });
             });
             
+            function deltaModerate() {
+                var verificationTime = document.getElementById("verification-time").innerHTML;
+                var verificationAddition = document.getElementById("verification-addition").innerHTML;
+                var verificationReduction = document.getElementById("verification-reduction").innerHTML;
+                
+                if (verificationTime !== '') {
+                    $("#delta-System").toggleClass("hide");
+                    $(".verification-table").toggleClass("hide");
+                    
+                    if (verificationAddition === '') {
+                        $("#verification-addition-row").toggleClass("hide");
+                    }
+                    if (verificationReduction === '') {
+                        $("#verification-reduction-row").toggleClass("hide");
+                    }
+                }
+            }
+
             function instructionModerate() {
                 var subState = document.getElementById("instance-substate").innerHTML;
                 var verificationState = document.getElementById("instance-verification").innerHTML;
@@ -157,7 +208,7 @@
                 // State 0 - Before Verify
                 if (subState !== 'READY' && subState !== 'FAILED') {
                     blockString = "Service is still processing. Please hold for further instructions.";
-                }                        
+                }
                 // State 1 - Ready & Verifying
                 else if (subState === 'READY' && verificationState === '0') {
                     blockString = "Service is still verifying.";
@@ -182,19 +233,19 @@
                 else if (subState === 'FAILED' && verificationState === '-1') {
                     blockString = "Service was not able to be verified.";
                 }
-                
+
                 document.getElementById("instruction-block").innerHTML = blockString;
             }
-            
+
             function buttonModerate() {
                 var superState = document.getElementById("instance-superstate").innerHTML;
                 var subState = document.getElementById("instance-substate").innerHTML;
                 var verificationState = document.getElementById("instance-verification").innerHTML;
-                  
-                if (superState === 'Create') {                       
+
+                if (superState === 'Create') {
                     // State 1 - Ready & Verifying
                     if (subState === 'READY' && verificationState === '0') {
-                        
+
                     }
                     // State 2 - Ready & Verified
                     else if (subState === 'READY' && verificationState === '1') {
@@ -208,7 +259,7 @@
                     }
                     // State 4 - Failed & Verifying
                     else if (subState === 'FAILED' && verificationState === '0') {
-                        
+
                     }
                     // State 5 - Failed & Verified
                     else if (subState === 'FAILED' && verificationState === '1') {
@@ -222,10 +273,10 @@
                         $("#instance-reverify").toggleClass("hide");
                     }
                 }
-                else if (superState === 'Cancel') {                      
+                else if (superState === 'Cancel') {
                     // State 1 - Ready & Verifying
                     if (subState === 'READY' && verificationState === '0') {
-                        
+
                     }
                     // State 2 - Ready & Verified
                     else if (subState === 'READY' && verificationState === '1') {
@@ -240,11 +291,11 @@
                     }
                     // State 4 - Failed & Verifying
                     else if (subState === 'FAILED' && verificationState === '0') {
-                        
+
                     }
                     // State 5 - Failed & Verified
                     else if (subState === 'FAILED' && verificationState === '1') {
-                        $("#instance-fcancel").toggleClass("hide");        
+                        $("#instance-fcancel").toggleClass("hide");
                         $("#instance-fmodify").toggleClass("hide");
                     }
                     // State 6 - Failed & Unverified

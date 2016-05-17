@@ -50,8 +50,8 @@ $(function () {
         window.document.location = $(this).data("href");
     });
     
-    $("#delta-table-header").click(function () {
-       $("#delta-table-body").toggleClass("hide"); 
+    $(".delta-table-header").click(function () {
+       $("body-" + this.id).toggleClass("hide"); 
     });
 
     clearCounters();
