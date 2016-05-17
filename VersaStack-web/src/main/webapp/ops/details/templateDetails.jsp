@@ -41,7 +41,16 @@
         <!-- MAIN PANEL -->
         <div id="main-pane">      
             <button type="button" id="button-service-return">Back to Catalog</button>           
-
+            <div id="refresh-panel">
+                Auto-Refresh Interval
+                <select id="refresh-timer" onchange="timerChange(this)">
+                    <option value="off">Off</option>
+                    <option value="5">5 sec.</option>
+                    <option value="10" selected>10 sec.</option>
+                    <option value="30">30 sec.</option>
+                    <option value="60">60 sec.</option>
+                </select>
+            </div>
             <div id="instance-panel">
                 <sql:query dataSource="${front_conn}" sql="SELECT S.name, X.super_state, V.verification_state FROM service S, service_instance I, service_state X, service_verification V
                            WHERE I.referenceUUID = ? AND I.service_instance_id = V.service_instance_id AND S.service_id = I.service_id AND X.service_state_id = I.service_state_id" var="instancelist">
@@ -54,7 +63,7 @@
                         <thead>
                             <tr>
                                 <th>${instance.name} Service Details</th>
-                                <th><button class="button-header" onclick="reloadPanel('instance-panel')">Refresh Now</button></th>
+                                <th><button class="button-header" onclick="reloadDetails()">Refresh Now</button></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -163,9 +172,7 @@
                 instructionModerate();
                 buttonModerate();
                 
-                setInterval(function() {
-                  $('#instance-panel').load(document.URL +  ' #instance-panel');
-                }, 10000); 
+                setRefresh(10);
 
                 $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
                     if (${user.isAllowed(1)}) {
@@ -186,6 +193,24 @@
                     }
                 });
             });
+            
+            function timerChange(sel) {
+                clearInterval(refreshTimer);
+                if (sel.value !== 'off') {
+                    setRefresh(sel.value);
+                }
+            }
+            
+            function setRefresh(time) {
+                refreshTimer = setInterval(reloadDetails(), (time * 1000));
+            }
+            
+            function reloadDetails() {
+                $('#instance-panel').load(document.URL + ' #instance-panel', function() {
+                    instructionModerate();
+                    buttonModerate(); 
+                });
+            }
             
             function deltaModerate() {
                 var verificationTime = document.getElementById("verification-time").innerHTML;

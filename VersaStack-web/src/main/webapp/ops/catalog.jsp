@@ -41,13 +41,25 @@
         <!-- MAIN PANEL -->
         <div id="main-pane">                                   
             <div id="service-overview">
+                <div id="refresh-panel">
+                    Auto-Refresh Interval
+                    <select id="refresh-timer" onchange="timerChange(this)">
+                        <option value="off">Off</option>
+                        <option value="5">5 sec.</option>
+                        <option value="10" selected>10 sec.</option>
+                        <option value="30">30 sec.</option>
+                        <option value="60">60 sec.</option>
+                    </select>
+                </div>
                 <div id="instance-panel">
                     <table class="management-table" id="status-table">
                         <thead>
                             <tr>
                                 <th>Service Name</th>
                                 <th>Service UUID</th>
-                                <th>Service Status   <button class="button-header" onclick="reloadPanel('instance-panel')">Refresh Now</button></th>
+                                <th>Service Status                                                                           
+                                    <button class="button-header" onclick="reloadTracker()">Refresh Now</button>                                    
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -114,9 +126,7 @@
         <!-- JS -->
         <script>
             $(function () {
-                setInterval(function() {
-                  $('#instance-panel').load(document.URL +  ' #instance-panel');
-                }, 10000); 
+                setRefresh(10); 
                 
                 $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
                     if (${user.isAllowed(1)}) {
@@ -138,6 +148,25 @@
                 });
                 $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", null);        
             });
+            
+            function timerChange(sel) {
+                clearInterval(refreshTimer);
+                if (sel.value !== 'off') {
+                    setRefresh(sel.value);
+                }
+            }
+            
+            function setRefresh(time) {
+                refreshTimer = setInterval(reloadTracker(), (time * 1000));     
+            }
+            
+            function reloadTracker() {
+                $('#instance-panel').load(document.URL +  ' #instance-panel', function() {
+                    $(".clickable-row").click(function () {
+                        window.document.location = $(this).data("href");
+                    }); 
+                });                                    
+            }
         </script>    
     </body>
 </html>
