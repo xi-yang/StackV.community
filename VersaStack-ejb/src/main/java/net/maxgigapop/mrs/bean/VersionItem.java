@@ -45,7 +45,7 @@ public class VersionItem extends PersistentEntity implements Serializable {
                 @JoinColumn(name = "group_id", referencedColumnName = "id")})
     private List<VersionGroup> versionGroups = null;
 
-    @OneToOne
+    @OneToOne(cascade = {CascadeType.ALL})
     @JoinColumn(name = "modelRefId")
     private ModelBase modelRef = null;
 

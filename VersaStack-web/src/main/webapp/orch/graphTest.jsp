@@ -46,6 +46,11 @@
                         element.classList.remove("hide");
                     }
                 });
+                
+                $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", function() {                    
+                    var tp = document.querySelector("#tagPanel");
+                    tp.style.left = "calc(40% - 66px)";
+                });                        
             });
         </script> 
 
@@ -304,12 +309,6 @@
 
                     evt.preventDefault();
                 });
-            
-                $("#tagPanel-tab").click(function (evt) {
-                   $("#tagPanel").toggleClass("closed");
-                   
-                    evt.preventDefault();
-                });
                 
                 $("#displayPanel-tab").click(function (evt) {
                     $("#displayPanel").toggleClass("closed");
@@ -317,12 +316,42 @@
                     evt.preventDefault();
                 });
                 
-//                $("#tagPanel-tab").click(function (evt) {
-//                    $("#tagPanel").toggleClass("closed");
-//
-//                    evt.preventDefault();
-//                });
-
+               // Brings tagPanel or tagDialog to the foreground if one is 
+               // clicked and behind the other. Will probably need to be 
+               // generalized soon. 
+               function bringToForeground(current) {
+                   var tagDialogElement = document.querySelector("#tagDialog");
+                   var tagPanelElement = document.querySelector("#tagPanel");
+                   if (!tagPanelElement.classList.contains("closed") && 
+                       tagDialogElement.classList.contains("tagDialog-active")) 
+                   {
+                       var tagDialog = document.getElementById("tagDialog");
+                       var tagPanel = document.getElementById("tagPanel");
+                       var tdz = parseInt(window.getComputedStyle(tagDialog, null).zIndex);
+                       var tpz = parseInt(window.getComputedStyle(tagPanel, null).zIndex);
+                       
+                       if (( (current === "tagDialog") && (tdz < tpz) ) ||
+                           ( (current === "tagPanel") &&  (tpz < tdz) ) ) {
+                            tagDialog.style.zIndex = tpz;
+                            tagPanel.style.zIndex = tdz;
+                       }
+                   }
+               }
+               
+                $("#tagDialog").click(function (evt) {
+                    bringToForeground("tagDialog");
+                    evt.preventDefault();
+                });
+                
+                $("#tagPanel").click(function (evt) {
+                    bringToForeground("tagPanel");
+                    evt.preventDefault();
+                });
+                
+                $("#servicePanel-tab").click(function (evt) {
+                    $("#servicePanel").toggleClass("closed");
+                    evt.preventDefault();
+                });               
             }
 
             //animStart and animStop are primarily intended as debug functions
@@ -365,7 +394,9 @@
                 this.initD3MenuEvents = function() {
                     var ns = model.listNodes();
                     for (var i in ns) {
-                        ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                        if (ns[i].svgNode) {
+                            ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                        }
                         if (ns[i].svgNodeAnchor) {
                             ns[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
                         }
@@ -373,8 +404,11 @@
 
                     var ns = model.listServices();
                     for (var i in ns) {
-                        if (!ns[i].svgNode) console.log("graphTest.jsp: initD3MenuEvnts: name of service  with null svgNode: " + ns[i].getName());
-                        ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                        if (ns[i].svgNode) {
+                            ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                        } else {
+                            console.log("graphTest.jsp: initD3MenuEvnts: name of service  with null svgNode: " + ns[i].getName());
+                        }
                         if (ns[i].svgNodeAnchor) {
                             ns[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
                         }
@@ -382,7 +416,9 @@
 
                     var ns = model.listSubnets();
                     for (var i in ns) {
-                        ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                        if (ns[i].svgNode) {
+                            ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
+                        }
                         if (ns[i].svgNodeAnchor) {
                             ns[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
                         }
@@ -393,7 +429,9 @@
 
                 this.initD3MenuPortEvents = function(ports) {
                     for (var i in ports) {
-                        ports[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ports[i]));
+                        if (ports[i].svgNode) {
+                            ports[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ports[i]));
+                        }    
                         if (ports[i].svgNodeAnchor) {
                             ports[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ports[i]));
                         }
@@ -402,7 +440,9 @@
 
                 this.initD3MenuVolumeEvents = function(volumes) {
                     for (var i in volumes) {
-                        volumes[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, volumes[i]));
+                        if (volumes[i].svgNode) {
+                            volumes[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, volumes[i]));
+                        }    
                         if (volumes[i].svgNodeAnchor) {
                             volumes[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, volumes[i]));
                         }
@@ -588,45 +628,34 @@
                 ${jobs}
             </div>
         </div>
-
-        <div class="closed" id="tagPanel">
-            <div id="tagPanel-tab">
-                Tags
+            
+        <div class="closed" id="servicePanel">
+            <div id="servicePanel-tab">
+                Jobs
             </div>
-            <div id ="tagPanel-contents">
-                <div id="tagPanel-colorPanel">
-                    <div id="tagPanel-colorPanelTitle"> Filter Colors</div>
-           <div id="tagPanelColorSelectionTab" style=" float:left;">
-                <span class="filteredColorBox" id="boxRed"> 
-                </span>
-                <span class="filteredColorBox" id="boxOrange">
-                </span>
-                <span class="filteredColorBox" id="boxYellow">
-                </span>
-                <span class="filteredColorBox" id="boxGreen">
-                </span>
-                <span class="filteredColorBox" id="boxBlue">
-                </span>
-                <span class="filteredColorBox" id="boxPurple">
-                </span>
-                   
-                    </div>
-                </div>
-                <div id="tagPanel-labelPanel">
-                    <div id="tagPanel-labelPanelTitle">Labels</div>
-                    <div id="labelList-container"> 
-                    <ul class="tagPanel-labelList" id="labelList1">
-<!--                      <li class="tagPanel-labelItem label-color-red"> Label</li>
-                      <li class="tagPanel-labelItem label-color-blue"> Label</li>
-                      <li class="tagPanel-labelItem label-color-orange"> Label </li>
-                      <li class="tagPanel-labelItem label-color-purple"> Label </li>-->
-                      
-                    </ul>
-                    </div>
-                </div>
-             </div>
+            <div id ="servicePanel-contents">
+                <table class="management-table" id="jobs-table">
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <c:forEach items="${serv.getJobStatuses()}" var="job">
+                            <tr>
+                                <td>${job.key}</td>
+                                <td>${job.value}</td>
+                            </tr>
+                        </c:forEach>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
+        <div id="tag-panel"> 
+        </div>
+            
         <div id="loadingPanel"></div>
         <div class="closed" id="displayPanel">
             <div id="displayPanel-contents">
@@ -710,15 +739,15 @@
   <nav id="context-menu" class="context-menu">
       <ul class="context-menu__items">
         <li class="context-menu__item">
-          <a href="#" class="context-menu__link" data-action="View"><i class="fa fa-eye"></i> Add Tag</a>
+          <a href="#" class="context-menu__link" data-action="Tag"><i class="fa  fa-tag"></i> Add Tag</a>
         </li>
       </ul>
     </nav>
 
 <div id="tagDialog">
   <div id="tagDialogBar">
-    <div id="tagDialogCloser">
-<i class="fa fa-times" aria-hidden="true"></i>
+    <div id="tagDialogCloserBar">
+        <i id="tagDialogCloser" class="fa fa-times" aria-hidden="true"></i>
     </div>
   </div>
   
@@ -761,91 +790,6 @@
   </div>
 </div>    
     
-    <script>
-       (function() {
-            var tags = []; // stores tag objects {color, data, label}
-            var selectedColors = []; // colors selected for filtering
-            
-            var colorBoxes = document.getElementsByClassName("filteredColorBox");
-            var tagHTMLs = document.getElementsByClassName("tagPanel-labelItem");
-            var that = this;
-            
-            this.init = function() {
-                var userName = "${user.getUsername()}";
-                // only do this if the user is logged in 
-                if(userName !== "") {
-                    $.ajax({
-                        crossDomain: true,
-                        type: "GET",
-                        url: "/VersaStack-web/restapi/app/label/" + userName,
-                        dataType: "json",
-
-                        success: function(data,  textStatus,  jqXHR ) {
-                            for (var i = 0, len = data.length; i < len; i++) {
-                                var dataRow = data[i];
-                                that.createTag(dataRow[0], dataRow[1], dataRow[2]);
-                            }
-                        },
-
-                        error: function(jqXHR, textStatus, errorThrown ) {
-                           alert(errorThrown + "\n"+textStatus);
-                           alert("Error retrieving tags.");
-                        }                  
-                    });
-                }
-                
-                for (var i = 0; i < colorBoxes.length;  i++) {
-                    colorBoxes[i].onclick = function() {
-                        var selectedColor = this.id.split("box")[1].toLowerCase();
-                        var selectedIndex = selectedColors.indexOf(selectedColor);
-                        if (selectedIndex === -1) {
-                            selectedColors.push(selectedColor);
-                            this.classList.add( "colorBox-highlighted");
-                        } else {
-                            selectedColors.splice(selectedIndex, 1);
-                            this.classList.remove("colorBox-highlighted");
-                        }      
-                        
-                        that.updateTagList();
-                    };
-                }
-            };  
-            
-            this.updateTagList = function() {
-               var tagHTMLs = document.getElementsByClassName("tagPanel-labelItem");
-               for( var i = 0; i < tagHTMLs.length; i++){
-                   var curTag = tagHTMLs.item(i);
-                   var curColor = curTag.classList.item(1).split("label-color-")[1];
-                   if (selectedColors.length === 0) {
-                       curTag.classList.remove("hide");
-                   } else if (selectedColors.indexOf(curColor) === -1){
-                       curTag.classList.add("hide");
-                   } else {
-                       curTag.classList.remove("hide");
-                   }
-               }
-            };
-            
-            this.createTag = function(label, data, color) {
-                var tagList = document.querySelector("#labelList1");
-                var tag = document.createElement("li");
-                tag.classList.add("tagPanel-labelItem");
-                tag.classList.add("label-color-" + color.toLowerCase());
-                tag.innerHTML = label;
-                tag.onclick = function() {
-                    var textField = document.createElement('textarea');
-                    textField.innerText = data;
-                    document.body.appendChild(textField);
-                    textField.select();
-                    document.execCommand('copy');
-                    $(textField).remove();                    
-                };
-                tagList.appendChild(tag);
-            };
-    
-            this.init();
-        })();
-    </script>
 </body>
 
 </html>

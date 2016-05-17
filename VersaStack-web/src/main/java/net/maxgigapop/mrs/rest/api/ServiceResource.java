@@ -65,6 +65,20 @@ public class ServiceResource {
     }
 
     @GET
+    @Path("/ready")
+    @Produces({"application/xml", "application/json"})
+    public String ready() {
+        return (serviceCallHandler.hasSystemBootStrapped() ? "true" : "false");
+    }
+    
+    @PUT
+    @Path("/ready/reset")
+    @Produces({"application/xml", "application/json"})
+    public void reset() {
+        serviceCallHandler.resetSystemBootStrapped();
+    }
+    
+    @GET
     @Path("/instance")
     @Produces({"application/xml", "application/json"})
     public String create() {
@@ -127,7 +141,7 @@ public class ServiceResource {
         String workerClassPath = svcApiDelta.getWorkerClassPath();
         SystemDelta sysDelta = serviceCallHandler.compileAddDelta(svcInstanceUUID, workerClassPath, svcApiDelta.getUuid(), svcApiDelta.getModelAddition(), svcApiDelta.getModelReduction());
         if (sysDelta == null) {
-            throw new ProcessingException("Failed to compile service delta");
+            throw new EJBException("Failed to compile service delta");
         }
         ApiDeltaBase apiSysDelta = new ApiDeltaBase();
         apiSysDelta.setId(sysDelta.getId().toString());
@@ -159,7 +173,7 @@ public class ServiceResource {
         String workerClassPath = svcApiDelta.getWorkerClassPath();
         SystemDelta sysDelta = serviceCallHandler.compileAddDelta(svcInstanceUUID, workerClassPath, svcApiDelta.getUuid(), svcApiDelta.getModelAddition(), svcApiDelta.getModelReduction());
         if (sysDelta == null) {
-            throw new ProcessingException("Failed to compile service delta");
+            throw new EJBException("Failed to compile service delta");
         }
         ApiDeltaBase apiSysDelta = new ApiDeltaBase();
         apiSysDelta.setId(sysDelta.getId().toString());
@@ -220,7 +234,7 @@ public class ServiceResource {
                     if (retryDelay == 2000L) {
                         return serviceCallHandler.propagateDeltas(svcInstanceUUID, false);
                     } else {
-                        return serviceCallHandler.propagateRetry(svcInstanceUUID, false);
+                        return serviceCallHandler.propagateRetry(svcInstanceUUID, true);
                     }   
                 } catch (EJBException ejbEx) {
                     String errMsg = ejbEx.getMessage();
@@ -241,7 +255,11 @@ public class ServiceResource {
             while (true) {
                 retryDelay *= 2; // retry up to 4 times at 2, 4, 8, 16 secs
                 try {
-                    return serviceCallHandler.propagateRetry(svcInstanceUUID, false);
+                    if (retryDelay == 2000L) {
+                        return serviceCallHandler.propagateRetry(svcInstanceUUID, false);
+                    } else {
+                        return serviceCallHandler.propagateRetry(svcInstanceUUID, true);
+                    }   
                 } catch (EJBException ejbEx) {
                     String errMsg = ejbEx.getMessage();
                     log.warning("Caught+Retry: " + errMsg);

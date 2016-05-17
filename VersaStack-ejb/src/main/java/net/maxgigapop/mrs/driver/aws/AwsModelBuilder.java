@@ -238,7 +238,7 @@ public class AwsModelBuilder {
                     Resource PRIVATE_ADDRESS = RdfOwl.createResource(model, ResourceTool.getResourceUri(PORT.toString()+":ip+"+q.getPrivateIpAddress(),AwsPrefix.nicNetworkAddress,vpcId,subnetId,portId,q.getPrivateIpAddress()), networkAddress);
                     model.add(model.createStatement(PORT, hasNetworkAddress, PRIVATE_ADDRESS));
                     model.add(model.createStatement(PRIVATE_ADDRESS, type, "ipv4:private"));
-                    model.add(model.createStatement(PRIVATE_ADDRESS, value, q.getPrivateIpAddress()));
+                    model.add(model.createStatement(PRIVATE_ADDRESS, value, q.getPrivateIpAddress()));  
                 }
             }
 
@@ -312,7 +312,7 @@ public class AwsModelBuilder {
                         model.add(model.createStatement(ec2Service, providesVM, INSTANCE));
                         model.add(model.createStatement(INSTANCE, providedByService, ec2Service));
 
-                        //put all the voumes attached to this instance into the modle
+                        //put all the voumes attached to this instance into the model
                         for (Volume vol : ec2Client.getVolumesWithAttachement(i)) {
                             String volumeId = ec2Client.getIdTag(vol.getVolumeId());
                             Resource VOLUME = RdfOwl.createResource(model, ResourceTool.getResourceUri(volumeId,AwsPrefix.volume,volumeId), volume);
@@ -333,6 +333,15 @@ public class AwsModelBuilder {
                             String portId = ec2Client.getIdTag(n.getNetworkInterfaceId());
                             Resource PORT = model.getResource(ResourceTool.getResourceUri(portId,AwsPrefix.nic,vpcId,subnetId,portId));
                             model.add(model.createStatement(INSTANCE, hasBidirectionalPort, PORT));
+                        }
+                        
+                        //put public ip as NetworkAddress of this instance into the model
+                        String publicIp = i.getPublicIpAddress();
+                        if (publicIp != null && !publicIp.isEmpty()) {
+                            Resource PUBLIC_ADDRESS = RdfOwl.createResource(model, ResourceTool.getResourceUri(INSTANCE.toString()+":public-ip+"+publicIp,AwsPrefix.publicAddress,publicIp), Mrs.NetworkAddress);
+                            model.add(model.createStatement(INSTANCE, hasNetworkAddress, PUBLIC_ADDRESS));
+                            model.add(model.createStatement(PUBLIC_ADDRESS, type, "ipv4:public"));
+                            model.add(model.createStatement(PUBLIC_ADDRESS, value, publicIp));  
                         }
                     }
                 }
@@ -422,8 +431,9 @@ public class AwsModelBuilder {
                         // if this ROUTINGTABLE has VPN propagation=yes add 0.0.0.0/0 routeto with nexthop=routefrom=propagatingVgw
                         if (t.getPropagatingVgws() != null && !t.getPropagatingVgws().isEmpty()) {
                             PropagatingVgw vgw = t.getPropagatingVgws().get(0);
-                            String vpnGatewayId = vgw.getGatewayId();
-                            Resource propagatingVGW = model.getResource(ResourceTool.getResourceUri(vpnGatewayId,AwsPrefix.gateway,vpnGatewayId));
+                            String vpnGatewayId =ec2Client.getIdTag(vgw.getGatewayId());
+                            String resourceUri = ResourceTool.getResourceUri(vpnGatewayId,AwsPrefix.gateway,vpnGatewayId);
+                            Resource propagatingVGW = model.getResource(resourceUri);
                             Resource propagatingRoute = RdfOwl.createResource(model, ROUTINGTABLE.getURI()+":route-0.0.0.00", Mrs.Route);
                             Resource propagatingRouteTo = RdfOwl.createResource(model, ROUTINGTABLE.getURI()+":route-0.0.0.00:routeto", Mrs.NetworkAddress);
                             model.add(model.createStatement(propagatingRouteTo, Mrs.type, "ipv4-prefix"));

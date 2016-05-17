@@ -32,7 +32,7 @@ public class AwsPrefix {
     
     public static String nicNetworkAddress = prefix+":vpc+%s:subnet+%s:nic+%s:ip+%s";
     
-    public static String publicAddress = prefix+":public-address";
+    public static String publicAddress = prefix+":public-ip+%s";
 
     public static String route = prefix+":vpc+%s:routingtable+%s:route+%s";
 

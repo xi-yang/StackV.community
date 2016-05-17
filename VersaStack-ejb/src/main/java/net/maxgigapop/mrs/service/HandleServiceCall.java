@@ -83,13 +83,16 @@ public class HandleServiceCall {
                     if (svcDelta.getSystemDelta().getDriverSystemDeltas() != null) {
                         for (Iterator<DriverSystemDelta> dsdIt = svcDelta.getSystemDelta().getDriverSystemDeltas().iterator(); dsdIt.hasNext();) {
                             DriverSystemDelta dsd = dsdIt.next();
-                            DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(dsd.getDriverInstance().getTopologyUri());
+                            //DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(dsd.getDriverInstance().getTopologyUri());
+                            DriverInstance driverInstance = dsd.getDriverInstance();
                             driverInstance.getDriverSystemDeltas().remove(dsd);
                             DeltaPersistenceManager.delete(dsd);
                         }
                     }
                     SystemInstance systemInstance = SystemInstancePersistenceManager.findBySystemDelta(svcDelta.getSystemDelta());
-                    SystemInstancePersistenceManager.delete(systemInstance);
+                    if (systemInstance != null) {
+                        SystemInstancePersistenceManager.delete(systemInstance);
+                    }
                     DeltaPersistenceManager.delete(svcDelta.getSystemDelta());
                 }
                 svcDeltaIt.remove();
@@ -147,7 +150,7 @@ public class HandleServiceCall {
         } catch (EJBException ex) {
             serviceInstance.setStatus("FAILED");
             ServiceInstancePersistenceManager.merge(serviceInstance);
-            return null;
+            throw ex;
         }
         // save serviceInstance, spaDelta and systemDelta
         SystemDelta resultDelta = worker.getResultModelDelta();
@@ -345,12 +348,21 @@ public class HandleServiceCall {
         if (serviceInstance == null) {
             throw new EJBException(HandleServiceCall.class.getName() + ".revertDeltas cannot find serviceInstance with uuid=" + serviceInstanceUuid);
         }
-        if (!forced && !serviceInstance.getStatus().equals("PROPAGATED")
-                && !serviceInstance.getStatus().equals("COMMITTED")
+        if (!forced && !serviceInstance.getStatus().startsWith("PROPAGATED")
+                && !serviceInstance.getStatus().startsWith("COMMITTED")
                 && !serviceInstance.getStatus().equals("READY")) {
             throw new EJBException(HandleServiceCall.class.getName() + ".revertDeltas needs  status='PROPAGATED' or 'COMMITTED' or 'READY' by " + serviceInstance + ", the actual status=" + serviceInstance.getStatus());
         }
         Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
+        List<ServiceDelta> reversableServiceDeltas = new ArrayList<>();
+        while (itSD.hasNext()) {
+            ServiceDelta svcDelta = itSD.next();
+            if (svcDelta.getStatus().equalsIgnoreCase("READY") || svcDelta.getStatus().equalsIgnoreCase("COMMITTED")
+                    || (forced && svcDelta.getStatus().equalsIgnoreCase("FAILED"))) {
+                reversableServiceDeltas.add(svcDelta);
+            }
+        }
+        itSD = reversableServiceDeltas.iterator();
         if (!itSD.hasNext()) {
             throw new EJBException(HandleServiceCall.class.getName() + ".revertDeltas (by " + serviceInstance + ",  in status=" + serviceInstance.getStatus() + ") has none delta to commit.");
         }
@@ -438,6 +450,7 @@ public class HandleServiceCall {
                 if (!resList.isEmpty()) {
                     Model sysModelReductionExt = ModelUtil.getModelSubTree(refModel, resList, includeMatches, excludeMatches, excludeExtentials);
                     reverseSysDelta.getModelAddition().getOntModel().add(sysModelReductionExt);
+                    reverseSysDelta.getModelReduction().getOntModel().remove(sysModelReductionExt);
                 }
             }
             if (systemDelta.getModelAddition() != null && systemDelta.getModelAddition().getOntModel() != null) {
@@ -452,6 +465,7 @@ public class HandleServiceCall {
                 if (!resList.isEmpty()) {
                     Model sysModelAdditionExt = ModelUtil.getModelSubTree(refModel, resList, includeMatches, excludeMatches, excludeExtentials);
                     reverseSysDelta.getModelReduction().getOntModel().add(sysModelAdditionExt);
+                    reverseSysDelta.getModelAddition().getOntModel().remove(sysModelAdditionExt);
                 }
             }
         }
@@ -581,6 +595,7 @@ public class HandleServiceCall {
                     for (Iterator<DriverSystemDelta> dsdIt = systemInstance.getSystemDelta().getDriverSystemDeltas().iterator(); dsdIt.hasNext();) {
                         DriverSystemDelta dsd = dsdIt.next();
                         DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(dsd.getDriverInstance().getTopologyUri());
+                        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
                         driverInstance.getDriverSystemDeltas().remove(dsd);
                         if (serviceDelta.getSystemDelta() != null && serviceDelta.getSystemDelta().getDriverSystemDeltas() != null
                                 && serviceDelta.getSystemDelta().getDriverSystemDeltas().contains(dsd)) {
@@ -778,6 +793,28 @@ public class HandleServiceCall {
             break;
         }
         return allEssentialVerified;
+    }
+    
+    public boolean hasSystemBootStrapped() {
+        SystemModelCoordinator systemModelCoordinator = null;
+        try {
+            Context ejbCxt = new InitialContext();
+            systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
+        } catch (NamingException ex) {
+            throw new EJBException(this.getClass().getName() + " failed to inject systemModelCoordinator", ex);
+        }
+        return systemModelCoordinator.isBootStrapped();
+    }
+    
+    public void resetSystemBootStrapped() {
+        SystemModelCoordinator systemModelCoordinator = null;
+        try {
+            Context ejbCxt = new InitialContext();
+            systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
+        } catch (NamingException ex) {
+            throw new EJBException(this.getClass().getName() + " failed to inject systemModelCoordinator", ex);
+        }
+        systemModelCoordinator.setBootStrapped(false);
     }
     
     private OntModel fetchReferenceModel() {
