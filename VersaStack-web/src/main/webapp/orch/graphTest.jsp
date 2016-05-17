@@ -1,6 +1,7 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page errorPage = "/VersaStack-web/errorPage.jsp" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
 <jsp:setProperty name="user" property="*" />  
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
@@ -562,30 +563,26 @@
             </div>
         </div>
             
+        <sql:setDataSource var="front_conn" driver="com.mysql.jdbc.Driver"
+                             url="jdbc:mysql://localhost:3306/frontend"
+                             user="front_view"  password="frontuser"/>
+
+        <sql:query dataSource="${front_conn}" sql="SELECT S.name, I.referenceUUID FROM service S, service_instance I, user_info U     
+                                                  WHERE U.user_id = I.user_id AND S.service_id = I.service_id AND U.username = ?" var="serviceList">
+                  <sql:param value="${user.getUsername()}" />
+        </sql:query>            
+
         <div class="closed" id="servicePanel">
             <div id="servicePanel-tab">
-                Jobs
+                Services
             </div>
             <div id ="servicePanel-contents">
-                <table class="management-table" id="jobs-table">
-                    <thead>
-                        <tr>
-                            <th>Service</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <c:forEach items="${serv.getJobStatuses()}" var="job">
-                            <tr>
-                                <td>${job.key}</td>
-                                <td>${job.value}</td>
-                            </tr>
-                        </c:forEach>
-                    </tbody>
-                </table>
-            </div>
+                <c:forEach items="${serviceList.rows}" var="service">
+                        <div class="service-instance-item" id="${service.referenceUUID}">${service.name}</div>
+                </c:forEach>
+           </div>
         </div>
-            
+      
         <div id="loadingPanel"></div>
         <div class="closed" id="displayPanel">
             <div id="displayPanel-contents">
