@@ -870,6 +870,7 @@ public class serviceBeans {
 
                     retList.add(instanceList);
                 } catch (IOException ex) {
+                    logger.log(Level.INFO, "Instance Status Check Failed on UUID = {0}", instanceUUID);
                 }
             }
         }

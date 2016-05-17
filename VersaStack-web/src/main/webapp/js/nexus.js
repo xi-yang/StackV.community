@@ -51,7 +51,7 @@ $(function () {
     });
     
     $(".delta-table-header").click(function () {
-       $("body-" + this.id).toggleClass("hide"); 
+       $("#body-" + this.id).toggleClass("hide"); 
     });
 
     clearCounters();
@@ -511,6 +511,18 @@ function addLink() {
 }
 
 // API CALLS
+
+
+function systemReady() {
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/service/ready';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        complete: function (result) {
+            return result;
+        }
+    });
+}
 
 function checkInstance(uuid) {
     var apiUrl = baseUrl + '/VersaStack-web/restapi/service/' + uuid + '/status';
@@ -989,15 +1001,8 @@ function reloadPage() {
     window.location.reload(true);
 }
 
-function systemReady() {
-    var apiUrl = baseUrl + '/VersaStack-web/restapi/service/ready';
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        success: function (result) {
-            return result;
-        }
-    });
+function reloadPanel(panelId) {
+    $('#' + panelId).load(document.URL +  ' #' + panelId);
 }
 
 var getUrlParameter = function getUrlParameter(sParam) {

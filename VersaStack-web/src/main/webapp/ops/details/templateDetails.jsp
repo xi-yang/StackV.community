@@ -40,20 +40,21 @@
         </div>
         <!-- MAIN PANEL -->
         <div id="main-pane">      
-            <button type="button" id="button-service-return">Back to Catalog</button>
-            <sql:query dataSource="${front_conn}" sql="SELECT S.name, X.super_state, V.verification_state FROM service S, service_instance I, service_state X, service_verification V
-                       WHERE I.referenceUUID = ? AND I.service_instance_id = V.service_instance_id AND S.service_id = I.service_id AND X.service_state_id = I.service_state_id" var="instancelist">
-                <sql:param value="${param.uuid}" />
-            </sql:query>
+            <button type="button" id="button-service-return">Back to Catalog</button>           
 
-            <div id="instance-pane">
+            <div id="instance-panel">
+                <sql:query dataSource="${front_conn}" sql="SELECT S.name, X.super_state, V.verification_state FROM service S, service_instance I, service_state X, service_verification V
+                           WHERE I.referenceUUID = ? AND I.service_instance_id = V.service_instance_id AND S.service_id = I.service_id AND X.service_state_id = I.service_state_id" var="instancelist">
+                    <sql:param value="${param.uuid}" />
+                </sql:query>
+
                 <c:forEach var="instance" items="${instancelist.rows}"> 
                     <div id="instance-verification" class="hide">${instance.verification_state}</div>
                     <table class="management-table" id="details-table">
                         <thead>
                             <tr>
                                 <th>${instance.name} Service Details</th>
-                                <th><button class="button-header" onclick="reloadPage()">Refresh</button></th>
+                                <th><button class="button-header" onclick="reloadPanel('instance-panel')">Refresh Now</button></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -160,7 +161,11 @@
             $(function () {
                 deltaModerate();        
                 instructionModerate();
-                buttonModerate();                
+                buttonModerate();
+                
+                setInterval(function() {
+                  $('#instance-panel').load(document.URL +  ' #instance-panel');
+                }, 10000); 
 
                 $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
                     if (${user.isAllowed(1)}) {

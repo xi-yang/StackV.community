@@ -41,25 +41,36 @@
         <!-- MAIN PANEL -->
         <div id="main-pane">                                   
             <div id="service-overview">
-
-                <table class="management-table" id="status-table">
-                    <thead>
-                        <tr>
-                            <th>Service Name</th>
-                            <th>Service UUID</th>
-                            <th>Service Status   <button class="button-header" onclick="reloadPage()">Refresh</button></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <c:forEach var="instance" items="${serv.instanceStatusCheck()}">
-                            <tr class="clickable-row" data-href='/VersaStack-web/ops/details.jsp?uuid=${instance[1]}'>
-                                <td>${instance[0]}</td>
-                                <td>${instance[1]}</td>
-                                <td>${instance[2]}</td>
+                <div id="instance-panel">
+                    <table class="management-table" id="status-table">
+                        <thead>
+                            <tr>
+                                <th>Service Name</th>
+                                <th>Service UUID</th>
+                                <th>Service Status   <button class="button-header" onclick="reloadPanel('instance-panel')">Refresh Now</button></th>
                             </tr>
-                        </c:forEach>
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            <c:forEach var="instance" items="${serv.instanceStatusCheck()}">
+                                <!--Details page redirection-->
+                                <c:choose>
+                                    <c:when test="${instance[0]} == 'Dynamic Network Connection'">
+                                        <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}&type=dnc'>
+                                        </c:when>
+
+                                        <c:otherwise>
+                                        <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}'>
+                                        </c:otherwise>
+                                    </c:choose>    
+
+                                    <td>${instance[0]}</td>
+                                    <td>${instance[1]}</td>
+                                    <td>${instance[2]}</td>
+                                </tr>
+                            </c:forEach>
+                        </tbody>
+                    </table>
+                </div>
 
                 <sql:query dataSource="${front_conn}" sql="SELECT DISTINCT S.name, S.filename, S.description FROM service S JOIN acl A, acl_entry_group G, acl_entry_user U 
                            WHERE S.atomic = 0 AND A.service_id = S.service_id 
@@ -103,6 +114,10 @@
         <!-- JS -->
         <script>
             $(function () {
+                setInterval(function() {
+                  $('#instance-panel').load(document.URL +  ' #instance-panel');
+                }, 10000); 
+                
                 $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
                     if (${user.isAllowed(1)}) {
                         var element = document.getElementById("service1");
