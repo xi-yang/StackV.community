@@ -25,7 +25,8 @@ define(["local/d3", "local/versastack/utils"],
                 /**@type Node**/
                 this.hostNode = null;
                 this.visible = false;
-
+                this.outputApi = outputApi;
+                
                 var that = this;
                 this.setOffset = function (x, y) {
                     this.dx = x;
@@ -194,6 +195,7 @@ define(["local/d3", "local/versastack/utils"],
                                         renderApi.drawHighlight();
                                         renderApi.layoutEdges();
                                     })
+                                    .on("contextmenu", that.outputApi.contextMenu.renderedElemContextListener.bind(undefined, port))
                                     .call(dragBehaviour);
                         })();
                     }
