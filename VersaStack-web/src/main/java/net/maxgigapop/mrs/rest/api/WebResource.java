@@ -892,6 +892,7 @@ public class WebResource {
                 verifyJSON = (JSONObject) obj;
             } catch (ParseException ex) {
                 Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+                throw new IOException("Parse Error within Verification: " + ex.getMessage());
             }           
             
             // Update verification results cache.
@@ -907,11 +908,12 @@ public class WebResource {
             prep.setInt(9, instanceID);
             prep.executeUpdate();
 
-
-            if (verifyJSON.containsKey("reductionVerified") && ((String) verifyJSON.get("reductionVerified")).equals("false"))
+            if (verifyJSON.containsKey("reductionVerified") && (verifyJSON.get("reductionVerified") != null) && ((String) verifyJSON.get("reductionVerified")).equals("false")) {
                 redVerified = false;
-            if (verifyJSON.containsKey("additionVerified") && ((String) verifyJSON.get("additionVerified")).equals("false"))
+            } 
+            if (verifyJSON.containsKey("additionVerified") && (verifyJSON.get("additionVerified") != null) && ((String) verifyJSON.get("additionVerified")).equals("false")) {
                 addVerified = false;
+            }
 
             //System.out.println("Verify Result: " + result + "\r\n");
             if (redVerified && addVerified) {

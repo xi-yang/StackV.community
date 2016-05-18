@@ -66,8 +66,12 @@
                             <c:forEach var="instance" items="${serv.instanceStatusCheck()}">
                                 <!--Details page redirection-->
                                 <c:choose>
-                                    <c:when test="${instance[0]} == 'Dynamic Network Connection'">
+                                    
+                                    <c:when test="${instance[0]} == 'Dynamic Network Connection'"><!--DNC-->
                                         <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}&type=dnc'>
+                                        </c:when>                                        
+                                        <c:when test="${instance[0]} == 'Network Creation'"><!--VCN-->
+                                        <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}&type=netcreate'>
                                         </c:when>
 
                                         <c:otherwise>
