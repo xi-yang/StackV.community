@@ -1,6 +1,7 @@
 {
     "user": "admin",
     "type": "netcreate",
+    "alias": "VCN Openstack",
     "data": {
         "virtual_clouds": [
             {

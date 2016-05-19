@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost:3306
--- Generation Time: May 17, 2016 at 07:07 PM
+-- Generation Time: May 19, 2016 at 09:31 PM
 -- Server version: 5.5.42
 -- PHP Version: 5.6.7
 
@@ -67,8 +67,6 @@ INSERT INTO `acl_entry_group` (`acl_id`, `usergroup_id`) VALUES
 (3, 1),
 (4, 1),
 (7, 1),
-(8, 1),
-(9, 1),
 (10, 1),
 (11, 1),
 (12, 1),
@@ -118,8 +116,12 @@ CREATE TABLE `label` (
 --
 
 INSERT INTO `label` (`identifier`, `username`, `label`, `color`) VALUES
-('test0', 'admin', 'urn:ogf:network:rains.maxgigapop.net:mira:dtn03.pub.alcf.anl.gov', 'orange'),
-('test1', 'admin', 'urn:ogf:network:rains.maxgigapop.net:mira:dtn07.pub.alcf.anl.gov:nic-xeth0.2200', 'purple');
+('real_test', 'admin', 'urn:ogf:network:rains.maxgigapop.net:mira:dtn03.pub.alcf.anl.gov', 'orange'),
+('test', 'admin', 'urn:ogf:network:rains.maxgigapop.net:mira:parallelfilesystem-/gpfs/mira-fs1', 'purple'),
+('test 2', 'admin', 'urn:ogf:network:domain=sdnx.maxgigapop.net:node=MCLN', 'red'),
+('test1', 'admin', 'Test 1', 'red'),
+('test2', 'admin', 'Test 2', 'blue'),
+('test3 ', 'admin', 'urn:ogf:network:rains.maxgigapop.net:mira:dtn07.pub.alcf.anl.gov:nic-xeth0.2200', 'purple');
 
 -- --------------------------------------------------------
 
@@ -148,7 +150,7 @@ INSERT INTO `service` (`service_id`, `name`, `filename`, `description`, `atomic`
 (7, 'Driver Management', 'driver', 'Installation and Uninstallation of Driver Instances.', 0),
 (8, 'Virtual Machine Management', 'vmadd', 'Management, Instantiation, and Setup of Virtual Machine Topologies.', 0),
 (9, 'View Filter Management', 'viewcreate', 'Management and Creation of graphical view filters.', 0),
-(10, 'Network Creation', 'netcreate', 'Network Creation Pilot Testbed', 0),
+(10, 'Virtual Cloud Network', 'netcreate', 'Network Creation Pilot Testbed', 0),
 (11, 'Dynamic Network Connection', 'dnc', 'Creation of new network connections.', 0),
 (12, 'Flow based Layer2 Protection', 'fl2p', 'Switching of protection and recovery path.', 0);
 
@@ -166,7 +168,7 @@ CREATE TABLE `service_delta` (
   `type` varchar(60) COLLATE utf8_unicode_ci NOT NULL,
   `referenceUUID` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `delta` longtext COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=28 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=42 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -179,7 +181,7 @@ CREATE TABLE `service_history` (
   `service_history_id` int(11) NOT NULL,
   `service_instance_id` int(11) NOT NULL,
   `service_state_id` int(11) NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -194,8 +196,9 @@ CREATE TABLE `service_instance` (
   `user_id` int(11) NOT NULL,
   `creation_time` datetime DEFAULT NULL,
   `referenceUUID` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `alias_name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `service_state_id` int(11) DEFAULT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=40 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -429,17 +432,17 @@ ALTER TABLE `service`
 -- AUTO_INCREMENT for table `service_delta`
 --
 ALTER TABLE `service_delta`
-  MODIFY `service_delta_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=28;
+  MODIFY `service_delta_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=42;
 --
 -- AUTO_INCREMENT for table `service_history`
 --
 ALTER TABLE `service_history`
-  MODIFY `service_history_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=4;
+  MODIFY `service_history_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=7;
 --
 -- AUTO_INCREMENT for table `service_instance`
 --
 ALTER TABLE `service_instance`
-  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=32;
+  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=40;
 --
 -- AUTO_INCREMENT for table `service_state`
 --

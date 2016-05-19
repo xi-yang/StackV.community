@@ -32,6 +32,11 @@
         <div id="main-pane">
             <br><br>
             Welcome ${user.firstName} ${user.lastName}.<br>
+            
+            
+            <c:redirect url="/ops/catalog.jsp" />
+            
+            
         </div>        
         <!-- JS -->
         <script>
