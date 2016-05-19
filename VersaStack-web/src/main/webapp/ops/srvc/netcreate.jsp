@@ -110,9 +110,11 @@
                                     <table class="management-table" id="net-custom-form">
                                         <thead>
                                             <tr>
-                                                <th>Custom</th>
-                                                <th><div id="custom-toggle"></div></th>
-                                        </tr>
+                                                <th>Service Alias</th>
+                                                <th>
+                                                    <input class="header-input" type="text" name="alias" required />
+                                                </th>
+                                            </tr>
                                         </thead>
                                         <tbody id="custom-fields">
                                             <!-- AWS -->
@@ -126,7 +128,7 @@
                                                             <c:forEach var="driver" items="${driverlist.rows}">
                                                                 <option value="${driver.topologyUri}">${driver.topologyUri}</option>
                                                             </c:forEach>
-                                                        </select>   
+                                                        </select>       
                                                     </td>
                                                 </tr>
                                                 <tr>

@@ -288,6 +288,7 @@ public class ServiceServlet extends HttpServlet {
         JSONObject dataJSON = new JSONObject();
         inputJSON.put("user", paraMap.get("username"));
         inputJSON.put("type", "netcreate");
+        inputJSON.put("alias", paraMap.get("alias"));
 
         JSONArray cloudArr = new JSONArray();
         JSONObject cloudJSON = new JSONObject();
@@ -309,7 +310,7 @@ public class ServiceServlet extends HttpServlet {
 
                 // Process each routes.
                 JSONArray routeArr = new JSONArray();
-                for (int j = 1; j < 10; j++) {                    
+                for (int j = 1; j < 10; j++) {
                     // Check for subroute existence.
                     if (paraMap.containsKey("subnet" + i + "-route" + j + "-to")) {
                         JSONObject routeJSON = new JSONObject();
@@ -429,17 +430,17 @@ public class ServiceServlet extends HttpServlet {
 
                             JSONArray interfaceArr = new JSONArray();
                             if (paraMap.containsKey("subnet" + i + "-vm" + j + "-floating")) {
-                            JSONObject interfaceJSON = new JSONObject();
-                                    interfaceJSON.put("type", "Ethernet");
-                                    interfaceJSON.put("address", "ipv4+" + paraMap.get("subnet" + i + "-vm" + j + "-floating") + "/255.255.255.0");
-                                    interfaceArr.add(interfaceJSON);                                
+                                JSONObject interfaceJSON = new JSONObject();
+                                interfaceJSON.put("type", "Ethernet");
+                                interfaceJSON.put("address", "ipv4+" + paraMap.get("subnet" + i + "-vm" + j + "-floating") + "/255.255.255.0");
+                                interfaceArr.add(interfaceJSON);
                             }
-                            
+
                             for (int k = 1; k <= 10; k++) {
                                 if (paraMap.containsKey("subnet" + i + "-vm" + j + "-sriov" + k + "-dest")) {
                                     JSONObject interfaceJSON = new JSONObject();
                                     interfaceJSON.put("type", "SRIOV");
-                                    
+
                                     interfaceArr.add(interfaceJSON);
                                 }
 
@@ -450,17 +451,17 @@ public class ServiceServlet extends HttpServlet {
                             for (int k = 1; k <= 10; k++) {
                                 if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k + "-to")) {
                                     JSONObject vmRouteJSON = new JSONObject();
-                        
+
                                     JSONObject toJSON = new JSONObject();
                                     toJSON.put("value", paraMap.get("subnet" + i + "-vm" + j + "-route" + k + "-to"));
                                     vmRouteJSON.put("to", toJSON);
-                                
+
                                     if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k + "-from")) {
                                         JSONObject fromJSON = new JSONObject();
                                         fromJSON.put("value", paraMap.get("subnet" + i + "-vm" + j + "-route" + k + "-from"));
                                         vmRouteJSON.put("from", fromJSON);
                                     }
-                                    
+
                                     if (paraMap.containsKey("subnet" + i + "-vm" + j + "-route" + k + "-next")) {
                                         JSONObject nextJSON = new JSONObject();
                                         nextJSON.put("value", paraMap.get("subnet" + i + "-vm" + j + "-route" + k + "-next"));
@@ -469,8 +470,7 @@ public class ServiceServlet extends HttpServlet {
                                 }
                             }
                             vmJSON.put("routes", vmRouteArr);
-                            
-                            
+
                         }
                     }
                 }
@@ -594,6 +594,7 @@ public class ServiceServlet extends HttpServlet {
         JSONObject dataJSON = new JSONObject();
         inputJSON.put("user", paraMap.get("username"));
         inputJSON.put("type", "dnc");
+        inputJSON.put("alias", paraMap.get("alias"));
 
         //Process each link
         JSONArray linkArr = new JSONArray();

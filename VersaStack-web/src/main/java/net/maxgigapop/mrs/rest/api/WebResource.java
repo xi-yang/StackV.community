@@ -264,6 +264,14 @@ public class WebResource {
                     break;
                 default:
             }
+            
+            String alias;
+            if (!paraMap.containsKey("alias")) {
+                paraMap.put("alias", "Unlabeled");
+                alias = "Unlabeled";
+            } else {
+                alias = paraMap.get("alias");
+            }
 
             // Initialize service parameters.
             prep = front_conn.prepareStatement("SELECT service_id"
@@ -276,12 +284,13 @@ public class WebResource {
 
             // Install Instance into DB.
             prep = front_conn.prepareStatement("INSERT INTO frontend.service_instance "
-                    + "(`service_id`, `user_id`, `creation_time`, `referenceUUID`, `service_state_id`) VALUES (?, ?, ?, ?, ?)");
+                    + "(`service_id`, `user_id`, `creation_time`, `referenceUUID`, `alias_name`, `service_state_id`) VALUES (?, ?, ?, ?, ?, ?)");
             prep.setInt(1, serviceID);
             prep.setString(2, userID);
             prep.setTimestamp(3, timeStamp);
             prep.setString(4, refUuid);
-            prep.setInt(5, 1);
+            prep.setString(5, alias);
+            prep.setInt(6, 1);
             prep.executeUpdate();
             
             int instanceID = servBean.getInstanceID(refUuid);

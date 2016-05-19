@@ -81,9 +81,11 @@
                                     <table class="management-table" id="net-custom-form">
                                         <thead>
                                             <tr>
-                                                <th>Custom</th>
-                                                <th><div id="custom-toggle">Display</div></th>
-                                        </tr>
+                                                <th>Service Alias</th>
+                                                <th>
+                                                    <input class="header-input" type="text" name="alias" required />
+                                                </th>
+                                            </tr>
                                         </thead>
                                         <tbody id="custom-fields">
                                             <tr id="link1">
