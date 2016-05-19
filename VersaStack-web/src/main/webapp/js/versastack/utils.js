@@ -14,11 +14,22 @@ define([], function () {
             elem.removeChild(elem.firstChild);
         }
     }
-
+    
+    function bsShowFadingMessage(container, message, position, delay){
+        $(container).popover({content: message, placement: position, trigger: "manual"});
+        $(container).popover("show");
+        setTimeout(
+          function(){
+            $(container).popover('hide');
+            $(container).popover('destroy');
+          },  delay);                                                         
+    }
+    
     /** PUBLIC INTERFACE **/
     return {
         map_: map_,
-        deleteAllChildNodes: deleteAllChildNodes
+        deleteAllChildNodes: deleteAllChildNodes,
+        bsShowFadingMessage: bsShowFadingMessage
     };
     /** END PUBLIC INTERFACE **/
 
