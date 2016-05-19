@@ -593,7 +593,6 @@ public class WebResource {
             paraMap.put("driverType", "os");
         }
 
-        int vmCounter = 1;
         // Parse Subnets.
         JSONArray subArr = (JSONArray) vcnJSON.get("subnets");
         for (int i = 0; i < subArr.size(); i++) {
@@ -605,6 +604,7 @@ public class WebResource {
             // Parse VMs.
             JSONArray vmArr = (JSONArray) subJSON.get("virtual_machines");
             if (vmArr != null) {
+                int vmCounter = 1;
                 for (Object vmEle : vmArr) {
                     //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name&host&floating_IP&sriov_destination&sriov_mac_address&sriov_ip_address&sriov_routes"
                     JSONObject vmJSON = (JSONObject) vmEle;
@@ -614,13 +614,6 @@ public class WebResource {
                     // Subnet Index
                     vmString += "&" + (i + 1);
 
-                    // Image Type                   
-                    if (vmJSON.containsKey("image")) {
-
-                    } else {
-                        vmString += "& ";
-                    }
-
                     // TYPES
                     if (vmJSON.containsKey("type")) {
                         String typeString = (String) vmJSON.get("type");
@@ -629,6 +622,13 @@ public class WebResource {
                         for (String type : typeArr) {
                             String typeTemp[] = type.split("\\+");
                             typeMap.put(typeTemp[0], typeTemp[1]);
+                        }
+
+                        // Image Type
+                        if (typeMap.containsKey("image")) {
+                            vmString += "&" + typeMap.get("image");
+                        } else {
+                            vmString += "& ";
                         }
 
                         // Instance Type
@@ -652,7 +652,7 @@ public class WebResource {
                             vmString += "& ";
                         }
                     } else {
-                        vmString += "& & & ";
+                        vmString += "& & & & ";
                     }
 
                     // VM Host
