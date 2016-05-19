@@ -114,6 +114,10 @@ define([
     var didDrag = false;
     var highlightedNode = null;
     var previousHighlight = null;
+    
+    var serviceHighlightedNodes = [];
+    var previousHighlightedNodes = [];
+    
     var lastMouse;
     var switchPopup = null;
     /**@param {outputApi} outputApi
@@ -571,6 +575,7 @@ define([
                         //However, we also want it to continue tracking us.
                         outputApi.setHoverLocation(e.clientX, e.clientY);
                         drawHighlight();
+                        highlightServiceElements();
                         switchPopup.render();
                         //fix all edges
                         map_(edgeList, updateSvgChoordsEdge);
@@ -699,7 +704,70 @@ define([
 
             }
         }
+        
+        function setServiceHighlights(x){
+            
+            // to close previous popups and highlihgting from last service 
+            for (var i in serviceHighlightedNodes) {
+                var type = serviceHighlightedNodes[i].getType();
 
+                if (type === "Port") {
+                    serviceHighlightedNodes[i].ancestorNode.portPopup.setVisible(false);
+                    drawPopups();
+
+                } else if (type === "Volume") {
+                    serviceHighlightedNodes[i].parentNode.volumePopup.setVisible(false);
+                    drawPopups();
+                }
+            }
+            
+            serviceHighlightedNodes = x;
+                            
+
+        }
+        
+        function removeServiceHighlights() {
+            serviceHighlightedNodes = [];
+            previousHighlightedNodes = [];
+
+        }
+        
+        function highlightServiceElements(){
+            if (previousHighlightedNodes !== []) {
+                
+                for (var i in previousHighlightedNodes) {
+                    previousHighlightedNodes[i].remove();
+                }
+                previousHighlightedNodes = [];
+            }
+          
+            for (var i in serviceHighlightedNodes) {
+                var type = serviceHighlightedNodes[i].getType();
+
+                if (type === "Port") {
+                    serviceHighlightedNodes[i].ancestorNode.portPopup.setVisible(true);
+                    drawPopups();                
+                } else if (type === "Volume") {
+                    serviceHighlightedNodes[i].parentNode.volumePopup.setVisible(true);
+                    drawPopups();
+                }
+                
+                if (serviceHighlightedNodes[i] && serviceHighlightedNodes[i].svgNode) {
+                    
+                    var toAppend = serviceHighlightedNodes[i].svgNode.node().cloneNode();
+                    previousHighlightedNodes.push(d3.select(toAppend)
+                            .style("filter", "url(#serviceHighlightOutline)")
+                            .style("opacity", "1")
+                            .attr("pointer-events", "none"));
+                    var parentNode = serviceHighlightedNodes[i].svgNode.node().parentNode;
+                    if (parentNode) {
+                        //If we are coming out of a fold, the parentNode might no longer exist
+                        parentNode.appendChild(toAppend);
+                    }
+                }                
+            }
+        }
+        
         function drawHighlight() {
             if (previousHighlight) {
                 previousHighlight.remove();
@@ -1006,6 +1074,9 @@ define([
             map_(edgeList, updateSvgChoordsEdge);
         };
         API["clickNode"] = clickNode;
+        API["highlightServiceElements"] = highlightServiceElements;
+        API["setServiceHighlights"] = setServiceHighlights;
+        API["removeServiceHighlights"] = removeServiceHighlights;
     }
 
 

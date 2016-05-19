@@ -562,13 +562,160 @@ define([
                 request.send();
             }
         };
+        
+        this.makeSubModel = function(mapList) { 
 
+            var nodeMap = {};
+            var portMap = {};
+            var serviceMap = {};
+            var subnetMap = {};
+            var volumeMap = {};
+            for (var i in mapList) {
+                if (mapList[i] === undefined || mapList[i] === {}) continue;
+
+                for (var key in mapList[i]) {
+                    //var val = mapList[i][key];
+                    //val.name = key;
+                    //console.log("JSON.stringify(element, null, 2): " + JSON.stringify(val, null, 2));
+                    var map = mapList[i];
+                    //alert(key);
+                    var val = map[key];
+                    val.name = key;
+                    //console.log("JSON.stringify(element, null, 2): " + JSON.stringify(val, null, 2));
+                    var types = val[values.type];
+                    
+                    var types = val[values.type];
+                    if (!types) {
+                       //console.log("Types empty!\n\nVal: " + val + "\nName: " + val.name);
+                    } else {
+                        map_(types, function (type) {
+                            type = type.value;
+
+                            switch (type) {
+                                // Fallthrough group 
+                                case values.topology:
+                                case values.node:
+                                    console.log("type: " + type);
+                                    var toAdd;
+                                    if (that.nodeMap[key]) {
+                                        toAdd = that.nodeMap[key];
+                                        nodeMap[key] = toAdd;
+                                    }
+                                    break;
+
+                                case values.bidirectionalPort:
+                                    var toAdd;
+                                    if (that.portMap[key]) {
+                                        toAdd = that.portMap[key];
+                                        portMap[key] = toAdd;
+                                    } 
+                                    break;
+
+                                    // Fallthrough group     
+                                case values.switchingService:
+                                case values.topopolgySwitchingService:
+                                case values.hypervisorService:
+                                case values.routingService:
+                                case values.virtualCloudService:
+                                case values.blockStorageService:
+                                    var toAdd;
+                                    if (that.serviceMap[key]) {
+                                        toAdd = that.serviceMap[key];
+                                        serviceMap[key] = toAdd;
+                                    } 
+                                    break;
+
+                                    // Fallthrough group 
+                                case values.objectStorageService:
+                                case values.virtualSwitchingService:
+                                case values.hypervisorBypassInterfaceService:
+                                case values.storageService:
+                                case values.IOPerformanceMeasurementService:
+                                case values.DataTransferService:
+                                case values.DataTransferClusterService:
+                                case values.NetworkObject:
+                                    var toAdd;
+                                    if (that.serviceMap[key]) {
+                                        toAdd = that.serviceMap[key];
+                                        serviceMap[key] = toAdd;
+                                    } 
+                                    break;
+
+                                case values.switchingSubnet:
+                                    var toAdd;
+                                    if (that.subnetMap[key]) {
+                                        toAdd = that.subnetMap[key];
+                                        subnetMap[key] = toAdd;
+                                    }
+                                    break;
+                                case values.namedIndividual://All elements have this
+                                    break;
+
+                                //fallthrough group x 
+                                case values.labelGroup:
+                                case values.label:
+                                case values.networkAdress:
+                                case values.bucket:
+                                case values.tag:
+                                case values.route:
+                                    break;
+                                case values.volume:
+                                    var toAdd;
+                                    if (that.volumeMap[key]) {
+                                        toAdd = that.volumeMap[key];
+                                        volumeMap[key] = toAdd;
+                                    }
+                                    break;
+
+                                // fallthrough group x 
+                                case values.routingTable:
+                                case values.ontology:
+                                case values.POSIX_IOBenchmark:
+                                case values.address:
+                                    break;
+                                default:
+                                    console.log("Unknown type: " + type);
+                                    break;
+                            }
+                        });                                                
+                    }
+                }
+            }
+            return {
+                nodeMap: nodeMap,
+                portMap: portMap,
+                serviceMap: serviceMap,
+                subnetMap: subnetMap,
+                volumeMap: volumeMap
+            };
+        };    
+                    
         this.getVersion = function () {
             return versionID;
         };
 
 
-
+        this.getModelMapValues = function(m) {
+            var ans = [];
+            for (var i in m.nodeMap){
+                ans.push(m.nodeMap[i]);
+            }
+            for (var i in m.serviceMap) {
+                ans.push(m.serviceMap[i]);
+            }
+            for (var i in m.portMap) {
+                ans.push(m.portMap[i]);
+            }
+            for (var i in m.volumeMap) {
+                ans.push(m.volumeMap[i]);
+            }               
+            for (var i in m.subnetMap) {
+                ans.push(m.subnetMap[i]);
+            }              
+            return ans;
+        };
+        
+        
         this.listNodes = function () {
             var ans = [];
             map_(rootNodes, /**@param {Node} node**/function (node) {

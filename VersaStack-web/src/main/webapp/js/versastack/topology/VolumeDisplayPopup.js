@@ -278,6 +278,7 @@ define(["local/d3", "local/versastack/utils"],
                             outputApi.setHoverLocation(e.clientX, e.clientY);
                             that.updateSvgChoords();
                             renderApi.drawHighlight();
+                            renderApi.highlightServiceElements();
                             renderApi.layoutEdges();
                         })
                         .on("dragstart", function () {

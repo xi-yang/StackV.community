@@ -576,13 +576,101 @@
             <div id="servicePanel-tab">
                 Services
             </div>
-            <div id ="servicePanel-contents">
+            <div id ="servicePanel-contents" class = "hide">
                 <c:forEach items="${serviceList.rows}" var="service">
                         <div class="service-instance-item" id="${service.referenceUUID}">${service.name}</div>
                 </c:forEach>
            </div>
         </div>
-      
+        <script>                 
+            $.ajax({
+                   crossDomain: true,
+                   type: "GET",
+                   url: "/VersaStack-web/restapi/service/ready",
+                   dataType: "text", 
+
+                   success: function(data,  textStatus,  jqXHR ) {
+                       if (data === "true")  {
+                          //alert(textStatus);
+                          $('#servicePanel-contents').removeClass("hide");
+                       } else {
+                          $('#servicePanel-contents').removeClass("hide");
+                           $('#servicePanel-contents').html("Service instances unavailable.").addClass('service-unready-message');
+                          
+                      }
+                   },
+
+                   error: function(jqXHR, textStatus, errorThrown ) {
+                       alert("Error getting status.");
+                       //alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
+                   }
+            });  
+            
+                $(".service-instance-item").each(function() {
+                    var that = this;
+                    var DELAY = 700, clicks = 0, timer = null;
+
+                   $( that ).click( function() {
+                        clicks++;  //count clicks
+
+                        if(clicks === 1) {                          
+                            timer = setTimeout(function() {
+                                    var UUID = $( that ).attr('id');
+                                    $.ajax({
+                                        crossDomain: true,
+                                        type: "GET",
+                                        url: "/VersaStack-web/restapi/app/service/lastverify/" + UUID,
+                                        dataType: "json", 
+
+                                        success: function(data,  textStatus,  jqXHR ) {
+                                             $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
+                                             $(that).addClass('service-instance-highlighted');
+                                             //alert("UUID: " + UUID);
+                                             //alert(data.verified_reduction);
+                                             //alert(data.verified_addition);
+                                             //alert(data.unverified_reduction);
+                                             //alert(data.unverified_addition);
+                                             //var result = model.makeSubModel([ data.verified_addition  ]);        
+                                                     //alert("result: " + result);
+                                             var uaObj = JSON.parse(data.verified_addition);
+                                             var result = model.makeSubModel([ uaObj  ]);
+                                             var modelArr = model.getModelMapValues(result);
+                                             
+                                             //alert(result);
+                          
+                                             render.API.setServiceHighlights(modelArr);
+                                             render.API.highlightServiceElements();
+                                             //alert("i'm here");
+                                             //render.highlightElements(result.serviceMap);
+                                             //render.highlightElements();
+                                             //render.highlightElements();
+                                        },
+
+                                        error: function(jqXHR, textStatus, errorThrown ) {
+                                            //alert("Error getting status.");
+                                            alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
+                                        }
+                                   });   
+                                clicks = 0;   
+                            }, DELAY);
+
+                    } else {
+                        clearTimeout(timer);    //prevent single-click action
+                        $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
+                        render.API.setServiceHighlights([]);
+                        render.API.highlightServiceElements();                        
+                        clicks = 0;             //after action performed, reset counter
+                    }
+
+                       
+          
+                  })
+                 .dblclick(function(e) {
+                   e.preventDefault();
+                 });
+              });
+
+        </script>
         <div id="loadingPanel"></div>
         <div class="closed" id="displayPanel">
             <div id="displayPanel-contents">
@@ -630,6 +718,19 @@
                        0 0 0 1 0" />
         <feComposite operator="out" in="a" in2="SourceGraphic"/>
     </filter>
+    
+<filter id="serviceHighlightOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+   <feFlood flood-color="#66ff66" result="base" />
+   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+   <feColorMatrix result="mask" in="bigger" type="matrix"
+      values="0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 1 0" />
+   <feComposite result="drop" in="base" in2="mask" operator="in" />
+   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+</filter>
+    
     <filter id="subnetHighlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
         <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
         <feMorphology operator="dilate" radius="1"/>
