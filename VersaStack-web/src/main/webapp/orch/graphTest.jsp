@@ -116,6 +116,7 @@
                             d3 = d3_;
                             utils = utils_;
                             map_ = utils.map_;
+                            bsShowFadingMessage = utils.bsShowFadingMessage;
                             DropDownTree = tree;
                             ContextMenu = c; 
                             TagDialog = td;
@@ -623,27 +624,20 @@
                                         dataType: "json", 
 
                                         success: function(data,  textStatus,  jqXHR ) {
-                                             $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
-                                             $(that).addClass('service-instance-highlighted');
-                                             //alert("UUID: " + UUID);
-                                             //alert(data.verified_reduction);
-                                             //alert(data.verified_addition);
-                                             //alert(data.unverified_reduction);
-                                             //alert(data.unverified_addition);
-                                             //var result = model.makeSubModel([ data.verified_addition  ]);        
-                                                     //alert("result: " + result);
-                                             var uaObj = JSON.parse(data.verified_addition);
-                                             var result = model.makeSubModel([ uaObj  ]);
-                                             var modelArr = model.getModelMapValues(result);
-                                             
-                                             //alert(result);
-                          
-                                             render.API.setServiceHighlights(modelArr);
-                                             render.API.highlightServiceElements();
-                                             //alert("i'm here");
-                                             //render.highlightElements(result.serviceMap);
-                                             //render.highlightElements();
-                                             //render.highlightElements();
+                                             if (data.verified_addition === null) {
+                                                 bsShowFadingMessage("#servicePanel", "Data not found", "top", 1000);
+                                             } else {
+                                                $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
+                                                $(that).addClass('service-instance-highlighted');
+                                                
+                                                var uaObj = JSON.parse(data.verified_addition);
+                                                var result = model.makeSubModel([ uaObj  ]);
+                                                var modelArr = model.getModelMapValues(result);
+
+                                                render.API.setServiceHighlights(modelArr);
+                                                render.API.highlightServiceElements();
+
+                                             }
                                         },
 
                                         error: function(jqXHR, textStatus, errorThrown ) {
