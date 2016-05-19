@@ -323,6 +323,16 @@
                                                                                         <input type="text" name="subnet1-vm1-sriov1-ip" placeholder="SRIOV IP Address">
                                                                                         <input type="text" name="subnet1-vm1-sriov1-gateway" placeholder="SRIOV Gateway">
                                                                                     </div>
+                                                                                    <div id="subnet1-vm1-sriov1-route-block">
+                                                                                        <div>
+                                                                                            <input type="text" name="subnet1-vm1-sriov1-route1-from" placeholder="From">
+                                                                                            <input type="text" name="subnet1-vm1-sriov1-route1-to" placeholder="To">
+                                                                                            <input type="text" name="subnet1-vm1-sriov1-route1-next" placeholder="Next Hop">
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <input class="button-register" id="subnet1-vm1-sriov1-route" type="button" value="Add Route" onClick="addSRIOVRoute(this.id)">
+                                                                                    </div>
                                                                                 </div>
                                                                                 <div>
                                                                                     <input class="button-register" id="subnet1-vm1-sriov" type="button" value="Add SRIOV" onClick="addSRIOV(this.id)">

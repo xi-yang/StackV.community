@@ -310,6 +310,7 @@ var subRouteLimit = 10;
 function addSubnetRoute(subnetID) {
     if (subRouteCounter === subRouteLimit) {
         alert("You have reached the limit of routes.");
+        return;
     }
 
     subRouteCounter++;
@@ -346,6 +347,7 @@ var SRIOVLimit = 10;
 function addSRIOV(VMID) {
     if (SRIOVCounter === SRIOVLimit) {
         alert("You have reached the limit of SRIOV connections.");
+        return;
     }
 
     SRIOVCounter++;
@@ -353,10 +355,32 @@ function addSRIOV(VMID) {
 
     block.innerHTML = block.innerHTML +
             '<div>' +
-            '<input type="text" name="' + VMID + SRIOVCounter + '-sriov-mac" placeholder="SRIOV MAC Address">' +
-            '<input type="text" name="' + VMID + SRIOVCounter + '-sriov-ip" placeholder="SRIOV IP Address">' +
-            '<input type="text" name="' + VMID + SRIOVCounter + '-sriov-gateway" placeholder="SRIOV Gateway">' +
-            '</div>';
+            '<input type="text" name="' + VMID + SRIOVCounter + '-mac" placeholder="SRIOV MAC Address">' +
+            '<input type="text" name="' + VMID + SRIOVCounter + '-ip" placeholder="SRIOV IP Address">' +
+            '<input type="text" name="' + VMID + SRIOVCounter + '-gateway" placeholder="SRIOV Gateway">' +
+            '</div><div id="' + VMID + SRIOVCounter + '-route-block"></div><div>' +
+            '<input class="button-register" id="' + VMID + SRIOVCounter + '-route" type="button" value="Add Route" onClick="addSRIOVRoute(this.id)">';
+    
+    addSRIOVRoute(VMID + SRIOVCounter +'-route');
+}
+
+var SRIOVRouteCounter = 1;
+var SRIOVRouteLimit = 20;
+function addSRIOVRoute(SRIOVRouteId) {
+    if (SRIOVCounter === SRIOVLimit) {
+        alert("You have reached the limit of SRIOV routes.");
+        return;
+    }
+
+    SRIOVRouteCounter++;
+    var block = document.getElementById(SRIOVRouteId + '-block');
+
+    block.innerHTML = block.innerHTML +
+            '<div>' +
+            '<input type="text" name="' + SRIOVRouteId + SRIOVRouteCounter + '-from" placeholder="From">' +
+            '<input type="text" name="' + SRIOVRouteId + SRIOVRouteCounter + '-to" placeholder="To">' +
+            '<input type="text" name="' + SRIOVRouteId + SRIOVRouteCounter + '-next" placeholder="Next Hop">' +
+            '</div>';            
 }
 
 var VMCounter = 1;
@@ -364,6 +388,7 @@ var VMLimit = 10;
 function addVM(type, subnetID) {
     if (VMCounter === VMLimit) {
         alert("You have reached the limit of VMs.");
+        return;
     }
     else if (type === 'aws') {
         VMCounter++;
@@ -407,9 +432,10 @@ function addVM(type, subnetID) {
 var gatewayCounter = 1;
 var gatewarLimit = 10;
 function addGateway(gatewayID){
-    if(gatewayCounter === gatewarLimit)
+    if(gatewayCounter === gatewarLimit){
         alert("You have reached the limit of Gateways.");
-    
+        return;
+    }
     gatewayCounter++;
     var block = document.getElementById(gatewayID + '-block');
     
@@ -432,6 +458,7 @@ var subnetLimit = 10;
 function addSubnet(type) {
     if (subnetCounter === subnetLimit) {
         alert("You have reached the limit of subnets.");
+        return;
     }
     else if (type === 'aws') {
         var table = document.getElementById("net-custom-form");
