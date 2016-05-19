@@ -204,7 +204,7 @@
                 if (sel.value !== 'off') {
                     setRefresh(sel.value);                    
                 } else {
-                    document.getElementById('refresh-button').innerHTML = 'Manually Refresh';
+                    document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
                 }
             }
             
@@ -215,8 +215,12 @@
             }
             
             function reloadInstance(time) {                
+                var manual = false;
                 if (typeof time === "undefined") {
                     time = countdown;
+                }
+                if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') { 
+                    manual = true;
                 }
                 
                 $('#instance-panel').load(document.URL + ' #instance-panel', function() {
@@ -228,10 +232,10 @@
                         $("#body-" + this.id).toggleClass("hide"); 
                     });
                     
-                    if (document.getElementById('refresh-button').innerHTML !== 'Manually Refresh') {                        
+                    if (manual === false) {                        
                         countdown = time;
                         document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-                    }
+                    } else { document.getElementById('refresh-button').innerHTML = 'Manually RefreshNow '; }
                 });                 
             }                        
             
@@ -279,8 +283,12 @@
                 var verificationState = document.getElementById("instance-verification").innerHTML;
                 var blockString = "";
 
+                // State -1 - Error during validation/reconstruction
+                if ((subState === 'READY' || subState === 'FAILED') && verificationState === "") {
+                    blockString = "Service encountered an error during verification. Please hold for further instructions.";
+                }
                 // State 0 - Before Verify
-                if (subState !== 'READY' && subState !== 'FAILED') {
+                else if (subState !== 'READY' && subState !== 'FAILED') {
                     blockString = "Service is still processing. Please hold for further instructions.";
                 }
                 // State 1 - Ready & Verifying

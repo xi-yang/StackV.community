@@ -58,7 +58,7 @@
                                 <th>Instance Alias</th>
                                 <th>Service Type</th>
                                 <th>Instance UUID</th>
-                                <th>Instance Status     <button class="button-header" id="refresh-button" onclick="reloadTracker()">Refresh Now</button></th>
+                                <th>Instance Status     <button class="button-header" id="refresh-button" onclick="reloadTracker()">Manually Refresh Now</button></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -158,7 +158,7 @@
                 if (sel.value !== 'off') {
                     setRefresh(sel.value);
                 } else {
-                    document.getElementById('refresh-button').innerHTML = 'Manually Refresh';
+                    document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
                 }
             }
             
@@ -169,8 +169,12 @@
             }
             
             function reloadTracker(time) {
+                var manual = false;
                 if (typeof time === "undefined") {
                     time = countdown;
+                }
+                if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') { 
+                    manual = true;
                 }
                 
                 $('#instance-panel').load(document.URL +  ' #instance-panel', function() {
@@ -178,10 +182,10 @@
                         window.document.location = $(this).data("href");                                                
                     }); 
                     
-                    if (document.getElementById('refresh-button').innerHTML !== 'Manually Refresh') {                        
+                    if (manual === false) {                        
                         countdown = time;
                         document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-                    }
+                    } else { document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now'; }
                 }); 
             }
             

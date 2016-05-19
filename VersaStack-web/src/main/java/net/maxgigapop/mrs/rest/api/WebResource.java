@@ -220,10 +220,12 @@ public class WebResource {
             }
 
             String serviceType = (String) inputJSON.get("type");
-            JSONObject dataJSON = (JSONObject) inputJSON.get("data");
+            String alias = (String) inputJSON.get("alias");
             String user = (String) inputJSON.get("user");
             String userID = "";
 
+            JSONObject dataJSON = (JSONObject) inputJSON.get("data");
+            
             // Find user ID.
             Connection front_conn;
             try {
@@ -263,15 +265,7 @@ public class WebResource {
                     paraMap = parseFlow(dataJSON, refUuid);
                     break;
                 default:
-            }
-            
-            String alias;
-            if (!paraMap.containsKey("alias")) {
-                paraMap.put("alias", "Unlabeled");
-                alias = "Unlabeled";
-            } else {
-                alias = paraMap.get("alias");
-            }
+            }            
 
             // Initialize service parameters.
             prep = front_conn.prepareStatement("SELECT service_id"
