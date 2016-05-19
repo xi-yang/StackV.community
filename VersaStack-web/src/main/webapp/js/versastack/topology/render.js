@@ -719,8 +719,9 @@ define([
                     serviceHighlightedNodes[i].parentNode.volumePopup.setVisible(false);
                     drawPopups();
                 }
+                
             }
-            
+
             serviceHighlightedNodes = x;
                             
 
@@ -765,7 +766,8 @@ define([
                         parentNode.appendChild(toAppend);
                     }
                 }                
-            }
+            }           
+            map_(edgeList, updateSvgChoordsEdge);           
         }
         
         function drawHighlight() {
