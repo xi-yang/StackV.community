@@ -220,10 +220,12 @@ public class WebResource {
             }
 
             String serviceType = (String) inputJSON.get("type");
-            JSONObject dataJSON = (JSONObject) inputJSON.get("data");
+            String alias = (String) inputJSON.get("alias");
             String user = (String) inputJSON.get("user");
             String userID = "";
 
+            JSONObject dataJSON = (JSONObject) inputJSON.get("data");
+            
             // Find user ID.
             Connection front_conn;
             try {
@@ -263,7 +265,7 @@ public class WebResource {
                     paraMap = parseFlow(dataJSON, refUuid);
                     break;
                 default:
-            }
+            }            
 
             // Initialize service parameters.
             prep = front_conn.prepareStatement("SELECT service_id"
@@ -276,12 +278,13 @@ public class WebResource {
 
             // Install Instance into DB.
             prep = front_conn.prepareStatement("INSERT INTO frontend.service_instance "
-                    + "(`service_id`, `user_id`, `creation_time`, `referenceUUID`, `service_state_id`) VALUES (?, ?, ?, ?, ?)");
+                    + "(`service_id`, `user_id`, `creation_time`, `referenceUUID`, `alias_name`, `service_state_id`) VALUES (?, ?, ?, ?, ?, ?)");
             prep.setInt(1, serviceID);
             prep.setString(2, userID);
             prep.setTimestamp(3, timeStamp);
             prep.setString(4, refUuid);
-            prep.setInt(5, 1);
+            prep.setString(5, alias);
+            prep.setInt(6, 1);
             prep.executeUpdate();
             
             int instanceID = servBean.getInstanceID(refUuid);
@@ -892,6 +895,7 @@ public class WebResource {
                 verifyJSON = (JSONObject) obj;
             } catch (ParseException ex) {
                 Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+                throw new IOException("Parse Error within Verification: " + ex.getMessage());
             }           
             
             // Update verification results cache.
@@ -907,11 +911,12 @@ public class WebResource {
             prep.setInt(9, instanceID);
             prep.executeUpdate();
 
-
-            if (verifyJSON.containsKey("reductionVerified") && ((String) verifyJSON.get("reductionVerified")).equals("false"))
+            if (verifyJSON.containsKey("reductionVerified") && (verifyJSON.get("reductionVerified") != null) && ((String) verifyJSON.get("reductionVerified")).equals("false")) {
                 redVerified = false;
-            if (verifyJSON.containsKey("additionVerified") && ((String) verifyJSON.get("additionVerified")).equals("false"))
+            } 
+            if (verifyJSON.containsKey("additionVerified") && (verifyJSON.get("additionVerified") != null) && ((String) verifyJSON.get("additionVerified")).equals("false")) {
                 addVerified = false;
+            }
 
             //System.out.println("Verify Result: " + result + "\r\n");
             if (redVerified && addVerified) {

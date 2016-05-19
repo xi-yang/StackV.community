@@ -19,6 +19,8 @@ Any value defined here will override the pom.xml file value but is only applicab
     </properties>
     <spellchecker-wordlist xmlns="http://www.netbeans.org/ns/spellchecker-wordlist/1">
         <word>Accessor</word>
+        <word>DNC</word>
         <word>substate</word>
+        <word>VCN</word>
     </spellchecker-wordlist>
 </project-shared-configuration>
