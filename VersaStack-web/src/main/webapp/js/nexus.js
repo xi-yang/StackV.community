@@ -323,23 +323,23 @@ function addSubnetRoute(subnetID) {
             '</div>';
 }
 
-var VMRouteCounter = 1;
-var VMRouteLimit = 10;
-function addVMRoute(VMID) {
-    if (VMRouteCounter === VMRouteLimit) {
-        alert("You have reached the limit of routes.");
-    }
-
-    VMRouteCounter++;
-    var block = document.getElementById(VMID + '-block');
-
-    block.innerHTML = block.innerHTML +
-            '<div>' +
-            '<input type="text" name="' + VMID + VMRouteCounter + '-from" placeholder="From"/>' +
-            '<input type="text" name="' + VMID + VMRouteCounter + '-to" placeholder="To"/>' +
-            '<input type="text" name="' + VMID + VMRouteCounter + '-next" placeholder="Next Hop"/>' +
-            '</div>';
-}
+//var VMRouteCounter = 1;
+//var VMRouteLimit = 10;
+//function addVMRoute(VMID) {
+//    if (VMRouteCounter === VMRouteLimit) {
+//        alert("You have reached the limit of routes.");
+//    }
+//
+//    VMRouteCounter++;
+//    var block = document.getElementById(VMID + '-block');
+//
+//    block.innerHTML = block.innerHTML +
+//            '<div>' +
+//            '<input type="text" name="' + VMID + VMRouteCounter + '-from" placeholder="From"/>' +
+//            '<input type="text" name="' + VMID + VMRouteCounter + '-to" placeholder="To"/>' +
+//            '<input type="text" name="' + VMID + VMRouteCounter + '-next" placeholder="Next Hop"/>' +
+//            '</div>';
+//}
 
 var SRIOVCounter = 1;
 var SRIOVLimit = 10;
@@ -353,9 +353,9 @@ function addSRIOV(VMID) {
 
     block.innerHTML = block.innerHTML +
             '<div>' +
-            '<input type="text" name="' + VMID + SRIOVCounter + '-dest" placeholder="SRIOV Destination">' +
             '<input type="text" name="' + VMID + SRIOVCounter + '-sriov-mac" placeholder="SRIOV MAC Address">' +
             '<input type="text" name="' + VMID + SRIOVCounter + '-sriov-ip" placeholder="SRIOV IP Address">' +
+            '<input type="text" name="' + VMID + SRIOVCounter + '-sriov-gateway" placeholder="SRIOV Gateway">' +
             '</div>';
 }
 
@@ -370,9 +370,9 @@ function addVM(type, subnetID) {
         var block = document.getElementById(subnetID + '-block');
         
         block.innerHTML = block.innerHTML +
-                '<table id="subnet' + subnetID + '-vm' + VMCounter + '-table">' +
+                '<table id="' + subnetID + VMCounter + '-table">' +
                 '<tbody>' +
-                '<tr><td>VM Name</td><td><input type="text" name="subnet' + subnetID + VMCounter + '"></td></tr>' +
+                '<tr><td>VM Name</td><td><input type="text" name="' + subnetID + VMCounter + '"></td></tr>' +
                 '<tr><td><input type="text" name="' + subnetID + VMCounter + '-keypair" placeholder="Keypair Name"></td>' + 
                 '<td><input type="text" name="' + subnetID + VMCounter + '-security" placeholder="Security Name"></td></tr>' +
                 '<tr><td><input type="text" name="' + subnetID + VMCounter + '-image" placeholder="Image Type"></td>' + 
@@ -385,9 +385,9 @@ function addVM(type, subnetID) {
         var block = document.getElementById(subnetID + '-block');
 
         block.innerHTML = block.innerHTML +
-                '<table id="subnet' + subnetID + '-vm' + VMCounter + '-table">' +
+                '<table id="' + subnetID + VMCounter + '-table">' +
                 '<tbody>' +
-                '<tr><td>VM Name</td><td><input type="text" name="subnet' + subnetID + VMCounter + '"></td></tr>' +
+                '<tr><td>VM Name</td><td><input type="text" name="' + subnetID + VMCounter + '"></td></tr>' +
                 '<tr><td><input type="text" name="' + subnetID + VMCounter + '-keypair" placeholder="Keypair Name"></td>' + 
                 '<td><input type="text" name="' + subnetID + VMCounter + '-security" placeholder="Security Name"></td></tr>' +
                 '<tr><td><input type="text" name="' + subnetID + VMCounter + '-image" placeholder="Image Type"></td>' + 
@@ -397,12 +397,34 @@ function addVM(type, subnetID) {
                 '<tr><td>SRIOV</td><td>' + 
                 '<div id="' + subnetID + VMCounter + '-sriov-block">' +                
                 '</div><div><input class="button-register" id="' + subnetID + VMCounter + '-sriov" type="button" value="Add SRIOV" onClick="addSRIOV(this.id)"></div>' + 
-                '</td></tr><tr><td>Routes</td><td><div id="' + subnetID + VMCounter + '-route-block">' +                
-                '</div><div><input class="button-register" id="subnet' + subnetID + VMCounter + '-route" type="button" value="Add VM Route" onClick="addVMRoute(this.id)"></div></td></tr></tbody></table>';
+                '</td></tr></tbody></table>';
         
-        addVMRoute(subnetID + VMCounter + '-route');
+//        addVMRoute(subnetID + VMCounter + '-route');
         addSRIOV(subnetID + VMCounter + '-sriov');
     }
+}
+
+var gatewayCounter = 1;
+var gatewarLimit = 10;
+function addGateway(gatewayID){
+    if(gatewayCounter === gatewarLimit)
+        alert("You have reached the limit of Gateways.");
+    
+    gatewayCounter++;
+    var block = document.getElementById(gatewayID + '-block');
+    
+    block.innerHTML = block.innerHTML +
+            '<table id="' + gatewayID + gatewayCounter + '-table">' +
+            '<tbody>' +
+            '<tr><td>Gateway Name</td>' +
+            '<td><input type="text" name="' + gatewayID + gatewayCounter + '"></td></tr>' +
+            '<tr><td>From</td>' +
+            '<td><input type="text" name="' + gatewayID + gatewayCounter + '-from-value" placeholder="Value"></td>' +
+            '<td><input type="text" name="' + gatewayID + gatewayCounter + '-from-type" placeholder="Type"></td></tr>' +
+            '<tr><td>To</td>' +
+            '<td><input type="text" name="' + gatewayID + gatewayCounter + '-to-value" placeholder="Value"></td>' +
+            '<td><input type="text" name="' + gatewayID + gatewayCounter + '-to-type" placeholder="Type"></td></tr>' +
+            '</tbody></table>';
 }
 
 var subnetCounter = 1;
@@ -464,13 +486,17 @@ function addSubnet(type) {
                 '<div>' +
                 '<input class="button-register" id="subnet' + subnetCounter + '-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">' +
                 '</div><br>' +                
+                '<div id="subnet' + subnetCounter + '-gateway-block"></div>' +
+                '<div>' + 
+                '<input class="button-register" id="subnet' + subnetCounter + '-gateway" type="button" value="Add Gateway" onClick="addGateway(this.id)">' + 
+                '</div><br>' +                
                 '<div id="subnet' + subnetCounter + '-vm-block"></div>' +
                 '<div>' + 
-                '<input class="button-register" id="subnet' + subnetCounter + '-vm" type="button" value="Add VM" onClick="addVM(\'ops\', this.id)">' + 
-                '</div>' +
+                '<input class="button-register" id="subnet' + subnetCounter + '-vm" type="button" value="Add VM" onClick="addVM(\'ops\', this.id)"></div>' +
                 '</div>';
 
         addSubnetRoute('subnet' + subnetCounter + '-route');
+        addGateway('subnet' + subnetCounter + '-gateway');
         addVM('ops', 'subnet' + subnetCounter + '-vm');
     }
 }
