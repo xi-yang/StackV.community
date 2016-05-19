@@ -55,18 +55,16 @@
                     <table class="management-table" id="status-table">
                         <thead>
                             <tr>
-                                <th>Service Name</th>
-                                <th>Service UUID</th>
-                                <th>Service Status                                                                           
-                                    <button class="button-header" onclick="reloadTracker()">Refresh Now</button>                                    
-                                </th>
+                                <th>Instance Alias</th>
+                                <th>Service Type</th>
+                                <th>Instance UUID</th>
+                                <th>Instance Status     <button class="button-header" id="refresh-button" onclick="reloadTracker()">Manually Refresh Now</button></th>
                             </tr>
                         </thead>
                         <tbody>
                             <c:forEach var="instance" items="${serv.instanceStatusCheck()}">
                                 <!--Details page redirection-->
-                                <c:choose>
-                                    
+                                <c:choose>                                    
                                     <c:when test="${instance[0]} == 'Dynamic Network Connection'"><!--DNC-->
                                         <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}&type=dnc'>
                                         </c:when>                                        
@@ -78,11 +76,12 @@
                                         <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}'>
                                         </c:otherwise>
                                     </c:choose>    
-
-                                    <td>${instance[0]}</td>
-                                    <td>${instance[1]}</td>
-                                    <td>${instance[2]}</td>
-                                </tr>
+                                            
+                                            <td>${instance[3]}</td>        
+                                            <td>${instance[0]}</td>
+                                            <td>${instance[1]}</td>
+                                            <td>${instance[2]}</td>
+                                        </tr>
                             </c:forEach>
                         </tbody>
                     </table>
@@ -156,21 +155,44 @@
             
             function timerChange(sel) {
                 clearInterval(refreshTimer);
+                clearInterval(countdownTimer);
                 if (sel.value !== 'off') {
                     setRefresh(sel.value);
+                } else {
+                    document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
                 }
             }
             
             function setRefresh(time) {
-                refreshTimer = setInterval(reloadTracker(), (time * 1000));     
+                countdown = time;
+                refreshTimer = setInterval(function(){reloadTracker(time);}, (time * 1000));
+                countdownTimer = setInterval(function(){refreshCountdown(time);}, 1000);
             }
             
-            function reloadTracker() {
+            function reloadTracker(time) {
+                var manual = false;
+                if (typeof time === "undefined") {
+                    time = countdown;
+                }
+                if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') { 
+                    manual = true;
+                }
+                
                 $('#instance-panel').load(document.URL +  ' #instance-panel', function() {
                     $(".clickable-row").click(function () {
-                        window.document.location = $(this).data("href");
+                        window.document.location = $(this).data("href");                                                
                     }); 
-                });                                    
+                    
+                    if (manual === false) {                        
+                        countdown = time;
+                        document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
+                    } else { document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now'; }
+                }); 
+            }
+            
+            function refreshCountdown() {
+                document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
+                countdown--;
             }
         </script>    
     </body>

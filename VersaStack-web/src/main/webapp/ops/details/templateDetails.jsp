@@ -50,9 +50,10 @@
                     <option value="30">30 sec.</option>
                     <option value="60">60 sec.</option>
                 </select>
-            </div>
+            </div>           
+            <div class="hide" id="loading-panel"></div>
             <div id="instance-panel">
-                <sql:query dataSource="${front_conn}" sql="SELECT S.name, X.super_state, V.verification_state FROM service S, service_instance I, service_state X, service_verification V
+                <sql:query dataSource="${front_conn}" sql="SELECT S.name, I.alias_name, X.super_state, V.verification_state FROM service S, service_instance I, service_state X, service_verification V
                            WHERE I.referenceUUID = ? AND I.service_instance_id = V.service_instance_id AND S.service_id = I.service_id AND X.service_state_id = I.service_state_id" var="instancelist">
                     <sql:param value="${param.uuid}" />
                 </sql:query>
@@ -63,16 +64,20 @@
                         <thead>
                             <tr>
                                 <th>${instance.name} Service Details</th>
-                                <th><button class="button-header" onclick="reloadDetails()">Refresh Now</button></th>
+                                <th><button class="button-header" id="refresh-button" onclick="reloadInstance()">Refresh</button></th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td>Service Reference UUID</td>
+                                <td>Instance Alias</td>
+                                <td>${instance.alias_name}</td>
+                            </tr>
+                            <tr>
+                                <td>Instance Reference UUID</td>
                                 <td>${param.uuid}</td>
                             </tr>
                             <tr>
-                                <td>Service State</td>
+                                <td>Instance State</td>
                                 <td id="instance-superstate">${instance.super_state}</td>
                             </tr>
                             <tr>
@@ -80,11 +85,10 @@
                                 <td id="instance-substate">${serv.detailsStatus(param.uuid)}</td>
                             </tr>
                             <tr>
-                                <td><div id="instruction-block"></div></td>
+                                <td colspan="2"><div id="instruction-block"></div></td>
                             </tr>
                             <tr>
-                                <td></td>
-                                <td>
+                                <td colspan="2">
                                     <div class="service-instance-panel">
                                         <button class="hide" id="instance-reinstate" onClick="reinstateInstance('${param.uuid}')">Reinstate</button>
                                         <button class="hide" id="instance-cancel" onClick="cancelInstance('${param.uuid}')">Cancel</button>
@@ -151,13 +155,13 @@
                             <tbody class="delta-table-body" id="body-delta-${verification.service_instance_id}">
                                 <tr id="verification-addition-row">
                                     <td>Addition</td>
-                                    <td>${verification.verified_addition}</td>
-                                    <td>${verification.unverified_addition}</td>
+                                    <td id="ver-add">${verification.verified_addition}</td>
+                                    <td id="unver-add">${verification.unverified_addition}</td>
                                 </tr>
                                 <tr id="verification-reduction-row">
                                     <td>Reduction</td>
-                                    <td>${verification.verified_reduction}</td>
-                                    <td>${verification.unverified_reduction}</td>
+                                    <td id="ver-red">${verification.verified_reduction}</td>
+                                    <td id="unver-red">${verification.unverified_reduction}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -167,7 +171,7 @@
         </div>        
         <!-- JS -->
         <script>
-            $(function () {
+            $(function () {                
                 deltaModerate();        
                 instructionModerate();
                 buttonModerate();
@@ -196,36 +200,80 @@
             
             function timerChange(sel) {
                 clearInterval(refreshTimer);
+                clearInterval(countdownTimer);
                 if (sel.value !== 'off') {
-                    setRefresh(sel.value);
+                    setRefresh(sel.value);                    
+                } else {
+                    document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
                 }
             }
             
             function setRefresh(time) {
-                refreshTimer = setInterval(reloadDetails(), (time * 1000));
+                countdown = time;
+                refreshTimer = setInterval(function(){reloadInstance(time);}, (time * 1000));
+                countdownTimer = setInterval(function(){refreshCountdown(time);}, 1000);
             }
             
-            function reloadDetails() {
+            function reloadInstance(time) {                
+                var manual = false;
+                if (typeof time === "undefined") {
+                    time = countdown;
+                }
+                if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') { 
+                    manual = true;
+                }
+                
                 $('#instance-panel').load(document.URL + ' #instance-panel', function() {
+                    deltaModerate();            
                     instructionModerate();
-                    buttonModerate(); 
-                });
+                    buttonModerate();
+                    
+                    $(".delta-table-header").click(function () {
+                        $("#body-" + this.id).toggleClass("hide"); 
+                    });
+                    
+                    if (manual === false) {                        
+                        countdown = time;
+                        document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
+                    } else { document.getElementById('refresh-button').innerHTML = 'Manually RefreshNow '; }
+                });                 
+            }                        
+            
+            function refreshCountdown() {
+                document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
+                countdown--;
             }
+            
+            function enableLoading() {
+                
+            }
+            
+            function disableLoading() {
+                
+            }
+            
+            // Moderation Functions
             
             function deltaModerate() {
+                var subState = document.getElementById("instance-substate").innerHTML;
                 var verificationTime = document.getElementById("verification-time").innerHTML;
                 var verificationAddition = document.getElementById("verification-addition").innerHTML;
                 var verificationReduction = document.getElementById("verification-reduction").innerHTML;
                 
-                if (verificationTime !== '') {
-                    $("#delta-System").toggleClass("hide");
-                    $(".verification-table").toggleClass("hide");
+                var verAdd = document.getElementById("ver-add").innerHTML;
+                var unverAdd = document.getElementById("unver-add").innerHTML;
+                var verRed = document.getElementById("ver-red").innerHTML;
+                var unverRed = document.getElementById("unver-red").innerHTML;
+                
+                if ((subState === 'READY' || subState !== 'FAILED') && verificationTime !== '') {
+                    $("#delta-System").addClass("hide");
+                    $(".verification-table").removeClass("hide");
                     
-                    if (verificationAddition === '') {
-                        $("#verification-addition-row").toggleClass("hide");
+                    if (verificationAddition === '' || (verAdd === '{ }' && unverAdd === '{ }')) {
+                        $("#verification-addition-row").addClass("hide");
                     }
-                    if (verificationReduction === '') {
-                        $("#verification-reduction-row").toggleClass("hide");
+                    if (verificationReduction === '' || (verRed === '{ }' && unverRed === '{ }')) {
+                        $("#verification-reduction-row").addClass("hide");
                     }
                 }
             }
@@ -235,8 +283,12 @@
                 var verificationState = document.getElementById("instance-verification").innerHTML;
                 var blockString = "";
 
+                // State -1 - Error during validation/reconstruction
+                if ((subState === 'READY' || subState === 'FAILED') && verificationState === "") {
+                    blockString = "Service encountered an error during verification. Please hold for further instructions.";
+                }
                 // State 0 - Before Verify
-                if (subState !== 'READY' && subState !== 'FAILED') {
+                else if (subState !== 'READY' && subState !== 'FAILED') {
                     blockString = "Service is still processing. Please hold for further instructions.";
                 }
                 // State 1 - Ready & Verifying
