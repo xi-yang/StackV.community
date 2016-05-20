@@ -232,6 +232,34 @@
                                                     <td>Network CIDR</td>
                                                     <td><input type="text" name="netCidr" required/></td>
                                                 </tr>
+                                                <tr>
+                                                    <td>Gateway</td>
+                                                    <td>
+                                                        <div id="gateway-block">
+                                                            <table id="gateway1-table">
+                                                                <tbody>
+                                                                    <tr>
+                                                                        <td>Name</td>
+                                                                        <td><input type="text" name="gateway1"></td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td>From</td>
+                                                                        <td><input type="text" name="gateway1-from-value" placeholder="Value"></td>
+                                                                        <td><input type="text" name="gateway1-from-type" placeholder="Type"></td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td>To</td>
+                                                                        <td><input type="text" name="gateway1-to-value" placeholder="Value"></td>
+                                                                        <td><input type="text" name="gateway1-to-type" placeholder="Type"></td>
+                                                                    </tr>
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                        <div>
+                                                            <input class="button-register" id="gateway" type="button" value="Add Gateway" onClick="addGateway(this.id)">
+                                                        </div>
+                                                    </td>
+                                                </tr>
                                                 <!-- <tr>
                                                     <td>Route Table</td>
                                                     <td>
@@ -269,30 +297,6 @@
                                                             </div>
                                                             <div>
                                                                 <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">
-                                                            </div>
-                                                            <div id="subnet1-gateway-block">
-                                                                <br>
-                                                                <table id="subnet1-gateway1-table">
-                                                                    <tbody>
-                                                                        <tr>
-                                                                            <td>Gateway Name</td>
-                                                                            <td><input type="text" name="subnet1-gateway1"></td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td>From</td>
-                                                                            <td><input type="text" name="subnet1-gateway1-from-value" placeholder="Value"></td>
-                                                                            <td><input type="text" name="subnet1-gateway1-from-type" placeholder="Type"></td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td>To</td>
-                                                                            <td><input type="text" name="subnet1-gateway1-to-value" placeholder="Value"></td>
-                                                                            <td><input type="text" name="subnet1-gateway1-to-type" placeholder="Type"></td>
-                                                                        </tr>
-                                                                    </tbody>
-                                                                </table>
-                                                            </div>
-                                                            <div>
-                                                                <input class="button-register" id="subnet1-gateway" type="button" value="Add Gateway" onClick="addGateway(this.id)">
                                                             </div>                                                            
                                                             <div id="subnet1-vm-block">
                                                                 <br>
