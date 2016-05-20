@@ -429,7 +429,7 @@ function addVM(type, subnetID) {
 }
 
 var gatewayCounter = 1;
-var gatewarLimit = 10;
+var gatewarLimit = 5;
 function addGateway(gatewayID){
     if(gatewayCounter === gatewarLimit){
         alert("You have reached the limit of Gateways.");
@@ -441,7 +441,7 @@ function addGateway(gatewayID){
     block.innerHTML = block.innerHTML +
             '<table id="' + gatewayID + gatewayCounter + '-table">' +
             '<tbody>' +
-            '<tr><td>Gateway Name</td>' +
+            '<tr><td>Name</td>' +
             '<td><input type="text" name="' + gatewayID + gatewayCounter + '"></td></tr>' +
             '<tr><td>From</td>' +
             '<td><input type="text" name="' + gatewayID + gatewayCounter + '-from-value" placeholder="Value"></td>' +
@@ -510,17 +510,12 @@ function addSubnet(type) {
                 '<div>' +
                 '<input class="button-register" id="subnet' + subnetCounter + '-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">' +
                 '</div><br>' +                
-                '<div id="subnet' + subnetCounter + '-gateway-block"></div>' +
-                '<div>' + 
-                '<input class="button-register" id="subnet' + subnetCounter + '-gateway" type="button" value="Add Gateway" onClick="addGateway(this.id)">' + 
-                '</div><br>' +                
                 '<div id="subnet' + subnetCounter + '-vm-block"></div>' +
                 '<div>' + 
                 '<input class="button-register" id="subnet' + subnetCounter + '-vm" type="button" value="Add VM" onClick="addVM(\'ops\', this.id)"></div>' +
                 '</div>';
 
         addSubnetRoute('subnet' + subnetCounter + '-route');
-        addGateway('subnet' + subnetCounter + '-gateway');
         addVM('ops', 'subnet' + subnetCounter + '-vm');
     }
 }
