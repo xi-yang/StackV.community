@@ -568,7 +568,7 @@
                              url="jdbc:mysql://localhost:3306/frontend"
                              user="front_view"  password="frontuser"/>
 
-        <sql:query dataSource="${front_conn}" sql="SELECT S.name, I.referenceUUID FROM service S, service_instance I, user_info U     
+        <sql:query dataSource="${front_conn}" sql="SELECT S.name, I.referenceUUID, I.alias_name FROM service S, service_instance I, user_info U     
                                                   WHERE U.user_id = I.user_id AND S.service_id = I.service_id AND U.username = ?" var="serviceList">
                   <sql:param value="${user.getUsername()}" />
         </sql:query>            
@@ -577,11 +577,25 @@
             <div id="servicePanel-tab">
                 Services
             </div>
-            <div id ="servicePanel-contents" class = "hide">
-                <c:forEach items="${serviceList.rows}" var="service">
-                        <div class="service-instance-item" id="${service.referenceUUID}">${service.name}</div>
-                </c:forEach>
-           </div>
+            <div id ="servicePanel-contents">
+                <table id="service-instance-table">
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Alias Name</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <c:forEach items="${serviceList.rows}" var="service">
+                            <tr class="service-instance-item" id="${service.referenceUUID}">
+                                <td>${service.name}</td>
+                                <td>${service.alias_name}</td>
+                            </tr>
+                        </c:forEach>
+                    </tbody>
+                </table>
+            </div>
+            
         </div>
         <script>                 
             $.ajax({
@@ -607,63 +621,70 @@
                    }
             });  
             
-                $(".service-instance-item").each(function() {
-                    var that = this;
-                    var DELAY = 700, clicks = 0, timer = null;
+            $(".service-instance-item").each(function() {
+                var that = this;
+                var DELAY = 700, clicks = 0, timer = null;
 
-                   $( that ).click( function() {
-                        clicks++;  //count clicks
+                $( that ).click( function() {
+                    clicks++;  //count clicks
 
-                        if(clicks === 1) {                          
-                            timer = setTimeout(function() {
-                                    var UUID = $( that ).attr('id');
-                                    $.ajax({
-                                        crossDomain: true,
-                                        type: "GET",
-                                        url: "/VersaStack-web/restapi/app/service/lastverify/" + UUID,
-                                        dataType: "json", 
-
-                                        success: function(data,  textStatus,  jqXHR ) {
-                                             if (data.verified_addition === null) {
-                                                 bsShowFadingMessage("#servicePanel", "Data not found", "top", 1000);
-                                             } else {
-                                                $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
-                                                $(that).addClass('service-instance-highlighted');
-                                                
-                                                var uaObj = JSON.parse(data.verified_addition);
-                                                var result = model.makeSubModel([ uaObj  ]);
-                                                var modelArr = model.getModelMapValues(result);
-
-                                                render.API.setServiceHighlights(modelArr);
-                                                render.API.highlightServiceElements();
-
-                                             }
-                                        },
-
-                                        error: function(jqXHR, textStatus, errorThrown ) {
-                                            //alert("Error getting status.");
-                                            alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
-                                        }
-                                   });   
-                                clicks = 0;   
-                            }, DELAY);
-
+                    if(clicks === 1) {                          
+                        timer = setTimeout(function() {
+                             clickServiceInstanceItem(that);
+                            clicks = 0;   
+                        }, DELAY);
                     } else {
                         clearTimeout(timer);    //prevent single-click action
-                        $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
-                        render.API.setServiceHighlights([]);
-                        render.API.highlightServiceElements();                        
-                        clicks = 0;             //after action performed, reset counter
+                        if ($(that).hasClass("service-instance-highlighted")) {
+                            $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
+                            render.API.setServiceHighlights([]);
+                            render.API.highlightServiceElements();                        
+                            clicks = 0;             //after action performed, reset counter
+                        } else {
+                            timer = setTimeout(function() {
+                                clickServiceInstanceItem(that);
+                                clicks = 0;   
+                            }, DELAY);                            
+                        }
                     }
+                }).dblclick(function(e) {
+                    e.preventDefault();
+                });
+            });
+              
+              
+            function clickServiceInstanceItem(item) {
+                var UUID = $( item ).attr('id');
 
-                       
-          
-                  })
-                 .dblclick(function(e) {
-                   e.preventDefault();
-                 });
-              });
+                $.ajax({
+                    crossDomain: true,
+                    type: "GET",
+                    url: "/VersaStack-web/restapi/app/service/lastverify/" + UUID,
+                    dataType: "json", 
 
+                    success: function(data,  textStatus,  jqXHR ) {
+                         if (data.verified_addition === null) {
+                             bsShowFadingMessage("#servicePanel", "Data not found", "top", 1000);
+                         } else {
+                            $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
+                            $(item).addClass('service-instance-highlighted');
+
+                            var uaObj = JSON.parse(data.verified_addition);
+                            var result = model.makeSubModel([ uaObj  ]);
+                            var modelArr = model.getModelMapValues(result);
+
+                            render.API.setServiceHighlights(modelArr);
+                            render.API.highlightServiceElements();
+
+                         }
+                    },
+
+                    error: function(jqXHR, textStatus, errorThrown ) {
+                        //alert("Error getting status.");
+                        alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
+                    }
+               });                     
+            }
         </script>
         <div id="loadingPanel"></div>
         <div class="closed" id="displayPanel">
