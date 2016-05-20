@@ -1039,5 +1039,14 @@ function createCORSRequest(method, url) {
 
 // Helper method to parse the title tag from the response.
 function getTitle(text) {
-  return text.match('<title>(.*)?</title>')[1];
+    return text.match('<title>(.*)?</title>')[1];
 }
+
+function enableLoading() {
+    $("#main-pane").addClass("loading");
+}
+
+function disableLoading() {
+    $("#main-pane").removeClass("loading");
+}
+

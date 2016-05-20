@@ -40,17 +40,7 @@
         </div>
         <!-- MAIN PANEL -->
         <div id="main-pane">                                   
-            <div id="service-overview">
-                <div id="refresh-panel">
-                    Auto-Refresh Interval
-                    <select id="refresh-timer" onchange="timerChange(this)">
-                        <option value="off">Off</option>
-                        <option value="5">5 sec.</option>
-                        <option value="10" selected>10 sec.</option>
-                        <option value="30">30 sec.</option>
-                        <option value="60">60 sec.</option>
-                    </select>
-                </div>
+            <div id="service-overview">                
                 <div id="instance-panel">
                     <table class="management-table" id="status-table">
                         <thead>
@@ -85,6 +75,16 @@
                             </c:forEach>
                         </tbody>
                     </table>
+                </div>
+                <div id="refresh-panel">
+                    Auto-Refresh Interval
+                    <select id="refresh-timer" onchange="timerChange(this)">
+                        <option value="off">Off</option>
+                        <option value="5">5 sec.</option>
+                        <option value="10" selected>10 sec.</option>
+                        <option value="30">30 sec.</option>
+                        <option value="60">60 sec.</option>
+                    </select>
                 </div>
 
                 <sql:query dataSource="${front_conn}" sql="SELECT DISTINCT S.name, S.filename, S.description FROM service S JOIN acl A, acl_entry_group G, acl_entry_user U 
@@ -123,6 +123,7 @@
             <button type="button" class="hide" id="button-service-cancel">Cancel</button>
             <div id="service-specific">                
             </div>
+            <div id="loading-panel"></div>
         </div>        
         <div id="tag-panel"> 
         </div>
@@ -168,7 +169,9 @@
                 countdownTimer = setInterval(function(){refreshCountdown(time);}, 1000);
             }
             
-            function reloadTracker(time) {
+            function reloadTracker(time) {  
+                enableLoading();
+                
                 var manual = false;
                 if (typeof time === "undefined") {
                     time = countdown;
@@ -186,6 +189,10 @@
                         countdown = time;
                         document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
                     } else { document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now'; }
+                    
+                    setTimeout(function () {
+                        disableLoading();
+                    }, 750);
                 }); 
             }
             
