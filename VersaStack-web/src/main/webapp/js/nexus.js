@@ -367,7 +367,7 @@ function addSRIOV(VMID) {
 var SRIOVRouteCounter = 1;
 var SRIOVRouteLimit = 20;
 function addSRIOVRoute(SRIOVRouteId) {
-    if (SRIOVCounter === SRIOVLimit) {
+    if (SRIOVRouteCounter === SRIOVRouteLimit) {
         alert("You have reached the limit of SRIOV routes.");
         return;
     }
@@ -406,7 +406,6 @@ function addVM(type, subnetID) {
     }
     else if (type === 'ops') {
         VMCounter++;
-        sriovCounter++;
         var block = document.getElementById(subnetID + '-block');
 
         block.innerHTML = block.innerHTML +
@@ -464,7 +463,6 @@ function addSubnet(type) {
         var table = document.getElementById("net-custom-form");
         var tableHeight = table.rows.length;
         subnetCounter++;
-        VMCounter++;       
 
         var row = table.insertRow(tableHeight - 2);
         row.id = 'subnet' + subnetCounter;
@@ -495,7 +493,6 @@ function addSubnet(type) {
         var table = document.getElementById("net-custom-form");
         var tableHeight = table.rows.length;
         subnetCounter++;
-        VMCounter++;
 
         var row = table.insertRow(tableHeight - 1);
         row.id = 'subnet' + subnetCounter;
@@ -1057,11 +1054,10 @@ function clearCounters() {
     queryCounter = 1;
     routeCounter = 1;
     subnetCounter = 1;
-    sriovCounter = 1;
-    sriovRouteCounter = 1;
-    VMCounter = 1;
-    VMRouteCounter = 1;
     SRIOVCounter = 1;
+    SRIOVRouteCounter = 1;
+    VMCounter = 1;
+    gatewayCounter = 1;
     subRouteCounter = 1;
     linkCounter = 1;
 }
