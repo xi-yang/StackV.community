@@ -374,6 +374,10 @@
                     </div>
                 </c:otherwise>
             </c:choose>
-        </div>    
+        </div>
+
+        <!-- TAG PANEL -->        
+        <div id="tag-panel"> 
+        </div>   
     </body>
 </html>
