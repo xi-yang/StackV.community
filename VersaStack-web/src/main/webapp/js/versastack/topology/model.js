@@ -47,28 +47,8 @@ define([
         this.init = function (mode, callback, model) {            
             var request = new XMLHttpRequest();  
             // If ready, load the live model. Otherwise, load the static model. 
-            $.ajax({
-                   crossDomain: true,
-                   type: "GET",
-                   url: "/VersaStack-web/restapi/service/ready",
-                   dataType: "text", 
-
-                   success: function(data,  textStatus,  jqXHR ) {
-                       if (data === "true")  {
-                          request.open("GET", "/VersaStack-web/restapi/model/");
-                          requestModel();
-                          //alert(textStatus);
-                       } else {
-                          request.open("GET", "/VersaStack-web/data/json/umd-anl-all-2.json");
-                          requestModel();
-                      }
-                   },
-
-                   error: function(jqXHR, textStatus, errorThrown ) {
-                       alert("Error getting status.");
-                       //alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
-                   }
-            });        
+            request.open("GET", "/VersaStack-web/restapi/model/");    
+            requestModel();
             
             function requestModel() {
                 request.setRequestHeader("Accept", "application/json");
@@ -86,12 +66,13 @@ define([
                         data = JSON.parse(data);
                         versionID = data.version;
                         map = JSON.parse(data);
-                    } else {
+                    } else {                       
                         data = JSON.parse(data);
                         versionID = data.version;
                         map = JSON.parse(data.ttlModel);
                     }
-
+                    if (map.hasOwnProperty('Exception')) return;
+                    
                     if (INJECT) {
                         var newNode = {type: 'uri', value: 'FOO:1'};
                         map["urn:ogf:network:sdn.maxgigapop.net:network"][values.hasNode].push(newNode);

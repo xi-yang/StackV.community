@@ -108,25 +108,49 @@
                     "local/versastack/topology/TagDialog"
                 ],
                         function (m, l, r, d3_, utils_, tree, c, td) {
-                            ModelConstructor = m;
-                            model = new ModelConstructor();
-                            model.init(1, drawGraph, null);
-                            layout = l;
-                            render = r;
-                            d3 = d3_;
-                            utils = utils_;
-                            map_ = utils.map_;
-                            bsShowFadingMessage = utils.bsShowFadingMessage;
-                            DropDownTree = tree;
-                            ContextMenu = c; 
-                            TagDialog = td;
-                            tagDialog = new TagDialog("${user.getUsername()}");
-                            
-                            tagDialog.init();
-                            // possibly pass in map here later for all possible dialogs 
-                            contextMenu = new ContextMenu(d3, render.API, tagDialog);//, tagDialog);
-                            contextMenu.init();
-                            outputApi = new outputApi_(render.API, contextMenu);
+                          $.ajax({
+                                   crossDomain: true,
+                                   type: "GET",
+                                   url: "/VersaStack-web/restapi/service/ready",
+                                   dataType: "text", 
+
+                                   success: function(data,  textStatus,  jqXHR ) {
+                                       if (data === "true")  {
+                                          //alert(textStatus);
+                                            $('#servicePanel-contents').removeClass("hide");     
+                                             
+                                            ModelConstructor = m;
+                                            model = new ModelConstructor();
+                                            model.init(1, drawGraph, null);
+                                            layout = l;
+                                            render = r;
+                                            d3 = d3_;
+                                            utils = utils_;
+                                            map_ = utils.map_;
+                                            bsShowFadingMessage = utils.bsShowFadingMessage;
+                                            DropDownTree = tree;
+                                            ContextMenu = c; 
+                                            TagDialog = td;
+                                            tagDialog = new TagDialog("${user.getUsername()}");
+
+                                            tagDialog.init();
+                                            // possibly pass in map here later for all possible dialogs 
+                                            contextMenu = new ContextMenu(d3, render.API, tagDialog);//, tagDialog);
+                                            contextMenu.init();
+                                            outputApi = new outputApi_(render.API, contextMenu);
+
+                                               
+                                       } else {
+                                           displayError("Visualization Unavailable", d3_);
+                                      }
+                                   },
+
+                                   error: function(jqXHR, textStatus, errorThrown ) {
+                                          console.log("Debugging: timeout at start..");
+                                          displayError("Visualization Unavailable", d3_);
+                                       //alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
+                                   }
+                            }); 
                         });
 
                 var request = new XMLHttpRequest();
@@ -152,6 +176,18 @@
                 $("#viz").attr("class", "");
                 
                 buttonInit();
+            }
+            
+            function displayError(error, d3_obj) {
+               d3_obj.select("#viz").append("text")
+                       .attr("x", $(window).width() / 4)
+                       .attr("y", $(window).height() / 2 )
+                       .attr("fill", "black")
+                       .attr("font-size", "80px")
+                       .text(error);
+
+               $('#servicePanel-contents').removeClass("hide");
+               $('#servicePanel-contents').html("Service instances unavailable.").addClass('service-unready-message');                       
             }
             
             function drawGraph() {
@@ -598,29 +634,6 @@
             
         </div>
         <script>                 
-            $.ajax({
-                   crossDomain: true,
-                   type: "GET",
-                   url: "/VersaStack-web/restapi/service/ready",
-                   dataType: "text", 
-
-                   success: function(data,  textStatus,  jqXHR ) {
-                       if (data === "true")  {
-                          //alert(textStatus);
-                          $('#servicePanel-contents').removeClass("hide");
-                       } else {
-                          $('#servicePanel-contents').removeClass("hide");
-                           $('#servicePanel-contents').html("Service instances unavailable.").addClass('service-unready-message');
-                          
-                      }
-                   },
-
-                   error: function(jqXHR, textStatus, errorThrown ) {
-                       alert("Error getting status.");
-                       //alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
-                   }
-            });  
-            
             $(".service-instance-item").each(function() {
                 var that = this;
                 var DELAY = 700, clicks = 0, timer = null;
