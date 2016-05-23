@@ -13,6 +13,7 @@ define(["local/d3", "local/versastack/utils"],
                 this.svgLine = null;
                 this.svgBubble = null;
                 this.color = "";
+                this.outputApi = outputApi;
                 /**@type Array.Port**/
                 //this.portColors = [];
                 //this.volumeEmptyColor = "";
@@ -178,6 +179,7 @@ define(["local/d3", "local/versastack/utils"],
                                         renderApi.drawHighlight();
                                         renderApi.layoutEdges();
                                     })
+                                    .on("contextmenu", that.outputApi.contextMenu.renderedElemContextListener.bind(undefined, volume))                                    
                                     .call(dragBehaviour);
                         })();
                     }

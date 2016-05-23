@@ -159,7 +159,7 @@ define([], function () {
         }
         
         // different one for display menu 
-        this.setContextListenerRendered = function(o) {
+        this.renderedElemContextListener = function(o) {
           that.selectedObject = o;
           d3.event.preventDefault();
           toggleMenuOn();
@@ -167,7 +167,7 @@ define([], function () {
           renderApi.selectElement(o);
         };
         
-        this.setContextListenerPanelObj = function(e, o) {
+        this.panelElemContextListener = function(e, o) {
           that.selectedObject = o;
           e.preventDefault();
           toggleMenuOn();

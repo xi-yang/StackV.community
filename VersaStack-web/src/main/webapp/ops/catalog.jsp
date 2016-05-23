@@ -125,6 +125,7 @@
             </div>
             <div id="loading-panel"></div>
         </div>        
+        <!-- TAG PANEL -->
         <div id="tag-panel"> 
         </div>
         <!-- JS -->
