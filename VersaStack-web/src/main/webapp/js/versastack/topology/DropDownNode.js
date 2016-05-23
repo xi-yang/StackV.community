@@ -123,7 +123,7 @@ define([
                     }
                 };
                 link.oncontextmenu  = function (e) {
-                   that.contextMenu.setContextListenerPanelObj(e, that.dataObject);
+                   that.contextMenu.panelElemContextListener(e, that.dataObject);
                 };
                 link.appendChild(text);
                 line.appendChild(link);
@@ -159,7 +159,7 @@ define([
                 value.innerHTML = property[1]; // just using this because it's there 
                 
                  line.oncontextmenu  = function (e) {
-                   that.contextMenu.setContextListenerPanelObj(e, that.dataObject);
+                   that.contextMenu.panelElemContextListener(e, that.dataObject);
                 };
                
                 line.appendChild(key);

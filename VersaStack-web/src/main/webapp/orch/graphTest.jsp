@@ -162,14 +162,7 @@
 
                 render.doRender(outputApi, model);
                 
-//                var ns = model.listNodes();
-//                for (var i in ns) {
-//                    ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
-//                    if (ns[i].svgNodeAnchor) {
-//                        ns[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
-//                    }
-//                }
-                  outputApi.initD3MenuEvents();
+
 //                animStart(30);
             }
             function reload() {
@@ -193,7 +186,6 @@
 //                    layout.testLayout(model, null, width, height);  //@
 //                    layout.testLayout(model, null, width, height);                    
                     render.doRender(outputApi, model);
-                     outputApi.initD3MenuEvents();
                     outputApi.renderApi.selectElement(null);
                 }, null);
 
@@ -270,7 +262,6 @@
         
                     outputApi.resetZoom();
                     render.doRender(outputApi, model);
-                    outputApi.initD3MenuEvents();
 
                     evt.preventDefault();
                 });
@@ -391,64 +382,6 @@
                     document.getElementById("displayName").innerText = name;
                 };
 
-                this.initD3MenuEvents = function() {
-                    var ns = model.listNodes();
-                    for (var i in ns) {
-                        if (ns[i].svgNode) {
-                            ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
-                        }
-                        if (ns[i].svgNodeAnchor) {
-                            ns[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
-                        }
-                    }
-
-                    var ns = model.listServices();
-                    for (var i in ns) {
-                        if (ns[i].svgNode) {
-                            ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
-                        } else {
-                            console.log("graphTest.jsp: initD3MenuEvnts: name of service  with null svgNode: " + ns[i].getName());
-                        }
-                        if (ns[i].svgNodeAnchor) {
-                            ns[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
-                        }
-                    }
-
-                    var ns = model.listSubnets();
-                    for (var i in ns) {
-                        if (ns[i].svgNode) {
-                            ns[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
-                        }
-                        if (ns[i].svgNodeAnchor) {
-                            ns[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ns[i]));
-                        }
-                    }
-
-
-                };
-
-                this.initD3MenuPortEvents = function(ports) {
-                    for (var i in ports) {
-                        if (ports[i].svgNode) {
-                            ports[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ports[i]));
-                        }    
-                        if (ports[i].svgNodeAnchor) {
-                            ports[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, ports[i]));
-                        }
-                    }                
-                };
-
-                this.initD3MenuVolumeEvents = function(volumes) {
-                    for (var i in volumes) {
-                        if (volumes[i].svgNode) {
-                            volumes[i].svgNode.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, volumes[i]));
-                        }    
-                        if (volumes[i].svgNodeAnchor) {
-                            volumes[i].svgNodeAnchor.on("contextmenu", contextMenu.setContextListenerRendered.bind(undefined, volumes[i]));
-                        }
-                    }            
-                };
-        
                 var zoomFactor = settings.INIT_ZOOM;
                 var offsetX = 0, offsetY = 0;
                 this.zoom = function (amount, mouseX, mouseY) {
@@ -652,9 +585,6 @@
                 </table>
             </div>
         </div>
-
-        <div id="tag-panel"> 
-        </div>
             
         <div id="loadingPanel"></div>
         <div class="closed" id="displayPanel">
@@ -736,6 +666,7 @@
     </g>
     </svg>
     
+ <!-- CONTEXT MENU -->
   <nav id="context-menu" class="context-menu">
       <ul class="context-menu__items">
         <li class="context-menu__item">
@@ -744,6 +675,7 @@
       </ul>
     </nav>
 
+<!-- TAG DIALOG -->
 <div id="tagDialog">
   <div id="tagDialogBar">
     <div id="tagDialogCloserBar">
@@ -788,8 +720,11 @@
       </button>
     </div>
   </div>
+</div>  
+
+<!-- TAG PANEL -->
+<div id="tag-panel"> 
 </div>    
-    
 </body>
 
 </html>

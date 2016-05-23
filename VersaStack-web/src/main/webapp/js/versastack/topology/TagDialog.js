@@ -74,10 +74,22 @@ define([], function () {
                             document.body.appendChild(textField);
                             textField.select();
                             document.execCommand('copy');
-                            $(textField).remove();                    
+                            $(textField).remove();     
+                            
+                            $("#tagPanel").popover({content: "Data copied to clipboard", placement: "top", trigger: "manual"});
+                            $("#tagPanel").popover("show");
+                            setTimeout(
+                              function(){$("#tagPanel").popover('hide');$("#tagPanel").popover('destroy');}, 
+                            1000);                             
                         };
                         tagList.appendChild(tag);
                         that.closeDialog();
+                        
+                        $("#tagPanel").popover({content: "Tag added.", placement: "top", trigger: "manual"});
+                        $("#tagPanel").popover("show");
+                        setTimeout(
+                          function(){$("#tagPanel").popover('hide');$("#tagPanel").popover('destroy');}, 
+                        1000);                                                   
                     },
                     error: function(jqXHR, textStatus, errorThrown ) {
                        //alert(errorThrown + "\n"+textStatus);
