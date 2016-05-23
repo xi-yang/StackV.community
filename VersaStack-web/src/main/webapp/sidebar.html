@@ -1,45 +1,33 @@
-<div id="sidebar-contents">
-    <div class="row">
+<div id="sidebar-toggle">
+    <label class="pure-toggle-label" for="pure-toggle-left" data-toggle-label="left"><span class="pure-toggle-icon"></span></label>
+</div>
 
+<div id="sidebar-contents">
+    <div id="sidebar-list" class="row">
         <div class="panel panel-group">
             <div class="panel-body">
-                <div class="panel-heading">  
-                    <h4 class="panel-title">
-                        <a data-toggle="collapse" data-parent="#main" href="#accordion" aria-expanded="true"><span class="glyphicon glyphicon-folder-close"></span> Open/Close Menu    </a>
-                    </h4>  
-                </div>
-                <div class="panel-collapse collapse in panel-scroll" id="accordion">
-                    <div class="panel panel-default hide" id="service2">
+                <div class="panel-collapse collapse in panel-scroll" id="accordion">                    
+
+                    <div class="panel panel-default" id="service3">
                         <div class="panel-heading">
                             <h4 class="panel-title">
-                                <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne"><span class="glyphicon glyphicon-folder-close"></span> Overviews</a>
+                                <a data-toggle="collapse" data-parent="#accordion" href="#collapseTwo"><span class="glyphicon glyphicon-th"></span> Operations</a>
                             </h4>
                         </div>
-                        <div id="collapseOne" class="panel-collapse collapse">
+                        <div id="collapseTwo" class="panel-collapse collapse in">
                             <div class="panel-body">
                                 <table class="table">
                                     <tbody><tr>
                                             <td>
-                                                <a href="#"> Placeholder</a>
+                                                <a href="/VersaStack-web/ops/catalog.jsp">Service Catalog</a>
                                             </td>
                                         </tr>
-                                        <tr>
-                                            <td>
-                                                <a href="#"> Placeholder</a>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <a href="#"> Placeholder</a>
-                                            </td>
-                                        </tr>                                                   
                                     </tbody></table>
                             </div>
                         </div>
                     </div>
 
-
-                    <div class="panel panel-default hide" id="service1">
+                    <div class="panel panel-default" id="service1">
                         <div class="panel-heading">
                             <h4 class="panel-title">
                                 <a data-toggle="collapse" data-parent="#accordion" href="#collapseThree"><span class="glyphicon glyphicon-user"></span> User Management</a>
@@ -68,49 +56,11 @@
                         </div>
                     </div>
 
-
-
-                    <div class="panel panel-default hide" id="service3">
-                        <div class="panel-heading">
-                            <h4 class="panel-title">
-                                <a data-toggle="collapse" data-parent="#accordion" href="#collapseTwo"><span class="glyphicon glyphicon-th"></span> Operations</a>
-                            </h4>
-                        </div>
-                        <div id="collapseTwo" class="panel-collapse collapse ">
-                            <div class="panel-body">
-                                <table class="table">
-                                    <tbody><tr>
-                                            <td>
-                                                <a href="/VersaStack-web/ops/catalog.jsp">Service Catalog</a>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <a href="#"> Placeholder</a>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <a href="#"> Placeholder</a>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <a href="#"> Placeholder</a>
-                                            </td>
-                                        </tr>
-                                    </tbody></table>
-                            </div>
-                        </div>
-                    </div>
-
-
-
-                    <div class="panel panel-default hide" id="service4">
+                    <div class="panel panel-default" id="service4">
                         <div class="panel-heading">
                             <h4 class="panel-title">
                                 <a data-toggle="collapse" data-parent="#accordion" href="#collapseFour">
-                                    <span class="glyphicon glyphicon-file"></span> Reports</a>
+                                    <span class="glyphicon glyphicon-file" aria-expanded="true"></span> Reports</a>
                             </h4>
                         </div>
                         <div id="collapseFour" class="panel-collapse collapse">

@@ -8,7 +8,18 @@
 
 $(function () {
     $("#nav").load("/VersaStack-web/navbar.html");
-   
+    $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
+        $(".pure-toggle-label").click(function (evt) {
+            $(".pure-toggle-label").toggleClass("toggle-open");
+            $(".pure-toggle-icon").toggleClass("toggle-open");
+
+            $("#sidebar-contents").toggleClass("sidebar-open");
+            $("#main-pane").toggleClass("sidebar-open");
+
+            evt.preventDefault();
+        });
+    });
+
     if (systemReady()) {
         document.getElementById("server-status").src="/VersaStack-web/img/online.png";
         document.getElementById("server-status").alt="Ready";
