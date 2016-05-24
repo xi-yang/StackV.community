@@ -606,7 +606,7 @@ public class WebResource {
             if (vmArr != null) {
                 int vmCounter = 1;
                 for (Object vmEle : vmArr) {
-                    //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name&host&floating_IP&sriov_destination&sriov_mac_address&sriov_ip_address&sriov_routes"
+                    //value format: "vm_name & subnet_index_number & type_detail & host & interfaces"
                     JSONObject vmJSON = (JSONObject) vmEle;
                                                                                 
                     // Name
@@ -615,78 +615,29 @@ public class WebResource {
                     vmString += "&" + (i + 1);
 
                     // TYPES
-                    if (vmJSON.containsKey("type")) {
-                        String typeString = (String) vmJSON.get("type");
-                        String typeArr[] = typeString.split(",");
-                        HashMap<String, String> typeMap = new HashMap<>();
-                        for (String type : typeArr) {
-                            String typeTemp[] = type.split("\\+");
-                            typeMap.put(typeTemp[0], typeTemp[1]);
-                        }
-
-                        // Image Type
-                        if (typeMap.containsKey("image")) {
-                            vmString += "&" + typeMap.get("image");
-                        } else {
-                            vmString += "& ";
-                        }
-
-                        // Instance Type
-                        if (typeMap.containsKey("instance")) {
-                            vmString += "&" + typeMap.get("instance");
-                        } else {
-                            vmString += "& ";
-                        }
-
-                        // Keypair Names
-                        if (typeMap.containsKey("keypair")) {
-                            vmString += "&" + typeMap.get("keypair");
-                        } else {
-                            vmString += "& ";
-                        }
-
-                        // Security Name
-                        if (typeMap.containsKey("secgroup")) {
-                            vmString += "&" + typeMap.get("secgroup");
-                        } else {
-                            vmString += "& ";
-                        }
-                    } else {
-                        vmString += "& & & & ";
-                    }
+                    vmString += vmJSON.containsKey("type")? "&" + (String) vmJSON.get("type") : "& ";
 
                     // VM Host
-                    if (vmJSON.containsKey("host")) {
-
-                    } else {
-                        vmString += "& ";
-                    }
+                    vmString += vmJSON.containsKey("host")? "&" + (String) vmJSON.get("host") : "& ";
                     
                     // INTERFACES
-                    HashMap<String, String> interfaceMap = new HashMap<>();
-                    int SRIOVCounter = 1;
-                    if (vmJSON.containsKey("interfaces")) {
-                        JSONArray interfaceArr = (JSONArray) vmJSON.get("interfaces");
-                        for (Object obj : interfaceArr) {
-                            JSONObject interfaceJSON = (JSONObject) obj;
-                            
-                            String typeString = (String) interfaceJSON.get("type");
-                            String addressString = (String) interfaceJSON.get("address");
-                            if (typeString.equalsIgnoreCase("Ethernet")) {
-                                interfaceMap.put("float", addressString.split("\\+")[1]);
-                            } else if (typeString.equalsIgnoreCase("SRIOV")) {
-                                
-                            }                            
-                        }                        
-                    }
-                    
-                    // Floating IP
-                    if (interfaceMap.containsKey("float")) {
-                        vmString += "&" + interfaceMap.get("float");
-                    } else {
-                        vmString += "& ";
-                    }
-                    
+                    vmString += vmJSON.containsKey("interfaces")? "&" + (String) vmJSON.get("interfaces") : "& ";
+//                    HashMap<String, String> interfaceMap = new HashMap<>();
+//                    int SRIOVCounter = 1;
+//                    if (vmJSON.containsKey("interfaces")) {
+//                        JSONArray interfaceArr = (JSONArray) vmJSON.get("interfaces");
+//                        for (Object obj : interfaceArr) {
+//                            JSONObject interfaceJSON = (JSONObject) obj;
+//                            
+//                            String typeString = (String) interfaceJSON.get("type");
+//                            String addressString = (String) interfaceJSON.get("address");
+//                            if (typeString.equalsIgnoreCase("Ethernet")) {
+//                                interfaceMap.put("float", addressString.split("\\+")[1]);
+//                            } else if (typeString.equalsIgnoreCase("SRIOV")) {
+//                                
+//                            }                            
+//                        }                        
+//                    }
                     paraMap.put("vm" + vmCounter++, vmString);
                 }
             }
@@ -757,20 +708,9 @@ public class WebResource {
         }
         paraMap.put("netRoutes", netRouteString);
 
-        // Parse Direct Connect.
-        JSONArray gateArr = (JSONArray) vcnJSON.get("gateways");
-        for (Object gateEle : gateArr) {
-            JSONObject gateJSON = (JSONObject) gateEle;
-            
-            if (((String) gateJSON.get("type")).contains("direct_connect")) {
-                JSONArray destArr = (JSONArray) gateJSON.get("to");
-                if (destArr != null) {
-                    JSONObject destJSON = (JSONObject) destArr.get(0);
-                    paraMap.put("directConn", (String) destJSON.get("value"));
-                }
-            }
-
-        }
+        // Parse Gateways.
+        if(vcnJSON.get("gateways") != null)
+            paraMap.put("gateways", (String) vcnJSON.get("gateways"));
 
         return paraMap;
     }
