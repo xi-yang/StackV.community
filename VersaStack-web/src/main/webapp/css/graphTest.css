@@ -28,7 +28,7 @@ html{
     transition: top 0.5s ease-in-out;
 }
 
-.display-open {
+#displayPanel.display-open {
     right: 0px;
     
     -webkit-transition: top 0.5s ease-in-out;
