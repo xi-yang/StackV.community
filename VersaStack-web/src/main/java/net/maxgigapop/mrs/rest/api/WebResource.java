@@ -587,11 +587,6 @@ public class WebResource {
 
         String parent = (String) vcnJSON.get("parent");
         paraMap.put("topoUri", parent);
-        if (parent.contains("aws") || parent.contains("amazon")) {
-            paraMap.put("driverType", "aws");
-        } else if (parent.contains("openstack")) {
-            paraMap.put("driverType", "os");
-        }
 
         // Parse Subnets.
         JSONArray subArr = (JSONArray) vcnJSON.get("subnets");
@@ -621,7 +616,11 @@ public class WebResource {
                     vmString += vmJSON.containsKey("host")? "&" + (String) vmJSON.get("host") : "& ";
                     
                     // INTERFACES
-                    vmString += vmJSON.containsKey("interfaces")? "&" + (String) vmJSON.get("interfaces") : "& ";
+                    if(vmJSON.containsKey("interfaces")){
+                        JSONArray interfaceArr = (JSONArray) vmJSON.get("interfaces");
+                        vmString += "&" + interfaceArr.toString();
+                    }else
+                        vmString += "& ";
 //                    HashMap<String, String> interfaceMap = new HashMap<>();
 //                    int SRIOVCounter = 1;
 //                    if (vmJSON.containsKey("interfaces")) {
@@ -709,9 +708,11 @@ public class WebResource {
         paraMap.put("netRoutes", netRouteString);
 
         // Parse Gateways.
-        if(vcnJSON.get("gateways") != null)
-            paraMap.put("gateways", (String) vcnJSON.get("gateways"));
-
+        if(vcnJSON.get("gateways") != null){
+            JSONArray gatewayArr = (JSONArray)vcnJSON.get("gateways");
+            paraMap.put("gateways", gatewayArr.toString());
+        }
+            
         return paraMap;
     }
 
