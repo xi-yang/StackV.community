@@ -330,7 +330,7 @@ body {
 #main-pane {
     position: absolute;
     height: 100%;
-    width: 100%;
+    width: calc(100% - 50px);
     margin-left: 25px;
     margin-right: 25px;
     padding: 10px;
@@ -610,9 +610,9 @@ body {
     
     opacity: 0;
     position: absolute;
-    width: calc(100% - 225px);
+    width: 100%;
     height: calc(100% - 37px);
-    left: 225px;
+    left: 0px;
     top: 37px;
     z-index: -1;
 }

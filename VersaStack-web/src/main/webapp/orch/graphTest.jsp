@@ -20,37 +20,22 @@
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/VersaStack-web/css/bootstrap.css">
         <link rel="stylesheet" href="/VersaStack-web/css/style.css">       
-      <link rel="stylesheet" href="/VersaStack-web/css/contextMenu.css">   
-      <!-- font awesome icons won't show up otherwise --->
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/contextMenu.css">   
+        <!-- font awesome icons won't show up otherwise --->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
 
         <script>
             $(document).ready(function () {
-                $("#nav").load("/VersaStack-web/navbar.html");
-
-                $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
-                    if (${user.isAllowed(1)}) {
-                        var element = document.getElementById("service1");
-                        element.classList.remove("hide");
-                    }
-                    if (${user.isAllowed(2)}) {
-                        var element = document.getElementById("service2");
-                        element.classList.remove("hide");
-                    }
-                    if (${user.isAllowed(3)}) {
-                        var element = document.getElementById("service3");
-                        element.classList.remove("hide");
-                    }
-                    if (${user.isAllowed(4)}) {
-                        var element = document.getElementById("service4");
-                        element.classList.remove("hide");
-                    }
-                });
-                
-                $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", function() {                    
+                $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", function () {
                     var tp = document.querySelector("#tagPanel");
                     tp.style.left = "calc(40% - 66px)";
-                });                        
+                });
+                
+                $("#displayPanel-tab").click(function (evt) {                                       
+                    $("#displayPanel").toggleClass("display-open");
+                    
+                    evt.preventDefault();
+                });
             });
         </script> 
 
@@ -116,10 +101,10 @@
                             utils = utils_;
                             map_ = utils.map_;
                             DropDownTree = tree;
-                            ContextMenu = c; 
+                            ContextMenu = c;
                             TagDialog = td;
                             tagDialog = new TagDialog("${user.getUsername()}");
-                            
+
                             tagDialog.init();
                             // possibly pass in map here later for all possible dialogs 
                             contextMenu = new ContextMenu(d3, render.API, tagDialog);//, tagDialog);
@@ -148,10 +133,10 @@
                 $("#loadingPanel").addClass("hide");
                 $("#hoverdiv").removeClass("hide");
                 $("#viz").attr("class", "");
-                
+
                 buttonInit();
             }
-            
+
             function drawGraph() {
                 var width = document.documentElement.clientWidth / settings.INIT_ZOOM;
                 var height = document.documentElement.clientHeight / settings.INIT_ZOOM;
@@ -161,7 +146,7 @@
                 layout.doLayout(model, null, width, height);
 
                 render.doRender(outputApi, model);
-                
+
 
 //                animStart(30);
             }
@@ -180,7 +165,7 @@
                     //If we do not, the layout does to converge as nicely, even if we double the number of iterations
                     layout.doLayout(model, null, width, height);
                     layout.doLayout(model, null, width, height);
-                    
+
                     //layout.force().gravity(1).charge(-900).start();
                     //commented this out for demo 0421106
 //                    layout.testLayout(model, null, width, height);  //@
@@ -252,21 +237,21 @@
                     layout.stop();
                     //layout.force().gravity(1).charge(-900).start();
                     layout.testLayout(model, null, width, height);
-                    layout.testLayout(model, null, width, height); 
-                    
+                    layout.testLayout(model, null, width, height);
+
 //                    var zoom = d3.behavior.zoom();
 //                    var viewCenter = [];
 //
 //                    viewCenter[0] = (-1)*zoom.translate()[0] + (0.5) * (  width/zoom.scale() );
 //                    viewCenter[1] = (-1)*zoom.translate()[1] + (0.5) * ( height/zoom.scale() );
-        
+
                     outputApi.resetZoom();
                     render.doRender(outputApi, model);
 
                     evt.preventDefault();
                 });
                 $("#stopButton").click(function (evt) {
-                   layout.stop(); 
+                    layout.stop();
                 });
                 $("#cancelButton").click(function (evt) {
                     $("#actionForm").empty();
@@ -300,49 +285,49 @@
 
                     evt.preventDefault();
                 });
-                
+
                 $("#displayPanel-tab").click(function (evt) {
                     $("#displayPanel").toggleClass("closed");
 
                     evt.preventDefault();
                 });
-                
-               // Brings tagPanel or tagDialog to the foreground if one is 
-               // clicked and behind the other. Will probably need to be 
-               // generalized soon. 
-               function bringToForeground(current) {
-                   var tagDialogElement = document.querySelector("#tagDialog");
-                   var tagPanelElement = document.querySelector("#tagPanel");
-                   if (!tagPanelElement.classList.contains("closed") && 
-                       tagDialogElement.classList.contains("tagDialog-active")) 
-                   {
-                       var tagDialog = document.getElementById("tagDialog");
-                       var tagPanel = document.getElementById("tagPanel");
-                       var tdz = parseInt(window.getComputedStyle(tagDialog, null).zIndex);
-                       var tpz = parseInt(window.getComputedStyle(tagPanel, null).zIndex);
-                       
-                       if (( (current === "tagDialog") && (tdz < tpz) ) ||
-                           ( (current === "tagPanel") &&  (tpz < tdz) ) ) {
+
+                // Brings tagPanel or tagDialog to the foreground if one is 
+                // clicked and behind the other. Will probably need to be 
+                // generalized soon. 
+                function bringToForeground(current) {
+                    var tagDialogElement = document.querySelector("#tagDialog");
+                    var tagPanelElement = document.querySelector("#tagPanel");
+                    if (!tagPanelElement.classList.contains("closed") &&
+                            tagDialogElement.classList.contains("tagDialog-active"))
+                    {
+                        var tagDialog = document.getElementById("tagDialog");
+                        var tagPanel = document.getElementById("tagPanel");
+                        var tdz = parseInt(window.getComputedStyle(tagDialog, null).zIndex);
+                        var tpz = parseInt(window.getComputedStyle(tagPanel, null).zIndex);
+
+                        if (((current === "tagDialog") && (tdz < tpz)) ||
+                                ((current === "tagPanel") && (tpz < tdz))) {
                             tagDialog.style.zIndex = tpz;
                             tagPanel.style.zIndex = tdz;
-                       }
-                   }
-               }
-               
+                        }
+                    }
+                }
+
                 $("#tagDialog").click(function (evt) {
                     bringToForeground("tagDialog");
                     evt.preventDefault();
                 });
-                
+
                 $("#tagPanel").click(function (evt) {
                     bringToForeground("tagPanel");
                     evt.preventDefault();
                 });
-                
+
                 $("#servicePanel-tab").click(function (evt) {
                     $("#servicePanel").toggleClass("closed");
                     evt.preventDefault();
-                });               
+                });
             }
 
             //animStart and animStop are primarily intended as debug functions
@@ -365,7 +350,7 @@
                 var that = this;
                 this.renderApi = renderAPI;
                 this.contextMenu = contextMenu;
-                
+
                 this.getSvgContainer = function () {
                     return d3.select("#viz");
                 };
@@ -373,7 +358,7 @@
                 var displayTree = new DropDownTree(document.getElementById("treeMenu"));
                 displayTree.renderApi = this.renderApi;
                 displayTree.contextMenu = this.contextMenu;
-                
+
                 this.getDisplayTree = function () {
                     return displayTree;
                 };
@@ -451,10 +436,10 @@
                 this.resetZoom = function () {   // @
                     zoomFactor = settings.INIT_ZOOM;
                     offsetX = 0;
-                    offsetY = 0;                    
+                    offsetY = 0;
                     this._updateTransform();
                 };
-    
+
                 var svg = document.getElementById("viz");
                 svg.addEventListener("mousewheel", function (e) {
                     e.preventDefault();
@@ -527,7 +512,7 @@
                 });
                 svg.addEventListener("mousemove", function (e) {
                     // && (e.which ==== 1) stops d3 bug of dragging to enable on context menu 
-                    if (isPanning && panningEnabled && (e.which === 1) )   {
+                    if (isPanning && panningEnabled && (e.which === 1)) {
                         moved = true;
                         that.scroll(e.movementX, e.movementY);
                     }
@@ -561,7 +546,7 @@
                 ${jobs}
             </div>
         </div>
-            
+
         <div class="closed" id="servicePanel">
             <div id="servicePanel-tab">
                 Jobs
@@ -585,9 +570,12 @@
                 </table>
             </div>
         </div>
-            
+
         <div id="loadingPanel"></div>
-        <div class="closed" id="displayPanel">
+        <div id="displayPanel">
+            <div id="displayPanel-tab">
+
+            </div>
             <div id="displayPanel-contents">
                 <button id="refreshButton">Refresh</button>
                 <button id="modelButton">Display Model</button>
@@ -598,18 +586,17 @@
                 <div id="treeMenu"></div>                
             </div>
             <div id="displayPanel-actions-container">
-            <div id="displayPanel-actions">
-                <button id="backButton">Back</button>
-                <button id="forwardButton">Forward</button>
-                <div id="URISeachContainer" style="float:right;padding-left:10px;">
-                    Search
-                    <input type="text" name="Search" id="URISearchInput" placeholder="Enter URI">
-                    <input type="submit" id= "URISearchSubmit" value="Submit">
-                </div>
+                <div id="displayPanel-actions">
+                    <button id="backButton">Back</button>
+                    <button id="forwardButton">Forward</button>
+                    <div id="URISeachContainer" style="float:right;padding-left:10px;">
+                        Search
+                        <input type="text" name="Search" id="URISearchInput" placeholder="Enter URI">
+                        <input type="submit" id= "URISearchSubmit" value="Submit">
+                    </div>
 
-                <div id="actionForm"></div>
-            </div>
-            <div id="displayPanel-tab">^^^^^</div>
+                    <div id="actionForm"></div>
+                </div>
             </div>
         </div>        
         <div class="hide" id="hoverdiv"></div>        
@@ -665,66 +652,65 @@
 
     </g>
     </svg>
-    
- <!-- CONTEXT MENU -->
-  <nav id="context-menu" class="context-menu">
-      <ul class="context-menu__items">
-        <li class="context-menu__item">
-          <a href="#" class="context-menu__link" data-action="Tag"><i class="fa  fa-tag"></i> Add Tag</a>
-        </li>
-      </ul>
+
+    <!-- CONTEXT MENU -->
+    <nav id="context-menu" class="context-menu">
+        <ul class="context-menu__items">
+            <li class="context-menu__item">
+                <a href="#" class="context-menu__link" data-action="Tag"><i class="fa  fa-tag"></i> Add Tag</a>
+            </li>
+        </ul>
     </nav>
 
-<!-- TAG DIALOG -->
-<div id="tagDialog">
-  <div id="tagDialogBar">
-    <div id="tagDialogCloserBar">
-        <i id="tagDialogCloser" class="fa fa-times" aria-hidden="true"></i>
-    </div>
-  </div>
-  
-  <div id="tagDialogContent">
-    <div id="tagDialogLabelInputContainter">
-    <input type="text" name="labelInput" id="tagDialogLabelInput" placeholder="Enter label.">
-    </div>
-    
-    <div id="tagDialogColorInputContainer">
-      <div id="tagDialogColorInputLabel">
-        Select Color
-      </div>
-      
-      <div id="tagDialogColorSelectionTab">
+    <!-- TAG DIALOG -->
+    <div id="tagDialog">
+        <div id="tagDialogBar">
+            <div id="tagDialogCloserBar">
+                <i id="tagDialogCloser" class="fa fa-times" aria-hidden="true"></i>
+            </div>
+        </div>
 
-        <span class="colorBox" id="boxRed"> 
-        </span>
-        <span class="colorBox" id="boxOrange">
-        </span>
-        <span class="colorBox" id="boxYellow">
-        </span>
-        <span class="colorBox" id="boxGreen">
-        </span>
-        <span class="colorBox" id="boxBlue">
-        </span>
-        <span class="colorBox" id="boxPurple">
-        </span>
-      </div>
-    </div>
-    
-    <div id="tagDialogButtonContainer">
-      <button id="tagDialogCancel">
-        Cancel
-      </button>
-      
-      <button id="tagDialogOK">
-        Ok 
-      </button>
-    </div>
-  </div>
-</div>  
+        <div id="tagDialogContent">
+            <div id="tagDialogLabelInputContainter">
+                <input type="text" name="labelInput" id="tagDialogLabelInput" placeholder="Enter label.">
+            </div>
 
-<!-- TAG PANEL -->
-<div id="tag-panel"> 
-</div>    
+            <div id="tagDialogColorInputContainer">
+                <div id="tagDialogColorInputLabel">
+                    Select Color
+                </div>
+
+                <div id="tagDialogColorSelectionTab">
+
+                    <span class="colorBox" id="boxRed"> 
+                    </span>
+                    <span class="colorBox" id="boxOrange">
+                    </span>
+                    <span class="colorBox" id="boxYellow">
+                    </span>
+                    <span class="colorBox" id="boxGreen">
+                    </span>
+                    <span class="colorBox" id="boxBlue">
+                    </span>
+                    <span class="colorBox" id="boxPurple">
+                    </span>
+                </div>
+            </div>
+
+            <div id="tagDialogButtonContainer">
+                <button id="tagDialogCancel">
+                    Cancel
+                </button>
+
+                <button id="tagDialogOK">
+                    Ok
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAG PANEL -->
+    <div id="tag-panel"> 
+    </div>
 </body>
-
 </html>

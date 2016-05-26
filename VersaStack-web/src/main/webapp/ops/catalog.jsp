@@ -121,13 +121,13 @@
             </div>
             <br>
             <button type="button" class="hide" id="button-service-cancel">Cancel</button>
-            <div id="service-specific">                
-            </div>
+            <div id="service-specific"></div>
+            
+            <!-- LOADING PANEL -->
             <div id="loading-panel"></div>
+            <!-- TAG PANEL -->
+            <div id="tag-panel"></div>
         </div>        
-        <!-- TAG PANEL -->
-        <div id="tag-panel"> 
-        </div>
         <!-- JS -->
         <script>
             $(function () {

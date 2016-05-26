@@ -20,11 +20,6 @@ $(function () {
         });
     });
 
-    if (systemReady()) {
-        document.getElementById("server-status").src="/VersaStack-web/img/online.png";
-        document.getElementById("server-status").alt="Ready";
-    }
-
     $(".button-service-select").click(function (evt) {
         $ref = "srvc/" + this.id.toLowerCase() + ".jsp #service-specific";
         // console.log($ref);
@@ -522,18 +517,6 @@ function addLink() {
 }
 
 // API CALLS
-
-
-function systemReady() {
-    var apiUrl = baseUrl + '/VersaStack-web/restapi/service/ready';
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        complete: function (result) {
-            return result;
-        }
-    });
-}
 
 function checkInstance(uuid) {
     var apiUrl = baseUrl + '/VersaStack-web/restapi/service/' + uuid + '/status';
