@@ -24,15 +24,15 @@ html{
     /*overflow: scroll; */
     z-index: 3;
     
-    -webkit-transition: top 0.5s ease-in-out;
-    transition: top 0.5s ease-in-out;
+    -webkit-transition: right 0.5s ease-in-out;
+    transition: right 0.5s ease-in-out;
 }
 
 #displayPanel.display-open {
     right: 0px;
     
-    -webkit-transition: top 0.5s ease-in-out;
-    transition: top 0.5s ease-in-out;
+    -webkit-transition: right 0.5s ease-in-out;
+    transition: right 0.5s ease-in-out;
 }
 
 #displayPanel-contents {
