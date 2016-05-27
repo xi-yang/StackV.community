@@ -58,6 +58,8 @@ define([
                         var data = request.responseText;
                     } else
                         var data = model;
+                    
+                    if (JSON.parse(data).hasOwnProperty('exception')) return;
 
                     if (data.charAt(0) === '<') {
                         alert("Empty Topology.");
@@ -71,7 +73,6 @@ define([
                         versionID = data.version;
                         map = JSON.parse(data.ttlModel);
                     }
-                    if (map.hasOwnProperty('Exception')) return;
                     
                     if (INJECT) {
                         var newNode = {type: 'uri', value: 'FOO:1'};
@@ -544,6 +545,51 @@ define([
             }
         };
         
+        this.getHostNodeURN = function(urn){
+            var e = that.elementMap[urn];
+            
+            if (!e) return null;
+            for (var rel in e.relationship_to){
+                if (that.elementMap[rel].getType() === "Node" ||
+                    that.elementMap[rel].getType() === "Topology")
+                    return rel;
+            }
+            return null;
+        };
+        
+        this.getOrigin = function(urn) {
+            var e = that.elementMap[urn];
+            
+            if (!e) return null;
+            
+            switch(e.getType()){
+                case "Topology":
+                case "Node":
+                    return that.nodeMap[urn];
+                case "SwitchingService":
+                case "HypervisorService":
+                case "RoutingService":
+                case "VirtualCloudService":
+                case "BlockStorageService":
+                case "ObjectStorageService":
+                case "VirtualSwitchService":
+                case "HypervisorBypassInterfaceService":
+                case "StorageService":
+                case "IOPerformanceMeasurementService":
+                case "DataTransferService":
+                case "DataTransferClusterService":
+                case "NetworkObject":
+                case "Service":
+                    return that.serviceMap[urn];
+                case "Port":
+                case "BidirectionalPort":
+                    return that.portMap[urn];
+                case "Volume":
+                    return that.volumeMap[urn];
+                default: return null;
+            }
+        };
+        
         this.makeSubModel = function(mapList) { 
 
             var nodeMap = {};
@@ -562,11 +608,44 @@ define([
                     //alert(key);
                     var val = map[key];
                     val.name = key;
-                    //console.log("JSON.stringify(element, null, 2): " + JSON.stringify(val, null, 2));
-                    var types = val[values.type];
-                    
+                    //console.log("JSON.stringify(element, null, 2): " + JSON.stringify(val, null, 2));                    
                     var types = val[values.type];
                     if (!types) {
+                        var hostURN = that.getHostNodeURN(key);
+                        var obj = that.getOrigin(key);
+                        if (hostURN) nodeMap[hostURN] = that.nodeMap[hostURN];
+
+                        if (obj) {
+                            switch(obj.getType()){
+                             case "Topology":
+                             case "Node":
+                                  nodeMap[key] = obj;
+                                  break;
+                             case "SwitchingService":
+                             case "HypervisorService":
+                             case "RoutingService":
+                             case "VirtualCloudService":
+                             case "BlockStorageService":
+                             case "ObjectStorageService":
+                             case "VirtualSwitchService":
+                             case "HypervisorBypassInterfaceService":
+                             case "StorageService":
+                             case "IOPerformanceMeasurementService":
+                             case "DataTransferService":
+                             case "DataTransferClusterService":
+                             case "NetworkObject":
+                             case "Service":
+                                 serviceMap[key] = obj;
+                                 break;
+                             case "Port":
+                             case "BidirectionalPort":
+                                 portMap[key] = obj;
+                                 break;
+                             case "Volume":
+                                 volumeMap[key] = obj;
+                                 break;
+                            }
+                        }
                        //console.log("Types empty!\n\nVal: " + val + "\nName: " + val.name);
                     } else {
                         map_(types, function (type) {
@@ -671,6 +750,457 @@ define([
             };
         };    
                     
+        this.initWithMap = function(map, baseModel) {
+                    versionID = map.version;
+                    
+                    that.nodeMap = {};
+                    that.portMap = {};
+                    that.serviceMap = {};
+                    that.subnetMap = {};
+                    that.volumeMap = {};
+                    that.elementMap = {};
+                    
+                    for (var key in map) {
+                        var val = map[key];
+                        val.name = key;
+                        //console.log("JSON.stringify(element, null, 2): " + JSON.stringify(val, null, 2));
+                        var types = val[values.type];
+                        if (!types) {
+                            var hostURN = baseModel.getHostNodeURN(key);
+                            var obj = baseModel.getOrigin(key);
+                            if (hostURN) that.nodeMap[hostURN] = baseModel.nodeMap[hostURN];
+
+                            if (obj) {
+                                switch(obj.getType()){
+                                 case "Topology":
+                                 case "Node":
+                                      that.nodeMap[key] = obj;
+                                      break;
+                                 case "SwitchingService":
+                                 case "HypervisorService":
+                                 case "RoutingService":
+                                 case "VirtualCloudService":
+                                 case "BlockStorageService":
+                                 case "ObjectStorageService":
+                                 case "VirtualSwitchService":
+                                 case "HypervisorBypassInterfaceService":
+                                 case "StorageService":
+                                 case "IOPerformanceMeasurementService":
+                                 case "DataTransferService":
+                                 case "DataTransferClusterService":
+                                 case "NetworkObject":
+                                 case "Service":
+                                     that.serviceMap[key] = obj;
+                                     break;
+                                 case "Port":
+                                 case "BidirectionalPort":
+                                     that.portMap[key] = obj;
+                                     break;
+                                 case "Volume":
+                                     that.volumeMap[key] = obj;
+                                     break;
+                                }
+                            }                        
+                    } else {
+                            map_(types, function (type) {
+                                type = type.value;
+
+                                // Adding every element to the elementMap for the 
+                                // displayPanel.  Ifnoring elemnets with the type "NamedIndividual"
+                                if (type.split("#")[1] === "NamedIndividual") return "";//                                                
+
+                                switch (type) {
+                                    // Fallthrough group 
+                                    case values.topology:
+                                    case values.node:
+                                        console.log("type: " + type);
+                                        var toAdd;
+                                        toAdd = new Node(val, map);
+                                        toAdd.isTopology = type === values.topology;
+                                        that.nodeMap[key] = toAdd;
+                                        break;
+
+                                    case values.bidirectionalPort:
+                                        var toAdd;
+                                        toAdd = new Port(val, map);
+                                        that.portMap[key] = toAdd;
+                                        break;
+
+                                        // Fallthrough group     
+                                    case values.switchingService:
+                                    case values.topopolgySwitchingService:
+                                    case values.hypervisorService:
+                                    case values.routingService:
+                                    case values.virtualCloudService:
+                                    case values.blockStorageService:
+                                        var toAdd;
+                                        toAdd = new Service(val, map);
+                                        that.serviceMap[key] = toAdd;
+                                        break;
+
+                                        // Fallthrough group 
+                                    case values.objectStorageService:
+                                    case values.virtualSwitchingService:
+                                    case values.hypervisorBypassInterfaceService:
+                                    case values.storageService:
+                                    case values.IOPerformanceMeasurementService:
+                                    case values.DataTransferService:
+                                    case values.DataTransferClusterService:
+                                    case values.NetworkObject:
+                                        var toAdd;
+                                        toAdd = new Service(val, map);
+                                        that.serviceMap[key] = toAdd;
+                                        break;
+
+                                    case values.switchingSubnet:
+                                        var toAdd;
+                                        toAdd = new Subnet(val, map);
+                                        that.subnetMap[key] = toAdd;
+                                        break;
+                                    case values.namedIndividual://All elements have this
+                                        break;
+
+                                    //fallthrough group x 
+                                    case values.labelGroup:
+                                    case values.label:
+                                    case values.networkAdress:
+                                    case values.bucket:
+                                    case values.tag:
+                                    case values.route:
+                                        break;
+                                    case values.volume:
+                                        var toAdd;
+                                        toAdd = new Volume(val, map);
+
+                                        toAdd.isTopology = type === values.topology;
+                                        that.volumeMap[key] = toAdd;
+                                        break;
+
+                                    // fallthrough group x 
+                                    case values.routingTable:
+                                    case values.ontology:
+                                    case values.POSIX_IOBenchmark:
+                                    case values.address:
+                                        break;
+                                    default:
+                                        console.log("Unknown type: " + type);
+                                        break;
+                                }
+                            });                                                
+                        }
+                    }
+
+                    for (var key in that.serviceMap) {
+
+                        var service = that.serviceMap[key];
+                        var service_ = service._backing;
+
+                        for (var key in service_) {
+                            switch (key) {
+                                case "name":
+                                case values.type:
+                                case values.providesBucket:
+
+                                case values.providesRoutingTable:
+                                case values.providesRoute:
+                                case values.VirtualCloudService:
+
+                                case values.encoding:
+                                case values.labelSwapping:
+                                case values.providesVolume:
+                                case values.providesRoutingTable:
+                                case values.providesRoute:
+                                case values.providesVM:
+                                case values.providesVPC:
+                                case values.providesBucket:
+                                case values.hasBidirectionalPort:
+                                case values.hasService:
+                                case values.active_transfers:
+                                case values.topoType:
+                                case values.value:
+                                case values.hasLabel:
+                                case values.hasLabelGroup:                          
+                                    break;                                                                 
+                                case values.providesSubnet:
+                                    var subnet = service_[key];
+                                    map_(subnet, function (subnetKey) {
+                                        subnetKey = subnetKey.value;
+
+                                        var subnet = that.subnetMap[subnetKey];
+                                        service.subnets.push(subnet);
+                                    });
+                                    break;
+                                default:
+                                    console.log("Unknown service attribute: " + key);
+
+                            }
+                        }
+
+                    }
+
+                    //Complete the ports
+                    //  Create aliases between our Port objects
+                    //  Associate a port with its children
+                    for (var key in that.portMap) {
+                        /**@type Port**/
+                        var port = that.portMap[key];
+                        var port_ = port._backing;
+                        var aliasKey = port_[values.isAlias];
+                        if (aliasKey) {
+                            var aliasPort = that.portMap[aliasKey[0].value];
+                            if (aliasPort) {
+                                // Asymmetrical aliases
+                                port.alias = aliasPort;
+                                // The alias' alias key 
+                                var otherAliasKey = that.portMap[aliasKey[0].value]._backing[values.isAlias];
+                                // If the alias has the current port as an alias in the model, represent that
+                                // in the object. Otherwise set its alias to null. 
+                                if (otherAliasKey && (otherAliasKey[0].value === key)) {
+                                    aliasPort.alias = port;
+                                } else {
+                                    aliasPort.alias = null;
+                                }
+                            }
+                        } else {
+                            port.alias = null;
+                        }
+                        port.childrenPorts = [];
+                        var childrenKeys = port_[values.hasBidirectionalPort];
+                        if (childrenKeys) {
+                            map_(childrenKeys, function (childKey) {
+                                var child = that.portMap[childKey.value];
+                                try {
+                                    port.childrenPorts.push(child);
+                                    child.parentPort = port;
+                                } catch (err) {
+                                    console.log("Port Children Error!");
+                                }
+                            });
+                        }
+                    }
+
+                    for (var key in that.subnetMap) {
+                        var subnet = that.subnetMap[key];
+                        var subnet_ = subnet._backing;
+                        for (var key in subnet_) {
+                            switch (key) {
+                                case "name":
+                                case values.type:
+                                case values.hasNetworkAddress:
+                                case values.encoding:
+                                case values.labelSwapping:
+                                case values.topoType:
+                                case values.hasTag:
+                                case values.value:
+                                    break;
+                                    //Associate ports and subnet with their parent node
+                                case values.hasBidirectionalPort:
+                                    var ports = subnet_[key];
+                                    map_(ports, function (portKey) {
+                                        portKey = portKey.value;
+                                        var port = that.portMap[portKey];
+                                        subnet.ports.push(port);
+                                    });
+                                    break;
+                                default:
+                                    console.log("Unknown subnet attribute: " + key);
+
+                            }
+                        }
+
+                    }
+
+                    //Associate ports and subnodes with their parent node
+                    //Create services
+                    for (var key in that.nodeMap) {
+                        /**@type Node**/
+                        var node = that.nodeMap[key];
+                        var node_ = node._backing;
+                        for (var key in node_) {
+                            console.log("key: " + key);
+                            switch (key) {
+                                case values.hasBidirectionalPort:
+                                    var ports = node_[key];
+                                    map_(ports, function (portKey) {
+                                        portKey = portKey.value;
+                                        var errorVal = portKey;
+                                        var port = that.portMap[portKey];
+                                        if (!port || node.ports.indexOf(port) !== -1) {
+                                            //port is undefined
+                                            console.log("No port: " + errorVal);
+                                        } else {
+                                            node.ports.push(port);
+                                            port.setNode(node);
+                                        }
+                                    });
+                                    break;
+                                case values.hasNode:
+                                case values.hasTopology:
+                                case values.hasFileSystem:
+                                    var subNodes = node_[key];
+                                    map_(subNodes, function (subNodeKey) {
+                                        var errorVal = subNodeKey.value;
+                                        var subNode = that.nodeMap[subNodeKey.value];
+                                        if (!subNode) {
+                                            //subnode is undefined
+                                            console.log("No subnode: " + errorVal);
+                                        } else {
+                                            subNode.isRoot = false;
+                                            node.children.push(subNode);
+                                            subNode._parent = node;
+                                        }
+                                    });
+                                    break;
+                                case values.hasService:
+                                    var services = node_[values.hasService];
+                                    map_(services, function (service) {
+                                        var errorVal = service.value;
+                                        service = that.serviceMap[service.value];
+                                        if (!service) {
+                                            //service is undefined
+                                            console.log("No service: " + errorVal);
+                                        } else {
+                                            node.services.push(service);
+                                        }
+                                    });
+                                    break;
+                                case "name":
+                                case "isRoot": //This is a key that we added to determine which elements are root in the node/topology tree
+                                case "processed":  //This is key that we added to assist in detecting when we fail to handle a case
+                                    break;
+                                case values.type:
+                                case values.hasNetworkAddress:
+                                case values.provideByService:
+                                case values.hasBucket:
+                                case values.belongsTo:
+                                case values.name:                           
+                                    break;                        
+                                case values.volume:
+                                    break;
+                                case values.hasVolume:
+                                    var volumes = node_[key];
+                                    map_(volumes, function (volume) {
+                                        var errorVal = volume.value;
+                                        volume = that.volumeMap[volume.value];
+                                        // bandaid fix
+                                        if (!volume || node.volumes.indexOf(volume) !== -1) {
+                                            //service is undefined
+                                            console.log("No volume: " + errorVal);
+                                        } else {
+                                            node.volumes.push(volume);
+                                            volume.parentNode = node;
+                                        }
+                                    });
+                                    break;
+                                case values.num_core:
+                                case values.memory_mb:
+                                case values.mount_point:
+                                case values.measurement:
+                                case values.topoType:
+                                case values.hasTag:                            
+                                    break;
+                                default:                         
+                                    console.log("Unknown key: " + key);
+                            }
+                        }
+                    }
+
+                    // Goes through all of the nodes and if they have a switching service 
+                    // that has ports that the node doesn't, adds the ports to the node
+                    for (var key in that.nodeMap) {
+
+                        var node = that.nodeMap[key];
+                        map_(node.services, function (service) {
+                            var service_ = service._backing;
+                            var types = service_[values.type];
+                            map_(types, function (type) {
+                                type = type.value;
+                                if (type === values.switchingService) {
+                                    var switchingServicePorts = service._backing[values.hasBidirectionalPort];
+                                    if (switchingServicePorts !== undefined) {
+                                        map_(switchingServicePorts, function (port) {
+                                            var portObj = that.portMap[port.value];
+                                            if (portObj !== undefined && node.ports.indexOf(portObj) === -1) {
+                                                node.ports.push(portObj);
+                                                portObj.setNode(node);
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+                        });
+                    }
+
+
+                    // Storing the relationships between all of the elemnts
+                    // Relationships stored in an <Element, Type> map, storing the
+                    // element it has the relationship to and what the relationship
+                    // is. 
+                    for (var key in that.elementMap) {        
+
+                        var src_element = that.elementMap[key];
+                        if ((src_element.getType() === "Node" ||
+                                src_element.getType() === "Topology")
+                                && that.nodeMap[src_element.getName()].isLeaf()) 
+                        {
+                            src_element.topLevel = false;
+                        }
+                        if (src_element !== undefined) {
+                            var src_element_ = src_element._backing;
+                            for (var key in src_element_) {
+
+                                // Elements with key 'name' are always undefined. 
+                                if (key === "name") continue;
+
+                                var elements = src_element_[key];
+                                map_(elements, function (element){
+                                    var errorVal = element.value;
+                                    element = that.elementMap[element.value];
+                                    if (element) {
+                                        var relationship =  key.split("#")[1];
+                                        var src_type = src_element.getType();
+                                        var type = element.getType();
+                                        if ((type !== "Topology" && type !== "Node") ||
+                                            ((src_type === "Topology" || src_type === "Node")  && 
+                                            (relationship === "hasTopology")))
+                                        {
+                                            element.topLevel = false;
+                                        }
+                                        element.relationship_to[src_element.getName()] = relationship;
+                                        src_element.misc_elements.push(element);                                  
+                                    } else {
+                                        //  console.log("name: " + key.split("#")[1] + " value: " + errorVal);
+                                    }
+                                }); 
+                            }
+                        }
+                    }
+
+                    // New unidirectional alias code 
+                    for (var key in that.elementMap) {   
+
+                        var src_element = that.elementMap[key];
+                        for (var i in src_element.misc_elements) {
+                            var elem = src_element.misc_elements[i];
+                            if (elem.relationship_to[src_element.getName()] === "isAlias"){
+                                    var port1 = that.portMap[src_element.getName()];
+                                    var port2 = that.portMap[elem.getName()];
+                                    if (port1 && port2) {
+                                        port1.alias = port2;
+                                        port2.alias = port1;
+                                    }
+                            }
+                        }
+                    }
+                    
+                    for (var key in that.nodeMap) {
+                        var node = that.nodeMap[key];
+                        if (node) {
+                            rootNodes.push(node);
+                        }
+                    }                    
+        };
+        
         this.getVersion = function () {
             return versionID;
         };

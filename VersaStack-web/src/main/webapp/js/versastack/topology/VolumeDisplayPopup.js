@@ -135,9 +135,9 @@ define(["local/d3", "local/versastack/utils"],
                     }
                     this.setVisible(true);
                     //draw the ports
-                    var volumeContainer = this.svgContainer.select("#volume");
+                    var volumeContainer = this.svgContainer.select("#volume" + "_" + outputApi.svgContainerName);
                     //var parentPortContainer = this.svgContainer.select("#parentPort");
-                    var container = this.svgContainer.select("#volumeDialogBox");
+                    var container = this.svgContainer.select("#volumeDialogBox" + "_" + outputApi.svgContainerName);
 
                     var stack = [];
                     map_(this.hostNode.volumes, function (volume) {

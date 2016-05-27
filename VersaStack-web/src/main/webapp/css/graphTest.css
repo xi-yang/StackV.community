@@ -4,7 +4,7 @@ html{
 
 }
 
-#hoverdiv{
+#hoverdiv_viz{
     position: fixed;
     visibility: hidden;
     background-color: rgba(255,255,255,.85);
@@ -12,7 +12,6 @@ html{
     border: 1px solid #999;
     padding: 7px;
 }
-
 #displayPanel{
     float:right;
     background-color: #d0d0d0;    

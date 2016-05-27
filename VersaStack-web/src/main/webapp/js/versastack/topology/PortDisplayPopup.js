@@ -141,9 +141,9 @@ define(["local/d3", "local/versastack/utils"],
                     }
                     this.setVisible(true);
                     //draw the ports
-                    var portContainer = this.svgContainer.select("#port");
-                    var parentPortContainer = this.svgContainer.select("#parentPort");
-                    var container = this.svgContainer.select("#dialogBox");
+                    var portContainer = this.svgContainer.select("#port" + "_" + outputApi.svgContainerName);
+                    var parentPortContainer = this.svgContainer.select("#parentPort" + "_" + outputApi.svgContainerName);
+                    var container = this.svgContainer.select("#dialogBox" + "_" + outputApi.svgContainerName);
 
                     var stack = [];
                     map_(this.hostNode.ports, function (port) {
@@ -172,31 +172,33 @@ define(["local/d3", "local/versastack/utils"],
                                         .attr("xlink:href", port.getIconPath());
                             }
                             port.svgNode
-                                    .on("mousemove", function () {
-                                        outputApi.setHoverText(port.getName());
-                                        outputApi.setHoverLocation(d3.event.x, d3.event.y);
-                                        outputApi.setHoverVisible(true);
-                                        if (!port.hasChildren()) {
-                                            port.enlarged = true;
-                                        }
-                                        that.updateSvgChoordsPort(port);
-                                    })
-                                    .on("mouseleave", function () {
-                                        outputApi.setHoverVisible(false);
-                                        port.enlarged = false;
-                                        that.updateSvgChoordsPort(port);
-                                    })
-                                    .on("click", function () {
-                                        renderApi.selectElement(port);
-                                    })
-                                    .on("dblclick", function () {
-                                        port.setFolded(!port.getFolded());
-                                        renderApi.redrawPopups();
-                                        renderApi.drawHighlight();
-                                        renderApi.layoutEdges();
-                                    })
-                                    .on("contextmenu", that.outputApi.contextMenu.renderedElemContextListener.bind(undefined, port))
-                                    .call(dragBehaviour);
+                                .on("mousemove", function () {
+                                    outputApi.setHoverText(port.getName());
+                                    outputApi.setHoverLocation(d3.event.x, d3.event.y);
+                                    outputApi.setHoverVisible(true);
+                                    if (!port.hasChildren()) {
+                                        port.enlarged = true;
+                                    }
+                                    that.updateSvgChoordsPort(port);
+                                })
+                                .on("mouseleave", function () {
+                                    outputApi.setHoverVisible(false);
+                                    port.enlarged = false;
+                                    that.updateSvgChoordsPort(port);
+                                })
+                                .on("click", function () {
+                                    renderApi.selectElement(port);
+                                })
+                                .on("dblclick", function () {
+                                    port.setFolded(!port.getFolded());
+                                    renderApi.redrawPopups();
+                                    renderApi.drawHighlight();
+                                    renderApi.layoutEdges();
+                                });
+                            if (that.outputApi.contextMenu){
+                                port.svgNode.on("contextmenu", that.outputApi.contextMenu.renderedElemContextListener.bind(undefined, port));                      
+                            } 
+                            port.svgNode.call(dragBehaviour);
                         })();
                     }
                     //Draw the box itself.

@@ -117,11 +117,7 @@
                                    success: function(data,  textStatus,  jqXHR ) {
                                        if (data === "true")  {
                                           //alert(textStatus);
-                                            $('#servicePanel-contents').removeClass("hide");     
-                                             
-                                            ModelConstructor = m;
-                                            model = new ModelConstructor();
-                                            model.init(1, drawGraph, null);
+                                            $('#servicePanel-contents').removeClass("hide");                                     
                                             layout = l;
                                             render = r;
                                             d3 = d3_;
@@ -137,18 +133,21 @@
                                             // possibly pass in map here later for all possible dialogs 
                                             contextMenu = new ContextMenu(d3, render.API, tagDialog);//, tagDialog);
                                             contextMenu.init();
-                                            outputApi = new outputApi_(render.API, contextMenu);
+                                            
+                                            outputApi = new outputApi_(render.API, contextMenu, "viz");
 
-                                               
+                                            ModelConstructor = m;
+                                            model = new ModelConstructor();
+                                            model.init(1, drawGraph.bind(undefined, outputApi, model), null);                                            
                                        } else {
                                            displayError("Visualization Unavailable", d3_);
-                                      }
+                                       }
                                    },
 
                                    error: function(jqXHR, textStatus, errorThrown ) {
-                                          console.log("Debugging: timeout at start..");
-                                          displayError("Visualization Unavailable", d3_);
-                                       //alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
+                                        console.log("Debugging: timeout at start..");
+                                        displayError("Visualization Unavailable", d3_);
+                                     //alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
                                    }
                             }); 
                         });
@@ -172,9 +171,10 @@
                 request.send();
 
                 $("#loadingPanel").addClass("hide");
-                $("#hoverdiv").removeClass("hide");
+                $("#hoverdiv_viz").removeClass("hide");
+
                 $("#viz").attr("class", "");
-                
+
                 buttonInit();
             }
             
@@ -190,17 +190,15 @@
                $('#servicePanel-contents').html("Service instances unavailable.").addClass('service-unready-message');                       
             }
             
-            function drawGraph() {
+            function drawGraph(outputApi, model) {
                 var width = document.documentElement.clientWidth / settings.INIT_ZOOM;
                 var height = document.documentElement.clientHeight / settings.INIT_ZOOM;
                 //TODO, figure out why we need to call this twice
                 //If we do not, the layout does to converge as nicely, even if we double the number of iterations
                 layout.doLayout(model, null, width, height);
                 layout.doLayout(model, null, width, height);
-
-                render.doRender(outputApi, model);
                 
-
+                render.doRender(outputApi, model);
 //                animStart(30);
             }
             function reload() {
@@ -227,52 +225,6 @@
                     outputApi.renderApi.selectElement(null);
                 }, null);
 
-//                var request = new XMLHttpRequest();
-//                request.open("GET", "/VersaStack-web/restapi/model/");
-//
-//                request.setRequestHeader("Accept", "application/json");
-//                request.onload = function () {
-//                    var modelData = request.responseText;
-//
-//                    if (modelData.charAt(0) === '<') {
-//                        return;
-//                    }
-//
-//                    modelData = JSON.parse(modelData);
-//                    $.post("/VersaStack-web/ViewServlet", {newModel: modelData.ttlModel}, function (response) {
-//                        // handle response from your servlet.
-//                    });
-//                };
-//                request.send();
-
-                $("#loadingPanel").addClass("hide");
-                $("#hoverdiv").removeClass("hide");
-                $("#viz").attr("class", "");
-            }
-
-            function filter(viewName, viewModel) {
-                $("#loadingPanel").removeClass("hide");
-                $("#hoverdiv").addClass("hide");
-                $("#viz").attr("class", "loading");
-
-                var lockNodes = model.listNodes();
-                //var posistionLocks = {};
-                model = new ModelConstructor(model);
-                model.init(2, function () {
-                    var width = document.documentElement.clientWidth / outputApi.getZoom();
-                    var height = document.documentElement.clientHeight / outputApi.getZoom();
-                    //TODO, figure out why we need to call this twice
-                    //If we do not, the layout does to converge as nicely, even if we double the number of iterations
-                    layout.doLayout(model, lockNodes, width, height);
-                    layout.doLayout(model, lockNodes, width, height);
-
-                    render.doRender(outputApi, model);
-                }, viewModel);
-
-                $.post("/VersaStack-web/ViewServlet", {filterName: viewName, filterModel: viewModel.ttlModel}, function (response) {
-                    // handle response from your servlet.
-                });
-
                 $("#loadingPanel").addClass("hide");
                 $("#hoverdiv").removeClass("hide");
                 $("#viz").attr("class", "");
@@ -291,52 +243,15 @@
                     //layout.force().gravity(1).charge(-900).start();
                     layout.testLayout(model, null, width, height);
                     layout.testLayout(model, null, width, height); 
-                    
-//                    var zoom = d3.behavior.zoom();
-//                    var viewCenter = [];
-//
-//                    viewCenter[0] = (-1)*zoom.translate()[0] + (0.5) * (  width/zoom.scale() );
-//                    viewCenter[1] = (-1)*zoom.translate()[1] + (0.5) * ( height/zoom.scale() );
-        
+                            
                     outputApi.resetZoom();
                     render.doRender(outputApi, model);
 
                     evt.preventDefault();
-                });
-                $("#stopButton").click(function (evt) {
-                   layout.stop(); 
-                });
-                $("#cancelButton").click(function (evt) {
-                    $("#actionForm").empty();
-
-                    $("#awsButton").toggleClass("hide");
-                    $("#cancelButton").toggleClass("hide");
-
-                    evt.preventDefault();
-                });
-                $("#refreshButton").click(function (evt) {
-                    reload();
-
-                    evt.preventDefault();
-                });
+                });               
 
                 $("#modelButton").click(function (evt) {
                     window.open('/VersaStack-web/modelView.jsp', 'newwindow', config = 'height=1200,width=400, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no');
-                });
-
-                $(".button-filter-select").click(function (evt) {
-                    $(".current-filter").removeClass("current-filter");
-
-                    var viewModels = ${user.getModels()};
-                    if (this.id === "nofilter") {
-                        reload();
-                    } else {
-                        filter(this.id, viewModels[this.id]);
-                    }
-
-                    $(this).addClass("current-filter");
-
-                    evt.preventDefault();
                 });
                 
                 $("#displayPanel-tab").click(function (evt) {
@@ -399,13 +314,14 @@
             }
 
 
-            function outputApi_(renderAPI, contextMenu) {
+            function outputApi_(renderAPI, contextMenu, svg) {
                 var that = this;
                 this.renderApi = renderAPI;
                 this.contextMenu = contextMenu;
+                this.svgContainerName = svg;
                 
                 this.getSvgContainer = function () {
-                    return d3.select("#viz");
+                    return d3.select("#" + this.svgContainerName);
                 };
 
                 var displayTree = new DropDownTree(document.getElementById("treeMenu"));
@@ -462,7 +378,7 @@
                 };
 
                 this._updateTransform = function () {
-                    d3.select("#transform").
+                    d3.select("#transform" + "_" + this.svgContainerName).
                             attr("transform", "scale(" + zoomFactor + ")translate(" + offsetX + "," + offsetY + ")");
                 };
                 this._updateTransform();
@@ -476,14 +392,14 @@
                 };
 
                 this.setHoverText = function (str) {
-                    document.getElementById("hoverdiv").innerText = str;
+                    document.getElementById("hoverdiv" + "_" + this.svgContainerName).innerText = str;
                 };
                 this.setHoverLocation = function (x, y) {
-                    document.getElementById("hoverdiv").style.left = x + "px";
-                    document.getElementById("hoverdiv").style.top = y + 10 + "px";
+                    document.getElementById("hoverdiv" + "_" + this.svgContainerName).style.left = x + "px";
+                    document.getElementById("hoverdiv" + "_" + this.svgContainerName).style.top = y + 10 + "px";
                 };
                 this.setHoverVisible = function (vis) {
-                    document.getElementById("hoverdiv").style.visibility = vis ? "visible" : "hidden";
+                    document.getElementById("hoverdiv" + "_" + this.svgContainerName).style.visibility = vis ? "visible" : "hidden";
                 };
 
                 this.resetZoom = function () {   // @
@@ -492,8 +408,11 @@
                     offsetY = 0;                    
                     this._updateTransform();
                 };
-    
-                var svg = document.getElementById("viz");
+                this.setZoom = function(zoom) {
+                    zoomFactor = zoom;
+                    this._updateTransform();
+                };
+                var svg = document.getElementById(this.svgContainerName);
                 svg.addEventListener("mousewheel", function (e) {
                     e.preventDefault();
                     //The OSX trackpad seems to produce scrolls two orders of magnitude large when using pinch to zoom,
@@ -586,18 +505,6 @@
         </div>
         <!-- SIDE BAR -->
         <div id="sidebar">            
-        </div>
-
-        <div id="filterPanel">
-            <div id="filterPanel-contents">
-                <button class="button-filter-select" id="nofilter">No Filter</button>
-                <c:forEach items="${user.modelNames}" var="filterName">
-                    <c:if test="${filterName != 'base'}">
-                        <button class="button-filter-select" id="${filterName}">${filterName}</button>
-                    </c:if>
-                </c:forEach>
-                ${jobs}
-            </div>
         </div>
             
         <sql:setDataSource var="front_conn" driver="com.mysql.jdbc.Driver"
@@ -702,11 +609,9 @@
         <div id="loadingPanel"></div>
         <div class="closed" id="displayPanel">
             <div id="displayPanel-contents">
-                <button id="refreshButton">Refresh</button>
                 <button id="modelButton">Display Model</button>
                 <button id="fullDiaplayButton">Toggle Full Model</button>
                 <button id="testButton">test</button> <!-- @ -->
-                <button id="stopButton">stop</button> <!-- @ -->
                 <div id="displayName"></div>
                 <div id="treeMenu"></div>                
             </div>
@@ -725,7 +630,7 @@
             <div id="displayPanel-tab">^^^^^</div>
             </div>
         </div>        
-        <div class="hide" id="hoverdiv"></div>        
+        <div class="hide" id="hoverdiv_viz"></div>        
 
         <svg class="loading" id="viz">
         <defs>
@@ -776,22 +681,22 @@
     <!--We nest a g in here because the svg tag itself cannot do transforms
         we separate topologies, edges, and nodes to create an explicit z-order
     -->
-    <g id="transform">
-    <g id="topology"/>
-    <g id="edge1"/>
-    <g id="anchor"/>
-    <g id="node"/>
-    <g id="dialogBox"/>
-    <g id="volumeDialogBox"/>
-    <g id="switchPopup"/>
-    <g id="parentPort"/>
-    <g id="edge2" />
-    <g id="port"/>
-    <g id="volume"/>
+    <g id="transform_viz">
+    <g id="topology_viz"/>
+    <g id="edge1_viz"/>
+    <g id="anchor_viz"/>
+    <g id="node_viz"/>
+    <g id="dialogBox_viz"/>
+    <g id="volumeDialogBox_viz"/>
+    <g id="switchPopup_viz"/>
+    <g id="parentPort_viz"/>
+    <g id="edge2_viz" />
+    <g id="port_viz"/>
+    <g id="volume_viz"/>
 
     </g>
     </svg>
-    
+ 
  <!-- CONTEXT MENU -->
   <nav id="context-menu" class="context-menu">
       <ul class="context-menu__items">
