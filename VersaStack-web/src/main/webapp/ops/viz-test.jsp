@@ -178,14 +178,17 @@
             function showDiactivatedViz(viz_id) {
                var viz_container =  $("#" + viz_id).closest("td");
                var index = viz_container.index();
-               viz_container.addClass("inactive_details_viz");
-               
-               var viz_table = viz_container.closest("table");
-               viz_table.find("th:nth-child(" + index + ")").addClass("inactive_details_viz");
+               //viz_container.addClass("inactive_details_viz");
+               viz_container.css({
+                 "border-top" : "0px",
+                 "background-color" : "#777"
+               });
+               //var viz_table = viz_container.closest("table");
+               //viz_table.find("th:nth-child(" + index + ")").css( "color", "#ccc");
             }
             
             function renderModels() {
-                var UUID = "1a33d50a-383c-4252-a67c-28e4d3fea0e6";
+                var UUID = prompt("Enter UUID", "1a33d50a-383c-4252-a67c-28e4d3fea0e6");
 
                 $.ajax({
                     crossDomain: true,
@@ -239,6 +242,7 @@
                     error: function(jqXHR, textStatus, errorThrown ) {
                         //alert("Error getting status.");
                        // alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
+                       alert("not found");
                     }
                });                     
                 
