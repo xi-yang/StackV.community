@@ -30,10 +30,11 @@
                     var tp = document.querySelector("#tagPanel");
                     tp.style.left = "calc(40% - 66px)";
                 });
-                
-                $("#displayPanel-tab").click(function (evt) {                                       
+
+                $("#displayPanel-tab").click(function (evt) {
                     $("#displayPanel").toggleClass("display-open");
-                    
+                    $("#displayPanel-tab").toggleClass("display-open");
+
                     evt.preventDefault();
                 });
             });
@@ -572,10 +573,8 @@
         </div>
 
         <div id="loadingPanel"></div>
+        <div id="displayPanel-tab"></div>
         <div id="displayPanel">
-            <div id="displayPanel-tab">
-
-            </div>
             <div id="displayPanel-contents">
                 <button id="refreshButton">Refresh</button>
                 <button id="modelButton">Display Model</button>
