@@ -164,8 +164,8 @@
             
            
             function drawGraph(outputApi, model) {
-                var width = document.documentElement.clientWidth / settings.INIT_ZOOM;
-                var height = document.documentElement.clientHeight / settings.INIT_ZOOM;
+                var width =  $("#va_viz").closest("td").width();//document.documentElement.clientWidth / settings.INIT_ZOOM;
+                var height = $( "#va_viz").closest("td").height(); //document.documentElement.clientHeight / settings.INIT_ZOOM;
                 //TODO, figure out why we need to call this twice
                 //If we do not, the layout does to converge as nicely, even if we double the number of iterations
                 layout.doLayout(model, null, width, height);
