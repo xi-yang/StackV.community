@@ -589,7 +589,44 @@ define([
                 default: return null;
             }
         };
-        
+
+         this.getBaseOrigin = function(urn) {
+            var e = that.elementMap[urn];
+            
+            if (!e) return null;
+            
+            switch(e.getType()){
+                case "Topology":
+                case "Node":
+                    return new Node(that.nodeMap[urn]._backing, 
+                                  that.nodeMap[urn].map);
+                case "SwitchingService":
+                case "HypervisorService":
+                case "RoutingService":
+                case "VirtualCloudService":
+                case "BlockStorageService":
+                case "ObjectStorageService":
+                case "VirtualSwitchService":
+                case "HypervisorBypassInterfaceService":
+                case "StorageService":
+                case "IOPerformanceMeasurementService":
+                case "DataTransferService":
+                case "DataTransferClusterService":
+                case "NetworkObject":
+                case "Service":
+                    return new Service(that.serviceMap[urn]._backing, 
+                                       that.serviceMap[urn].map);
+                case "Port":
+                case "BidirectionalPort":
+                    return new Port(that.portMap[urn]._backing, 
+                                    that.portMap[urn].map);
+                case "Volume":
+                    return new Volume(that.volumeMap[urn]._backing, 
+                                      that.volumeMap[urn].map);
+                default: return null;
+            }
+        };
+               
         this.makeSubModel = function(mapList) { 
 
             var nodeMap = {};
@@ -767,8 +804,9 @@ define([
                         var types = val[values.type];
                         if (!types) {
                             var hostURN = baseModel.getHostNodeURN(key);
-                            var obj = baseModel.getOrigin(key);
-                            if (hostURN) that.nodeMap[hostURN] = baseModel.nodeMap[hostURN];
+                            var obj = baseModel.getBaseOrigin(key);
+                            if (hostURN) that.nodeMap[hostURN] = new Node(baseModel.nodeMap[hostURN]._backing, 
+                                                                          baseModel.nodeMap[hostURN].map);
 
                             if (obj) {
                                 switch(obj.getType()){
