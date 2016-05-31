@@ -28,8 +28,7 @@
         <script>
             $(document).ready(function () {
                 $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", function () {
-                    var tp = document.querySelector("#tagPanel");
-                    tp.style.left = "calc(40% - 66px)";
+
                 });
 
                 $("#displayPanel-tab").click(function (evt) {
