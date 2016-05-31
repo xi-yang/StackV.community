@@ -21,8 +21,8 @@
 #tagPanel {
     background-color: #e9e9e9;
     position: fixed;
-    bottom: 0;
-    left: calc(20% - 66px);
+    bottom: 0px;
+    left: 0px;
     z-index: 2;
     min-width: 10%;
     border: 2px solid rgba(0, 0, 0, .05);
@@ -33,13 +33,14 @@
 }
 
 #tagPanel.closed {
-    bottom: calc(-52% + 40px);
+    bottom: calc(-50% + 20px);
     -webkit-transition: bottom 0.5s ease-in-out;
     transition: bottom 0.5s ease-in-out;
 }
 
 #tagPanel-tab {
     background-color: #d0d0d0;
+    height: 20px;
 }
 
 #tagPanel-contents {height: 100%;}

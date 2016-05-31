@@ -21,37 +21,22 @@
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/VersaStack-web/css/bootstrap.css">
         <link rel="stylesheet" href="/VersaStack-web/css/style.css">       
-      <link rel="stylesheet" href="/VersaStack-web/css/contextMenu.css">   
-      <!-- font awesome icons won't show up otherwise --->
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/contextMenu.css">   
+        <!-- font awesome icons won't show up otherwise --->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
 
         <script>
             $(document).ready(function () {
-                $("#nav").load("/VersaStack-web/navbar.html");
+                $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", function () {
 
-                $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
-                    if (${user.isAllowed(1)}) {
-                        var element = document.getElementById("service1");
-                        element.classList.remove("hide");
-                    }
-                    if (${user.isAllowed(2)}) {
-                        var element = document.getElementById("service2");
-                        element.classList.remove("hide");
-                    }
-                    if (${user.isAllowed(3)}) {
-                        var element = document.getElementById("service3");
-                        element.classList.remove("hide");
-                    }
-                    if (${user.isAllowed(4)}) {
-                        var element = document.getElementById("service4");
-                        element.classList.remove("hide");
-                    }
                 });
-                
-                $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", function() {                    
-                    var tp = document.querySelector("#tagPanel");
-                    tp.style.left = "calc(40% - 66px)";
-                });                        
+
+                $("#displayPanel-tab").click(function (evt) {
+                    $("#displayPanel").toggleClass("display-open");
+                    $("#displayPanel-tab").toggleClass("display-open");
+
+                    evt.preventDefault();
+                });
             });
         </script> 
 
@@ -216,7 +201,7 @@
                     //If we do not, the layout does to converge as nicely, even if we double the number of iterations
                     layout.doLayout(model, null, width, height);
                     layout.doLayout(model, null, width, height);
-                    
+
                     //layout.force().gravity(1).charge(-900).start();
                     //commented this out for demo 0421106
 //                    layout.testLayout(model, null, width, height);  //@
@@ -253,49 +238,49 @@
                 $("#modelButton").click(function (evt) {
                     window.open('/VersaStack-web/modelView.jsp', 'newwindow', config = 'height=1200,width=400, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no');
                 });
-                
+
                 $("#displayPanel-tab").click(function (evt) {
                     $("#displayPanel").toggleClass("closed");
 
                     evt.preventDefault();
                 });
-                
-               // Brings tagPanel or tagDialog to the foreground if one is 
-               // clicked and behind the other. Will probably need to be 
-               // generalized soon. 
-               function bringToForeground(current) {
-                   var tagDialogElement = document.querySelector("#tagDialog");
-                   var tagPanelElement = document.querySelector("#tagPanel");
-                   if (!tagPanelElement.classList.contains("closed") && 
-                       tagDialogElement.classList.contains("tagDialog-active")) 
-                   {
-                       var tagDialog = document.getElementById("tagDialog");
-                       var tagPanel = document.getElementById("tagPanel");
-                       var tdz = parseInt(window.getComputedStyle(tagDialog, null).zIndex);
-                       var tpz = parseInt(window.getComputedStyle(tagPanel, null).zIndex);
-                       
-                       if (( (current === "tagDialog") && (tdz < tpz) ) ||
-                           ( (current === "tagPanel") &&  (tpz < tdz) ) ) {
+
+                // Brings tagPanel or tagDialog to the foreground if one is 
+                // clicked and behind the other. Will probably need to be 
+                // generalized soon. 
+                function bringToForeground(current) {
+                    var tagDialogElement = document.querySelector("#tagDialog");
+                    var tagPanelElement = document.querySelector("#tagPanel");
+                    if (!tagPanelElement.classList.contains("closed") &&
+                            tagDialogElement.classList.contains("tagDialog-active"))
+                    {
+                        var tagDialog = document.getElementById("tagDialog");
+                        var tagPanel = document.getElementById("tagPanel");
+                        var tdz = parseInt(window.getComputedStyle(tagDialog, null).zIndex);
+                        var tpz = parseInt(window.getComputedStyle(tagPanel, null).zIndex);
+
+                        if (((current === "tagDialog") && (tdz < tpz)) ||
+                                ((current === "tagPanel") && (tpz < tdz))) {
                             tagDialog.style.zIndex = tpz;
                             tagPanel.style.zIndex = tdz;
-                       }
-                   }
-               }
-               
+                        }
+                    }
+                }
+
                 $("#tagDialog").click(function (evt) {
                     bringToForeground("tagDialog");
                     evt.preventDefault();
                 });
-                
+
                 $("#tagPanel").click(function (evt) {
                     bringToForeground("tagPanel");
                     evt.preventDefault();
                 });
-                
+
                 $("#servicePanel-tab").click(function (evt) {
                     $("#servicePanel").toggleClass("closed");
                     evt.preventDefault();
-                });               
+                });
             }
 
             //animStart and animStop are primarily intended as debug functions
@@ -327,7 +312,7 @@
                 var displayTree = new DropDownTree(document.getElementById("treeMenu"));
                 displayTree.renderApi = this.renderApi;
                 displayTree.contextMenu = this.contextMenu;
-                
+
                 this.getDisplayTree = function () {
                     return displayTree;
                 };
@@ -405,7 +390,7 @@
                 this.resetZoom = function () {   // @
                     zoomFactor = settings.INIT_ZOOM;
                     offsetX = 0;
-                    offsetY = 0;                    
+                    offsetY = 0;
                     this._updateTransform();
                 };
                 this.setZoom = function(zoom) {
@@ -484,7 +469,7 @@
                 });
                 svg.addEventListener("mousemove", function (e) {
                     // && (e.which ==== 1) stops d3 bug of dragging to enable on context menu 
-                    if (isPanning && panningEnabled && (e.which === 1) )   {
+                    if (isPanning && panningEnabled && (e.which === 1)) {
                         moved = true;
                         that.scroll(e.movementX, e.movementY);
                     }
@@ -506,7 +491,19 @@
         <!-- SIDE BAR -->
         <div id="sidebar">            
         </div>
-            
+
+        <div id="filterPanel">
+            <div id="filterPanel-contents">
+                <button class="button-filter-select" id="nofilter">No Filter</button>
+                <c:forEach items="${user.modelNames}" var="filterName">
+                    <c:if test="${filterName != 'base'}">
+                        <button class="button-filter-select" id="${filterName}">${filterName}</button>
+                    </c:if>
+                </c:forEach>
+                ${jobs}
+            </div>
+        </div>
+
         <div class="closed" id="servicePanel">
             <div id="servicePanel-tab">
                 Services
@@ -602,7 +599,8 @@
             }
         </script>
         <div id="loadingPanel"></div>
-        <div class="closed" id="displayPanel">
+        <div id="displayPanel-tab"></div>
+        <div id="displayPanel">
             <div id="displayPanel-contents">
                 <button id="modelButton">Display Model</button>
                 <button id="fullDiaplayButton">Toggle Full Model</button>
@@ -611,18 +609,17 @@
                 <div id="treeMenu"></div>                
             </div>
             <div id="displayPanel-actions-container">
-            <div id="displayPanel-actions">
-                <button id="backButton">Back</button>
-                <button id="forwardButton">Forward</button>
-                <div id="URISeachContainer" style="float:right;padding-left:10px;">
-                    Search
-                    <input type="text" name="Search" id="URISearchInput" placeholder="Enter URI">
-                    <input type="submit" id= "URISearchSubmit" value="Submit">
-                </div>
+                <div id="displayPanel-actions">
+                    <button id="backButton">Back</button>
+                    <button id="forwardButton">Forward</button>
+                    <div id="URISeachContainer" style="float:right;padding-left:10px;">
+                        Search
+                        <input type="text" name="Search" id="URISearchInput" placeholder="Enter URI">
+                        <input type="submit" id= "URISearchSubmit" value="Submit">
+                    </div>
 
-                <div id="actionForm"></div>
-            </div>
-            <div id="displayPanel-tab">^^^^^</div>
+                    <div id="actionForm"></div>
+                </div>
             </div>
         </div>        
         <div class="hide" id="hoverdiv_viz"></div>        
@@ -701,56 +698,55 @@
       </ul>
     </nav>
 
-<!-- TAG DIALOG -->
-<div id="tagDialog">
-  <div id="tagDialogBar">
-    <div id="tagDialogCloserBar">
-        <i id="tagDialogCloser" class="fa fa-times" aria-hidden="true"></i>
-    </div>
-  </div>
-  
-  <div id="tagDialogContent">
-    <div id="tagDialogLabelInputContainter">
-    <input type="text" name="labelInput" id="tagDialogLabelInput" placeholder="Enter label.">
-    </div>
-    
-    <div id="tagDialogColorInputContainer">
-      <div id="tagDialogColorInputLabel">
-        Select Color
-      </div>
-      
-      <div id="tagDialogColorSelectionTab">
+    <!-- TAG DIALOG -->
+    <div id="tagDialog">
+        <div id="tagDialogBar">
+            <div id="tagDialogCloserBar">
+                <i id="tagDialogCloser" class="fa fa-times" aria-hidden="true"></i>
+            </div>
+        </div>
 
-        <span class="colorBox" id="boxRed"> 
-        </span>
-        <span class="colorBox" id="boxOrange">
-        </span>
-        <span class="colorBox" id="boxYellow">
-        </span>
-        <span class="colorBox" id="boxGreen">
-        </span>
-        <span class="colorBox" id="boxBlue">
-        </span>
-        <span class="colorBox" id="boxPurple">
-        </span>
-      </div>
-    </div>
-    
-    <div id="tagDialogButtonContainer">
-      <button id="tagDialogCancel">
-        Cancel
-      </button>
-      
-      <button id="tagDialogOK">
-        Ok 
-      </button>
-    </div>
-  </div>
-</div>  
+        <div id="tagDialogContent">
+            <div id="tagDialogLabelInputContainter">
+                <input type="text" name="labelInput" id="tagDialogLabelInput" placeholder="Enter label.">
+            </div>
 
-<!-- TAG PANEL -->
-<div id="tag-panel"> 
-</div>    
+            <div id="tagDialogColorInputContainer">
+                <div id="tagDialogColorInputLabel">
+                    Select Color
+                </div>
+
+                <div id="tagDialogColorSelectionTab">
+
+                    <span class="colorBox" id="boxRed"> 
+                    </span>
+                    <span class="colorBox" id="boxOrange">
+                    </span>
+                    <span class="colorBox" id="boxYellow">
+                    </span>
+                    <span class="colorBox" id="boxGreen">
+                    </span>
+                    <span class="colorBox" id="boxBlue">
+                    </span>
+                    <span class="colorBox" id="boxPurple">
+                    </span>
+                </div>
+            </div>
+
+            <div id="tagDialogButtonContainer">
+                <button id="tagDialogCancel">
+                    Cancel
+                </button>
+
+                <button id="tagDialogOK">
+                    Ok
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAG PANEL -->
+    <div id="tag-panel"> 
+    </div>
 </body>
-
 </html>
