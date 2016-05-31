@@ -15,25 +15,23 @@ html{
 #displayPanel{
     float:right;
     background-color: #d0d0d0;    
-    min-height: calc(50%);
+    height: calc(100% - 37px);
     top: 37px;
     width: 25%;
-    position: absolute;
-    right:0;
-    border-left: 5px solid rgba(0, 0, 0, .05);
-    border-bottom: 5px solid rgba(0, 0, 0, .05);
+    position: fixed;
+    right: -25%;
     /*overflow: scroll; */
     z-index: 3;
     
-    -webkit-transition: top 0.5s ease-in-out;
-    transition: top 0.5s ease-in-out;
+    -webkit-transition: right 0.5s ease-in-out;
+    transition: right 0.5s ease-in-out;
 }
 
-#displayPanel.closed {
-    top: calc(-50% + 60px);
+#displayPanel.display-open {
+    right: 0px;
     
-    -webkit-transition: top 0.5s ease-in-out;
-    transition: top 0.5s ease-in-out;
+    -webkit-transition: right 0.5s ease-in-out;
+    transition: right 0.5s ease-in-out;
 }
 
 #displayPanel-contents {
@@ -42,22 +40,23 @@ html{
 }
 
 
-#displayPanel-tab {
-    background-color: rgba(0, 0, 0, .05);    
-    height: 20px;
-    width: 100%;
+#displayPanel-tab {    
     position: absolute;
-    bottom: 0;
+    right: 0px;
+    height: 100%;
+    width: 10px;
+    background-color: #555;
+    z-index: 5;
     
-    -webkit-transition: transform 1s ease-in-out;
-    transition: transform 1s ease-in-out;
+    -webkit-transition: right 0.5s ease-in-out;
+    transition: right 0.5s ease-in-out;
 }
 
-#displayPanel.closed #displayPanel-tab {
-    transform: rotateX(180deg);
+#displayPanel-tab.display-open {    
+    right: 25%;
     
-    -webkit-transition: transform 1s ease-in-out;
-    transition: transform 1s ease-in-out;
+    -webkit-transition: right 0.5s ease-in-out;
+    transition: right 0.5s ease-in-out;
 }
 
 #displayPanel-actions {    
@@ -82,10 +81,11 @@ html{
 .dropDownArrow {cursor:pointer;}
 /* Edit loading transition timer below */
 #viz{
-    width: calc(100% - 210px);
+    width: 100%;
     height: calc(100% - 37px);
-    float: right;
-    border-left: 20px solid rgba(0, 0, 0, .05);
+    position: absolute;
+    top: 37px;
+    left: 0px;
     
     -webkit-transition: opacity 2s ease-in;
     transition: opacity 2s ease-in;
@@ -129,7 +129,7 @@ body{
 }
 #treeMenu {
     min-height:150px;
-    max-height:250px;    
+    max-height:250px;
     overflow-y:scroll;
          overflow: -moz-scrollbars-vertical;
     clear:both;
@@ -138,7 +138,6 @@ body{
 
 #awsButton, #cancelButton {
     float: left;
-
 }
 
 .button-filter-select {
@@ -150,10 +149,10 @@ body{
 
 .current-filter {
     color: red;
-    background-color: rgba(0, 0, 0, .10)
+    background-color: rgba(0, 0, 0, .10);
 }
 
-#displayName{
+#displayName {
     text-align: center;
     visibility: visible;
     padding: 7px;
@@ -163,10 +162,10 @@ body{
 }
 
 #filterPanel {
-    position: absolute;
+    display: none;
+    position: relative;
     top: 37px;
-    left: 225px;
-    border-left: 5px solid rgba(0, 0, 0, .05);
+    left: 0px;
     z-index: 2;
 }
 
@@ -177,7 +176,6 @@ body{
     left: 0;
     height: calc(100% - 20px);
 }
-
 
 /*****for tag dialog *******/
 #tagDialogBar {

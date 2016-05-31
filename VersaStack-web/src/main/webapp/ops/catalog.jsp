@@ -121,36 +121,18 @@
             </div>
             <br>
             <button type="button" class="hide" id="button-service-cancel">Cancel</button>
-            <div id="service-specific">                
-            </div>
+            <div id="service-specific"></div>
+            
+            <!-- LOADING PANEL -->
             <div id="loading-panel"></div>
+            <!-- TAG PANEL -->
+            <div id="tag-panel"></div>
         </div>        
-        <!-- TAG PANEL -->
-        <div id="tag-panel"> 
-        </div>
         <!-- JS -->
         <script>
             $(function () {
                 setRefresh(10); 
                 
-                $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
-                    if (${user.isAllowed(1)}) {
-                        var element = document.getElementById("service1");
-                        element.classList.remove("hide");
-                    }
-                    if (${user.isAllowed(2)}) {
-                        var element = document.getElementById("service2");
-                        element.classList.remove("hide");
-                    }
-                    if (${user.isAllowed(3)}) {
-                        var element = document.getElementById("service3");
-                        element.classList.remove("hide");
-                    }
-                    if (${user.isAllowed(4)}) {
-                        var element = document.getElementById("service4");
-                        element.classList.remove("hide");
-                    }
-                });
                 $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", null);        
             });
             

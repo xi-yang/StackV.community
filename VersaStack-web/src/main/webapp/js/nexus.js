@@ -8,11 +8,17 @@
 
 $(function () {
     $("#nav").load("/VersaStack-web/navbar.html");
-   
-    if (systemReady()) {
-        document.getElementById("server-status").src="/VersaStack-web/img/online.png";
-        document.getElementById("server-status").alt="Ready";
-    }
+    $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
+        $(".pure-toggle-label").click(function (evt) {
+            $(".pure-toggle-label").toggleClass("toggle-open");
+            $(".pure-toggle-icon").toggleClass("toggle-open");
+
+            $("#sidebar-contents").toggleClass("sidebar-open");
+            $("#main-pane").toggleClass("sidebar-open");
+
+            evt.preventDefault();
+        });
+    });
 
     $(".button-service-select").click(function (evt) {
         $ref = "srvc/" + this.id.toLowerCase() + ".jsp #service-specific";
@@ -511,18 +517,6 @@ function addLink() {
 }
 
 // API CALLS
-
-
-function systemReady() {
-    var apiUrl = baseUrl + '/VersaStack-web/restapi/service/ready';
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        complete: function (result) {
-            return result;
-        }
-    });
-}
 
 function checkInstance(uuid) {
     var apiUrl = baseUrl + '/VersaStack-web/restapi/service/' + uuid + '/status';
