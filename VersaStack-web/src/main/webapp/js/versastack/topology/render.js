@@ -114,12 +114,20 @@ define([
     var didDrag = false;
     var highlightedNode = null;
     var previousHighlight = null;
+    
+    var serviceHighlightedNodes = [];
+    var previousHighlightedNodes = [];
+    
     var lastMouse;
-    var switchPopup = null;
+    var switchPopup = {};
     /**@param {outputApi} outputApi
      * @param {Model} model
+     * @param (fullSize) boolean
      **/
-    function doRender(outputApi, model) {
+    function doRender(outputApi, model, fullSize) {
+        // default parameter
+        var fullSize = typeof fullSize !== 'undefined' ?  fullSize : true;
+
         var svgContainer = outputApi.getSvgContainer();
         if (firstRun) {
             firstRun = false;
@@ -166,42 +174,45 @@ define([
             switchSettings.DIALOG_BUFFER /= outputApi.getZoom();
             switchSettings.DIALOG_INNER_BUFFER /= outputApi.getZoom();
             switchSettings.DIALOG_TAB_TEXT_SIZE /= outputApi.getZoom();
-
-            svgContainer.on("click", function () {
-                //Clear the selected element.
-                //We check the event path so this only happens if we did not actually click on something
-                var clickedElem = d3.event.path[0];
-                if (clickedElem.id === "viz") {
-                    selectElement(null);
-                }
-            });
-            selectElement(null); // show top level topologies in display panel 
+            
+            if (fullSize) {
+                svgContainer.on("click", function () {
+                    //Clear the selected element.
+                    //We check the event path so this only happens if we did not actually click on something
+                    var clickedElem = d3.event.path[0];
+                    if (clickedElem.id === outputApi.svgContainerName) {
+                        selectElement(null);
+                    }
+                });
+                selectElement(null); // show top level topologies in display panel 
+            }
         } 
         
-        // Fixes bug of selectElement(null) having stale model after reloading 
-        svgContainer.on("click", function () {
-           //Clear the selected element.
-           //We check the event path so this only happens if we did not actually click on something
-           var clickedElem = d3.event.path[0];
-           if (clickedElem.id === "viz") {
-               selectElement(null);
-           }
-        });       
-        
-        if (!switchPopup) {
-            switchPopup = buildSwitchPopup();
+        if (fullSize) {
+            // Fixes bug of selectElement(null) having stale model after reloading 
+            svgContainer.on("click", function () {
+               //Clear the selected element.
+               //We check the event path so this only happens if we did not actually click on something
+               var clickedElem = d3.event.path[0];
+               if (clickedElem.id === outputApi.svgContainerName) {
+                   selectElement(null);
+               }
+            });       
+        }
+        if (!switchPopup[outputApi.svgContainerName]) {
+            switchPopup[outputApi.svgContainerName] = buildSwitchPopup();
         }
         redraw();
         var nodeList, edgeList;
         function redraw() {
-            svgContainer.select("#topology").selectAll("*").remove(); //Clear the previous drawing
-            svgContainer.select("#edge1").selectAll("*").remove(); //Clear the previous drawing
-            svgContainer.select("#edge2").selectAll("*").remove(); //Clear the previous drawing
-            svgContainer.select("#node").selectAll("*").remove(); //Clear the previous drawing
-            svgContainer.select("#anchor").selectAll("*").remove(); //Clear the previous drawing
-            svgContainer.select("#parentPort").selectAll("*").remove();
-            svgContainer.select("#switchPopup").selectAll("*").remove();
-            svgContainer.select("#volume").selectAll("*").remove();
+            svgContainer.select("#topology" + "_" + outputApi.svgContainerName).selectAll("*").remove(); //Clear the previous drawing
+            svgContainer.select("#edge1" + "_" + outputApi.svgContainerName).selectAll("*").remove(); //Clear the previous drawing
+            svgContainer.select("#edge2" + "_" + outputApi.svgContainerName).selectAll("*").remove(); //Clear the previous drawing
+            svgContainer.select("#node" + "_" + outputApi.svgContainerName).selectAll("*").remove(); //Clear the previous drawing
+            svgContainer.select("#anchor" + "_" + outputApi.svgContainerName).selectAll("*").remove(); //Clear the previous drawing
+            svgContainer.select("#parentPort" + "_" + outputApi.svgContainerName).selectAll("*").remove();
+            svgContainer.select("#switchPopup" + "_" + outputApi.svgContainerName).selectAll("*").remove();
+            svgContainer.select("#volume" + "_" + outputApi.svgContainerName).selectAll("*").remove();
             
             nodeList = model.listNodes();
             edgeList = model.listEdges();
@@ -223,15 +234,17 @@ define([
                     if (!n.volumePopup) {
                         n.volumePopup = buildVolumeDisplayPopup(n);
                     }
-
-                    n.svgNode = svgContainer.select("#node").append("image")
+                    n.svgNode = svgContainer.select("#node" + "_" + outputApi.svgContainerName).append("image")
                             .attr("xlink:href", n.getIconPath())
                             .on("click", onNodeClick.bind(undefined, n))
                             .on("dblclick", onNodeDblClick.bind(undefined, n))
                             .on("mousemove", onNodeMouseMove.bind(undefined, n))
-                            .on("mouseleave", onNodeMouseLeave.bind(undefined, n))
-                            .on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n))
-                            .call(makeDragBehaviour(n));
+                            .on("mouseleave", onNodeMouseLeave.bind(undefined, n));                    
+                    if (fullSize) {
+                        n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));    
+                    } 
+                    n.svgNode.call(makeDragBehaviour(n));
+                    
                     setElementSize(n, false);
                     drawServices(n);
                     updateSvgChoordsNode(n);
@@ -254,29 +267,36 @@ define([
                 //render the convex hull surounding the decendents of n
                 var path = getTopolgyPath(n);
                 var color = settings.HULL_COLORS[n.getDepth() % settings.HULL_COLORS.length];
-                n.svgNode = svgContainer.select("#topology").append("path")
-                        .style("fill", color)
-                        .style("stroke", color)
-                        .style("stroke-width", settings.TOPOLOGY_SIZE + settings.TOPOLOGY_BUFFER * n.getHeight())
-                        .style("stroke-linejoin", "round")
-                        .style("opacity", settings.HULL_OPACITY)
-                        .attr("d", topologyPathToString(path))
-                        .on("click", onNodeClick.bind(undefined, n))
-                        .on("dblclick", onNodeDblClick.bind(undefined, n))
-                        .on("mousemove", onNodeMouseMove.bind(undefined, n))
-                        .on("mouseleave", onNodeMouseLeave.bind(undefined, n))
-                        .on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n))       
-                        .call(makeDragBehaviour(n));
-                n.svgNodeAnchor = svgContainer.select("#anchor").append("rect")
+                
+                 n.svgNode = svgContainer.select("#topology" + "_" + outputApi.svgContainerName).append("path")
+                    .style("fill", color)
+                    .style("stroke", color)
+                    .style("stroke-width", settings.TOPOLOGY_SIZE + settings.TOPOLOGY_BUFFER * n.getHeight())
+                    .style("stroke-linejoin", "round")
+                    .style("opacity", settings.HULL_OPACITY)
+                    .attr("d", topologyPathToString(path))
+                    .on("click", onNodeClick.bind(undefined, n))
+                    .on("dblclick", onNodeDblClick.bind(undefined, n))
+                    .on("mousemove", onNodeMouseMove.bind(undefined, n))
+                    .on("mouseleave", onNodeMouseLeave.bind(undefined, n));
+                if (fullSize) {
+                        n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));    
+                }
+                n.svgNode.call(makeDragBehaviour(n));
+                
+                n.svgNodeAnchor = svgContainer.select("#anchor" + "_" + outputApi.svgContainerName).append("rect")
                         .style("fill", "white")
                         .style("stroke", "black")
                         .style("stroke-width", settings.TOPOLOGY_ANCHOR_STROKE)
                         .on("click", onNodeClick.bind(undefined, n))
                         .on("dblclick", onNodeDblClick.bind(undefined, n))
                         .on("mousemove", onNodeMouseMove.bind(undefined, n))
-                        .on("mouseleave", onNodeMouseLeave.bind(undefined, n))
-                        .on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n))                
-                        .call(makeDragBehaviour(n));
+                        .on("mouseleave", onNodeMouseLeave.bind(undefined, n));  
+                if (fullSize) {
+                    n.svgNodeAnchor.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));                
+                }
+                n.svgNodeAnchor.call(makeDragBehaviour(n));
+                
                 setElementSize(n, false);
                 drawServices(n);
                 updateSvgChoordsNode(n);
@@ -292,7 +312,7 @@ define([
         
         /**@param {Node} n**/
         function drawServices(n) {
-            n.svgNodeServices = svgContainer.select("#node").append("g");
+            n.svgNodeServices = svgContainer.select("#node" + "_" + outputApi.svgContainerName).append("g");
             map_(n.services, /**@param {Service} service**/function (service) {
                 service.svgNode = n.svgNodeServices.append("image")
                         .attr("xlink:href", service.getIconPath())
@@ -305,27 +325,31 @@ define([
                         .on("click", onServiceClick.bind(undefined, service))
                         .on("dblclick", onNodeDblClick.bind(undefined, n))
                         .on("mousemove", onNodeMouseMove.bind(undefined, service))
-                        .on("mouseleave", onNodeMouseLeave.bind(undefined, service))
-                        .on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, service))             
-                        .call(makeDragBehaviour(n));
+                        .on("mouseleave", onNodeMouseLeave.bind(undefined, service));
+
+                if (fullSize) {
+                    service.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, service));
+                }    
+                service.svgNode.call(makeDragBehaviour(n));
+
                 setElementSize(service, false);
             });
             updateSvgChoordsService(n);
         }
 
         function drawPopups() {
-            svgContainer.select("#dialogBox").selectAll("*").remove();
-            svgContainer.select("#port").selectAll("*").remove();
-            svgContainer.select("#parentPort").selectAll("*").remove();
+            svgContainer.select("#dialogBox" + "_" + outputApi.svgContainerName).selectAll("*").remove();
+            svgContainer.select("#port" + "_" + outputApi.svgContainerName).selectAll("*").remove();
+            svgContainer.select("#parentPort" + "_" + outputApi.svgContainerName).selectAll("*").remove();
 
-            svgContainer.select("#volumeDialogBox").selectAll("*").remove();
-            svgContainer.select("#volume").selectAll("*").remove();
+            svgContainer.select("#volumeDialogBox" + "_" + outputApi.svgContainerName).selectAll("*").remove();
+            svgContainer.select("#volume" + "_" + outputApi.svgContainerName).selectAll("*").remove();
     
             map_(nodeList, function (n) {
                 n.portPopup.render();
                 n.volumePopup.render();
             });
-            switchPopup.render();
+            switchPopup[outputApi.svgContainerName].render();
         }
 
         /**@param {Node} n**/
@@ -571,7 +595,8 @@ define([
                         //However, we also want it to continue tracking us.
                         outputApi.setHoverLocation(e.clientX, e.clientY);
                         drawHighlight();
-                        switchPopup.render();
+                        highlightServiceElements();
+                        switchPopup[outputApi.svgContainerName].render();
                         //fix all edges
                         map_(edgeList, updateSvgChoordsEdge);
                     })
@@ -589,15 +614,15 @@ define([
 
         /**@param {Edge} e**/
         function drawEdge(e) {
-            e.svgNode = svgContainer.select("#edge1").append("line")
+            e.svgNode = svgContainer.select("#edge1" + "_" + outputApi.svgContainerName).append("line")
                     .style("stroke", settings.EDGE_COLOR)
                     .style("stroke-width", settings.EDGE_WIDTH);
-            e.svgLeadLeft = svgContainer.select("#edge2").append("line")
+            e.svgLeadLeft = svgContainer.select("#edge2" + "_" + outputApi.svgContainerName).append("line")
                     .style("stroke", settings.EDGE_COLOR)
                     .style("stroke-width", settings.EDGE_WIDTH)
                     .style("visibility", "hidden")
                     .attr("stroke-linecap", "round");
-            e.svgLeadRight = svgContainer.select("#edge2").append("line")
+            e.svgLeadRight = svgContainer.select("#edge2" + "_" + outputApi.svgContainerName).append("line")
                     .style("stroke", settings.EDGE_COLOR)
                     .style("stroke-width", settings.EDGE_WIDTH)
                     .style("visibility", "hidden")
@@ -625,29 +650,33 @@ define([
             }
             highlightedNode = n;
             drawHighlight();
-            outputApi.setDisplayName(n.getName());
-            /**@type {DropDownTree} displayTree**/
-            var displayTree = outputApi.getDisplayTree();
-            displayTree.clear();
-            var e = model.elementMap[n.getName()];
-            e.populateProperties(displayTree);
+            if (fullSize) {
+                outputApi.setDisplayName(n.getName());
+                /**@type {DropDownTree} displayTree**/
+                var displayTree = outputApi.getDisplayTree();
+                 displayTree.clear();
+                var e = model.elementMap[n.getName()];
+               e.populateProperties(displayTree);
             
-            if (e.misc_elements.length > 0 )
-                displayTree.addChild("", "Separator", null);
+                if (e.misc_elements.length > 0 )
+                    displayTree.addChild("", "Separator", null);
 
-            e.populateTreeMenu(displayTree);
-            displayTree.addToHistory(e.getName(), "Node");
-            //console.log("API: " + API);
-            //if (API === undefined)
-               //console.log("i am undefined: ");
-            displayTree.draw();
-            displayTree.topViewShown = false;            
+                 e.populateTreeMenu(displayTree);
+                 displayTree.addToHistory(e.getName(), "Node");
+                //console.log("API: " + API);
+                //if (API === undefined)
+                   //console.log("i am undefined: ");
+                displayTree.draw();
+                displayTree.topViewShown = false;    
+            }
             // Only show these popups if there are acutally ports and volumes 
             if (n.ports.length !== 0) 
                 n.portPopup.toggleVisible();
             if (n.volumes.length !== 0)
                  n.volumePopup.toggleVisible();
             drawPopups();
+            highlightServiceElements(); // show stuff that was highlighting when it has an svg node 
+
             map_(edgeList, updateSvgChoordsEdge);
             selectElement(n);
             selectedNode = n;
@@ -670,28 +699,30 @@ define([
             }
             highlightedNode = n;
             drawHighlight();
-            outputApi.setDisplayName(n.getName());
-            var displayTree = outputApi.getDisplayTree();
-            displayTree.clear();
-            var e = model.elementMap[n.getName()];
-            e.populateProperties(displayTree);
-            
-            if (e.misc_elements.length > 0 )
-             displayTree.addChild("", "Separator", null);
+            if (fullSize) {
+                outputApi.setDisplayName(n.getName());
+                var displayTree = outputApi.getDisplayTree();
+                displayTree.clear();
+                var e = model.elementMap[n.getName()];
+                e.populateProperties(displayTree);
 
-            e.populateTreeMenu(displayTree);
-            displayTree.addToHistory(e.getName(), "Service");
-            //console.log("API: " + API);
-            //if (API === undefined)
-               //console.log("i am undefined: ");            
-            displayTree.draw();
-            displayTree.topViewShown = false;
+                if (e.misc_elements.length > 0 )
+                 displayTree.addChild("", "Separator", null);
+
+                e.populateTreeMenu(displayTree);
+                displayTree.addToHistory(e.getName(), "Service");
+                //console.log("API: " + API);
+                //if (API === undefined)
+                   //console.log("i am undefined: ");            
+                displayTree.draw();
+                displayTree.topViewShown = false;
+            }
             if (n.getTypeBrief() === "SwitchingService") {
 
-                if (switchPopup.hostNode === n) {
-                    switchPopup.clear();
+                if (switchPopup[outputApi.svgContainerName].hostNode === n) {
+                    switchPopup[outputApi.svgContainerName].clear();
                 } else {
-                    switchPopup.clear()
+                    switchPopup[outputApi.svgContainerName].clear()
                             .setOffset(settings.DIALOG_OFFSET_X, -settings.DIALOG_OFFSET_Y)
                             .setHostNode(n)
                             .render();
@@ -699,7 +730,56 @@ define([
 
             }
         }
+        
+        function setServiceHighlights(x){          
+            serviceHighlightedNodes = x;
+        }
+        
+        function removeServiceHighlights() {
+            serviceHighlightedNodes = [];
+            previousHighlightedNodes = [];
 
+        }
+        
+        function highlightServiceElements(){
+            if (fullSize) {
+                if (previousHighlightedNodes !== []) {
+
+                    for (var i in previousHighlightedNodes) {
+                        previousHighlightedNodes[i].remove();
+                    }
+                    previousHighlightedNodes = [];
+                }
+
+                for (var i in serviceHighlightedNodes) {
+                    var type = serviceHighlightedNodes[i].getType();
+
+                    if (type === "Port") {
+                        //serviceHighlightedNodes[i].ancestorNode.portPopup.setVisible(true);
+                        //drawPopups();                
+                    } else if (type === "Volume") {
+                        //serviceHighlightedNodes[i].parentNode.volumePopup.setVisible(true);
+                        //drawPopups();
+                    }
+
+                    if (serviceHighlightedNodes[i] && serviceHighlightedNodes[i].svgNode) {
+
+                        var toAppend = serviceHighlightedNodes[i].svgNode.node().cloneNode();
+                        previousHighlightedNodes.push(d3.select(toAppend)
+                                .style("filter", "url(#subnetHighlight)")
+                                .style("opacity", "1")
+                                .attr("pointer-events", "none"));
+                        var parentNode = serviceHighlightedNodes[i].svgNode.node().parentNode;
+                        if (parentNode) {
+                            //If we are coming out of a fold, the parentNode might no longer exist
+                            parentNode.appendChild(toAppend);
+                        }
+                    }                
+                }           
+                map_(edgeList, updateSvgChoordsEdge);         
+            }
+        }
+        
         function drawHighlight() {
             if (previousHighlight) {
                 previousHighlight.remove();
@@ -721,54 +801,56 @@ define([
                 console.log("Trying to highlight an element without an svgNode");
             }
         }
-
+        
         function selectElement(elem) {
-            if (!elem) {
-                //deselect element
-                outputApi.setDisplayName("Topologies");
-                var displayTree = outputApi.getDisplayTree();
-                outputApi.getDisplayTree().clear();
-                // Tried to optimize where I can by saving the topLevelTopologies
-                // here, still some delay. 
-                // Changing everything so that you only populate the display
-                // tree when the drop down node is clicked, how long would that take? 
-//               if ( typeof selectElement.topLevelTopologies === 'undefined' ) {
-                        // It has not... perform the initialization
-                       var topLevelTopologies = [];
-                        for (var key in model.elementMap) {
-                            var e = model.elementMap[key];
-                            if (e.getType() === "Topology" && e.topLevel) {
-                                topLevelTopologies.push(e);                                
-                                var child = displayTree.addChild(e.getName(), "Element", e);
-                                e.populateTreeMenu(child);
+            if (fullSize) {
+                if (!elem) {
+                    //deselect element
+                    outputApi.setDisplayName("Topologies");
+                    var displayTree = outputApi.getDisplayTree();
+                    outputApi.getDisplayTree().clear();
+                    // Tried to optimize where I can by saving the topLevelTopologies
+                    // here, still some delay. 
+                    // Changing everything so that you only populate the display
+                    // tree when the drop down node is clicked, how long would that take? 
+    //               if ( typeof selectElement.topLevelTopologies === 'undefined' ) {
+                            // It has not... perform the initialization
+                           var topLevelTopologies = [];
+                            for (var key in model.elementMap) {
+                                var e = model.elementMap[key];
+                                if (e.getType() === "Topology" && e.topLevel) {
+                                    topLevelTopologies.push(e);                                
+                                    var child = displayTree.addChild(e.getName(), "Element", e);
+                                    e.populateTreeMenu(child);
+                                }
                             }
-                        }
-                   // }
-//                } else {
-//                    for (var i in selectElement.topLevelTopologies) {
-//                        e = selectElement.topLevelTopologies[i];
-//                        var child = displayTree.addChild(e.getName(), "Element");
-//                        e.populateTreeMenu(child);
-//                        
-//                    }
-//                }
-                displayTree.draw();
-                console.log("versionalID: " + model.versionID);
-                //outputApi.getDisplayTree().clear();
-            } else {
-                outputApi.setDisplayName(elem.getName());
-                /**@type {DropDownTree} displayTree**/
-                var displayTree = outputApi.getDisplayTree();
-                displayTree.clear();
-                var e = model.elementMap[elem.getName()];
-                e.populateProperties(displayTree);
-                
-                if (e.misc_elements.length > 0 )
-                    displayTree.addChild("", "Separator", null);
+                       // }
+    //                } else {
+    //                    for (var i in selectElement.topLevelTopologies) {
+    //                        e = selectElement.topLevelTopologies[i];
+    //                        var child = displayTree.addChild(e.getName(), "Element");
+    //                        e.populateTreeMenu(child);
+    //                        
+    //                    }
+    //                }
+                    displayTree.draw();
+                    console.log("versionalID: " + model.versionID);
+                    //outputApi.getDisplayTree().clear();
+                } else {
+                    outputApi.setDisplayName(elem.getName());
+                    /**@type {DropDownTree} displayTree**/
+                    var displayTree = outputApi.getDisplayTree();
+                    displayTree.clear();
+                    var e = model.elementMap[elem.getName()];
+                    e.populateProperties(displayTree);
 
-                e.populateTreeMenu(displayTree);
-                e.showRelationships(displayTree);
-                displayTree.draw();
+                    if (e.misc_elements.length > 0 )
+                        displayTree.addChild("", "Separator", null);
+
+                    e.populateTreeMenu(displayTree);
+                    e.showRelationships(displayTree);
+                    displayTree.draw();
+                }
             }
             highlightedNode = elem;
             drawHighlight();
@@ -936,7 +1018,9 @@ define([
            // eventually we want to use type their type for this , not a given type. 
            var element = model.elementMap[name];
            if (element === undefined) {
-               alert("Element not found. Please enter valid URN.");
+               if (fullSize) {
+                   alert("Element not found. Please enter valid URN.");
+               }
            } else {
                 type = element.getType();
                 
@@ -944,13 +1028,14 @@ define([
                  case "Topology":
                  case "Node":
                      onNodeClick(model.nodeMap[name]);
-                     outputApi.getDisplayTree().addToHistory(name, type);
-                     outputApi.getDisplayTree().topViewShown = false;
-
+                     if (fullSize) {
+                        outputApi.getDisplayTree().addToHistory(name, type);
+                        outputApi.getDisplayTree().topViewShown = false;
+                     }
                      console.log("i'm node: " + model.nodeMap[name].getName());
 
                      break;
-                 case "SwitchingServicHypervisorBypassInterfaceServicee":
+                 case "SwitchingService":
                  case "HypervisorService":
                  case "RoutingService":
                  case "VirtualCloudService":
@@ -965,31 +1050,36 @@ define([
                  case "NetworkObject":
                  case "Service":
                      onServiceClick(model.serviceMap[name]);
-                     outputApi.getDisplayTree().addToHistory(name, type);
-                     outputApi.getDisplayTree().topViewShown = false;
-
+                     if (fullSize) {
+                        outputApi.getDisplayTree().addToHistory(name, type);
+                        outputApi.getDisplayTree().topViewShown = false;
+                     }
                      console.log("i'm service");
                      break;
                  case "Port":
                  case "BidirectionalPort":
                      selectElement(model.portMap[name]);
-                     outputApi.getDisplayTree().addToHistory(name, type);  
-                     outputApi.getDisplayTree().topViewShown = false;
-
+                     if (fullSize) {
+                        outputApi.getDisplayTree().addToHistory(name, type);  
+                        outputApi.getDisplayTree().topViewShown = false;
+                     }
                      console.log("i'm port");
                      break;
                  case "Volume":
-                     selectElement(model.volumeMap[name]);     
-                     outputApi.getDisplayTree().addToHistory(name, type);   
-                     outputApi.getDisplayTree().topViewShown = false;
-
+                     selectElement(model.volumeMap[name]);    
+                     if (fullSize) {
+                        outputApi.getDisplayTree().addToHistory(name, type);   
+                        outputApi.getDisplayTree().topViewShown = false;
+                     }
                      console.log("i'm volume");
                      break;
                  default:
                      selectElement(model.elementMap[name]);
-                     outputApi.getDisplayTree().addToHistory(name, type);
-                     outputApi.getDisplayTree().topViewShown = false;
-
+                     
+                     if (fullSize) {
+                        outputApi.getDisplayTree().addToHistory(name, type);
+                        outputApi.getDisplayTree().topViewShown = false;
+                     }
                      console.log("I'm element");
                      break;
                }
@@ -1006,6 +1096,9 @@ define([
             map_(edgeList, updateSvgChoordsEdge);
         };
         API["clickNode"] = clickNode;
+        API["highlightServiceElements"] = highlightServiceElements;
+        API["setServiceHighlights"] = setServiceHighlights;
+        API["removeServiceHighlights"] = removeServiceHighlights;
     }
 
 

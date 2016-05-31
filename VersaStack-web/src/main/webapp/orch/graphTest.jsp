@@ -1,6 +1,7 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page errorPage = "/VersaStack-web/errorPage.jsp" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
 <jsp:setProperty name="user" property="*" />  
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
@@ -93,24 +94,48 @@
                     "local/versastack/topology/TagDialog"
                 ],
                         function (m, l, r, d3_, utils_, tree, c, td) {
-                            ModelConstructor = m;
-                            model = new ModelConstructor();
-                            model.init(1, drawGraph, null);
-                            layout = l;
-                            render = r;
-                            d3 = d3_;
-                            utils = utils_;
-                            map_ = utils.map_;
-                            DropDownTree = tree;
-                            ContextMenu = c;
-                            TagDialog = td;
-                            tagDialog = new TagDialog("${user.getUsername()}");
+                          $.ajax({
+                                   crossDomain: true,
+                                   type: "GET",
+                                   url: "/VersaStack-web/restapi/service/ready",
+                                   dataType: "text", 
 
-                            tagDialog.init();
-                            // possibly pass in map here later for all possible dialogs 
-                            contextMenu = new ContextMenu(d3, render.API, tagDialog);//, tagDialog);
-                            contextMenu.init();
-                            outputApi = new outputApi_(render.API, contextMenu);
+                                   success: function(data,  textStatus,  jqXHR ) {
+                                       if (data === "true")  {
+                                          //alert(textStatus);
+                                            $('#servicePanel-contents').removeClass("hide");                                     
+                                            layout = l;
+                                            render = r;
+                                            d3 = d3_;
+                                            utils = utils_;
+                                            map_ = utils.map_;
+                                            bsShowFadingMessage = utils.bsShowFadingMessage;
+                                            DropDownTree = tree;
+                                            ContextMenu = c; 
+                                            TagDialog = td;
+                                            tagDialog = new TagDialog("${user.getUsername()}");
+
+                                            tagDialog.init();
+                                            // possibly pass in map here later for all possible dialogs 
+                                            contextMenu = new ContextMenu(d3, render.API, tagDialog);//, tagDialog);
+                                            contextMenu.init();
+                                            
+                                            outputApi = new outputApi_(render.API, contextMenu, "viz");
+
+                                            ModelConstructor = m;
+                                            model = new ModelConstructor();
+                                            model.init(1, drawGraph.bind(undefined, outputApi, model), null);                                            
+                                       } else {
+                                           displayError("Visualization Unavailable", d3_);
+                                       }
+                                   },
+
+                                   error: function(jqXHR, textStatus, errorThrown ) {
+                                        console.log("Debugging: timeout at start..");
+                                        displayError("Visualization Unavailable", d3_);
+                                     //alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
+                                   }
+                            }); 
                         });
 
                 var request = new XMLHttpRequest();
@@ -132,23 +157,34 @@
                 request.send();
 
                 $("#loadingPanel").addClass("hide");
-                $("#hoverdiv").removeClass("hide");
+                $("#hoverdiv_viz").removeClass("hide");
+
                 $("#viz").attr("class", "");
 
                 buttonInit();
             }
+            
+            function displayError(error, d3_obj) {
+               d3_obj.select("#viz").append("text")
+                       .attr("x", $(window).width() / 4)
+                       .attr("y", $(window).height() / 2 )
+                       .attr("fill", "black")
+                       .attr("font-size", "80px")
+                       .text(error);
 
-            function drawGraph() {
+               $('#servicePanel-contents').removeClass("hide");
+               $('#servicePanel-contents').html("Service instances unavailable.").addClass('service-unready-message');                       
+            }
+            
+            function drawGraph(outputApi, model) {
                 var width = document.documentElement.clientWidth / settings.INIT_ZOOM;
                 var height = document.documentElement.clientHeight / settings.INIT_ZOOM;
                 //TODO, figure out why we need to call this twice
                 //If we do not, the layout does to converge as nicely, even if we double the number of iterations
                 layout.doLayout(model, null, width, height);
                 layout.doLayout(model, null, width, height);
-
+                
                 render.doRender(outputApi, model);
-
-
 //                animStart(30);
             }
             function reload() {
@@ -175,52 +211,6 @@
                     outputApi.renderApi.selectElement(null);
                 }, null);
 
-//                var request = new XMLHttpRequest();
-//                request.open("GET", "/VersaStack-web/restapi/model/");
-//
-//                request.setRequestHeader("Accept", "application/json");
-//                request.onload = function () {
-//                    var modelData = request.responseText;
-//
-//                    if (modelData.charAt(0) === '<') {
-//                        return;
-//                    }
-//
-//                    modelData = JSON.parse(modelData);
-//                    $.post("/VersaStack-web/ViewServlet", {newModel: modelData.ttlModel}, function (response) {
-//                        // handle response from your servlet.
-//                    });
-//                };
-//                request.send();
-
-                $("#loadingPanel").addClass("hide");
-                $("#hoverdiv").removeClass("hide");
-                $("#viz").attr("class", "");
-            }
-
-            function filter(viewName, viewModel) {
-                $("#loadingPanel").removeClass("hide");
-                $("#hoverdiv").addClass("hide");
-                $("#viz").attr("class", "loading");
-
-                var lockNodes = model.listNodes();
-                //var posistionLocks = {};
-                model = new ModelConstructor(model);
-                model.init(2, function () {
-                    var width = document.documentElement.clientWidth / outputApi.getZoom();
-                    var height = document.documentElement.clientHeight / outputApi.getZoom();
-                    //TODO, figure out why we need to call this twice
-                    //If we do not, the layout does to converge as nicely, even if we double the number of iterations
-                    layout.doLayout(model, lockNodes, width, height);
-                    layout.doLayout(model, lockNodes, width, height);
-
-                    render.doRender(outputApi, model);
-                }, viewModel);
-
-                $.post("/VersaStack-web/ViewServlet", {filterName: viewName, filterModel: viewModel.ttlModel}, function (response) {
-                    // handle response from your servlet.
-                });
-
                 $("#loadingPanel").addClass("hide");
                 $("#hoverdiv").removeClass("hide");
                 $("#viz").attr("class", "");
@@ -238,53 +228,16 @@
                     layout.stop();
                     //layout.force().gravity(1).charge(-900).start();
                     layout.testLayout(model, null, width, height);
-                    layout.testLayout(model, null, width, height);
-
-//                    var zoom = d3.behavior.zoom();
-//                    var viewCenter = [];
-//
-//                    viewCenter[0] = (-1)*zoom.translate()[0] + (0.5) * (  width/zoom.scale() );
-//                    viewCenter[1] = (-1)*zoom.translate()[1] + (0.5) * ( height/zoom.scale() );
-
+                    layout.testLayout(model, null, width, height); 
+                            
                     outputApi.resetZoom();
                     render.doRender(outputApi, model);
 
                     evt.preventDefault();
-                });
-                $("#stopButton").click(function (evt) {
-                    layout.stop();
-                });
-                $("#cancelButton").click(function (evt) {
-                    $("#actionForm").empty();
-
-                    $("#awsButton").toggleClass("hide");
-                    $("#cancelButton").toggleClass("hide");
-
-                    evt.preventDefault();
-                });
-                $("#refreshButton").click(function (evt) {
-                    reload();
-
-                    evt.preventDefault();
-                });
+                });               
 
                 $("#modelButton").click(function (evt) {
                     window.open('/VersaStack-web/modelView.jsp', 'newwindow', config = 'height=1200,width=400, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no');
-                });
-
-                $(".button-filter-select").click(function (evt) {
-                    $(".current-filter").removeClass("current-filter");
-
-                    var viewModels = ${user.getModels()};
-                    if (this.id === "nofilter") {
-                        reload();
-                    } else {
-                        filter(this.id, viewModels[this.id]);
-                    }
-
-                    $(this).addClass("current-filter");
-
-                    evt.preventDefault();
                 });
 
                 $("#displayPanel-tab").click(function (evt) {
@@ -347,13 +300,14 @@
             }
 
 
-            function outputApi_(renderAPI, contextMenu) {
+            function outputApi_(renderAPI, contextMenu, svg) {
                 var that = this;
                 this.renderApi = renderAPI;
                 this.contextMenu = contextMenu;
-
+                this.svgContainerName = svg;
+                
                 this.getSvgContainer = function () {
-                    return d3.select("#viz");
+                    return d3.select("#" + this.svgContainerName);
                 };
 
                 var displayTree = new DropDownTree(document.getElementById("treeMenu"));
@@ -410,7 +364,7 @@
                 };
 
                 this._updateTransform = function () {
-                    d3.select("#transform").
+                    d3.select("#transform" + "_" + this.svgContainerName).
                             attr("transform", "scale(" + zoomFactor + ")translate(" + offsetX + "," + offsetY + ")");
                 };
                 this._updateTransform();
@@ -424,14 +378,14 @@
                 };
 
                 this.setHoverText = function (str) {
-                    document.getElementById("hoverdiv").innerText = str;
+                    document.getElementById("hoverdiv" + "_" + this.svgContainerName).innerText = str;
                 };
                 this.setHoverLocation = function (x, y) {
-                    document.getElementById("hoverdiv").style.left = x + "px";
-                    document.getElementById("hoverdiv").style.top = y + 10 + "px";
+                    document.getElementById("hoverdiv" + "_" + this.svgContainerName).style.left = x + "px";
+                    document.getElementById("hoverdiv" + "_" + this.svgContainerName).style.top = y + 10 + "px";
                 };
                 this.setHoverVisible = function (vis) {
-                    document.getElementById("hoverdiv").style.visibility = vis ? "visible" : "hidden";
+                    document.getElementById("hoverdiv" + "_" + this.svgContainerName).style.visibility = vis ? "visible" : "hidden";
                 };
 
                 this.resetZoom = function () {   // @
@@ -440,8 +394,11 @@
                     offsetY = 0;
                     this._updateTransform();
                 };
-
-                var svg = document.getElementById("viz");
+                this.setZoom = function(zoom) {
+                    zoomFactor = zoom;
+                    this._updateTransform();
+                };
+                var svg = document.getElementById(this.svgContainerName);
                 svg.addEventListener("mousewheel", function (e) {
                     e.preventDefault();
                     //The OSX trackpad seems to produce scrolls two orders of magnitude large when using pinch to zoom,
@@ -550,37 +507,105 @@
 
         <div class="closed" id="servicePanel">
             <div id="servicePanel-tab">
-                Jobs
+                Services
             </div>
             <div id ="servicePanel-contents">
-                <table class="management-table" id="jobs-table">
+                <table id="service-instance-table">
                     <thead>
                         <tr>
+                            <th>Alias Name</th>                            
                             <th>Service</th>
-                            <th>Status</th>
+                            <th>Instance Status</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <c:forEach items="${serv.getJobStatuses()}" var="job">
-                            <tr>
-                                <td>${job.key}</td>
-                                <td>${job.value}</td>
+                        
+                        <c:forEach var="instance" items="${serv.instanceStatusCheck()}">
+                            <tr class="service-instance-item" id="${instance[1]}">
+                                <td>${instance[3]}</td>        
+                                <td>${instance[0]}</td>
+                                <td>${instance[2]}</td>
                             </tr>
                         </c:forEach>
+                            
                     </tbody>
                 </table>
             </div>
+            
         </div>
+        <script>                 
+            $(".service-instance-item").each(function() {
+                var that = this;
+                var DELAY = 700, clicks = 0, timer = null;
 
+                $( that ).click( function() {
+                    clicks++;  //count clicks
+
+                    if(clicks === 1) {                          
+                        timer = setTimeout(function() {
+                             clickServiceInstanceItem(that);
+                            clicks = 0;   
+                        }, DELAY);
+                    } else {
+                        clearTimeout(timer);    //prevent single-click action
+                        if ($(that).hasClass("service-instance-highlighted")) {
+                            $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
+                            render.API.setServiceHighlights([]);
+                            render.API.highlightServiceElements();                        
+                            clicks = 0;             //after action performed, reset counter
+                        } else {
+                            timer = setTimeout(function() {
+                                clickServiceInstanceItem(that);
+                                clicks = 0;   
+                            }, DELAY);                            
+                        }
+                    }
+                }).dblclick(function(e) {
+                    e.preventDefault();
+                });
+            });
+              
+              
+            function clickServiceInstanceItem(item) {
+                var UUID = $( item ).attr('id');
+
+                $.ajax({
+                    crossDomain: true,
+                    type: "GET",
+                    url: "/VersaStack-web/restapi/app/service/lastverify/" + UUID,
+                    dataType: "json", 
+
+                    success: function(data,  textStatus,  jqXHR ) {
+                         if (data.verified_addition === null) {
+                             bsShowFadingMessage("#servicePanel", "Data not found", "top", 1000);
+                         } else {
+                            $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
+                            $(item).addClass('service-instance-highlighted');
+
+                            var uaObj = JSON.parse(data.verified_addition);
+                            var result = model.makeSubModel([ uaObj  ]);
+                            var modelArr = model.getModelMapValues(result);
+
+                            render.API.setServiceHighlights(modelArr);
+                            render.API.highlightServiceElements();
+
+                         }
+                    },
+
+                    error: function(jqXHR, textStatus, errorThrown ) {
+                        //alert("Error getting status.");
+                        alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
+                    }
+               });                     
+            }
+        </script>
         <div id="loadingPanel"></div>
         <div id="displayPanel-tab"></div>
         <div id="displayPanel">
             <div id="displayPanel-contents">
-                <button id="refreshButton">Refresh</button>
                 <button id="modelButton">Display Model</button>
                 <button id="fullDiaplayButton">Toggle Full Model</button>
                 <button id="testButton">test</button> <!-- @ -->
-                <button id="stopButton">stop</button> <!-- @ -->
                 <div id="displayName"></div>
                 <div id="treeMenu"></div>                
             </div>
@@ -598,7 +623,7 @@
                 </div>
             </div>
         </div>        
-        <div class="hide" id="hoverdiv"></div>        
+        <div class="hide" id="hoverdiv_viz"></div>        
 
         <svg class="loading" id="viz">
         <defs>
@@ -619,6 +644,19 @@
                        0 0 0 1 0" />
         <feComposite operator="out" in="a" in2="SourceGraphic"/>
     </filter>
+    
+<filter id="serviceHighlightOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+   <feFlood flood-color="#66ff66" result="base" />
+   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+   <feColorMatrix result="mask" in="bigger" type="matrix"
+      values="0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 1 0" />
+   <feComposite result="drop" in="base" in2="mask" operator="in" />
+   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+</filter>
+    
     <filter id="subnetHighlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
         <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
         <feMorphology operator="dilate" radius="1"/>
@@ -636,29 +674,29 @@
     <!--We nest a g in here because the svg tag itself cannot do transforms
         we separate topologies, edges, and nodes to create an explicit z-order
     -->
-    <g id="transform">
-    <g id="topology"/>
-    <g id="edge1"/>
-    <g id="anchor"/>
-    <g id="node"/>
-    <g id="dialogBox"/>
-    <g id="volumeDialogBox"/>
-    <g id="switchPopup"/>
-    <g id="parentPort"/>
-    <g id="edge2" />
-    <g id="port"/>
-    <g id="volume"/>
+    <g id="transform_viz">
+    <g id="topology_viz"/>
+    <g id="edge1_viz"/>
+    <g id="anchor_viz"/>
+    <g id="node_viz"/>
+    <g id="dialogBox_viz"/>
+    <g id="volumeDialogBox_viz"/>
+    <g id="switchPopup_viz"/>
+    <g id="parentPort_viz"/>
+    <g id="edge2_viz" />
+    <g id="port_viz"/>
+    <g id="volume_viz"/>
 
     </g>
     </svg>
-
-    <!-- CONTEXT MENU -->
-    <nav id="context-menu" class="context-menu">
-        <ul class="context-menu__items">
-            <li class="context-menu__item">
-                <a href="#" class="context-menu__link" data-action="Tag"><i class="fa  fa-tag"></i> Add Tag</a>
-            </li>
-        </ul>
+ 
+ <!-- CONTEXT MENU -->
+  <nav id="context-menu" class="context-menu">
+      <ul class="context-menu__items">
+        <li class="context-menu__item">
+          <a href="#" class="context-menu__link" data-action="Tag"><i class="fa  fa-tag"></i> Add Tag</a>
+        </li>
+      </ul>
     </nav>
 
     <!-- TAG DIALOG -->
