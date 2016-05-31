@@ -1018,7 +1018,9 @@ define([
            // eventually we want to use type their type for this , not a given type. 
            var element = model.elementMap[name];
            if (element === undefined) {
-                    alert("Element not found. Please enter valid URN.");
+               if (fullSize) {
+                   alert("Element not found. Please enter valid URN.");
+               }
            } else {
                 type = element.getType();
                 
