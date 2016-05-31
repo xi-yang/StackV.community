@@ -119,7 +119,7 @@ define([
     var previousHighlightedNodes = [];
     
     var lastMouse;
-    var switchPopup = null;
+    var switchPopup = {};
     /**@param {outputApi} outputApi
      * @param {Model} model
      * @param (fullSize) boolean
@@ -199,8 +199,8 @@ define([
                }
             });       
         }
-        if (!switchPopup) {
-            switchPopup = buildSwitchPopup();
+        if (!switchPopup[outputApi.svgContainerName]) {
+            switchPopup[outputApi.svgContainerName] = buildSwitchPopup();
         }
         redraw();
         var nodeList, edgeList;
@@ -349,7 +349,7 @@ define([
                 n.portPopup.render();
                 n.volumePopup.render();
             });
-            switchPopup.render();
+            switchPopup[outputApi.svgContainerName].render();
         }
 
         /**@param {Node} n**/
@@ -596,7 +596,7 @@ define([
                         outputApi.setHoverLocation(e.clientX, e.clientY);
                         drawHighlight();
                         highlightServiceElements();
-                        switchPopup.render();
+                        switchPopup[outputApi.svgContainerName].render();
                         //fix all edges
                         map_(edgeList, updateSvgChoordsEdge);
                     })
@@ -719,10 +719,10 @@ define([
             }
             if (n.getTypeBrief() === "SwitchingService") {
 
-                if (switchPopup.hostNode === n) {
-                    switchPopup.clear();
+                if (switchPopup[outputApi.svgContainerName].hostNode === n) {
+                    switchPopup[outputApi.svgContainerName].clear();
                 } else {
-                    switchPopup.clear()
+                    switchPopup[outputApi.svgContainerName].clear()
                             .setOffset(settings.DIALOG_OFFSET_X, -settings.DIALOG_OFFSET_Y)
                             .setHostNode(n)
                             .render();
@@ -1018,7 +1018,7 @@ define([
            // eventually we want to use type their type for this , not a given type. 
            var element = model.elementMap[name];
            if (element === undefined) {
-               alert("Element not found. Please enter valid URN.");
+                    alert("Element not found. Please enter valid URN.");
            } else {
                 type = element.getType();
                 
