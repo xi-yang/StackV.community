@@ -622,7 +622,6 @@
                 </div>
             </div>
         </div>        
-        <div class="hide" id="hoverdiv_viz"></div>        
 
         <svg class="loading" id="viz">
         <defs>
@@ -688,7 +687,8 @@
 
     </g>
     </svg>
- 
+   <div class="hide" id="hoverdiv_viz"></div>        
+
  <!-- CONTEXT MENU -->
   <nav id="context-menu" class="context-menu">
       <ul class="context-menu__items">
