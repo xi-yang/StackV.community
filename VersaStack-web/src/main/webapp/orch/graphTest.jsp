@@ -507,15 +507,6 @@
         <div id="sidebar">            
         </div>
             
-        <sql:setDataSource var="front_conn" driver="com.mysql.jdbc.Driver"
-                             url="jdbc:mysql://localhost:3306/frontend"
-                             user="front_view"  password="frontuser"/>
-
-        <sql:query dataSource="${front_conn}" sql="SELECT S.name, I.referenceUUID, I.alias_name FROM service S, service_instance I, user_info U     
-                                                  WHERE U.user_id = I.user_id AND S.service_id = I.service_id AND U.username = ?" var="serviceList">
-                  <sql:param value="${user.getUsername()}" />
-        </sql:query>            
-
         <div class="closed" id="servicePanel">
             <div id="servicePanel-tab">
                 Services
