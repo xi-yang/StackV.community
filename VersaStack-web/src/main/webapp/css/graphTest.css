@@ -237,9 +237,8 @@ body{
     /*position: absolute;*/
     position: fixed;
 
-/*    bottom: 0;*/
-    bottom:-25%;
-    left: calc(56% - 66px);   
+    bottom: 0;
+    left: 15%;   
     z-index: 2;
     min-width: 30%;
     min-height: 20%;
@@ -249,12 +248,12 @@ body{
     transition: bottom 0.5s ease-in-out;
     
 /*    height: 30%;*/
-    height: 50%;
+    height: 40%;
 }
 
 #servicePanel.closed {
     /*bottom: calc(-19% + 13px);*/
-    bottom: calc(-52% + 40px);
+    bottom: calc(-50% + 20px);
     -webkit-transition: bottom 0.5s ease-in-out;
     transition: bottom 0.5s ease-in-out;
 }
