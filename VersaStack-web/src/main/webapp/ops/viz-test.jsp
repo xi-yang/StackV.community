@@ -188,7 +188,7 @@
             }
             
             function renderModels() {
-                var UUID = prompt("Enter UUID", "1a33d50a-383c-4252-a67c-28e4d3fea0e6");
+                var UUID = prompt("Enter UUID", "");
 
                 $.ajax({
                     crossDomain: true,
@@ -243,6 +243,10 @@
                         //alert("Error getting status.");
                        // alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
                        alert("not found");
+                       showDiactivatedViz("va_viz");
+                       showDiactivatedViz("ur_viz");
+                       showDiactivatedViz("ua_viz");
+                       showDiactivatedViz("vr_viz");
                     }
                });                     
                 
