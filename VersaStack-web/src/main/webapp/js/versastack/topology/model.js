@@ -801,12 +801,16 @@ define([
                         var val = map[key];
                         val.name = key;
                         //console.log("JSON.stringify(element, null, 2): " + JSON.stringify(val, null, 2));
+                        var hostURN = baseModel.getHostNodeURN(key);
+                        if (hostURN) that.nodeMap[hostURN] = new Node(baseModel.nodeMap[hostURN]._backing, 
+                                                                          baseModel.nodeMap[hostURN].map);
+             
                         var types = val[values.type];
                         if (!types) {
-                            var hostURN = baseModel.getHostNodeURN(key);
+                           // var hostURN = baseModel.getHostNodeURN(key);
                             var obj = baseModel.getBaseOrigin(key);
-                            if (hostURN) that.nodeMap[hostURN] = new Node(baseModel.nodeMap[hostURN]._backing, 
-                                                                          baseModel.nodeMap[hostURN].map);
+                           // if (hostURN) that.nodeMap[hostURN] = new Node(baseModel.nodeMap[hostURN]._backing, 
+                           //                                               baseModel.nodeMap[hostURN].map);
 
                             if (obj) {
                                 switch(obj.getType()){
