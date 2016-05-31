@@ -524,17 +524,21 @@
                 <table id="service-instance-table">
                     <thead>
                         <tr>
+                            <th>Alias Name</th>                            
                             <th>Service</th>
-                            <th>Alias Name</th>
+                            <th>Instance Status</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <c:forEach items="${serviceList.rows}" var="service">
-                            <tr class="service-instance-item" id="${service.referenceUUID}">
-                                <td>${service.name}</td>
-                                <td>${service.alias_name}</td>
+                        
+                        <c:forEach var="instance" items="${serv.instanceStatusCheck()}">
+                            <tr class="service-instance-item" id="${instance[1]}">
+                                <td>${instance[3]}</td>        
+                                <td>${instance[0]}</td>
+                                <td>${instance[2]}</td>
                             </tr>
                         </c:forEach>
+                            
                     </tbody>
                 </table>
             </div>
