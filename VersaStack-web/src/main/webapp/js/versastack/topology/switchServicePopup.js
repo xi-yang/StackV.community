@@ -197,7 +197,7 @@ define(["local/d3", "local/versastack/utils"],
 
 
                 this.render = function () {
-                    if (!this.hostNode) {
+                    if (!this.hostNode || this.hostNode.subnets.length === 0) {
                         return;
                     }
                     var container = this.svgContainer.select("#switchPopup" + "_" + outputApi.svgContainerName);
