@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost:3306
--- Generation Time: Jun 02, 2016 at 05:22 PM
+-- Generation Time: Jun 02, 2016 at 08:07 PM
 -- Server version: 5.5.42
 -- PHP Version: 5.6.7
 
@@ -168,7 +168,7 @@ CREATE TABLE `service_delta` (
   `type` varchar(60) COLLATE utf8_unicode_ci NOT NULL,
   `referenceUUID` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `delta` longtext COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -198,7 +198,7 @@ CREATE TABLE `service_instance` (
   `referenceUUID` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `alias_name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `service_state_id` int(11) DEFAULT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=46 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=48 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -233,6 +233,7 @@ DROP TABLE IF EXISTS `service_verification`;
 CREATE TABLE `service_verification` (
   `service_instance_id` int(11) NOT NULL,
   `verification_state` int(11) DEFAULT NULL,
+  `verification_run` int(11) NOT NULL DEFAULT '0',
   `delta_uuid` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `creation_time` varchar(45) COLLATE utf8_unicode_ci DEFAULT NULL,
   `verified_reduction` longtext COLLATE utf8_unicode_ci,
@@ -432,7 +433,7 @@ ALTER TABLE `service`
 -- AUTO_INCREMENT for table `service_delta`
 --
 ALTER TABLE `service_delta`
-  MODIFY `service_delta_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `service_delta_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=5;
 --
 -- AUTO_INCREMENT for table `service_history`
 --
@@ -442,7 +443,7 @@ ALTER TABLE `service_history`
 -- AUTO_INCREMENT for table `service_instance`
 --
 ALTER TABLE `service_instance`
-  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=46;
+  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=48;
 --
 -- AUTO_INCREMENT for table `service_state`
 --
