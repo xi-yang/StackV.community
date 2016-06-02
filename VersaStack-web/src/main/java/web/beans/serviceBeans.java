@@ -598,6 +598,10 @@ public class serviceBeans {
                 }
             }
             else if(driverType.equals("ops")){
+                String createPathExportTo = "";
+                String dependOn = "";
+                JSONObject connCriteriaValue = new JSONObject();
+                
                 for (String vm : vmList) {
                     String[] vmPara = vm.split("&");
                     //0:vm name.
@@ -636,8 +640,6 @@ public class serviceBeans {
                                         + "    a            mrs:NetworkAddress;\n    mrs:type     \"floating-ip\";\n"
                                         + "    mrs:value     \"" + addressString + "\".\n\n";
                                 
-                                String createPathExportTo = "";
-                                JSONObject connCriteriaValue = new JSONObject();
                                 for (int i = 0; i < sriovList.size(); i++) {
                                     JSONObject sriov = sriovList.get(i);
                                     
@@ -669,13 +671,14 @@ public class serviceBeans {
                                                     routeArr.add(rt);
                                                 }
                                             }
-                                            
+
                                             //sriov port_profile
                                             if (gwJSON.containsKey("from")) {
                                                 JSONArray fromArr = (JSONArray) gwJSON.get("from");
                                                 JSONObject fromJSON = (JSONObject) fromArr.get(0);
                                                 if (fromJSON.get("type").equals("port_profile")) {
                                                     //construct models;
+                                                    dependOn += "&lt;x-policy-annotation:action:ucs-sriov-stitch-external-" + vmPara[0] + "-sriov" + i + "&gt;, ";
                                                     svcDelta += "&lt;x-policy-annotation:action:ucs-sriov-stitch-external-" + vmPara[0] + "-sriov" + i + "&gt;\n"
                                                             + "    a            spa:PolicyAction ;\n"
                                                             + "    spa:type     \"MCE_UcsSriovStitching\" ;\n"
@@ -694,13 +697,14 @@ public class serviceBeans {
                                                             + "    }\"\"\" .\n\n";
                                                 }
                                             }
-                                            
+
                                             //sriov stitch_port
                                             if (gwJSON.containsKey("to")) {
                                                 JSONArray toArr = (JSONArray) gwJSON.get("to");
                                                 JSONObject toJSON = (JSONObject) toArr.get(0);
                                                 if (toJSON.get("type").equals("stitch_port")) {
                                                     //construct models;
+                                                    dependOn += "&lt;x-policy-annotation:action:ucs-" + vmPara[0] + "-sriov" + i + "-stitch&gt;, ";
                                                     svcDelta += "&lt;x-policy-annotation:action:ucs-" + vmPara[0] + "-sriov" + i + "-stitch&gt;\n"
                                                             + "    a            spa:PolicyAction ;\n"
                                                             + "    spa:type     \"MCE_UcsSriovStitching\" ;\n"
@@ -710,7 +714,7 @@ public class serviceBeans {
                                                             + "&lt;x-policy-annotation:data:" + vmPara[0] + "-sriov" + i + "-criteria&gt;\n"
                                                             + "    a            spa:PolicyData;\n"
                                                             + "    spa:type     \"JSON\";\n"
-                                                            + "    spa:value    \"\"\"{\n"
+                                                            + "    spa:format    \"\"\"{\n"
                                                             + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "\",\n"
                                                             + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn" + (String) gwJSON.get("name") + "%\n"
                                                             + "       \"mac_address\": \"" + mac + "\",\n"
@@ -719,33 +723,26 @@ public class serviceBeans {
                                                             + "    }\"\"\" .\n\n";
                                                     createPathExportTo += "&lt;x-policy-annotation:data:" + vmPara[0] + "-sriov" + i + "-criteria&gt;, ";
                                                     if (!connCriteriaValue.containsKey("urn:ogf:network:vo1_maxgigapop_net:link=conn" + (String) gwJSON.get("name"))) {
-                                                        String dest = (String) toJSON.get("value");
                                                         JSONObject vlanTag = new JSONObject();
-                                                        vlanTag.put("vlan_tag", dest.substring(dest.indexOf("?vlan") + 6));
+                                                        String dest = (String) toJSON.get("value");
+                                                        String vlan = "any";
+                                                        if(dest.contains("?vlan=")){
+                                                            dest = dest.substring(0, dest.indexOf("?vlan"));
+                                                            vlan = dest.substring(dest.indexOf("?vlan=") + 6);
+                                                        }
+                                                        vlanTag.put("vlan_tag", vlan);
                                                         JSONObject path = new JSONObject();
-                                                        path.put("urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0], vlanTag);
-                                                        path.put(dest.substring(0, dest.indexOf("?vlan")).replace("\\", ""), vlanTag);
+                                                        path.put(topoUri, vlanTag);
+                                                        path.put(dest.replace("\\", ""), vlanTag);
                                                         connCriteriaValue.put("urn:ogf:network:vo1_maxgigapop_net:link=conn" + (String) gwJSON.get("name"), path);
                                                     }
-                                               }
+                                                }
                                             }
                                             break;
                                         }
                                     }
                                 }
-                                
-                                if (!createPathExportTo.isEmpty()) {
-                                    svcDelta += "&lt;x-policy-annotation:action:create-path&gt;\n"
-                                            + "    a            spa:PolicyAction ;\n"
-                                            + "    spa:type     \"MCE_MPVlanConnection\" ;\n"
-                                            + "    spa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;\n"
-                                            + "    spa:exportTo " + createPathExportTo.substring(0, (createPathExportTo.length() - 2)) + ".\n"
-                                            + "\n"
-                                            + "&lt;x-policy-annotation:data:conn-criteria&gt;\n"
-                                            + "    a            spa:PolicyData;\n"
-                                            + "    spa:type     \"JSON\";\n"
-                                            + "    spa:value    \"\"\"" + connCriteriaValue.toString() + "\"\"\".\n\n";
-                                }
+
                             }
                         } catch (Exception ex) {
                             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
@@ -776,21 +773,42 @@ public class serviceBeans {
                             + "    spa:type     \"JSON\";\n    spa:format    \"\"\"{ "
                             + "\"place_into\": \"%$.subnets[" + sub + "].uri%\"}\"\"\" .\n\n";
                 }
+
+                if (!createPathExportTo.isEmpty()) {
+                    svcDelta += "&lt;x-policy-annotation:action:create-path&gt;\n"
+                            + "    a            spa:PolicyAction ;\n"
+                            + "    spa:type     \"MCE_MPVlanConnection\" ;\n"
+                            + "    spa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;\n"
+                            + "    spa:exportTo " + createPathExportTo.substring(0, (createPathExportTo.length() - 2)) + ".\n"
+                            + "\n"
+                            + "&lt;x-policy-annotation:data:conn-criteria&gt;\n"
+                            + "    a            spa:PolicyData;\n"
+                            + "    spa:type     \"JSON\";\n"
+                            + "    spa:value    \"\"\"" + connCriteriaValue.toString() + "\"\"\".\n\n";
+                }
+
+                if (!dependOn.isEmpty()) {
+                    svcDelta += "&lt;" + topoUri + ":vt&gt;\n"
+                            + "   a  nml:Topology;\n"
+                            + "   spa:type spa:Abstraction;\n"
+                            + "   spa:dependOn  " + dependOn.substring(0, (dependOn.length() - 2)) + ".\n\n";
+                }
+
             }
         }
         svcDelta += "&lt;x-policy-annotation:action:create-vpc&gt;\n"
                 + "    a           spa:PolicyAction ;\n"
                 + "    spa:type     \"MCE_VirtualNetworkCreation\" ;\n"
                 + "    spa:importFrom &lt;x-policy-annotation:data:vpc-criteria&gt; ";
-        svcDelta += exportTo.isEmpty() ? ".\n\n":";\n    spa:exportTo " + exportTo.substring(0, (exportTo.length() - 2)) + " .\n\n";
-        
+        svcDelta += exportTo.isEmpty() ? ".\n\n" : ";\n    spa:exportTo " + exportTo.substring(0, (exportTo.length() - 2)) + " .\n\n";
+
         svcDelta += "&lt;x-policy-annotation:data:vpc-criteria&gt;\n"
-                    + "    a            spa:PolicyData;\n"
-                    + "    spa:type     nml:Topology;\n"
-                    + "    spa:value    \"\"\"" + network.toString().replace("\\", "")
-                    + "\"\"\".\n\n"
-                    + "</modelAddition>\n\n"
-                    + "</serviceDelta>";
+                + "    a            spa:PolicyData;\n"
+                + "    spa:type     nml:Topology;\n"
+                + "    spa:value    \"\"\"" + network.toString().replace("\\", "")
+                + "\"\"\".\n\n"
+                + "</modelAddition>\n\n"
+                + "</serviceDelta>";
 
         try {
             PrintWriter out = new PrintWriter("/Users/rikenavadur/test.ttl");
