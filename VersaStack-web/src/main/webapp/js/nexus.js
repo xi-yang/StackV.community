@@ -8,6 +8,17 @@
 
 $(function () {
     $("#nav").load("/VersaStack-web/navbar.html");
+    $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
+        $(".pure-toggle-label").click(function (evt) {
+            $(".pure-toggle-label").toggleClass("toggle-open");
+            $(".pure-toggle-icon").toggleClass("toggle-open");
+
+            $("#sidebar-contents").toggleClass("sidebar-open");
+            $("#main-pane").toggleClass("sidebar-open");
+
+            evt.preventDefault();
+        });
+    });
 
     $(".button-service-select").click(function (evt) {
         $ref = "srvc/" + this.id.toLowerCase() + ".jsp #service-specific";
@@ -45,8 +56,8 @@ $(function () {
         window.document.location = $(this).data("href");
     });
     
-    $("#delta-table-header").click(function () {
-       $("#delta-table-body").toggleClass("hide"); 
+    $(".delta-table-header").click(function () {
+       $("#body-" + this.id).toggleClass("hide"); 
     });
 
     clearCounters();
@@ -960,37 +971,7 @@ function fl2pModerate(uuid){
 
 //**
 
-function templateModerate() {
-    var superstate = document.getElementById("instance-superstate").innerHTML;
-    var substate = document.getElementById("instance-substate").innerHTML;
 
-    if (superstate === 'Create') {
-        switch (substate) {
-            case 'READY':
-                $("#instance-cancel").toggleClass("hide");
-                break;
-
-            case 'INIT':
-                $("#instance-delete").toggleClass("hide");
-                break;
-
-            case 'FAILED':
-                $("#instance-delete").toggleClass("hide");
-                break;
-        }
-    }
-    if (superstate === 'Cancel') {
-        switch (substate) {
-            case 'READY':
-                $("#instance-delete").toggleClass("hide");
-                break;
-                
-            case 'FAILED':
-                $("#instance-delete").toggleClass("hide");
-                break;
-        }
-    }
-}
 
 /*
  
@@ -1061,7 +1042,9 @@ function reloadPage() {
     window.location.reload(true);
 }
 
-
+function reloadPanel(panelId) {
+    $('#' + panelId).load(document.URL +  ' #' + panelId);
+}
 
 var getUrlParameter = function getUrlParameter(sParam) {
     var sPageURL = decodeURIComponent(window.location.search.substring(1)),
@@ -1097,5 +1080,14 @@ function createCORSRequest(method, url) {
 
 // Helper method to parse the title tag from the response.
 function getTitle(text) {
-  return text.match('<title>(.*)?</title>')[1];
+    return text.match('<title>(.*)?</title>')[1];
 }
+
+function enableLoading() {
+    $("#main-pane").addClass("loading");
+}
+
+function disableLoading() {
+    $("#main-pane").removeClass("loading");
+}
+

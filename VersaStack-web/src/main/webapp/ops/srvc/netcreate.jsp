@@ -110,9 +110,11 @@
                                     <table class="management-table" id="net-custom-form">
                                         <thead>
                                             <tr>
-                                                <th>Custom</th>
-                                                <th><div id="custom-toggle"></div></th>
-                                        </tr>
+                                                <th>Service Alias</th>
+                                                <th>
+                                                    <input class="header-input" type="text" name="alias" required />
+                                                </th>
+                                            </tr>
                                         </thead>
                                         <tbody id="custom-fields">
                                             <!-- AWS -->
@@ -126,7 +128,7 @@
                                                             <c:forEach var="driver" items="${driverlist.rows}">
                                                                 <option value="${driver.topologyUri}">${driver.topologyUri}</option>
                                                             </c:forEach>
-                                                        </select>   
+                                                        </select>       
                                                     </td>
                                                 </tr>
                                                 <tr>
@@ -407,28 +409,9 @@
                 </c:otherwise>
             </c:choose>
         </div>
-        <!-- JS -->
-        <script>
-            $(function () {
-                $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
-                    if (${user.isAllowed(1)}) {
-                        var element = document.getElementById("service1");
-                        element.classList.remove("hide");
-                    }
-                    if (${user.isAllowed(2)}) {
-                        var element = document.getElementById("service2");
-                        element.classList.remove("hide");
-                    }
-                    if (${user.isAllowed(3)}) {
-                        var element = document.getElementById("service3");
-                        element.classList.remove("hide");
-                    }
-                    if (${user.isAllowed(4)}) {
-                        var element = document.getElementById("service4");
-                        element.classList.remove("hide");
-                    }
-                });
-            });
-        </script>        
+
+        <!-- TAG PANEL -->        
+        <div id="tag-panel"> 
+        </div>   
     </body>
 </html>

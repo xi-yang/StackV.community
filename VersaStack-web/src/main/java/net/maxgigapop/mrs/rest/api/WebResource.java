@@ -220,10 +220,12 @@ public class WebResource {
             }
 
             String serviceType = (String) inputJSON.get("type");
-            JSONObject dataJSON = (JSONObject) inputJSON.get("data");
+            String alias = (String) inputJSON.get("alias");
             String user = (String) inputJSON.get("user");
             String userID = "";
 
+            JSONObject dataJSON = (JSONObject) inputJSON.get("data");
+            
             // Find user ID.
             Connection front_conn;
             try {
@@ -263,7 +265,7 @@ public class WebResource {
                     paraMap = parseFlow(dataJSON, refUuid);
                     break;
                 default:
-            }
+            }            
 
             // Initialize service parameters.
             prep = front_conn.prepareStatement("SELECT service_id"
@@ -276,12 +278,13 @@ public class WebResource {
 
             // Install Instance into DB.
             prep = front_conn.prepareStatement("INSERT INTO frontend.service_instance "
-                    + "(`service_id`, `user_id`, `creation_time`, `referenceUUID`, `service_state_id`) VALUES (?, ?, ?, ?, ?)");
+                    + "(`service_id`, `user_id`, `creation_time`, `referenceUUID`, `alias_name`, `service_state_id`) VALUES (?, ?, ?, ?, ?, ?)");
             prep.setInt(1, serviceID);
             prep.setString(2, userID);
             prep.setTimestamp(3, timeStamp);
             prep.setString(4, refUuid);
-            prep.setInt(5, 1);
+            prep.setString(5, alias);
+            prep.setInt(6, 1);
             prep.executeUpdate();
             
             int instanceID = servBean.getInstanceID(refUuid);
@@ -808,7 +811,7 @@ public class WebResource {
                 front_connectionProps);
         PreparedStatement prep;
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 1; i <= 5; i++) {
             boolean redVerified = true, addVerified = true;
             URL url = new URL(String.format("%s/service/verify/%s", host, refUuid));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -833,10 +836,11 @@ public class WebResource {
                 verifyJSON = (JSONObject) obj;
             } catch (ParseException ex) {
                 Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+                throw new IOException("Parse Error within Verification: " + ex.getMessage());
             }           
             
             // Update verification results cache.
-            prep = front_conn.prepareStatement("UPDATE `service_verification` SET `delta_uuid`=?,`creation_time`=?,`verified_reduction`=?,`verified_addition`=?,`unverified_reduction`=?,`unverified_addition`=?,`reduction`=?,`addition`=? WHERE `service_instance_id`=?");
+            prep = front_conn.prepareStatement("UPDATE `service_verification` SET `delta_uuid`=?,`creation_time`=?,`verified_reduction`=?,`verified_addition`=?,`unverified_reduction`=?,`unverified_addition`=?,`reduction`=?,`addition`=?, `verification_run`=? WHERE `service_instance_id`=?");
             prep.setString(1, (String) verifyJSON.get("referenceUUID"));
             prep.setString(2, (String) verifyJSON.get("creationTime"));
             prep.setString(3, (String) verifyJSON.get("verifiedModelReduction"));
@@ -845,14 +849,16 @@ public class WebResource {
             prep.setString(6, (String) verifyJSON.get("unverifiedModelAddition"));
             prep.setString(7, (String) verifyJSON.get("reductionVerified"));
             prep.setString(8, (String) verifyJSON.get("additionVerified"));
-            prep.setInt(9, instanceID);
+            prep.setInt(9, i);
+            prep.setInt(10, instanceID);
             prep.executeUpdate();
 
-
-            if (verifyJSON.containsKey("reductionVerified") && ((String) verifyJSON.get("reductionVerified")).equals("false"))
+            if (verifyJSON.containsKey("reductionVerified") && (verifyJSON.get("reductionVerified") != null) && ((String) verifyJSON.get("reductionVerified")).equals("false")) {
                 redVerified = false;
-            if (verifyJSON.containsKey("additionVerified") && ((String) verifyJSON.get("additionVerified")).equals("false"))
+            } 
+            if (verifyJSON.containsKey("additionVerified") && (verifyJSON.get("additionVerified") != null) && ((String) verifyJSON.get("additionVerified")).equals("false")) {
                 addVerified = false;
+            }
 
             //System.out.println("Verify Result: " + result + "\r\n");
             if (redVerified && addVerified) {

@@ -443,7 +443,7 @@ public class AwsPush {
                         break;
                     }
                     try {
-                        Thread.sleep(5000L);
+                        Thread.sleep(10000L);
                     } catch (InterruptedException ex) {
                         ;
                     }
@@ -493,7 +493,7 @@ public class AwsPush {
                         break;
                     }
                     try {
-                        Thread.sleep(5000L);
+                        Thread.sleep(10000L);
                     } catch (InterruptedException ex) {
                         ;
                     }

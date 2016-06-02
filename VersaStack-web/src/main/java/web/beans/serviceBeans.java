@@ -955,7 +955,7 @@ public class serviceBeans {
         front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
-        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID, X.super_state FROM"
+        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID, X.super_state, I.alias_name FROM"
                 + " service S, service_instance I, service_state X WHERE S.service_id = I.service_id AND I.service_state_id = X.service_state_id");
         ResultSet rs1 = prep.executeQuery();
         while (rs1.next()) {
@@ -964,6 +964,7 @@ public class serviceBeans {
             String instanceName = rs1.getString("name");
             String instanceUUID = rs1.getString("referenceUUID");
             String instanceSuperState = rs1.getString("super_state");
+            String instanceAlias = rs1.getString("alias_name");
             if (!banList.contains(instanceName)) {
                 try {
                     URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
@@ -974,9 +975,11 @@ public class serviceBeans {
                     instanceList.add(instanceName);
                     instanceList.add(instanceUUID);
                     instanceList.add(instanceState);
+                    instanceList.add(instanceAlias);
 
                     retList.add(instanceList);
                 } catch (IOException ex) {
+                    logger.log(Level.INFO, "Instance Status Check Failed on UUID = {0}", instanceUUID);
                 }
             }
         }

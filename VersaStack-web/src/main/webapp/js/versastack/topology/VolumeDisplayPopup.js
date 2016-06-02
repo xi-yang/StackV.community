@@ -13,6 +13,7 @@ define(["local/d3", "local/versastack/utils"],
                 this.svgLine = null;
                 this.svgBubble = null;
                 this.color = "";
+                this.outputApi = outputApi;
                 /**@type Array.Port**/
                 //this.portColors = [];
                 //this.volumeEmptyColor = "";
@@ -134,9 +135,9 @@ define(["local/d3", "local/versastack/utils"],
                     }
                     this.setVisible(true);
                     //draw the ports
-                    var volumeContainer = this.svgContainer.select("#volume");
+                    var volumeContainer = this.svgContainer.select("#volume" + "_" + outputApi.svgContainerName);
                     //var parentPortContainer = this.svgContainer.select("#parentPort");
-                    var container = this.svgContainer.select("#volumeDialogBox");
+                    var container = this.svgContainer.select("#volumeDialogBox" + "_" + outputApi.svgContainerName);
 
                     var stack = [];
                     map_(this.hostNode.volumes, function (volume) {
@@ -178,6 +179,7 @@ define(["local/d3", "local/versastack/utils"],
                                         renderApi.drawHighlight();
                                         renderApi.layoutEdges();
                                     })
+                                    .on("contextmenu", that.outputApi.contextMenu.renderedElemContextListener.bind(undefined, volume))                                    
                                     .call(dragBehaviour);
                         })();
                     }
@@ -276,6 +278,7 @@ define(["local/d3", "local/versastack/utils"],
                             outputApi.setHoverLocation(e.clientX, e.clientY);
                             that.updateSvgChoords();
                             renderApi.drawHighlight();
+                            renderApi.highlightServiceElements();
                             renderApi.layoutEdges();
                         })
                         .on("dragstart", function () {

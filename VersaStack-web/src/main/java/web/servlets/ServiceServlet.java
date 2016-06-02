@@ -288,6 +288,7 @@ public class ServiceServlet extends HttpServlet {
         JSONObject dataJSON = new JSONObject();
         inputJSON.put("user", paraMap.get("username"));
         inputJSON.put("type", "netcreate");
+        inputJSON.put("alias", paraMap.get("alias"));
 
         JSONArray cloudArr = new JSONArray();
         JSONObject cloudJSON = new JSONObject();
@@ -643,6 +644,7 @@ public class ServiceServlet extends HttpServlet {
         JSONObject dataJSON = new JSONObject();
         inputJSON.put("user", paraMap.get("username"));
         inputJSON.put("type", "dnc");
+        inputJSON.put("alias", paraMap.get("alias"));
 
         //Process each link
         JSONArray linkArr = new JSONArray();
