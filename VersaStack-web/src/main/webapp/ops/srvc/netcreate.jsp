@@ -187,7 +187,7 @@
                                                                         </tr>
                                                                         <tr>
                                                                             <td><input type="text" name="subnet1-vm1-keypair" placeholder="Keypair Name"></td>
-                                                                            <td><input type="text" name="subnet1-vm1-security" placeholder="Security Name"></td>
+                                                                            <td><input type="text" name="subnet1-vm1-security" placeholder="Security Group"></td>
                                                                         </tr>
                                                                         <tr>
                                                                             <td><input type="text" name="subnet1-vm1-image" placeholder="Image Type"></td>
@@ -234,6 +234,34 @@
                                                     <td>Network CIDR</td>
                                                     <td><input type="text" name="netCidr" required/></td>
                                                 </tr>
+                                                <tr>
+                                                    <td>Gateway</td>
+                                                    <td>
+                                                        <div id="gateway-block">
+                                                            <table id="gateway1-table">
+                                                                <tbody>
+                                                                    <tr>
+                                                                        <td>Name</td>
+                                                                        <td><input type="text" name="gateway1"></td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td>From</td>
+                                                                        <td><input type="text" name="gateway1-from-value" placeholder="Value"></td>
+                                                                        <td><input type="text" name="gateway1-from-type" placeholder="Type"></td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td>To</td>
+                                                                        <td><input type="text" name="gateway1-to-value" placeholder="Value"></td>
+                                                                        <td><input type="text" name="gateway1-to-type" placeholder="Type"></td>
+                                                                    </tr>
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                        <div>
+                                                            <input class="button-register" id="gateway" type="button" value="Add Gateway" onClick="addGateway(this.id)">
+                                                        </div>
+                                                    </td>
+                                                </tr>
                                                 <!-- <tr>
                                                     <td>Route Table</td>
                                                     <td>
@@ -271,7 +299,7 @@
                                                             </div>
                                                             <div>
                                                                 <input class="button-register" id="subnet1-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">
-                                                            </div>
+                                                            </div>                                                            
                                                             <div id="subnet1-vm-block">
                                                                 <br>
                                                                 <table id="subnet1-vm1-table">                                                                    
@@ -282,7 +310,7 @@
                                                                         </tr>
                                                                         <tr>
                                                                             <td><input type="text" name="subnet1-vm1-keypair" placeholder="Keypair Name"></td>
-                                                                            <td><input type="text" name="subnet1-vm1-security" placeholder="Security Name"></td>
+                                                                            <td><input type="text" name="subnet1-vm1-security" placeholder="Security Group"></td>
                                                                         </tr>
                                                                         <tr>
                                                                             <td><input type="text" name="subnet1-vm1-image" placeholder="Image Type"></td>
@@ -297,9 +325,19 @@
                                                                             <td>
                                                                                 <div id="subnet1-vm1-sriov-block">
                                                                                     <div>
-                                                                                        <input type="text" name="subnet1-vm1-sriov1-dest" placeholder="SRIOV Destination">
                                                                                         <input type="text" name="subnet1-vm1-sriov1-mac" placeholder="SRIOV MAC Address">
                                                                                         <input type="text" name="subnet1-vm1-sriov1-ip" placeholder="SRIOV IP Address">
+                                                                                        <input type="text" name="subnet1-vm1-sriov1-gateway" placeholder="SRIOV Gateway">
+                                                                                    </div>
+                                                                                    <div id="subnet1-vm1-sriov1-route-block">
+                                                                                        <div>
+                                                                                            <input type="text" name="subnet1-vm1-sriov1-route1-from" placeholder="From">
+                                                                                            <input type="text" name="subnet1-vm1-sriov1-route1-to" placeholder="To">
+                                                                                            <input type="text" name="subnet1-vm1-sriov1-route1-next" placeholder="Next Hop">
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <input class="button-register" id="subnet1-vm1-sriov1-route" type="button" value="Add Route" onClick="addSRIOVRoute(this.id)">
                                                                                     </div>
                                                                                 </div>
                                                                                 <div>
@@ -307,7 +345,7 @@
                                                                                 </div>
                                                                             </td>
                                                                         </tr>
-                                                                        <tr>
+<!--                                                                        <tr>
                                                                             <td>Routes</td>
                                                                             <td>
                                                                                 <div id="subnet1-vm1-route-block">
@@ -321,7 +359,7 @@
                                                                                     <input class="button-register" id="subnet1-vm1-route" type="button" value="Add VM Route" onClick="addVMRoute(this.id)">
                                                                                 </div>
                                                                             </td>
-                                                                        </tr>
+                                                                        </tr>-->
                                                                     </tbody>                                                                    
                                                                 </table>
                                                             </div>
@@ -331,10 +369,6 @@
                                                         </div>
                                                     </td>
                                                 </tr>
-                                                <!--                                                <tr>
-                                                                                                    <td>Direct Connect</td>
-                                                                                                    <td><input type="text" name="conn-dest" placeholder="Destination" size="60" /><input type="text" name="conn-vlan" placeholder="VLAN" size="8" /></td>
-                                                                                                </tr>-->
                                                 <tr>
                                                     <td></td>
                                                     <td><input type="submit" name="custom" value="Submit" /><input class="button-register" type="button" value="Add Subnet" onClick="addSubnet('ops')"></td>
