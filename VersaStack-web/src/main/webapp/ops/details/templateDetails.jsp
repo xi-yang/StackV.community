@@ -138,12 +138,13 @@
                         </table>
                     </c:forEach>
 
-                    <sql:query dataSource="${front_conn}" sql="SELECT V.service_instance_id, V.creation_time, V.addition, V.reduction, V.verified_reduction, V.verified_addition, V.unverified_reduction, V.unverified_addition
+                    <sql:query dataSource="${front_conn}" sql="SELECT V.service_instance_id, V.verification_run, V.creation_time, V.addition, V.reduction, V.verified_reduction, V.verified_addition, V.unverified_reduction, V.unverified_addition
                                FROM service_verification V, service_instance I WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id" var="verificationlist">
                         <sql:param value="${param.uuid}" />
                     </sql:query>
 
                     <c:forEach var="verification" items="${verificationlist.rows}">
+                        <div id="verification-run" class="hide">${verification.verification_run}</div>
                         <div id="verification-time" class="hide">${verification.creation_time}</div>
                         <div id="verification-addition" class="hide">${verification.addition}</div>
                         <div id="verification-reduction" class="hide">${verification.reduction}</div>
@@ -270,11 +271,12 @@
             function instructionModerate() {
                 var subState = document.getElementById("instance-substate").innerHTML;
                 var verificationState = document.getElementById("instance-verification").innerHTML;
+                var verificationRun = document.getElementById("verification-run").innerHTML;
                 var blockString = "";
 
                 // State -1 - Error during validation/reconstruction
                 if ((subState === 'READY' || subState === 'FAILED') && verificationState === "") {
-                    blockString = "Service encountered an error during verification. Please hold for further instructions.";
+                    blockString = "Service encountered an error during verification. Please contact your technical supervisor for further instructions.";
                 }
                 // State 0 - Before Verify
                 else if (subState !== 'READY' && subState !== 'FAILED') {
@@ -282,7 +284,7 @@
                 }
                 // State 1 - Ready & Verifying
                 else if (subState === 'READY' && verificationState === '0') {
-                    blockString = "Service is still verifying.";
+                    blockString = "Service is verifying. (Run " + verificationRun + "/5)";
                 }
                 // State 2 - Ready & Verified
                 else if (subState === 'READY' && verificationState === '1') {
@@ -294,7 +296,7 @@
                 }
                 // State 4 - Failed & Verifying
                 else if (subState === 'FAILED' && verificationState === '0') {
-                    blockString = "Service is still verifying.";
+                    blockString = "Service is verifying. (Run " + verificationRun + "/5)";
                 }
                 // State 5 - Failed & Verified
                 else if (subState === 'FAILED' && verificationState === '1') {

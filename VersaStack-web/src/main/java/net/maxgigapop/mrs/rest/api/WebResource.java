@@ -870,7 +870,7 @@ public class WebResource {
                 front_connectionProps);
         PreparedStatement prep;
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 1; i <= 5; i++) {
             boolean redVerified = true, addVerified = true;
             URL url = new URL(String.format("%s/service/verify/%s", host, refUuid));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -899,7 +899,7 @@ public class WebResource {
             }           
             
             // Update verification results cache.
-            prep = front_conn.prepareStatement("UPDATE `service_verification` SET `delta_uuid`=?,`creation_time`=?,`verified_reduction`=?,`verified_addition`=?,`unverified_reduction`=?,`unverified_addition`=?,`reduction`=?,`addition`=? WHERE `service_instance_id`=?");
+            prep = front_conn.prepareStatement("UPDATE `service_verification` SET `delta_uuid`=?,`creation_time`=?,`verified_reduction`=?,`verified_addition`=?,`unverified_reduction`=?,`unverified_addition`=?,`reduction`=?,`addition`=?, `verification_run`=? WHERE `service_instance_id`=?");
             prep.setString(1, (String) verifyJSON.get("referenceUUID"));
             prep.setString(2, (String) verifyJSON.get("creationTime"));
             prep.setString(3, (String) verifyJSON.get("verifiedModelReduction"));
@@ -908,7 +908,8 @@ public class WebResource {
             prep.setString(6, (String) verifyJSON.get("unverifiedModelAddition"));
             prep.setString(7, (String) verifyJSON.get("reductionVerified"));
             prep.setString(8, (String) verifyJSON.get("additionVerified"));
-            prep.setInt(9, instanceID);
+            prep.setInt(9, i);
+            prep.setInt(10, instanceID);
             prep.executeUpdate();
 
             if (verifyJSON.containsKey("reductionVerified") && (verifyJSON.get("reductionVerified") != null) && ((String) verifyJSON.get("reductionVerified")).equals("false")) {

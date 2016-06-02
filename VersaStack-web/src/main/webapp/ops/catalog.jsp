@@ -102,7 +102,7 @@
                             <th></th>
                         </tr>
                     </thead>
-                    <tbody>                    
+                    <tbody>
                         <c:forEach var="service" items="${servlist.rows}">
                             <tr>
                                 <td>${service.name}</td>
@@ -110,7 +110,7 @@
                                 <td>
                                     <jsp:element name="button">
                                         <jsp:attribute name="class">button-service-select</jsp:attribute>
-                                        <jsp:attribute name="id">${service.filename}</jsp:attribute>                                           
+                                        <jsp:attribute name="id">${service.filename}</jsp:attribute>
                                         <jsp:body>Select</jsp:body>
                                     </jsp:element>
                                 </td>
@@ -127,7 +127,7 @@
             <div id="loading-panel"></div>
             <!-- TAG PANEL -->
             <div id="tag-panel"></div>
-        </div>        
+        </div>
         <!-- JS -->
         <script>
             $(function () {
