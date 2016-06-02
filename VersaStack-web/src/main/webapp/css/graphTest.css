@@ -129,7 +129,7 @@ body{
 }
 #treeMenu {
     min-height:150px;
-    max-height:250px;
+    max-height:90%;
     overflow-y:scroll;
          overflow: -moz-scrollbars-vertical;
     clear:both;
