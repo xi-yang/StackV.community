@@ -185,7 +185,7 @@
                                                                         </tr>
                                                                         <tr>
                                                                             <td><input type="text" name="subnet1-vm1-keypair" placeholder="Keypair Name"></td>
-                                                                            <td><input type="text" name="subnet1-vm1-security" placeholder="Security Name"></td>
+                                                                            <td><input type="text" name="subnet1-vm1-security" placeholder="Security Group"></td>
                                                                         </tr>
                                                                         <tr>
                                                                             <td><input type="text" name="subnet1-vm1-image" placeholder="Image Type"></td>
@@ -308,7 +308,7 @@
                                                                         </tr>
                                                                         <tr>
                                                                             <td><input type="text" name="subnet1-vm1-keypair" placeholder="Keypair Name"></td>
-                                                                            <td><input type="text" name="subnet1-vm1-security" placeholder="Security Name"></td>
+                                                                            <td><input type="text" name="subnet1-vm1-security" placeholder="Security Group"></td>
                                                                         </tr>
                                                                         <tr>
                                                                             <td><input type="text" name="subnet1-vm1-image" placeholder="Image Type"></td>
