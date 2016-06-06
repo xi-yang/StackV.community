@@ -621,7 +621,9 @@ public class WebResource {
                     // INTERFACES
                     if(vmJSON.containsKey("interfaces")){
                         JSONArray interfaceArr = (JSONArray) vmJSON.get("interfaces");
-                        vmString += "&" + interfaceArr.toString();
+                        if (!interfaceArr.isEmpty()) {
+                            vmString += "&" + interfaceArr.toString();
+                        }
                     }else
                         vmString += "& ";
 //                    HashMap<String, String> interfaceMap = new HashMap<>();
