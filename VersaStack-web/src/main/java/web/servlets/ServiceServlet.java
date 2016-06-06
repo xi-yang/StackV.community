@@ -398,7 +398,8 @@ public class ServiceServlet extends HttpServlet {
                                 }
                                 vmString += "keypair+" + paraMap.get("subnet" + i + "-vm" + j + "-keypair");
                             }
-                            vmJSON.put("type", vmString);
+                            if (!vmString.isEmpty())
+                                vmJSON.put("type", vmString);
 
                             // not implemented yet
                             JSONArray interfaceArr = new JSONArray();
