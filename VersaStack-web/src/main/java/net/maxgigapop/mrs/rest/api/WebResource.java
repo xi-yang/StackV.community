@@ -593,6 +593,7 @@ public class WebResource {
 
         // Parse Subnets.
         JSONArray subArr = (JSONArray) vcnJSON.get("subnets");
+        int vmCounter = 1;
         for (int i = 0; i < subArr.size(); i++) {
             JSONObject subJSON = (JSONObject) subArr.get(i);
 
@@ -602,7 +603,6 @@ public class WebResource {
             // Parse VMs.
             JSONArray vmArr = (JSONArray) subJSON.get("virtual_machines");
             if (vmArr != null) {
-                int vmCounter = 1;
                 for (Object vmEle : vmArr) {
                     //value format: "vm_name & subnet_index_number & type_detail & host & interfaces"
                     JSONObject vmJSON = (JSONObject) vmEle;
