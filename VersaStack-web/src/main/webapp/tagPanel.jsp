@@ -11,6 +11,8 @@
 <jsp:setProperty name="user" property="*" />  
 
         <link rel="stylesheet" href="/VersaStack-web/css/tagPanel.css">       
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
+
         <div class="closed" id="tagPanel" data-toggle="popover">
             <div id="tagPanel-tab">
                 Tags
@@ -51,9 +53,10 @@
             var colorBoxes = document.getElementsByClassName("filteredColorBox");
             var tagHTMLs = document.getElementsByClassName("tagPanel-labelItem");
             var that = this;
+            var userName;
             
             this.init = function() {
-                var userName = "${user.getUsername()}";
+                userName = "${user.getUsername()}";
                 // only do this if the user is logged in 
                 if(userName !== "") {
                     $.ajax({
@@ -113,8 +116,22 @@
                 var tag = document.createElement("li");
                 tag.classList.add("tagPanel-labelItem");
                 tag.classList.add("label-color-" + color.toLowerCase());
+                
+                var x = document.createElement("i");
+                x.classList.add("fa");
+                x.classList.add("fa-times");
+                x.classList.add("tagDeletionIcon");      
+                x.onclick = that.deleteTag.bind(undefined, label, tag, tagList);
+                
                 tag.innerHTML = label;
-                tag.onclick = function() {
+                tag.appendChild(x);
+
+                tag.onclick = function(e) {
+                    // Don't fire for events triggered by children. 
+                    if (e.target !== this)
+                        return;
+  
+
                     var textField = document.createElement('textarea');
                     textField.innerText = data;
                     document.body.appendChild(textField);
@@ -130,7 +147,35 @@
                 };
                 tagList.appendChild(tag);
             };
-    
+            
+            this.deleteTag = function (identifier, htmlElement, list) {
+                    $.ajax({
+                        crossDomain: true,
+                        type: "DELETE",
+                        url: "/VersaStack-web/restapi/app/label/" + userName + "/delete/" + identifier,
+
+                        success: function(data,  textStatus,  jqXHR ) {
+                            $("#tagPanel").popover({content: "Tag Deleted", placement: "top", trigger: "manual"});
+                            $("#tagPanel").popover("show");
+                            setTimeout(
+                              function(){$("#tagPanel").popover('hide');$("#tagPanel").popover('destroy');}, 
+                            1000);          
+                            list.removeChild(htmlElement);
+                        },
+
+                        error: function(jqXHR, textStatus, errorThrown ) {
+                            $("#tagPanel").popover({content: "Error deleting tag.", placement: "top", trigger: "manual"});
+                            $("#tagPanel").popover("show");
+                            setTimeout(
+                              function(){$("#tagPanel").popover('hide');$("#tagPanel").popover('destroy');}, 
+                            1000);          
+                            
+                           //alert(errorThrown + "\n"+textStatus);
+                           //alert("Error deleting tag.");
+                        }                  
+                    });                
+            };
+            
             this.init();
         })();
     </script>

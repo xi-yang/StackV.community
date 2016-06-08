@@ -96,3 +96,10 @@
 #boxBlue {background-color:blue;}
 #boxPurple {background-color:purple;}
 .colorBox-highlighted {    border: 2px solid black;}
+
+.tagDeletionIcon{
+    float: right;
+    margin-top: 1%;
+    margin-right: 1%;
+    cursor: pointer;    
+}
