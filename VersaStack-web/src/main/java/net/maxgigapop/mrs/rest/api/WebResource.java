@@ -30,6 +30,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.container.AsyncResponse;
@@ -165,6 +166,45 @@ public class WebResource {
             return "<<<Failed - " + ex.getMessage() + " - " + ex.getSQLState();
         }
         return "Added";
+    }
+    
+    @DELETE
+    @Path(value = "/label/{username}/delete/{identifier}")
+    public String deleteLabel(@PathParam(value = "username") String username, @PathParam(value = "identifier") String identifier) {
+        try {
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("DELETE FROM `frontend` .`label` WHERE username = ? AND identifier = ?"); 
+            prep.setString(1, username);
+            prep.setString(2, identifier);
+            prep.executeUpdate();
+        } catch (SQLException ex) {
+            return "<<<Failed - " + ex.getMessage() + " - " + ex.getSQLState();
+        }
+        return "Deleted";
+    }
+
+    @DELETE
+    @Path(value = "/label/{username}/clear")
+    public String clearLabels(@PathParam(value = "username") String username) {
+        try {
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("DELETE FROM `frontend`.`label` WHERE username = ? ");
+            prep.setString(1, username);
+            prep.executeUpdate();
+        } catch (SQLException ex) {
+            return "<<<Failed - " + ex.getMessage() + " - " + ex.getSQLState();
+        }
+        return "Cleared";
     }
 
     @GET
