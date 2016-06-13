@@ -630,13 +630,7 @@ public class WebResource {
 
         String parent = (String) vcnJSON.get("parent");
         paraMap.put("topoUri", parent);
-        if (parent.contains("aws") || parent.contains("amazon")) {
-            paraMap.put("driverType", "aws");
-        } else if (parent.contains("openstack")) {
-            paraMap.put("driverType", "os");
-        }
 
-        int vmCounter = 1;
         // Parse Subnets.
         JSONArray subArr = (JSONArray) vcnJSON.get("subnets");
         for (int i = 0; i < subArr.size(); i++) {
@@ -648,8 +642,9 @@ public class WebResource {
             // Parse VMs.
             JSONArray vmArr = (JSONArray) subJSON.get("virtual_machines");
             if (vmArr != null) {
+                int vmCounter = 1;
                 for (Object vmEle : vmArr) {
-                    //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name&host&floating_IP&sriov_destination&sriov_mac_address&sriov_ip_address&sriov_routes"
+                    //value format: "vm_name & subnet_index_number & type_detail & host & interfaces"
                     JSONObject vmJSON = (JSONObject) vmEle;
                                                                                 
                     // Name
@@ -657,79 +652,34 @@ public class WebResource {
                     // Subnet Index
                     vmString += "&" + (i + 1);
 
-                    // Image Type                   
-                    if (vmJSON.containsKey("image")) {
-
-                    } else {
-                        vmString += "& ";
-                    }
-
                     // TYPES
-                    if (vmJSON.containsKey("type")) {
-                        String typeString = (String) vmJSON.get("type");
-                        String typeArr[] = typeString.split(",");
-                        HashMap<String, String> typeMap = new HashMap<>();
-                        for (String type : typeArr) {
-                            String typeTemp[] = type.split("\\+");
-                            typeMap.put(typeTemp[0], typeTemp[1]);
-                        }
-
-                        // Instance Type
-                        if (typeMap.containsKey("instance")) {
-                            vmString += "&" + typeMap.get("instance");
-                        } else {
-                            vmString += "& ";
-                        }
-
-                        // Keypair Names
-                        if (typeMap.containsKey("keypair")) {
-                            vmString += "&" + typeMap.get("keypair");
-                        } else {
-                            vmString += "& ";
-                        }
-
-                        // Security Name
-                        if (typeMap.containsKey("secgroup")) {
-                            vmString += "&" + typeMap.get("secgroup");
-                        } else {
-                            vmString += "& ";
-                        }
-                    } else {
-                        vmString += "& & & ";
-                    }
+                    vmString += vmJSON.containsKey("type")? "&" + (String) vmJSON.get("type") : "& ";
 
                     // VM Host
-                    if (vmJSON.containsKey("host")) {
-
-                    } else {
-                        vmString += "& ";
-                    }
+                    vmString += vmJSON.containsKey("host")? "&" + (String) vmJSON.get("host") : "& ";
                     
                     // INTERFACES
-                    HashMap<String, String> interfaceMap = new HashMap<>();
-                    int SRIOVCounter = 1;
-                    if (vmJSON.containsKey("interfaces")) {
+                    if(vmJSON.containsKey("interfaces")){
                         JSONArray interfaceArr = (JSONArray) vmJSON.get("interfaces");
-                        for (Object obj : interfaceArr) {
-                            JSONObject interfaceJSON = (JSONObject) obj;
-                            
-                            String typeString = (String) interfaceJSON.get("type");
-                            String addressString = (String) interfaceJSON.get("address");
-                            if (typeString.equalsIgnoreCase("Ethernet")) {
-                                interfaceMap.put("float", addressString.split("\\+")[1]);
-                            } else if (typeString.equalsIgnoreCase("SRIOV")) {
-                                
-                            }                            
-                        }                        
-                    }
-                    
-                    // Floating IP
-                    if (interfaceMap.containsKey("float")) {
-                        vmString += "&" + interfaceMap.get("float");
-                    } else {
+                        vmString += "&" + interfaceArr.toString();
+                    }else
                         vmString += "& ";
-                    }
-                    
+//                    HashMap<String, String> interfaceMap = new HashMap<>();
+//                    int SRIOVCounter = 1;
+//                    if (vmJSON.containsKey("interfaces")) {
+//                        JSONArray interfaceArr = (JSONArray) vmJSON.get("interfaces");
+//                        for (Object obj : interfaceArr) {
+//                            JSONObject interfaceJSON = (JSONObject) obj;
+//                            
+//                            String typeString = (String) interfaceJSON.get("type");
+//                            String addressString = (String) interfaceJSON.get("address");
+//                            if (typeString.equalsIgnoreCase("Ethernet")) {
+//                                interfaceMap.put("float", addressString.split("\\+")[1]);
+//                            } else if (typeString.equalsIgnoreCase("SRIOV")) {
+//                                
+//                            }                            
+//                        }                        
+//                    }
                     paraMap.put("vm" + vmCounter++, vmString);
                 }
             }
@@ -800,21 +750,12 @@ public class WebResource {
         }
         paraMap.put("netRoutes", netRouteString);
 
-        // Parse Direct Connect.
-        JSONArray gateArr = (JSONArray) vcnJSON.get("gateways");
-        for (Object gateEle : gateArr) {
-            JSONObject gateJSON = (JSONObject) gateEle;
-            
-            if (((String) gateJSON.get("type")).contains("direct_connect")) {
-                JSONArray destArr = (JSONArray) gateJSON.get("to");
-                if (destArr != null) {
-                    JSONObject destJSON = (JSONObject) destArr.get(0);
-                    paraMap.put("directConn", (String) destJSON.get("value"));
-                }
-            }
-
+        // Parse Gateways.
+        if(vcnJSON.get("gateways") != null){
+            JSONArray gatewayArr = (JSONArray)vcnJSON.get("gateways");
+            paraMap.put("gateways", gatewayArr.toString());
         }
-
+            
         return paraMap;
     }
 
@@ -910,7 +851,7 @@ public class WebResource {
                 front_connectionProps);
         PreparedStatement prep;
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 1; i <= 5; i++) {
             boolean redVerified = true, addVerified = true;
             URL url = new URL(String.format("%s/service/verify/%s", host, refUuid));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -939,7 +880,7 @@ public class WebResource {
             }           
             
             // Update verification results cache.
-            prep = front_conn.prepareStatement("UPDATE `service_verification` SET `delta_uuid`=?,`creation_time`=?,`verified_reduction`=?,`verified_addition`=?,`unverified_reduction`=?,`unverified_addition`=?,`reduction`=?,`addition`=? WHERE `service_instance_id`=?");
+            prep = front_conn.prepareStatement("UPDATE `service_verification` SET `delta_uuid`=?,`creation_time`=?,`verified_reduction`=?,`verified_addition`=?,`unverified_reduction`=?,`unverified_addition`=?,`reduction`=?,`addition`=?, `verification_run`=? WHERE `service_instance_id`=?");
             prep.setString(1, (String) verifyJSON.get("referenceUUID"));
             prep.setString(2, (String) verifyJSON.get("creationTime"));
             prep.setString(3, (String) verifyJSON.get("verifiedModelReduction"));
@@ -948,7 +889,8 @@ public class WebResource {
             prep.setString(6, (String) verifyJSON.get("unverifiedModelAddition"));
             prep.setString(7, (String) verifyJSON.get("reductionVerified"));
             prep.setString(8, (String) verifyJSON.get("additionVerified"));
-            prep.setInt(9, instanceID);
+            prep.setInt(9, i);
+            prep.setInt(10, instanceID);
             prep.executeUpdate();
 
             if (verifyJSON.containsKey("reductionVerified") && (verifyJSON.get("reductionVerified") != null) && ((String) verifyJSON.get("reductionVerified")).equals("false")) {

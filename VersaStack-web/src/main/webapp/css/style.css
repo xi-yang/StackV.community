@@ -668,6 +668,7 @@ body {
 
 #main-pane.sidebar-open {
     opacity: .25;
+    margin-left: 0px;
 }
 
 /************
