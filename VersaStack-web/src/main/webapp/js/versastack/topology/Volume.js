@@ -18,6 +18,7 @@ define([
         /**@type Node**/
         //this.ancestorNode = null;
         //this.alias = null;
+        this._map = map; 
         
         this.isVisible = false;
         this.x = 0;
