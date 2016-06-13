@@ -79,7 +79,8 @@
             var d3;
             var utils;
             var DropDownTree;
-
+            var functionMap = {}; // stores objects for funcitonality such as ContextMenu, tag Dialog, etc 
+            
             var outputApi;
 
             function onload() {
@@ -115,8 +116,9 @@
                                             tagDialog = new TagDialog("${user.getUsername()}");
 
                                             tagDialog.init();
+                                            functionMap['Tag'] = tagDialog;
                                             // possibly pass in map here later for all possible dialogs 
-                                            contextMenu = new ContextMenu(d3, render.API, tagDialog);//, tagDialog);
+                                            contextMenu = new ContextMenu(d3, render.API, functionMap);//, tagDialog);
                                             contextMenu.init();
                                             
                                             outputApi = new outputApi_(render.API, contextMenu, "viz");
