@@ -240,7 +240,7 @@ define([
                             .on("dblclick", onNodeDblClick.bind(undefined, n))
                             .on("mousemove", onNodeMouseMove.bind(undefined, n))
                             .on("mouseleave", onNodeMouseLeave.bind(undefined, n));                    
-                    if (fullSize) {
+                    if (outputApi.contextMenu) {
                         n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));    
                     } 
                     n.svgNode.call(makeDragBehaviour(n));
@@ -279,7 +279,7 @@ define([
                     .on("dblclick", onNodeDblClick.bind(undefined, n))
                     .on("mousemove", onNodeMouseMove.bind(undefined, n))
                     .on("mouseleave", onNodeMouseLeave.bind(undefined, n));
-                if (fullSize) {
+                if (outputApi.contextMenu) {
                         n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));    
                 }
                 n.svgNode.call(makeDragBehaviour(n));
@@ -292,7 +292,7 @@ define([
                         .on("dblclick", onNodeDblClick.bind(undefined, n))
                         .on("mousemove", onNodeMouseMove.bind(undefined, n))
                         .on("mouseleave", onNodeMouseLeave.bind(undefined, n));  
-                if (fullSize) {
+                if (outputApi.contextMenu) {
                     n.svgNodeAnchor.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));                
                 }
                 n.svgNodeAnchor.call(makeDragBehaviour(n));
@@ -327,7 +327,7 @@ define([
                         .on("mousemove", onNodeMouseMove.bind(undefined, service))
                         .on("mouseleave", onNodeMouseLeave.bind(undefined, service));
 
-                if (fullSize) {
+                if (outputApi.contextMenu) {
                     service.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, service));
                 }    
                 service.svgNode.call(makeDragBehaviour(n));
@@ -650,7 +650,7 @@ define([
             }
             highlightedNode = n;
             drawHighlight();
-            if (fullSize) {
+            if (outputApi.getDisplayTree()) {
                 outputApi.setDisplayName(n.getName());
                 /**@type {DropDownTree} displayTree**/
                 var displayTree = outputApi.getDisplayTree();
@@ -668,6 +668,10 @@ define([
                    //console.log("i am undefined: ");
                 displayTree.draw();
                 displayTree.topViewShown = false;    
+                if (fullSize) {
+                    displayTree.open();
+                }
+                
             }
             // Only show these popups if there are acutally ports and volumes 
             if (n.ports.length !== 0) 
@@ -699,7 +703,7 @@ define([
             }
             highlightedNode = n;
             drawHighlight();
-            if (fullSize) {
+            if (outputApi.getDisplayTree()) {
                 outputApi.setDisplayName(n.getName());
                 var displayTree = outputApi.getDisplayTree();
                 displayTree.clear();
@@ -716,6 +720,9 @@ define([
                    //console.log("i am undefined: ");            
                 displayTree.draw();
                 displayTree.topViewShown = false;
+                if (fullSize) {
+                    displayTree.open();
+                }                
             }
             if (n.getTypeBrief() === "SwitchingService") {
 
@@ -803,7 +810,7 @@ define([
         }
         
         function selectElement(elem) {
-            if (fullSize) {
+            if (outputApi.getDisplayTree()) {
                 if (!elem) {
                     //deselect element
                     outputApi.setDisplayName("Topologies");
@@ -850,6 +857,10 @@ define([
                     e.populateTreeMenu(displayTree);
                     e.showRelationships(displayTree);
                     displayTree.draw();
+                    if (fullSize) {
+                        displayTree.open();
+                    }                
+
                 }
             }
             highlightedNode = elem;
