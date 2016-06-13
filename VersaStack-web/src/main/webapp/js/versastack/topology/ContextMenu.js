@@ -4,21 +4,18 @@
  * and open the template in the editor.
  */
 "use strict";
-define([], function () {
-    function ContextMenu(d3, renderApi, tagDialog) {
-
+define(["local/versastack/utils"], function (utils) {
+    
+    function ContextMenu(d3, renderApi, functionMap) {
+        var positionUsingPointer = utils.positionUsingPointer;
+        var getElementPosition = utils.getElementPosition;
         var d3 = d3; // d3 context 
         var renderApi = renderApi;
         var that = this;
         var tagDialog = tagDialog;
-        //////////////////////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////////////////////
-        //
-        // H E L P E R    F U N C T I O N S
-        //
-        //////////////////////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////////////////////
+        var functionMap = functionMap;
 
+        // Helper functions
         /**
          * Function to check if we clicked inside an element with a particular class
          * name.
@@ -164,7 +161,6 @@ define([], function () {
           d3.event.preventDefault();
           toggleMenuOn();
           positionMenu(d3.event);
-          renderApi.selectElement(o);
         };
         
         this.panelElemContextListener = function(e, o) {
@@ -183,7 +179,7 @@ define([], function () {
 
             if ( clickeElIsLink ) {
               e.preventDefault();
-              menuItemListener( clickeElIsLink );
+              menuItemListener( clickeElIsLink, e );
             } else {
               var button = e.which || e.button;
               if ( button === 1 ) {
@@ -268,10 +264,27 @@ define([], function () {
          * 
          * @param {HTMLElement} link The link that was clicked
          */
-        function menuItemListener( link ) {
-            switch(link.getAttribute("data-action")) {
-                case "Tag": tagDialog.openDialog(that.selectedObject); break;
+        function menuItemListener( link, event ) {
+            if (!functionMap) {           
+                console.log("Debugging: in ContextMenu.js::: No functionality available.");
+                return;
             }
+            
+            var funcName = link.getAttribute("data-action");
+            if (funcName) {
+                var func = functionMap[funcName];
+                if (func) {
+                    switch(funcName) {
+                        case "Tag": func.openDialog(that.selectedObject); break;
+                        case "ModelBrowser": positionUsingPointer("displayPanel", event); func(that.selectedObject);  break;
+                    }
+                } else {
+                    console.log("Debugging: in ContextMenu.js::: Menu Item Not Found");
+                }
+            } else {
+                console.log("Debugging: in ContextMenu.js::: Context menu data-attribute not found.")
+            }
+            
             toggleMenuOff();
         }
 
