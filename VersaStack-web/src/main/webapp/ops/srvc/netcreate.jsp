@@ -371,7 +371,7 @@
                                                 </tr>
                                                 <tr>
                                                     <td></td>
-                                                    <td><input type="submit" name="custom" value="Submit" /><input class="button-register" type="button" value="Add Subnet" onClick="addSubnet('ops')"></td>
+                                                    <td><input type="submit" name="custom" value="Submit" /><input class="button-register" type="button" value="Add Subnet" onClick="addSubnet('ops')"><input class="button-register" type="button" value="Clear Form" onClick="resetForm()"></td>
                                                 </tr>
                                             </c:if>
                                         </tbody>

@@ -674,6 +674,11 @@ function deleteInstance(uuid) {
 
 // TEMPLATING
 
+function resetForm() {
+    var form = document.getElementById('custom-form');
+    form.reset();
+}
+
 function applyNetTemplate(code) {
     var form = document.getElementById('custom-form');
     form.reset();

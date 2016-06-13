@@ -80,7 +80,8 @@ html{
 .panelElementProperty{font-weight:bold;}
 .dropDownArrow {cursor:pointer;}
 /* Edit loading transition timer below */
-#viz{
+#viz {
+    background: rgba(100,100,100,1);
     width: 100%;
     height: calc(100% - 37px);
     position: absolute;
