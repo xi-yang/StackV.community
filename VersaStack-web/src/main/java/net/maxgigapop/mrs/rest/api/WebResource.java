@@ -189,7 +189,7 @@ public class WebResource {
     }
 
     @DELETE
-    @Path(value = "/label/{username}/clear")
+    @Path(value = "/label/{username}/clearall")
     public String clearLabels(@PathParam(value = "username") String username) {
         try {
             Properties front_connectionProps = new Properties();
@@ -204,7 +204,7 @@ public class WebResource {
         } catch (SQLException ex) {
             return "<<<Failed - " + ex.getMessage() + " - " + ex.getSQLState();
         }
-        return "Cleared";
+        return "Labels Cleared";
     }
 
     @GET
