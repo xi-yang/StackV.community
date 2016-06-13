@@ -31,6 +31,7 @@
                 </div>
                 <div id="tagPanel-labelPanel">
                     <div id="tagPanel-labelPanelTitle">Labels</div>
+                    <button id="ClearAllTagsButton">Clear All</button>
                     <div id="labelList-container">
                         <ul class="tagPanel-labelList" id="labelList1">
                         </ul>
@@ -175,7 +176,36 @@
                         }                  
                     });                
             };
-            
+            $("#ClearAllTagsButton").click(function() {
+                //var tagList = document.querySelector("#labelList1");
+
+                $.ajax({
+                    crossDomain: true,
+                    type: "DELETE",
+                    url: "/VersaStack-web/restapi/app/label/" + userName + "/clear",
+
+                    success: function(data,  textStatus,  jqXHR ) {
+                        $("#tagPanel").popover({content: "Tags Cleared", placement: "top", trigger: "manual"});
+                        $("#tagPanel").popover("show");
+                        setTimeout(
+                          function(){$("#tagPanel").popover('hide');$("#tagPanel").popover('destroy');}, 
+                        1000);          
+                        $("#labelList1").empty();
+                    },
+
+                    error: function(jqXHR, textStatus, errorThrown ) {
+                        $("#tagPanel").popover({content: "Error clearing tags.", placement: "top", trigger: "manual"});
+                        $("#tagPanel").popover("show");
+                        setTimeout(
+                          function(){$("#tagPanel").popover('hide');$("#tagPanel").popover('destroy');}, 
+                        1000);          
+
+                       //alert(errorThrown + "\n"+textStatus);
+                       //alert("Error deleting tag.");
+                    }                  
+                });                
+              
+            });
             this.init();
         })();
     </script>
