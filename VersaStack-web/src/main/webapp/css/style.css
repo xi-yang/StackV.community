@@ -307,7 +307,7 @@ body {
     height: 40px;
     margin: 0 0 0 0;
     padding: 0;
-    background: rgba(20,25,31,.75);
+    background: rgba(10,10,10,.75);
     box-shadow: inset 0px -1px 10px 0px #364454
 }
 #nav ul {
@@ -853,3 +853,180 @@ body {
   -webkit-transform: translateX(-50%) translateY(-10px) rotate(-45deg);
   top: 10px;
 }
+
+
+
+
+
+
+
+
+/*form styles*/
+#msform {
+    width: 600px;
+    margin: 50px auto;
+    text-align: center;
+    position: relative;
+}
+#msform fieldset {
+    background: white;
+    border: 0 none;
+    border-radius: 3px;
+    box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.4);
+    padding: 20px 30px;
+
+    box-sizing: border-box;
+    width: 90%;
+    margin-left: 5%;
+
+    /*stacking fieldsets above each other*/
+    position: absolute;
+}
+/*Hide all except first fieldset*/
+#msform fieldset:not(:first-of-type) {
+    display: none;
+}
+#msform .subfs {
+    width: 100%;
+    position: absolute;
+    left: -5%;
+    top: 110%;
+    padding-left: 0px;
+    padding-right: 0px;
+}
+
+.subfs-table {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.subfs-table th {
+    padding-left: 20px;
+}
+
+.subfs-table td {
+    padding-top: 5px;
+}
+
+.subfs-table .subfs-headrow {
+    border-top: 1px solid #969696;
+    border-bottom: 1px solid #969696;    
+}
+
+/*inputs*/
+#msform input, #msform textarea {
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    width: 80%;
+    box-sizing: border-box;
+    font-family: montserrat;
+    color: #2C3E50;
+}
+
+#msform .small-counter {
+    width: 12%;
+    margin-left: 10px;
+}
+
+#msform label {
+    margin: 10px 20px;
+    float: left;
+}
+
+/*buttons*/
+#msform .action-button {
+    width: 100px;
+    background: #27AE60;
+    font-weight: bold;
+    color: white;
+    border: 0 none;
+    border-radius: 1px;
+    cursor: pointer;
+    padding: 10px 5px;
+    margin: 10px 5px;
+}
+#msform .action-button:hover, #msform .action-button:focus {
+    box-shadow: 0 0 0 2px white, 0 0 0 3px #27AE60;
+}
+
+/*headings*/
+.fs-title {
+    font-size: 15px;
+    text-transform: uppercase;
+    color: #2C3E50;
+    margin-bottom: 10px;
+}
+.fs-subtitle {
+    font-weight: normal;
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 20px;
+}
+
+/*table*/
+.fs-table {
+    border: none;
+    width: 100%;
+}
+
+.fs-table td {
+    padding-bottom: 10px;
+    text-align: left;
+}
+
+/*progressbar*/
+#progressbar {
+    margin-bottom: 30px;
+    overflow: hidden;
+    padding: 0;
+    /*CSS counters to number the steps*/
+    counter-reset: step;
+}
+
+#progressbar li {
+    list-style-type: none;
+    color: white;
+    text-transform: uppercase;
+    font-size: 9px;
+    width: 16.6%;
+    float: left;
+    position: relative;
+}
+#progressbar li:before {
+    content: counter(step);
+    counter-increment: step;
+    width: 20px;
+    line-height: 20px;
+    display: block;
+    font-size: 10px;
+    color: #333;
+    background: white;
+    border-radius: 3px;
+    margin: 0 auto 5px auto;
+}
+/*progressbar connectors*/
+#progressbar li:after {
+    content: '';
+    width: 100%;
+    height: 2px;
+    background: white;
+    position: absolute;
+    left: -50%;
+    top: 9px;
+    z-index: -1; /*put it behind the numbers*/
+}
+#progressbar li:first-child:after {
+    /*connector not needed before the first step*/
+    content: none; 
+}
+/*marking active/completed steps green*/
+/*The number of the step and the connector before it = green*/
+#progressbar li.active:before,  #progressbar li.active:after{
+    background: #27AE60;
+    color: white;
+}
+
+
+
+
