@@ -41,6 +41,8 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import web.beans.serviceBeans;
+import com.hp.hpl.jena.ontology.OntModel;
+import net.maxgigapop.mrs.common.ModelUtil;
 
 /**
  * REST Web Service
@@ -497,6 +499,52 @@ public class WebResource {
             }
 
             return retMap;
+        } catch (SQLException e) {
+            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+            return null;
+        }
+    }
+
+    @GET
+    @Path("/service/availibleitems/{siUUID}")
+    @Produces("application/json")
+    public String getVerificationResultsUnion(@PathParam("siUUID") String serviceUUID) throws Exception {
+        try {
+            HashMap<String, String> retMap = new HashMap<>();
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("SELECT V.* FROM service_instance I, service_verification V WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
+            prep.setString(1, serviceUUID);
+            ResultSet rs1 = prep.executeQuery();
+            String verified_addition = "";
+            String unverified_reduction = "";
+            OntModel vAddition;
+            OntModel uReduction;
+            
+            while (rs1.next()) {
+                verified_addition = rs1.getString("verified_addition");
+                unverified_reduction = rs1.getString("unverified_reduction");
+            }
+                      
+           if (verified_addition  != null && unverified_reduction != null) {
+                vAddition = ModelUtil.unmarshalOntModelJson(verified_addition);
+                uReduction = ModelUtil.unmarshalOntModelJson(unverified_reduction);
+
+                ArrayList<OntModel> modelList = new ArrayList<>();
+                modelList.add(vAddition);
+                modelList.add(uReduction);
+                OntModel newModel = ModelUtil.createUnionOntModel(modelList);
+                return ModelUtil.marshalOntModelJson(newModel);
+           }
+           
+           if (verified_addition != null) return verified_addition;
+           else if (unverified_reduction != null) return unverified_reduction;
+           else return null;
+           
         } catch (SQLException e) {
             Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
             return null;
