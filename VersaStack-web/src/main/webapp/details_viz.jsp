@@ -10,23 +10,9 @@
 <c:if test="${user.loggedIn == false}">
     <c:redirect url="/index.jsp" />
 </c:if>
-<!DOCTYPE html>
-<html >    
-    <head>   
-        <meta charset="UTF-8">
-        <title>Template Service</title>
-        <script src="/VersaStack-web/js/jquery/jquery.js"></script>
-        <script src="/VersaStack-web/js/bootstrap.js"></script>
-        <script src="/VersaStack-web/js/nexus.js"></script>
-
-        <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
-        <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
-        <link rel="stylesheet" href="/VersaStack-web/css/bootstrap.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/style.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/driver.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/contextMenu.css">   
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.min.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/contextMenu.css">           
+        
         <style>
             .hover_div {
                     position: fixed;
@@ -144,29 +130,6 @@
                 padding-right: 3%;
             }
         </style>
-         <script>
-            //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
-            dojoConfig = {
-                has: {
-                    "dojo-firebug": true,
-                    "dojo-debug-messages": true
-                },
-                async: true,
-                parseOnLoad: true,
-                packages: [
-                    {
-                        name: "d3",
-                        location: "//d3js.org/",
-                        main: "d3.v3"
-                    },
-                    {
-                        name: "local",
-                        location: "/VersaStack-web/js/"
-                    }
-                ]
-            };
-        </script>
-        <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
        
         <script type="text/javascript">
             var settings = {
@@ -183,8 +146,6 @@
             var utils;
             var DropDownTree;
             var functionMap = {}; // stores objects for funcitonality such as ContextMenu, tag Dialog, etc 
-            var prevX = document.getElementById('displayPanel').style.left;
-            var prevY = document.getElementById('displayPanel').style.top;
 
             var outputApi;
 
@@ -220,10 +181,6 @@
                                                 browser.classList.add( "displayPanel-active");
                                                 render.API.selectElement(o);
                                                 
-                                                
-                                                prevX = parseInt(document.getElementById('displayPanel').style.left.slice(0,-2));
-                                                prevY = parseInt(document.getElementById('displayPanel').style.top.slice(0,-2));
-
                                             };
                                             
                                             contextMenu = new ContextMenu(d3, render.API, functionMap);//, tagDialog);
@@ -292,8 +249,7 @@
             }
             
             function showDiactivatedViz(viz_id) {
-               var viz_container =  $("#" + viz_id).closest("td");
-               var index = viz_container.index();
+               var viz_container =  $("#" + viz_id + "_div");
                //viz_container.addClass("inactive_details_viz");
                viz_container.css({
                  "border-top" : "0px",
@@ -304,8 +260,7 @@
             }
             
             function renderModels() {
-                var UUID = prompt("Enter UUID", "");
-
+                var UUID = location.search.split("?uuid=")[1];
                 $.ajax({
                     crossDomain: true,
                     type: "GET",
@@ -321,6 +276,7 @@
                             drawGraph(outputApi, vaModel);
                          }  else {
                              showDiactivatedViz("va_viz");
+                             alert("this is me.");
                          }
                         
                         if (data.verified_reduction && data.verified_reduction !==  '{ }') {
@@ -550,75 +506,13 @@
                     }
                 });
                 
-                function displayPanelMove(e) {
-                    
-                  var div = document.getElementById('displayPanel');
-                  var currentX = e.pageX;
-                  var currentY = e.pageY;
-                  var diffX = currentX - prevX;
-                  var diffY = currentY - prevY; 
-                  var YOffset = 10;
-                  if (diffY < 0) YOffset = -YOffset;
-                 
-                  // remember to get the actual values fron mthese 
-                  if (currentX !== prevX) {
-                      div.style.left = (parseInt(div.style.left.slice(0,-2)) + diffX)+ "px";
-                      prevX = currentX;
-                  }
-                  if (currentY !== prevY) {
-                      div.style.top = (parseInt(div.style.top.slice(0,-2)) + diffY ) + "px";
-                      prevY = currentY;
-                  }
-                  
-                }
-                                                 
-                $("#displayPanelBar").on("mousedown", function (e) {
-                      window.addEventListener('mousemove', displayPanelMove, true);
-                });
-                
-                $("#displayPanel").on("mouseup", function (e) {
-                     window.removeEventListener('mousemove', displayPanelMove, true);
-                });                
-
-                $("#displayPanelBar").on("mouseup", function (e) {
-                     window.removeEventListener('mousemove', displayPanelMove, true);
-                });                
-                
-                $("#displayPanelBar").on("mouseleave", function (e) {
-                    //if (e.pageX > $("#displayPanelBar").position().left + $("#displayPanelBar").height() + 20){
-                    // window.removeEventListener('mousemove', displayPanelMove, true);
-                   // }
-                      //$("#displayPanelBar").off('mousemove', displayPanelMove);
-
-                });                
-                
+                $("#displayPanel").draggable({handle: "#displayPanelBar"});                
             }
         </script>        
-    </head>
-
-    <sql:setDataSource var="rains_conn" driver="com.mysql.jdbc.Driver"
-                       url="jdbc:mysql://localhost:3306/rainsdb"
-                       user="root"  password="root"/>
-
-    <body onload="onload()">
-        <!-- NAV BAR -->
-        <div id="nav">
-        </div>
-        <!-- SIDE BAR -->
-        <div id="sidebar">            
-        </div>
         <!-- MAIN PANEL -->
-        <div id="main-pane">
-                 <table class="management-table">
-                    <thead>
-                        <tr>
-                            <th>Verified Addition</th>
-                            <th>Verified Reduction</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>
+        <div id="pane">
+
+                                <div id="va_viz_div" class="hidden">
                                     <div class="hover_div" id="hoverdiv_va_viz"></div>        
 
                                     <svg  class ="details_viz" id="va_viz">
@@ -685,9 +579,8 @@
 
                                 </g>
                                 </svg>
-                                
-                            </td>
-                            <td>
+                             </div>
+                                <div id="vr_viz_div" class="hidden">
                                     <div class="hover_div" id="hoverdiv_vr_viz"></div>        
 
                                     <svg class ="details_viz" id="vr_viz">
@@ -753,21 +646,11 @@
                                 <g id="volume_vr_viz"/>
 
                                 </g>
-                                </svg>                                
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                                </svg>  
+                                </div>
+                            
 
-                 <table class="management-table">
-                    <thead>
-                        <tr>
-                            <th>Unverified Addition</th>
-                            <th>Unverified Reduction</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <td>
+                            <div id="ua_viz_div" class="hidden">
                                     <div class="hover_div" id="hoverdiv_ua_viz"></div>        
 
                                     <svg  class ="details_viz" id="ua_viz">
@@ -833,10 +716,10 @@
                                 <g id="volume_ua_viz"/>
 
                                 </g>
-                                </svg>                            
-                        </td>
-
-                        <td>
+                                </svg>       
+                            </div>
+                        
+                            <div id="vr_viz_div" class="hidden">
                                     <div class="hover_div" id="hoverdiv_ur_viz"></div>        
 
                                     <svg class ="details_viz" id="ur_viz">
@@ -902,11 +785,10 @@
                                 <g id="volume_ur_viz"/>
 
                                 </g>
-                                </svg>                            
-                        </td>
-                    </tbody>
-                </table>            
+                                </svg>     
+                            </div>
         </div>
+        <script> onload(); </script>
          <!-- CONTEXT MENU -->
         <nav id="context-menu" class="context-menu">
             <ul class="context-menu__items">
@@ -935,29 +817,4 @@
                 </div>
             </div>
            </div>        
-       
-        <!-- TAG PANEL -->       
-        <div id="tag-panel"> 
-        </div>        
-        <!-- JS -->
-        <script>
-            $(function () {
-                $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
-                    if (${user.isAllowed(1)}) {
-                        var element = document.getElementById("service1");
-                        element.classList.remove("hide");
-                    }
-                    if (${user.isAllowed(3)}) {
-                        var element = document.getElementById("service3");
-                        element.classList.remove("hide");
-                    }
-                    if (${user.isAllowed(4)}) {
-                        var element = document.getElementById("service4");
-                        element.classList.remove("hide");
-                    }
-                });
-                $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", null);
-            });
-        </script>        
-    </body>
-</html>
+           

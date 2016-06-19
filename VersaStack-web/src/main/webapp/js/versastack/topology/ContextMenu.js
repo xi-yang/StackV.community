@@ -245,21 +245,55 @@ define(["local/versastack/utils"], function (utils) {
           windowWidth = window.innerWidth;
           windowHeight = window.innerHeight;
 
-          if ( (windowWidth - clickCoordsX) < menuWidth ) {
-            menu.style.left = windowWidth - menuWidth + "px";
-          } else {
+//          if ( (windowWidth - clickCoordsX) < menuWidth ) {
+//            menu.style.left = windowWidth - menuWidth + "px";
+//          } else {
             menu.style.left = clickCoordsX + "px";
-          }
+         // }
           
-          if ( (windowHeight - clickCoordsY) < menuHeight ) {
-            menu.style.top = windowHeight - menuHeight + "px";
-          } else {
+//          if ( (windowHeight - clickCoordsY) < menuHeight ) {
+//            menu.style.top = windowHeight - menuHeight + "px";
+//          } else {
             menu.style.top = clickCoordsY + "px";
-          }
+         // }
           
           //console.log("in positionMenu: menu.style.left: " + menu.style.left + " , menu.style.top: " + menu.style.top);
         }
+        
+        function positionDisplayPanel(elementID, e) {
+            var clickCoords = getElementPosition(e);
+            var clickCoordsX = clickCoords.x;
+            var clickCoordsY = clickCoords.y;
 
+            var element = document.querySelector("#" + elementID);
+
+            var elemWidth = element.offsetWidth + 4;
+            var elemHeight = getHeight("#" + elementID) + 4; //element.offsetHeight + 4;
+
+            var windowWidth = window.innerWidth;
+            var windowHeight = window.innerHeight;
+
+            element.style.left = clickCoordsX + 20 + "px";
+            element.style.top = clickCoordsY - elemHeight + "px";
+            
+        }
+        
+        function getHeight(elementName) {
+            var previousCss  = $(elementName).attr("style");
+
+            $(elementName)
+                .css({
+                    position:   'absolute', // Optional if #myDiv is already absolute
+                    visibility: 'hidden',
+                    display:    'block'
+                });
+
+            var optionHeight = $(elementName).height();
+
+            $(elementName).attr("style", previousCss ? previousCss : "");
+            return optionHeight;
+        }
+        
         /**
          * 
          * @param {HTMLElement} link The link that was clicked
@@ -276,7 +310,7 @@ define(["local/versastack/utils"], function (utils) {
                 if (func) {
                     switch(funcName) {
                         case "Tag": func.openDialog(that.selectedObject); break;
-                        case "ModelBrowser": positionUsingPointer("displayPanel", event); func(that.selectedObject);  break;
+                        case "ModelBrowser": positionDisplayPanel("displayPanel", event); func(that.selectedObject);  break;
                     }
                 } else {
                     console.log("Debugging: in ContextMenu.js::: Menu Item Not Found");
