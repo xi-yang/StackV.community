@@ -41,7 +41,8 @@ define([
         DIALOG_PORT_BUFFER_VERT: 2,
         DIALOG_PORT_BUFFER_HORZ: 3,
         DIALOG_OFFSET_X: 0,
-        DIALOG_OFFSET_Y: -20
+        DIALOG_OFFSET_Y: -20,
+        BASE_ITEM_OPACITY: .05
     };
     var volumeSettings = {
         NODE_SIZE: 30,
@@ -199,7 +200,7 @@ define([
                }
             });       
         }
-        if (!switchPopup[outputApi.svgContainerName]) {
+        if (!switchPopup[outputApi.svgContainerName] || !fullSize) {
             switchPopup[outputApi.svgContainerName] = buildSwitchPopup();
         }
         redraw();
