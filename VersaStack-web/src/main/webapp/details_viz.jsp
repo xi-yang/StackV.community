@@ -718,7 +718,7 @@
                                 </svg>       
                             </div>
                         
-                            <div id="vr_viz_div" class="hidden">
+                            <div id="ur_viz_div" class="hidden">
                                     <div class="hover_div" id="hoverdiv_ur_viz"></div>        
 
                                     <svg class ="details_viz" id="ur_viz">
