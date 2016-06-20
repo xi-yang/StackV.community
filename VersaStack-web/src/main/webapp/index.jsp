@@ -26,7 +26,7 @@
     </head>
 
     <body>
-        <div class='form animated'>
+        <div class="form login-form">
             <!-- Kept for code reference
             <div class='switch'>
                 <i class='fa fa-pencil fa-times'></i>
