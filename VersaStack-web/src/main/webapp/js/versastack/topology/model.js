@@ -814,6 +814,11 @@ define([
                         
                         var types = val[values.type];
                         if (!types) {
+                            if (baseModel.getBaseOrigin[key])
+                                types = baseModel.getBaseOrigin[key]._map[key][values.type];
+                        }
+                        
+                        if (!types) {
                            // var hostURN = baseModel.getHostNodeURN(key);
                             var obj = baseModel.getBaseOrigin(key);
                            // if (hostURN) that.nodeMap[hostURN] = new Node(baseModel.nodeMap[hostURN]._backing, 
@@ -981,7 +986,9 @@ define([
                                         subnetKey = subnetKey.value;
 
                                         var subnet = that.subnetMap[subnetKey];
-                                        service.subnets.push(subnet);
+                                        if (subnet) {
+                                            service.subnets.push(subnet);
+                                        }
                                     });
                                     break;
                                 default:
