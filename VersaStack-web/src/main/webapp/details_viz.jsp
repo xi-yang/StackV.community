@@ -276,7 +276,6 @@
                             drawGraph(outputApi, vaModel);
                          }  else {
                              showDiactivatedViz("va_viz");
-                             alert("this is me.");
                          }
                         
                         if (data.verified_reduction && data.verified_reduction !==  '{ }') {
