@@ -17,6 +17,7 @@ define([
                 this.size = 0;
                 /**@type Array.subnet**/
                 this.subnets = [];
+                this._map = map;
                 
                 this.misc_elements = [];
                 

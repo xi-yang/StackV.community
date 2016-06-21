@@ -599,7 +599,7 @@ define([
                 case "Topology":
                 case "Node":
                     return new Node(that.nodeMap[urn]._backing, 
-                                  that.nodeMap[urn].map);
+                                  that.nodeMap[urn]._map);
                 case "SwitchingService":
                 case "HypervisorService":
                 case "RoutingService":
@@ -615,14 +615,14 @@ define([
                 case "NetworkObject":
                 case "Service":
                     return new Service(that.serviceMap[urn]._backing, 
-                                       that.serviceMap[urn].map);
+                                       that.serviceMap[urn]._map);
                 case "Port":
                 case "BidirectionalPort":
                     return new Port(that.portMap[urn]._backing, 
-                                    that.portMap[urn].map);
+                                    that.portMap[urn]._map);
                 case "Volume":
                     return new Volume(that.volumeMap[urn]._backing, 
-                                      that.volumeMap[urn].map);
+                                      that.volumeMap[urn]._map);
                 default: return null;
             }
         };
@@ -802,15 +802,29 @@ define([
                         val.name = key;
                         //console.log("JSON.stringify(element, null, 2): " + JSON.stringify(val, null, 2));
                         var hostURN = baseModel.getHostNodeURN(key);
-                        if (hostURN) that.nodeMap[hostURN] = new Node(baseModel.nodeMap[hostURN]._backing, 
+                        if (hostURN) {
+                            that.nodeMap[hostURN] = new Node(baseModel.nodeMap[hostURN]._backing, 
                                                                           baseModel.nodeMap[hostURN].map);
-             
+                            that.elementMap[hostURN] = new Element(baseModel.nodeMap[hostURN]._backing, 
+                                                                   baseModel.nodeMap[hostURN].map, 
+                                                                   that.elementMap);
+                            that.elementMap[hostURN].topLevel = true;        
+                                                                          
+                        }
+                        
                         var types = val[values.type];
+                        if (!types) {
+                            if (baseModel.getBaseOrigin[key])
+                                types = baseModel.getBaseOrigin[key]._map[key][values.type];
+                        }
+                        
                         if (!types) {
                            // var hostURN = baseModel.getHostNodeURN(key);
                             var obj = baseModel.getBaseOrigin(key);
                            // if (hostURN) that.nodeMap[hostURN] = new Node(baseModel.nodeMap[hostURN]._backing, 
                            //                                               baseModel.nodeMap[hostURN].map);
+                            that.elementMap[key] = new Element(obj._backing, obj._map, that.elementMap);
+                            that.elementMap[key].topLevel = true;        
 
                             if (obj) {
                                 switch(obj.getType()){
@@ -844,6 +858,9 @@ define([
                                 }
                             }                        
                     } else {
+                            that.elementMap[key] = new Element(val, map, that.elementMap);
+                            that.elementMap[key].topLevel = true;        
+
                             map_(types, function (type) {
                                 type = type.value;
 
@@ -969,7 +986,9 @@ define([
                                         subnetKey = subnetKey.value;
 
                                         var subnet = that.subnetMap[subnetKey];
-                                        service.subnets.push(subnet);
+                                        if (subnet) {
+                                            service.subnets.push(subnet);
+                                        }
                                     });
                                     break;
                                 default:
@@ -1011,11 +1030,13 @@ define([
                         if (childrenKeys) {
                             map_(childrenKeys, function (childKey) {
                                 var child = that.portMap[childKey.value];
-                                try {
-                                    port.childrenPorts.push(child);
-                                    child.parentPort = port;
-                                } catch (err) {
-                                    console.log("Port Children Error!");
+                                if (child) {
+                                    try {
+                                        port.childrenPorts.push(child);
+                                        child.parentPort = port;
+                                    } catch (err) {
+                                        console.log("Port Children Error!");
+                                    }
                                 }
                             });
                         }

@@ -14,6 +14,7 @@
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>
+        <script src="/VersaStack-web/js/jquery-ui.min.js"></script>
 
         <link rel="stylesheet" type="text/css" href="/VersaStack-web/css/graphTest.css">
         <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
@@ -24,6 +25,7 @@
         <link rel="stylesheet" href="/VersaStack-web/css/contextMenu.css">   
         <!-- font awesome icons won't show up otherwise --->
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.min.css">
 
         <script>
             $(document).ready(function () {
@@ -79,7 +81,8 @@
             var d3;
             var utils;
             var DropDownTree;
-
+            var functionMap = {}; // stores objects for funcitonality such as ContextMenu, tag Dialog, etc 
+            
             var outputApi;
 
             function onload() {
@@ -115,15 +118,18 @@
                                             tagDialog = new TagDialog("${user.getUsername()}");
 
                                             tagDialog.init();
+                                            functionMap['Tag'] = tagDialog;
                                             // possibly pass in map here later for all possible dialogs 
-                                            contextMenu = new ContextMenu(d3, render.API, tagDialog);//, tagDialog);
+                                            contextMenu = new ContextMenu(d3, render.API, functionMap);//, tagDialog);
                                             contextMenu.init();
                                             
                                             outputApi = new outputApi_(render.API, contextMenu, "viz");
 
                                             ModelConstructor = m;
                                             model = new ModelConstructor();
-                                            model.init(1, drawGraph.bind(undefined, outputApi, model), null);                                            
+                                            model.init(1, drawGraph.bind(undefined, outputApi, model), null);    
+                                            
+                                            $("#tagDialog").draggable();
                                        } else {
                                            displayError("Visualization Unavailable", d3_);
                                        }
@@ -571,18 +577,19 @@
                 $.ajax({
                     crossDomain: true,
                     type: "GET",
-                    url: "/VersaStack-web/restapi/app/service/lastverify/" + UUID,
+                    url: "/VersaStack-web/restapi/app/service/availibleitems/" + UUID,
                     dataType: "json", 
 
                     success: function(data,  textStatus,  jqXHR ) {
-                         if (data.verified_addition === null) {
+                         if (data === null) {
                              bsShowFadingMessage("#servicePanel", "Data not found", "top", 1000);
                          } else {
                             $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
                             $(item).addClass('service-instance-highlighted');
-
-                            var uaObj = JSON.parse(data.verified_addition);
-                            var result = model.makeSubModel([ uaObj  ]);
+                            //alert(data);
+                            // Union of verified addition and unverified reduction
+                            var unionObj = data; 
+                            var result = model.makeSubModel([ unionObj  ]);
                             var modelArr = model.getModelMapValues(result);
 
                             render.API.setServiceHighlights(modelArr);
@@ -622,7 +629,6 @@
                 </div>
             </div>
         </div>        
-        <div class="hide" id="hoverdiv_viz"></div>        
 
         <svg class="loading" id="viz">
         <defs>
@@ -688,7 +694,8 @@
 
     </g>
     </svg>
- 
+   <div class="hide" id="hoverdiv_viz"></div>        
+
  <!-- CONTEXT MENU -->
   <nav id="context-menu" class="context-menu">
       <ul class="context-menu__items">

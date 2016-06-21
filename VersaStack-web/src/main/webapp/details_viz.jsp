@@ -10,21 +10,9 @@
 <c:if test="${user.loggedIn == false}">
     <c:redirect url="/index.jsp" />
 </c:if>
-<!DOCTYPE html>
-<html >    
-    <head>   
-        <meta charset="UTF-8">
-        <title>Template Service</title>
-        <script src="/VersaStack-web/js/jquery/jquery.js"></script>
-        <script src="/VersaStack-web/js/bootstrap.js"></script>
-        <script src="/VersaStack-web/js/nexus.js"></script>
-
-        <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
-        <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
-        <link rel="stylesheet" href="/VersaStack-web/css/bootstrap.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/style.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/driver.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.min.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/contextMenu.css">           
+        
         <style>
             .hover_div {
                     position: fixed;
@@ -48,31 +36,100 @@
             .inactive_details_viz th {
                 color: #ccc;
             }
-            
+          /****/
+
+            /*#tagDialogBar {
+                width:100%;
+            }
+            #tagDialogCloser{
+              color:grey;
+              cursor:pointer;
+            }
+
+            #tagDialogCloserBar{
+              padding-left:80%;    
+            }
+            #tagDialogContent {
+              margin:auto;
+              margin-top:10px;
+            }*/
+            #displayPanel {
+              text-align:center;
+              background-color:#EDEDED;
+              width:25%;
+            /*  height:30%;*/
+              display:none;
+              position:absolute;
+              top: 30%;
+              left: 30%;
+              margin-top: -50px;
+              margin-left: -50px;
+              border: 1px inset #B5B1B1;
+              z-index:1;
+            }
+
+            #displayPanel.displayPanel-active {display:block;}
+            .urnLink {
+                color:blue;
+                cursor:pointer;
+               overflow: auto; 
+               word-wrap: break-word;
+            }
+            .clicked {
+                color:red;
+                text-decoration: underline;
+            }
+            .urnLink:hover { }
+            .urnLink:visited {color:purple }
+
+            .panelElementProperty{font-weight:bold;}
+            .dropDownArrow {cursor:pointer;}
+
+            .treeMenu{
+                margin-left:15px;
+                text-align: left;
+            }
+            #treeMenu {
+                min-height:150px;
+                max-height:250px;
+                overflow-y:scroll;
+                     overflow: -moz-scrollbars-vertical;
+                clear:both;
+                /* webkit scrollbar stuff */
+            }
+            #displayName {
+                text-align: center;
+                visibility: visible;
+                padding: 7px;
+                width: content-box;
+                font-size: 150%;
+                overflow-wrap: break-word;
+            }
+
+            #displayPanel-actions {    
+            /*    bottom: 20px;
+                position: absolute;   */
+                padding-bottom: 2%;
+
+            }
+
+            #displayPanelBar {
+                width:100%;
+                cursor:default;
+            }
+            #displayPanelCloser{
+              color:grey;
+              cursor:pointer;
+            }
+
+            #displayPanelCloserBar{
+              padding-left:95%;    
+              border-bottom: black 1px solid;
+            }
+            #displayPanel-contents{ 
+                padding-right: 3%;
+            }
         </style>
-         <script>
-            //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
-            dojoConfig = {
-                has: {
-                    "dojo-firebug": true,
-                    "dojo-debug-messages": true
-                },
-                async: true,
-                parseOnLoad: true,
-                packages: [
-                    {
-                        name: "d3",
-                        location: "//d3js.org/",
-                        main: "d3.v3"
-                    },
-                    {
-                        name: "local",
-                        location: "/VersaStack-web/js/"
-                    }
-                ]
-            };
-        </script>
-        <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
        
         <script type="text/javascript">
             var settings = {
@@ -88,6 +145,7 @@
             var d3;
             var utils;
             var DropDownTree;
+            var functionMap = {}; // stores objects for funcitonality such as ContextMenu, tag Dialog, etc 
 
             var outputApi;
 
@@ -116,7 +174,18 @@
                                             map_ = utils.map_;
                                             bsShowFadingMessage = utils.bsShowFadingMessage;
                                             // possibly pass in map here later for all possible dialogs 
+                                            ContextMenu = c; 
+                                            DropDownTree = tree;
+                                            functionMap['ModelBrowser'] = function(o) {
+                                                var browser = document.querySelector("#displayPanel");
+                                                browser.classList.add( "displayPanel-active");
+                                                render.API.selectElement(o);
+                                                
+                                            };
                                             
+                                            contextMenu = new ContextMenu(d3, render.API, functionMap);//, tagDialog);
+                                            contextMenu.init();
+
                                             //outputApi = new outputApi_(render.API, null, "viz");
                                             //outputApi2 = new outputApi_(render.API, contextMenu, "viz2");
 
@@ -139,6 +208,10 @@
 //                                     //alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
 //                                   }
 //                            }); 
+                            document.getElementById("displayPanelCloser").onclick = function() {
+                             $("#displayPanel").removeClass( "displayPanel-active");
+                            };
+
                         });
 
 
@@ -176,8 +249,7 @@
             }
             
             function showDiactivatedViz(viz_id) {
-               var viz_container =  $("#" + viz_id).closest("td");
-               var index = viz_container.index();
+               var viz_container =  $("#" + viz_id + "_div");
                //viz_container.addClass("inactive_details_viz");
                viz_container.css({
                  "border-top" : "0px",
@@ -188,8 +260,7 @@
             }
             
             function renderModels() {
-                var UUID = prompt("Enter UUID", "1a33d50a-383c-4252-a67c-28e4d3fea0e6");
-
+                var UUID = location.search.split("?uuid=")[1];
                 $.ajax({
                     crossDomain: true,
                     type: "GET",
@@ -201,7 +272,7 @@
                             var vaObj = JSON.parse(data.verified_addition);
                             var vaModel = new ModelConstructor();
                             vaModel.initWithMap(vaObj, model);
-                            var outputApi = new outputApi_(render.API, null, "va_viz");
+                            var outputApi = new outputApi_(render.API, contextMenu, "va_viz");
                             drawGraph(outputApi, vaModel);
                          }  else {
                              showDiactivatedViz("va_viz");
@@ -211,7 +282,7 @@
                             var vrObj = JSON.parse(data.verified_reduction);
                             var vrModel = new ModelConstructor();
                             vrModel.initWithMap(vrObj, model);
-                            var outputApi2 = new outputApi_(render.API, null, "vr_viz");
+                            var outputApi2 = new outputApi_(render.API, contextMenu, "vr_viz");
                             drawGraph(outputApi2, vrModel);                       
                         } else {
                             showDiactivatedViz("vr_viz");
@@ -221,7 +292,7 @@
                             var uaObj = JSON.parse(data.unverified_addition);
                             var uaModel = new ModelConstructor();
                             uaModel.initWithMap(uaObj, model);
-                            var outputApi3 = new outputApi_(render.API, null, "ua_viz");
+                            var outputApi3 = new outputApi_(render.API, contextMenu, "ua_viz");
                             drawGraph(outputApi3, uaModel);                        
                         } else {
                             showDiactivatedViz("ua_viz");
@@ -231,7 +302,7 @@
                             var urObj = JSON.parse(data.unverified_reduction);
                             var urModel = new ModelConstructor();
                             urModel.initWithMap(urObj, model);
-                            var outputApi4 = new outputApi_(render.API, null, "ur_viz");
+                            var outputApi4 = new outputApi_(render.API, contextMenu, "ur_viz");
                             drawGraph(outputApi4, urModel);                        
                         } else {
                             showDiactivatedViz("ur_viz");
@@ -243,6 +314,10 @@
                         //alert("Error getting status.");
                        // alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
                        alert("not found");
+                       showDiactivatedViz("va_viz");
+                       showDiactivatedViz("ur_viz");
+                       showDiactivatedViz("ua_viz");
+                       showDiactivatedViz("vr_viz");
                     }
                });                     
                 
@@ -258,12 +333,16 @@
                 };
 
                 
+                var displayTree = new DropDownTree(document.getElementById("treeMenu"));
+                displayTree.renderApi = this.renderApi;
+                displayTree.contextMenu = this.contextMenu;
+
                 this.getDisplayTree = function () {
-                    return null;
+                    return displayTree;
                 };
 
                 this.setDisplayName = function (name) {
-                    //document.getElementById("displayName").innerText = name;
+                    document.getElementById("displayName").innerText = name;
                 };
 
                 var zoomFactor = settings.INIT_ZOOM;
@@ -425,33 +504,14 @@
                         e.preventDefault();
                     }
                 });
+                
+                $("#displayPanel").draggable({handle: "#displayPanelBar"});                
             }
         </script>        
-    </head>
-
-    <sql:setDataSource var="rains_conn" driver="com.mysql.jdbc.Driver"
-                       url="jdbc:mysql://localhost:3306/rainsdb"
-                       user="root"  password="root"/>
-
-    <body onload="onload()">
-        <!-- NAV BAR -->
-        <div id="nav">
-        </div>
-        <!-- SIDE BAR -->
-        <div id="sidebar">            
-        </div>
         <!-- MAIN PANEL -->
-        <div id="main-pane">
-                 <table class="management-table">
-                    <thead>
-                        <tr>
-                            <th>Verified Addition</th>
-                            <th>Verified Reduction</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>
+        <div id="pane">
+
+                                <div id="va_viz_div" class="hidden">
                                     <div class="hover_div" id="hoverdiv_va_viz"></div>        
 
                                     <svg  class ="details_viz" id="va_viz">
@@ -518,9 +578,8 @@
 
                                 </g>
                                 </svg>
-                                
-                            </td>
-                            <td>
+                             </div>
+                                <div id="vr_viz_div" class="hidden">
                                     <div class="hover_div" id="hoverdiv_vr_viz"></div>        
 
                                     <svg class ="details_viz" id="vr_viz">
@@ -586,21 +645,11 @@
                                 <g id="volume_vr_viz"/>
 
                                 </g>
-                                </svg>                                
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                                </svg>  
+                                </div>
+                            
 
-                 <table class="management-table">
-                    <thead>
-                        <tr>
-                            <th>Unverified Addition</th>
-                            <th>Unverified Reduction</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <td>
+                            <div id="ua_viz_div" class="hidden">
                                     <div class="hover_div" id="hoverdiv_ua_viz"></div>        
 
                                     <svg  class ="details_viz" id="ua_viz">
@@ -666,10 +715,10 @@
                                 <g id="volume_ua_viz"/>
 
                                 </g>
-                                </svg>                            
-                        </td>
-
-                        <td>
+                                </svg>       
+                            </div>
+                        
+                            <div id="ur_viz_div" class="hidden">
                                     <div class="hover_div" id="hoverdiv_ur_viz"></div>        
 
                                     <svg class ="details_viz" id="ur_viz">
@@ -735,37 +784,36 @@
                                 <g id="volume_ur_viz"/>
 
                                 </g>
-                                </svg>                            
-                        </td>
-                    </tbody>
-                </table>            
+                                </svg>     
+                            </div>
         </div>
-        <!-- TAG PANEL -->       
-        <div id="tag-panel"> 
-        </div>        
-        <!-- JS -->
-        <script>
-            $(function () {
-                $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
-                    if (${user.isAllowed(1)}) {
-                        var element = document.getElementById("service1");
-                        element.classList.remove("hide");
-                    }
-                    if (${user.isAllowed(2)}) {
-                        var element = document.getElementById("service2");
-                        element.classList.remove("hide");
-                    }
-                    if (${user.isAllowed(3)}) {
-                        var element = document.getElementById("service3");
-                        element.classList.remove("hide");
-                    }
-                    if (${user.isAllowed(4)}) {
-                        var element = document.getElementById("service4");
-                        element.classList.remove("hide");
-                    }
-                });
-                $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", null);
-            });
-        </script>        
-    </body>
-</html>
+        <script> onload(); </script>
+         <!-- CONTEXT MENU -->
+        <nav id="context-menu" class="context-menu">
+            <ul class="context-menu__items">
+              <li class="context-menu__item">
+                <a href="#" class="context-menu__link" data-action="ModelBrowser"><i class="fa  fa-sitemap"></i>View Model Browser</a>
+              </li>
+            </ul>
+          </nav>
+         
+         
+          <div id="displayPanel">
+                      <div id="displayPanelBar">
+            <div id="displayPanelCloserBar">
+                <i id="displayPanelCloser" class="fa fa-times" aria-hidden="true"></i>
+            </div>
+        </div>
+
+            <div id="displayPanel-contents">
+                <div id="displayName"></div>
+                <div id="treeMenu"></div>                
+            </div>
+            <div id="displayPanel-actions-container">
+                <div id="displayPanel-actions">
+                    <button id="backButton">Back</button>
+                    <button id="forwardButton">Forward</button>
+                </div>
+            </div>
+           </div>        
+           

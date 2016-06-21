@@ -55,21 +55,27 @@ define([
                 console.log("my history: name: " + that.history[currentIndex][0] + " type: " + that.history[currentIndex][1]);
             }
         };
-
-        document.getElementById("URISearchSubmit").onclick = function() {
-            var uri = document.getElementById("URISearchInput").value;
-            that.renderApi.clickNode(uri, "Element");
-        };
         
-        document.getElementById("fullDiaplayButton").onclick = function() {
-            if (!that.topViewShown) {
-                that.topViewShown = true;
-                that.renderApi.selectElement(null);
-            } else {
-                that.topViewShown = false;
-                that.renderApi.clickNode(that.history[currentIndex][0], that.history[currentIndex][1]);
-            }           
-        };
+        var uriSearchSubmit = document.getElementById("URISearchSubmit");
+        if (uriSearchSubmit){
+            uriSearchSubmit.onclick = function() {
+                var uri = document.getElementById("URISearchInput").value;
+                that.renderApi.clickNode(uri, "Element");
+            };
+        }
+        
+        var fullDisplay = document.getElementById("fullDiaplayButton");
+        if (fullDisplay) {
+            fullDisplay.onclick = function() {
+                if (!that.topViewShown) {
+                    that.topViewShown = true;
+                    that.renderApi.selectElement(null);
+                } else {
+                    that.topViewShown = false;
+                    that.renderApi.clickNode(that.history[currentIndex][0], that.history[currentIndex][1]);
+                }           
+            };
+        }
         
         this.clear = function () {
             this.rootNodes = [];
@@ -102,7 +108,11 @@ define([
             return ans;
         };
        
-        
+        this.open = function() {
+          $("#displayPanel-tab").addClass("display-open");  
+          $("#displayPanel").addClass("display-open");  
+
+        };
     }
     return DropDownTree;
 });
