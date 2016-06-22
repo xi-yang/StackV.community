@@ -805,6 +805,8 @@ define([
                         if (hostURN) {
                             that.nodeMap[hostURN] = new Node(baseModel.nodeMap[hostURN]._backing, 
                                                                           baseModel.nodeMap[hostURN].map);
+                            that.nodeMap[hostURN].detailsReference = true;
+                            
                             that.elementMap[hostURN] = new Element(baseModel.nodeMap[hostURN]._backing, 
                                                                    baseModel.nodeMap[hostURN].map, 
                                                                    that.elementMap);
@@ -813,10 +815,12 @@ define([
                         }
                         
                         var types = val[values.type];
+                        var detailsReference = false;
                         if (!types) {
                             if (baseModel.getBaseOrigin(key)) {
                                 types = baseModel.getBaseOrigin(key)._map[key][values.type];
                                 val[values.type] = types;
+                                detailsReference = true;
                             }
                         }
                         
@@ -878,12 +882,14 @@ define([
                                         var toAdd;
                                         toAdd = new Node(val, map);
                                         toAdd.isTopology = type === values.topology;
+                                        if (detailsReference) toAdd.detailsReference = true;
                                         that.nodeMap[key] = toAdd;
                                         break;
 
                                     case values.bidirectionalPort:
                                         var toAdd;
                                         toAdd = new Port(val, map);
+                                        if (detailsReference) toAdd.detailsReference = true;                                        
                                         that.portMap[key] = toAdd;
                                         break;
 
@@ -896,6 +902,7 @@ define([
                                     case values.blockStorageService:
                                         var toAdd;
                                         toAdd = new Service(val, map);
+                                        if (detailsReference) toAdd.detailsReference = true;                                        
                                         that.serviceMap[key] = toAdd;
                                         break;
 
@@ -910,12 +917,14 @@ define([
                                     case values.NetworkObject:
                                         var toAdd;
                                         toAdd = new Service(val, map);
+                                        if (detailsReference) toAdd.detailsReference = true;                                        
                                         that.serviceMap[key] = toAdd;
                                         break;
 
                                     case values.switchingSubnet:
                                         var toAdd;
                                         toAdd = new Subnet(val, map);
+                                        if (detailsReference) toAdd.detailsReference = true;                                        
                                         that.subnetMap[key] = toAdd;
                                         break;
                                     case values.namedIndividual://All elements have this
@@ -934,6 +943,7 @@ define([
                                         toAdd = new Volume(val, map);
 
                                         toAdd.isTopology = type === values.topology;
+                                         if (detailsReference) toAdd.detailsReference = true;                                       
                                         that.volumeMap[key] = toAdd;
                                         break;
 

@@ -244,6 +244,9 @@ define([
                     if (outputApi.contextMenu) {
                         n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));    
                     } 
+                    if (n.detailsReference) {
+                        n.svgNode.style("opacity", .4);
+                    }
                     n.svgNode.call(makeDragBehaviour(n));
                     
                     setElementSize(n, false);
@@ -296,6 +299,10 @@ define([
                 if (outputApi.contextMenu) {
                     n.svgNodeAnchor.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));                
                 }
+                if (n.detailsReference) {
+                    n.svgNode.style("opacity", .4);
+                }
+                
                 n.svgNodeAnchor.call(makeDragBehaviour(n));
                 
                 setElementSize(n, false);
@@ -331,6 +338,10 @@ define([
                 if (outputApi.contextMenu) {
                     service.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, service));
                 }    
+                if (service.detailsReference) {
+                    service.svgNode.style("opacity", .4);
+                }
+                
                 service.svgNode.call(makeDragBehaviour(n));
 
                 setElementSize(service, false);

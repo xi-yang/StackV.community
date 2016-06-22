@@ -278,6 +278,11 @@ define(["local/d3", "local/versastack/utils"],
                                 .attr("y", y)
                                 .attr("height", that.textSize + that.innerBuffer * 2)
                                 .attr("width", width);
+                        
+                        if (subnet.detailsReference) {
+                            subnet.svgNode.style("opacity", .4);
+                        }
+
                         subnet.svgNodeCover
                                 .attr("x", x)
                                 .attr("y", y)

@@ -155,7 +155,9 @@ define(["local/d3", "local/versastack/utils"],
                             
                                 volume.svgNode = volumeContainer.append("image")
                                         .attr("xlink:href", volume.getIconPath());
-                    
+                            if (volume.detailsReference) {
+                                volume.svgNode.style("opacity", .4);
+                            }
                             volume.svgNode
                                     .on("mousemove", function () {
                                         outputApi.setHoverText(volume.getName());
