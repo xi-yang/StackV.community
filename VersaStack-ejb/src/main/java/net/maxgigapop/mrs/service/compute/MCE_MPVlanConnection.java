@@ -284,10 +284,6 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
                 jsonHops.add(hop);
             }
             jsonValue.put(connId, jsonHops);
-            //@TODO: common logic
-            if (dataValue != null) {
-                spaModel.remove(resData, Spa.value, dataValue);
-            }
             //add output as spa:value of the export resrouce
             String exportValue = jsonValue.toJSONString();
             if (querySolution.contains("format")) {
@@ -298,6 +294,10 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
                     log.log(Level.WARNING, ex.getMessage());
                     continue;
                 }
+            }
+            //@TODO: common logic
+            if (dataValue != null) {
+                spaModel.remove(resData, Spa.value, dataValue);
             }
             spaModel.add(resData, Spa.value, exportValue);
         }

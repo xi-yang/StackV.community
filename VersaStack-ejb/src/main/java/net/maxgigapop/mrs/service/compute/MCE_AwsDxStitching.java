@@ -163,7 +163,9 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
         }
         String awsUri = (String) jsonStitchReq.get("parent");
         String stitchFromUri = (String) jsonStitchReq.get("stitch_from");
-
+        if (stitchFromUri.isEmpty() || (!stitchFromUri.startsWith("ur") && stitchFromUri.startsWith("x-"))) {
+            throw new EJBException(String.format("%s::process doStitching imports invalid 'stitch_from' value", this.getClass().getName()));
+        }
         // 1. get VGW resources
         String sparql = "SELECT ?vgw WHERE {{"
                 + "?aws nml:hasTopology ?vpc."
