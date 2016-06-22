@@ -814,8 +814,10 @@ define([
                         
                         var types = val[values.type];
                         if (!types) {
-                            if (baseModel.getBaseOrigin[key])
-                                types = baseModel.getBaseOrigin[key]._map[key][values.type];
+                            if (baseModel.getBaseOrigin(key)) {
+                                types = baseModel.getBaseOrigin(key)._map[key][values.type];
+                                val[values.type] = types;
+                            }
                         }
                         
                         if (!types) {
@@ -857,7 +859,7 @@ define([
                                      break;
                                 }
                             }                        
-                    } else {
+                        } else {
                             that.elementMap[key] = new Element(val, map, that.elementMap);
                             that.elementMap[key].topLevel = true;        
 
