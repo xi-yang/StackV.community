@@ -25,6 +25,8 @@ define(["local/d3", "local/versastack/utils"],
                 this.textSize = 0;
                 /**@type Service**/
                 this.hostNode = null;
+                this.outputApi = outputApi;
+                
                 var that = this;
                 this.setOffset = function (x, y) {
                     this.dx = x;
@@ -263,6 +265,7 @@ define(["local/d3", "local/versastack/utils"],
                                 .style("opacity", "0")
                                 .on("mousemove", onMouseMove)
                                 .on("mouseleave", OnMouseLeave)
+                                .on("contextmenu", that.outputApi.contextMenu.renderedElemContextListener.bind(undefined, subnet))                                             
                                 .on("click", onClick)
                                 .call(makeDragBehaviour());
                     });
