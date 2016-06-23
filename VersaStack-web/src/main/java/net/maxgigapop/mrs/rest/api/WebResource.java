@@ -264,6 +264,9 @@ public class WebResource {
                 case "fl2p":
                     paraMap = parseFlow(dataJSON, refUuid);
                     break;
+                case "hybridcloud":
+                    paraMap = parseHybridCloud(dataJSON, refUuid);
+                    break;
                 default:
             }            
 
@@ -318,6 +321,9 @@ public class WebResource {
                     break;
                 case "fl2p":
                     servBean.createflow(paraMap);
+                    break;
+                case "hybridcloud":
+                    servBean.creatHybridCloud(paraMap);
                     break;
                 default:
             }
@@ -718,6 +724,14 @@ public class WebResource {
             paraMap.put("gateways", gatewayArr.toString());
         }
             
+        return paraMap;
+    }
+    
+    private HashMap<String, String> parseHybridCloud(JSONObject dataJSON, String refUuid){
+        HashMap<String, String> paraMap = new HashMap<>();
+        paraMap.put("instanceUUID", refUuid);
+        paraMap.put("virtual_clouds", dataJSON.get("virtual_clouds").toString());
+        
         return paraMap;
     }
 
