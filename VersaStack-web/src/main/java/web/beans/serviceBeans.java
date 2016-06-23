@@ -691,10 +691,10 @@ public class serviceBeans {
                                                             + "    spa:value    \"\"\"{\n"
                                                             + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "\",\n"
                                                             + "       \"to_port_profile\": \"" + (String) fromJSON.get("value") + "\",\n"
-                                                            + "       \"mac_address\": \"" + mac + "\",\n"
-                                                            + "       \"ip_address\": \"" + ip + "\",\n"
-                                                            + (routeArr.isEmpty() ? "" : "       \"routes\": " + routeArr.toString().replace("\\", "")) + "\n"
-                                                            + "    }\"\"\" .\n\n";
+                                                            + "       \"mac_address\": \"" + mac + "\""
+                                                            + (ip == null? "": ",\n       \"ip_address\": \"" + ip + "\"")
+                                                            + (routeArr.isEmpty() ? "" : ",\n       \"routes\": " + routeArr.toString().replace("\\", ""))
+                                                            + "\n    }\"\"\" .\n\n";
                                                 }
                                             }
 
@@ -717,10 +717,10 @@ public class serviceBeans {
                                                             + "    spa:format    \"\"\"{\n"
                                                             + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "\",\n"
                                                             + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn" + (String) gwJSON.get("name") + "%\n"
-                                                            + "       \"mac_address\": \"" + mac + "\",\n"
-                                                            + "       \"ip_address\": \"" + ip + "\",\n"
-                                                            + (routeArr == null ? "" : "       \"routes\": " + routeArr.toString().replace("\\", "")) + "\n"
-                                                            + "    }\"\"\" .\n\n";
+                                                            + "       \"mac_address\": \"" + mac + "\""
+                                                            + (ip == null? "": ",\n       \"ip_address\": \"" + ip + "\"")
+                                                            + (routeArr.isEmpty() ? "" : ",\n       \"routes\": " + routeArr.toString().replace("\\", ""))
+                                                            + "\n    }\"\"\" .\n\n";
                                                     createPathExportTo += "&lt;x-policy-annotation:data:" + vmPara[0] + "-sriov" + i + "-criteria&gt;, ";
                                                     if (!connCriteriaValue.containsKey("urn:ogf:network:vo1_maxgigapop_net:link=conn" + (String) gwJSON.get("name"))) {
                                                         JSONObject vlanTag = new JSONObject();
@@ -744,6 +744,8 @@ public class serviceBeans {
                                 }
 
                             }
+                            else
+                                svcDelta += ".\n\n";
                         } catch (Exception ex) {
                             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
                         }
@@ -988,16 +990,15 @@ public class serviceBeans {
                 
                 svcDelta += "&lt;" + topoUri + ":" + vcnName + "&gt;\n"
                         + "    a                         nml:Topology ;\n"
-                        + "    spa:dependOn &lt;x-policy-annotation:action:create" + vcnName + "&gt;,"
+                        + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vcnName + "&gt;,"
                         + " &lt;x-policy-annotation:action:create-dc1&gt;.\n\n"
-                        + "&lt;x-policy-annotation:action:create" + vcnName + "&gt;\n"
                         + "&lt;x-policy-annotation:action:create-dc1&gt;\n"
                         + "    a            spa:PolicyAction ;\n"
                         + "    spa:type     \"MCE_AwsDxStitching\" ;\n"
                         + "    spa:importFrom &lt;x-policy-annotation:data:" + vcnName + "-export&gt;,"
-                        + " &lt;x-policy-annotation:data:conn-criteriaexport&gt; ;\n"
-                        + "    spa:dependOn &lt;x-policy-annotation:action:create" + vcnName + "&gt;,"
-                        + " &lt;x-policy-annotation:action:create-path&gt;.\n\n"
+                        + " &lt;x-policy-annotation:data:aws-ops-criteriaexport&gt; ;\n"
+                        + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vcnName + "&gt;,"
+                        + " &lt;x-policy-annotation:action:create-aws-ops-path&gt;.\n\n"
                         + "&lt;x-policy-annotation:data:" + vcnName + "-export&gt;\n"
                         + "    a            spa:PolicyData ;\n"
                         + "    spa:type     \"JSON\" ;\n"
@@ -1013,8 +1014,8 @@ public class serviceBeans {
                     svcDelta += subnetCriteria + "\n    a            spa:PolicyData;\n"
                             + "    spa:type     \"JSON\";\n"
                             + "    spa:format    \"\"\"{\n"
-                            + "       \"place_into\": \"%$.subnets[" + i + "]].uri%\"\n"
-                            + "    }\"\"\" .";
+                            + "       \"place_into\": \"%$.subnets[" + i + "].uri%\"\n"
+                            + "    }\"\"\" .\n\n";
                     
                     JSONArray vmArr = vmList.get(i);
                     for(Object vmObj : vmArr){
@@ -1032,14 +1033,12 @@ public class serviceBeans {
                                 + "&lt;x-policy-annotation:action:create-" + vmName + "&gt;\n"
                                 + "    a            spa:PolicyAction ;\n"
                                 + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
-                                + "    spa:dependOn &lt;x-policy-annotation:action:create" + vcnName + "&gt; ;\n"
+                                + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vcnName + "&gt; ;\n"
                                 + "    spa:importFrom " + subnetCriteria + " .\n\n";
-
                     }
-                    
                 }
                 
-                svcDelta += "&lt;x-policy-annotation:action:create" + vcnName + "&gt;\n"
+                svcDelta += "&lt;x-policy-annotation:action:create-" + vcnName + "&gt;\n"
                         + "    a            spa:PolicyAction ;\n"
                         + "    spa:type     \"MCE_VirtualNetworkCreation\" ;\n"
                         + "    spa:importFrom &lt;x-policy-annotation:data:" + vcnName + "-criteria&gt; ;\n"
@@ -1047,28 +1046,163 @@ public class serviceBeans {
                         + (exportTo.isEmpty() ? ".\n\n" : "," + exportTo.substring(0, (exportTo.length() - 2)) + " .\n\n");
             }
             else if(driverType.equals("ops")){
+                svcDelta += "&lt;" + topoUri + ":" + vcnName + "&gt;\n"
+                        + "    a                         nml:Topology ;\n"
+                        + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vcnName + "&gt;.\n\n"
+                        + "&lt;" + topoUri + ":vt&gt;\n"
+                        + "   a  nml:Topology;\n"
+                        + "   spa:type spa:Abstraction;\n"
+                        + "   spa:dependOn  &lt;x-policy-annotation:action:ucs-sriov-stitch&gt;.\n\n";
                 
+                String exportTo = "";
+                boolean sriov = false;
+                for(int i=0; i<vmList.size(); i++){
+                    String subnetCriteria = "&lt;x-policy-annotation:data:" + vcnName + "-subnet" + i + "-vm-criteria&gt;";
+                    exportTo += subnetCriteria + ", ";
+                    svcDelta += subnetCriteria + "\n    a            spa:PolicyData;\n"
+                            + "    spa:type     \"JSON\";\n"
+                            + "    spa:format    \"\"\"{\n"
+                            + "       \"place_into\": \"%$.subnets[" + i + "].uri%\"\n"
+                            + "    }\"\"\" .\n\n";
+                    
+                    JSONArray vmArr = vmList.get(i);
+                    for(Object vmObj : vmArr){
+                        JSONObject vmJson = (JSONObject) vmObj;
+                        String vmName = (String) vmJson.get("name");
+                        String vmType = (String) vmJson.get("type");
+                        String vmHost = (String) vmJson.get("host");
+                        
+                        svcDelta += "&lt;" + topoUri + ":" + vcnName + ":" + vmName + "&gt;\n"
+                                + "    a                         nml:Node ;\n"
+                                + (vmType == null ? "" : "    mrs:type       \"" + vmType + "\";\n")
+                                + "    nml:hasBidirectionalPort   &lt;" + topoUri + ":" + vcnName + ":" + vmName + ":eth0&gt; ;\n"
+                                + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;.\n\n"
+                                + "&lt;x-policy-annotation:action:create-" + vmName + "&gt;\n"
+                                + "    a            spa:PolicyAction ;\n"
+                                + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
+                                + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vcnName + "&gt; ;\n"
+                                + "    spa:importFrom &lt;x-policy-annotation:data:" + vcnName + "-host-criteria&gt;.\n\n"
+                                + "&lt;x-policy-annotation:action:create-" + vmName + "&-eth0gt;\n"
+                                + "    a            spa:PolicyAction ;\n"
+                                + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
+                                + "    spa:importFrom " + subnetCriteria + ".\n\n"
+                                + "&lt;x-policy-annotation:data:" + vcnName + "-host-criteria&gt;\n"
+                                + "    a            spa:PolicyData;\n"
+                                + "    spa:type     \"JSON\";\n"
+                                + "    spa:value    \"\"\"{\n"
+                                + "       \"place_into\": \"" + topoUri + ":host+" + vmHost + "\"\n"
+                                + "    }\"\"\" .\n\n"
+                                + "&lt;" + topoUri + ":" + vcnName + ":" + vmName + ":eth0&gt;\n"
+                                + "    a            nml:BidirectionalPort ;\n"
+                                + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&-eth0gt; ";
+                        
+                        if(!vmJson.containsKey("interfaces"))
+                            svcDelta += ".\n\n";
+                        else{
+                            String addressString = null;
+                            JSONArray interArr = (JSONArray) vmJson.get("interfaces");
+                            for(Object interObj : interArr){
+                                JSONObject interJson = (JSONObject) interObj;
+                                String typeString = (String) interJson.get("type");
+                                if (typeString.equalsIgnoreCase("Ethernet")){
+                                    addressString = (String) interJson.get("address");
+                                    addressString = addressString.contains("ipv")? addressString.substring(addressString.indexOf("ipv")+5) : addressString;
+                                    addressString = addressString.contains("/")? addressString.substring(0, addressString.indexOf("/")) : addressString;
+                                    break;
+                                }
+                            }
+                            if(addressString != null){
+                                svcDelta += ";\n    mrs:hasNetworkAddress          "
+                                        + "&lt;" + topoUri + ":" + vcnName + ":" + vmName + ":eth0:floatingip&gt; .\n\n"
+                                        + "&lt;" + topoUri + ":" + vcnName + ":" + vmName + ":eth0:floatingip&gt;\n"
+                                        + "    a            mrs:NetworkAddress;\n"
+                                        + "    mrs:type     \"floating-ip\";\n"
+                                        + "    mrs:value     \"" + addressString + "\".\n\n";
+                                for (Object interObj : interArr) {
+                                    JSONObject interJson = (JSONObject) interObj;
+                                    String typeString = (String) interJson.get("type");
+                                    String gateway = (String) interJson.get("gateway");
+                                    if (typeString.equalsIgnoreCase("SRIOV") && gateway.equalsIgnoreCase("l2path-aws-dc1") && sriov == false) {
+                                        //Parse sriov ip, mac, and routes.
+                                        String address = (String) interJson.get("address");
+                                        String[] addArr = address.split(",");
+                                        String ip = null;
+                                        String mac = null;
+                                        for (String str : addArr) {
+                                            ip = str.contains("ip") ? str.substring(5) : ip;
+                                            mac = str.contains("mac") ? str.substring(4) : mac;
+                                        }
+                                        JSONArray routeArr = (JSONArray) interJson.get("routes");
+                                        for (Object r : routeArr) {
+                                            JSONObject route = (JSONObject) r;
+                                            if (route.containsKey("to")) {
+                                                JSONObject value = (JSONObject) route.get("to");
+                                                route.put("to", value.get("value"));
+                                            }
+                                            if (route.containsKey("from")) {
+                                                JSONObject value = (JSONObject) route.get("from");
+                                                route.put("from", value.get("value"));
+                                            }
+                                            if (route.containsKey("next_hop")) {
+                                                JSONObject value = (JSONObject) route.get("next_hop");
+                                                route.put("next_hop", value.get("value"));
+                                            }
+                                        }
+
+                                        svcDelta += "&lt;x-policy-annotation:action:ucs-sriov-stitch&gt;\n"
+                                                + "    a            spa:PolicyAction ;\n"
+                                                + "    spa:type     \"MCE_UcsSriovStitching\" ;\n"
+                                                + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;, "
+                                                + "&lt;x-policy-annotation:action:create-aws-ops-path&gt;;\n"
+                                                + "    spa:importFrom &lt;x-policy-annotation:data:sriov-criteria&gt;, "
+                                                + "&lt;x-policy-annotation:data:aws-ops-criteriaexport&gt; .\n\n"
+                                                + "&lt;x-policy-annotation:data:sriov-criteria&gt;\n"
+                                                + "    a            spa:PolicyData;\n"
+                                                + "    spa:type     \"JSON\";\n"
+                                                + "    spa:format    \"\"\"{\n"
+                                                + "       \"stitch_from\": \"" + topoUri + ":" + vcnName + ":" + vmName + "\",\n"
+                                                + "       \"mac_address\": \"" + mac + "\""
+                                                + (ip == null ? "" : ",\n       \"ip_address\": \"" + ip + "\"")
+                                                + (routeArr.isEmpty() ? "" : ",\n       \"routes\": " + routeArr.toString().replace("\\", ""))
+                                                + "\n    }\"\"\" .\n\n";
+                                        sriov = true;
+                                    }
+                                }
+                            }
+                            else
+                                svcDelta += ".\n\n";
+                        }
+                    }
+                }
+                
+                svcDelta += "&lt;x-policy-annotation:action:create-" + vcnName + "&gt;\n"
+                        + "    a            spa:PolicyAction ;\n"
+                        + "    spa:type     \"MCE_VirtualNetworkCreation\" ;\n"
+                        + "    spa:importFrom &lt;x-policy-annotation:data:" + vcnName + "-criteria&gt; "
+                        + (exportTo.isEmpty() ? "" : ";\n    spa:exportTo " + exportTo.substring(0, (exportTo.length() - 2)))
+                        + ".\n\n";
+
             }
             
             svcDelta += "&lt;x-policy-annotation:data:" + vcnName + "-criteria&gt;\n"
                     + "    a            spa:PolicyData;\n"
-                    + "    spa:type     nml:Topology;"
+                    + "    spa:type     nml:Topology;\n"
                     + "    spa:value    \"\"\"" + vcnJson.toString().replace("\\", "")
                     + "\"\"\".\n\n";
         }
         
-        svcDelta += "&lt;x-policy-annotation:action:create-path&gt;\n"
+        svcDelta += "&lt;x-policy-annotation:action:create-aws-ops-path&gt;\n"
                 + "    a            spa:PolicyAction ;\n"
                 + "    spa:type     \"MCE_MPVlanConnection\" ;\n"
-                + "    spa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;\n"
-                + "    spa:exportTo &lt;x-policy-annotation:data:conn-criteriaexport&gt; .\n\n"
-                + "&lt;x-policy-annotation:data:conn-criteriaexport&gt;\n"
+                + "    spa:importFrom &lt;x-policy-annotation:data:aws-ops-criteria&gt; ;\n"
+                + "    spa:exportTo &lt;x-policy-annotation:data:aws-ops-criteriaexport&gt; .\n\n"
+                + "&lt;x-policy-annotation:data:aws-ops-criteriaexport&gt;\n"
                 + "    a            spa:PolicyData;\n"
                 + "    spa:type     \"JSON\" ;\n"
                 + "    spa:format   \"\"\"{\n"
                 + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%\n"
                 + "    }\"\"\" .\n\n"
-                + "&lt;x-policy-annotation:data:conn-criteria&gt;\n"
+                + "&lt;x-policy-annotation:data:aws-ops-criteria&gt;\n"
                 + "    a            spa:PolicyData;\n"
                 + "    spa:type     \"JSON\";\n"
                 + "    spa:value    \"\"\"{\n"
