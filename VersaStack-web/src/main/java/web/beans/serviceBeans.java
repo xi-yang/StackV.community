@@ -1081,12 +1081,12 @@ public class serviceBeans {
                                 + "    a            spa:PolicyAction ;\n"
                                 + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
                                 + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vcnName + "&gt; ;\n"
-                                + "    spa:importFrom &lt;x-policy-annotation:data:" + vcnName + "-host-criteria&gt;.\n\n"
-                                + "&lt;x-policy-annotation:action:create-" + vmName + "&-eth0gt;\n"
+                                + "    spa:importFrom &lt;x-policy-annotation:data:" + vcnName + "-" + vmName + "-host-criteria&gt;.\n\n"
+                                + "&lt;x-policy-annotation:action:create-" + vmName + "-eth0&gt;\n"
                                 + "    a            spa:PolicyAction ;\n"
                                 + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
                                 + "    spa:importFrom " + subnetCriteria + ".\n\n"
-                                + "&lt;x-policy-annotation:data:" + vcnName + "-host-criteria&gt;\n"
+                                + "&lt;x-policy-annotation:data:" + vcnName + "-" + vmName + "-host-criteria&gt;\n"
                                 + "    a            spa:PolicyData;\n"
                                 + "    spa:type     \"JSON\";\n"
                                 + "    spa:value    \"\"\"{\n"
@@ -1094,7 +1094,7 @@ public class serviceBeans {
                                 + "    }\"\"\" .\n\n"
                                 + "&lt;" + topoUri + ":" + vcnName + ":" + vmName + ":eth0&gt;\n"
                                 + "    a            nml:BidirectionalPort ;\n"
-                                + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&-eth0gt; ";
+                                + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "-eth0&gt; ";
                         
                         if(!vmJson.containsKey("interfaces"))
                             svcDelta += ".\n\n";
