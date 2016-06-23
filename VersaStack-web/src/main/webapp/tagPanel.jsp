@@ -182,7 +182,7 @@
                 $.ajax({
                     crossDomain: true,
                     type: "DELETE",
-                    url: "/VersaStack-web/restapi/app/label/" + userName + "/clear",
+                    url: "/VersaStack-web/restapi/app/label/" + userName + "/clearall",
 
                     success: function(data,  textStatus,  jqXHR ) {
                         $("#tagPanel").popover({content: "Tags Cleared", placement: "top", trigger: "manual"});
