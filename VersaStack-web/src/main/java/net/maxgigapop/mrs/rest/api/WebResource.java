@@ -275,8 +275,10 @@ public class WebResource {
                     + " FROM service WHERE filename = ?");
             prep.setString(1, serviceType);
             rs1 = prep.executeQuery();
-            rs1.next();
-            int serviceID = rs1.getInt(1);
+            int serviceID = -1;
+            while (rs1.next()) {
+                serviceID = rs1.getInt(1);
+            }
             Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
 
             // Install Instance into DB.
