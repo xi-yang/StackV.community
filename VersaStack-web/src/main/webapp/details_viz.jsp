@@ -129,6 +129,9 @@
             #displayPanel-contents{ 
                 padding-right: 3%;
             }
+            .details-viz-recenter-button{
+                float:right;
+            }
         </style>
        
         <script type="text/javascript">
@@ -223,9 +226,26 @@
                 //$("#viz").attr("class", "");
                 //$("#viz2").attr("class", "");
                 //alert("i'm here. ")
+                
             }
             
-            function displayError(error, d3_obj) {
+
+                
+            function recenterGraph(outputApi, model) {
+                outputApi.resetZoom();
+                var width = $("#va_viz").closest("td").width();
+                var height = $( "#va_viz").closest("td").height();
+
+                layout.stop();
+                //layout.force().gravity(1).charge(-900).start();
+                layout.testLayout(model, null, width, height);
+                layout.testLayout(model, null, width, height); 
+
+                outputApi.resetZoom();
+                render.doRender(outputApi, model);
+            }
+
+           function displayError(error, d3_obj) {
                d3_obj.select("#viz").append("text")
                        .attr("x", $(window).width() / 4)
                        .attr("y", $(window).height() / 2 )
@@ -288,8 +308,13 @@
                             vaModel.initWithMap(vaObj, model);
                             var outputApi = new outputApi_(render.API, contextMenu, "va_viz");
                             drawGraph(outputApi, vaModel);
+                            $("#va_viz_recenter_button").click(function (evt) {
+                                recenterGraph(outputApi, vaModel);
+                                evt.preventDefault();
+                            });                            
                          }  else {
                              displayError("Empty", d3,"va_viz");
+                             $("#va_viz_recenter_button").attr('disabled','disabled'); 
                          }
                         
                         if (data.verified_reduction && data.verified_reduction !==  '{ }') {
@@ -297,9 +322,14 @@
                             var vrModel = new ModelConstructor();
                             vrModel.initWithMap(vrObj, model);
                             var outputApi2 = new outputApi_(render.API, contextMenu, "vr_viz");
-                            drawGraph(outputApi2, vrModel);                       
+                            drawGraph(outputApi2, vrModel);   
+                            $("#vr_viz_recenter_button").click(function (evt) {
+                                recenterGraph(outputApi2, vrModel);
+                                evt.preventDefault();
+                            });                            
                         } else {
                             displayError("Empty", d3,"vr_viz");
+                            $("#vr_viz_recenter_button").attr('disabled','disabled');                         
                         }
                         
                         if (data.unverified_addition && data.unverified_addition !==  '{ }') {
@@ -307,9 +337,14 @@
                             var uaModel = new ModelConstructor();
                             uaModel.initWithMap(uaObj, model);
                             var outputApi3 = new outputApi_(render.API, contextMenu, "ua_viz");
-                            drawGraph(outputApi3, uaModel);                        
+                            drawGraph(outputApi3, uaModel); 
+                            $("#ua_viz_recenter_button").click(function (evt) {
+                                recenterGraph(outputApi3, uaModel);
+                                evt.preventDefault();
+                            });                           
                         } else {
                             displayError("Empty", d3,"ua_viz");
+                            $("#ua_viz_recenter_button").attr('disabled','disabled');
                         }
                         
                         if (data.unverified_reduction && data.unverified_reduction !==  '{ }'){
@@ -317,11 +352,15 @@
                             var urModel = new ModelConstructor();
                             urModel.initWithMap(urObj, model);
                             var outputApi4 = new outputApi_(render.API, contextMenu, "ur_viz");
-                            drawGraph(outputApi4, urModel);                        
+                            drawGraph(outputApi4, urModel);
+                            $("#ur_viz_recenter_button").click(function (evt) {
+                                recenterGraph(outputApi4, urModel);
+                                evt.preventDefault();
+                            });                                  
                         } else {
                             displayError("Empty", d3,"ur_viz");
-                        }
-                        
+                            $("#ur_viz_recenter_button").attr('disabled','disabled');
+                        }                
                     },
 
                     error: function(jqXHR, textStatus, errorThrown ) {
@@ -426,7 +465,7 @@
                 };
 
                 this.resetZoom = function () {   // @
-                    zoomFactor = settings.INIT_ZOOM;
+                    that.setZoom(.8);
                     offsetX = 0;
                     offsetY = 0;                    
                     this._updateTransform();
@@ -592,6 +631,7 @@
 
                                 </g>
                                 </svg>
+                                <button   class="details-viz-recenter-button" id="va_viz_recenter_button">Recenter</button>
                              </div>
                                 <div id="vr_viz_div" class="hidden">
                                     <div class="hover_div" id="hoverdiv_vr_viz"></div>        
@@ -660,6 +700,7 @@
 
                                 </g>
                                 </svg>  
+                                <button class="details-viz-recenter-button" id="vr_viz_recenter_button">Recenter</button>
                                 </div>
                             
 
@@ -730,6 +771,8 @@
 
                                 </g>
                                 </svg>       
+                                <button   class="details-viz-recenter-button" id="ua_viz_recenter_button">Recenter</button>
+
                             </div>
                         
                             <div id="ur_viz_div" class="hidden">
@@ -798,7 +841,8 @@
                                 <g id="volume_ur_viz"/>
 
                                 </g>
-                                </svg>     
+                                </svg> 
+                                <button  class="details-viz-recenter-button" id="ur_viz_recenter_button">Recenter</button>
                             </div>
         </div>
         <script> onload(); </script>
