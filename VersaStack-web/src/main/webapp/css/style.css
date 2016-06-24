@@ -895,6 +895,13 @@ body {
     padding-right: 0px;
 }
 
+.fade-hide {
+    display: none;
+    
+    opacity: 0;
+    transition: opacity 1s ease;
+}
+
 .subfs-table {
     width: 100%;
     margin-bottom: 10px;
@@ -911,6 +918,16 @@ body {
 .subfs-table .subfs-headrow {
     border-top: 1px solid #969696;
     border-bottom: 1px solid #969696;    
+    
+    transition: background-color 0.5s ease;
+    transition: color 0.5s ease;
+}
+
+.subfs-headrow.closed {
+    color: #ffffff;
+    background-color: #27AE60;
+    
+    
 }
 
 /*inputs*/
@@ -950,7 +967,7 @@ body {
     box-shadow: 0 0 0 2px white, 0 0 0 3px #27AE60;
 }
 
-/*headings*/
+/*text*/
 .fs-title {
     font-size: 15px;
     text-transform: uppercase;
@@ -963,6 +980,11 @@ body {
     color: #666;
     margin-bottom: 20px;
 }
+.fs-subtext {
+    font-size: 13px;
+    padding: 0px 20%;
+    margin-bottom: 5px;
+}
 
 /*table*/
 .fs-table {
@@ -974,6 +996,8 @@ body {
     padding-bottom: 10px;
     text-align: left;
 }
+
+
 
 /*progressbar*/
 #progressbar {

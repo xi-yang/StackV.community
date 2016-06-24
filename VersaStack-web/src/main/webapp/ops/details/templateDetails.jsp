@@ -61,9 +61,9 @@
                             <select id="refresh-timer" onchange="timerChange(this)">
                                 <option value="off">Off</option>
                                 <option value="5">5 sec.</option>
-                                <option value="10" selected>10 sec.</option>
+                                <option value="10">10 sec.</option>
                                 <option value="30">30 sec.</option>
-                                <option value="60">60 sec.</option>
+                                <option value="60" selected>60 sec.</option>
                             </select>
                         </div>       
                         <button class="button-header" id="refresh-button" onclick="reloadInstance()">Refresh in    seconds</button>
@@ -94,13 +94,15 @@
                                 <td colspan="2">
                                     <div class="service-instance-panel">
                                         <button class="hide" id="instance-reinstate" onClick="reinstateInstance('${param.uuid}')">Reinstate</button>
+                                        <button class="hide" id="instance-freinstate" onClick="forceReinstateInstance('${param.uuid}')">Force Reinstate</button>
                                         <button class="hide" id="instance-cancel" onClick="cancelInstance('${param.uuid}')">Cancel</button>
                                         <button class="hide" id="instance-fcancel" onClick="forceCancelInstance('${param.uuid}')">Force Cancel</button>
-                                        <button class="hide" id="instance-fretry" onClick="">Force Retry</button>
-                                        <button class="hide" id="instance-modify" onClick="">Modify</button>
-                                        <button class="hide" id="instance-fmodify" onClick="">Force Modify</button>
-                                        <button class="hide" id="instance-reverify" onClick="">Re-Verify</button>
+                                        <button class="hide" id="instance-fretry" onClick="forceRetryInstance('${param.uuid}')">Force Retry</button>
+                                        <button class="hide" id="instance-modify" onClick="modifyInstance('${param.uuid}')">Modify</button>
+                                        <button class="hide" id="instance-fmodify" onClick="forceModifyInstance('${param.uuid}')">Force Modify</button>
+                                        <button class="hide" id="instance-reverify" onClick="verifyInstance('${param.uuid}')">Re-Verify</button>
                                         <button class="hide" id="instance-delete" onClick="deleteInstance('${param.uuid}')">Delete</button>
+                                        <button class="hide" id="instance-fdelete" onClick="deleteInstance('${param.uuid}')">Force Delete</button>
                                     </div>
                                 </td>
                             </tr>
@@ -181,7 +183,7 @@
                 instructionModerate();
                 buttonModerate();
 
-                setRefresh(10);
+                setRefresh(60);
             });
 
             function timerChange(sel) {
@@ -284,7 +286,7 @@
                 }
                 // State 1 - Ready & Verifying
                 else if (subState === 'READY' && verificationState === '0') {
-                    blockString = "Service is verifying. (Run " + verificationRun + "/5)";
+                    blockString = "Service is verifying.";
                 }
                 // State 2 - Ready & Verified
                 else if (subState === 'READY' && verificationState === '1') {
@@ -356,6 +358,40 @@
                         $("#instance-reinstate").toggleClass("hide");
                         $("#instance-modify").toggleClass("hide");
                         $("#instance-delete").toggleClass("hide");
+                    }
+                    // State 3 - Ready & Unverified
+                    else if (subState === 'READY' && verificationState === '-1') {
+                        $("#instance-fdelete").toggleClass("hide");
+                        $("#instance-freinstate").toggleClass("hide");
+                        $("#instance-reverify").toggleClass("hide");
+                    }
+                    // State 4 - Failed & Verifying
+                    else if (subState === 'FAILED' && verificationState === '0') {
+
+                    }
+                    // State 5 - Failed & Verified
+                    else if (subState === 'FAILED' && verificationState === '1') {
+                        $("#instance-freinstate").toggleClass("hide");
+                        $("#instance-fmodify").toggleClass("hide");
+                        $("#instance-delete").toggleClass("hide");
+                    }
+                    // State 6 - Failed & Unverified
+                    else if (subState === 'FAILED' && verificationState === '-1') {
+                        $("#instance-fdelete").toggleClass("hide");
+                        $("#instance-freinstate").toggleClass("hide");
+                        $("#instance-fretry").toggleClass("hide");
+                        $("#instance-reverify").toggleClass("hide");
+                    }
+                }
+                else if (superState === 'Reinstate') {
+                    // State 1 - Ready & Verifying
+                    if (subState === 'READY' && verificationState === '0') {
+
+                    }
+                    // State 2 - Ready & Verified
+                    else if (subState === 'READY' && verificationState === '1') {
+                        $("#instance-cancel").toggleClass("hide");
+                        $("#instance-modify").toggleClass("hide");
                     }
                     // State 3 - Ready & Unverified
                     else if (subState === 'READY' && verificationState === '-1') {

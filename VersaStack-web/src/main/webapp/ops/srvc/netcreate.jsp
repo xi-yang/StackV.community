@@ -182,7 +182,7 @@
                                                                 <table id="subnet1-vm1-table">                                                                    
                                                                     <tbody>
                                                                         <tr>
-                                                                            <td>VM Name</th>
+                                                                            <td>VM Name</td>
                                                                             <td><input type="text" name="subnet1-vm1"></td>
                                                                         </tr>
                                                                         <tr>
