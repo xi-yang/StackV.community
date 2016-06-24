@@ -247,7 +247,21 @@
                 render.doRender(outputApi, model, false);
 //                animStart(30);
             }
-            
+            function displayError(error, d3_obj, viz_id) {
+               var div_width = $("#" + viz_id).width();
+               var div_height = $("#" + viz_id).height();
+               var x = (div_width/4) + (div_width/8);
+               var y = (div_height/2) + (div_height/8);
+               
+               d3_obj.select("#" + viz_id).append("text")
+                       .attr("x", x)
+                       .attr("y",  y)
+                       .attr("fill", "black")
+                       .attr("font-size", "50px")
+                       .attr("opacity", .4)
+                       .text(error);
+            }
+
             function showDiactivatedViz(viz_id) {
                var viz_container =  $("#" + viz_id + "_div");
                //viz_container.addClass("inactive_details_viz");
@@ -275,7 +289,7 @@
                             var outputApi = new outputApi_(render.API, contextMenu, "va_viz");
                             drawGraph(outputApi, vaModel);
                          }  else {
-                             showDiactivatedViz("va_viz");
+                             displayError("Empty", d3,"va_viz");
                          }
                         
                         if (data.verified_reduction && data.verified_reduction !==  '{ }') {
@@ -285,7 +299,7 @@
                             var outputApi2 = new outputApi_(render.API, contextMenu, "vr_viz");
                             drawGraph(outputApi2, vrModel);                       
                         } else {
-                            showDiactivatedViz("vr_viz");
+                            displayError("Empty", d3,"vr_viz");
                         }
                         
                         if (data.unverified_addition && data.unverified_addition !==  '{ }') {
@@ -295,7 +309,7 @@
                             var outputApi3 = new outputApi_(render.API, contextMenu, "ua_viz");
                             drawGraph(outputApi3, uaModel);                        
                         } else {
-                            showDiactivatedViz("ua_viz");
+                            displayError("Empty", d3,"ua_viz");
                         }
                         
                         if (data.unverified_reduction && data.unverified_reduction !==  '{ }'){
@@ -305,7 +319,7 @@
                             var outputApi4 = new outputApi_(render.API, contextMenu, "ur_viz");
                             drawGraph(outputApi4, urModel);                        
                         } else {
-                            showDiactivatedViz("ur_viz");
+                            displayError("Empty", d3,"ur_viz");
                         }
                         
                     },
