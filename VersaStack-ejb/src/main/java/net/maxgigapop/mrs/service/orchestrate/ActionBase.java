@@ -208,6 +208,7 @@ public class ActionBase {
             IModelComputationElement ejbMce = (IModelComputationElement) ejbCxt.lookup(this.mceBeanPath);
             this.state = ActionState.PROCESSING;
             Future<ServiceDelta> asyncResult = ejbMce.process(policy, referenceModel, inputDelta);
+            log.info("@Processing => "+policy);
             //# not FINISHED yet
             return asyncResult;
         } catch (NamingException ex) {
