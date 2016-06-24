@@ -136,6 +136,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
     //?? Use current containing abstract Topology ?
     // ignore if dependOn 'Abstraction'
     private OntModel doPlacement(OntModel model, Resource vm, List<Map> placementCriteria) {
+        log.info("@doPlacement -> "+vm);
         OntModel placementModel = null;
         for (Map filterCriterion : placementCriteria) {
             if (!filterCriterion.containsKey("data") || !filterCriterion.containsKey("type") || !filterCriterion.containsKey("value")) {
