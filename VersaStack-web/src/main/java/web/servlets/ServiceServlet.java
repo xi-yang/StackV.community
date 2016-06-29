@@ -372,7 +372,7 @@ public class ServiceServlet extends HttpServlet {
                     //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name"
                     for (int j = 1; j <= 10; j++) {
                         JSONObject vmJSON = new JSONObject();
-                        if (paraMap.containsKey("subnet" + i + "-vm" + j)) {
+                        if (Integer.parseInt(paraMap.get("vm" + j + "-subnet")) == i) {
                             vmJSON.put("name", paraMap.get("subnet" + i + "-vm" + j));
 
                             // Parse Types.

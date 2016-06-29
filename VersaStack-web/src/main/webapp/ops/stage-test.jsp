@@ -37,12 +37,11 @@
 
     <body>
         <!-- NAV BAR -->
-        <div id="nav">
-        </div>
+        <div id="nav"></div>
         <!-- SIDE BAR -->
-        <div id="sidebar">            
-        </div>
+        <div id="sidebar"></div>
         <!-- MAIN PANEL -->
+        <div id="black-screen"></div>
         <div id="main-pane">
             <!-- Multistep form -->
             <form action="/VersaStack-web/ServiceServlet" method="post" id="msform" target="_blank">
@@ -55,9 +54,16 @@
                     <li>Gateways</li>
                     <li>Summary</li>
                 </ul>
+                
+                <fieldset class="active-fs" id="mode-select">
+                    <div><button type="button" class="action-button" onclick="applyTemplate(0)">Start from Scratch</button></div>
+                    <h3 class="fs-title">Templates</h3>
+                    <div><button type="button" class="action-button" onclick="applyTemplate(1)">Template 1</button></div>
+                    <div><button type="button" class="action-button" onclick="applyTemplate(2)">Template 2</button></div>
+                </fieldset>
 
                 <!-- Stage 1: Host --> 
-                <fieldset class="active-fs" id='1-base-start'>
+                <fieldset id='1-base-start'>
                     <h2 class="fs-title">Select your Host</h2>
                     <h3 class="fs-subtitle"></h3>
                     <button type="button" name="type" class="stage1-next action-button" value="aws">AWS</button>
@@ -82,8 +88,8 @@
                                         <c:forEach var="driver" items="${driverlist.rows}">
                                             <option value="${driver.topologyUri}">${driver.topologyUri}</option>
                                         </c:forEach>
-                                    </select>       
-                                </td>
+                                    </select>        
+                               </td>
                             </tr>
                         </thead>
                         <tbody>

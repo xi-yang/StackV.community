@@ -18,16 +18,13 @@ $(function () {
 
         current_fs = $(this).parent();
         next_fs = $(fieldset_id);
-
-        $(".active-fs").removeClass("active-fs"); 
-        next_fs.addClass("active-fs");
         
         if (this.value === 'aws') {
              $("#progressbar li").eq(4).addClass("disabled");
         }
-        
-        setProgress(next_fs.attr('id').charAt(0));
+                
         nextStage(current_fs, next_fs);
+        setProgress(next_fs.attr('id').charAt(0));
     });
 
     $(".next").click(function () {
@@ -36,16 +33,12 @@ $(function () {
         animating = true;
 
         current_fs = $(this).parent();
-        next_fs = $(this).parent().next();
-
-        $(".active-fs").removeClass("active-fs"); 
-        next_fs.addClass("active-fs");        
-
+        next_fs = $(this).parent().next();       
+        
+        nextStage(current_fs, next_fs);
         if (next_fs.attr('id')) {
             setProgress(next_fs.attr('id').charAt(0));
         }        
-        
-        nextStage(current_fs, next_fs);
     });
 
     $(".previous").click(function () {
@@ -54,16 +47,12 @@ $(function () {
         animating = true;
 
         current_fs = $(this).parent();
-        previous_fs = $(this).parent().prev();
-
-        $(".active-fs").removeClass("active-fs"); 
-        previous_fs.addClass("active-fs"); 
+        previous_fs = $(this).parent().prev();; 
         
+        previousStage(current_fs, previous_fs);
         if (previous_fs.attr('id')) {
             setProgress(previous_fs.attr('id').charAt(0));
-        }        
-                
-        previousStage(current_fs, previous_fs);
+        }                               
     });
 
     $(".reset").click(function () {
@@ -72,12 +61,12 @@ $(function () {
         animating = true;
 
         current_fs = $(this).parent();
-        base_fs = $('#1-base-start');
+        base_fs = $('#1-base-1');
         
         $("#progressbar li").removeClass("disabled");
         
-        setProgress(1);
         previousStage(current_fs, base_fs);
+        setProgress(1);
     });
 
     $(".subfs-headrow").click(function () {
@@ -88,7 +77,7 @@ $(function () {
     });
     
     $("#progressbar li").click(function () {
-        if (animating || this.hasClass('disabled'))
+        if (animating || $(this).hasClass('disabled'))
             return false;
         animating = true;
                 
@@ -107,9 +96,6 @@ $(function () {
         else if (next_index < curr_index) {
             previousStage(current_fs, next_fs);   
         }
-        
-        $(".active-fs").removeClass("active-fs"); 
-        next_fs.addClass("active-fs"); 
     });
 });
 
@@ -130,6 +116,9 @@ function setProgress(stage_num) {
 }
 
 function nextStage(current_fs, incoming_fs) {
+    $(".active-fs").removeClass("active-fs"); 
+    incoming_fs.addClass("active-fs"); 
+    
     //show the next fieldset
     incoming_fs.show();
     //hide the current fieldset with style
@@ -156,6 +145,9 @@ function nextStage(current_fs, incoming_fs) {
 }
 
 function previousStage(current_fs, incoming_fs) {
+    $(".active-fs").removeClass("active-fs"); 
+    incoming_fs.addClass("active-fs");     
+    
     //show the next fieldset
     incoming_fs.show();
     //hide the current fieldset with style
@@ -179,6 +171,29 @@ function previousStage(current_fs, incoming_fs) {
         //this comes from the custom easing plugin
         easing: 'easeInOutBack'
     });
+}
+
+function applyTemplate(mode) {
+    $("#black-screen").addClass("off");
+    if (animating)
+        return false;
+    animating = true;
+    
+    if (mode === 0) {             
+        base_fs = $('#1-base-1');
+        mode_fs = $('#mode-select');
+        nextStage(mode_fs, base_fs);
+    }
+    else if (mode === 1) {                
+        current_fs = $("#mode-select");
+        next_fs = $("#6-aws-1");
+        
+        nextStage(current_fs, next_fs);
+        setProgress(6);
+    } 
+    else if (mode === 2) {
+        
+    }
 }
 
 var subnetCount;
@@ -258,13 +273,17 @@ function setSubRoutes(input) {
     table.innerHTML = "";
     
     var subRouteCount = input.value;
+    var row = table.insertRow(0);
+    var cell = row.insertCell(0);
+    cell.innerHTML = '<input type = "checkbox" name = "subnet' + subnetId + '-route-prop" value = "true" /> Enable VPN Routes Propagation';
+    
     for (j = 1; j <= subRouteCount; j++) {
         var row3 = table.insertRow(j - 1);
         var cell3_1 = row3.insertCell(0);
 
-        cell3_1.innerHTML = '<input type="text" name="subnet' + i + '-route' + j + '-from" placeholder="From"/>' +
-                '<input type="text" name="subnet' + i + '-route' + j + '-to" placeholder="To"/>' +
-                '<input type="text" name="subnet' + i + '-route' + j + '-next" placeholder="Next Hop"/>';
+        cell3_1.innerHTML = '<input type="text" name="subnet' + subnetId + '-route' + j + '-from" placeholder="From"/>' +
+                '<input type="text" name="subnet' + subnetId + '-route' + j + '-to" placeholder="To"/>' +
+                '<input type="text" name="subnet' + subnetId + '-route' + j + '-next" placeholder="Next Hop"/>';
     }
 }
 
@@ -309,7 +328,7 @@ function setVMs(input) {
         var cell2_1 = document.createElement("td");
         var cell2_2 = document.createElement("td");        
         
-        var selectString = '<select name="vm' + i + '-subnet"><option selected disabled>Select the subnet host.</option>';
+        var selectString = '<select name="vm' + i + '-subnet"><option selected disabled required>Select the subnet host.</option>';
         for (j = 1; j <= subnetCount; j++) {
             var subnetTag = document.getElementById("subnet" + j + "-tag");
             
