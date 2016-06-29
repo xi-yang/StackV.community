@@ -1159,7 +1159,7 @@ public class serviceBeans {
                                                 + "&lt;x-policy-annotation:data:sriov-criteria&gt;\n"
                                                 + "    a            spa:PolicyData;\n"
                                                 + "    spa:type     \"JSON\";\n"
-                                                + "    spa:format    \"\"\"{\n"
+                                                + "    spa:value    \"\"\"{\n"
                                                 + "       \"stitch_from\": \"" + topoUri + ":" + vcnName + ":" + vmName + "\",\n"
                                                 + "       \"mac_address\": \"" + mac + "\""
                                                 + (ip == null ? "" : ",\n       \"ip_address\": \"" + ip + "\"")
