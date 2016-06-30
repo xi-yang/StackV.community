@@ -1083,6 +1083,7 @@ public class serviceBeans {
                                 + "&lt;x-policy-annotation:action:create-" + vmName + "-eth0&gt;\n"
                                 + "    a            spa:PolicyAction ;\n"
                                 + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
+                                + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vcnName + "&gt; ;\n"
                                 + "    spa:importFrom " + subnetCriteria + ".\n\n"
                                 + "&lt;x-policy-annotation:data:" + vcnName + "-" + vmName + "-host-criteria&gt;\n"
                                 + "    a            spa:PolicyData;\n"
