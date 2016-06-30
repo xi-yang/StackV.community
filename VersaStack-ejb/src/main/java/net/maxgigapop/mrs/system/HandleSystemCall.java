@@ -175,6 +175,7 @@ public class HandleSystemCall {
 
     public void terminateInstance(String refUUID) {
         SystemInstance systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(refUUID);
+        systemInstance = SystemInstancePersistenceManager.findById(systemInstance.getId());
         if (systemInstance == null) {
             throw new EJBException(String.format("terminateInstance cannot find the SystemInstance with referenceUUID=%s", refUUID));
         }
@@ -183,16 +184,17 @@ public class HandleSystemCall {
             if (systemInstance.getSystemDelta().getDriverSystemDeltas() != null) {
                 for (Iterator<DriverSystemDelta> it = systemInstance.getSystemDelta().getDriverSystemDeltas().iterator(); it.hasNext();) {
                     DriverSystemDelta dsd = it.next();
-                    DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(dsd.getDriverInstance().getTopologyUri());
+                    //DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(dsd.getDriverInstance().getTopologyUri());
+                    DriverInstance driverInstance = dsd.getDriverInstance();
                     driverInstance.getDriverSystemDeltas().remove(dsd);
                     DeltaPersistenceManager.delete(dsd);
                 }
             }
         }
-        SystemInstancePersistenceManager.delete(systemInstance);
         if (systemInstance.getSystemDelta() != null) {
             DeltaPersistenceManager.delete(systemInstance.getSystemDelta());
         }
+        SystemInstancePersistenceManager.delete(systemInstance);
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
