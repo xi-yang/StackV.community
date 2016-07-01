@@ -9,10 +9,10 @@ var baseUrl = window.location.origin;
 $(function () {
     $("#nav").load("/VersaStack-web/navbar.html");
     $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
-        $("#sidebar-toggle").click(function (evt) {
-            $("#sidebar-toggle-1").toggleClass("img-off");
-            $("#sidebar-toggle-2").toggleClass("img-off");
-            
+        $(".pure-toggle-label").click(function (evt) {
+            $(".pure-toggle-label").toggleClass("toggle-open");
+            $(".pure-toggle-icon").toggleClass("toggle-open");
+
             $("#sidebar-contents").toggleClass("sidebar-open");
             $("#main-pane").toggleClass("sidebar-open");
 

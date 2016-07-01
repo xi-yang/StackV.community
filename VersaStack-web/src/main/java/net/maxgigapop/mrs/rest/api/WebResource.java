@@ -625,15 +625,13 @@ public class WebResource {
     
 
     // Parsing Methods ---------------------------------------------------------
-    
-    // @TODO: PRETTY MUCH UNDOING SERVLET CODE?
     private HashMap<String, String> parseDNC(JSONObject dataJSON, String refUuid) {
         HashMap<String, String> paraMap = new HashMap<>();
         paraMap.put("instanceUUID", refUuid);
 
         JSONArray linksArr = (JSONArray) dataJSON.get("links");
-        for (int i = 1; i <= linksArr.size(); i++) {
-            JSONObject linksJSON = (JSONObject) linksArr.get(i - 1);
+        for (int i = 0; i < linksArr.size(); i++) {
+            JSONObject linksJSON = (JSONObject) linksArr.get(i);
             String name = (String) linksJSON.get("name");
             String src = (String) linksJSON.get("src");
             String srcVlan = (String) linksJSON.get("src-vlan");
@@ -641,12 +639,10 @@ public class WebResource {
             String desVlan = (String) linksJSON.get("des-vlan");
 
             String linkUrn = servBean.urnBuilder("dnc", name, refUuid);
+            String connString = src + "&vlan_tag+" + srcVlan + "\r\n" + des + "&vlan_tag+" + desVlan;
 
-            paraMap.put("linkUri" + i, linkUrn);
-            paraMap.put("src-conn" + i, src);
-            paraMap.put("des-conn" + i, des);
-            paraMap.put("src-vlan" + i, srcVlan);
-            paraMap.put("des-vlan" + i, desVlan);
+            paraMap.put("linkUri" + (i + 1), linkUrn);
+            paraMap.put("conn" + (i + 1), connString);
         }
 
         return paraMap;
