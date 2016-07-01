@@ -18,13 +18,10 @@ $(function () {
 
         current_fs = $(this).parent();
         next_fs = $(fieldset_id);
-        
-        if (this.value === 'aws') {
-             $("#progressbar li").eq(4).addClass("disabled");
-        }
-                
+
+        configureProgress(this.value);
+
         nextStage(current_fs, next_fs);
-        setProgress(next_fs.attr('id').charAt(0));
     });
 
     $(".next").click(function () {
@@ -33,12 +30,8 @@ $(function () {
         animating = true;
 
         current_fs = $(this).parent();
-        next_fs = $(this).parent().next();       
-        
+        next_fs = $(this).parent().next();
         nextStage(current_fs, next_fs);
-        if (next_fs.attr('id')) {
-            setProgress(next_fs.attr('id').charAt(0));
-        }        
     });
 
     $(".previous").click(function () {
@@ -47,12 +40,8 @@ $(function () {
         animating = true;
 
         current_fs = $(this).parent();
-        previous_fs = $(this).parent().prev();; 
-        
+        previous_fs = $(this).parent().prev();
         previousStage(current_fs, previous_fs);
-        if (previous_fs.attr('id')) {
-            setProgress(previous_fs.attr('id').charAt(0));
-        }                               
     });
 
     $(".reset").click(function () {
@@ -60,13 +49,11 @@ $(function () {
             return false;
         animating = true;
 
+        resetStages();
+        
         current_fs = $(this).parent();
         base_fs = $('#1-base-1');
-        
-        $("#progressbar li").removeClass("disabled");
-        
         previousStage(current_fs, base_fs);
-        setProgress(1);
     });
 
     $(".subfs-headrow").click(function () {
@@ -75,29 +62,53 @@ $(function () {
 
         body.toggleClass("hide");
     });
-    
+
     $("#progressbar li").click(function () {
         if (animating || $(this).hasClass('disabled'))
             return false;
         animating = true;
-                
-        var curr_id = $(".active-fs").attr('id').substring(0,5) + "-1";
+
+        var curr_id = $(".active-fs").attr('id');
         var curr_index = curr_id.charAt(0);
-        var next_index = $("#progressbar li").index(this) + 1;
-        var next_id = next_index + curr_id.substring(1);
-        
         current_fs = $("#" + curr_id);
-        next_fs = $("#" + next_id);
-        
-        setProgress(next_index);
-        if (next_index > curr_index) {
-            nextStage(current_fs, next_fs);   
+
+        var next_index = $("#progressbar li").index(this) + 1;
+        var next_superid = next_index + curr_id.substring(1, 5);
+
+        var next_fs_list = $("[id^=" + next_superid + "]");
+        if (next_fs_list.last().children().first().children().length === 0) {
+            next_fs = next_fs_list.first();
+        } else {
+            next_fs = next_fs_list.last();
+        }    
+
+        if (next_index === 1) {
+            resetStages();
+            
+            base_fs = $('#1-base-1');
+            previousStage(current_fs, base_fs);
+        }
+        else if (next_index > curr_index) {
+            nextStage(current_fs, next_fs);
         }
         else if (next_index < curr_index) {
-            previousStage(current_fs, next_fs);   
+            previousStage(current_fs, next_fs);
         }
     });
 });
+
+function configureProgress(type) {
+    $("#progressbar li").removeClass("disabled");
+
+    if (type === 'aws') {
+        $("#progressbar li").eq(4).addClass("disabled");
+    }
+}
+
+function resetStages() {
+    $("#progressbar li").addClass("disabled");
+    $("#msform")[0].reset();
+}
 
 function setProgress(stage_num) {
     // .eq is zero-indexed; stage 1 is actually element 0.
@@ -116,9 +127,11 @@ function setProgress(stage_num) {
 }
 
 function nextStage(current_fs, incoming_fs) {
-    $(".active-fs").removeClass("active-fs"); 
-    incoming_fs.addClass("active-fs"); 
-    
+    $(".active-fs").removeClass("active-fs");
+    incoming_fs.addClass("active-fs");
+    var incomingStage = incoming_fs.attr('id').substring(0, 1);
+    setProgress(incomingStage);
+
     //show the next fieldset
     incoming_fs.show();
     //hide the current fieldset with style
@@ -145,9 +158,11 @@ function nextStage(current_fs, incoming_fs) {
 }
 
 function previousStage(current_fs, incoming_fs) {
-    $(".active-fs").removeClass("active-fs"); 
-    incoming_fs.addClass("active-fs");     
-    
+    $(".active-fs").removeClass("active-fs");
+    incoming_fs.addClass("active-fs");
+    var incomingStage = incoming_fs.attr('id').substring(0, 1);
+    setProgress(incomingStage);
+
     //show the next fieldset
     incoming_fs.show();
     //hide the current fieldset with style
@@ -174,40 +189,111 @@ function previousStage(current_fs, incoming_fs) {
 }
 
 function applyTemplate(mode) {
+    var form = document.getElementById('msform');
     $("#black-screen").addClass("off");
     if (animating)
         return false;
     animating = true;
-    
-    if (mode === 0) {             
+
+    if (mode === 0) {
         base_fs = $('#1-base-1');
-        mode_fs = $('#mode-select');
+        mode_fs = $('#0-mode-select');
         nextStage(mode_fs, base_fs);
     }
-    else if (mode === 1) {                
-        current_fs = $("#mode-select");
-        next_fs = $("#6-aws-1");
-        
+    else {
+        // Basic AWS Template
+        if (mode === 1) {
+            current_fs = $("#0-mode-select");
+            next_fs = $("#2-aws-1");
+            configureProgress('aws');
+
+            form.elements['netType'].value = 'internal';
+            form.elements['netCidr'].value = '10.1.0.0/16';
+
+            var subnetCounter = document.getElementById('awsStage3-subnet');
+            subnetCounter.value = 2;
+            setSubnets(subnetCounter);
+
+            var sub1RouteCounter = document.getElementById('awsStage3-subnet1-routes');
+            sub1RouteCounter.value = 2;
+            setSubRoutes(sub1RouteCounter);
+
+            form.elements['subnet1-name'].value = '';
+            form.elements['subnet1-cidr'].value = '10.1.0.0/24';
+            form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
+            form.elements['subnet1-route1-next'].value = 'internet';
+            form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
+            form.elements['subnet1-route2-next'].value = 'vpn';
+            form.elements['subnet1-route-prop'].checked = true;
+
+            form.elements['subnet2-name'].value = '';
+            form.elements['subnet2-cidr'].value = '10.1.1.0/24';
+
+            form.elements['conn-dest'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*';
+            form.elements['conn-vlan'].value = 'any';
+        }
+        // AWS w/ VMs Template
+        else if (mode === 2) {
+            current_fs = $("#0-mode-select");
+            next_fs = $("#2-aws-1");
+            configureProgress('aws');
+
+            form.elements['netType'].value = 'internal';
+            form.elements['netCidr'].value = '10.1.0.0/16';
+
+            var subnetCounter = document.getElementById('awsStage3-subnet');
+            subnetCounter.value = 2;
+            setSubnets(subnetCounter);
+
+            var sub1RouteCounter = document.getElementById('awsStage3-subnet1-routes');
+            sub1RouteCounter.value = 2;
+            setSubRoutes(sub1RouteCounter);
+
+            var vmCounter = document.getElementById('awsStage4-vm');
+            vmCounter.value = 2;
+            setVMs(vmCounter);
+
+            form.elements['subnet1-name'].value = '';
+            form.elements['subnet1-cidr'].value = '10.1.0.0/24';
+
+            form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
+            form.elements['subnet1-route1-next'].value = 'internet';
+            form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
+            form.elements['subnet1-route2-next'].value = 'vpn';
+            form.elements['subnet1-route-prop'].checked = true;
+
+            form.elements['subnet2-name'].value = '';
+            form.elements['subnet2-cidr'].value = '10.1.1.0/24';
+
+            form.elements['vm1-name'].value = 'test_with_vm_types_1';
+            $("#awsStage4-vm1-table select").val("1");
+            form.elements['vm1-image'].value = 'ami-08111162';
+            form.elements['vm1-instance'].value = 't2.micro';
+
+            form.elements['vm2-name'].value = 'test_with_vm_types_2';
+            $("#awsStage4-vm2-table select").val("2");
+            form.elements['vm2-image'].value = 'ami-fce3c696';
+            form.elements['vm2-instance'].value = 't2.small';
+            form.elements['vm2-keypair'].value = 'xi-aws-max-dev-key';
+            form.elements['vm2-security'].value = 'geni';
+        }
+
         nextStage(current_fs, next_fs);
-        setProgress(6);
-    } 
-    else if (mode === 2) {
-        
     }
 }
 
 var subnetCount;
 function setSubnets(input) {
     subnetCount = input.value;
-    
-    var stage = input.id;    
+
+    var stage = input.id;
     var old = input.oldvalue;
     var fieldset = document.getElementById(stage + "-fs");
     var subTable = document.getElementById(stage + "-route-table");
 
     $("#" + stage + "-route-table tr").remove();
     fieldset.innerHTML = "";
-    
+
     var start = 1;
     for (i = start; i <= input.value; i++) {
         // Set stage 3 data table
@@ -231,7 +317,7 @@ function setSubnets(input) {
         row1.innerHTML += '<br>';
         thead.appendChild(row1);
         table.appendChild(thead);
-        
+
         row1.addEventListener('click', function () {
             var head = $(this).parent();
             var body1 = head.next();
@@ -245,14 +331,14 @@ function setSubnets(input) {
         var row2 = document.createElement("tr");
         var cell2_1 = document.createElement("td");
         var cell2_2 = document.createElement("td");
-        cell2_1.innerHTML = '<input type="text" name="subnet' + i + '-name" id="subnet' + i + '-tag" placeholder="Name"/>';
+        cell2_1.innerHTML = '<input type="text" name="subnet' + i + '-name" id="subnet' + i + '-tag" onchange="updateSubnetNames(this)" placeholder="Name"/>';
         cell2_2.innerHTML = '<input type="text" name="subnet' + i + '-cidr" placeholder="CIDR Block"/>';
         row2.appendChild(cell2_1);
         row2.appendChild(cell2_2);
-        tbody1.appendChild(row2);     
+        tbody1.appendChild(row2);
         table.appendChild(tbody1);
         table.appendChild(tbody2);
-        
+
         fieldset.appendChild(table);
 
         // Set inputs for subnet routes
@@ -262,7 +348,7 @@ function setSubnets(input) {
         cell.innerHTML = '<div class="fs-subtext">How many routes for Subnet ' + i + '?   ' +
                 '<input type="number" class="small-counter" id="' + stage + i + '-routes" ' +
                 'onfocus="this.oldvalue = this.value;" ' +
-                'onchange="setSubRoutes(this)" /></div>';   
+                'onchange="setSubRoutes(this)" /></div>';
     }
 }
 
@@ -270,20 +356,22 @@ function setSubRoutes(input) {
     // Grab correct subnet table
     var subnetId = input.id.substring(0, input.id.length - 7);
     var table = document.getElementById(subnetId + '-table').getElementsByTagName('tbody')[1];
+    var subnetNum = subnetId.substring(subnetId.length - 1);
     table.innerHTML = "";
-    
+
     var subRouteCount = input.value;
     var row = table.insertRow(0);
     var cell = row.insertCell(0);
-    cell.innerHTML = '<input type = "checkbox" name = "subnet' + subnetId + '-route-prop" value = "true" /> Enable VPN Routes Propagation';
-    
+    cell.innerHTML = '<label><input type = "checkbox" name = "subnet' + subnetNum + '-route-prop" value = "true"> Enable VPN Routes Propagation</label>';
+
+
     for (j = 1; j <= subRouteCount; j++) {
         var row3 = table.insertRow(j - 1);
         var cell3_1 = row3.insertCell(0);
 
-        cell3_1.innerHTML = '<input type="text" name="subnet' + subnetId + '-route' + j + '-from" placeholder="From"/>' +
-                '<input type="text" name="subnet' + subnetId + '-route' + j + '-to" placeholder="To"/>' +
-                '<input type="text" name="subnet' + subnetId + '-route' + j + '-next" placeholder="Next Hop"/>';
+        cell3_1.innerHTML = '<input type="text" name="subnet' + subnetNum + '-route' + j + '-from" placeholder="From"/>' +
+                '<input type="text" name="subnet' + subnetNum + '-route' + j + '-to" placeholder="To"/>' +
+                '<input type="text" name="subnet' + subnetNum + '-route' + j + '-next" placeholder="Next Hop"/>';
     }
 }
 
@@ -291,9 +379,9 @@ function setVMs(input) {
     var stage = input.id;
     var old = input.oldvalue;
     var fieldset = document.getElementById(stage + "-fs");
-    
+
     fieldset.innerHTML = "";
-    
+
     var start = 1;
     for (i = start; i <= input.value; i++) {
         // Set stage 3 data table
@@ -315,7 +403,7 @@ function setVMs(input) {
         row1.innerHTML += '<br>';
         thead.appendChild(row1);
         table.appendChild(thead);
-        
+
         row1.addEventListener('click', function () {
             var head = $(this).parent();
             var body = head.next();
@@ -326,21 +414,22 @@ function setVMs(input) {
 
         var row2 = document.createElement("tr");
         var cell2_1 = document.createElement("td");
-        var cell2_2 = document.createElement("td");        
-        
-        var selectString = '<select name="vm' + i + '-subnet"><option selected disabled required>Select the subnet host.</option>';
+        var cell2_2 = document.createElement("td");
+
+        var selectString = '<select name="vm' + i + '-subnet"><option selected disabled required>Select the subnet host</option>';
         for (j = 1; j <= subnetCount; j++) {
             var subnetTag = document.getElementById("subnet" + j + "-tag");
-            
+
             selectString += '<option value="' + j + '">Subnet ' + j + ' (' + subnetTag.value + ')</option>';
         }
         selectString += '</select>';
-        cell2_1.innerHTML = selectString;
-        
+
+        cell2_1.innerHTML = '<td><input type="text" name="vm' + i + '-name"></td>';
+        cell2_2.innerHTML = selectString;
         row2.appendChild(cell2_1);
         row2.appendChild(cell2_2);
         tbody.appendChild(row2);
-        
+
         var row3 = document.createElement("tr");
         var cell3_1 = document.createElement("td");
         var cell3_2 = document.createElement("td");
@@ -348,8 +437,8 @@ function setVMs(input) {
         cell3_2.innerHTML = '<input type="text" name="vm' + i + '-security" placeholder="Security Group">';
         row3.appendChild(cell3_1);
         row3.appendChild(cell3_2);
-        tbody.appendChild(row3);        
-               
+        tbody.appendChild(row3);
+
         var row4 = document.createElement("tr");
         var cell4_1 = document.createElement("td");
         var cell4_2 = document.createElement("td");
@@ -358,9 +447,17 @@ function setVMs(input) {
         row4.appendChild(cell4_1);
         row4.appendChild(cell4_2);
         tbody.appendChild(row4);
-        
-        
-        table.appendChild(tbody);        
+
+
+        table.appendChild(tbody);
         fieldset.appendChild(table);
     }
+}
+
+function updateSubnetNames(input) {
+    var subnetId = input.id;
+    var subnetNum = subnetId.substring(6, 7);
+
+    $('[id^=4] select option[value=' + subnetNum + ']').text(
+            'Subnet ' + subnetNum + ' (' + input.value + ')');
 }

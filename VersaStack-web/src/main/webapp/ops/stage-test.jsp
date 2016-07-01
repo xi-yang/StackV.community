@@ -7,9 +7,6 @@
 <jsp:setProperty name="user" property="*" />  
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
 <jsp:setProperty name="serv" property="*" />  
-<c:if test="${user.loggedIn == false}">
-    <c:redirect url="/index.jsp" />
-</c:if>
 <!DOCTYPE html>
 <html >    
     <head>   
@@ -47,23 +44,23 @@
             <form action="/VersaStack-web/ServiceServlet" method="post" id="msform" target="_blank">
                 <!-- Progress Bar -->
                 <ul id="progressbar">
-                    <li class="active">Service Host</li>
-                    <li>Network</li>
-                    <li>Subnets</li>
-                    <li>VMs</li>
-                    <li>Gateways</li>
-                    <li>Summary</li>
+                    <li class="disabled active">Service Host</li>
+                    <li class="disabled">Network</li>
+                    <li class="disabled">Subnets</li>
+                    <li class="disabled">VMs</li>
+                    <li class="disabled">Gateways</li>
+                    <li class="disabled">Summary</li>
                 </ul>
                 
-                <fieldset class="active-fs" id="mode-select">
+                <fieldset class="active-fs" id="0-mode-select" style="z-index: 4;">
                     <div><button type="button" class="action-button" onclick="applyTemplate(0)">Start from Scratch</button></div>
                     <h3 class="fs-title">Templates</h3>
-                    <div><button type="button" class="action-button" onclick="applyTemplate(1)">Template 1</button></div>
-                    <div><button type="button" class="action-button" onclick="applyTemplate(2)">Template 2</button></div>
+                    <div><button type="button" class="action-button" onclick="applyTemplate(1)">Basic AWS</button></div>
+                    <div><button type="button" class="action-button" onclick="applyTemplate(2)">AWS w/ VMs</button></div>
                 </fieldset>
 
                 <!-- Stage 1: Host --> 
-                <fieldset id='1-base-start'>
+                <fieldset id='1-base-1'>
                     <h2 class="fs-title">Select your Host</h2>
                     <h3 class="fs-subtitle"></h3>
                     <button type="button" name="type" class="stage1-next action-button" value="aws">AWS</button>
@@ -84,7 +81,7 @@
                                 <td>
                                     <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance WHERE driverEjbPath='java:module/AwsDriver'" var="driverlist" />
                                     <select name="topoUri" required>
-                                        <option selected disabled>Choose the driver topology URI.</option>
+                                        <option selected disabled value="test">Choose the driver topology URI</option>
                                         <c:forEach var="driver" items="${driverlist.rows}">
                                             <option value="${driver.topologyUri}">${driver.topologyUri}</option>
                                         </c:forEach>
@@ -162,7 +159,7 @@
 
 
 
-                <!-- Type 2 -->
+                <!-- Openstack -->
                 <fieldset id='2-ops-1'>
                     <h2 class="fs-title">Specify Form Fields</h2>
                     <h3 class="fs-subtitle">How many do you wish to include?</h3>
