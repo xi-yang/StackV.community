@@ -633,7 +633,6 @@ public class ServiceServlet extends HttpServlet {
 
     }
 
-    // @TODO: COMPLETELY INEFFICIENT BUT LOW PRIORITY - SEE WEBRESOURCE
     public String parseConnection(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException, IOException {
         for (Object key : paraMap.keySet().toArray()) {
             if (paraMap.get((String) key).isEmpty()) {
