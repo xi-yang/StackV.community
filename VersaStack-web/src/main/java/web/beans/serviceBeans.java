@@ -1124,23 +1124,24 @@ public class serviceBeans {
                     + " FROM service_instance WHERE referenceUUID = ?");
             prep.setString(1, refUuid);
             ResultSet rs1 = prep.executeQuery();
-            rs1.next();
-            instanceID = rs1.getInt(1);
+            if (rs1.next()) {
 
-            historyID = currentHistoryID(instanceID);
+                instanceID = rs1.getInt(1);
 
-            String formatDelta = svcDelta.replaceAll("<", "&lt;");
-            formatDelta = formatDelta.replaceAll(">", "&gt;");
+                historyID = currentHistoryID(instanceID);
 
-            prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
-                    + "(`service_instance_id`, `service_history_id`, `type`, `referenceUUID`, `delta`) "
-                    + "VALUES (?, ?, 'Service', ?, ?)");
-            prep.setInt(1, instanceID);
-            prep.setInt(2, historyID);
-            prep.setString(3, deltaUUID);
-            prep.setString(4, formatDelta);
-            prep.executeUpdate();
+                String formatDelta = svcDelta.replaceAll("<", "&lt;");
+                formatDelta = formatDelta.replaceAll(">", "&gt;");
 
+                prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
+                        + "(`service_instance_id`, `service_history_id`, `type`, `referenceUUID`, `delta`) "
+                        + "VALUES (?, ?, 'Service', ?, ?)");
+                prep.setInt(1, instanceID);
+                prep.setInt(2, historyID);
+                prep.setString(3, deltaUUID);
+                prep.setString(4, formatDelta);
+                prep.executeUpdate();
+            }
         } catch (SQLException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
         }
