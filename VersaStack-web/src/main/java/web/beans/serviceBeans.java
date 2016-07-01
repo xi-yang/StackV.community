@@ -251,7 +251,7 @@ public class serviceBeans {
 
     public int createConnection(Map<String, String> paraMap) {
 
-        String refUuid = null;
+        String refUuid = paraMap.get("referenceUUID");
         List<String> linkUri = new ArrayList<>();
 
         JSONObject connectJSON = new JSONObject();
@@ -306,13 +306,6 @@ public class serviceBeans {
                 + "    spa:type     \"JSON\" .\n\n"
                 + "</modelAddition>\n\n"
                 + "</serviceDelta>";
-        try {
-            PrintWriter out = new PrintWriter("/Users/ranjitha/Desktop/test.ttl");
-            out.println(delta);
-            out.close();
-        } catch (Exception e) {
-
-        }
 
         String result;
 
