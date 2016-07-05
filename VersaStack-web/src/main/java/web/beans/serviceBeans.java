@@ -251,7 +251,7 @@ public class serviceBeans {
 
     public int createConnection(Map<String, String> paraMap) {
 
-        String refUuid = paraMap.get("referenceUUID");
+        String refUuid = paraMap.get("instanceUUID");
         List<String> linkUri = new ArrayList<>();
 
         JSONObject connectJSON = new JSONObject();

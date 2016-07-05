@@ -42,6 +42,7 @@
         <div id="main-pane">
             <!-- Multistep form -->
             <form action="/VersaStack-web/ServiceServlet" method="post" id="msform" target="_blank">
+                <input type="hidden" name="netCreate" value="true"/>
                 <!-- Progress Bar -->
                 <ul id="progressbar">
                     <li class="disabled active">Service Host</li>
@@ -150,7 +151,7 @@
                     <h3 class="fs-subtitle">(Summary Module still in development)</h3>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <input type="submit" name="submit" class="action-button" value="Submit" />                    
+                    <button type="submit" name="submit" class="action-button" value="aws">Submit</button>                    
                 </fieldset>
 
 

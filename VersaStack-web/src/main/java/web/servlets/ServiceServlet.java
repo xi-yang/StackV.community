@@ -368,11 +368,11 @@ public class ServiceServlet extends HttpServlet {
                 // Process VMs.
                 JSONArray vmArr = new JSONArray();
 //                for (int j = 1; j < 10; j++) {
-                if (paraMap.get("driverType").equalsIgnoreCase("aws")) {
+                if (paraMap.get("submit").equalsIgnoreCase("aws")) {
                     //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name"
                     for (int j = 1; j <= 10; j++) {
                         JSONObject vmJSON = new JSONObject();
-                        if (Integer.parseInt(paraMap.get("vm" + j + "-subnet")) == i) {
+                        if (paraMap.containsKey("vm" + j + "-subnet") && Integer.parseInt(paraMap.get("vm" + j + "-subnet")) == i) {
                             vmJSON.put("name", paraMap.get("subnet" + i + "-vm" + j));
 
                             // Parse Types.
@@ -412,7 +412,7 @@ public class ServiceServlet extends HttpServlet {
                                 vmArr.add(vmJSON);
                         }
                     }
-                } else if (paraMap.get("driverType").equalsIgnoreCase("ops")) {
+                } else if (paraMap.get("submit").equalsIgnoreCase("ops")) {
                     //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name&host&floating_IP&sriov_destination&sriov_mac_address&sriov_ip_address&sriov_routes"
                     for (int j = 1; j <= 10; j++) {
                         JSONObject vmJSON = new JSONObject();

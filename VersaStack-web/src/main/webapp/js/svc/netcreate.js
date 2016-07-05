@@ -15,6 +15,13 @@ $(function () {
         animating = true;
 
         fieldset_id = '#2-' + this.value + '-1';
+        
+        var form = document.getElementById('msform');
+        if (this.value === 'aws') {
+            
+        } else {
+            
+        }
 
         current_fs = $(this).parent();
         next_fs = $(fieldset_id);
