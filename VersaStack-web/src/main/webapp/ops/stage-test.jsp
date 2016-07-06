@@ -7,6 +7,9 @@
 <jsp:setProperty name="user" property="*" />  
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
 <jsp:setProperty name="serv" property="*" />  
+<c:if test="${user.loggedIn == false}">
+    <c:redirect url="/index.jsp" />
+</c:if>
 <!DOCTYPE html>
 <html >    
     <head>   
