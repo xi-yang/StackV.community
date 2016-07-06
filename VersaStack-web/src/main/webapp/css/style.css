@@ -12,6 +12,25 @@ Dark Blue 1: #364454
 
 Dark Blue 2: #242d38
 
+Dark Blue 3: #060709
+
+Normal Blue: #50657c
+    Hover - #8398af
+
+Light Blue: #5297e0
+
+
+*/
+
+/*
+Z-indexes:
+
+loading-panel: 10
+nav: 6
+sidebar-toggle: 5
+sidebar: 4
+mode-select: 4
+black-screen: 3
 
 */
 
@@ -30,6 +49,30 @@ a.hover {
 
 .opaque {
     opacity: 0;
+}
+
+#black-screen {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    padding: 40px;
+    padding-top: 77px; 
+
+    pointer-events: none;
+    z-index: 3;    
+    background-color: rgba(0,0,0,0.4);
+    
+    transition: opacity 1s ease;
+}
+
+#black-screen.off {
+    opacity: 0;
+    
+    transition: opacity 1s ease;
+}
+
+#0-mode-select {
+    z-index: 4;
 }
 
 body {
@@ -671,6 +714,25 @@ body {
     box-shadow: 10px 3px 10px 2px rgba(0, 0, 0, 0.3);
 }
 
+#sidebar-toggle {
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50px;   
+    z-index: 5;
+}
+
+#sidebar-toggle img {
+    position: absolute;
+    
+    transition: opacity .5s ease-in-out;
+}
+
+#sidebar-toggle img.img-off {
+    opacity: 0;
+    
+    transition: opacity .5s ease-in-out;
+}
+
 #sidebar-contents {
     background: linear-gradient(rgba(38, 38, 38, 0.4), rgba(0,0,0,.5)), url('/VersaStack-web/img/background.png');
     top: 40px;
@@ -876,8 +938,7 @@ body {
     padding: 20px 30px;
 
     box-sizing: border-box;
-    width: 90%;
-    margin-left: 5%;
+    width: 100%;
 
     /*stacking fieldsets above each other*/
     position: absolute;
@@ -889,10 +950,17 @@ body {
 #msform .subfs {
     width: 100%;
     position: absolute;
-    left: -5%;
+    left: 0px;
     top: 110%;
     padding-left: 0px;
     padding-right: 0px;
+}
+
+.fade-hide {
+    display: none;
+    
+    opacity: 0;
+    transition: opacity 1s ease;
 }
 
 .subfs-table {
@@ -911,14 +979,23 @@ body {
 .subfs-table .subfs-headrow {
     border-top: 1px solid #969696;
     border-bottom: 1px solid #969696;    
+    
+    transition: background-color 0.5s ease;
+    transition: color 0.5s ease;
+}
+
+.subfs-headrow.closed {
+    color: #ffffff;
+    background-color: #50657c;        
 }
 
 /*inputs*/
 #msform input, #msform textarea {
+    margin: 1px 5px;
     padding: 5px;
     border: 1px solid #ccc;
     border-radius: 3px;
-    width: 80%;
+    width: 90%;
     box-sizing: border-box;
     font-family: montserrat;
     color: #2C3E50;
@@ -932,12 +1009,14 @@ body {
 #msform label {
     margin: 10px 20px;
     float: left;
+    font-size: 90%;
+    font-weight: inherit;
 }
 
 /*buttons*/
 #msform .action-button {
-    width: 100px;
-    background: #27AE60;
+    width: 30%;
+    background: #50657c;
     font-weight: bold;
     color: white;
     border: 0 none;
@@ -945,12 +1024,15 @@ body {
     cursor: pointer;
     padding: 10px 5px;
     margin: 10px 5px;
+    
+    transition: all .5s ease;
 }
 #msform .action-button:hover, #msform .action-button:focus {
-    box-shadow: 0 0 0 2px white, 0 0 0 3px #27AE60;
+    background: #8398af;
+    box-shadow: 0 0 0 2px white, 0 0 0 3px #50657c;
 }
 
-/*headings*/
+/*text*/
 .fs-title {
     font-size: 15px;
     text-transform: uppercase;
@@ -962,6 +1044,11 @@ body {
     font-size: 13px;
     color: #666;
     margin-bottom: 20px;
+}
+.fs-subtext {
+    font-size: 13px;
+    padding: 0px 20%;
+    margin-bottom: 5px;
 }
 
 /*table*/
@@ -975,6 +1062,8 @@ body {
     text-align: left;
 }
 
+
+
 /*progressbar*/
 #progressbar {
     margin-bottom: 30px;
@@ -983,7 +1072,9 @@ body {
     /*CSS counters to number the steps*/
     counter-reset: step;
 }
-
+#progressbar li.disabled {
+    color: black;
+}
 #progressbar li {
     list-style-type: none;
     color: white;
@@ -992,6 +1083,7 @@ body {
     width: 16.6%;
     float: left;
     position: relative;
+    transition: all 1s ease;
 }
 #progressbar li:before {
     content: counter(step);
@@ -1000,21 +1092,23 @@ body {
     line-height: 20px;
     display: block;
     font-size: 10px;
-    color: #333;
-    background: white;
+    color: white;
+    background: #242d38;
     border-radius: 3px;
     margin: 0 auto 5px auto;
+    transition: all 1s ease;
 }
 /*progressbar connectors*/
 #progressbar li:after {
     content: '';
     width: 100%;
     height: 2px;
-    background: white;
+    background: #242d38;
     position: absolute;
     left: -50%;
     top: 9px;
     z-index: -1; /*put it behind the numbers*/
+    transition: all 1s ease;
 }
 #progressbar li:first-child:after {
     /*connector not needed before the first step*/
@@ -1023,10 +1117,14 @@ body {
 /*marking active/completed steps green*/
 /*The number of the step and the connector before it = green*/
 #progressbar li.active:before,  #progressbar li.active:after{
-    background: #27AE60;
-    color: white;
+    background: white;
+    color: #333;
 }
 
+#progressbar li.disabled:before {
+    background: #060709;
+    opacity: .5;
+}
 
 
 

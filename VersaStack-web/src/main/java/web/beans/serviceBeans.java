@@ -208,7 +208,6 @@ public class serviceBeans {
             rs1.next();
             int instanceId = rs1.getInt(1);
             int stateId = rs1.getInt(2);
-           
 
         } catch (SQLException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
@@ -252,50 +251,27 @@ public class serviceBeans {
 
     public int createConnection(Map<String, String> paraMap) {
 
-        String topoUri = null;
-        String refUuid = null;
-        List<String> connection = new ArrayList<>();
+        String refUuid = paraMap.get("instanceUUID");
         List<String> linkUri = new ArrayList<>();
-        String connPara;
 
-        for (Map.Entry<String, String> entry : paraMap.entrySet()) {
+        JSONObject connectJSON = new JSONObject();
+        for (int i = 1; i <= 10; i++) {
+            if (paraMap.containsKey("src-conn" + i)) {
+                JSONObject exteriorJSON = new JSONObject();
 
-            if (entry.getKey().contains("linkUri")) {
-                linkUri.add(entry.getValue());
-            } else if (entry.getKey().contains("conn")) {
-                connection.add(entry.getValue());
+                // Construct interior connection JSON Object
+                JSONObject interiorJSON = new JSONObject();
+                interiorJSON.put("vlan_tag", paraMap.get("src-vlan" + i));
+                exteriorJSON.put(paraMap.get("src-conn" + i), interiorJSON);
 
-            } else if (entry.getKey().equalsIgnoreCase("instanceUUID")) {
-                refUuid = entry.getValue();
-            }
+                interiorJSON = new JSONObject();
+                interiorJSON.put("vlan_tag", paraMap.get("des-vlan" + i));
+                exteriorJSON.put(paraMap.get("des-conn" + i), interiorJSON);
 
-        }
-        JSONObject jsonConnect = new JSONObject();
-        for (String linkName : linkUri) {
-            //
-            connPara = linkName;
-            for (String link : connection) {
-                JSONObject jsonPort = new JSONObject();
-                // <<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&vlan_tag+3021-3029>>>>>\r\n<<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*&vlan_tag+3021-3029>>>>>”
-                String[] linkPara = link.split("\r\n");
-                for (String port : linkPara) {
-                    //<<<<<<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*>>>>>>&<<<<<vlan_tag+3021-3029>>>>>>
-                    String[] portPara = port.split("&");
-                    JSONObject jsonVlan = new JSONObject();
-                    for (String vlan : portPara) {
-                        if (vlan.contains("vlan")) {
-                            String[] vlanPara = vlan.split("\\+");
-                            jsonVlan.put(vlanPara[0], vlanPara[1]);
-                        }
-                    }
-                    jsonPort.put(portPara[0], jsonVlan);
-                }
-                jsonConnect.put(connPara, jsonPort);
-
+                // Insert into carrier object
+                connectJSON.put(paraMap.get("linkUri" + i), exteriorJSON);
             }
         }
-
-        System.out.println(jsonConnect.toString());
 
         String deltaUUID = UUID.randomUUID().toString();
 
@@ -324,20 +300,12 @@ public class serviceBeans {
                 + "&lt;x-policy-annotation:data:conn-criteria&gt;\n"
                 + "    a            spa:PolicyData;\n"
                 + "    spa:type     \"JSON\";\n"
-                + "    spa:value    \"\"\"" + jsonConnect.toString().replace("\\", "")
+                + "    spa:value    \"\"\"" + connectJSON.toString().replace("\\", "")
                 + "    \"\"\".\n\n&lt;x-policy-annotation:data:conn-criteriaexport&gt;\n"
                 + "    a            spa:PolicyData;\n"
                 + "    spa:type     \"JSON\" .\n\n"
                 + "</modelAddition>\n\n"
                 + "</serviceDelta>";
-        try {
-
-            PrintWriter out = new PrintWriter("/Users/ranjitha/Desktop/test.ttl");
-            out.println(delta);
-            out.close();
-        } catch (Exception e) {
-
-        }
 
         String result;
 
@@ -353,10 +321,10 @@ public class serviceBeans {
             if (!result.contains("referenceVersion")) {
                 return 2;//Error occurs when interacting with back-end system
             }
-            
+
             // Cache System Delta
             cacheSystemDelta(instanceID, historyID, result);
-            
+
             url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
             HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, propagate, "PUT", null);
@@ -376,9 +344,9 @@ public class serviceBeans {
                 result = this.executeHttpMethod(url, status, "GET", null);
                 if (!result.equals("COMMITTED")) {
                     return 3;//Fail to create network
-                }                
+                }
             }
-            
+
             return 0;
         } catch (Exception e) {
             return 1;//connection error
@@ -386,7 +354,7 @@ public class serviceBeans {
 
     }
 
-    public int createNetwork(Map<String, String> paraMap)  {
+    public int createNetwork(Map<String, String> paraMap) {
         String topoUri = null;
         String driverType = null;
         String netCidr = null;
@@ -401,28 +369,29 @@ public class serviceBeans {
         for (Map.Entry<String, String> entry : paraMap.entrySet()) {
             if (entry.getKey().equalsIgnoreCase("topoUri")) {
                 topoUri = entry.getValue();
-                
+
                 Properties rains_connectionProps = new Properties();
                 rains_connectionProps.put("user", rains_db_user);
                 rains_connectionProps.put("password", rains_db_pass);
                 Connection rains_conn;
                 try {
-                    rains_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/rainsdb",rains_connectionProps);
+                    rains_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/rainsdb", rains_connectionProps);
                     PreparedStatement prep = rains_conn.prepareStatement("SELECT driverEjbPath"
                             + " FROM driver_instance WHERE topologyUri = ?");
                     prep.setString(1, topoUri);
                     ResultSet rs1 = prep.executeQuery();
                     rs1.next();
                     String driverPath = rs1.getString(1);
-                    if (driverPath.contains("Aws"))
+                    if (driverPath.contains("Aws")) {
                         driverType = "aws";
-                    else if (driverPath.contains("OpenStack"))
+                    } else if (driverPath.contains("OpenStack")) {
                         driverType = "ops";
+                    }
 
                 } catch (SQLException ex) {
                     Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
                 }
-            }else if (entry.getKey().equalsIgnoreCase("netCidr")) {
+            } else if (entry.getKey().equalsIgnoreCase("netCidr")) {
                 netCidr = entry.getValue();
             } else if (entry.getKey().equalsIgnoreCase("instanceUUID")) {
                 refUuid = entry.getValue();
@@ -441,7 +410,7 @@ public class serviceBeans {
                             break;
                         }
                     }
-                    
+
                 } catch (ParseException ex) {
                     Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -506,9 +475,9 @@ public class serviceBeans {
             gatewaysJson.add(gatewayValue);
         }
         network.put("gateways", gatewaysJson);
-   
+
         String deltaUUID = UUID.randomUUID().toString();
-        
+
         String svcDelta = "<serviceDelta>\n<uuid>" + deltaUUID
                 + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
                 + "\n\n<modelAddition>\n"
@@ -521,19 +490,19 @@ public class serviceBeans {
                 + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n"
                 + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_clouds:tag+vpc1&gt;\n"
                 + "    a                         nml:Topology ;\n";
-        
+
         String exportTo = "";
-        if(driverType.equals("aws") && directConn != null){
+        if (driverType.equals("aws") && directConn != null) {
             String dest = directConn.contains("?vlan") ? directConn.substring(0, directConn.indexOf("?vlan")) : directConn;
-            String vlan = directConn.contains("?vlan") ? directConn.substring(directConn.indexOf("?vlan")+6): "any";
+            String vlan = directConn.contains("?vlan") ? directConn.substring(directConn.indexOf("?vlan") + 6) : "any";
             exportTo += "&lt;x-policy-annotation:data:vpc-export&gt;, ";
             svcDelta += "    spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt;"
                     + ", &lt;x-policy-annotation:action:create-mce_dc1&gt; .\n\n"
-                    + "&lt;urn:ogf:network:vo1_maxgigapop_net:link=conn1&gt;\n" 
+                    + "&lt;urn:ogf:network:vo1_maxgigapop_net:link=conn1&gt;\n"
                     + "    a            mrs:SwitchingSubnet;\n"
-                    + "    spa:type     spa:Abstraction;\n" 
+                    + "    spa:type     spa:Abstraction;\n"
                     + "    spa:dependOn &lt;x-policy-annotation:action:create-path&gt;.\n\n"
-                    + "&lt;x-policy-annotation:action:create-path&gt;\n" 
+                    + "&lt;x-policy-annotation:action:create-path&gt;\n"
                     + "    a            spa:PolicyAction ;\n"
                     + "    spa:type     \"MCE_MPVlanConnection\" ;\n"
                     + "    spa:importFrom &lt;x-policy-annotation:data:conn-criteria1&gt; ;\n"
@@ -561,12 +530,13 @@ public class serviceBeans {
                     + "    spa:type     \"JSON\";\n"
                     + "    spa:value    \"\"\"{\n"
                     + "        \"urn:ogf:network:vo1_maxgigapop_net:link=conn1\":"
-                    + "{ \""+ dest +"\":{\"vlan_tag\":\""+ vlan +"\"},\n"
-                    + "        \"" + topoUri + "\":{\"vlan_tag\":\""+ vlan +"\"}\n"
+                    + "{ \"" + dest + "\":{\"vlan_tag\":\"" + vlan + "\"},\n"
+                    + "        \"" + topoUri + "\":{\"vlan_tag\":\"" + vlan + "\"}\n"
                     + "        }\n"
-                    + "    }\"\"\".\n\n";            
-        } else
+                    + "    }\"\"\".\n\n";
+        } else {
             svcDelta += "    spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; .\n\n";
+        }
 
         if (!vmList.isEmpty()) {
             if (driverType.equals("aws")) {
@@ -596,12 +566,11 @@ public class serviceBeans {
                             + "    spa:type     \"JSON\";\n    spa:format    \"\"\"{ "
                             + "\"place_into\": \"%$.subnets[" + sub + "].uri%\"}\"\"\" .\n\n";
                 }
-            }
-            else if(driverType.equals("ops")){
+            } else if (driverType.equals("ops")) {
                 String createPathExportTo = "";
                 String dependOn = "";
                 JSONObject connCriteriaValue = new JSONObject();
-                
+
                 for (String vm : vmList) {
                     String[] vmPara = vm.split("&");
                     //0:vm name.
@@ -622,27 +591,28 @@ public class serviceBeans {
                             JSONArray interfaceArr = (JSONArray) jsonParser.parse(vmPara[4]);
                             String addressString = null;
                             ArrayList<JSONObject> sriovList = new ArrayList<>();
-                            for (Object obj : interfaceArr){
+                            for (Object obj : interfaceArr) {
                                 JSONObject interfaceJSON = (JSONObject) obj;
                                 String typeString = (String) interfaceJSON.get("type");
-                                if (typeString.equalsIgnoreCase("Ethernet")){
+                                if (typeString.equalsIgnoreCase("Ethernet")) {
                                     addressString = (String) interfaceJSON.get("address");
-                                    addressString = addressString.contains("ipv")? addressString.substring(addressString.indexOf("ipv")+5) : addressString;
-                                    addressString = addressString.contains("/")? addressString.substring(0, addressString.indexOf("/")) : addressString;
-                                } else if (typeString.equalsIgnoreCase("SRIOV"))
+                                    addressString = addressString.contains("ipv") ? addressString.substring(addressString.indexOf("ipv") + 5) : addressString;
+                                    addressString = addressString.contains("/") ? addressString.substring(0, addressString.indexOf("/")) : addressString;
+                                } else if (typeString.equalsIgnoreCase("SRIOV")) {
                                     sriovList.add(interfaceJSON);
+                                }
                             }
-                            
-                            if(addressString != null){
+
+                            if (addressString != null) {
                                 svcDelta += ";\n    mrs:hasNetworkAddress   "
                                         + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0:floating&gt;.\n\n"
                                         + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0:floating&gt;\n"
                                         + "    a            mrs:NetworkAddress;\n    mrs:type     \"floating-ip\";\n"
                                         + "    mrs:value     \"" + addressString + "\".\n\n";
-                                
+
                                 for (int i = 0; i < sriovList.size(); i++) {
                                     JSONObject sriov = sriovList.get(i);
-                                    
+
                                     //Parse sriov ip and mac address.
                                     String address = (String) sriov.get("address");
                                     String[] addArr = address.split(",");
@@ -652,9 +622,9 @@ public class serviceBeans {
                                         ip = str.contains("ip") ? str.substring(5) : ip;
                                         mac = str.contains("mac") ? str.substring(4) : mac;
                                     }
-                                    
+
                                     //Find sriov parameter from Gateways.
-                                    for(Object gwEle : gateArr){
+                                    for (Object gwEle : gateArr) {
                                         JSONObject gwJSON = (JSONObject) gwEle;
                                         if (gwJSON.get("name").equals(sriov.get("gateway"))) {
                                             //parse sriov routes
@@ -726,7 +696,7 @@ public class serviceBeans {
                                                         JSONObject vlanTag = new JSONObject();
                                                         String dest = (String) toJSON.get("value");
                                                         String vlan = "any";
-                                                        if(dest.contains("?vlan=")){
+                                                        if (dest.contains("?vlan=")) {
                                                             dest = dest.substring(0, dest.indexOf("?vlan"));
                                                             vlan = dest.substring(dest.indexOf("?vlan=") + 6);
                                                         }
@@ -833,7 +803,7 @@ public class serviceBeans {
             if (!result.contains("referenceVersion")) {
                 return 2;//Error occurs when interacting with back-end system
             }
-            
+
             // Cache System Delta
             cacheSystemDelta(instanceID, historyID, result);
 
@@ -856,11 +826,11 @@ public class serviceBeans {
                 result = this.executeHttpMethod(url, status, "GET", null);
                 if (!result.equals("COMMITTED")) {
                     return 3;//Fail to create network
-                }                
+                }
             }
 
             return 0;
-            
+
         } catch (Exception e) {
             return 1;//connection error
         }
@@ -1181,8 +1151,7 @@ public class serviceBeans {
             // Retrieve UUID from delta
             /*
             
-            */
-            
+             */
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
@@ -1200,7 +1169,7 @@ public class serviceBeans {
         } catch (SQLException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }      
+    }
 
 // ------------------------- DEPRECATED SERVICES -------------------------------
     /**

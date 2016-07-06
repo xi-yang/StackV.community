@@ -153,6 +153,7 @@ INSERT INTO `service` (`service_id`, `name`, `filename`, `description`, `atomic`
 (10, 'Virtual Cloud Network', 'netcreate', 'Network Creation Pilot Testbed', 0),
 (11, 'Dynamic Network Connection', 'dnc', 'Creation of new network connections.', 0),
 (12, 'Flow based Layer2 Protection', 'fl2p', 'Switching of protection and recovery path.', 1);
+(13, 'Hybrid Cloud', 'hybridcloud', 'Hybrid Cloud Service', 0);
 
 -- --------------------------------------------------------
 

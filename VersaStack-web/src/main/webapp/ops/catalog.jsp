@@ -81,9 +81,9 @@
                     <select id="refresh-timer" onchange="timerChange(this)">
                         <option value="off">Off</option>
                         <option value="5">5 sec.</option>
-                        <option value="10" selected>10 sec.</option>
+                        <option value="10">10 sec.</option>
                         <option value="30">30 sec.</option>
-                        <option value="60">60 sec.</option>
+                        <option value="60" selected>60 sec.</option>
                     </select>
                 </div>
 
@@ -131,7 +131,7 @@
         <!-- JS -->
         <script>
             $(function () {
-                setRefresh(10); 
+                setRefresh(60); 
                 
                 $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", null);        
             });
