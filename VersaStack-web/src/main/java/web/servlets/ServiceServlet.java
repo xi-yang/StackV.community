@@ -368,35 +368,35 @@ public class ServiceServlet extends HttpServlet {
                 // Process VMs.
                 JSONArray vmArr = new JSONArray();
 //                for (int j = 1; j < 10; j++) {
-                if (paraMap.get("driverType").equalsIgnoreCase("aws")) {
+                if (paraMap.get("submit").equalsIgnoreCase("aws")) {
                     //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name"
                     for (int j = 1; j <= 10; j++) {
                         JSONObject vmJSON = new JSONObject();
-                        if (paraMap.containsKey("subnet" + i + "-vm" + j)) {
-                            vmJSON.put("name", paraMap.get("subnet" + i + "-vm" + j));
+                        if (paraMap.containsKey("vm" + j + "-subnet") && Integer.parseInt(paraMap.get("vm" + j + "-subnet")) == i) {
+                            vmJSON.put("name", paraMap.get("vm" + j + "-name"));
 
                             // Parse Types.
                             String vmString = "";
-                            if (paraMap.containsKey("subnet" + i + "-vm" + j + "-instance")) {
-                                vmString += "instance+" + paraMap.get("subnet" + i + "-vm" + j + "-instance");
+                            if (paraMap.containsKey("vm" + j + "-instance")) {
+                                vmString += "instance+" + paraMap.get("vm" + j + "-instance");
                             }
-                            if (paraMap.containsKey("subnet" + i + "-vm" + j + "-security")) {
+                            if (paraMap.containsKey("vm" + j + "-security")) {
                                 if (!vmString.isEmpty()) {
                                     vmString += ",";
                                 }
-                                vmString += "secgroup+" + paraMap.get("subnet" + i + "-vm" + j + "-security");
+                                vmString += "secgroup+" + paraMap.get("vm" + j + "-security");
                             }
-                            if (paraMap.containsKey("subnet" + i + "-vm" + j + "-image")) {
+                            if (paraMap.containsKey("vm" + j + "-image")) {
                                 if (!vmString.isEmpty()) {
                                     vmString += ",";
                                 }
-                                vmString += "image+" + paraMap.get("subnet" + i + "-vm" + j + "-image");
+                                vmString += "image+" + paraMap.get("vm" + j + "-image");
                             }
-                            if (paraMap.containsKey("subnet" + i + "-vm" + j + "-keypair")) {
+                            if (paraMap.containsKey("vm" + j + "-keypair")) {
                                 if (!vmString.isEmpty()) {
                                     vmString += ",";
                                 }
-                                vmString += "keypair+" + paraMap.get("subnet" + i + "-vm" + j + "-keypair");
+                                vmString += "keypair+" + paraMap.get("vm" + j + "-keypair");
                             }
                             if (!vmString.isEmpty())
                                 vmJSON.put("type", vmString);
@@ -413,36 +413,36 @@ public class ServiceServlet extends HttpServlet {
                                 vmArr.add(vmJSON);
                         }
                     }
-                } else if (paraMap.get("driverType").equalsIgnoreCase("ops")) {
+                } else if (paraMap.get("submit").equalsIgnoreCase("ops")) {
                     //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name&host&floating_IP&sriov_destination&sriov_mac_address&sriov_ip_address&sriov_routes"
                     for (int j = 1; j <= 10; j++) {
                         JSONObject vmJSON = new JSONObject();
-                        if (paraMap.containsKey("subnet" + i + "-vm" + j)) {
-                            vmJSON.put("name", paraMap.get("subnet" + i + "-vm" + j));
-                            vmJSON.put("host", paraMap.get("subnet" + i + "-vm" + j + "-host"));
+                        if (paraMap.containsKey("vm" + j)) {
+                            vmJSON.put("name", paraMap.get("vm" + j));
+                            vmJSON.put("host", paraMap.get("vm" + j + "-host"));
 
                             // Parse Types.
                             String vmString = "";
-                            if (paraMap.containsKey("subnet" + i + "-vm" + j + "-instance")) {
-                                vmString += "instance+" + paraMap.get("subnet" + i + "-vm" + j + "-instance");
+                            if (paraMap.containsKey("vm" + j + "-instance")) {
+                                vmString += "instance+" + paraMap.get("vm" + j + "-instance");
                             }
-                            if (paraMap.containsKey("subnet" + i + "-vm" + j + "-security")) {
+                            if (paraMap.containsKey("vm" + j + "-security")) {
                                 if (!vmString.isEmpty()) {
                                     vmString += ",";
                                 }
-                                vmString += "secgroup+" + paraMap.get("subnet" + i + "-vm" + j + "-security");
+                                vmString += "secgroup+" + paraMap.get("vm" + j + "-security");
                             }
-                            if (paraMap.containsKey("subnet" + i + "-vm" + j + "-image")) {
+                            if (paraMap.containsKey("vm" + j + "-image")) {
                                 if (!vmString.isEmpty()) {
                                     vmString += ",";
                                 }
-                                vmString += "image+" + paraMap.get("subnet" + i + "-vm" + j + "-image");
+                                vmString += "image+" + paraMap.get("vm" + j + "-image");
                             }
-                            if (paraMap.containsKey("subnet" + i + "-vm" + j + "-keypair")) {
+                            if (paraMap.containsKey("vm" + j + "-keypair")) {
                                 if (!vmString.isEmpty()) {
                                     vmString += ",";
                                 }
-                                vmString += "keypair+" + paraMap.get("subnet" + i + "-vm" + j + "-keypair");
+                                vmString += "keypair+" + paraMap.get("vm" + j + "-keypair");
                             }
                             if (!vmString.isEmpty()) {
                                 vmJSON.put("type", vmString);
@@ -451,40 +451,40 @@ public class ServiceServlet extends HttpServlet {
                             //Parse Interfaces: either floating IP or SRIOV connection
                             JSONArray interfaceArr = new JSONArray();
                             //check if assigning floating IP
-                            if (paraMap.containsKey("subnet" + i + "-vm" + j + "-floating")) {
+                            if (paraMap.containsKey("vm" + j + "-floating")) {
                                 JSONObject interfaceJSON = new JSONObject();
                                 interfaceJSON.put("type", "Ethernet");
-                                interfaceJSON.put("address", "ipv4+" + paraMap.get("subnet" + i + "-vm" + j + "-floating") + "/255.255.255.0");
+                                interfaceJSON.put("address", "ipv4+" + paraMap.get("vm" + j + "-floating") + "/255.255.255.0");
                                 interfaceArr.add(interfaceJSON);
                                 
                                 //Process SRIOV only when a floating IP is assigned
                                 for (int k = 1; k <= 10; k++) {
-                                    if (paraMap.containsKey("subnet" + i + "-vm" + j + "-sriov" + k + "-mac")) {
+                                    if (paraMap.containsKey("vm" + j + "-sriov" + k + "-mac")) {
                                         JSONObject sriovJSON = new JSONObject();
-                                        String addrString = "mac+" + paraMap.get("subnet" + i + "-vm" + j + "-sriov" + k + "-mac");
-                                        addrString += paraMap.containsKey("subnet" + i + "-vm" + j + "-sriov" + k + "-ip")?
-                                                ",ipv4+" + paraMap.get("subnet" + i + "-vm" + j + "-sriov" + k + "-ip") + "/255.255.255.0":"";
+                                        String addrString = "mac+" + paraMap.get("vm" + j + "-sriov" + k + "-mac");
+                                        addrString += paraMap.containsKey("vm" + j + "-sriov" + k + "-ip")?
+                                                ",ipv4+" + paraMap.get("vm" + j + "-sriov" + k + "-ip") + "/255.255.255.0":"";
                                         sriovJSON.put("address", addrString);
                                         sriovJSON.put("type", "SRIOV");
-                                        sriovJSON.put("gateway", paraMap.get("subnet" + i + "-vm" + j + "-sriov" + k + "-gateway"));
+                                        sriovJSON.put("gateway", paraMap.get("vm" + j + "-sriov" + k + "-gateway"));
 
                                         JSONArray sriovRoutesArr = new JSONArray();
                                         for (int l = 1; l <= 20; l++){
                                             JSONObject routeJSON = new JSONObject();
-                                            if (paraMap.containsKey("subnet" + i + "-vm" + j + "-sriov" + k + "-route" + l + "-from")) {
+                                            if (paraMap.containsKey("vm" + j + "-sriov" + k + "-route" + l + "-from")) {
                                                 JSONObject fromJSON = new JSONObject();
-                                                fromJSON.put("value", paraMap.get("subnet" + i + "-vm" + j + "-sriov" + k + "-route" + l + "-from"));
+                                                fromJSON.put("value", paraMap.get("vm" + j + "-sriov" + k + "-route" + l + "-from"));
                                                 routeJSON.put("from", fromJSON);
                                             }
                                             
-                                            if (paraMap.containsKey("subnet" + i + "-vm" + j + "-sriov" + k + "-route" + l + "-to")) {
+                                            if (paraMap.containsKey("vm" + j + "-sriov" + k + "-route" + l + "-to")) {
                                                 JSONObject toJSON = new JSONObject();
-                                                toJSON.put("value", paraMap.get("subnet" + i + "-vm" + j + "-sriov" + k + "-route" + l + "-to"));
+                                                toJSON.put("value", paraMap.get("vm" + j + "-sriov" + k + "-route" + l + "-to"));
                                                 routeJSON.put("to", toJSON);
                                             }
-                                            if (paraMap.containsKey("subnet" + i + "-vm" + j + "-sriov" + k + "-route" + l + "-next")) {
+                                            if (paraMap.containsKey("vm" + j + "-sriov" + k + "-route" + l + "-next")) {
                                                 JSONObject nextJSON = new JSONObject();
-                                                nextJSON.put("value", paraMap.get("subnet" + i + "-vm" + j + "-sriov" + k + "-route" + l + "-next"));
+                                                nextJSON.put("value", paraMap.get("vm" + j + "-sriov" + k + "-route" + l + "-next"));
                                                 routeJSON.put("next_hop", nextJSON);
                                             }
                                             if(!routeJSON.isEmpty())
@@ -637,6 +637,7 @@ public class ServiceServlet extends HttpServlet {
 
     }
 
+    // @TODO: COMPLETELY INEFFICIENT BUT LOW PRIORITY - SEE WEBRESOURCE
     public String parseConnection(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException, IOException {
         for (Object key : paraMap.keySet().toArray()) {
             if (paraMap.get((String) key).isEmpty()) {
