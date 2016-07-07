@@ -276,7 +276,7 @@ public class OpenStackNeutronModelBuilder {
                 }
             }
             //UCS STIOV special handling
-            if (metadata != null && metadata.containsKey("sriov_vnic:status") && !metadata.get("sriov_vnic:status").equals("detached")) {
+            if (metadata != null && metadata.containsKey("sriov_vnic:status") && metadata.get("sriov_vnic:status").equals("attached")) {
                 if (vmRoutingSvc == null) {
                     vmRoutingSvc = RdfOwl.createResource(model, ResourceTool.getResourceUri(server_name + ":routingservice", OpenstackPrefix.routingService, server_name), Mrs.RoutingService);
                     model.add(model.createStatement(VM, Nml.hasService, vmRoutingSvc));
@@ -384,7 +384,7 @@ public class OpenStackNeutronModelBuilder {
                 try {
                     cephRbdJson = cephRbdJson.replaceAll("'", "\""); // tolerate single quotes
                     JSONObject jsonObj = (JSONObject) parser.parse(cephRbdJson);
-                    if (!jsonObj.containsKey("volume") || !jsonObj.containsKey("size")) {
+                    if (!jsonObj.containsKey("volume") || !jsonObj.containsKey("size") || !jsonObj.containsKey("status") || !jsonObj.get("size").equals("up")) {
                         Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING,
                                 String.format("OpenStack driver model server '%s' Ceph RBD requires both 'volume' and 'size' parameters in metadata ''%s'", server_name, cephRbdKey));
                         continue;
