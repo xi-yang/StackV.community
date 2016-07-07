@@ -52,7 +52,7 @@
                     <li class="disabled">Network</li>
                     <li class="disabled">Subnets</li>
                     <li class="disabled">VMs</li>
-                    <li class="disabled">Gateways</li>
+                    <li class="disabled">SRIOV</li>
                     <li class="disabled">Summary</li>
                 </ul>
                 
@@ -237,17 +237,27 @@
                 </fieldset>                                                             
                 <fieldset id="4-ops-2">
                     <fieldset class="subfs" id="opsStage4-vm-fs">
-
+                        
                     </fieldset>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="button" name="next" class="next action-button" value="Next" />                    
                 </fieldset>
                 
-                <!-- Stage 5: Summary -->
+                <!-- Stage 5: SRIOV -->
                 <fieldset id="5-ops-1">
-                    <h2 class="fs-title">Gateways</h2>
-                    <h3 class="fs-subtitle"></h3>
+                    <h2 class="fs-title">SRIOV</h2>
+                    <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="opsStage5-sriov" onfocus="this.oldvalue = this.value;" onchange="setSRIOV(this)"/></h3>
+                    <table class="subfs-table" id="opsStage5-sriov-route-table">
+
+                    </table>
+                    <input type="button" name="previous" class="previous action-button" value="Previous" />
+                    <input type="button" name="next" id="opsStage5" class="next action-button" value="Next" /> 
+                </fieldset>                                                             
+                <fieldset id="5-ops-2">
+                    <fieldset class="subfs" id="opsStage5-sriov-fs">
+
+                    </fieldset>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="button" name="next" class="next action-button" value="Next" />                    

@@ -292,6 +292,10 @@ public class serviceBeans {
                     + "spa:dependOn &lt;x-policy-annotation:action:create-path&gt;.\n\n";
         }
 
+        delta += "&lt;urn:ogf:network:openstack.com:openstack-cloud:vlan&gt;\n"
+                + "a mrs:SwitchingSubnet; spa:type spa:Abstraction;\n"
+                + "spa:dependOn &lt;x-policy-annotation:action:create-path&gt; .\n\n";
+
         delta += "&lt;x-policy-annotation:action:create-path&gt;\n"
                 + "    a            spa:PolicyAction ;\n"
                 + "    spa:type     \"MCE_MPVlanConnection\" ;\n"
