@@ -899,7 +899,7 @@ public class serviceBeans {
                 + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n"
                 + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n";
         
-        for(Object obj : vcnArr){
+        for (Object obj : vcnArr) {
             JSONObject vcnJson = (JSONObject) obj;
             String topoUri = (String) vcnJson.get("parent");
             topoUriList.add(topoUri);
@@ -907,7 +907,6 @@ public class serviceBeans {
             String vcnName = (String) vcnJson.get("name");
             vcnJson.remove("name");
 
-            
             JSONArray subArr = (JSONArray) vcnJson.get("subnets");
             ArrayList<JSONArray> vmList = new ArrayList<JSONArray>();
             for (int i = 0; i < subArr.size(); i++) {
@@ -936,7 +935,7 @@ public class serviceBeans {
                     }
                 }
             }
-            
+
             //modify the network routes info to be directly use in ttl model
             JSONArray netRoutesArr = (JSONArray) vcnJson.get("routes");
             for (Object r : netRoutesArr) {
@@ -954,7 +953,7 @@ public class serviceBeans {
                     route.put("nextHop", value.get("value"));
                 }
             }
-            
+
             //find driver type
             Properties rains_connectionProps = new Properties();
             rains_connectionProps.put("user", rains_db_user);
@@ -977,7 +976,7 @@ public class serviceBeans {
             } catch (SQLException ex) {
                 Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
             }
-            
+
             if (driverType.equals("aws")) {
                 //add gateway for aws cloud
                 JSONArray gatewaysJson = new JSONArray();
@@ -988,8 +987,8 @@ public class serviceBeans {
                 temp.put("type", "vpn");
                 gatewaysJson.add(temp);
                 vcnJson.put("gateways", gatewaysJson);
-                
-                svcDelta += "&lt;" + topoUri + ":" + vcnName + "&gt;\n"
+
+                svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_clouds:tag+" + vcnName + "&gt;\n"
                         + "    a                         nml:Topology ;\n"
                         + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vcnName + "&gt;,"
                         + " &lt;x-policy-annotation:action:create-dc1&gt;.\n\n"
@@ -1007,9 +1006,9 @@ public class serviceBeans {
                         + "       \"parent\":\"" + topoUri + "\",\n"
                         + "       \"stitch_from\": \"%$.gateways[?(@.type=='vpn-gateway')].uri%\",\n"
                         + "    }\"\"\" .\n\n";
-                
+
                 String vncExportTo = "";
-                for(int i=0; i<vmList.size(); i++){
+                for (int i = 0; i < vmList.size(); i++) {
                     String subnetCriteria = "&lt;x-policy-annotation:data:" + vcnName + "-subnet" + i + "-vm-criteria&gt;";
                     vncExportTo += subnetCriteria + ", ";
                     svcDelta += subnetCriteria + "\n    a            spa:PolicyData;\n"
@@ -1017,18 +1016,18 @@ public class serviceBeans {
                             + "    spa:format    \"\"\"{\n"
                             + "       \"place_into\": \"%$.subnets[" + i + "].uri%\"\n"
                             + "    }\"\"\" .\n\n";
-                    
+
                     JSONArray vmArr = vmList.get(i);
-                    for(Object vmObj : vmArr){
+                    for (Object vmObj : vmArr) {
                         JSONObject vmJson = (JSONObject) vmObj;
                         String vmName = (String) vmJson.get("name");
                         String vmType = (String) vmJson.get("type");
-                        svcDelta += "&lt;" + topoUri + ":" + vcnName + ":" + vmName + "&gt;\n"
+                        svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "&gt;\n"
                                 + "    a                         nml:Node ;\n"
                                 + (vmType == null ? "" : "    mrs:type       \"" + vmType + "\";\n")
-                                + "    nml:hasBidirectionalPort   &lt;" + topoUri + ":" + vcnName + ":" + vmName + ":eth0&gt; ;\n"
+                                + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0&gt; ;\n"
                                 + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;.\n\n"
-                                + "&lt;" + topoUri + ":" + vcnName + ":" + vmName + ":eth0&gt;\n"
+                                + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0&gt;\n"
                                 + "    a            nml:BidirectionalPort;\n"
                                 + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;.\n\n"
                                 + "&lt;x-policy-annotation:action:create-" + vmName + "&gt;\n"
@@ -1038,23 +1037,22 @@ public class serviceBeans {
                                 + "    spa:importFrom " + subnetCriteria + " .\n\n";
                     }
                 }
-                
+
                 svcDelta += "&lt;x-policy-annotation:action:create-" + vcnName + "&gt;\n"
                         + "    a            spa:PolicyAction ;\n"
                         + "    spa:type     \"MCE_VirtualNetworkCreation\" ;\n"
                         + "    spa:importFrom &lt;x-policy-annotation:data:" + vcnName + "-criteria&gt; ;\n"
                         + "    spa:exportTo &lt;x-policy-annotation:data:" + vcnName + "-export&gt;"
                         + (vncExportTo.isEmpty() ? ".\n\n" : "," + vncExportTo.substring(0, (vncExportTo.length() - 2)) + " .\n\n");
-            }
-            else if(driverType.equals("ops")){
+            } else if (driverType.equals("ops")) {
                 int sriovCounter = 1;
                 String dependOn = "";
-                svcDelta += "&lt;" + topoUri + ":" + vcnName + "&gt;\n"
+                svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_clouds:tag+" + vcnName + "&gt;\n"
                         + "    a                         nml:Topology ;\n"
                         + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vcnName + "&gt;.\n\n";
-                
+
                 String vncExportTo = "";
-                for(int i=0; i<vmList.size(); i++){
+                for (int i = 0; i < vmList.size(); i++) {
                     String subnetCriteria = "&lt;x-policy-annotation:data:" + vcnName + "-subnet" + i + "-vm-criteria&gt;";
                     vncExportTo += subnetCriteria + ", ";
                     svcDelta += subnetCriteria + "\n    a            spa:PolicyData;\n"
@@ -1062,18 +1060,18 @@ public class serviceBeans {
                             + "    spa:format    \"\"\"{\n"
                             + "       \"place_into\": \"%$.subnets[" + i + "].uri%\"\n"
                             + "    }\"\"\" .\n\n";
-                    
+
                     JSONArray vmArr = vmList.get(i);
-                    for(Object vmObj : vmArr){
+                    for (Object vmObj : vmArr) {
                         JSONObject vmJson = (JSONObject) vmObj;
                         String vmName = (String) vmJson.get("name");
                         String vmType = (String) vmJson.get("type");
                         String vmHost = (String) vmJson.get("host");
-                        
-                        svcDelta += "&lt;" + topoUri + ":" + vcnName + ":" + vmName + "&gt;\n"
+
+                        svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "&gt;\n"
                                 + "    a                         nml:Node ;\n"
                                 + (vmType == null ? "" : "    mrs:type       \"" + vmType + "\";\n")
-                                + "    nml:hasBidirectionalPort   &lt;" + topoUri + ":" + vcnName + ":" + vmName + ":eth0&gt; ;\n"
+                                + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0&gt; ;\n"
                                 + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;.\n\n"
                                 + "&lt;x-policy-annotation:action:create-" + vmName + "&gt;\n"
                                 + "    a            spa:PolicyAction ;\n"
@@ -1091,29 +1089,29 @@ public class serviceBeans {
                                 + "    spa:value    \"\"\"{\n"
                                 + "       \"place_into\": \"" + topoUri + ":host+" + vmHost + "\"\n"
                                 + "    }\"\"\" .\n\n"
-                                + "&lt;" + topoUri + ":" + vcnName + ":" + vmName + ":eth0&gt;\n"
+                                + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0&gt;\n"
                                 + "    a            nml:BidirectionalPort ;\n"
                                 + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "-eth0&gt; ";
-                        
-                        if(!vmJson.containsKey("interfaces"))
+
+                        if (!vmJson.containsKey("interfaces")) {
                             svcDelta += ".\n\n";
-                        else{
+                        } else {
                             String addressString = null;
                             JSONArray interArr = (JSONArray) vmJson.get("interfaces");
-                            for(Object interObj : interArr){
+                            for (Object interObj : interArr) {
                                 JSONObject interJson = (JSONObject) interObj;
                                 String typeString = (String) interJson.get("type");
-                                if (typeString.equalsIgnoreCase("Ethernet")){
+                                if (typeString.equalsIgnoreCase("Ethernet")) {
                                     addressString = (String) interJson.get("address");
-                                    addressString = addressString.contains("ipv")? addressString.substring(addressString.indexOf("ipv")+5) : addressString;
-                                    addressString = addressString.contains("/")? addressString.substring(0, addressString.indexOf("/")) : addressString;
+                                    addressString = addressString.contains("ipv") ? addressString.substring(addressString.indexOf("ipv") + 5) : addressString;
+                                    addressString = addressString.contains("/") ? addressString.substring(0, addressString.indexOf("/")) : addressString;
                                     break;
                                 }
                             }
-                            if(addressString != null){
+                            if (addressString != null) {
                                 svcDelta += ";\n    mrs:hasNetworkAddress          "
-                                        + "&lt;" + topoUri + ":" + vcnName + ":" + vmName + ":eth0:floatingip&gt; .\n\n"
-                                        + "&lt;" + topoUri + ":" + vcnName + ":" + vmName + ":eth0:floatingip&gt;\n"
+                                        + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0:floatingip&gt; .\n\n"
+                                        + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0:floatingip&gt;\n"
                                         + "    a            mrs:NetworkAddress;\n"
                                         + "    mrs:type     \"floating-ip\";\n"
                                         + "    mrs:value     \"" + addressString + "\".\n\n";
@@ -1133,22 +1131,22 @@ public class serviceBeans {
                                         }
                                         JSONArray routeArr = (JSONArray) interJson.get("routes");
 
-                                        svcDelta += "&lt;x-policy-annotation:action:ucs-sriov-stitch"+sriovCounter+"&gt;\n"
+                                        svcDelta += "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;\n"
                                                 + "    a            spa:PolicyAction ;\n"
                                                 + "    spa:type     \"MCE_UcsSriovStitching\" ;\n"
                                                 + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;, "
                                                 + "&lt;x-policy-annotation:action:create-aws-ops-path&gt;;\n"
-                                                + "    spa:importFrom &lt;x-policy-annotation:data:sriov-criteria"+sriovCounter+"&gt;, "
+                                                + "    spa:importFrom &lt;x-policy-annotation:data:sriov-criteria" + sriovCounter + "&gt;, "
                                                 + "&lt;x-policy-annotation:data:aws-ops-criteriaexport&gt; .\n\n"
-                                                + "&lt;x-policy-annotation:data:sriov-criteria"+sriovCounter+"&gt;\n"
+                                                + "&lt;x-policy-annotation:data:sriov-criteria" + sriovCounter + "&gt;\n"
                                                 + "    a            spa:PolicyData;\n"
                                                 + "    spa:type     \"JSON\";\n"
                                                 + "    spa:format    \"\"\"{\n"
-                                                + "       \"stitch_from\": \"" + topoUri + ":" + vcnName + ":" + vmName + "\",\n"
+                                                + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "\",\n"
                                                 + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%\n"
                                                 + "       \"mac_address\": \"" + mac + "\""
                                                 + (ip == null ? "" : ",\n       \"ip_address\": \"" + ip + "\"");
-                                        if(routeArr != null){
+                                        if (routeArr != null) {
                                             for (Object r : routeArr) {
                                                 JSONObject route = (JSONObject) r;
                                                 if (route.containsKey("to")) {
@@ -1167,19 +1165,19 @@ public class serviceBeans {
                                             svcDelta += ",\n       \"routes\": " + routeArr.toString().replace("\\", "");
                                         }
                                         svcDelta += "\n    }\"\"\" .\n\n";
-                                        dependOn += "&lt;x-policy-annotation:action:ucs-sriov-stitch"+sriovCounter+"&gt;, ";
-                                        creatPathExportTo += "&lt;x-policy-annotation:data:sriov-criteria"+sriovCounter+"&gt;, ";
+                                        dependOn += "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;, ";
+                                        creatPathExportTo += "&lt;x-policy-annotation:data:sriov-criteria" + sriovCounter + "&gt;, ";
                                         sriovCounter++;
                                         break;
                                     }
                                 }
-                            }
-                            else
+                            } else {
                                 svcDelta += ".\n\n";
+                            }
                         }
                     }
                 }
-                
+
                 svcDelta += "&lt;x-policy-annotation:action:create-" + vcnName + "&gt;\n"
                         + "    a            spa:PolicyAction ;\n"
                         + "    spa:type     \"MCE_VirtualNetworkCreation\" ;\n"
@@ -1191,14 +1189,14 @@ public class serviceBeans {
                         + "   spa:type spa:Abstraction;\n"
                         + "   spa:dependOn  " + dependOn.substring(0, dependOn.length() - 2) + ".\n\n";
             }
-            
+
             svcDelta += "&lt;x-policy-annotation:data:" + vcnName + "-criteria&gt;\n"
                     + "    a            spa:PolicyData;\n"
                     + "    spa:type     nml:Topology;\n"
                     + "    spa:value    \"\"\"" + vcnJson.toString().replace("\\", "")
                     + "\"\"\".\n\n";
         }
-        
+
         svcDelta += "&lt;x-policy-annotation:action:create-aws-ops-path&gt;\n"
                 + "    a            spa:PolicyAction ;\n"
                 + "    spa:type     \"MCE_MPVlanConnection\" ;\n"
@@ -1216,13 +1214,13 @@ public class serviceBeans {
                 + "    spa:type     \"JSON\";\n"
                 + "    spa:value    \"\"\"{\n"
                 + "        \"urn:ogf:network:vo1_maxgigapop_net:link=conn1\": {\n"
-                + "            \""+ topoUriList.get(0)+"\":{\"vlan_tag\":\"any\"},\n"
-                + "            \""+ topoUriList.get(1)+"\":{\"vlan_tag\":\"any\"}\n"
+                + "            \"" + topoUriList.get(0) + "\":{\"vlan_tag\":\"any\"},\n"
+                + "            \"" + topoUriList.get(1) + "\":{\"vlan_tag\":\"any\"}\n"
                 + "        }\n"
                 + "    }\"\"\".\n\n"
                 + "</modelAddition>\n\n"
                 + "</serviceDelta>";
-        
+
         try {
             PrintWriter out = new PrintWriter("/Users/rikenavadur/test.ttl");
             out.println(svcDelta);
