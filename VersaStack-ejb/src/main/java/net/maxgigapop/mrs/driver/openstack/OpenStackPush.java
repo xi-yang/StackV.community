@@ -757,9 +757,9 @@ public class OpenStackPush {
                     sriovNum++;
                 }
                 for  (Object obj: allMetaObj.keySet()) {
-                    // set metadata: "sriov_vnic:status": "do_attach"
+                    // set metadata: "sriov_vnic:status": "create"
                     String servername = (String)obj;
-                    client.setMetadata(servername, "sriov_vnic:status", "do_attach");
+                    client.setMetadata(servername, "sriov_vnic:status", "create");
                 }
             } else if (o.get("request").toString().equals("CreateVirtualRouterRequest") && o.get("routing table").equals("quagga-bgp")) {
                 // OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
@@ -890,8 +890,8 @@ public class OpenStackPush {
                     sriovNum++;
                 }
                 for  (String servername: serversToDetachSriov) {
-                    // set metadata: "sriov_vnic:status": "do_detach"
-                    client.setMetadata(servername, "sriov_vnic:status", "do_detach");
+                    // set metadata: "sriov_vnic:status": "delete"
+                    client.setMetadata(servername, "sriov_vnic:status", "delete");
                 }
             } else if (o.get("request").toString().equals("CephStorageRequest")) {
                 String servername = (String) o.get("server name");
