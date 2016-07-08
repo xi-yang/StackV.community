@@ -79,7 +79,7 @@
                         "virtual_machines": [
                             {
                                 "name": "ec2-vpc1-vm1",
-                                "type": "instance+2,secgroup+rains,keypair+icecube_key"
+                                "type": "image+ami-0d1bf860,instance+c4.xlarge"
                             }
                         ],
                         "routes": [
