@@ -767,7 +767,7 @@ public class OpenStackPush {
                 String servername = o.get("server name").toString();
                 // 1. routing table (BGP root) level parameters as "network address #" 
                 JSONObject jsonBgpInfo = new JSONObject();
-                jsonBgpInfo.put("status", "up");
+                jsonBgpInfo.put("status", "create");
                 int netAddrNum = 1;
                 while (o.containsKey(String.format("network address %d", netAddrNum))) {
                     String addrValue = (String)o.get(String.format("network address %d", netAddrNum));
@@ -870,7 +870,7 @@ public class OpenStackPush {
                     JSONParser parser = new JSONParser();
                     JSONObject jsonObj = (JSONObject) parser.parse(bgpInfoStr);
                     if (jsonObj.containsKey("status")) {
-                        jsonObj.put("status", "down");
+                        jsonObj.put("status", "delete");
                         client.setMetadata(servername, "quagga:bgp:info", jsonObj.toJSONString().replaceAll("\"", "'").replaceAll("\\\\/", "/"));
                     }
                 } catch (ParseException e) {
@@ -1409,16 +1409,6 @@ public class OpenStackPush {
                     requests.add(o);
                 } //1.4.2 port attachment will be deleted
                 else {
-
-                    /*
-                  
-
-                     if (p.getDeviceOwner() == null && p.getDeviceOwner().isEmpty()) {
-
-                     throw new EJBException(String.format("bidirectional port %s to be detached from instance %s is not"
-                     + " attached", port, serverName));
-                     }
-                     */
                     o.put("request", "DetachPortRequest");
                     o.put("port name", portName);
                     o.put("server name", serverName);

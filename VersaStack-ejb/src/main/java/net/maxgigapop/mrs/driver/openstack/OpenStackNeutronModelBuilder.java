@@ -276,7 +276,7 @@ public class OpenStackNeutronModelBuilder {
                 }
             }
             //UCS STIOV special handling
-            if (metadata != null && metadata.containsKey("sriov_vnic:status") && metadata.get("sriov_vnic:status").equals("attached")) {
+            if (metadata != null && metadata.containsKey("sriov_vnic:status") && metadata.get("sriov_vnic:status").equals("up")) {
                 if (vmRoutingSvc == null) {
                     vmRoutingSvc = RdfOwl.createResource(model, ResourceTool.getResourceUri(server_name + ":routingservice", OpenstackPrefix.routingService, server_name), Mrs.RoutingService);
                     model.add(model.createStatement(VM, Nml.hasService, vmRoutingSvc));
