@@ -384,7 +384,7 @@ public class OpenStackNeutronModelBuilder {
                 try {
                     cephRbdJson = cephRbdJson.replaceAll("'", "\""); // tolerate single quotes
                     JSONObject jsonObj = (JSONObject) parser.parse(cephRbdJson);
-                    if (!jsonObj.containsKey("volume") || !jsonObj.containsKey("size") || !jsonObj.containsKey("status") || !jsonObj.get("size").equals("up")) {
+                    if (!jsonObj.containsKey("volume") || !jsonObj.containsKey("size") || !jsonObj.containsKey("status") || !jsonObj.get("status").equals("up")) {
                         Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING,
                                 String.format("OpenStack driver model server '%s' Ceph RBD requires both 'volume' and 'size' parameters in metadata ''%s'", server_name, cephRbdKey));
                         continue;
