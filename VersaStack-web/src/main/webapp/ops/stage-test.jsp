@@ -47,12 +47,13 @@
             <form action="/VersaStack-web/ServiceServlet" method="post" id="msform" target="_blank">
                 <input type="hidden" name="netCreate" value="true"/>
                 <!-- Progress Bar -->
-                <ul id="progressbar">
+                <ul class="aws-progress" id="progressbar">
                     <li class="disabled active">Service Host</li>
                     <li class="disabled">Network</li>
                     <li class="disabled">Subnets</li>
                     <li class="disabled">VMs</li>
                     <li class="disabled">SRIOV</li>
+                    <li class="disabled">Gateways</li>
                     <li class="disabled">Summary</li>
                 </ul>
                 
@@ -79,12 +80,12 @@
                     <table class="fs-table" id="awsStage2-table">
                         <thead>
                             <tr>                            
-                                <td><input type="text" name="alias" placeholder="Instance Alias" required /></td>
+                                <td><input type="text" name="alias" placeholder="Instance Alias" /></td>
                             </tr>
                             <tr>
                                 <td>
                                     <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance WHERE driverEjbPath='java:module/AwsDriver'" var="driverlist" />
-                                    <select name="topoUri" required>
+                                    <select name="topoUri" >
                                         <option selected disabled value="test">Choose the driver topology URI</option>
                                         <c:forEach var="driver" items="${driverlist.rows}">
                                             <option value="${driver.topologyUri}">${driver.topologyUri}</option>
@@ -95,10 +96,10 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td><input type="text" name="netType" placeholder="Network Type" required/></td>
+                                <td><input type="text" name="netType" placeholder="Network Type" /></td>
                             </tr>
                             <tr>
-                                <td><input type="text" name="netCidr" placeholder="Network CIDR" required/></td>
+                                <td><input type="text" name="netCidr" placeholder="Network CIDR" /></td>
                             </tr>
                         </tbody>
                         <tbody>
@@ -150,8 +151,8 @@
                     <input type="button" name="next" class="next action-button" value="Next" />                    
                 </fieldset>
                 
-                <!-- Stage 6: Summary -->
-                <fieldset id="6-aws-1">
+                <!-- Stage 7: Summary -->
+                <fieldset id="7-aws-1">
                     <h2 class="fs-title">Summary</h2>
                     <h3 class="fs-subtitle">(Summary Module still in development)</h3>
 
@@ -173,12 +174,12 @@
                     <table class="fs-table" id="opsStage2-table">
                         <thead>
                             <tr>                            
-                                <td><input type="text" name="alias" placeholder="Instance Alias" required /></td>
+                                <td><input type="text" name="alias" placeholder="Instance Alias" /></td>
                             </tr>
                             <tr>
                                 <td>
                                     <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance WHERE driverEjbPath='java:module/AwsDriver'" var="driverlist" />
-                                    <select name="topoUri" required>
+                                    <select name="topoUri" >
                                         <option selected disabled value="test">Choose the driver topology URI</option>
                                         <c:forEach var="driver" items="${driverlist.rows}">
                                             <option value="${driver.topologyUri}">${driver.topologyUri}</option>
@@ -189,18 +190,10 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td><input type="text" name="netType" placeholder="Network Type" required/></td>
+                                <td><input type="text" name="netType" placeholder="Network Type" /></td>
                             </tr>
                             <tr>
-                                <td><input type="text" name="netCidr" placeholder="Network CIDR" required/></td>
-                            </tr>
-                        </tbody>
-                        <tbody>
-                            <tr>
-                                <td><input type="text" name="conn-dest" placeholder="Direct Connect Destination" size="60" /></td>                            
-                            </tr>
-                            <tr>
-                                <td><input type="text" name="conn-vlan" placeholder="Direct Connect VLAN" size="8" /></td>
+                                <td><input type="text" name="netCidr" placeholder="Network CIDR" /></td>
                             </tr>
                         </tbody>
                     </table>
@@ -220,7 +213,7 @@
                 </fieldset>                                                             
                 <fieldset id="3-ops-2">
                     <fieldset class="subfs" id="opsStage3-subnet-fs">
-
+                        
                     </fieldset>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
@@ -263,8 +256,10 @@
                     <input type="button" name="next" class="next action-button" value="Next" />                    
                 </fieldset>
                 
-                <!-- Stage 6: Summary -->
-                <fieldset id="6-ops-1">
+                <!-- Stage 6: Gateways -->
+                
+                <!-- Stage 7: Summary -->
+                <fieldset id="7-ops-1">
                     <h2 class="fs-title">Summary</h2>
                     <h3 class="fs-subtitle">(Summary Module still in development)</h3>
 

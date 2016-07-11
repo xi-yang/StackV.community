@@ -21,6 +21,7 @@ Any value defined here will override the pom.xml file value but is only applicab
         <word>Accessor</word>
         <word>DNC</word>
         <word>Openstack</word>
+        <word>SRIOV</word>
         <word>substate</word>
         <word>VCN</word>
     </spellchecker-wordlist>
