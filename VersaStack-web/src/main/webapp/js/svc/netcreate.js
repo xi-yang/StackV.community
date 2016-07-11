@@ -109,6 +109,7 @@ function configureProgress(type) {
 
     if (type === 'aws') {
         $("#progressbar li").eq(4).addClass("disabled");
+        $("#progressbar li").eq(5).addClass("disabled");
     }
 }
 
@@ -426,7 +427,7 @@ function setVMs(input) {
         var cell2_1 = document.createElement("td");
         var cell2_2 = document.createElement("td");
 
-        var selectString = '<select name="vm' + i + '-subnet"><option selected disabled required>Select the subnet host</option>';
+        var selectString = '<select name="vm' + i + '-subnet"><option selected disabled>Select the subnet host</option>';
         for (j = 1; j <= subnetCount; j++) {
             var subnetTag = document.getElementById("subnet" + j + "-tag");
 
@@ -434,7 +435,7 @@ function setVMs(input) {
         }
         selectString += '</select>';
 
-        cell2_1.innerHTML = '<td><input type="text" id="vm' + i + '-tag" name="vm' + i + '-name"></td>';
+        cell2_1.innerHTML = '<td><input type="text" id="vm' + i + '-tag" onchange="updateVMNames(this)" name="vm' + i + '-name" placeholder="Name"></td>';
         cell2_2.innerHTML = selectString;
         row2.appendChild(cell2_1);
         row2.appendChild(cell2_2);
@@ -458,6 +459,16 @@ function setVMs(input) {
         row4.appendChild(cell4_2);
         tbody.appendChild(row4);
 
+        if (stage.substring(2) === 'ops') {
+            var row5 = document.createElement("tr");
+            var cell5_1 = document.createElement("td");
+            var cell5_2 = document.createElement("td");
+            cell5_1.innerHTML = '<input type="text" name="vm' + i + '-host" placeholder="Host">';
+            cell5_2.innerHTML = '<input type="text" name="vm' + i + '-floating" placeholder="Floating IP">';
+            row5.appendChild(cell5_1);
+            row5.appendChild(cell5_2);
+            tbody.appendChild(row5);
+        }
 
         table.appendChild(tbody);
         fieldset.appendChild(table);
@@ -510,7 +521,7 @@ function setSRIOV(input) {
             body2.toggleClass("fade-hide");
         });
         
-        var selectString = '<select name="SRIOV' + i + '-vm"><option selected disabled required>Select the SRIOV host</option>';
+        var selectString = '<select name="SRIOV' + i + '-vm"><option selected disabled>Select the SRIOV host</option>';
         for (j = 1; j <= vmCount; j++) {
             var vmTag = document.getElementById("vm" + j + "-tag");
 
@@ -530,8 +541,7 @@ function setSRIOV(input) {
         var row3 = document.createElement("tr");
         var cell3_1 = document.createElement("td");
         var cell3_2 = document.createElement("td");
-        cell3_1.innerHTML = '<input type="text" name="SRIOV' + i + '-mac" id="SRIOV' + i + '-tag" onchange="updateVMNames(this)" placeholder="Name"/>';
-        cell3_2.innerHTML = '<input type="text" name="SRIOV' + i + '-ip" placeholder="IP Address"/>';
+        cell3_1.innerHTML = '<input type="text" name="SRIOV' + i + '-ip" placeholder="IP Address"/>';
         row3.appendChild(cell3_1);
         row3.appendChild(cell3_2);
         tbody1.appendChild(row3);
@@ -576,4 +586,12 @@ function updateSubnetNames(input) {
 
     $('[id^=4] select option[value=' + subnetNum + ']').text(
             'Subnet ' + subnetNum + ' (' + input.value + ')');
+}
+
+function updateVMNames(input) {
+    var vmId = input.id;
+    var vmNum = vmId.substring(2, 3);
+
+    $('[id^=5] select option[value=' + vmNum + ']').text(
+            'VM ' + vmNum + ' (' + input.value + ')');
 }
