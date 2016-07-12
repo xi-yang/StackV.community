@@ -64,7 +64,14 @@ define([], function () {
         providesRoute: "http://schemas.ogf.org/mrs/2013/12/topology#providesRoute",
         providesVM: "http://schemas.ogf.org/mrs/2013/12/topology#providesVM",
         providesVPC: "http://schemas.ogf.org/mrs/2013/12/topology#providesVPC",
-        providesBucket: "http://schemas.ogf.org/mrs/2013/12/topology#providesBucket"
-
+        providesBucket: "http://schemas.ogf.org/mrs/2013/12/topology#providesBucket",
+        spaPolicyData: "http://schemas.ogf.org/mrs/2015/02/spa#PolicyData",
+        spaPolicyAction: "http://schemas.ogf.org/mrs/2015/02/spa#PolicyAction",
+        spaType: "http://schemas.ogf.org/mrs/2015/02/spa#type",
+        spaImportFrom: "http://schemas.ogf.org/mrs/2015/02/spa#importFrom",
+        spaExportTo: "http://schemas.ogf.org/mrs/2015/02/spa#exportTo",
+        spaDependOn: "http://schemas.ogf.org/mrs/2015/02/spa#dependOn",
+        spaValue: "http://schemas.ogf.org/mrs/2015/02/spa#value",
+        spaFormat: "http://schemas.ogf.org/mrs/2015/02/spa#format"
     };
 });
