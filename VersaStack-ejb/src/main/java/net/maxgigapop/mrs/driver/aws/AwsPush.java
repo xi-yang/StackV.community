@@ -768,7 +768,13 @@ public class AwsPush {
                             AuthorizeSecurityGroupEgressRequest asger = new AuthorizeSecurityGroupEgressRequest()
                                     .withGroupId(csgResult.getGroupId())
                                     .withIpPermissions(egrPermList);
-                            ec2.authorizeSecurityGroupEgress(asger);
+                            try {
+                                ec2.authorizeSecurityGroupEgress(asger);
+                            } catch (com.amazonaws.AmazonServiceException ex) {
+                                if (ex.getErrorCode().equals("InvalidPermission.Duplicate")) {
+                                    ;
+                                }
+                            }
                         }
                         secGroupId = csgResult.getGroupId();
                     }
