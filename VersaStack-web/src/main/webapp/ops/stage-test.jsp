@@ -45,6 +45,7 @@
         <div id="main-pane">
             <!-- Multistep form -->
             <form action="/VersaStack-web/ServiceServlet" method="post" id="msform" target="_blank">
+                <input type="hidden" name="username" value="${user.getUsername()}"/>
                 <input type="hidden" name="netCreate" value="true"/>
                 <!-- Progress Bar -->
                 <ul class="aws-progress" id="progressbar">
@@ -52,8 +53,8 @@
                     <li class="disabled">Network</li>
                     <li class="disabled">Subnets</li>
                     <li class="disabled">VMs</li>
-                    <li class="disabled">SRIOV</li>
                     <li class="disabled">Gateways</li>
+                    <li class="disabled">SRIOV</li>                    
                     <li class="disabled">Summary</li>
                 </ul>
                 
@@ -62,6 +63,7 @@
                     <h3 class="fs-title">Templates</h3>
                     <div><button type="button" class="action-button" onclick="applyTemplate(1)">Basic AWS</button></div>
                     <div><button type="button" class="action-button" onclick="applyTemplate(2)">AWS w/ VMs</button></div>
+                    <div><button type="button" class="action-button" onclick="applyTemplate(3)">Basic OpenStack</button></div>
                 </fieldset>
 
                 <!-- Stage 1: Host --> 
@@ -237,18 +239,16 @@
                     <input type="button" name="next" class="next action-button" value="Next" />                    
                 </fieldset>
                 
-                <!-- Stage 5: SRIOV -->
+                <!-- Stage 5: Gateways -->
                 <fieldset id="5-ops-1">
-                    <h2 class="fs-title">SRIOV</h2>
-                    <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="opsStage5-sriov" onfocus="this.oldvalue = this.value;" onchange="setSRIOV(this)"/></h3>
-                    <table class="subfs-table" id="opsStage5-sriov-route-table">
+                    <h2 class="fs-title">Gateways</h2>
+                    <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="opsStage5-gateway" onfocus="this.oldvalue = this.value;" onchange="setGateways(this)"/></h3>
 
-                    </table>
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="button" name="next" id="opsStage5" class="next action-button" value="Next" /> 
                 </fieldset>                                                             
                 <fieldset id="5-ops-2">
-                    <fieldset class="subfs" id="opsStage5-sriov-fs">
+                    <fieldset class="subfs" id="opsStage5-gateway-fs">
 
                     </fieldset>
 
@@ -256,7 +256,24 @@
                     <input type="button" name="next" class="next action-button" value="Next" />                    
                 </fieldset>
                 
-                <!-- Stage 6: Gateways -->
+                <!-- Stage 6: SRIOV -->
+                <fieldset id="6-ops-1">
+                    <h2 class="fs-title">SRIOV</h2>
+                    <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="opsStage6-sriov" onfocus="this.oldvalue = this.value;" onchange="setSRIOV(this)"/></h3>
+                    <table class="subfs-table" id="opsStage6-sriov-route-table">
+
+                    </table>
+                    <input type="button" name="previous" class="previous action-button" value="Previous" />
+                    <input type="button" name="next" id="opsStage6" class="next action-button" value="Next" /> 
+                </fieldset>                                                             
+                <fieldset id="6-ops-2">
+                    <fieldset class="subfs" id="opsStage6-sriov-fs">
+
+                    </fieldset>
+
+                    <input type="button" name="previous" class="previous action-button" value="Previous" />
+                    <input type="button" name="next" class="next action-button" value="Next" />                    
+                </fieldset>                                
                 
                 <!-- Stage 7: Summary -->
                 <fieldset id="7-ops-1">

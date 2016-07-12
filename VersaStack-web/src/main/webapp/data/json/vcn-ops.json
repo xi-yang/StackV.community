@@ -1,7 +1,7 @@
 {
     "user": "admin",
     "type": "netcreate",
-    "alias": "VCN Openstack",
+    "alias": "VCN Test 1",
     "data": {
         "virtual_clouds": [
             {
@@ -38,6 +38,12 @@
                                 "type": "stitch_port"
                             }
                         ],
+                        "from": [
+                            {
+                                "value": "AWS-DC1",
+                                "type": "port_profile"
+                            }
+                        ],
                         "name": "l2path-aws-dc1",
                         "type": "ucs_port_profile"
                     }
@@ -62,7 +68,7 @@
                                 "host": "msx3",
                                 "interfaces": [
                                     {
-                                        "address": "ipv4+206.196.180.148/24",
+                                        "address": "ipv4+206.196.180.148/255.255.255.0",
                                         "name": "ops-vtn1:vm1:eth0",
                                         "type": "Ethernet"
                                     },
@@ -76,18 +82,18 @@
                                         "address": "ipv4+10.10.0.1/255.255.255.0,mac+11:22:22:33:33:02",
                                         "name": "ops-vtn1:vm1:eth2",
                                         "type": "SRIOV",
-                                        "gateway": "l2path-aws-dc1",
-                                        "routes": [
-                                            {
-                                                "to": {
-                                                    "value": "192.168.1.0/24",
-                                                    "type": "ipv4-prefix"
-                                                },
-                                                "next_hop": {
-                                                    "value": "192.168.1.1"
-                                                }
-                                            }
-                                        ]
+                                        "gateway": "l2path-aws-dc1"
+                                    }
+                                ],
+                                "routes": [
+                                    {
+                                        "to": {
+                                            "value": "192.168.1.0/24",
+                                            "type": "ipv4-prefix"
+                                        },
+                                        "next_hop": {
+                                            "value": "192.168.1.1"
+                                        }
                                     }
                                 ]
                             }

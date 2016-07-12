@@ -285,6 +285,59 @@ function applyTemplate(mode) {
             form.elements['vm2-keypair'].value = 'xi-aws-max-dev-key';
             form.elements['vm2-security'].value = 'geni';
         }
+        // Basic OPS Template
+        else if (mode === 3) {
+            current_fs = $("#0-mode-select");
+            next_fs = $("#2-ops-1");
+            configureProgress('ops');
+
+            form.elements['netType'].value = 'internal';
+            form.elements['netCidr'].value = '10.0.0.0/16';
+
+            var subnetCounter = document.getElementById('opsStage3-subnet');
+            subnetCounter.value = 1;
+            setSubnets(subnetCounter);
+
+            var sub1RouteCounter = document.getElementById('opsStage3-subnet1-routes');
+            sub1RouteCounter.value = 1;
+            setSubRoutes(sub1RouteCounter);
+
+            var vmCounter = document.getElementById('opsStage4-vm');
+            vmCounter.value = 1;
+            setVMs(vmCounter);
+            
+            var gatewayCounter = document.getElementById('opsStage4-gateway');
+            gatewayCounter.value = 1;
+            setGateways(gatewayCounter);
+            
+            var SRIOVCounter = document.getElementById('opsStage5-sriov');
+            SRIOVCounter.value = 2;
+            setSRIOV(SRIOVCounter);
+
+            form.elements['subnet1-name'].value = 'subnet1';
+            form.elements['subnet1-cidr'].value = '10.0.0.0/24';
+
+            form.elements['subnet1-route1-to'].value = '0.0.0.0/0';
+            form.elements['subnet1-route1-next'].value = 'internet';
+
+            form.elements['vm1-name'].value = 'ops-vtn1-vm1';
+            $("#opsStage4-vm1-table select").val("1");
+            form.elements['vm1-instance'].value = '2';
+            form.elements['vm1-keypair'].value = 'icecube_key';
+            form.elements['vm1-security'].value = 'rains';            
+            form.elements['vm1-floating'].value = '206.196.180.148/255.255.255.0';
+            form.elements['vm1-host'].value = '';
+            
+            form.elements['SRIOV1-name'].value = 'ops-vtn1-vm1';
+            $("#opsStage4-SRIOV1-table select").val("1");
+            
+            form.elements['vm1-keypair'].value = 'icecube_key';
+            form.elements['vm1-security'].value = 'rains';            
+            form.elements['vm1-floating'].value = '206.196.180.148/255.255.255.0';
+            form.elements['vm1-host'].value = '';
+            
+            
+        }
 
         nextStage(current_fs, next_fs);
     }
@@ -532,7 +585,6 @@ function setSRIOV(input) {
         var row2 = document.createElement("tr");
         var cell2_1 = document.createElement("td");
         var cell2_2 = document.createElement("td");
-        cell2_1.innerHTML = '<input type="text" name="SRIOV' + i + '-gateway" id="SRIOV' + i + '-tag" onchange="updateVMNames(this)" placeholder="Name"/>';
         cell2_2.innerHTML = selectString;
         row2.appendChild(cell2_1);
         row2.appendChild(cell2_2);
@@ -541,7 +593,8 @@ function setSRIOV(input) {
         var row3 = document.createElement("tr");
         var cell3_1 = document.createElement("td");
         var cell3_2 = document.createElement("td");
-        cell3_1.innerHTML = '<input type="text" name="SRIOV' + i + '-ip" placeholder="IP Address"/>';
+        cell3_1.innerHTML = '<input type="text" name="SRIOV' + i + '-name" id="SRIOV' + i + '-tag" placeholder="Name"/>';
+        cell3_2.innerHTML = '<input type="text" name="SRIOV' + i + '-ip" placeholder="IP Address"/>';
         row3.appendChild(cell3_1);
         row3.appendChild(cell3_2);
         tbody1.appendChild(row3);
@@ -577,6 +630,88 @@ function setSRIOVRoutes(input) {
         cell3_1.innerHTML = '<input type="text" name="SRIOV' + SRIOVNum + '-route' + j + '-from" placeholder="From"/>' +
                 '<input type="text" name="SRIOV' + SRIOVNum + '-route' + j + '-to" placeholder="To"/>' +
                 '<input type="text" name="SRIOV' + SRIOVNum + '-route' + j + '-next" placeholder="Next Hop"/>';
+    }
+}
+
+var gatewayCount;
+function setGateways(input) {
+    gatewayCount = input.value;
+    
+    var stage = input.id;
+    var old = input.oldvalue;
+    var fieldset = document.getElementById(stage + "-fs");
+
+    fieldset.innerHTML = "";
+
+    var start = 1;
+    for (i = start; i <= input.value; i++) {
+        // Set stage 3 data table
+        var table = document.createElement("table");
+        table.className = 'subfs-table';
+        table.id = stage + i + '-table';
+
+        var thead = document.createElement("thead");
+        var tbody = document.createElement("tbody");
+        tbody.className = 'fade-hide';
+
+        var row1 = document.createElement("tr");
+        row1.className = 'subfs-headrow closed';
+        var cell1_1 = document.createElement("th");
+        var cell1_2 = document.createElement("th");
+        cell1_1.innerHTML = 'VM ' + i;
+        row1.appendChild(cell1_1);
+        row1.appendChild(cell1_2);
+        row1.innerHTML += '<br>';
+        thead.appendChild(row1);
+        table.appendChild(thead);
+
+        row1.addEventListener('click', function () {
+            var head = $(this).parent();
+            var body = head.next();
+
+            $(this).toggleClass("closed");
+            body.toggleClass("fade-hide");
+        });
+
+        var row2 = document.createElement("tr");
+        var cell2_1 = document.createElement("td");
+        var cell2_2 = document.createElement("td");
+
+        var selectString = '<select name="vm' + i + '-subnet"><option selected disabled>Select the subnet host</option>';
+        for (j = 1; j <= subnetCount; j++) {
+            var subnetTag = document.getElementById("subnet" + j + "-tag");
+
+            selectString += '<option value="' + j + '">Subnet ' + j + ' (' + subnetTag.value + ')</option>';
+        }
+        selectString += '</select>';
+
+        cell2_1.innerHTML = '<td><input type="text" id="vm' + i + '-tag" onchange="updateVMNames(this)" name="vm' + i + '-name" placeholder="Name"></td>';
+        cell2_2.innerHTML = selectString;
+        row2.appendChild(cell2_1);
+        row2.appendChild(cell2_2);
+        tbody.appendChild(row2);
+
+        var row3 = document.createElement("tr");
+        var cell3_1 = document.createElement("td");
+        var cell3_2 = document.createElement("td");
+        cell3_1.innerHTML = '<input type="text" name="gateway' + i + '-name" placeholder="Name">';
+        cell3_2.innerHTML = '<input type="text" name="gateway' + i + '-type" placeholder="Type">';
+        row3.appendChild(cell3_1);
+        row3.appendChild(cell3_2);
+        tbody.appendChild(row3);
+
+        var row4 = document.createElement("tr");
+        var cell4_1 = document.createElement("td");
+        var cell4_2 = document.createElement("td");
+        cell4_1.innerHTML = '<input type="text" name="gateway' + i + '-from" placeholder="From"/>' +
+                '<input type="text" name="gateway' + i + '-to" placeholder="To"/>' +
+                '<input type="text" name="gateway' + i + '-next" placeholder="Next Hop"/>';        
+        row4.appendChild(cell4_1);
+        row4.appendChild(cell4_2);
+        tbody.appendChild(row4);
+
+        table.appendChild(tbody);
+        fieldset.appendChild(table);
     }
 }
 

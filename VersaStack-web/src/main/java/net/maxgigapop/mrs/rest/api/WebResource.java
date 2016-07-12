@@ -256,7 +256,8 @@ public class WebResource {
             try {
                 Object obj = parser.parse(inputString);
                 inputJSON = (JSONObject) obj;
-
+                
+                System.out.println("Service API- inputJSON: " + inputJSON.toJSONString());
             } catch (ParseException ex) {
                 Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -344,16 +345,7 @@ public class WebResource {
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_verification` "
                     + "(`service_instance_id`) VALUES (?)");
             prep.setInt(1, instanceID);
-            prep.executeUpdate();
-            
-            // Replicate properties into DB.
-            for (String key : paraMap.keySet()) {
-                if (!paraMap.get(key).isEmpty()) {
-                    url = new URL(String.format("%s/service/property/%s/%s/", host, refUuid, key));
-                    connection = (HttpURLConnection) url.openConnection();
-                    servBean.executeHttpMethod(url, connection, "POST", paraMap.get(key));
-                }
-            }
+            prep.executeUpdate();           
             
             // Execute service creation.
             switch (serviceType) {
@@ -385,6 +377,7 @@ public class WebResource {
             return refUuid;
 
         } catch (EJBException | SQLException | IOException | InterruptedException e) {
+            System.out.println("<<<CREATION ERROR: " + e.getMessage());
             return "<<<CREATION ERROR: " + e.getMessage();
         }
     }
