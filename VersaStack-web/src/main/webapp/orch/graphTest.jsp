@@ -21,6 +21,9 @@
         <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/VersaStack-web/css/bootstrap.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.min.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.structure.min.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.theme.css">                
         <link rel="stylesheet" href="/VersaStack-web/css/style.css">       
         <link rel="stylesheet" href="/VersaStack-web/css/contextMenu.css">   
         <!-- font awesome icons won't show up otherwise --->
@@ -39,6 +42,16 @@
 
                     evt.preventDefault();
                 });
+                
+                  $(function() {
+                     $( "#dialog_policyAction" ).dialog({
+                         autoOpen: false
+                     });
+                     $( "#dialog_policyData" ).dialog({
+                         autoOpen: false
+                     });                     
+                });
+
             });
         </script> 
 
@@ -143,23 +156,23 @@
                             }); 
                         });
 
-                var request = new XMLHttpRequest();
-                request.open("GET", "/VersaStack-web/data/json/umd-anl-all.json");
-
-                request.setRequestHeader("Accept", "application/json");
-                request.onload = function () {
-                    var modelData = request.responseText;
-
-                    if (modelData.charAt(0) === '<') {
-                        return;
-                    }
-
-                    modelData = JSON.parse(modelData);
-                    $.post("/VersaStack-web/ViewServlet", {newModel: modelData.ttlModel}, function (response) {
-                        // handle response from your servlet.
-                    });
-                };
-                request.send();
+//                var request = new XMLHttpRequest();
+//                request.open("GET", "/VersaStack-web/data/json/umd-anl-all.json");
+//
+//                request.setRequestHeader("Accept", "application/json");
+//                request.onload = function () {
+//                    var modelData = request.responseText;
+//
+//                    if (modelData.charAt(0) === '<') {
+//                        return;
+//                    }
+//
+//                    modelData = JSON.parse(modelData);
+//                    $.post("/VersaStack-web/ViewServlet", {newModel: modelData.ttlModel}, function (response) {
+//                        // handle response from your servlet.
+//                    });
+//                };
+//                request.send();
 
                 $("#loadingPanel").addClass("hide");
                 $("#hoverdiv_viz").removeClass("hide");
@@ -650,6 +663,7 @@
         <feComposite operator="out" in="a" in2="SourceGraphic"/>
     </filter>
     
+    
 <filter id="serviceHighlightOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
    <feFlood flood-color="#66ff66" result="base" />
    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
@@ -661,7 +675,39 @@
    <feComposite result="drop" in="base" in2="mask" operator="in" />
    <feBlend in="SourceGraphic" in2="drop" mode="normal" />
 </filter>
-    
+<filter id="spaDependOnOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+   <feFlood flood-color="#B3F131" result="base" />
+   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+   <feColorMatrix result="mask" in="bigger" type="matrix"
+      values="0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 1 0" />
+   <feComposite result="drop" in="base" in2="mask" operator="in" />
+   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+</filter>
+<filter id="spaExportToOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+   <feFlood flood-color="#23ABA6" result="base" />
+   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+   <feColorMatrix result="mask" in="bigger" type="matrix"
+      values="0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 1 0" />
+   <feComposite result="drop" in="base" in2="mask" operator="in" />
+   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+</filter>
+<filter id="spaImportFromOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+   <feFlood flood-color="#FD3338" result="base" />
+   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+   <feColorMatrix result="mask" in="bigger" type="matrix"
+      values="0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 1 0" />
+   <feComposite result="drop" in="base" in2="mask" operator="in" />
+   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+</filter>    
     <filter id="subnetHighlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
         <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
         <feMorphology operator="dilate" radius="1"/>
@@ -675,6 +721,11 @@
     <filter id="ghost" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
         <feColorMatrix type="saturate" values=".2"/>
     </filter>
+    
+     <marker id="marker_arrow" markerWidth="10" markerHeight="10" refx="15" refy="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="black" />
+    </marker>
+   
     </defs>
     <!--We nest a g in here because the svg tag itself cannot do transforms
         we separate topologies, edges, and nodes to create an explicit z-order
@@ -750,6 +801,11 @@
                 </button>
             </div>
         </div>
+    </div>
+    
+    <div id="dialog_policyAction" title="Policy Action">
+    </div>
+    <div id="dialog_policyData" title="Policy Data">
     </div>
 
     <!-- TAG PANEL -->

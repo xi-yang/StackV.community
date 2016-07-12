@@ -47,7 +47,7 @@ define([
             //       console.log("that.name: " + that.name);
             //console.log("that.type: " + that.type);
      
-            if (that.name.substring(0,3) === "urn") { 
+            if (that.name.substring(0,3) === "urn" || that.name.substring(0,2) === "x-") { 
                 var text = document.createElement("a");
                 text.className = "urnLink";
             } else {
@@ -110,7 +110,8 @@ define([
                 horiz.style = "font-weight:bold;margin-top: 5px;margin-bottom: 5px;border-top: 1px solid #333;";
                 line.appendChild(horiz);
                 content.appendChild(line);
-            } else if (that.name.substring(0,3) === "urn" && that.type !== "Relationship") {
+            } else if (((that.name.substring(0,3) === "urn") ||
+                        (that.name.substring(0,2) === "x-" )) && that.type !== "Relationship") {
                 var link = document.createElement("div");
                 link.className = "urnLink";
                 //link.setAttribute("href", "");
@@ -128,7 +129,8 @@ define([
                 link.appendChild(text);
                 line.appendChild(link);
                 content.appendChild(line);
-            } else if (that.name.substring(0,3) === "urn" && that.type === "Relationship") {
+            } else if ( (that.name.substring(0,3) === "urn") ||
+                        (that.name.substring(0,2) === "x-" )&& that.type === "Relationship") {
                 // copy paste below and above to get desired result 
                 var property =  that.name.split("(*)");                
                 var link = document.createElement("span");
@@ -155,9 +157,14 @@ define([
                 var value = document.createElement("span");               
                 key.className = "panelElementProperty";
                 var property =  that.name.split(":");
-                key.innerHTML = property[0] + ":";
-                value.innerHTML = property[1]; // just using this because it's there 
-                
+                if (property[0] !== 'format ' && property[0] !== 'value ' && property[1].substring(0) !== "{") {
+                    key.innerHTML = property[0] + ":";
+                    value.innerHTML = property[1]; // just using this because it's there 
+                } else {
+                    key.innerHTML = property[0] + ":";
+                    property.splice(0,1);
+                    value.innerHTML = that.dataObject;
+                }
                  line.oncontextmenu  = function (e) {
                    that.contextMenu.panelElemContextListener(e, that.dataObject);
                 };

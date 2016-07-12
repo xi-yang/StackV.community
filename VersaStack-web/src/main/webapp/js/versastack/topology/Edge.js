@@ -17,8 +17,14 @@ define([], function () {
         this.svgNode = null;
         this.svgLeadLeft = null;
         this.svgLeadRight = null;
-
+        this.edgeType = null;
+        
         this._isProper = function () {
+            if (this.leftPort.getType() !== "Port" && this.rightPort.getType() !== "Port") {
+                this.source = this.leftPort;
+                this.target = this.rightPort;
+                return true;
+            }
             if (!this.leftPort) {
                 console.log("Left Port Missing!");
                 return false;
@@ -57,6 +63,9 @@ define([], function () {
             }
         };
 
+        this.getType = function() {
+            return "Edge";
+        }
 
     }
     return Edge;

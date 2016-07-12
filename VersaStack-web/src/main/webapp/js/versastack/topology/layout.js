@@ -14,7 +14,22 @@ define([
     function doLayout(model, lockNodes, width, height) {
         var nodes = model.listNodes();
         var edges = model.listEdges();
-
+        
+        // lay out policies as nodes ...
+        var policies = model.listPolicies();
+        for (var i in policies) nodes.push(policies[i]);
+        
+        // same with policy edges
+        var polEdges = model.policyEdges;
+        for (var i in polEdges) {
+            polEdges[i]._isProper();
+            if (polEdges[i]) {
+                edges.push(polEdges[i]);
+            }
+        } 
+        
+        if (edges[0] === undefined) edges.splice(0,1);
+        
         if (lockNodes) {
             map_(lockNodes, function (node) {
                 if (node.isLeaf()) {

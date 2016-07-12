@@ -28,8 +28,11 @@ define([
     "local/versastack/topology/modelConstants",
     "local/versastack/topology/Subnet",
     "local/versastack/topology/Volume",
-    "local/versastack/topology/Element"
-], function (utils, Node, Port, Service, values, Subnet, Volume, Element) {
+    "local/versastack/topology/Element",
+    "local/versastack/topology/Policy",
+    "local/versastack/topology/Edge"
+
+], function (utils, Node, Port, Service, values, Subnet, Volume, Element, Policy, Edge) {
 
     function Model(oldModel) {
         var map_ = utils.map_;
@@ -47,7 +50,8 @@ define([
         this.init = function (mode, callback, model) {            
             var request = new XMLHttpRequest();  
             // If ready, load the live model. Otherwise, load the static model. 
-            request.open("GET", "/VersaStack-web/restapi/model/");    
+            request.open("GET", "/VersaStack-web/restapi/model/"); 
+           // request.open("GET", "/VersaStack-web/data/json/spa-rvtk-versastack-qa1-1vm.json");
             requestModel();
             
             function requestModel() {
@@ -64,10 +68,13 @@ define([
                     if (data.charAt(0) === '<') {
                         alert("Empty Topology.");
                         return;
-                    } else if (data.charAt(0) === 'u') {
-                        data = JSON.parse(data);
-                        versionID = data.version;
+                    } else if ((data.charAt(0) === 'u' || data.charAt(0) === '{')) {
+                        //data = JSON.parse(data);
+                        //versionID = data.version;
                         map = JSON.parse(data);
+                        if (map.ttlModel) {
+                           map = JSON.parse(map.ttlModel);
+                        }
                     } else {                       
                         data = JSON.parse(data);
                         versionID = data.version;
@@ -97,6 +104,8 @@ define([
                     that.subnetMap = {};
                     that.volumeMap = {};
                     that.elementMap = {};
+                    that.policyMap = {};
+                    that.policyEdges = [];
                     for (var key in map) {
                         var val = map[key];
                         val.name = key;
@@ -225,6 +234,17 @@ define([
                                     case values.POSIX_IOBenchmark:
                                     case values.address:
                                         break;
+                                    case values.spaPolicyData:
+                                    case values.spaPolicyAction:
+                                        var toAdd;
+                                        if (oldModel && oldModel.policyMap[key]) {
+                                            toAdd = oldModel.policyMap[key];
+                                            toAdd.reload(val, map);
+                                        } else {
+                                            toAdd = new Policy(val, map);
+                                        }
+                                        that.policyMap[key] = toAdd;
+                                        break;
                                     default:
                                         console.log("Unknown type: " + type);
                                         break;
@@ -232,7 +252,61 @@ define([
                             });                                                
                         }
                     }
+                    
+                    for (var key in that.policyMap) {
+                        var policy = that.policyMap[key];
+                        var policy_ = policy._backing;
+                        for (var key in policy_) {
+                            switch(key) {
+                                case values.spaType:
+                                    if (policy.getTypeDetailed() === "PolicyAction")
+                                    policy.data = policy_[key][0].value;
+                                    break;
+                                case values.spaImportFrom:
+                                    var ifs = policy_[key];
+                                    map_(ifs, function (if_key) {
+                                        if_key = if_key.value;
 
+                                        var i_f = that.policyMap[if_key];                                       
+                                        var toAdd = new Edge(i_f, policy);
+                                        toAdd.edgeType = "importFrom";
+                                        that.policyEdges.push(toAdd);                                                                     
+                                    });
+                                    break;
+                                case values.spaExportTo:
+                                    var ets = policy_[key];
+                                    map_(ets, function (et_key) {
+                                        et_key = et_key.value;
+                                        var e_t = that.policyMap[et_key];
+                                        var toAdd = new Edge(policy, e_t);
+                                        toAdd.edgeType = "exportTo";
+                                        that.policyEdges.push(toAdd);     
+                                    });                                    
+                                    break;
+                                case values.spaDependOn:
+                                    var dos = policy_[key];
+                                    map_(dos, function (do_key) {
+                                        do_key = do_key.value;
+                                        var d_o = that.policyMap[do_key];
+                                        var toAdd = new Edge(policy, d_o);
+                                        toAdd.edgeType = "dependOn";
+                                        that.policyEdges.push(toAdd);                                                                    
+                                     });
+                                    break;
+                                case values.spaValue:
+                                    if (policy.getTypeDetailed() === "PolicyData")
+                                    policy.data = policy_[key][0].value;
+                                    break;
+                                case values.spaFormat:
+                                    if (policy.getTypeDetailed() === "PolicyData")
+                                    policy.data = policy_[key][0].value;                                    
+                                    break;
+                                default:
+                                    console.log("Unknown policy attribute: " + key);
+                            }
+                        }
+                    }
+                    
                     for (var key in that.serviceMap) {
                         var service = that.serviceMap[key];
                         var service_ = service._backing;
@@ -272,6 +346,17 @@ define([
                                         service.subnets.push(subnet);
                                     });
                                     break;
+                                case values.spaDependOn:
+                                    var dos = service_[key];
+                                    map_(dos, function (do_key) {
+                                        do_key = do_key.value;
+                                        var d_o = that.policyMap[do_key];
+                                        var toAdd = new Edge(service, d_o);
+                                        toAdd.edgeType = "dependOn";
+                                        that.policyEdges.push(toAdd);                                    
+                                    });                                    
+                                    
+                                    break;                                    
                                 default:
                                     console.log("Unknown service attribute: " + key);
 
@@ -344,6 +429,16 @@ define([
                                         subnet.ports.push(port);
                                     });
                                     break;
+                                case values.spaDependOn:
+                                    var dos = subnet_[key];
+                                    map_(dos, function (do_key) {
+                                        do_key = do_key.value;
+                                        var d_o = that.policyMap[do_key];
+                                        var toAdd = new Edge(subnet, d_o);
+                                        toAdd.edgeType = "dependOn";
+                                        that.policyEdges.push(toAdd);                                    });                                    
+                                    
+                                    break;                                      
                                 default:
                                     console.log("Unknown subnet attribute: " + key);
 
@@ -441,6 +536,18 @@ define([
                                 case values.topoType:
                                 case values.hasTag:                            
                                     break;
+                                case values.spaDependOn:
+                                    var dos = node_[key];
+                                    map_(dos, function (do_key) {
+                                        do_key = do_key.value;
+                                        var d_o = that.policyMap[do_key];
+                                        var toAdd = new Edge(node, d_o);
+                                        toAdd.edgeType = "dependOn";
+                                        that.policyEdges.push(toAdd);
+                                    });                                    
+                                    
+                                    break;                                      
+                                    
                                 default:                         
                                     console.log("Unknown key: " + key);
                             }
@@ -796,7 +903,9 @@ define([
                     that.subnetMap = {};
                     that.volumeMap = {};
                     that.elementMap = {};
-                    
+                    that.policyMap = {};
+                    that.policyEdges = [];
+               
                     for (var key in map) {
                         var val = map[key];
                         val.name = key;
@@ -953,6 +1062,14 @@ define([
                                     case values.POSIX_IOBenchmark:
                                     case values.address:
                                         break;
+                                    case values.spaPolicyData:
+                                    case values.spaPolicyAction:
+                                        var toAdd;
+                                        toAdd = new Policy(val, map);
+                                        if (detailsReference) toAdd.detailsReference = true;                                       
+
+                                        that.policyMap[key] = toAdd;
+                                        break;                                        
                                     default:
                                         console.log("Unknown type: " + type);
                                         break;
@@ -960,6 +1077,61 @@ define([
                             });                                                
                         }
                     }
+
+                    for (var key in that.policyMap) {
+                        var policy = that.policyMap[key];
+                        var policy_ = policy._backing;
+                        for (var key in policy_) {
+                            switch(key) {
+                                case values.spaType:
+                                    if (policy.getTypeDetailed() === "PolicyAction")
+                                    policy.data = policy_[key][0].value;
+                                    break;
+                                case values.spaImportFrom:
+                                    var ifs = policy_[key];
+                                    map_(ifs, function (if_key) {
+                                        if_key = if_key.value;
+
+                                        var i_f = that.policyMap[if_key];                                       
+                                        var toAdd = new Edge(i_f, policy);
+                                        toAdd.edgeType = "importFrom";
+                                        that.policyEdges.push(toAdd);                                                                     
+                                    });
+                                    break;
+                                case values.spaExportTo:
+                                    var ets = policy_[key];
+                                    map_(ets, function (et_key) {
+                                        et_key = et_key.value;
+                                        var e_t = that.policyMap[et_key];
+                                        var toAdd = new Edge(policy, e_t);
+                                        toAdd.edgeType = "exportTo";
+                                        that.policyEdges.push(toAdd);     
+                                    });                                    
+                                    break;
+                                case values.spaDependOn:
+                                    var dos = policy_[key];
+                                    map_(dos, function (do_key) {
+                                        do_key = do_key.value;
+                                        var d_o = that.policyMap[do_key];
+                                        var toAdd = new Edge(policy, d_o);
+                                        toAdd.edgeType = "dependOn";
+                                        that.policyEdges.push(toAdd);                                                                    
+                                     });
+                                    break;
+                                case values.spaValue:
+                                    if (policy.getTypeDetailed() === "PolicyData")
+                                    policy.data = policy_[key][0].value;
+                                    break;
+                                case values.spaFormat:
+                                    if (policy.getTypeDetailed() === "PolicyData")
+                                    policy.data = policy_[key][0].value;                                    
+                                    break;
+                                default:
+                                    console.log("Unknown policy attribute: " + key);
+                            }
+                        }
+                    }
+                    
 
                     for (var key in that.serviceMap) {
 
@@ -1003,6 +1175,16 @@ define([
                                         }
                                     });
                                     break;
+                                case values.spaDependOn:
+                                    var dos = service_[key];
+                                    map_(dos, function (do_key) {
+                                        do_key = do_key.value;
+                                        var d_o = that.policyMap[do_key];
+                                        var toAdd = new Edge(service, d_o);
+                                        toAdd.edgeType = "dependOn";
+                                        that.policyEdges.push(toAdd);                                    
+                                    });                                                                      
+                                    break;                                    
                                 default:
                                     console.log("Unknown service attribute: " + key);
 
@@ -1077,6 +1259,17 @@ define([
                                         subnet.ports.push(port);
                                     });
                                     break;
+                                case values.spaDependOn:
+                                    var dos = subnet_[key];
+                                    map_(dos, function (do_key) {
+                                        do_key = do_key.value;
+                                        var d_o = that.policyMap[do_key];
+                                        var toAdd = new Edge(subnet, d_o);
+                                        toAdd.edgeType = "dependOn";
+                                        that.policyEdges.push(toAdd);                                    });                                    
+                                    
+                                    break;                                      
+                                    
                                 default:
                                     console.log("Unknown subnet attribute: " + key);
 
@@ -1174,6 +1367,17 @@ define([
                                 case values.topoType:
                                 case values.hasTag:                            
                                     break;
+                                case values.spaDependOn:
+                                    var dos = node_[key];
+                                    map_(dos, function (do_key) {
+                                        do_key = do_key.value;
+                                        var d_o = that.policyMap[do_key];
+                                        var toAdd = new Edge(node, d_o);
+                                        toAdd.edgeType = "dependOn";
+                                        that.policyEdges.push(toAdd);
+                                    });                                    
+                                    
+                                    break;                                                                          
                                 default:                         
                                     console.log("Unknown key: " + key);
                             }
@@ -1322,6 +1526,13 @@ define([
             return ans;
         };
 
+        this.listPolicies = function() {
+            var policies = [];
+            for (var key in that.policyMap) policies.push(that.policyMap[key]);
+            return policies;
+        };
+        
+        
         this.listPorts = function() {
             var ports = [];
             for (var key in that.portMap) ports.push(that.portMap[key]);

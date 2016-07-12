@@ -40,6 +40,15 @@
                     }
                 ]
             };
+                
+                $(function() {
+                  $( "#dialog_policyAction" ).dialog({
+                      autoOpen: false
+                  });
+                  $( "#dialog_policyData" ).dialog({
+                      autoOpen: false
+                  });                     
+                });                  
         </script>
         <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
 
@@ -50,6 +59,10 @@
         <link rel="stylesheet" href="/VersaStack-web/css/style.css">
         <link rel="stylesheet" href="/VersaStack-web/css/driver.css">
         <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.min.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.structure.min.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.theme.css">                
+
     </head>
     
     <sql:setDataSource var="front_conn" driver="com.mysql.jdbc.Driver"
@@ -283,7 +296,7 @@
 
                     $("#unver-red").append($("#ur_viz_div"));     
                     $("#unver-red").find("#ur_viz_div").removeClass("hidden");
-                });
+                });      
             }
 
             // Moderation Functions
