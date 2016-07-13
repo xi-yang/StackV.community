@@ -96,21 +96,8 @@
                                </td>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td><input type="text" name="netType" placeholder="Network Type" /></td>
-                            </tr>
-                            <tr>
-                                <td><input type="text" name="netCidr" placeholder="Network CIDR" /></td>
-                            </tr>
-                        </tbody>
-                        <tbody>
-                            <tr>
-                                <td><input type="text" name="conn-dest" placeholder="Direct Connect Destination" size="60" /></td>                            
-                            </tr>
-                            <tr>
-                                <td><input type="text" name="conn-vlan" placeholder="Direct Connect VLAN" size="8" /></td>
-                            </tr>
+                        <tbody id="awsStage2-network">
+                            
                         </tbody>
                     </table>
                     <input type="button" name="previous" class="reset action-button" value="Previous" />
@@ -140,6 +127,9 @@
                 <fieldset id="4-aws-1">
                     <h2 class="fs-title">Virtual Machines</h2>
                     <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="awsStage4-vm" onfocus="this.oldvalue = this.value;" onchange="setVMs(this)"/></h3>
+                    <table class="subfs-table" id="awsStage4-vm-route-table">
+
+                    </table>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="button" name="next" id="awsStage4" class="next action-button" value="Next" />
@@ -190,13 +180,8 @@
                                </td>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td><input type="text" name="netType" placeholder="Network Type" /></td>
-                            </tr>
-                            <tr>
-                                <td><input type="text" name="netCidr" placeholder="Network CIDR" /></td>
-                            </tr>
+                        <tbody id="opsStage2-network">
+                            
                         </tbody>
                     </table>
                     <input type="button" name="previous" class="reset action-button" value="Previous" />
@@ -226,6 +211,9 @@
                 <fieldset id="4-ops-1">
                     <h2 class="fs-title">Virtual Machines</h2>
                     <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="opsStage4-vm" onfocus="this.oldvalue = this.value;" onchange="setVMs(this)"/></h3>
+                    <table class="subfs-table" id="opsStage4-vm-route-table">
+
+                    </table>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="button" name="next" id="opsStage4" class="next action-button" value="Next" />

@@ -65,7 +65,7 @@
                             {
                                 "name": "ops-vtn1-vm1",
                                 "type": "instance+2,secgroup+rains,keypair+icecube_key",
-                                "host": "msx3",
+                                "host": "msx3", 
                                 "interfaces": [
                                     {
                                         "address": "ipv4+206.196.180.148/255.255.255.0",
