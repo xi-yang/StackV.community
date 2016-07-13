@@ -256,7 +256,8 @@ public class WebResource {
             try {
                 Object obj = parser.parse(inputString);
                 inputJSON = (JSONObject) obj;
-
+                
+                System.out.println("Service API- inputJSON: " + inputJSON.toJSONString());
             } catch (ParseException ex) {
                 Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -306,6 +307,9 @@ public class WebResource {
                 case "fl2p":
                     paraMap = parseFlow(dataJSON, refUuid);
                     break;
+                case "hybridcloud":
+                    paraMap = parseHybridCloud(dataJSON, refUuid);
+                    break;
                 default:
             }            
 
@@ -314,8 +318,10 @@ public class WebResource {
                     + " FROM service WHERE filename = ?");
             prep.setString(1, serviceType);
             rs1 = prep.executeQuery();
-            rs1.next();
-            int serviceID = rs1.getInt(1);
+            int serviceID = -1;
+            while (rs1.next()) {
+                serviceID = rs1.getInt(1);
+            }
             Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
 
             // Install Instance into DB.
@@ -339,16 +345,7 @@ public class WebResource {
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_verification` "
                     + "(`service_instance_id`) VALUES (?)");
             prep.setInt(1, instanceID);
-            prep.executeUpdate();
-            
-            // Replicate properties into DB.
-            for (String key : paraMap.keySet()) {
-                if (!paraMap.get(key).isEmpty()) {
-                    url = new URL(String.format("%s/service/property/%s/%s/", host, refUuid, key));
-                    connection = (HttpURLConnection) url.openConnection();
-                    servBean.executeHttpMethod(url, connection, "POST", paraMap.get(key));
-                }
-            }
+            prep.executeUpdate();           
             
             // Execute service creation.
             switch (serviceType) {
@@ -360,6 +357,9 @@ public class WebResource {
                     break;
                 case "fl2p":
                     servBean.createflow(paraMap);
+                    break;
+                case "hybridcloud":
+                    servBean.creatHybridCloud(paraMap);
                     break;
                 default:
             }
@@ -377,6 +377,7 @@ public class WebResource {
             return refUuid;
 
         } catch (EJBException | SQLException | IOException | InterruptedException e) {
+            System.out.println("<<<CREATION ERROR: " + e.getMessage());
             return "<<<CREATION ERROR: " + e.getMessage();
         }
     }
@@ -390,25 +391,26 @@ public class WebResource {
 
         try {
             switch (action) {
-                case "propagate":
-                    propagate(refUuid, 0);
-                    break;
-                case "commit":
-                    commit(refUuid, 0);
-                    break;
-                case "revert":
-                    revert(refUuid, 0);
-                    break;
-
                 case "cancel":
                     setSuperState(refUuid, 2);
                     cancelInstance(refUuid);
                     break;
-
+                case "force_cancel":
+                    setSuperState(refUuid, 2);
+                    forceCancelInstance(refUuid);
+                    
                 case "reinstate":
                     setSuperState(refUuid, 4);
                     cancelInstance(refUuid);
                     break;
+                case "force_reinstate":
+                    setSuperState(refUuid, 4);
+                    forceCancelInstance(refUuid);
+                    break;                    
+                    
+                case "force_retry":
+                    forceRetryInstance(refUuid);
+                    break;                         
 
                 case "delete":
                     deleteInstance(refUuid);
@@ -428,7 +430,7 @@ public class WebResource {
                             + Thread.currentThread().getName() + "::ID="
                             + Thread.currentThread().getId() + "::Time Taken="
                             + (endTime - startTime) + " ms.");
-                    return "Verification Complete.\r\n";
+                    return "Verification Complete.\r\n";                    
 
                 default:
                     return "Error! Invalid Action.\r\n";
@@ -601,15 +603,15 @@ public class WebResource {
                 return 1;
             }
 
-            result = revert(refUuid, 2);
+            result = revert(refUuid);
             if (!result) {
                 return 2;
             }
-            result = propagate(refUuid, 2);
+            result = propagate(refUuid);
             if (!result) {
                 return 3;
             }
-            result = commit(refUuid, 2);
+            result = commit(refUuid);
             if (!result) {
                 return 4;
             }
@@ -632,15 +634,95 @@ public class WebResource {
             return -1;
         }
     }
+    
+    private int forceCancelInstance(String refUuid) throws SQLException {
+        boolean result;
+        try {
+            String instanceState = status(refUuid);
+            if (!instanceState.equalsIgnoreCase("READY")) {
+                return 1;
+            }
+
+            result = forceRevert(refUuid);
+            if (!result) {
+                return 2;
+            }
+            result = forcePropagate(refUuid);
+            if (!result) {
+                return 3;
+            }
+            result = forceCommit(refUuid);
+            if (!result) {
+                return 4;
+            }
+
+            while (true) {
+                instanceState = status(refUuid);
+                if (instanceState.equals("READY")) {                    
+                    verify(refUuid);
+                   
+                    return 0;
+                } else if (!instanceState.equals("COMMITTED")) {
+                    return 5;
+                }
+                Thread.sleep(5000);
+            }
+            
+
+        } catch (IOException | InterruptedException ex) {
+            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+            return -1;
+        }
+    }
+    
+    private int forceRetryInstance(String refUuid) throws SQLException {
+        boolean result;
+        try {
+            String instanceState = status(refUuid);
+            if (!instanceState.equalsIgnoreCase("READY")) {
+                return 1;
+            }
+
+            result = forcePropagate(refUuid);
+            if (!result) {
+                return 3;
+            }
+            result = forceCommit(refUuid);
+            if (!result) {
+                return 4;
+            }
+
+            while (true) {
+                instanceState = status(refUuid);
+                if (instanceState.equals("READY")) {                    
+                    verify(refUuid);
+                   
+                    return 0;
+                } else if (!instanceState.equals("COMMITTED")) {
+                    return 5;
+                }
+                Thread.sleep(5000);
+            }
+            
+
+        } catch (IOException | InterruptedException ex) {
+            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+            return -1;
+        }
+    }
+    
+    
 
     // Parsing Methods ---------------------------------------------------------
+    
+    // @TODO: PRETTY MUCH UNDOING SERVLET CODE?
     private HashMap<String, String> parseDNC(JSONObject dataJSON, String refUuid) {
         HashMap<String, String> paraMap = new HashMap<>();
         paraMap.put("instanceUUID", refUuid);
 
         JSONArray linksArr = (JSONArray) dataJSON.get("links");
-        for (int i = 0; i < linksArr.size(); i++) {
-            JSONObject linksJSON = (JSONObject) linksArr.get(i);
+        for (int i = 1; i <= linksArr.size(); i++) {
+            JSONObject linksJSON = (JSONObject) linksArr.get(i - 1);
             String name = (String) linksJSON.get("name");
             String src = (String) linksJSON.get("src");
             String srcVlan = (String) linksJSON.get("src-vlan");
@@ -648,10 +730,12 @@ public class WebResource {
             String desVlan = (String) linksJSON.get("des-vlan");
 
             String linkUrn = servBean.urnBuilder("dnc", name, refUuid);
-            String connString = src + "&vlan_tag+" + srcVlan + "\r\n" + des + "&vlan_tag+" + desVlan;
 
-            paraMap.put("linkUri" + (i + 1), linkUrn);
-            paraMap.put("conn" + (i + 1), connString);
+            paraMap.put("linkUri" + i, linkUrn);
+            paraMap.put("src-conn" + i, src);
+            paraMap.put("des-conn" + i, des);
+            paraMap.put("src-vlan" + i, srcVlan);
+            paraMap.put("des-vlan" + i, desVlan);
         }
 
         return paraMap;
@@ -808,6 +892,14 @@ public class WebResource {
             
         return paraMap;
     }
+    
+    private HashMap<String, String> parseHybridCloud(JSONObject dataJSON, String refUuid){
+        HashMap<String, String> paraMap = new HashMap<>();
+        paraMap.put("instanceUUID", refUuid);
+        paraMap.put("virtual_clouds", dataJSON.get("virtual_clouds").toString());
+        
+        return paraMap;
+    }
 
     private HashMap<String, String> parseFlow(JSONObject dataJSON, String refUuid) {
         HashMap<String, String> paraMap = new HashMap<>();
@@ -859,28 +951,49 @@ public class WebResource {
         prep.executeUpdate();
     }
 
-    private boolean propagate(String refUuid, int stateId) throws MalformedURLException, IOException {
+    private boolean propagate(String refUuid) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
         return result.equalsIgnoreCase("PROPAGATED");
     }
+    private boolean forcePropagate(String refUuid) throws MalformedURLException, IOException {
+        URL url = new URL(String.format("%s/service/%s/propagate_forcedretry", host, refUuid));
+        HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+        String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
+        return result.equalsIgnoreCase("PROPAGATED");
+    }
 
-    private boolean commit(String refUuid, int stateId) throws MalformedURLException, IOException {
+    private boolean commit(String refUuid) throws MalformedURLException, IOException {
+        URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
+        HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+        String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
+        return result.equalsIgnoreCase("COMMITTED");
+    }
+    private boolean forceCommit(String refUuid) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
         return result.equalsIgnoreCase("COMMITTED");
     }
 
-    private boolean revert(String refUuid, int stateId) throws MalformedURLException, IOException {
+    private boolean revert(String refUuid) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/revert", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
         
         // Revert now returns service delta UUID; pending changes.
         return true;
-    }
+    }    
+    private boolean forceRevert(String refUuid) throws MalformedURLException, IOException {
+        URL url = new URL(String.format("%s/service/%s/revert_forced", host, refUuid));
+        HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+        String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
+        
+        // Revert now returns service delta UUID; pending changes.
+        return true;
+    }    
+    
 
     private String delete(String refUuid) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/", host, refUuid));

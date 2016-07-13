@@ -664,7 +664,7 @@ public class MCETools {
         // interception with input availableVlanRange 
         Boolean vlanTranslation = true;
         Resource egressSwitchingService = null;
-        if (prevHop != null && !vlanRange.isEmpty()) {
+        if (prevHop != null) {
             // check vlan translation
             String sparql = String.format("SELECT ?swapping WHERE {<%s> a nml:SwitchingService. <%s> nml:labelSwapping ?swapping.}", prevHop, prevHop);
             ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
@@ -675,21 +675,33 @@ public class MCETools {
                 // non-translation
                 vlanTranslation = false;
             }
-            // vlan translation
-            TagSet lastVlanRange = TagSet.VlanRangeANY;
-            // no vlan translation
-            if (!vlanTranslation && lastParamMap != null && lastParamMap.containsKey("vlanRange")) {
-                lastVlanRange = (TagSet) lastParamMap.get("vlanRange");
+        } else if (nextHop != null) {
+            // check vlan translation
+            String sparql = String.format("SELECT ?swapping WHERE {<%s> a nml:SwitchingService. <%s> nml:labelSwapping ?swapping.}", nextHop, nextHop);
+            ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
+            if (rs.hasNext()) {
+                egressSwitchingService = nextHop;
             }
-            if (allowedVlanRange != null && !allowedVlanRange.isEmpty()) {
-                vlanRange.intersect(allowedVlanRange);
+            if (!rs.hasNext() || !rs.next().getLiteral("swapping").getBoolean()) {
+                // non-translation
+                vlanTranslation = false;
             }
-            vlanRange.intersect(lastVlanRange);
         }
+        // vlan translation
+        TagSet lastVlanRange = TagSet.VlanRangeANY;
+        // no vlan translation
+        if (!vlanTranslation && lastParamMap != null && lastParamMap.containsKey("vlanRange")) {
+            lastVlanRange = (TagSet) lastParamMap.get("vlanRange");
+        }
+        if (allowedVlanRange != null && !allowedVlanRange.isEmpty()) {
+            vlanRange.intersect(allowedVlanRange);
+        }
+        vlanRange.intersect(lastVlanRange);
         // exception if empty        
         if (vlanRange.isEmpty()) {
             throw new TagSet.EmptyTagSetExeption();
         }
+        // store non-empty vlanRange
         paramMap.put("vlanRange", vlanRange);
         if (egressSwitchingService != null) {
             paramMap.put("egressSwitchingService", egressSwitchingService);

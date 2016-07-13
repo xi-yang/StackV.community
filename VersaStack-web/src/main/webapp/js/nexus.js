@@ -9,10 +9,10 @@ var baseUrl = window.location.origin;
 $(function () {
     $("#nav").load("/VersaStack-web/navbar.html");
     $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
-        $(".pure-toggle-label").click(function (evt) {
-            $(".pure-toggle-label").toggleClass("toggle-open");
-            $(".pure-toggle-icon").toggleClass("toggle-open");
-
+        $("#sidebar-toggle").click(function (evt) {
+            $("#sidebar-toggle-1").toggleClass("img-off");
+            $("#sidebar-toggle-2").toggleClass("img-off");
+            
             $("#sidebar-contents").toggleClass("sidebar-open");
             $("#main-pane").toggleClass("sidebar-open");
 
@@ -629,9 +629,76 @@ function cancelInstance(uuid) {
     window.location.reload(true);
     //window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
+function forceCancelInstance(uuid) {
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/force_cancel';
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        success: function (result) {
+            // Do something with the result
+        }
+    });
+
+    window.location.reload(true);
+    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
+}
 
 function reinstateInstance(uuid) {
     var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/reinstate';
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        success: function (result) {
+            // Do something with the result
+        }
+    });
+
+    window.location.reload(true);
+    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
+}
+function forceReinstateInstance(uuid) {
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/force_reinstate';
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        success: function (result) {
+            // Do something with the result
+        }
+    });
+
+    window.location.reload(true);
+    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
+}
+
+function forceRetryInstance(uuid) {
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/force_retry';
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        success: function (result) {
+            // Do something with the result
+        }
+    });
+
+    window.location.reload(true);
+    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
+}
+
+function modifyInstance(uuid) {
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/modify';
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        success: function (result) {
+            // Do something with the result
+        }
+    });
+
+    window.location.reload(true);
+    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
+}
+function forceModifyInstance(uuid) {
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/force_modify';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -659,7 +726,6 @@ function verifyInstance(uuid) {
 }
 
 function deleteInstance(uuid) {
-
     var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/delete';
     $.ajax({
         url: apiUrl,
@@ -1049,6 +1115,10 @@ function reloadPage() {
 
 function reloadPanel(panelId) {
     $('#' + panelId).load(document.URL + ' #' + panelId);
+}
+
+function emptyElement(id) {
+    $("#" + id).empty();
 }
 
 var getUrlParameter = function getUrlParameter(sParam) {
