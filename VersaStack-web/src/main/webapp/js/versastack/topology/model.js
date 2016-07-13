@@ -51,7 +51,7 @@ define([
             var request = new XMLHttpRequest();  
             // If ready, load the live model. Otherwise, load the static model. 
             request.open("GET", "/VersaStack-web/restapi/model/"); 
-           // request.open("GET", "/VersaStack-web/data/json/spa-rvtk-versastack-qa1-1vm.json");
+            //request.open("GET", "/VersaStack-web/data/json/spa-rvtk-versastack-qa1-1vm.json");
             requestModel();
             
             function requestModel() {
