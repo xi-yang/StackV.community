@@ -380,5 +380,17 @@ public class ServiceResource {
         }
         return apiDeltaVerification;
     }
+    /*
+    @GET
+    @Produces("application/json")
+    @Path("/delta/{deltaUUID}/{deltaType}")
+    public ApiDeltaBase retrieveDeltaJson(@PathParam("deltaUUID") String deltaUUID, @PathParam("uuid") String deltaType) throws Exception {
+    }
     
+    @GET
+    @Produces("application/xml")
+    @Path("/delta/{deltaUUID}/{deltaType}")
+    public ApiDeltaBase retrieveDeltaJson(@PathParam("deltaUUID") String deltaUUID, @PathParam("uuid") String deltaType) throws Exception {
+    }
+    */
 }
