@@ -44,7 +44,7 @@
         <div id="black-screen"></div>
         <div id="main-pane">
             <!-- Multistep form -->
-            <form action="/VersaStack-web/ServiceServlet" method="post" id="msform" target="_blank">
+            <form action="/VersaStack-web/ServiceServlet" method="post" id="msform">
                 <input type="hidden" name="username" value="${user.getUsername()}"/>
                 <input type="hidden" name="netCreate" value="true"/>
                 <!-- Progress Bar -->
