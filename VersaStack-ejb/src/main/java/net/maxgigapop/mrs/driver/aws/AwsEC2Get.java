@@ -457,7 +457,7 @@ public class AwsEC2Get {
                     break;
                 }
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
                         sleep(delay);
                     } catch (InterruptedException ex1) {
@@ -489,7 +489,7 @@ public class AwsEC2Get {
                     break;
                 }
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
                         sleep(delay);
                     } catch (InterruptedException ex1) {
@@ -517,7 +517,7 @@ public class AwsEC2Get {
                 Subnet resource = client.describeSubnets(request).getSubnets().get(0);
                 //break;
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
                         sleep(delay);
                     } catch (InterruptedException ex1) {
@@ -546,7 +546,7 @@ public class AwsEC2Get {
                 RouteTable resource = client.describeRouteTables(request).getRouteTables().get(0);
                 break;
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
                         sleep(delay);
                     } catch (InterruptedException ex1) {
@@ -573,7 +573,7 @@ public class AwsEC2Get {
             try {
                 RouteTable resource = client.describeRouteTables(request).getRouteTables().get(0);
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
                         sleep(delay);
                     } catch (InterruptedException ex1) {
@@ -602,7 +602,7 @@ public class AwsEC2Get {
                 InternetGateway resource = client.describeInternetGateways(request).getInternetGateways().get(0);
                 break;
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
                         sleep(delay);
                     } catch (InterruptedException ex1) {
@@ -629,7 +629,7 @@ public class AwsEC2Get {
             try {
                 InternetGateway resource = client.describeInternetGateways(request).getInternetGateways().get(0);
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
                         sleep(delay);
                     } catch (InterruptedException ex1) {
@@ -661,7 +661,7 @@ public class AwsEC2Get {
                     break;
                 }
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
                         sleep(delay);
                     } catch (InterruptedException ex1) {
@@ -692,7 +692,7 @@ public class AwsEC2Get {
                     break;
                 }
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
                         sleep(delay);
                     } catch (InterruptedException ex1) {
@@ -720,7 +720,7 @@ public class AwsEC2Get {
                 VpnGateway resource = client.describeVpnGateways(request).getVpnGateways().get(0);
                 break;
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
                         sleep(delay);
                     } catch (InterruptedException ex1) {
@@ -750,7 +750,7 @@ public class AwsEC2Get {
                     break;
                 }
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
                         sleep(delay);
                     } catch (InterruptedException ex1) {
@@ -784,7 +784,7 @@ public class AwsEC2Get {
                     break;
                 }
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
                         sleep(delay);
                     } catch (InterruptedException ex1) {
@@ -822,7 +822,7 @@ public class AwsEC2Get {
                     break;
                 }
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
                         sleep(delay);
                     } catch (InterruptedException ex1) {
@@ -853,7 +853,7 @@ public class AwsEC2Get {
                     break;
                 }
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
                         sleep(delay);
                     } catch (InterruptedException ex1) {
@@ -883,7 +883,7 @@ public class AwsEC2Get {
                     break;
                 }
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
                         sleep(delay);
                     } catch (InterruptedException ex1) {
@@ -914,7 +914,7 @@ public class AwsEC2Get {
                     break;
                 }
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
                         sleep(delay);
                     } catch (InterruptedException ex1) {
@@ -944,7 +944,7 @@ public class AwsEC2Get {
                     break;
                 }
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
                         sleep(delay);
                     } catch (InterruptedException ex1) {
@@ -975,7 +975,7 @@ public class AwsEC2Get {
                     break;
                 }
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
                         sleep(delay);
                     } catch (InterruptedException ex1) {
@@ -1005,7 +1005,7 @@ public class AwsEC2Get {
                     break;
                 }
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
                         sleep(delay);
                     } catch (InterruptedException ex1) {
@@ -1036,7 +1036,7 @@ public class AwsEC2Get {
                     break;
                 }
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
                         sleep(delay);
                     } catch (InterruptedException ex1) {
@@ -1066,7 +1066,7 @@ public class AwsEC2Get {
                     break;
                 }
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
                         sleep(delay);
                     } catch (InterruptedException ex1) {
@@ -1097,7 +1097,7 @@ public class AwsEC2Get {
                     break;
                 }
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
                         sleep(delay);
                     } catch (InterruptedException ex1) {
@@ -1129,7 +1129,7 @@ public class AwsEC2Get {
                 }
                 return null;
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
                         sleep(delay);
                     } catch (InterruptedException ex1) {
@@ -1335,7 +1335,7 @@ public class AwsEC2Get {
                 List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
                 return descriptions;
             } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax*2) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax*2) {
                     try {
                         sleep(delay); // pause for 2 ~ 64 seconds
                     } catch (InterruptedException ex1) {
