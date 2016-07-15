@@ -2482,7 +2482,8 @@ public class AwsPush {
                 query = "SELECT ?type WHERE {?service mrs:providesVolume <" + volume.asResource() + ">}";
                 ResultSet r1 = executeQuery(query, emptyModel, modelAdd);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model addition does not specify service that provides volume: %s", volume));
+                    logger.warning(String.format("model addition does not specify service that provides volume: %s", volume));
+                    continue;
                 }
 
                 //find out the type of the volume
