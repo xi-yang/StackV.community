@@ -596,4 +596,53 @@ public class ModelUtil {
         }
 
     }
+    
+    static public class DeltaRetrieval {
+        protected String modelAdditionSvc = null;
+        protected String modelReductionSvc = null;
+        protected String modelAdditionSys = null;
+        protected String modelReductionSys = null;
+        protected String referenceModelUUID = null;
+
+        public String getModelAdditionSvc() {
+            return modelAdditionSvc;
+        }
+
+        public void setModelAdditionSvc(String modelAdditionSvc) {
+            this.modelAdditionSvc = modelAdditionSvc;
+        }
+
+        public String getModelReductionSvc() {
+            return modelReductionSvc;
+        }
+
+        public void setModelReductionSvc(String modelReductionSvc) {
+            this.modelReductionSvc = modelReductionSvc;
+        }
+
+        public String getModelAdditionSys() {
+            return modelAdditionSys;
+        }
+
+        public void setModelAdditionSys(String modelAdditionSys) {
+            this.modelAdditionSys = modelAdditionSys;
+        }
+
+        public String getModelReductionSys() {
+            return modelReductionSys;
+        }
+
+        public void setModelReductionSys(String modelReductionSys) {
+            this.modelReductionSys = modelReductionSys;
+        }
+
+        public String getReferenceModelUUID() {
+            return referenceModelUUID;
+        }
+
+        public void setReferenceModelUUID(String referenceModelUUID) {
+            this.referenceModelUUID = referenceModelUUID;
+        }
+
+    }
 }
