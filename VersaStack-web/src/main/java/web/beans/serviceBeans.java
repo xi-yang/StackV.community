@@ -888,6 +888,8 @@ public class serviceBeans {
         }
 
         String deltaUUID = UUID.randomUUID().toString();
+        String awsExportTo = "";
+        String awsDxStitching = "";        
         String svcDelta = "<serviceDelta>\n<uuid>" + deltaUUID
                 + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
                 + "\n\n<modelAddition>\n"
@@ -992,13 +994,6 @@ public class serviceBeans {
                         + "    a                         nml:Topology ;\n"
                         + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vcnName + "&gt;,"
                         + " &lt;x-policy-annotation:action:create-dc1&gt;.\n\n"
-                        + "&lt;x-policy-annotation:action:create-dc1&gt;\n"
-                        + "    a            spa:PolicyAction ;\n"
-                        + "    spa:type     \"MCE_AwsDxStitching\" ;\n"
-                        + "    spa:importFrom &lt;x-policy-annotation:data:" + vcnName + "-export&gt;,"
-                        + " &lt;x-policy-annotation:data:aws-ops-criteriaexport&gt; ;\n"
-                        + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vcnName + "&gt;,"
-                        + " &lt;x-policy-annotation:action:create-aws-ops-path&gt;.\n\n"
                         + "&lt;x-policy-annotation:data:" + vcnName + "-export&gt;\n"
                         + "    a            spa:PolicyData ;\n"
                         + "    spa:type     \"JSON\" ;\n"
@@ -1006,6 +1001,13 @@ public class serviceBeans {
                         + "       \"parent\":\"" + topoUri + "\",\n"
                         + "       \"stitch_from\": \"%$.gateways[?(@.type=='vpn-gateway')].uri%\",\n"
                         + "    }\"\"\" .\n\n";
+                awsDxStitching += "&lt;x-policy-annotation:action:create-dc1&gt;\n"
+                        + "    a            spa:PolicyAction ;\n"
+                        + "    spa:type     \"MCE_AwsDxStitching\" ;\n"
+                        + "    spa:importFrom &lt;x-policy-annotation:data:" + vcnName + "-export&gt;,"
+                        + " &lt;x-policy-annotation:data:aws-ops-criteriaexport&gt; ;\n"
+                        + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vcnName + "&gt;,"
+                        + " &lt;x-policy-annotation:action:create-aws-ops-path&gt;";
 
                 String vncExportTo = "";
                 for (int i = 0; i < vmList.size(); i++) {
@@ -1047,6 +1049,8 @@ public class serviceBeans {
             } else if (driverType.equals("ops")) {
                 int sriovCounter = 1;
                 String dependOn = "";
+                String providesVolume = "";
+                String svcDeltaCeph = "";
                 svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_clouds:tag+" + vcnName + "&gt;\n"
                         + "    a                         nml:Topology ;\n"
                         + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vcnName + "&gt;.\n\n";
@@ -1067,10 +1071,24 @@ public class serviceBeans {
                         String vmName = (String) vmJson.get("name");
                         String vmType = (String) vmJson.get("type");
                         String vmHost = (String) vmJson.get("host");
+                        String nodeHasVolume = "";
+                        if (vmJson.containsKey("ceph_rbd")) {
+                            JSONArray cephArr = (JSONArray) vmJson.get("ceph_rbd");
+                            for (int ceph = 0; ceph < cephArr.size(); ceph++) {
+                                JSONObject cephJson = (JSONObject) cephArr.get(i);
+                                nodeHasVolume += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":volume+ceph" + ceph + "&gt;, ";
+                                svcDeltaCeph += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":volume+ceph" + ceph + "&gt;\n"
+                                        + "   a  mrs:Volume;\n"
+                                        + "   mrs:disk_gb \""+ (String) cephJson.get("disk_gb") +"\";\n"
+                                        + "   mrs:mount_point \""+ (String) cephJson.get("mount_point") +"\".\n\n";
+                            }
+                            providesVolume += nodeHasVolume;
+                        }
 
                         svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "&gt;\n"
                                 + "    a                         nml:Node ;\n"
                                 + (vmType == null ? "" : "    mrs:type       \"" + vmType + "\";\n")
+                                + (nodeHasVolume.isEmpty() ? "" : "    mrs:hasVolume       " + nodeHasVolume.substring(0,nodeHasVolume.length()-2) + ";\n")
                                 + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0&gt; ;\n"
                                 + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;.\n\n"
                                 + "&lt;x-policy-annotation:action:create-" + vmName + "&gt;\n"
@@ -1135,6 +1153,7 @@ public class serviceBeans {
                                                 + "    a            spa:PolicyAction ;\n"
                                                 + "    spa:type     \"MCE_UcsSriovStitching\" ;\n"
                                                 + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;, "
+                                                + "&lt;x-policy-annotation:action:create-" + vmName + "-eth0&gt;, "
                                                 + "&lt;x-policy-annotation:action:create-aws-ops-path&gt;;\n"
                                                 + "    spa:importFrom &lt;x-policy-annotation:data:sriov-criteria" + sriovCounter + "&gt;, "
                                                 + "&lt;x-policy-annotation:data:aws-ops-criteriaexport&gt; .\n\n"
@@ -1165,6 +1184,48 @@ public class serviceBeans {
                                             svcDelta += ",\n       \"routes\": " + routeArr.toString().replace("\\", "");
                                         }
                                         svcDelta += "\n    }\"\"\" .\n\n";
+
+                                        if (vmJson.containsKey("quagga_bgp")) {
+                                            JSONObject quaggaJson = (JSONObject) vmJson.get("quagga_bgp");
+                                            if(!quaggaJson.containsKey("as_number"))
+                                                quaggaJson.put("as_number", "%$..customer_asn%");
+                                            if(!quaggaJson.containsKey("router_id"))
+                                                quaggaJson.put("router_id", "%$..customer_id%");                                            
+                                            JSONArray neighborArr = (JSONArray) quaggaJson.get("neighbors");
+                                            for(Object neighborObj : neighborArr){
+                                                JSONObject neighborJson = (JSONObject) neighborObj;
+                                                if(!neighborJson.containsKey("remote_ip"))
+                                                    neighborJson.put("remote_ip", "%$..amazon_ip%");
+                                                if(!neighborJson.containsKey("local_ip"))
+                                                    neighborJson.put("local_ip", "%$..customer_ip%");
+                                            }
+                                            JSONArray quaggaNetworks = (JSONArray) quaggaJson.get("networks");
+                                            quaggaJson.remove("networks");
+                                            
+                                            svcDelta += "&lt;x-policy-annotation:action:nfv-quagga-bgp" + sriovCounter + "&gt;\n"
+                                                    + "    a            spa:PolicyAction ;\n"
+                                                    + "    spa:type     \"MCE_NfvBgpRouting\";\n"
+                                                    + "    spa:dependOn &lt;x-policy-annotation:action:create-mce_dc1&gt;, "
+                                                    + "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;;\n"
+                                                    + "    spa:importFrom &lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-remote&gt;, "
+                                                    + "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-local&gt;.\n\n"
+                                                    + "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-remote&gt;\n"
+                                                    + "    a            spa:PolicyData ;\n"
+                                                    + "    spa:type     \"JSON\" ;\n"
+                                                    + "    spa:format   \"\"\""+ quaggaJson.toString() +"\"\"\" .\n\n"
+                                                    + "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-local&gt;\n"
+                                                    + "    a            spa:PolicyData ;\n"
+                                                    + "    spa:type     \"JSON\" ;\n"
+                                                    + "    spa:value   \"\"\"{\n"
+                                                    + "       \"parent\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "\",\n"
+                                                    + "       \"networks\":"+ quaggaNetworks.toString().replace("\\", "") +"\n"
+                                                    + "    }\"\"\" .\n\n";
+                                            dependOn += "&lt;x-policy-annotation:action:nfv-quagga-bgp" + sriovCounter + "&gt;, ";
+                                            awsExportTo += "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-remote&gt;, ";
+                                        }
+                                        else {
+                                            dependOn += "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;, ";
+                                        }
                                         dependOn += "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;, ";
                                         creatPathExportTo += "&lt;x-policy-annotation:data:sriov-criteria" + sriovCounter + "&gt;, ";
                                         sriovCounter++;
@@ -1177,8 +1238,14 @@ public class serviceBeans {
                         }
                     }
                 }
+                
+                if(!providesVolume.isEmpty()){
+                    svcDeltaCeph += "&lt;urn:ogf:network:service+" + refUuid + ":resource+ceph-rbd&gt;\n"
+                            + "   mrs:providesVolume " + providesVolume.substring(0,providesVolume.length()-2) + " .\n\n";
+                }
 
-                svcDelta += "&lt;x-policy-annotation:action:create-" + vcnName + "&gt;\n"
+                svcDelta += svcDeltaCeph
+                        + "&lt;x-policy-annotation:action:create-" + vcnName + "&gt;\n"
                         + "    a            spa:PolicyAction ;\n"
                         + "    spa:type     \"MCE_VirtualNetworkCreation\" ;\n"
                         + "    spa:importFrom &lt;x-policy-annotation:data:" + vcnName + "-criteria&gt; "
@@ -1196,8 +1263,12 @@ public class serviceBeans {
                     + "    spa:value    \"\"\"" + vcnJson.toString().replace("\\", "")
                     + "\"\"\".\n\n";
         }
+        
+        awsDxStitching += awsExportTo.isEmpty()? ".\n\n" : 
+                ";\n    spa:exportTo " + awsExportTo.substring(0,awsExportTo.length()-2) + ".\n\n";
 
-        svcDelta += "&lt;x-policy-annotation:action:create-aws-ops-path&gt;\n"
+        svcDelta += awsDxStitching
+                + "&lt;x-policy-annotation:action:create-aws-ops-path&gt;\n"
                 + "    a            spa:PolicyAction ;\n"
                 + "    spa:type     \"MCE_MPVlanConnection\" ;\n"
                 + "    spa:importFrom &lt;x-policy-annotation:data:aws-ops-criteria&gt; ;\n"
