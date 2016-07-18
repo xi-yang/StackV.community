@@ -1190,7 +1190,7 @@ public class serviceBeans {
                                             if(!quaggaJson.containsKey("as_number"))
                                                 quaggaJson.put("as_number", "%$..customer_asn%");
                                             if(!quaggaJson.containsKey("router_id"))
-                                                quaggaJson.put("router_id", "%$..customer_id%");                                            
+                                                quaggaJson.put("router_id", "%$..customer_ip%");                                            
                                             JSONArray neighborArr = (JSONArray) quaggaJson.get("neighbors");
                                             for(Object neighborObj : neighborArr){
                                                 JSONObject neighborJson = (JSONObject) neighborObj;
@@ -1205,7 +1205,7 @@ public class serviceBeans {
                                             svcDelta += "&lt;x-policy-annotation:action:nfv-quagga-bgp" + sriovCounter + "&gt;\n"
                                                     + "    a            spa:PolicyAction ;\n"
                                                     + "    spa:type     \"MCE_NfvBgpRouting\";\n"
-                                                    + "    spa:dependOn &lt;x-policy-annotation:action:create-mce_dc1&gt;, "
+                                                    + "    spa:dependOn &lt;x-policy-annotation:action:create-dc1&gt;, "
                                                     + "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;;\n"
                                                     + "    spa:importFrom &lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-remote&gt;, "
                                                     + "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-local&gt;.\n\n"
