@@ -1137,7 +1137,7 @@ public class serviceBeans {
                                     JSONObject interJson = (JSONObject) interObj;
                                     String typeString = (String) interJson.get("type");
                                     String gateway = (String) interJson.get("gateway");
-                                    if (typeString.equalsIgnoreCase("SRIOV") && gateway.equalsIgnoreCase("l2path-aws-dc1")) {
+                                    if (typeString.equalsIgnoreCase("SRIOV")) {
                                         //Parse sriov ip, mac, and routes.
                                         String address = (String) interJson.get("address");
                                         String[] addArr = address.split(",");
@@ -1240,7 +1240,7 @@ public class serviceBeans {
                 }
                 
                 if(!providesVolume.isEmpty()){
-                    svcDeltaCeph += "&lt;urn:ogf:network:service+" + refUuid + ":resource+ceph-rbd&gt;\n"
+                    svcDeltaCeph += "&lt;urn:ogf:network:openstack.com:openstack-cloud:ceph-rbd&gt;\n"
                             + "   mrs:providesVolume " + providesVolume.substring(0,providesVolume.length()-2) + " .\n\n";
                 }
 
