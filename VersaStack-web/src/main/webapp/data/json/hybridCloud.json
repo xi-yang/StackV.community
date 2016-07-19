@@ -47,7 +47,6 @@
                                         "address": "ipv4+10.10.0.1/255.255.255.0,mac+11:22:22:33:33:02",
                                         "name": "ops-vtn1:vm1:eth2",
                                         "type": "SRIOV",
-                                        "gateway": "l2path-aws-dc1",
                                         "routes": [
                                             {
                                                 "to": {
