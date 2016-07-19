@@ -16,13 +16,6 @@
                         "virtual_machines": [
                             {
                                 "name": "ec2-vpc1-vm1",
-                                "interfaces": [
-                                    {
-                                        "address": "10.20.2.2/255.255.255.0",
-                                        "name": "wix:if0",
-                                        "type": "Ethernet"
-                                    }
-                                ],
                                 "type": "aws_ec2"
                             }
                         ],

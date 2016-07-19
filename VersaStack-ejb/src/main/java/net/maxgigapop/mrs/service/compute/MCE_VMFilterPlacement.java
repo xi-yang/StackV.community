@@ -69,13 +69,16 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
                 + "?policy spa:type 'MCE_VMFilterPlacement'. "
                 + "?policy spa:importFrom ?data. "
                 + "?data spa:type ?dataType. ?data spa:value ?dataValue. "
-                + String.format("FILTER (not exists {?policy spa:dependOn ?other} && not exists {?res a spa:PolicyAction} && ?policy = <%s>)", policy.getURI())
+                + String.format("FILTER (not exists {?policy spa:dependOn ?other} && ?policy = <%s>)", policy.getURI())
                 + "}";
         Map<Resource, List> policyMap = new HashMap<>();
         ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             Resource res = querySolution.get("res").asResource();
+            if (annotatedDelta.getModelAddition().getOntModel().contains(res, RdfOwl.type, Spa.PolicyAction)) {
+                continue;
+            }
             if (!policyMap.containsKey(res)) {
                 List policyList = new ArrayList<>();
                 policyMap.put(res, policyList);

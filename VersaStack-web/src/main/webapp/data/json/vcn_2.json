@@ -1,4 +1,5 @@
 {
+    "alias": "VCN Test",
     "user": "admin",
     "type": "netcreate",
     "data": {
@@ -14,14 +15,7 @@
                         "cidr": "10.1.0.0/24",
                         "virtual_machines": [
                             {
-                                "name": "test_with_vm_types_1",
-                                "interfaces": [
-                                    {
-                                        "address": "10.20.2.2/255.255.255.0",
-                                        "name": "wix:if0",
-                                        "type": "Ethernet"
-                                    }
-                                ],
+                                "name": "test_with_vm_types_1",                                
                                 "type": "t2.micro"
                             }
                         ],
@@ -61,13 +55,6 @@
                         "virtual_machines": [
                             {
                                 "name": "test_with_vm_types_2",
-                                "interfaces": [
-                                    {
-                                        "address": "10.20.2.2/255.255.255.0",
-                                        "name": "wix:if0",
-                                        "type": "Ethernet"
-                                    }
-                                ],
                                 "type": "t2.small"
                             }
                         ]                    

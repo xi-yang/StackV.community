@@ -1,7 +1,7 @@
 {
     "user": "admin",
     "type": "hybridcloud",
-    "alias": "test_Hybrid_cloud",
+    "alias": "hybridTest",
     "data": {
         "virtual_clouds": [{
                 "name": "vtn1",
@@ -35,29 +35,73 @@
                         "virtual_machines": [
                             {
                                 "name": "ops-vtn1-vm1",
-                                "type": "instance+2,secgroup+rains,keypair+icecube_key",
+                                "type": "instance+5,secgroup+rains,keypair+demo-key",
                                 "host": "msx1",
                                 "interfaces": [
                                     {
-                                        "address": "ipv4+206.196.180.148/24",
+                                        "address": "ipv4+10.10.252.233/24",
                                         "name": "ops-vtn1:vm1:eth0",
                                         "type": "Ethernet"
                                     },
                                     {
-                                        "address": "ipv4+10.10.0.1/255.255.255.0,mac+11:22:22:33:33:02",
+                                        "address": "ipv4+10.10.0.1/255.255.255.0,mac+aa:bb:cc:00:00:12",
                                         "name": "ops-vtn1:vm1:eth2",
                                         "type": "SRIOV",
                                         "routes": [
                                             {
                                                 "to": {
-                                                    "value": "192.168.1.0/24",
+                                                    "value": "206.196.179.0/24",
                                                     "type": "ipv4-prefix"
                                                 },
                                                 "next_hop": {
-                                                    "value": "192.168.1.1"
+                                                    "value": "10.10.0.2"
                                                 }
                                             }
                                         ]
+                                    }
+                                ],
+                                "quagga_bgp":{
+                                    "neighbors":[
+                                        {
+                                            "remote_asn":"7224",
+                                            "bgp_authkey":"versastack"
+                                        }
+                                    ],
+                                    "networks":["10.10.0.0/24"]
+                                }
+                            },
+                            {
+                                "name": "ops-vtn1-vm2",
+                                "type": "instance+2,secgroup+rains,keypair+icecube_key",
+                                "host": "msx3",
+                                "interfaces": [
+                                    {
+                                        "address": "ipv4+10.10.252.234/24",
+                                        "name": "ops-vtn1:vm2:eth0",
+                                        "type": "Ethernet"
+                                    },
+                                    {
+                                        "address": "ipv4+10.10.0.12/255.255.255.0,mac+aa:bb:cc:00:00:23",
+                                        "name": "ops-vtn1:vm2:eth2",
+                                        "type": "SRIOV",
+                                        "routes": [
+                                            {
+                                                "to": {
+                                                    "value": "10.0.0.0/16",
+                                                    "type": "ipv4-prefix"
+                                                },
+                                                "next_hop": {
+                                                    "value": "10.10.0.1"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "ceph_rbd":[
+                                    {
+                                        "name":"",
+                                        "disk_gb":"2048000",
+                                        "mount_point":"/mnt/ceph_2tb"
                                     }
                                 ]
                             }

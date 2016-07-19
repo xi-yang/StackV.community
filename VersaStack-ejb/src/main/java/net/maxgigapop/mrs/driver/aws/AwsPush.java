@@ -2482,7 +2482,8 @@ public class AwsPush {
                 query = "SELECT ?type WHERE {?service mrs:providesVolume <" + volume.asResource() + ">}";
                 ResultSet r1 = executeQuery(query, emptyModel, modelAdd);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model addition does not specify service that provides volume: %s", volume));
+                    logger.warning(String.format("model addition does not specify service that provides volume: %s", volume));
+                    continue;
                 }
 
                 //find out the type of the volume
@@ -2912,6 +2913,7 @@ public class AwsPush {
             RDFNode gateway = null;
             RDFNode vInterface = null;
 
+            //check to see if y is the vgw
             //check to see if x is the virtual interface
             query = "SELECT  ?tag WHERE {<" + x.asResource() + ">  a  nml:BidirectionalPort ."
                     + "<" + x.asResource() + "> mrs:type \"direct-connect-vif\"}";
@@ -2921,8 +2923,8 @@ public class AwsPush {
                 vInterface = x;
             }
 
-            //check to see if y is the interface
-            //check to see if x is the virtual interface
+            //check to see if x is the vgw
+            //check to see if y is the virtual interface
             query = "SELECT  ?tag WHERE {<" + y.asResource() + ">  a  nml:BidirectionalPort ."
                     + "<" + y.asResource() + "> mrs:type \"direct-connect-vif\"}";
             r1 = executeQueryUnion(query, model, modelAdd);
@@ -2949,6 +2951,19 @@ public class AwsPush {
                 throw new EJBException(String.format("Gateway %s is not a vpn gateway", gateway));
             }
 
+            //make sure the virtual private gateway has not been associated with other dx virtual interface
+            query = "SELECT ?other WHERE {"
+                    + "<" + gateway.asResource() + "> nml:isAlias ?other. "
+                    + "?other  a  nml:BidirectionalPort. "
+                    + "?other mrs:type \"direct-connect-vif\" "
+                    + "FILTER (?other != <" + vInterface.asResource() + ">)"
+                    + "}";
+            r1 = executeQuery(query, emptyModel, model);
+            if (r1.hasNext()) {
+                Resource otherDxvif = r1.next().getResource("other");
+                throw new EJBException(String.format("Trying to accociate VGW %s with %s but it is already associated with %s",  gateway, vInterface, otherDxvif));
+            }
+            
             String gatewayIdTag = ResourceTool.getResourceName(gateway.asResource().toString(), AwsPrefix.gateway);
             String interfaceId = ResourceTool.getResourceName(vInterface.asResource().toString(), AwsPrefix.vif);
 

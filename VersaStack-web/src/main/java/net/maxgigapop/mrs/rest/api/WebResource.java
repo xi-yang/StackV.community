@@ -638,80 +638,54 @@ public class WebResource {
     private int forceCancelInstance(String refUuid) throws SQLException {
         boolean result;
         try {
-            String instanceState = status(refUuid);
-            if (!instanceState.equalsIgnoreCase("READY")) {
-                return 1;
-            }
+            forceRevert(refUuid);
+            forcePropagate(refUuid);
+            forceCommit(refUuid);
 
-            result = forceRevert(refUuid);
-            if (!result) {
-                return 2;
-            }
-            result = forcePropagate(refUuid);
-            if (!result) {
-                return 3;
-            }
-            result = forceCommit(refUuid);
-            if (!result) {
-                return 4;
-            }
-
-            while (true) {
-                instanceState = status(refUuid);
-                if (instanceState.equals("READY")) {                    
+            for (int i = 0; i < 20; i++) {
+                String instanceState = status(refUuid);
+                if (instanceState.equals("READY")) {
                     verify(refUuid);
-                   
+
                     return 0;
                 } else if (!instanceState.equals("COMMITTED")) {
                     return 5;
                 }
                 Thread.sleep(5000);
             }
-            
+            return -1;
 
         } catch (IOException | InterruptedException ex) {
             Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
             return -1;
         }
     }
-    
+
     private int forceRetryInstance(String refUuid) throws SQLException {
         boolean result;
         try {
-            String instanceState = status(refUuid);
-            if (!instanceState.equalsIgnoreCase("READY")) {
-                return 1;
-            }
+            forcePropagate(refUuid);
+            forceCommit(refUuid);
 
-            result = forcePropagate(refUuid);
-            if (!result) {
-                return 3;
-            }
-            result = forceCommit(refUuid);
-            if (!result) {
-                return 4;
-            }
-
-            while (true) {
-                instanceState = status(refUuid);
-                if (instanceState.equals("READY")) {                    
+            for (int i = 0; i < 20; i++) {
+                String instanceState = status(refUuid);
+                if (instanceState.equals("READY")) {
                     verify(refUuid);
-                   
+
                     return 0;
                 } else if (!instanceState.equals("COMMITTED")) {
                     return 5;
                 }
                 Thread.sleep(5000);
             }
-            
+            return -1;
 
         } catch (IOException | InterruptedException ex) {
             Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
             return -1;
         }
     }
-    
-    
+
 
     // Parsing Methods ---------------------------------------------------------
     

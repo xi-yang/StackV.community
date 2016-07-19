@@ -48,7 +48,7 @@ import net.maxgigapop.mrs.common.Spa;
 @Stateless
 public class MCE_NetworkPlacement implements IModelComputationElement {
 
-    private static final Logger log = Logger.getLogger(MCE_VMFilterPlacement.class.getName());
+    private static final Logger log = Logger.getLogger(MCE_NetworkPlacement.class.getName());
 
     @Override
     @Asynchronous

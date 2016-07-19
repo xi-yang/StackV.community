@@ -795,6 +795,54 @@ public class HandleServiceCall {
         return allEssentialVerified;
     }
     
+    public void retrieveDelta(String serviceDeltaUuid, ModelUtil.DeltaRetrieval apiData, boolean marshallWithJson) {
+        ServiceDelta serviceDelta = ServiceDeltaPersistenceManager.findByReferenceUUID(serviceDeltaUuid);
+        if (serviceDelta == null) {
+            //try serviceDeltaUuid as a serviceInstanceUuid and look for the latest serviceDeltaUuid in this instance
+            ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceDeltaUuid);
+            if (serviceInstance != null && !serviceInstance.getServiceDeltas().isEmpty()) {
+                serviceDelta = serviceInstance.getServiceDeltas().get(serviceInstance.getServiceDeltas().size()-1);
+            }
+        }
+        if (serviceDelta == null) {
+            throw new EJBException(this.getClass().getName() + " retrieveDelta does not know serviceDelta: " + serviceDeltaUuid);
+        }
+        try {
+            if (marshallWithJson) {
+                if (serviceDelta.getModelAddition() != null && serviceDelta.getModelAddition().getOntModel() != null)
+                   apiData.setModelAdditionSvc(ModelUtil.marshalModelJson(serviceDelta.getModelAddition().getOntModel()));
+                if (serviceDelta.getModelReduction() != null && serviceDelta.getModelReduction().getOntModel() != null)
+                    apiData.setModelReductionSvc(ModelUtil.marshalModelJson(serviceDelta.getModelReduction().getOntModel()));
+            } else {
+                if (serviceDelta.getModelAddition() != null && serviceDelta.getModelAddition().getOntModel() != null)
+                    apiData.setModelAdditionSvc(ModelUtil.marshalModel(serviceDelta.getModelAddition().getOntModel()));
+                if (serviceDelta.getModelReduction() != null && serviceDelta.getModelReduction().getOntModel() != null)
+                    apiData.setModelReductionSvc(ModelUtil.marshalModel(serviceDelta.getModelReduction().getOntModel()));
+            }
+        } catch (Exception ex) {
+            throw new EJBException(ex);
+        }
+        if (serviceDelta.getSystemDelta() == null) {
+            return;
+        }
+        try {
+            if (marshallWithJson) {
+                if (serviceDelta.getSystemDelta().getModelAddition() != null && serviceDelta.getSystemDelta().getModelAddition().getOntModel() != null)
+                    apiData.setModelAdditionSys(ModelUtil.marshalModelJson(serviceDelta.getSystemDelta().getModelAddition().getOntModel()));
+                if (serviceDelta.getSystemDelta().getModelReduction() != null && serviceDelta.getSystemDelta().getModelReduction().getOntModel() != null)
+                    apiData.setModelReductionSys(ModelUtil.marshalModelJson(serviceDelta.getSystemDelta().getModelReduction().getOntModel()));
+            } else {
+                if (serviceDelta.getSystemDelta().getModelAddition() != null && serviceDelta.getSystemDelta().getModelAddition().getOntModel() != null)
+                    apiData.setModelAdditionSys(ModelUtil.marshalModel(serviceDelta.getSystemDelta().getModelAddition().getOntModel()));
+                if (serviceDelta.getSystemDelta().getModelReduction() != null && serviceDelta.getSystemDelta().getModelReduction().getOntModel() != null)
+                    apiData.setModelReductionSys(ModelUtil.marshalModel(serviceDelta.getSystemDelta().getModelReduction().getOntModel()));
+            }
+            apiData.setReferenceModelUUID(serviceDelta.getSystemDelta().getReferenceVersionGroup().getRefUuid());
+        } catch (Exception ex) {
+            throw new EJBException(ex);
+        }
+    }
+    
     public boolean hasSystemBootStrapped() {
         SystemModelCoordinator systemModelCoordinator = null;
         try {
