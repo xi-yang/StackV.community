@@ -142,7 +142,6 @@ public class AwsModelBuilder {
         //in the push part
         for (VirtualInterface vi : dcClient.getVirtualInterfaces()) {
             String vlanNum = Integer.toString(vi.getVlan());
-
             String virtualInterfaceState =  vi.getVirtualInterfaceState();
             String[] invalidStates = {VirtualInterfaceState.Deleted.toString(), VirtualInterfaceState.Deleting.toString()};
             if ((Arrays.asList(invalidStates).contains(virtualInterfaceState))) {
@@ -154,6 +153,7 @@ public class AwsModelBuilder {
             Resource VIRTUAL_INTERFACE = RdfOwl.createResource(model, ResourceTool.getResourceUri(vi.getVirtualInterfaceId(),AwsPrefix.vif,vi.getVirtualInterfaceId()), biPort);
             model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.name, vi.getVirtualInterfaceId()));
             model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.type, "direct-connect-vif"));
+            model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.value, "direct-connect-vif+"+vi.getVirtualInterfaceType()));
             model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabelGroup, VLAN_LABEL_GROUP));
             model.add(model.createStatement(VLAN_LABEL_GROUP, Nml.labeltype, vlan));
             model.add(model.createStatement(directConnect, hasBidirectionalPort, VIRTUAL_INTERFACE));
@@ -182,19 +182,20 @@ public class AwsModelBuilder {
             }            
             //check if it has a gateway, meaning the virtual interface is being used
             String virtualGatewayId =  vi.getVirtualGatewayId();
-            String[] acceptedStates = {VirtualInterfaceState.Available.toString(), 
-                VirtualInterfaceState.Confirming.toString(), VirtualInterfaceState.Deleting.toString(), 
+            String[] acceptedStates = {VirtualInterfaceState.Available.toString(), VirtualInterfaceState.Deleting.toString(), 
                 VirtualInterfaceState.Pending.toString(), VirtualInterfaceState.Verifying.toString(), "down"};
             if(virtualGatewayId != null && (Arrays.asList(acceptedStates).contains(virtualInterfaceState)))
             {
-                virtualGatewayId = ec2Client.getIdTag(virtualGatewayId);
                 Resource VLAN_LABEL = RdfOwl.createResource(model, ResourceTool.getResourceUri(vlanNum, AwsPrefix.label,vi.getVirtualInterfaceId(),vlanNum), Nml.Label);
-                Resource VPNGATEWAY = model.getResource(ResourceTool.getResourceUri(virtualGatewayId,AwsPrefix.gateway,virtualGatewayId));
                 model.add(model.createStatement(VLAN_LABEL, Nml.labeltype, vlan));
                 model.add(model.createStatement(VLAN_LABEL, Nml.value, vlanNum));
                 model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabel, VLAN_LABEL));
-                model.add(model.createStatement(VPNGATEWAY, Nml.isAlias, VIRTUAL_INTERFACE));
-                model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.isAlias, VPNGATEWAY));
+                if (!virtualGatewayId.isEmpty()) {
+                    virtualGatewayId = ec2Client.getIdTag(virtualGatewayId);
+                    Resource VPNGATEWAY = model.getResource(ResourceTool.getResourceUri(virtualGatewayId,AwsPrefix.gateway,virtualGatewayId));
+                    model.add(model.createStatement(VPNGATEWAY, Nml.isAlias, VIRTUAL_INTERFACE));
+                    model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.isAlias, VPNGATEWAY));
+                }
             }
         }
 
@@ -237,7 +238,7 @@ public class AwsModelBuilder {
                     Resource PRIVATE_ADDRESS = RdfOwl.createResource(model, ResourceTool.getResourceUri(PORT.toString()+":ip+"+q.getPrivateIpAddress(),AwsPrefix.nicNetworkAddress,vpcId,subnetId,portId,q.getPrivateIpAddress()), networkAddress);
                     model.add(model.createStatement(PORT, hasNetworkAddress, PRIVATE_ADDRESS));
                     model.add(model.createStatement(PRIVATE_ADDRESS, type, "ipv4:private"));
-                    model.add(model.createStatement(PRIVATE_ADDRESS, value, q.getPrivateIpAddress()));
+                    model.add(model.createStatement(PRIVATE_ADDRESS, value, q.getPrivateIpAddress()));  
                 }
             }
 
@@ -311,7 +312,7 @@ public class AwsModelBuilder {
                         model.add(model.createStatement(ec2Service, providesVM, INSTANCE));
                         model.add(model.createStatement(INSTANCE, providedByService, ec2Service));
 
-                        //put all the voumes attached to this instance into the modle
+                        //put all the voumes attached to this instance into the model
                         for (Volume vol : ec2Client.getVolumesWithAttachement(i)) {
                             String volumeId = ec2Client.getIdTag(vol.getVolumeId());
                             Resource VOLUME = RdfOwl.createResource(model, ResourceTool.getResourceUri(volumeId,AwsPrefix.volume,volumeId), volume);
@@ -332,6 +333,15 @@ public class AwsModelBuilder {
                             String portId = ec2Client.getIdTag(n.getNetworkInterfaceId());
                             Resource PORT = model.getResource(ResourceTool.getResourceUri(portId,AwsPrefix.nic,vpcId,subnetId,portId));
                             model.add(model.createStatement(INSTANCE, hasBidirectionalPort, PORT));
+                        }
+                        
+                        //put public ip as NetworkAddress of this instance into the model
+                        String publicIp = i.getPublicIpAddress();
+                        if (publicIp != null && !publicIp.isEmpty()) {
+                            Resource PUBLIC_ADDRESS = RdfOwl.createResource(model, ResourceTool.getResourceUri(INSTANCE.toString()+":public-ip+"+publicIp,AwsPrefix.publicAddress,publicIp), Mrs.NetworkAddress);
+                            model.add(model.createStatement(INSTANCE, hasNetworkAddress, PUBLIC_ADDRESS));
+                            model.add(model.createStatement(PUBLIC_ADDRESS, type, "ipv4:public"));
+                            model.add(model.createStatement(PUBLIC_ADDRESS, value, publicIp));  
                         }
                     }
                 }
@@ -362,6 +372,10 @@ public class AwsModelBuilder {
                     Resource ROUTE_TO = null;
                     Resource ROUTE_FROM = null;
                     int i = 0;
+                    //@TODO: A workaround for unconventional routes such as ones for VPC EndPoints
+                    if (r.getDestinationCidrBlock() == null) {
+                        continue;
+                    }
                     String routeId = r.getDestinationCidrBlock().replace("/", "");
                     Resource ROUTE = RdfOwl.createResource(model, ROUTINGTABLE.toString()+":route-"+routeId, route);
                     model.add(model.createStatement(ROUTINGSERVICE, providesRoute, ROUTE));
@@ -417,8 +431,9 @@ public class AwsModelBuilder {
                         // if this ROUTINGTABLE has VPN propagation=yes add 0.0.0.0/0 routeto with nexthop=routefrom=propagatingVgw
                         if (t.getPropagatingVgws() != null && !t.getPropagatingVgws().isEmpty()) {
                             PropagatingVgw vgw = t.getPropagatingVgws().get(0);
-                            String vpnGatewayId = vgw.getGatewayId();
-                            Resource propagatingVGW = model.getResource(ResourceTool.getResourceUri(vpnGatewayId,AwsPrefix.gateway,vpnGatewayId));
+                            String vpnGatewayId =ec2Client.getIdTag(vgw.getGatewayId());
+                            String resourceUri = ResourceTool.getResourceUri(vpnGatewayId,AwsPrefix.gateway,vpnGatewayId);
+                            Resource propagatingVGW = model.getResource(resourceUri);
                             Resource propagatingRoute = RdfOwl.createResource(model, ROUTINGTABLE.getURI()+":route-0.0.0.00", Mrs.Route);
                             Resource propagatingRouteTo = RdfOwl.createResource(model, ROUTINGTABLE.getURI()+":route-0.0.0.00:routeto", Mrs.NetworkAddress);
                             model.add(model.createStatement(propagatingRouteTo, Mrs.type, "ipv4-prefix"));

@@ -261,15 +261,15 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
             JSONArray routes = (JSONArray) jsonStitchReq.get("routes");
             for (Object obj : routes) {
                 JSONObject route = (JSONObject) obj;
-                String strRouteTo = ((String) route.get("to")).replaceAll("/", "");
-                String strRouteVia = ((String) route.get("next_hop")).replaceAll("/", "");
-                Resource vnicRoute = RdfOwl.createResource(stitchModel, resVnic.getURI() + ":route+to-" + strRouteTo + "-via-" + strRouteVia, Mrs.Route);
+                String strRouteTo = ((String) route.get("to"));
+                String strRouteVia = ((String) route.get("next_hop"));
+                Resource vnicRoute = RdfOwl.createResource(stitchModel, resVnic.getURI() + ":route+to-" + strRouteTo.replaceAll("/", "") + "-via-" + strRouteVia.replaceAll("/", ""), Mrs.Route);
                 stitchModel.add(stitchModel.createStatement(resRoutingSvc, Mrs.providesRoute, vnicRoute));
-                Resource vnicRouteTo = RdfOwl.createResource(stitchModel, resVnic.getURI() + ":routeto+" + strRouteTo, Mrs.NetworkAddress);
+                Resource vnicRouteTo = RdfOwl.createResource(stitchModel, resVnic.getURI() + ":routeto+" + strRouteTo.replaceAll("/", ""), Mrs.NetworkAddress);
                 stitchModel.add(stitchModel.createStatement(vnicRouteTo, Mrs.type, "ipv4-prefix"));
                 stitchModel.add(stitchModel.createStatement(vnicRouteTo, Mrs.value, strRouteTo));
                 stitchModel.add(stitchModel.createStatement(vnicRoute, Mrs.routeTo, vnicRouteTo));
-                Resource vnicRouteVia = RdfOwl.createResource(stitchModel, resVnic.getURI() + ":next+" + strRouteVia, Mrs.NetworkAddress);
+                Resource vnicRouteVia = RdfOwl.createResource(stitchModel, resVnic.getURI() + ":next+" + strRouteVia.replaceAll("/", ""), Mrs.NetworkAddress);
                 stitchModel.add(stitchModel.createStatement(vnicRouteVia, Mrs.type, "ipv4-address"));
                 stitchModel.add(stitchModel.createStatement(vnicRouteVia, Mrs.value, strRouteVia));
                 stitchModel.add(stitchModel.createStatement(vnicRoute, Mrs.nextHop, vnicRouteVia));

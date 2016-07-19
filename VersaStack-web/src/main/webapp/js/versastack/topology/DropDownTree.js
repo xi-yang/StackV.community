@@ -9,6 +9,7 @@ define([
         this.rootNodes = [];
         this.containerDiv = containerDiv;
         this.renderApi = null;
+        this.contextMenu = null;
         this.history = [];
         this.topViewShown = false;
         var currentIndex = -1;
@@ -54,22 +55,27 @@ define([
                 console.log("my history: name: " + that.history[currentIndex][0] + " type: " + that.history[currentIndex][1]);
             }
         };
-
-        document.getElementById("URISearchSubmit").onclick = function() {
-            var uri = document.getElementById("URISearchInput").value;
-                //alert("i'm here");
-            that.renderApi.clickNode(uri, "Element");
-        };
         
-        document.getElementById("fullDiaplayButton").onclick = function() {
-            if (!that.topViewShown) {
-                that.topViewShown = true;
-                that.renderApi.selectElement(null);
-            } else {
-                that.topViewShown = false;
-                that.renderApi.clickNode(that.history[currentIndex][0], that.history[currentIndex][1]);
-            }           
-        };
+        var uriSearchSubmit = document.getElementById("URISearchSubmit");
+        if (uriSearchSubmit){
+            uriSearchSubmit.onclick = function() {
+                var uri = document.getElementById("URISearchInput").value;
+                that.renderApi.clickNode(uri, "Element");
+            };
+        }
+        
+        var fullDisplay = document.getElementById("fullDiaplayButton");
+        if (fullDisplay) {
+            fullDisplay.onclick = function() {
+                if (!that.topViewShown) {
+                    that.topViewShown = true;
+                    that.renderApi.selectElement(null);
+                } else {
+                    that.topViewShown = false;
+                    that.renderApi.clickNode(that.history[currentIndex][0], that.history[currentIndex][1]);
+                }           
+            };
+        }
         
         this.clear = function () {
             this.rootNodes = [];
@@ -90,19 +96,23 @@ define([
                 node.renderApi = that.renderApi;
             });
             if (this.rootNodes.length === 0) {
-                this.addChild("test", "");
+                this.addChild("test", "", null);
             }
             //("i'm here"); was for seeig where the start is 
         };
 
         //We use the same method name as DropDownNode.addChild to enable polymorphism
-        this.addChild = function (name, type) {
-            var ans = new DropDownNode(name, that.renderApi, type);
+        this.addChild = function (name, type, data) {
+            var ans = new DropDownNode(name, that.renderApi, type, data, that.contextMenu);
             this.rootNodes.push(ans);
             return ans;
         };
        
-        
+        this.open = function() {
+          $("#displayPanel-tab").addClass("display-open");  
+          $("#displayPanel").addClass("display-open");  
+
+        };
     }
     return DropDownTree;
 });

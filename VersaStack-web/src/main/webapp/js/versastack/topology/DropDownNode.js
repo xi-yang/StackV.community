@@ -3,17 +3,22 @@ define([
     "local/versastack/utils"
 ], function (utils) {
     var map_ = utils.map_;
-    function DropDownNode(name, renderApi, type) {
+    function DropDownNode(name, renderApi, type, data, contextMenu) {
         /**@type Array.DropDownNode**/
         this.children = [];
         this.name = name;
         this.renderApi = renderApi;
+        this.contextMenu = contextMenu;
         this.type = type;
+        // data associated with the node
+        // so for example, the element or the key, value pair. 
+        // { key: "key", value: "value", type : "type" }
+        this.dataObject = data;
         
         var that = this;
 
-        this.addChild = function (name, type) {
-            var ans = new DropDownNode(name, this.renderApi, type);
+        this.addChild = function (name, type, data) {
+            var ans = new DropDownNode(name, that.renderApi, type, data, that.contextMenu); // changed this.renderApi to that.renderApi
             this.children.push(ans);
             return ans;
         };
@@ -42,7 +47,7 @@ define([
             //       console.log("that.name: " + that.name);
             //console.log("that.type: " + that.type);
      
-            if (that.name.substring(0,3) === "urn") { 
+            if (that.name.substring(0,3) === "urn" || that.name.substring(0,2) === "x-") { 
                 var text = document.createElement("a");
                 text.className = "urnLink";
             } else {
@@ -58,7 +63,7 @@ define([
             } else if (that.name.substring(0,3) === "urn") {
                 var bullet = document.createElement("span");
                 bullet.innerHTML = "•";
-                bullet.style.float = "left";
+                if (that.type !== "Relationship") bullet.style.float = "left";
                 line.appendChild(bullet);
             }
             
@@ -82,13 +87,13 @@ define([
                         child.style.display = disp;
                     });
                     text.innerHTML = _getText();
-                    map_(that.children, function (child) {
-                        console.log("only on click");
-                        var toAdd = child.getHTML();
-                        toAdd.style.display = isExpanded ? "inherit" : "none";
-                        childNodes.push(toAdd);
-                        content.appendChild(toAdd);
-                    });                    
+//                    map_(that.children, function (child) {
+//                        console.log("only on click");
+//                        var toAdd = child.getHTML();
+//                        toAdd.style.display = isExpanded ? "inherit" : "none";
+//                        childNodes.push(toAdd);
+//                        content.appendChild(toAdd);
+//                    });                    
                 };            
             }
             
@@ -105,7 +110,8 @@ define([
                 horiz.style = "font-weight:bold;margin-top: 5px;margin-bottom: 5px;border-top: 1px solid #333;";
                 line.appendChild(horiz);
                 content.appendChild(line);
-            } else if (that.name.substring(0,3) === "urn" && that.type !== "Relationship") {
+            } else if (((that.name.substring(0,3) === "urn") ||
+                        (that.name.substring(0,2) === "x-" )) && that.type !== "Relationship") {
                 var link = document.createElement("div");
                 link.className = "urnLink";
                 //link.setAttribute("href", "");
@@ -117,10 +123,14 @@ define([
                         
                     }
                 };
+                link.oncontextmenu  = function (e) {
+                   that.contextMenu.panelElemContextListener(e, that.dataObject);
+                };
                 link.appendChild(text);
                 line.appendChild(link);
                 content.appendChild(line);
-            } else if (that.name.substring(0,3) === "urn" && that.type === "Relationship") {
+            } else if ( (that.name.substring(0,3) === "urn") ||
+                        (that.name.substring(0,2) === "x-" )&& that.type === "Relationship") {
                 // copy paste below and above to get desired result 
                 var property =  that.name.split("(*)");                
                 var link = document.createElement("span");
@@ -130,7 +140,7 @@ define([
                    link.className = "urnLink clicked";
                    console.log(" what is this: " + that.renderApi);
                    that.renderApi.clickNode(property[0], that.type);          
-                };
+                };                
                 link.innerHTML = property[0];
                 
                 var key = document.createElement("span");
@@ -147,8 +157,18 @@ define([
                 var value = document.createElement("span");               
                 key.className = "panelElementProperty";
                 var property =  that.name.split(":");
-                key.innerHTML = property[0] + ":";
-                value.innerHTML = property[1]; // just using this because it's there 
+                if (property[0] !== 'format ' && property[0] !== 'value ' && property[1].substring(0) !== "{") {
+                    key.innerHTML = property[0] + ":";
+                    value.innerHTML = property[1]; // just using this because it's there 
+                } else {
+                    key.innerHTML = property[0] + ":";
+                    property.splice(0,1);
+                    value.innerHTML = that.dataObject;
+                }
+                 line.oncontextmenu  = function (e) {
+                   that.contextMenu.panelElemContextListener(e, that.dataObject);
+                };
+               
                 line.appendChild(key);
                 line.appendChild(value);
                 content.appendChild(line);
@@ -157,12 +177,13 @@ define([
                 content.appendChild(line);
             }
 
-//            map_(this.children, function (child) {
-//                var toAdd = child.getHTML();
-//                toAdd.style.display = isExpanded ? "inherit" : "none";
-//                childNodes.push(toAdd);
-//                content.appendChild(toAdd);
-//            });
+            // this was a new changed, forgot what the point of htis was ... @
+            map_(this.children, function (child) {
+                var toAdd = child.getHTML();
+                toAdd.style.display = isExpanded ? "inherit" : "none";
+                childNodes.push(toAdd);
+                content.appendChild(toAdd);
+            });
             ans.appendChild(content);
 
             return ans;

@@ -47,6 +47,7 @@ define(["local/versastack/topology/modelConstants"],
                 this.dx = 0;
                 this.dy = 0;
                 this.size = 0;
+                this.detailsReference = false;
                 
                 this.misc_elements = [];
                 
@@ -181,15 +182,19 @@ define(["local/versastack/topology/modelConstants"],
                             console.log("x: " + leave.x + " y: " + leave.y);
                         }
                         if (leave === undefined) {
-                            console.log("its undefined LEAVEEEEE");
+                            console.log("undefined leaf");
                         }
                     });
                     var num = leaves.length;
+                    
+//                    console.log("Node -> getCenterOfMass -> leaves.length: " + leaves.length);  @
                     map_(leaves, function (leaf) {
                         if(leaf !== undefined) {
                             // do a before and after x and y check here 
                             ans.x += leaf.x / num;
                             ans.y += leaf.y / num;
+//                            console.log("Node->getCenterOfMass -> ans.x in map:  " + ans.x); @
+//                            console.log("Node->getCenterOfMass -> ans.y in map: " + ans.y);   @
                         }
                         if (leaf === undefined) console.log("they're (leaf) null \n");                                           
                         //if (isNaN(leaf.x) || isNaN(leaf.y)) console.log("they're (leaf coords) null \n");                   
@@ -204,7 +209,11 @@ define(["local/versastack/topology/modelConstants"],
                             console.log("my name is: " + this.getName());
                         }
                     }
-                    if (isNaN(this.x) || isNaN(this.y)) return {x: 0, y: 0};
+                    if (isNaN(this.x) || isNaN(this.y)) {
+//                        console.log("In Node:getCenterOfMass ->isNaN(tis returned; his.x) || isNaN(this.y is true ans 0,0 is returned; "); @
+                        return {x: 0, y: 0};
+                    }
+//                    console.log("In Node:getCenterOfMass ->ans is returned: ans is ans.x: " + ans.x + ", ans.y: " + ans.y);       @              
                     return ans;
                 };
                 this.getVisible = function () {

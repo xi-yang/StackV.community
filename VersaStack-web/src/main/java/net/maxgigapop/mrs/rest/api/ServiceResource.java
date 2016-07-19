@@ -43,6 +43,7 @@ import net.maxgigapop.mrs.bean.ServiceInstance;
 import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ServiceInstancePersistenceManager;
 import net.maxgigapop.mrs.rest.api.model.ApiDeltaBase;
+import net.maxgigapop.mrs.rest.api.model.ApiDeltaRetrieval;
 import net.maxgigapop.mrs.rest.api.model.ApiDeltaVerification;
 import org.json.simple.JSONObject;
 
@@ -64,6 +65,20 @@ public class ServiceResource {
     public ServiceResource() {
     }
 
+    @GET
+    @Path("/ready")
+    @Produces({"application/xml", "application/json"})
+    public String ready() {
+        return (serviceCallHandler.hasSystemBootStrapped() ? "true" : "false");
+    }
+    
+    @PUT
+    @Path("/ready/reset")
+    @Produces({"application/xml", "application/json"})
+    public void reset() {
+        serviceCallHandler.resetSystemBootStrapped();
+    }
+    
     @GET
     @Path("/instance")
     @Produces({"application/xml", "application/json"})
@@ -127,7 +142,7 @@ public class ServiceResource {
         String workerClassPath = svcApiDelta.getWorkerClassPath();
         SystemDelta sysDelta = serviceCallHandler.compileAddDelta(svcInstanceUUID, workerClassPath, svcApiDelta.getUuid(), svcApiDelta.getModelAddition(), svcApiDelta.getModelReduction());
         if (sysDelta == null) {
-            throw new ProcessingException("Failed to compile service delta");
+            throw new EJBException("Failed to compile service delta");
         }
         ApiDeltaBase apiSysDelta = new ApiDeltaBase();
         apiSysDelta.setId(sysDelta.getId().toString());
@@ -159,7 +174,7 @@ public class ServiceResource {
         String workerClassPath = svcApiDelta.getWorkerClassPath();
         SystemDelta sysDelta = serviceCallHandler.compileAddDelta(svcInstanceUUID, workerClassPath, svcApiDelta.getUuid(), svcApiDelta.getModelAddition(), svcApiDelta.getModelReduction());
         if (sysDelta == null) {
-            throw new ProcessingException("Failed to compile service delta");
+            throw new EJBException("Failed to compile service delta");
         }
         ApiDeltaBase apiSysDelta = new ApiDeltaBase();
         apiSysDelta.setId(sysDelta.getId().toString());
@@ -220,7 +235,7 @@ public class ServiceResource {
                     if (retryDelay == 2000L) {
                         return serviceCallHandler.propagateDeltas(svcInstanceUUID, false);
                     } else {
-                        return serviceCallHandler.propagateRetry(svcInstanceUUID, false);
+                        return serviceCallHandler.propagateRetry(svcInstanceUUID, true);
                     }   
                 } catch (EJBException ejbEx) {
                     String errMsg = ejbEx.getMessage();
@@ -241,7 +256,11 @@ public class ServiceResource {
             while (true) {
                 retryDelay *= 2; // retry up to 4 times at 2, 4, 8, 16 secs
                 try {
-                    return serviceCallHandler.propagateRetry(svcInstanceUUID, false);
+                    if (retryDelay == 2000L) {
+                        return serviceCallHandler.propagateRetry(svcInstanceUUID, false);
+                    } else {
+                        return serviceCallHandler.propagateRetry(svcInstanceUUID, true);
+                    }   
                 } catch (EJBException ejbEx) {
                     String errMsg = ejbEx.getMessage();
                     log.warning("Caught+Retry: " + errMsg);
@@ -361,6 +380,36 @@ public class ServiceResource {
             apiDeltaVerification.setReductionVerified(deltaVerification.getReductionVerified() ? "true" : "false");
         }
         return apiDeltaVerification;
+    }
+    
+    @GET
+    @Produces("application/json")
+    @Path("/delta/{svcUUID}")
+    public ApiDeltaRetrieval retrieveDeltaJson(@PathParam("svcUUID") String svcUUID) throws Exception {
+        ApiDeltaRetrieval apiDeltaRetrieval = new ApiDeltaRetrieval();
+        ModelUtil.DeltaRetrieval deltaRetrieval = new ModelUtil.DeltaRetrieval();
+        serviceCallHandler.retrieveDelta(svcUUID, deltaRetrieval, true);
+        apiDeltaRetrieval.setReferenceUUID(deltaRetrieval.getReferenceModelUUID());
+        apiDeltaRetrieval.setServiceModelAddition(deltaRetrieval.getModelAdditionSvc());
+        apiDeltaRetrieval.setServiceModelReduction(deltaRetrieval.getModelReductionSvc());
+        apiDeltaRetrieval.setSystemModelAddition(deltaRetrieval.getModelAdditionSys());
+        apiDeltaRetrieval.setSystemModelReduction(deltaRetrieval.getModelReductionSys());
+        return apiDeltaRetrieval;
+    }
+    
+    @GET
+    @Produces("application/xml")
+    @Path("/delta/{svcUUID}")
+    public ApiDeltaRetrieval retrieveDelta(@PathParam("svcUUID") String svcUUID) throws Exception {
+        ApiDeltaRetrieval apiDeltaRetrieval = new ApiDeltaRetrieval();
+        ModelUtil.DeltaRetrieval deltaRetrieval = new ModelUtil.DeltaRetrieval();
+        serviceCallHandler.retrieveDelta(svcUUID, deltaRetrieval, false);
+        apiDeltaRetrieval.setReferenceUUID(deltaRetrieval.getReferenceModelUUID());
+        apiDeltaRetrieval.setServiceModelAddition(deltaRetrieval.getModelAdditionSvc());
+        apiDeltaRetrieval.setServiceModelReduction(deltaRetrieval.getModelReductionSvc());
+        apiDeltaRetrieval.setSystemModelAddition(deltaRetrieval.getModelAdditionSys());
+        apiDeltaRetrieval.setSystemModelReduction(deltaRetrieval.getModelReductionSys());
+        return apiDeltaRetrieval;
     }
     
 }

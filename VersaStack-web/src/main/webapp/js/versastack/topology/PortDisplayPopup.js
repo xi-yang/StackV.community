@@ -25,7 +25,8 @@ define(["local/d3", "local/versastack/utils"],
                 /**@type Node**/
                 this.hostNode = null;
                 this.visible = false;
-
+                this.outputApi = outputApi;
+                
                 var that = this;
                 this.setOffset = function (x, y) {
                     this.dx = x;
@@ -140,9 +141,9 @@ define(["local/d3", "local/versastack/utils"],
                     }
                     this.setVisible(true);
                     //draw the ports
-                    var portContainer = this.svgContainer.select("#port");
-                    var parentPortContainer = this.svgContainer.select("#parentPort");
-                    var container = this.svgContainer.select("#dialogBox");
+                    var portContainer = this.svgContainer.select("#port" + "_" + outputApi.svgContainerName);
+                    var parentPortContainer = this.svgContainer.select("#parentPort" + "_" + outputApi.svgContainerName);
+                    var container = this.svgContainer.select("#dialogBox" + "_" + outputApi.svgContainerName);
 
                     var stack = [];
                     map_(this.hostNode.ports, function (port) {
@@ -156,7 +157,7 @@ define(["local/d3", "local/versastack/utils"],
                             map_(port.childrenPorts, function (child) {
                                 stack.push(child);
                             });
-
+                            
                             var color;
                             if (port.hasAlias() || port.hasChildren()) {
                                 color = that.portColors[port.getVisibleHeight() % that.portColors.length];
@@ -170,31 +171,38 @@ define(["local/d3", "local/versastack/utils"],
                                 port.svgNode = portContainer.append("image")
                                         .attr("xlink:href", port.getIconPath());
                             }
+                           if (port.detailsReference) {
+                                port.svgNode.style("opacity", .4);
+                            }
+
                             port.svgNode
-                                    .on("mousemove", function () {
-                                        outputApi.setHoverText(port.getName());
-                                        outputApi.setHoverLocation(d3.event.x, d3.event.y);
-                                        outputApi.setHoverVisible(true);
-                                        if (!port.hasChildren()) {
-                                            port.enlarged = true;
-                                        }
-                                        that.updateSvgChoordsPort(port);
-                                    })
-                                    .on("mouseleave", function () {
-                                        outputApi.setHoverVisible(false);
-                                        port.enlarged = false;
-                                        that.updateSvgChoordsPort(port);
-                                    })
-                                    .on("click", function () {
-                                        renderApi.selectElement(port);
-                                    })
-                                    .on("dblclick", function () {
-                                        port.setFolded(!port.getFolded());
-                                        renderApi.redrawPopups();
-                                        renderApi.drawHighlight();
-                                        renderApi.layoutEdges();
-                                    })
-                                    .call(dragBehaviour);
+                                .on("mousemove", function () {
+                                    outputApi.setHoverText(port.getName());
+                                    outputApi.setHoverLocation(d3.event.x, d3.event.y);
+                                    outputApi.setHoverVisible(true);
+                                    if (!port.hasChildren()) {
+                                        port.enlarged = true;
+                                    }
+                                    that.updateSvgChoordsPort(port);
+                                })
+                                .on("mouseleave", function () {
+                                    outputApi.setHoverVisible(false);
+                                    port.enlarged = false;
+                                    that.updateSvgChoordsPort(port);
+                                })
+                                .on("click", function () {
+                                    renderApi.selectElement(port);
+                                })
+                                .on("dblclick", function () {
+                                    port.setFolded(!port.getFolded());
+                                    renderApi.redrawPopups();
+                                    renderApi.drawHighlight();
+                                    renderApi.layoutEdges();
+                                });
+                            if (that.outputApi.contextMenu){
+                                port.svgNode.on("contextmenu", that.outputApi.contextMenu.renderedElemContextListener.bind(undefined, port));                      
+                            } 
+                            port.svgNode.call(dragBehaviour);
                         })();
                     }
                     //Draw the box itself.
@@ -278,8 +286,16 @@ define(["local/d3", "local/versastack/utils"],
                             .attr("x", anchor.x + this.dx - width / 2)
                             .attr("y", anchor.y + this.dy - height - this.bevel / 2)
                             .attr("height", height + this.bevel / 2)
-                            .attr("width", width)
-
+                            .attr("width", width);
+                    // new chane, added debugging @
+                    console.log("\n]nEntering PortDisplayPopup updateSvgChoords");
+                    console.log("x: " + (anchor.x + this.dx - width / 2));
+                    console.log("y: " + (anchor.y + this.dy - height - this.bevel / 2));
+                    console.log("anchor.x: " + anchor.x);
+                    console.log("anchor.y: " + anchor.y);
+                    console.log("this.dx: " + this.dx);
+                    console.log("this.dy: " + this.dy);
+                    console.log("\nLeaving  PortDisplayPopup updateSvgChoords \n\n");
                     //connect the box to the node;
                     var dst = this.hostNode.getCenterOfMass();
                     this.svgLine
@@ -304,6 +320,7 @@ define(["local/d3", "local/versastack/utils"],
                             outputApi.setHoverLocation(e.clientX, e.clientY);
                             that.updateSvgChoords();
                             renderApi.drawHighlight();
+                            renderApi.highlightServiceElements();
                             renderApi.layoutEdges();
                         })
                         .on("dragstart", function () {

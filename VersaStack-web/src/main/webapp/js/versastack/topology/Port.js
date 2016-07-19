@@ -15,7 +15,8 @@ define([
         /**@type Node**/
         this.ancestorNode = null;
         this.alias = null;
-
+        this._map = map;
+        
         this.isVisible = false;
         this.x = 0;
         this.y = 0;
@@ -23,6 +24,7 @@ define([
         this.svgNode = null;
         this.svgNodeSubnetHighlight = null; // For subnet tab
         this.folded = false;
+        this.detailsReference = false;
         
         //We are reloading this port from a new model
         //Model.js will handle most of the reparsing, but we need to
@@ -59,7 +61,15 @@ define([
         var children = backing[values.hasBidirectionalPort];
         if (children) {
             map_(children, function (child) {
-                child = map[child.value];
+                if (child.value) {
+                    child = map[child.value];
+                } else if (child.name) {
+                    alert("");
+                    child = map[child.name];
+              
+                } else {
+                    return; 
+                }
                 try {
                 child = new Port(child, map);
                 that.childrenPorts.push(child);

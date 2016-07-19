@@ -2,7 +2,7 @@
 define(["local/d3", "local/versastack/utils"],
         function (d3, utils) {
             var map_ = utils.map_;
-            function SwitchPopup(outputApi, renderApi) {
+            function SwitchPopup(outputApi) {
                 this.svgContainer = null;
                 this.dx = 0;
                 this.dy = 0;
@@ -25,6 +25,8 @@ define(["local/d3", "local/versastack/utils"],
                 this.textSize = 0;
                 /**@type Service**/
                 this.hostNode = null;
+                this.outputApi = outputApi;
+                
                 var that = this;
                 this.setOffset = function (x, y) {
                     this.dx = x;
@@ -151,7 +153,7 @@ define(["local/d3", "local/versastack/utils"],
                     eraseHighlights();
                     clickSubnet = null;
                     this.hostNode = null;
-                    var container = this.svgContainer.select("#switchPopup");
+                    var container = this.svgContainer.select("#switchPopup" + "_" + outputApi.svgContainerName);
                     eraseHighlights();
                     container.selectAll("*").remove();
                     return this;
@@ -163,13 +165,15 @@ define(["local/d3", "local/versastack/utils"],
                     }
                     clickSubnet = subnet;
                     clickSubnet.svgNode.style("fill", that.tabColorSelected);
-                    outputApi.setDisplayName(clickSubnet.getName());
-                    var displayTree = outputApi.getDisplayTree();
-                    displayTree.clear();
-                    subnet.populateTreeMenu(displayTree);
-                    displayTree.draw();
+//                    outputApi.setDisplayName(clickSubnet.getName());
+//                    var displayTree = outputApi.getDisplayTree();
+//                    displayTree.clear();
+                    outputApi.renderApi.clickNode(clickSubnet.getName(), 'Subnet');
+//                    subnet.populateTreeMenu(displayTree);
+//                    displayTree.draw();
                     eraseHighlights();
                     map_(subnet.ports, function (port) {
+                        if (port.ancestorNode === null) return;
                         var toHighlight = port.getFirstVisibleParent();
                         //It is possible that multiple ports of the subnet will resolve to the same node
                         //when deciding what we should highlight. To avoid issues in removing highlights,
@@ -195,10 +199,10 @@ define(["local/d3", "local/versastack/utils"],
 
 
                 this.render = function () {
-                    if (!this.hostNode) {
+                    if (!this.hostNode || this.hostNode.subnets.length === 0) {
                         return;
                     }
-                    var container = this.svgContainer.select("#switchPopup");
+                    var container = this.svgContainer.select("#switchPopup" + "_" + outputApi.svgContainerName);
                     container.selectAll("*").remove();
                     eraseHighlights();
                     var anchor = this.hostNode.getCenterOfMass();
@@ -261,6 +265,7 @@ define(["local/d3", "local/versastack/utils"],
                                 .style("opacity", "0")
                                 .on("mousemove", onMouseMove)
                                 .on("mouseleave", OnMouseLeave)
+                                .on("contextmenu", that.outputApi.contextMenu.renderedElemContextListener.bind(undefined, subnet))                                             
                                 .on("click", onClick)
                                 .call(makeDragBehaviour());
                     });
@@ -276,6 +281,11 @@ define(["local/d3", "local/versastack/utils"],
                                 .attr("y", y)
                                 .attr("height", that.textSize + that.innerBuffer * 2)
                                 .attr("width", width);
+                        
+                        if (subnet.detailsReference) {
+                            subnet.svgNode.style("opacity", .4);
+                        }
+
                         subnet.svgNodeCover
                                 .attr("x", x)
                                 .attr("y", y)

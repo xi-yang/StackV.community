@@ -9,10 +9,11 @@ define(["local/d3", "local/versastack/utils"],
                 this.dy = 0;
                 this.minWidth = 0;
                 this.minHeight = 0;
-                this.bevel = 0;
+                this.bevel = 10;
                 this.svgLine = null;
                 this.svgBubble = null;
                 this.color = "";
+                this.outputApi = outputApi;
                 /**@type Array.Port**/
                 //this.portColors = [];
                 //this.volumeEmptyColor = "";
@@ -47,8 +48,6 @@ define(["local/d3", "local/versastack/utils"],
                 };
                 this.setColor = function (color) {
                     this.color = color;
-                    //alert("color: " + color +"\nthis.color: " + this.color);
-
                     return this;
                 };
                 this.setOpacity = function (opacity) {
@@ -136,9 +135,9 @@ define(["local/d3", "local/versastack/utils"],
                     }
                     this.setVisible(true);
                     //draw the ports
-                    var volumeContainer = this.svgContainer.select("#volume");
+                    var volumeContainer = this.svgContainer.select("#volume" + "_" + outputApi.svgContainerName);
                     //var parentPortContainer = this.svgContainer.select("#parentPort");
-                    var container = this.svgContainer.select("#volumeDialogBox");
+                    var container = this.svgContainer.select("#volumeDialogBox" + "_" + outputApi.svgContainerName);
 
                     var stack = [];
                     map_(this.hostNode.volumes, function (volume) {
@@ -156,7 +155,9 @@ define(["local/d3", "local/versastack/utils"],
                             
                                 volume.svgNode = volumeContainer.append("image")
                                         .attr("xlink:href", volume.getIconPath());
-                    
+                            if (volume.detailsReference) {
+                                volume.svgNode.style("opacity", .4);
+                            }
                             volume.svgNode
                                     .on("mousemove", function () {
                                         outputApi.setHoverText(volume.getName());
@@ -180,6 +181,7 @@ define(["local/d3", "local/versastack/utils"],
                                         renderApi.drawHighlight();
                                         renderApi.layoutEdges();
                                     })
+                                    .on("contextmenu", that.outputApi.contextMenu.renderedElemContextListener.bind(undefined, volume))                                    
                                     .call(dragBehaviour);
                         })();
                     }
@@ -278,6 +280,7 @@ define(["local/d3", "local/versastack/utils"],
                             outputApi.setHoverLocation(e.clientX, e.clientY);
                             that.updateSvgChoords();
                             renderApi.drawHighlight();
+                            renderApi.highlightServiceElements();
                             renderApi.layoutEdges();
                         })
                         .on("dragstart", function () {

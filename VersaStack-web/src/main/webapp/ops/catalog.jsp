@@ -40,26 +40,52 @@
         </div>
         <!-- MAIN PANEL -->
         <div id="main-pane">                                   
-            <div id="service-overview">
-
-                <table class="management-table" id="status-table">
-                    <thead>
-                        <tr>
-                            <th>Service Name</th>
-                            <th>Service UUID</th>
-                            <th>Service Status   <button class="button-header" onclick="reloadPage()">Refresh</button></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <c:forEach var="instance" items="${serv.instanceStatusCheck()}">
-                            <tr class="clickable-row" data-href='/VersaStack-web/ops/details.jsp?uuid=${instance[1]}'>
-                                <td>${instance[0]}</td>
-                                <td>${instance[1]}</td>
-                                <td>${instance[2]}</td>
+            <div id="service-overview">                
+                <div id="instance-panel">
+                    <table class="management-table" id="status-table">
+                        <thead>
+                            <tr>
+                                <th>Instance Alias</th>
+                                <th>Service Type</th>
+                                <th>Instance UUID</th>
+                                <th>Instance Status     <button class="button-header" id="refresh-button" onclick="reloadTracker()">Manually Refresh Now</button></th>
                             </tr>
-                        </c:forEach>
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            <c:forEach var="instance" items="${serv.instanceStatusCheck()}">
+                                <!--Details page redirection-->
+                                <c:choose>                                    
+                                    <c:when test="${instance[0]} == 'Dynamic Network Connection'"><!--DNC-->
+                                        <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}&type=dnc'>
+                                        </c:when>                                        
+                                        <c:when test="${instance[0]} == 'Network Creation'"><!--VCN-->
+                                        <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}&type=netcreate'>
+                                        </c:when>
+
+                                        <c:otherwise>
+                                        <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}'>
+                                        </c:otherwise>
+                                    </c:choose>    
+                                            
+                                            <td>${instance[3]}</td>        
+                                            <td>${instance[0]}</td>
+                                            <td>${instance[1]}</td>
+                                            <td>${instance[2]}</td>
+                                        </tr>
+                            </c:forEach>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="refresh-panel">
+                    Auto-Refresh Interval
+                    <select id="refresh-timer" onchange="timerChange(this)">
+                        <option value="off">Off</option>
+                        <option value="5">5 sec.</option>
+                        <option value="10">10 sec.</option>
+                        <option value="30">30 sec.</option>
+                        <option value="60" selected>60 sec.</option>
+                    </select>
+                </div>
 
                 <sql:query dataSource="${front_conn}" sql="SELECT DISTINCT S.name, S.filename, S.description FROM service S JOIN acl A, acl_entry_group G, acl_entry_user U 
                            WHERE S.atomic = 0 AND A.service_id = S.service_id 
@@ -76,7 +102,7 @@
                             <th></th>
                         </tr>
                     </thead>
-                    <tbody>                    
+                    <tbody>
                         <c:forEach var="service" items="${servlist.rows}">
                             <tr>
                                 <td>${service.name}</td>
@@ -84,7 +110,7 @@
                                 <td>
                                     <jsp:element name="button">
                                         <jsp:attribute name="class">button-service-select</jsp:attribute>
-                                        <jsp:attribute name="id">${service.filename}</jsp:attribute>                                           
+                                        <jsp:attribute name="id">${service.filename}</jsp:attribute>
                                         <jsp:body>Select</jsp:body>
                                     </jsp:element>
                                 </td>
@@ -95,32 +121,68 @@
             </div>
             <br>
             <button type="button" class="hide" id="button-service-cancel">Cancel</button>
-            <div id="service-specific">                
-            </div>
-        </div>        
+            <div id="service-specific"></div>
+            
+            <!-- LOADING PANEL -->
+            <div id="loading-panel"></div>
+            <!-- TAG PANEL -->
+            <div id="tag-panel"></div>
+        </div>
         <!-- JS -->
         <script>
             $(function () {
-                $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
-                    if (${user.isAllowed(1)}) {
-                        var element = document.getElementById("service1");
-                        element.classList.remove("hide");
-                    }
-                    if (${user.isAllowed(2)}) {
-                        var element = document.getElementById("service2");
-                        element.classList.remove("hide");
-                    }
-                    if (${user.isAllowed(3)}) {
-                        var element = document.getElementById("service3");
-                        element.classList.remove("hide");
-                    }
-                    if (${user.isAllowed(4)}) {
-                        var element = document.getElementById("service4");
-                        element.classList.remove("hide");
-                    }
-                });
+                setRefresh(60); 
+                
+                $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", null);        
             });
-
-        </script>        
+            
+            function timerChange(sel) {
+                clearInterval(refreshTimer);
+                clearInterval(countdownTimer);
+                if (sel.value !== 'off') {
+                    setRefresh(sel.value);
+                } else {
+                    document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
+                }
+            }
+            
+            function setRefresh(time) {
+                countdown = time;
+                refreshTimer = setInterval(function(){reloadTracker(time);}, (time * 1000));
+                countdownTimer = setInterval(function(){refreshCountdown(time);}, 1000);
+            }
+            
+            function reloadTracker(time) {  
+                enableLoading();
+                
+                var manual = false;
+                if (typeof time === "undefined") {
+                    time = countdown;
+                }
+                if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') { 
+                    manual = true;
+                }
+                
+                $('#instance-panel').load(document.URL +  ' #instance-panel', function() {
+                    $(".clickable-row").click(function () {
+                        window.document.location = $(this).data("href");                                                
+                    }); 
+                    
+                    if (manual === false) {                        
+                        countdown = time;
+                        document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
+                    } else { document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now'; }
+                    
+                    setTimeout(function () {
+                        disableLoading();
+                    }, 750);
+                }); 
+            }
+            
+            function refreshCountdown() {
+                document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
+                countdown--;
+            }
+        </script>    
     </body>
 </html>

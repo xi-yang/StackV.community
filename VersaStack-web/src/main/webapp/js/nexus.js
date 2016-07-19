@@ -2,20 +2,31 @@
 /* global XDomainRequest */
 
 // Service JavaScript Library
-    var baseUrl = window.location.origin;
+var baseUrl = window.location.origin;
 
 // Page Load Function
 
 $(function () {
     $("#nav").load("/VersaStack-web/navbar.html");
+    $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
+        $("#sidebar-toggle").click(function (evt) {
+            $("#sidebar-toggle-1").toggleClass("img-off");
+            $("#sidebar-toggle-2").toggleClass("img-off");
+            
+            $("#sidebar-contents").toggleClass("sidebar-open");
+            $("#main-pane").toggleClass("sidebar-open");
+
+            evt.preventDefault();
+        });
+    });
 
     $(".button-service-select").click(function (evt) {
-        $ref = "srvc/" + this.id.toLowerCase() + ".jsp #service-specific";
-        // console.log($ref);
+        $ref = "/VersaStack-web/ops/srvc/" + this.id.toLowerCase() + ".jsp";
+        window.location.href = $ref;
 
-        $("#service-overview").toggleClass("hide");
-        $("#button-service-cancel").toggleClass("hide");
-        $("#service-specific").load($ref);
+        //$("#service-overview").toggleClass("hide");
+        //$("#button-service-cancel").toggleClass("hide");
+        //$("#service-specific").load($ref);
         evt.preventDefault();
     });
 
@@ -44,9 +55,9 @@ $(function () {
     $(".clickable-row").click(function () {
         window.document.location = $(this).data("href");
     });
-    
-    $("#delta-table-header").click(function () {
-       $("#delta-table-body").toggleClass("hide"); 
+
+    $(".delta-table-header").click(function () {
+        $("#body-" + this.id).toggleClass("hide");
     });
 
     clearCounters();
@@ -93,7 +104,7 @@ function viewmodeSelect(sel) {
     }
     $("#service-top").load($ref);
     $("#service-bottom").load($ref2);
-    
+
     clearCounters();
 }
 
@@ -131,7 +142,7 @@ function topoSelect(sel) {
         $ref = "/VersaStack-web/ops/srvc/vmadd.jsp #service-fields";
 
     $("#service-bottom").load($ref);
-    
+
     clearCounters();
 }
 
@@ -162,7 +173,7 @@ function networkSelect(sel) {
         $ref2 = "/VersaStack-web/ops/srvc/netcreate.jsp #service-fields";
     }
     $("#service-bottom").load($ref2);
-    
+
     clearCounters();
 }
 
@@ -305,152 +316,12 @@ function addRoute() {
     }
 }
 
-var VMCounter = 1;
-var VMLimit = 10;
-function addVM(type, subnetID) {
-    if (VMCounter === VMLimit) {
-        alert("You have reached the limit of VMs.");
-    }
-    else if (type === 'aws') {
-        VMCounter++;
-        var block = document.getElementById(subnetID + '-block');
-
-        block.innerHTML = block.innerHTML +
-                '<div>VM ' + VMCounter + 
-                '<input type="text" name="' + subnetID + VMCounter + '" placeholder="VM Name">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-keypair" placeholder="Keypair Name">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-security" placeholder="Security Name">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-image" placeholder="Image Type">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-instance" placeholder="Instance Type">' +
-                '</div>';
-    }
-    else if (type === 'ops') {
-        VMCounter++;
-        var block = document.getElementById(subnetID + '-block');
-
-        block.innerHTML = block.innerHTML +
-                '<div>VM ' + VMCounter + 
-                '<input type="text" name="' + subnetID + VMCounter + '" placeholder="VM Name">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-keypair" placeholder="Keypair Name">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-security" placeholder="Security Name">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-image" placeholder="Image Type">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-instance" placeholder="Instance Type">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-host" placeholder="VM Host">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-floating" placeholder="Floating IP">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-sriov-dest" placeholder="SRIOV Destination">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-sriov-mac" placeholder="SRIOV MAC Address">' +
-                '<input type="text" name="' + subnetID + VMCounter + '-sriov-ip" placeholder="SRIOV IP Address">' +
-                '<div>' +
-                '<input type="text" name="' + subnetID + VMCounter + '-route1-from" placeholder="From">' +                
-                '<input type="text" name="' + subnetID + VMCounter + '-route1-to" placeholder="To">' +        
-                '<input type="text" name="' + subnetID + VMCounter + '-route1-next" placeholder="Next Hop">' +
-                '</div><div>' +
-                '<input type="text" name="' + subnetID + VMCounter + '-route2-from" placeholder="From">' +                
-                '<input type="text" name="' + subnetID + VMCounter + '-route2-to" placeholder="To">' +        
-                '<input type="text" name="' + subnetID + VMCounter + '-route2-next" placeholder="Next Hop">' +                
-                '</div>' +
-                '</div>';
-    }
-}
-
-var subnetCounter = 1;
-var subnetLimit = 10;
-function addSubnet(type) {
-    if (subnetCounter === subnetLimit) {
-        alert("You have reached the limit of subnets.");
-    }
-    else if (type === 'aws') {
-        var table = document.getElementById("net-custom-form");
-        var tableHeight = table.rows.length;
-        subnetCounter++;
-        VMCounter++;       
-
-        var row = table.insertRow(tableHeight - 2);
-        row.id = 'subnet' + subnetCounter;
-
-        var cell1 = row.insertCell(0);
-        cell1.innerHTML = 'Subnet ' + subnetCounter;
-        var cell2 = row.insertCell(1);
-        cell2.innerHTML = '<div>' +
-                '<input type="text" name="subnet' + subnetCounter + '-name" placeholder="Name"/>' +
-                '<input type="text" name="subnet' + subnetCounter + '-cidr" placeholder="CIDR Block"/>' +
-                '<div id="subnet' + subnetCounter + '-route-block">' +
-                '<div>' +
-                '<input type="text" name="subnet' + subnetCounter + '-route1-from" placeholder="From"/>\n' +
-                '<input type="text" name="subnet' + subnetCounter + '-route1-to" placeholder="To"/>\n' +
-                '<input type="text" name="subnet' + subnetCounter + '-route1-next" placeholder="Next Hop"/>\n' +
-                '</div>' +
-                '</div>' +
-                '<div>' +
-                '<input type="checkbox" name="subnet' + subnetCounter + '-route-prop" value="true"/>   Enable VPN Routes Propogation' +
-                '</div>' +
-                '<div>' +
-                '<input class="button-register" id="subnet' + subnetCounter + '-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">' +
-                '</div>' +
-                '</div>' +
-                '<div id="subnet' + subnetCounter + '-vm-block">' +
-                '<div>VM ' + VMCounter + 
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '" placeholder="VM Name">' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-keypair" placeholder="Keypair Name">' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-security" placeholder="Security Name">' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-image" placeholder="Image Type">' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-instance" placeholder="Instance Type">' +
-                '</div>' +
-                '<div>' +
-                '<input class="button-register" id="subnet' + subnetCounter + '-vm" type="button" value="Add VM" onClick="addVM(\'aws\', this.id)">' +
-                '</div>';
-    }
-        else if (type === 'ops') {
-        var table = document.getElementById("net-custom-form");
-        var tableHeight = table.rows.length;
-        subnetCounter++;
-        VMCounter++;       
-
-        var row = table.insertRow(tableHeight - 2);
-        row.id = 'subnet' + subnetCounter;
-
-        var cell1 = row.insertCell(0);
-        cell1.innerHTML = 'Subnet ' + subnetCounter;
-        var cell2 = row.insertCell(1);
-        cell2.innerHTML = '<div>' +
-                '<input type="text" name="subnet' + subnetCounter + '-name" placeholder="Name"/>' +
-                '<input type="text" name="subnet' + subnetCounter + '-cidr" placeholder="CIDR Block"/>' +
-                '<div id="subnet' + subnetCounter + '-route-block">' +
-                '<div>' +
-                '<input type="text" name="subnet' + subnetCounter + '-route1-from" placeholder="From"/>\n' +
-                '<input type="text" name="subnet' + subnetCounter + '-route1-to" placeholder="To"/>\n' +
-                '<input type="text" name="subnet' + subnetCounter + '-route1-next" placeholder="Next Hop"/>\n' +
-                '</div>' +
-                '</div>' +
-                '<div>' +
-                '<input type="checkbox" name="subnet' + subnetCounter + '-route-prop" value="true"/>   Enable VPN Routes Propogation' +
-                '</div>' +
-                '<div>' +
-                '<input class="button-register" id="subnet' + subnetCounter + '-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">' +
-                '</div>' +
-                '</div>' +
-                '<div id="subnet' + subnetCounter + '-vm-block">' +
-                '<div>VM ' + VMCounter + 
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '" placeholder="VM Name">' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-keypair" placeholder="Keypair Name">' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-security" placeholder="Security Name">' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-image" placeholder="Image Type">' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-instance" placeholder="Instance Type">' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-host" placeholder="VM Host">' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-floating" placeholder="Floating IP">' +
-                '<input type="text" name="subnet' + subnetCounter + '-vm' + VMCounter + '-sriov" placeholder="SRIOV Connection">' +
-                '</div>' +
-                '<div>' +
-                '<input class="button-register" id="subnet' + subnetCounter + '-vm" type="button" value="Add VM" onClick="addVM(\'ops\', this.id)">' +
-                '</div>';
-    }
-}
-
 var subRouteCounter = 1;
 var subRouteLimit = 10;
 function addSubnetRoute(subnetID) {
     if (subRouteCounter === subRouteLimit) {
         alert("You have reached the limit of routes.");
+        return;
     }
 
     subRouteCounter++;
@@ -462,8 +333,202 @@ function addSubnetRoute(subnetID) {
             '<input type="text" name="' + subnetID + subRouteCounter + '-to" placeholder="To"/>' +
             '<input type="text" name="' + subnetID + subRouteCounter + '-next" placeholder="Next Hop"/>' +
             '</div>';
+}
 
+//var VMRouteCounter = 1;
+//var VMRouteLimit = 10;
+//function addVMRoute(VMID) {
+//    if (VMRouteCounter === VMRouteLimit) {
+//        alert("You have reached the limit of routes.");
+//    }
+//
+//    VMRouteCounter++;
+//    var block = document.getElementById(VMID + '-block');
+//
+//    block.innerHTML = block.innerHTML +
+//            '<div>' +
+//            '<input type="text" name="' + VMID + VMRouteCounter + '-from" placeholder="From"/>' +
+//            '<input type="text" name="' + VMID + VMRouteCounter + '-to" placeholder="To"/>' +
+//            '<input type="text" name="' + VMID + VMRouteCounter + '-next" placeholder="Next Hop"/>' +
+//            '</div>';
+//}
 
+var SRIOVCounter = 1;
+var SRIOVLimit = 10;
+function addSRIOV(VMID) {
+    if (SRIOVCounter === SRIOVLimit) {
+        alert("You have reached the limit of SRIOV connections.");
+        return;
+    }
+
+    SRIOVCounter++;
+    var block = document.getElementById(VMID + '-block');
+
+    block.innerHTML = block.innerHTML +
+            '<div>' +
+            '<input type="text" name="' + VMID + SRIOVCounter + '-mac" placeholder="SRIOV MAC Address">' +
+            '<input type="text" name="' + VMID + SRIOVCounter + '-ip" placeholder="SRIOV IP Address">' +
+            '<input type="text" name="' + VMID + SRIOVCounter + '-gateway" placeholder="SRIOV Gateway">' +
+            '</div><div id="' + VMID + SRIOVCounter + '-route-block"></div><div>' +
+            '<input class="button-register" id="' + VMID + SRIOVCounter + '-route" type="button" value="Add Route" onClick="addSRIOVRoute(this.id)">';
+
+    addSRIOVRoute(VMID + SRIOVCounter + '-route');
+}
+
+var SRIOVRouteCounter = 1;
+var SRIOVRouteLimit = 20;
+function addSRIOVRoute(SRIOVRouteId) {
+    if (SRIOVRouteCounter === SRIOVRouteLimit) {
+        alert("You have reached the limit of SRIOV routes.");
+        return;
+    }
+
+    SRIOVRouteCounter++;
+    var block = document.getElementById(SRIOVRouteId + '-block');
+
+    block.innerHTML = block.innerHTML +
+            '<div>' +
+            '<input type="text" name="' + SRIOVRouteId + SRIOVRouteCounter + '-from" placeholder="From">' +
+            '<input type="text" name="' + SRIOVRouteId + SRIOVRouteCounter + '-to" placeholder="To">' +
+            '<input type="text" name="' + SRIOVRouteId + SRIOVRouteCounter + '-next" placeholder="Next Hop">' +
+            '</div>';
+}
+
+var VMCounter = 1;
+var VMLimit = 10;
+function addVM(type, subnetID) {
+    if (VMCounter === VMLimit) {
+        alert("You have reached the limit of VMs.");
+        return;
+    }
+    else if (type === 'aws') {
+        VMCounter++;
+        var block = document.getElementById(subnetID + '-block');
+
+        block.innerHTML = block.innerHTML +
+                '<table id="' + subnetID + VMCounter + '-table">' +
+                '<tbody>' +
+                '<tr><td>VM Name</td><td><input type="text" name="' + subnetID + VMCounter + '"></td></tr>' +
+                '<tr><td><input type="text" name="' + subnetID + VMCounter + '-keypair" placeholder="Keypair Name"></td>' +
+                '<td><input type="text" name="' + subnetID + VMCounter + '-security" placeholder="Security Group"></td></tr>' +
+                '<tr><td><input type="text" name="' + subnetID + VMCounter + '-image" placeholder="Image Type"></td>' +
+                '<td><input type="text" name="' + subnetID + VMCounter + '-instance" placeholder="Instance Type"></td></tr>' +
+                '</tbody></table>';
+    }
+    else if (type === 'ops') {
+        VMCounter++;
+        var block = document.getElementById(subnetID + '-block');
+
+        block.innerHTML = block.innerHTML +
+                '<table id="' + subnetID + VMCounter + '-table">' +
+                '<tbody>' +
+                '<tr><td>VM Name</td><td><input type="text" name="' + subnetID + VMCounter + '"></td></tr>' +
+                '<tr><td><input type="text" name="' + subnetID + VMCounter + '-keypair" placeholder="Keypair Name"></td>' +
+                '<td><input type="text" name="' + subnetID + VMCounter + '-security" placeholder="Security Group"></td></tr>' +
+                '<tr><td><input type="text" name="' + subnetID + VMCounter + '-image" placeholder="Image Type"></td>' +
+                '<td><input type="text" name="' + subnetID + VMCounter + '-instance" placeholder="Instance Type"></td></tr>' +
+                '<tr><td><input type="text" name="' + subnetID + VMCounter + '-host" placeholder="VM Host"></td>' +
+                '<td><input type="text" name="' + subnetID + VMCounter + '-floating" placeholder="Floating IP"></td></tr>' +
+                '<tr><td>SRIOV</td><td>' +
+                '<div id="' + subnetID + VMCounter + '-sriov-block">' +
+                '</div><div><input class="button-register" id="' + subnetID + VMCounter + '-sriov" type="button" value="Add SRIOV" onClick="addSRIOV(this.id)"></div>' +
+                '</td></tr></tbody></table>';
+
+//        addVMRoute(subnetID + VMCounter + '-route');
+        addSRIOV(subnetID + VMCounter + '-sriov');
+    }
+}
+
+var gatewayCounter = 1;
+var gatewarLimit = 5;
+function addGateway(gatewayID) {
+    if (gatewayCounter === gatewarLimit) {
+        alert("You have reached the limit of Gateways.");
+        return;
+    }
+    gatewayCounter++;
+    var block = document.getElementById(gatewayID + '-block');
+
+    block.innerHTML = block.innerHTML +
+            '<table id="' + gatewayID + gatewayCounter + '-table">' +
+            '<tbody>' +
+            '<tr><td>Name</td>' +
+            '<td><input type="text" name="' + gatewayID + gatewayCounter + '"></td></tr>' +
+            '<tr><td>From</td>' +
+            '<td><input type="text" name="' + gatewayID + gatewayCounter + '-from-value" placeholder="Value"></td>' +
+            '<td><input type="text" name="' + gatewayID + gatewayCounter + '-from-type" placeholder="Type"></td></tr>' +
+            '<tr><td>To</td>' +
+            '<td><input type="text" name="' + gatewayID + gatewayCounter + '-to-value" placeholder="Value"></td>' +
+            '<td><input type="text" name="' + gatewayID + gatewayCounter + '-to-type" placeholder="Type"></td></tr>' +
+            '</tbody></table>';
+}
+
+var subnetCounter = 1;
+var subnetLimit = 10;
+function addSubnet(type) {
+    if (subnetCounter === subnetLimit) {
+        alert("You have reached the limit of subnets.");
+        return;
+    }
+    else if (type === 'aws') {
+        var table = document.getElementById("net-custom-form");
+        var tableHeight = table.rows.length;
+        subnetCounter++;
+
+        var row = table.insertRow(tableHeight - 2);
+        row.id = 'subnet' + subnetCounter;
+
+        var cell1 = row.insertCell(0);
+        cell1.innerHTML = 'Subnet ' + subnetCounter;
+        var cell2 = row.insertCell(1);
+        cell2.innerHTML = '<div>' +
+                '<input type="text" name="subnet' + subnetCounter + '-name" placeholder="Name"/>' +
+                '<input type="text" name="subnet' + subnetCounter + '-cidr" placeholder="CIDR Block"/>' +
+                '<div id="subnet' + subnetCounter + '-route-block"></div>' +
+                '<div>' +
+                '<input type="checkbox" name="subnet' + subnetCounter + '-route-prop" value="true"/>   Enable VPN Routes Propogation' +
+                '</div>' +
+                '<div>' +
+                '<input class="button-register" id="subnet' + subnetCounter + '-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">' +
+                '</div><br>' +
+                '<div id="subnet' + subnetCounter + '-vm-block"></div>' +
+                '<div>' +
+                '<input class="button-register" id="subnet' + subnetCounter + '-vm" type="button" value="Add VM" onClick="addVM(\'aws\', this.id)">' +
+                '</div>' +
+                '</div>';
+
+        addSubnetRoute('subnet' + subnetCounter + '-route');
+        addVM('aws', 'subnet' + subnetCounter + '-vm');
+    }
+    else if (type === 'ops') {
+        var table = document.getElementById("net-custom-form");
+        var tableHeight = table.rows.length;
+        subnetCounter++;
+
+        var row = table.insertRow(tableHeight - 1);
+        row.id = 'subnet' + subnetCounter;
+
+        var cell1 = row.insertCell(0);
+        cell1.innerHTML = 'Subnet ' + subnetCounter;
+        var cell2 = row.insertCell(1);
+        cell2.innerHTML = '<div>' +
+                '<input type="text" name="subnet' + subnetCounter + '-name" placeholder="Name"/>' +
+                '<input type="text" name="subnet' + subnetCounter + '-cidr" placeholder="CIDR Block"/>' +
+                '<div id="subnet' + subnetCounter + '-route-block"></div>' +
+                '<div>' +
+                '<input type="checkbox" name="subnet' + subnetCounter + '-route-prop" value="true"/>   Enable VPN Routes Propogation' +
+                '</div>' +
+                '<div>' +
+                '<input class="button-register" id="subnet' + subnetCounter + '-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">' +
+                '</div><br>' +
+                '<div id="subnet' + subnetCounter + '-vm-block"></div>' +
+                '<div>' +
+                '<input class="button-register" id="subnet' + subnetCounter + '-vm" type="button" value="Add VM" onClick="addVM(\'ops\', this.id)"></div>' +
+                '</div>';
+
+        addSubnetRoute('subnet' + subnetCounter + '-route');
+        addVM('ops', 'subnet' + subnetCounter + '-vm');
+    }
 }
 
 var linkCounter = 1;
@@ -496,6 +561,8 @@ function addLink() {
                 '</div>';
     }
 }
+
+// API CALLS
 
 function checkInstance(uuid) {
     var apiUrl = baseUrl + '/VersaStack-web/restapi/service/' + uuid + '/status';
@@ -546,6 +613,7 @@ function revertInstance(uuid) {
     });
 
     window.location.reload(true);
+    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
 function cancelInstance(uuid) {
@@ -559,6 +627,20 @@ function cancelInstance(uuid) {
     });
 
     window.location.reload(true);
+    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
+}
+function forceCancelInstance(uuid) {
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/force_cancel';
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        success: function (result) {
+            // Do something with the result
+        }
+    });
+
+    window.location.reload(true);
+    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
 function reinstateInstance(uuid) {
@@ -572,10 +654,78 @@ function reinstateInstance(uuid) {
     });
 
     window.location.reload(true);
+    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
+}
+function forceReinstateInstance(uuid) {
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/force_reinstate';
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        success: function (result) {
+            // Do something with the result
+        }
+    });
+
+    window.location.reload(true);
+    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
+}
+
+function forceRetryInstance(uuid) {
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/force_retry';
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        success: function (result) {
+            // Do something with the result
+        }
+    });
+
+    window.location.reload(true);
+    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
+}
+
+function modifyInstance(uuid) {
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/modify';
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        success: function (result) {
+            // Do something with the result
+        }
+    });
+
+    window.location.reload(true);
+    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
+}
+function forceModifyInstance(uuid) {
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/force_modify';
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        success: function (result) {
+            // Do something with the result
+        }
+    });
+
+    window.location.reload(true);
+    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
+}
+
+function verifyInstance(uuid) {
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/verify';
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        success: function (result) {
+            // Do something with the result
+        }
+    });
+
+    window.location.reload(true);
+    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
 function deleteInstance(uuid) {
-
     var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/delete';
     $.ajax({
         url: apiUrl,
@@ -588,45 +738,38 @@ function deleteInstance(uuid) {
     window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
-function reinstateInstance(uuid) {
+// TEMPLATING
 
-    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/reinstate';
-    $.ajax({
-        url: apiUrl,
-        type: 'PUT',
-        success: function (result) {
-            console.log("RE-INITAILIZATION SUCCESS?!");
-        }
-    });
-
-    window.location.replace('/VersaStack-web/ops/catalog.jsp');
+function resetForm() {
+    var form = document.getElementById('custom-form');
+    form.reset();
 }
 
 function applyNetTemplate(code) {
     var form = document.getElementById('custom-form');
     form.reset();
-    
+
     switch (code) {
         case 1:
             form.elements['netType'].value = 'internal';
             form.elements['netCidr'].value = '10.1.0.0/16';
-            
+
             if (subRouteCounter === 1) {
                 addSubnetRoute('subnet1-route');
-            }               
+            }
             if (subnetCounter === 1) {
                 addSubnet('aws');
-            }       
+            }
 
             form.elements['subnet1-name'].value = '';
             form.elements['subnet1-cidr'].value = '10.1.0.0/24';
             form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
             form.elements['subnet1-route1-next'].value = 'internet';
-         
+
             form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
-            form.elements['subnet1-route2-next'].value = 'vpn';            
+            form.elements['subnet1-route2-next'].value = 'vpn';
             form.elements['subnet1-route-prop'].checked = true;
-     
+
             form.elements['subnet2-name'].value = '';
             form.elements['subnet2-cidr'].value = '10.1.1.0/24';
 
@@ -635,13 +778,13 @@ function applyNetTemplate(code) {
         case 2:
             form.elements['netType'].value = 'internal';
             form.elements['netCidr'].value = '10.1.0.0/16';
-            
+
             if (subRouteCounter === 1) {
                 addSubnetRoute('subnet1-route');
-            }      
+            }
             if (subnetCounter === 1) {
                 addSubnet('aws');
-            }  
+            }
 
             form.elements['subnet1-name'].value = '';
             form.elements['subnet1-cidr'].value = '10.1.0.0/24';
@@ -656,12 +799,12 @@ function applyNetTemplate(code) {
             form.elements['subnet2-name'].value = '';
             form.elements['subnet2-cidr'].value = '10.1.1.0/24';
             form.elements['subnet2-vm2'].value = 'vm2';
-            
+
             form.elements['conn-dest'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*';
-            form.elements['conn-vlan'].value = '3023';
+            form.elements['conn-vlan'].value = 'any';
 
             break;
-            
+
         case 3:
             form.elements['netType'].value = 'internal';
             form.elements['netCidr'].value = '10.1.0.0/16';
@@ -675,13 +818,13 @@ function applyNetTemplate(code) {
 
             form.elements['subnet1-name'].value = '';
             form.elements['subnet1-cidr'].value = '10.1.0.0/24';
-            
+
             form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
             form.elements['subnet1-route1-next'].value = 'internet';
             form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
             form.elements['subnet1-route2-next'].value = 'vpn';
             form.elements['subnet1-route-prop'].checked = true;
-            
+
             form.elements['subnet1-vm1'].value = 'test_with_vm_types_1';
             form.elements['subnet1-vm1-image'].value = 'ami-08111162';
             form.elements['subnet1-vm1-instance'].value = 't2.micro';
@@ -696,74 +839,72 @@ function applyNetTemplate(code) {
             form.elements['subnet2-vm2-security'].value = 'geni';
 
             break;
-            
+
         case 4:
             form.elements['netType'].value = 'internal';
             form.elements['netCidr'].value = '10.1.0.0/16';
-            
-            if (subRouteCounter === 1) {
-                addSubnetRoute('subnet1-route');
-            }
-            if (subnetCounter === 1) {
-                addSubnet('ops');
-            }
+
+//            if (subRouteCounter === 1) {
+//                addSubnetRoute('subnet1-route');
+//            }
+//            if (subnetCounter === 1) {
+//                addSubnet('ops');
+//            }
 
             form.elements['subnet1-name'].value = '';
             form.elements['subnet1-cidr'].value = '10.1.0.0/24';
-            
-            form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
-            form.elements['subnet1-route1-next'].value = 'internet';
-            form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
-            form.elements['subnet1-route2-next'].value = 'vpn';
-            form.elements['subnet1-route-prop'].checked = true;
-            
+
+//            form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
+//            form.elements['subnet1-route1-next'].value = 'internet';
+//            form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
+//            form.elements['subnet1-route2-next'].value = 'vpn';
+            form.elements['subnet1-route-default'].checked = true;
+
             form.elements['subnet1-vm1'].value = 'vm_OPS';
-            form.elements['subnet1-vm1-instance'].value = 'm1.medium';
-            form.elements['subnet1-vm1-keypair'].value = 'icecube_key';
-            form.elements['subnet1-vm1-security'].value = 'rains';
+//            form.elements['subnet1-vm1-instance'].value = 'm1.medium';
+//            form.elements['subnet1-vm1-keypair'].value = 'icecube_key';
+//            form.elements['subnet1-vm1-security'].value = 'rains';
             form.elements['subnet1-vm1-host'].value = 'msx1';
-            
-            form.elements['subnet2-name'].value = '';
-            form.elements['subnet2-cidr'].value = '10.1.1.0/24';
-            
+
+//            form.elements['subnet2-name'].value = '';
+//            form.elements['subnet2-cidr'].value = '10.1.1.0/24';
+//            
             break;
-            
-        case 5:    
+
+        case 5:
             form.elements['netType'].value = 'internal';
             form.elements['netCidr'].value = '10.1.0.0/16';
-            
-            if (subRouteCounter === 1) {
-                addSubnetRoute('subnet1-route');
-            }
-            if (subnetCounter === 1) {
-                addSubnet('ops');
+
+            if (VMRouteCounter === 1) {
+                addVMRoute('subnet1-vm1-route');
             }
 
             form.elements['subnet1-name'].value = '';
             form.elements['subnet1-cidr'].value = '10.1.0.0/24';
-            
-            form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
-            form.elements['subnet1-route1-next'].value = 'internet';
-            form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
-            form.elements['subnet1-route2-next'].value = 'vpn';
-            form.elements['subnet1-route-prop'].checked = true;
-            
+
+//            form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
+//            form.elements['subnet1-route1-next'].value = 'internet';
+//            form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
+//            form.elements['subnet1-route2-next'].value = 'vpn';
+            form.elements['subnet1-route-default'].checked = true;
+
             form.elements['subnet1-vm1'].value = 'vm_OPS';
-            form.elements['subnet1-vm1-instance'].value = 'm1.medium';
+            form.elements['subnet1-vm1-instance'].value = '4';
+            form.elements['subnet1-vm1-image'].value = '77817b73-baa2-424b-b890-e1a95af1fdf9';
             form.elements['subnet1-vm1-keypair'].value = 'icecube_key';
             form.elements['subnet1-vm1-security'].value = 'rains';
             form.elements['subnet1-vm1-host'].value = 'msx1';
             form.elements['subnet1-vm1-floating'].value = '206.196.180.148';
-            form.elements['subnet1-vm1-sriov-dest'].value = 'urn:ogf:network:aws.amazon.com:aws-cloud';
-            form.elements['subnet1-vm1-sriov-mac'].value = 'aa:bb:cc:00:00:12';
-            form.elements['subnet1-vm1-sriov-ip'].value = '10.10.0.1/30';
+            form.elements['subnet1-vm1-sriov1-dest'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
+            form.elements['subnet1-vm1-sriov1-mac'].value = 'aa:bb:cc:00:00:12';
+            form.elements['subnet1-vm1-sriov1-ip'].value = '10.10.0.1/30';
             form.elements['subnet1-vm1-route1-to'].value = '192.168.0.0/24';
             form.elements['subnet1-vm1-route1-next'].value = '10.10.0.2';
             form.elements['subnet1-vm1-route2-to'].value = '206.196.179.0/24';
             form.elements['subnet1-vm1-route2-next'].value = '10.10.0.2';
 
-            form.elements['subnet2-name'].value = '';
-            form.elements['subnet2-cidr'].value = '10.1.1.0/24';
+//            form.elements['subnet2-name'].value = '';
+//            form.elements['subnet2-cidr'].value = '10.1.1.0/24';
 
             break;
     }
@@ -772,16 +913,16 @@ function applyNetTemplate(code) {
 function applyFL2PTemplate(code) {
     var form = document.getElementById('custom-form');
     form.reset();
-    
-    switch(code){
+
+    switch (code) {
         case 1:
             form.elements['topUri'].value = 'urn:ogf:network:domain=vo1.versastack.org:link=link1';
             form.elements['eth-src'].value = 'urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000005:port-s5-eth1';
             form.elements['eth-des'].value = 'urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000002:port-s2-eth1';
-            
+
             break;
     }
-        
+
 }
 
 
@@ -789,7 +930,7 @@ function applyFL2PTemplate(code) {
 function applyDNCTemplate(code) {
     var form = document.getElementById('custom-form');
     form.reset();
-    
+
     switch (code) {
         case 1:
             //form.elements['topoUri'].value = 'urn:ogf:network:vo1.maxgigapop.net:link';
@@ -846,7 +987,7 @@ function dncModerate() {
             case 'READY':
                 $("#instance-delete").toggleClass("hide");
                 break;
-                
+
             case 'FAILED':
                 $("#instance-delete").toggleClass("hide");
                 break;
@@ -855,7 +996,7 @@ function dncModerate() {
 }
 
 
-function fl2pModerate(uuid){
+function fl2pModerate(uuid) {
     var superstate = document.getElementById("instance-superstate").innerHTML;
     var substate = document.getElementById("instance-substate").innerHTML;
 
@@ -879,21 +1020,21 @@ function fl2pModerate(uuid){
             case 'READY':
                 $("#instance-delete").toggleClass("hide");
                 break;
-                
+
             case 'FAILED':
                 $("#instance-delete").toggleClass("hide");
                 break;
         }
     }
-    if (superstate === 'Reinstate'){
-        switch(substate){
+    if (superstate === 'Reinstate') {
+        switch (substate) {
             case 'READY':
                 $("#instance-reinstate").toggleClass("hide");
                 break;
             case 'FAILED':
                 $("#instance-delete").toggleClass("hide");
                 break;
-            
+
         }
     }
 }
@@ -901,37 +1042,7 @@ function fl2pModerate(uuid){
 
 //**
 
-function templateModerate() {
-    var superstate = document.getElementById("instance-superstate").innerHTML;
-    var substate = document.getElementById("instance-substate").innerHTML;
 
-    if (superstate === 'Create') {
-        switch (substate) {
-            case 'READY':
-                $("#instance-cancel").toggleClass("hide");
-                break;
-
-            case 'INIT':
-                $("#instance-delete").toggleClass("hide");
-                break;
-
-            case 'FAILED':
-                $("#instance-delete").toggleClass("hide");
-                break;
-        }
-    }
-    if (superstate === 'Cancel') {
-        switch (substate) {
-            case 'READY':
-                $("#instance-delete").toggleClass("hide");
-                break;
-                
-            case 'FAILED':
-                $("#instance-delete").toggleClass("hide");
-                break;
-        }
-    }
-}
 
 /*
  
@@ -990,7 +1101,10 @@ function clearCounters() {
     queryCounter = 1;
     routeCounter = 1;
     subnetCounter = 1;
+    SRIOVCounter = 1;
+    SRIOVRouteCounter = 1;
     VMCounter = 1;
+    gatewayCounter = 1;
     subRouteCounter = 1;
     linkCounter = 1;
 }
@@ -999,7 +1113,13 @@ function reloadPage() {
     window.location.reload(true);
 }
 
+function reloadPanel(panelId) {
+    $('#' + panelId).load(document.URL + ' #' + panelId);
+}
 
+function emptyElement(id) {
+    $("#" + id).empty();
+}
 
 var getUrlParameter = function getUrlParameter(sParam) {
     var sPageURL = decodeURIComponent(window.location.search.substring(1)),
@@ -1018,22 +1138,30 @@ var getUrlParameter = function getUrlParameter(sParam) {
 
 // Create the XHR object.
 function createCORSRequest(method, url) {
-  var xhr = new XMLHttpRequest();
-  if ("withCredentials" in xhr) {
-    // XHR for Chrome/Firefox/Opera/Safari.
-    xhr.open(method, url, true);
-  } else if (typeof XDomainRequest !== "undefined") {
-    // XDomainRequest for IE.
-    xhr = new XDomainRequest();
-    xhr.open(method, url);
-  } else {
-    // CORS not supported.
-    xhr = null;
-  }
-  return xhr;
+    var xhr = new XMLHttpRequest();
+    if ("withCredentials" in xhr) {
+        // XHR for Chrome/Firefox/Opera/Safari.
+        xhr.open(method, url, true);
+    } else if (typeof XDomainRequest !== "undefined") {
+        // XDomainRequest for IE.
+        xhr = new XDomainRequest();
+        xhr.open(method, url);
+    } else {
+        // CORS not supported.
+        xhr = null;
+    }
+    return xhr;
 }
 
 // Helper method to parse the title tag from the response.
 function getTitle(text) {
-  return text.match('<title>(.*)?</title>')[1];
+    return text.match('<title>(.*)?</title>')[1];
+}
+
+function enableLoading() {
+    $("#main-pane").addClass("loading");
+}
+
+function disableLoading() {
+    $("#main-pane").removeClass("loading");
 }

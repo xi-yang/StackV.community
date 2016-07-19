@@ -1,6 +1,7 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page errorPage = "/VersaStack-web/errorPage.jsp" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
 <jsp:setProperty name="user" property="*" />  
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
@@ -13,36 +14,44 @@
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>
+        <script src="/VersaStack-web/js/jquery-ui.min.js"></script>
 
         <link rel="stylesheet" type="text/css" href="/VersaStack-web/css/graphTest.css">
         <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
         <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/VersaStack-web/css/bootstrap.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.min.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.structure.min.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.theme.css">                
         <link rel="stylesheet" href="/VersaStack-web/css/style.css">       
+        <link rel="stylesheet" href="/VersaStack-web/css/contextMenu.css">   
+        <!-- font awesome icons won't show up otherwise --->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.min.css">
 
         <script>
             $(document).ready(function () {
-                $("#nav").load("/VersaStack-web/navbar.html");
+                $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", function () {
 
-                $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
-                    if (${user.isAllowed(1)}) {
-                        var element = document.getElementById("service1");
-                        element.classList.remove("hide");
-                    }
-                    if (${user.isAllowed(2)}) {
-                        var element = document.getElementById("service2");
-                        element.classList.remove("hide");
-                    }
-                    if (${user.isAllowed(3)}) {
-                        var element = document.getElementById("service3");
-                        element.classList.remove("hide");
-                    }
-                    if (${user.isAllowed(4)}) {
-                        var element = document.getElementById("service4");
-                        element.classList.remove("hide");
-                    }
                 });
+
+                $("#displayPanel-tab").click(function (evt) {
+                    $("#displayPanel").toggleClass("display-open");
+                    $("#displayPanel-tab").toggleClass("display-open");
+
+                    evt.preventDefault();
+                });
+                
+                  $(function() {
+                     $( "#dialog_policyAction" ).dialog({
+                         autoOpen: false
+                     });
+                     $( "#dialog_policyData" ).dialog({
+                         autoOpen: false
+                     });                     
+                });
+
             });
         </script> 
 
@@ -85,7 +94,8 @@
             var d3;
             var utils;
             var DropDownTree;
-
+            var functionMap = {}; // stores objects for funcitonality such as ContextMenu, tag Dialog, etc 
+            
             var outputApi;
 
             function onload() {
@@ -94,53 +104,104 @@
                     "local/versastack/topology/render",
                     "local/d3",
                     "local/versastack/utils",
-                    "local/versastack/topology/DropDownTree"],
-                        function (m, l, r, d3_, utils_, tree) {
-                            ModelConstructor = m;
-                            model = new ModelConstructor();
-                            model.init(1, drawGraph, null);
-                            layout = l;
-                            render = r;
-                            d3 = d3_;
-                            utils = utils_;
-                            map_ = utils.map_;
-                            DropDownTree = tree;
+                    "local/versastack/topology/DropDownTree",
+                    "local/versastack/topology/ContextMenu",
+                    "local/versastack/topology/TagDialog"
+                ],
+                        function (m, l, r, d3_, utils_, tree, c, td) {
+                          $.ajax({
+                                   crossDomain: true,
+                                   type: "GET",
+                                   url: "/VersaStack-web/restapi/service/ready",
+                                   dataType: "text", 
 
-                            outputApi = new outputApi_(render.API);
+                                   success: function(data,  textStatus,  jqXHR ) {
+                                       if (data === "true")  {
+                                          //alert(textStatus);
+                                            $('#servicePanel-contents').removeClass("hide");                                     
+                                            layout = l;
+                                            render = r;
+                                            d3 = d3_;
+                                            utils = utils_;
+                                            map_ = utils.map_;
+                                            bsShowFadingMessage = utils.bsShowFadingMessage;
+                                            DropDownTree = tree;
+                                            ContextMenu = c; 
+                                            TagDialog = td;
+                                            tagDialog = new TagDialog("${user.getUsername()}");
+
+                                            tagDialog.init();
+                                            functionMap['Tag'] = tagDialog;
+                                            // possibly pass in map here later for all possible dialogs 
+                                            contextMenu = new ContextMenu(d3, render.API, functionMap);//, tagDialog);
+                                            contextMenu.init();
+                                            
+                                            outputApi = new outputApi_(render.API, contextMenu, "viz");
+
+                                            ModelConstructor = m;
+                                            model = new ModelConstructor();
+                                            model.init(1, drawGraph.bind(undefined, outputApi, model), null);    
+                                            
+                                            $("#tagDialog").draggable();
+                                       } else {
+                                           displayError("Visualization Unavailable", d3_);
+                                       }
+                                   },
+
+                                   error: function(jqXHR, textStatus, errorThrown ) {
+                                        console.log("Debugging: timeout at start..");
+                                        displayError("Visualization Unavailable", d3_);
+                                     //alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
+                                   }
+                            }); 
                         });
 
-                var request = new XMLHttpRequest();
-                request.open("GET", "/VersaStack-web/data/json/umd-anl-all.json");
-
-                request.setRequestHeader("Accept", "application/json");
-                request.onload = function () {
-                    var modelData = request.responseText;
-
-                    if (modelData.charAt(0) === '<') {
-                        return;
-                    }
-
-                    modelData = JSON.parse(modelData);
-                    $.post("/VersaStack-web/ViewServlet", {newModel: modelData.ttlModel}, function (response) {
-                        // handle response from your servlet.
-                    });
-                };
-                request.send();
+//                var request = new XMLHttpRequest();
+//                request.open("GET", "/VersaStack-web/data/json/umd-anl-all.json");
+//
+//                request.setRequestHeader("Accept", "application/json");
+//                request.onload = function () {
+//                    var modelData = request.responseText;
+//
+//                    if (modelData.charAt(0) === '<') {
+//                        return;
+//                    }
+//
+//                    modelData = JSON.parse(modelData);
+//                    $.post("/VersaStack-web/ViewServlet", {newModel: modelData.ttlModel}, function (response) {
+//                        // handle response from your servlet.
+//                    });
+//                };
+//                request.send();
 
                 $("#loadingPanel").addClass("hide");
-                $("#hoverdiv").removeClass("hide");
+                $("#hoverdiv_viz").removeClass("hide");
+
                 $("#viz").attr("class", "");
-                
+
                 buttonInit();
             }
-            function drawGraph() {
+            
+            function displayError(error, d3_obj) {
+               d3_obj.select("#viz").append("text")
+                       .attr("x", $(window).width() / 4)
+                       .attr("y", $(window).height() / 2 )
+                       .attr("fill", "black")
+                       .attr("font-size", "80px")
+                       .text(error);
+
+               $('#servicePanel-contents').removeClass("hide");
+               $('#servicePanel-contents').html("Service instances unavailable.").addClass('service-unready-message');                       
+            }
+            
+            function drawGraph(outputApi, model) {
                 var width = document.documentElement.clientWidth / settings.INIT_ZOOM;
                 var height = document.documentElement.clientHeight / settings.INIT_ZOOM;
                 //TODO, figure out why we need to call this twice
                 //If we do not, the layout does to converge as nicely, even if we double the number of iterations
                 layout.doLayout(model, null, width, height);
                 layout.doLayout(model, null, width, height);
-
+                
                 render.doRender(outputApi, model);
 //                animStart(30);
             }
@@ -160,107 +221,85 @@
                     layout.doLayout(model, null, width, height);
                     layout.doLayout(model, null, width, height);
 
+                    //layout.force().gravity(1).charge(-900).start();
+                    //commented this out for demo 0421106
+//                    layout.testLayout(model, null, width, height);  //@
+//                    layout.testLayout(model, null, width, height);                    
                     render.doRender(outputApi, model);
                     outputApi.renderApi.selectElement(null);
                 }, null);
 
-                var request = new XMLHttpRequest();
-                request.open("GET", "/VersaStack-web/restapi/model/");
-
-                request.setRequestHeader("Accept", "application/json");
-                request.onload = function () {
-                    var modelData = request.responseText;
-
-                    if (modelData.charAt(0) === '<') {
-                        return;
-                    }
-
-                    modelData = JSON.parse(modelData);
-                    $.post("/VersaStack-web/ViewServlet", {newModel: modelData.ttlModel}, function (response) {
-                        // handle response from your servlet.
-                    });
-                };
-                request.send();
-
                 $("#loadingPanel").addClass("hide");
                 $("#hoverdiv").removeClass("hide");
                 $("#viz").attr("class", "");
             }
 
-            function filter(viewName, viewModel) {
-                $("#loadingPanel").removeClass("hide");
-                $("#hoverdiv").addClass("hide");
-                $("#viz").attr("class", "loading");
-
-                var lockNodes = model.listNodes();
-                //var posistionLocks = {};
-                model = new ModelConstructor(model);
-                model.init(2, function () {
+            function buttonInit() { //@
+                $("#testButton").click(function (evt) {
+                    outputApi.resetZoom();
                     var width = document.documentElement.clientWidth / outputApi.getZoom();
                     var height = document.documentElement.clientHeight / outputApi.getZoom();
                     //TODO, figure out why we need to call this twice
                     //If we do not, the layout does to converge as nicely, even if we double the number of iterations
-                    layout.doLayout(model, lockNodes, width, height);
-                    layout.doLayout(model, lockNodes, width, height);
-
+//                    layout.doLayout(model, null, width, height);
+//                    layout.doLayout(model, null, width, height);
+                    layout.stop();
+                    //layout.force().gravity(1).charge(-900).start();
+                    layout.testLayout(model, null, width, height);
+                    layout.testLayout(model, null, width, height); 
+                            
+                    outputApi.resetZoom();
                     render.doRender(outputApi, model);
-                }, viewModel);
-
-                $.post("/VersaStack-web/ViewServlet", {filterName: viewName, filterModel: viewModel.ttlModel}, function (response) {
-                    // handle response from your servlet.
-                });
-
-                $("#loadingPanel").addClass("hide");
-                $("#hoverdiv").removeClass("hide");
-                $("#viz").attr("class", "");
-            }
-
-            function buttonInit() {
-                $("#cancelButton").click(function (evt) {
-                    $("#actionForm").empty();
-
-                    $("#awsButton").toggleClass("hide");
-                    $("#cancelButton").toggleClass("hide");
 
                     evt.preventDefault();
-                });
-                $("#refreshButton").click(function (evt) {
-                    reload();
-
-                    evt.preventDefault();
-                });
+                });               
 
                 $("#modelButton").click(function (evt) {
                     window.open('/VersaStack-web/modelView.jsp', 'newwindow', config = 'height=1200,width=400, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no');
                 });
 
-                $(".button-filter-select").click(function (evt) {
-                    $(".current-filter").removeClass("current-filter");
-
-                    var viewModels = ${user.getModels()};
-                    if (this.id === "nofilter") {
-                        reload();
-                    } else {
-                        filter(this.id, viewModels[this.id]);
-                    }
-
-                    $(this).addClass("current-filter");
-
-                    evt.preventDefault();
-                });
-            
                 $("#displayPanel-tab").click(function (evt) {
                     $("#displayPanel").toggleClass("closed");
 
                     evt.preventDefault();
                 });
 
-                $("#jobsPanel-tab").click(function (evt) {
-                    $("#jobsPanel").toggleClass("closed");
+                // Brings tagPanel or tagDialog to the foreground if one is 
+                // clicked and behind the other. Will probably need to be 
+                // generalized soon. 
+                function bringToForeground(current) {
+                    var tagDialogElement = document.querySelector("#tagDialog");
+                    var tagPanelElement = document.querySelector("#tagPanel");
+                    if (!tagPanelElement.classList.contains("closed") &&
+                            tagDialogElement.classList.contains("tagDialog-active"))
+                    {
+                        var tagDialog = document.getElementById("tagDialog");
+                        var tagPanel = document.getElementById("tagPanel");
+                        var tdz = parseInt(window.getComputedStyle(tagDialog, null).zIndex);
+                        var tpz = parseInt(window.getComputedStyle(tagPanel, null).zIndex);
 
+                        if (((current === "tagDialog") && (tdz < tpz)) ||
+                                ((current === "tagPanel") && (tpz < tdz))) {
+                            tagDialog.style.zIndex = tpz;
+                            tagPanel.style.zIndex = tdz;
+                        }
+                    }
+                }
+
+                $("#tagDialog").click(function (evt) {
+                    bringToForeground("tagDialog");
                     evt.preventDefault();
                 });
 
+                $("#tagPanel").click(function (evt) {
+                    bringToForeground("tagPanel");
+                    evt.preventDefault();
+                });
+
+                $("#servicePanel-tab").click(function (evt) {
+                    $("#servicePanel").toggleClass("closed");
+                    evt.preventDefault();
+                });
             }
 
             //animStart and animStop are primarily intended as debug functions
@@ -279,16 +318,20 @@
             }
 
 
-            function outputApi_(renderAPI) {
+            function outputApi_(renderAPI, contextMenu, svg) {
                 var that = this;
                 this.renderApi = renderAPI;
-
+                this.contextMenu = contextMenu;
+                this.svgContainerName = svg;
+                
                 this.getSvgContainer = function () {
-                    return d3.select("#viz");
+                    return d3.select("#" + this.svgContainerName);
                 };
 
                 var displayTree = new DropDownTree(document.getElementById("treeMenu"));
                 displayTree.renderApi = this.renderApi;
+                displayTree.contextMenu = this.contextMenu;
+
                 this.getDisplayTree = function () {
                     return displayTree;
                 };
@@ -296,8 +339,6 @@
                 this.setDisplayName = function (name) {
                     document.getElementById("displayName").innerText = name;
                 };
-
-
 
                 var zoomFactor = settings.INIT_ZOOM;
                 var offsetX = 0, offsetY = 0;
@@ -341,7 +382,7 @@
                 };
 
                 this._updateTransform = function () {
-                    d3.select("#transform").
+                    d3.select("#transform" + "_" + this.svgContainerName).
                             attr("transform", "scale(" + zoomFactor + ")translate(" + offsetX + "," + offsetY + ")");
                 };
                 this._updateTransform();
@@ -355,18 +396,27 @@
                 };
 
                 this.setHoverText = function (str) {
-                    document.getElementById("hoverdiv").innerText = str;
+                    document.getElementById("hoverdiv" + "_" + this.svgContainerName).innerText = str;
                 };
                 this.setHoverLocation = function (x, y) {
-                    document.getElementById("hoverdiv").style.left = x + "px";
-                    document.getElementById("hoverdiv").style.top = y + 10 + "px";
+                    document.getElementById("hoverdiv" + "_" + this.svgContainerName).style.left = x + "px";
+                    document.getElementById("hoverdiv" + "_" + this.svgContainerName).style.top = y + 10 + "px";
                 };
                 this.setHoverVisible = function (vis) {
-                    document.getElementById("hoverdiv").style.visibility = vis ? "visible" : "hidden";
+                    document.getElementById("hoverdiv" + "_" + this.svgContainerName).style.visibility = vis ? "visible" : "hidden";
                 };
 
-
-                var svg = document.getElementById("viz");
+                this.resetZoom = function () {   // @
+                    zoomFactor = settings.INIT_ZOOM;
+                    offsetX = 0;
+                    offsetY = 0;
+                    this._updateTransform();
+                };
+                this.setZoom = function(zoom) {
+                    zoomFactor = zoom;
+                    this._updateTransform();
+                };
+                var svg = document.getElementById(this.svgContainerName);
                 svg.addEventListener("mousewheel", function (e) {
                     e.preventDefault();
                     //The OSX trackpad seems to produce scrolls two orders of magnitude large when using pinch to zoom,
@@ -437,7 +487,8 @@
                     isPanning = true;
                 });
                 svg.addEventListener("mousemove", function (e) {
-                    if (isPanning && panningEnabled) {
+                    // && (e.which ==== 1) stops d3 bug of dragging to enable on context menu 
+                    if (isPanning && panningEnabled && (e.which === 1)) {
                         moved = true;
                         that.scroll(e.movementX, e.movementY);
                     }
@@ -472,55 +523,125 @@
             </div>
         </div>
 
-        <div class="closed" id="jobsPanel">
-            <div id="jobsPanel-tab">
-                Jobs
+        <div class="closed" id="servicePanel">
+            <div id="servicePanel-tab">
+                Services
             </div>
-            <div id ="jobsPanel-contents">
-                <table class="management-table" id="jobs-table">
+            <div id ="servicePanel-contents">
+                <table id="service-instance-table">
                     <thead>
                         <tr>
+                            <th>Alias Name</th>                            
                             <th>Service</th>
-                            <th>Status</th>
+                            <th>Instance Status</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <c:forEach items="${serv.getJobStatuses()}" var="job">
-                            <tr>
-                                <td>${job.key}</td>
-                                <td>${job.value}</td>
+                        
+                        <c:forEach var="instance" items="${serv.instanceStatusCheck()}">
+                            <tr class="service-instance-item" id="${instance[1]}">
+                                <td>${instance[3]}</td>        
+                                <td>${instance[0]}</td>
+                                <td>${instance[2]}</td>
                             </tr>
                         </c:forEach>
+                            
                     </tbody>
                 </table>
             </div>
+            
         </div>
+        <script>                 
+            $(".service-instance-item").each(function() {
+                var that = this;
+                var DELAY = 700, clicks = 0, timer = null;
 
+                $( that ).click( function() {
+                    clicks++;  //count clicks
+
+                    if(clicks === 1) {                          
+                        timer = setTimeout(function() {
+                             clickServiceInstanceItem(that);
+                            clicks = 0;   
+                        }, DELAY);
+                    } else {
+                        clearTimeout(timer);    //prevent single-click action
+                        if ($(that).hasClass("service-instance-highlighted")) {
+                            $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
+                            render.API.setServiceHighlights([]);
+                            render.API.highlightServiceElements();                        
+                            clicks = 0;             //after action performed, reset counter
+                        } else {
+                            timer = setTimeout(function() {
+                                clickServiceInstanceItem(that);
+                                clicks = 0;   
+                            }, DELAY);                            
+                        }
+                    }
+                }).dblclick(function(e) {
+                    e.preventDefault();
+                });
+            });
+              
+              
+            function clickServiceInstanceItem(item) {
+                var UUID = $( item ).attr('id');
+
+                $.ajax({
+                    crossDomain: true,
+                    type: "GET",
+                    url: "/VersaStack-web/restapi/app/service/availibleitems/" + UUID,
+                    dataType: "json", 
+
+                    success: function(data,  textStatus,  jqXHR ) {
+                         if (data === null) {
+                             bsShowFadingMessage("#servicePanel", "Data not found", "top", 1000);
+                         } else {
+                            $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
+                            $(item).addClass('service-instance-highlighted');
+                            //alert(data);
+                            // Union of verified addition and unverified reduction
+                            var unionObj = data; 
+                            var result = model.makeSubModel([ unionObj  ]);
+                            var modelArr = model.getModelMapValues(result);
+
+                            render.API.setServiceHighlights(modelArr);
+                            render.API.highlightServiceElements();
+
+                         }
+                    },
+
+                    error: function(jqXHR, textStatus, errorThrown ) {
+                        //alert("Error getting status.");
+                        alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
+                    }
+               });                     
+            }
+        </script>
         <div id="loadingPanel"></div>
-        <div class="closed" id="displayPanel">
+        <div id="displayPanel-tab"></div>
+        <div id="displayPanel">
             <div id="displayPanel-contents">
-                <button id="refreshButton">Refresh</button>
                 <button id="modelButton">Display Model</button>
                 <button id="fullDiaplayButton">Toggle Full Model</button>
+                <button id="testButton">test</button> <!-- @ -->
                 <div id="displayName"></div>
                 <div id="treeMenu"></div>                
             </div>
             <div id="displayPanel-actions-container">
-            <div id="displayPanel-actions">
-                <button id="backButton">Back</button>
-                <button id="forwardButton">Forward</button>
-                <div id="URISeachContainer" style="float:right;padding-left:10px;">
-                    Search
-                    <input type="text" name="Search" id="URISearchInput" placeholder="Enter URI">
-                    <input type="submit" id= "URISearchSubmit" value="Submit">
-                </div>
+                <div id="displayPanel-actions">
+                    <button id="backButton">Back</button>
+                    <button id="forwardButton">Forward</button>
+                    <div id="URISeachContainer" style="float:right;padding-left:10px;">
+                        Search
+                        <input type="text" name="Search" id="URISearchInput" placeholder="Enter URI">
+                        <input type="submit" id= "URISearchSubmit" value="Submit">
+                    </div>
 
-                <div id="actionForm"></div>
+                    <div id="actionForm"></div>
+                </div>
             </div>
-            <div id="displayPanel-tab">^^^^^</div>
-            </div>
-        </div>
-        <div class="hide" id="hoverdiv"></div>        
+        </div>        
 
         <svg class="loading" id="viz">
         <defs>
@@ -541,6 +662,52 @@
                        0 0 0 1 0" />
         <feComposite operator="out" in="a" in2="SourceGraphic"/>
     </filter>
+    
+    
+<filter id="serviceHighlightOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+   <feFlood flood-color="#66ff66" result="base" />
+   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+   <feColorMatrix result="mask" in="bigger" type="matrix"
+      values="0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 1 0" />
+   <feComposite result="drop" in="base" in2="mask" operator="in" />
+   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+</filter>
+<filter id="spaDependOnOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+   <feFlood flood-color="#B3F131" result="base" />
+   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+   <feColorMatrix result="mask" in="bigger" type="matrix"
+      values="0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 1 0" />
+   <feComposite result="drop" in="base" in2="mask" operator="in" />
+   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+</filter>
+<filter id="spaExportToOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+   <feFlood flood-color="#23ABA6" result="base" />
+   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+   <feColorMatrix result="mask" in="bigger" type="matrix"
+      values="0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 1 0" />
+   <feComposite result="drop" in="base" in2="mask" operator="in" />
+   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+</filter>
+<filter id="spaImportFromOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+   <feFlood flood-color="#FD3338" result="base" />
+   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+   <feColorMatrix result="mask" in="bigger" type="matrix"
+      values="0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 1 0" />
+   <feComposite result="drop" in="base" in2="mask" operator="in" />
+   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+</filter>    
     <filter id="subnetHighlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
         <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
         <feMorphology operator="dilate" radius="1"/>
@@ -554,26 +721,95 @@
     <filter id="ghost" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
         <feColorMatrix type="saturate" values=".2"/>
     </filter>
+    
+     <marker id="marker_arrow" markerWidth="10" markerHeight="10" refx="15" refy="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="black" />
+    </marker>
+   
     </defs>
     <!--We nest a g in here because the svg tag itself cannot do transforms
         we separate topologies, edges, and nodes to create an explicit z-order
     -->
-    <g id="transform">
-    <g id="topology"/>
-    <g id="edge1"/>
-    <g id="anchor"/>
-    <g id="node"/>
-    <g id="dialogBox"/>
-    <g id="volumeDialogBox"/>
-    <g id="switchPopup"/>
-    <g id="parentPort"/>
-    <g id="edge2" />
-    <g id="port"/>
-    <g id="volume"/>
+    <g id="transform_viz">
+    <g id="topology_viz"/>
+    <g id="edge1_viz"/>
+    <g id="anchor_viz"/>
+    <g id="node_viz"/>
+    <g id="dialogBox_viz"/>
+    <g id="volumeDialogBox_viz"/>
+    <g id="switchPopup_viz"/>
+    <g id="parentPort_viz"/>
+    <g id="edge2_viz" />
+    <g id="port_viz"/>
+    <g id="volume_viz"/>
 
     </g>
     </svg>
+   <div class="hide" id="hoverdiv_viz"></div>        
 
+ <!-- CONTEXT MENU -->
+  <nav id="context-menu" class="context-menu">
+      <ul class="context-menu__items">
+        <li class="context-menu__item">
+          <a href="#" class="context-menu__link" data-action="Tag"><i class="fa  fa-tag"></i> Add Tag</a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- TAG DIALOG -->
+    <div id="tagDialog">
+        <div id="tagDialogBar">
+            <div id="tagDialogCloserBar">
+                <i id="tagDialogCloser" class="fa fa-times" aria-hidden="true"></i>
+            </div>
+        </div>
+
+        <div id="tagDialogContent">
+            <div id="tagDialogLabelInputContainter">
+                <input type="text" name="labelInput" id="tagDialogLabelInput" placeholder="Enter label.">
+            </div>
+
+            <div id="tagDialogColorInputContainer">
+                <div id="tagDialogColorInputLabel">
+                    Select Color
+                </div>
+
+                <div id="tagDialogColorSelectionTab">
+
+                    <span class="colorBox" id="boxRed"> 
+                    </span>
+                    <span class="colorBox" id="boxOrange">
+                    </span>
+                    <span class="colorBox" id="boxYellow">
+                    </span>
+                    <span class="colorBox" id="boxGreen">
+                    </span>
+                    <span class="colorBox" id="boxBlue">
+                    </span>
+                    <span class="colorBox" id="boxPurple">
+                    </span>
+                </div>
+            </div>
+
+            <div id="tagDialogButtonContainer">
+                <button id="tagDialogCancel">
+                    Cancel
+                </button>
+
+                <button id="tagDialogOK">
+                    Ok
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="dialog_policyAction" title="Policy Action">
+    </div>
+    <div id="dialog_policyData" title="Policy Data">
+    </div>
+
+    <!-- TAG PANEL -->
+    <div id="tag-panel"> 
+    </div>
 </body>
-
 </html>

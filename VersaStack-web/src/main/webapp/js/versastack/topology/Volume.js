@@ -18,6 +18,7 @@ define([
         /**@type Node**/
         //this.ancestorNode = null;
         //this.alias = null;
+        this._map = map; 
         
         this.isVisible = false;
         this.x = 0;
@@ -26,6 +27,7 @@ define([
         this.svgNode = null;
         this.svgNodeSubnetHighlight = null; // For subnet tab
    //     this.folded = false;
+        this.detailsReference = false;
 
         //We are reloading this port from a new model
         //Model.js will handle most of the reparsing, but we need to
