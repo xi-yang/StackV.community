@@ -1,6 +1,4 @@
 {
-    "user": "admin",
-    "type": "netcreate",
     "alias": "VCN Test 1",
     "data": {
         "virtual_clouds": [
@@ -36,12 +34,6 @@
                             {
                                 "value": "urn:ogf:network:domain=wix.internet2.edu:node=sw.net.wix.internet2.edu:port=13/1:link=al2s?vlan=any",
                                 "type": "stitch_port"
-                            }
-                        ],
-                        "from": [
-                            {
-                                "value": "AWS-DC1",
-                                "type": "port_profile"
                             }
                         ],
                         "name": "l2path-aws-dc1",
@@ -104,5 +96,7 @@
                 ]
             }
         ]
-    }
+    },
+    "type": "netcreate",
+    "user": "admin"
 }

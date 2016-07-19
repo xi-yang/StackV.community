@@ -21,12 +21,12 @@ $(function () {
     });
 
     $(".button-service-select").click(function (evt) {
-        $ref = "srvc/" + this.id.toLowerCase() + ".jsp #service-specific";
-        // console.log($ref);
+        $ref = "/VersaStack-web/ops/srvc/" + this.id.toLowerCase() + ".jsp";
+        window.location.href = $ref;
 
-        $("#service-overview").toggleClass("hide");
-        $("#button-service-cancel").toggleClass("hide");
-        $("#service-specific").load($ref);
+        //$("#service-overview").toggleClass("hide");
+        //$("#button-service-cancel").toggleClass("hide");
+        //$("#service-specific").load($ref);
         evt.preventDefault();
     });
 

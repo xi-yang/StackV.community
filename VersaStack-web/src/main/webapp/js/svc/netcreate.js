@@ -26,7 +26,7 @@ $(function () {
         current_fs = $(this).parent();
         next_fs = $(fieldset_id);
 
-        configureProgress(this.value);
+        configureForm(this.value);
 
         nextStage(current_fs, next_fs);
     });
@@ -104,12 +104,33 @@ $(function () {
     });
 });
 
-function configureProgress(type) {
+function configureForm(type) {
     $("#progressbar li").removeClass("disabled");
+    
+    var tbody = document.getElementById(type + "Stage2-network");
+    tbody.innerHTML = "";
+    
+    var row1 = document.createElement("tr");
+    var cell1_1 = document.createElement("td");
+    var cell1_2 = document.createElement("td");
+    cell1_1.innerHTML = '<input type="text" name="netType" placeholder="Network Type" />';
+    cell1_2.innerHTML = '<input type="text" name="netCidr" placeholder="Network CIDR" />';
+    row1.appendChild(cell1_1);
+    row1.appendChild(cell1_2);
+    tbody.appendChild(row1);    
 
     if (type === 'aws') {
         $("#progressbar li").eq(4).addClass("disabled");
         $("#progressbar li").eq(5).addClass("disabled");
+
+        var row2 = document.createElement("tr");
+        var cell2_1 = document.createElement("td");
+        var cell2_2 = document.createElement("td");
+        cell2_1.innerHTML = '<input type="text" name="conn-dest" placeholder="Direct Connect Destination" />';
+        cell2_2.innerHTML = '<input type="text" name="conn-vlan" placeholder="Direct Connect VLAN" />';
+        row2.appendChild(cell2_1);
+        row2.appendChild(cell2_2);
+        tbody.appendChild(row2);
     }
 }
 
@@ -213,7 +234,7 @@ function applyTemplate(mode) {
         if (mode === 1) {
             current_fs = $("#0-mode-select");
             next_fs = $("#2-aws-1");
-            configureProgress('aws');
+            configureForm('aws');
 
             form.elements['netType'].value = 'internal';
             form.elements['netCidr'].value = '10.1.0.0/16';
@@ -244,10 +265,10 @@ function applyTemplate(mode) {
         else if (mode === 2) {
             current_fs = $("#0-mode-select");
             next_fs = $("#2-aws-1");
-            configureProgress('aws');
+            configureForm('aws');
 
             form.elements['netType'].value = 'internal';
-            form.elements['netCidr'].value = '10.1.0.0/16';
+            form.elements['netCidr'].value = '10.0.0.0/16';
 
             var subnetCounter = document.getElementById('awsStage3-subnet');
             subnetCounter.value = 2;
@@ -261,7 +282,7 @@ function applyTemplate(mode) {
             vmCounter.value = 2;
             setVMs(vmCounter);
 
-            form.elements['subnet1-name'].value = '';
+            form.elements['subnet1-name'].value = 'subnet1';
             form.elements['subnet1-cidr'].value = '10.1.0.0/24';
 
             form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
@@ -270,7 +291,7 @@ function applyTemplate(mode) {
             form.elements['subnet1-route2-next'].value = 'vpn';
             form.elements['subnet1-route-prop'].checked = true;
 
-            form.elements['subnet2-name'].value = '';
+            form.elements['subnet2-name'].value = 'subnet2';
             form.elements['subnet2-cidr'].value = '10.1.1.0/24';
 
             form.elements['vm1-name'].value = 'test_with_vm_types_1';
@@ -284,16 +305,21 @@ function applyTemplate(mode) {
             form.elements['vm2-instance'].value = 't2.small';
             form.elements['vm2-keypair'].value = 'xi-aws-max-dev-key';
             form.elements['vm2-security'].value = 'geni';
+            
+            form.elements['conn-dest'].value = 'urn:publicid:IDN+dragon.maxgigapop.net+interface+CLPK:1-1-2:*';
+            form.elements['conn-vlan'].value = '3023';
         }
         // Basic OPS Template
         else if (mode === 3) {
             current_fs = $("#0-mode-select");
             next_fs = $("#2-ops-1");
-            configureProgress('ops');
-
+            configureForm('ops');                        
+            
+            // Network
             form.elements['netType'].value = 'internal';
             form.elements['netCidr'].value = '10.0.0.0/16';
 
+            // Subnets
             var subnetCounter = document.getElementById('opsStage3-subnet');
             subnetCounter.value = 1;
             setSubnets(subnetCounter);
@@ -302,40 +328,55 @@ function applyTemplate(mode) {
             sub1RouteCounter.value = 1;
             setSubRoutes(sub1RouteCounter);
 
+            form.elements['subnet1-name'].value = 'subnet1';
+            form.elements['subnet1-cidr'].value = '10.0.0.0/24';
+            form.elements['subnet1-route-default'].checked = true;                                    
+
+            // VMs
             var vmCounter = document.getElementById('opsStage4-vm');
             vmCounter.value = 1;
             setVMs(vmCounter);
+
+            var vm1RouteCounter = document.getElementById('opsStage4-vm1-routes');
+            vm1RouteCounter.value = 1;
+            setVMRoutes(vm1RouteCounter);
             
-            var gatewayCounter = document.getElementById('opsStage4-gateway');
-            gatewayCounter.value = 1;
-            setGateways(gatewayCounter);
-            
-            var SRIOVCounter = document.getElementById('opsStage5-sriov');
-            SRIOVCounter.value = 2;
-            setSRIOV(SRIOVCounter);
-
-            form.elements['subnet1-name'].value = 'subnet1';
-            form.elements['subnet1-cidr'].value = '10.0.0.0/24';
-
-            form.elements['subnet1-route1-to'].value = '0.0.0.0/0';
-            form.elements['subnet1-route1-next'].value = 'internet';
-
             form.elements['vm1-name'].value = 'ops-vtn1-vm1';
             $("#opsStage4-vm1-table select").val("1");
             form.elements['vm1-instance'].value = '2';
             form.elements['vm1-keypair'].value = 'icecube_key';
             form.elements['vm1-security'].value = 'rains';            
-            form.elements['vm1-floating'].value = '206.196.180.148/255.255.255.0';
-            form.elements['vm1-host'].value = '';
+            form.elements['vm1-floating'].value = '206.196.180.148';
+            form.elements['vm1-host'].value = 'msx3';            
+            form.elements['vm1-route1-to'].value = '192.168.1.0/24';
+            form.elements['vm1-route1-next'].value = '192.168.1.1';
+                
+            // Gateways    
+            var gatewayCounter = document.getElementById('opsStage5-gateway');
+            gatewayCounter.value = 2;
+            setGateways(gatewayCounter);
             
+            form.elements['gateway1-name'].value = 'cluster-gw1';
+            $("#gateway1-type-select").val("port_profile");
+            form.elements['gateway1-from'].value = 'MSX-Date-Local';
+            form.elements['gateway2-name'].value = 'l2path-aws-dc1';
+            $("#gateway2-type-select").val("stitch_port");
+            form.elements['gateway2-to'].value = 'urn:ogf:network:domain=wix.internet2.edu:node=sw.net.wix.internet2.edu:port=13/1:link=al2s?vlan=any';
+            
+            // SRIOVs
+            var SRIOVCounter = document.getElementById('opsStage6-sriov');
+            SRIOVCounter.value = 2;
+            setSRIOV(SRIOVCounter);
+            $("#SRIOV1-vm-select").val("1");
+            $("#SRIOV1-gateway-select").val("1");
             form.elements['SRIOV1-name'].value = 'ops-vtn1-vm1';
-            $("#opsStage4-SRIOV1-table select").val("1");
-            
-            form.elements['vm1-keypair'].value = 'icecube_key';
-            form.elements['vm1-security'].value = 'rains';            
-            form.elements['vm1-floating'].value = '206.196.180.148/255.255.255.0';
-            form.elements['vm1-host'].value = '';
-            
+            form.elements['SRIOV1-ip'].value = '192.168.1.2';
+            form.elements['SRIOV1-mac'].value = '11:22:22:33:33:01';
+            $("#SRIOV2-vm-select").val("1");
+            $("#SRIOV2-gateway-select").val("2");
+            form.elements['SRIOV2-name'].value = 'ops-vtn1:vm1:eth2';
+            form.elements['SRIOV2-ip'].value = '10.10.0.1';
+            form.elements['SRIOV2-mac'].value = '11:22:22:33:33:02';
             
         }
 
@@ -351,13 +392,12 @@ function setSubnets(input) {
     var old = input.oldvalue;
     var fieldset = document.getElementById(stage + "-fs");
     var subTable = document.getElementById(stage + "-route-table");
-
     $("#" + stage + "-route-table tr").remove();
     fieldset.innerHTML = "";
 
     var start = 1;
     for (i = start; i <= input.value; i++) {
-        // Set stage 3 data table
+        
         var table = document.createElement("table");
         table.className = 'subfs-table';
         table.id = stage + i + '-table';
@@ -423,8 +463,11 @@ function setSubRoutes(input) {
     var subRouteCount = input.value;
     var row = table.insertRow(0);
     var cell = row.insertCell(0);
-    cell.innerHTML = '<label><input type = "checkbox" name = "subnet' + subnetNum + '-route-prop" value = "true"> Enable VPN Routes Propagation</label>';
-
+    if (subnetId.substring(0, 3) === 'aws') {
+        cell.innerHTML = '<label><input type = "checkbox" name = "subnet' + subnetNum + '-route-prop" value = "true"> Enable VPN Routes Propagation</label>';
+    } else if (subnetId.substring(0, 3) === 'ops') {
+        cell.innerHTML = '<label><input type = "checkbox" name = "subnet' + subnetNum + '-route-default" value = "true"> Enable Default Routing</label>';
+    }
 
     for (j = 1; j <= subRouteCount; j++) {
         var row3 = table.insertRow(j - 1);
@@ -439,6 +482,133 @@ function setSubRoutes(input) {
 var vmCount;
 function setVMs(input) {
     vmCount = input.value;
+
+    var stage = input.id;
+    var old = input.oldvalue;
+    var fieldset = document.getElementById(stage + "-fs");
+    var vmTable = document.getElementById(stage + "-route-table");
+    $("#" + stage + "-route-table tr").remove();
+    fieldset.innerHTML = "";
+
+
+    var start = 1;
+    for (i = start; i <= input.value; i++) {
+        // Set stage 3 data table
+        var table = document.createElement("table");
+        table.className = 'subfs-table';
+        table.id = stage + i + '-table';
+
+        var thead = document.createElement("thead");
+        var tbody1 = document.createElement("tbody");
+        tbody1.className = 'fade-hide';
+        var tbody2 = document.createElement("tbody");
+        tbody2.className = 'fade-hide';
+        
+        var row1 = document.createElement("tr");
+        row1.className = 'subfs-headrow closed';
+        var cell1_1 = document.createElement("th");
+        var cell1_2 = document.createElement("th");
+        cell1_1.innerHTML = 'VM ' + i;
+        row1.appendChild(cell1_1);
+        row1.appendChild(cell1_2);
+        row1.innerHTML += '<br>';
+        thead.appendChild(row1);
+        table.appendChild(thead);
+
+        row1.addEventListener('click', function () {
+            var head = $(this).parent();
+            var body1 = head.next();
+            var body2 = body1.next();
+
+            $(this).toggleClass("closed");
+            body1.toggleClass("fade-hide");
+            body2.toggleClass("fade-hide");
+        });
+
+
+        var row2 = document.createElement("tr");
+        var cell2_1 = document.createElement("td");
+        var cell2_2 = document.createElement("td");
+
+        var selectString = '<select name="vm' + i + '-subnet" id="vm' + i + '-subnet-select"><option selected disabled>Select the subnet host</option>';
+        for (j = 1; j <= subnetCount; j++) {
+            var subnetTag = document.getElementById("subnet" + j + "-tag");
+
+            selectString += '<option value="' + j + '">Subnet ' + j + ' (' + subnetTag.value + ')</option>';
+        }
+        selectString += '</select>';
+
+        cell2_1.innerHTML = '<td><input type="text" id="vm' + i + '-tag" onchange="updateVMNames(this)" name="vm' + i + '-name" placeholder="Name"></td>';
+        cell2_2.innerHTML = selectString;
+        row2.appendChild(cell2_1);
+        row2.appendChild(cell2_2);
+        tbody1.appendChild(row2);
+
+        var row3 = document.createElement("tr");
+        var cell3_1 = document.createElement("td");
+        var cell3_2 = document.createElement("td");
+        cell3_1.innerHTML = '<input type="text" name="vm' + i + '-keypair" placeholder="Keypair Name">';
+        cell3_2.innerHTML = '<input type="text" name="vm' + i + '-security" placeholder="Security Group">';
+        row3.appendChild(cell3_1);
+        row3.appendChild(cell3_2);
+        tbody1.appendChild(row3);
+
+        var row4 = document.createElement("tr");
+        var cell4_1 = document.createElement("td");
+        var cell4_2 = document.createElement("td");
+        cell4_1.innerHTML = '<input type="text" name="vm' + i + '-image" placeholder="Image Type">';
+        cell4_2.innerHTML = '<input type="text" name="vm' + i + '-instance" placeholder="Instance Type">';
+        row4.appendChild(cell4_1);
+        row4.appendChild(cell4_2);
+        tbody1.appendChild(row4);
+
+        if (stage.substring(0, 3) === 'ops') {
+            var row5 = document.createElement("tr");
+            var cell5_1 = document.createElement("td");
+            var cell5_2 = document.createElement("td");
+            cell5_1.innerHTML = '<input type="text" name="vm' + i + '-host" placeholder="Host">';
+            cell5_2.innerHTML = '<input type="text" name="vm' + i + '-floating" placeholder="Floating IP">';
+            row5.appendChild(cell5_1);
+            row5.appendChild(cell5_2);
+            tbody1.appendChild(row5);
+        }
+
+        table.appendChild(tbody1);
+        table.appendChild(tbody2);
+        fieldset.appendChild(table);
+
+        // Set inputs for vm routes
+        var row = vmTable.insertRow(i - 1);
+        var cell = row.insertCell(0);
+
+        cell.innerHTML = '<div class="fs-subtext">How many routes for VM ' + i + '?   ' +
+                '<input type="number" class="small-counter" id="' + stage + i + '-routes" ' +
+                'onfocus="this.oldvalue = this.value;" ' +
+                'onchange="setVMRoutes(this)" /></div>';
+    }
+}
+
+function setVMRoutes(input) {
+    // Grab correct vm table
+    var vmId = input.id.substring(0, input.id.length - 7);
+    var table = document.getElementById(vmId + '-table').getElementsByTagName('tbody')[1];
+    var vmNum = vmId.substring(vmId.length - 1);
+    table.innerHTML = "";
+
+    var vmRouteCount = input.value;  
+    for (j = 1; j <= vmRouteCount; j++) {
+        var row3 = table.insertRow(j - 1);
+        var cell3_1 = row3.insertCell(0);
+
+        cell3_1.innerHTML = '<input type="text" name="vm' + vmNum + '-route' + j + '-from" placeholder="From"/>' +
+                '<input type="text" name="vm' + vmNum + '-route' + j + '-to" placeholder="To"/>' +
+                '<input type="text" name="vm' + vmNum + '-route' + j + '-next" placeholder="Next Hop"/>';
+    }
+}
+
+var gatewayCount;
+function setGateways(input) {
+    gatewayCount = input.value;
     
     var stage = input.id;
     var old = input.oldvalue;
@@ -461,7 +631,7 @@ function setVMs(input) {
         row1.className = 'subfs-headrow closed';
         var cell1_1 = document.createElement("th");
         var cell1_2 = document.createElement("th");
-        cell1_1.innerHTML = 'VM ' + i;
+        cell1_1.innerHTML = 'Gateway ' + i;
         row1.appendChild(cell1_1);
         row1.appendChild(cell1_2);
         row1.innerHTML += '<br>';
@@ -479,49 +649,23 @@ function setVMs(input) {
         var row2 = document.createElement("tr");
         var cell2_1 = document.createElement("td");
         var cell2_2 = document.createElement("td");
-
-        var selectString = '<select name="vm' + i + '-subnet"><option selected disabled>Select the subnet host</option>';
-        for (j = 1; j <= subnetCount; j++) {
-            var subnetTag = document.getElementById("subnet" + j + "-tag");
-
-            selectString += '<option value="' + j + '">Subnet ' + j + ' (' + subnetTag.value + ')</option>';
-        }
-        selectString += '</select>';
-
-        cell2_1.innerHTML = '<td><input type="text" id="vm' + i + '-tag" onchange="updateVMNames(this)" name="vm' + i + '-name" placeholder="Name"></td>';
-        cell2_2.innerHTML = selectString;
+        cell2_1.innerHTML = '<td><input type="text" id="gateway' + i + '-tag" onchange="updateGatewayNames(this)" name="gateway' + i + '-name" placeholder="Name"></td>';
+        cell2_2.innerHTML = '<select id="gateway' + i + '-type-select" name="gateway' + i + '-type"><option selected disabled>Select the hosting Gateway</option>'
+                + '<option value="port_profile">UCS Port Profile</option>'
+                + '<option value="stitch_port">L2 Stitch Port</option></select>';
         row2.appendChild(cell2_1);
         row2.appendChild(cell2_2);
         tbody.appendChild(row2);
 
-        var row3 = document.createElement("tr");
-        var cell3_1 = document.createElement("td");
-        var cell3_2 = document.createElement("td");
-        cell3_1.innerHTML = '<input type="text" name="vm' + i + '-keypair" placeholder="Keypair Name">';
-        cell3_2.innerHTML = '<input type="text" name="vm' + i + '-security" placeholder="Security Group">';
-        row3.appendChild(cell3_1);
-        row3.appendChild(cell3_2);
-        tbody.appendChild(row3);
-
         var row4 = document.createElement("tr");
         var cell4_1 = document.createElement("td");
         var cell4_2 = document.createElement("td");
-        cell4_1.innerHTML = '<input type="text" name="vm' + i + '-image" placeholder="Image Type">';
-        cell4_2.innerHTML = '<input type="text" name="vm' + i + '-instance" placeholder="Instance Type">';
+        cell4_1.innerHTML = '<input type="text" name="gateway' + i + '-from" placeholder="From"/>' +
+                '<input type="text" name="gateway' + i + '-to" placeholder="To"/>' +
+                '<input type="text" name="gateway' + i + '-next" placeholder="Next Hop"/>';        
         row4.appendChild(cell4_1);
         row4.appendChild(cell4_2);
         tbody.appendChild(row4);
-
-        if (stage.substring(2) === 'ops') {
-            var row5 = document.createElement("tr");
-            var cell5_1 = document.createElement("td");
-            var cell5_2 = document.createElement("td");
-            cell5_1.innerHTML = '<input type="text" name="vm' + i + '-host" placeholder="Host">';
-            cell5_2.innerHTML = '<input type="text" name="vm' + i + '-floating" placeholder="Floating IP">';
-            row5.appendChild(cell5_1);
-            row5.appendChild(cell5_2);
-            tbody.appendChild(row5);
-        }
 
         table.appendChild(tbody);
         fieldset.appendChild(table);
@@ -557,7 +701,7 @@ function setSRIOV(input) {
         row1.className = 'subfs-headrow closed';
         var cell1_1 = document.createElement("th");
         var cell1_2 = document.createElement("th");
-        cell1_1.innerHTML = 'Gateway ' + i;
+        cell1_1.innerHTML = 'SRIOV ' + i;
         row1.appendChild(cell1_1);
         row1.appendChild(cell1_2);
         row1.innerHTML += '<br>';
@@ -574,18 +718,27 @@ function setSRIOV(input) {
             body2.toggleClass("fade-hide");
         });
         
-        var selectString = '<select name="SRIOV' + i + '-vm"><option selected disabled>Select the SRIOV host</option>';
+        var selectString1 = '<select name="SRIOV' + i + '-gateway" id="SRIOV' + i + '-gateway-select"><option selected disabled>Select the hosting Gateway</option>';
+        for (j = 1; j <= gatewayCount; j++) {
+            var gatewayTag = document.getElementById("gateway" + j + "-tag");
+
+            selectString1 += '<option value="' + j + '">Gateway ' + j + ' (' + gatewayTag.value + ')</option>';
+        }
+        selectString1 += '</select>';
+        
+        var selectString2 = '<select name="SRIOV' + i + '-vm" id="SRIOV' + i + '-vm-select"><option selected disabled>Select the hosting VM</option>';
         for (j = 1; j <= vmCount; j++) {
             var vmTag = document.getElementById("vm" + j + "-tag");
 
-            selectString += '<option value="' + j + '">VM ' + j + ' (' + vmTag.value + ')</option>';
+            selectString2 += '<option value="' + j + '">VM ' + j + ' (' + vmTag.value + ')</option>';
         }
-        selectString += '</select>';
+        selectString2 += '</select>';
 
         var row2 = document.createElement("tr");
         var cell2_1 = document.createElement("td");
         var cell2_2 = document.createElement("td");
-        cell2_2.innerHTML = selectString;
+        cell2_1.innerHTML = selectString1;
+        cell2_2.innerHTML = selectString2;
         row2.appendChild(cell2_1);
         row2.appendChild(cell2_2);
         tbody1.appendChild(row2);
@@ -594,123 +747,22 @@ function setSRIOV(input) {
         var cell3_1 = document.createElement("td");
         var cell3_2 = document.createElement("td");
         cell3_1.innerHTML = '<input type="text" name="SRIOV' + i + '-name" id="SRIOV' + i + '-tag" placeholder="Name"/>';
-        cell3_2.innerHTML = '<input type="text" name="SRIOV' + i + '-ip" placeholder="IP Address"/>';
         row3.appendChild(cell3_1);
         row3.appendChild(cell3_2);
         tbody1.appendChild(row3);
+        
+        var row4 = document.createElement("tr");
+        var cell4_1 = document.createElement("td");
+        var cell4_2 = document.createElement("td");
+        cell4_1.innerHTML = '<input type="text" name="SRIOV' + i + '-ip" placeholder="IP Address"/>';
+        cell4_2.innerHTML = '<input type="text" name="SRIOV' + i + '-mac" placeholder="MAC Address"/>';
+        row4.appendChild(cell4_1);
+        row4.appendChild(cell4_2);
+        tbody1.appendChild(row4);
                 
         table.appendChild(tbody1);
         table.appendChild(tbody2);
 
-        fieldset.appendChild(table);
-
-        // Set inputs for subnet routes
-        var row = subTable.insertRow(i - 1);
-        var cell = row.insertCell(0);
-
-        cell.innerHTML = '<div class="fs-subtext">How many routes for SRIOV ' + i + '?   ' +
-                '<input type="number" class="small-counter" id="' + stage + i + '-routes" ' +
-                'onfocus="this.oldvalue = this.value;" ' +
-                'onchange="setSRIOVRoutes(this)" /></div>';
-    }
-}
-
-function setSRIOVRoutes(input) {
-    // Grab correct SRIOV table
-    var SRIOVId = input.id.substring(0, input.id.length - 7);
-    var table = document.getElementById(SRIOVId + '-table').getElementsByTagName('tbody')[1];
-    var SRIOVNum = SRIOVId.substring(SRIOVId.length - 1);
-    table.innerHTML = "";
-
-    var SRIOVRouteCount = input.value;
-    for (j = 1; j <= SRIOVRouteCount; j++) {
-        var row3 = table.insertRow(j - 1);
-        var cell3_1 = row3.insertCell(0);
-
-        cell3_1.innerHTML = '<input type="text" name="SRIOV' + SRIOVNum + '-route' + j + '-from" placeholder="From"/>' +
-                '<input type="text" name="SRIOV' + SRIOVNum + '-route' + j + '-to" placeholder="To"/>' +
-                '<input type="text" name="SRIOV' + SRIOVNum + '-route' + j + '-next" placeholder="Next Hop"/>';
-    }
-}
-
-var gatewayCount;
-function setGateways(input) {
-    gatewayCount = input.value;
-    
-    var stage = input.id;
-    var old = input.oldvalue;
-    var fieldset = document.getElementById(stage + "-fs");
-
-    fieldset.innerHTML = "";
-
-    var start = 1;
-    for (i = start; i <= input.value; i++) {
-        // Set stage 3 data table
-        var table = document.createElement("table");
-        table.className = 'subfs-table';
-        table.id = stage + i + '-table';
-
-        var thead = document.createElement("thead");
-        var tbody = document.createElement("tbody");
-        tbody.className = 'fade-hide';
-
-        var row1 = document.createElement("tr");
-        row1.className = 'subfs-headrow closed';
-        var cell1_1 = document.createElement("th");
-        var cell1_2 = document.createElement("th");
-        cell1_1.innerHTML = 'VM ' + i;
-        row1.appendChild(cell1_1);
-        row1.appendChild(cell1_2);
-        row1.innerHTML += '<br>';
-        thead.appendChild(row1);
-        table.appendChild(thead);
-
-        row1.addEventListener('click', function () {
-            var head = $(this).parent();
-            var body = head.next();
-
-            $(this).toggleClass("closed");
-            body.toggleClass("fade-hide");
-        });
-
-        var row2 = document.createElement("tr");
-        var cell2_1 = document.createElement("td");
-        var cell2_2 = document.createElement("td");
-
-        var selectString = '<select name="vm' + i + '-subnet"><option selected disabled>Select the subnet host</option>';
-        for (j = 1; j <= subnetCount; j++) {
-            var subnetTag = document.getElementById("subnet" + j + "-tag");
-
-            selectString += '<option value="' + j + '">Subnet ' + j + ' (' + subnetTag.value + ')</option>';
-        }
-        selectString += '</select>';
-
-        cell2_1.innerHTML = '<td><input type="text" id="vm' + i + '-tag" onchange="updateVMNames(this)" name="vm' + i + '-name" placeholder="Name"></td>';
-        cell2_2.innerHTML = selectString;
-        row2.appendChild(cell2_1);
-        row2.appendChild(cell2_2);
-        tbody.appendChild(row2);
-
-        var row3 = document.createElement("tr");
-        var cell3_1 = document.createElement("td");
-        var cell3_2 = document.createElement("td");
-        cell3_1.innerHTML = '<input type="text" name="gateway' + i + '-name" placeholder="Name">';
-        cell3_2.innerHTML = '<input type="text" name="gateway' + i + '-type" placeholder="Type">';
-        row3.appendChild(cell3_1);
-        row3.appendChild(cell3_2);
-        tbody.appendChild(row3);
-
-        var row4 = document.createElement("tr");
-        var cell4_1 = document.createElement("td");
-        var cell4_2 = document.createElement("td");
-        cell4_1.innerHTML = '<input type="text" name="gateway' + i + '-from" placeholder="From"/>' +
-                '<input type="text" name="gateway' + i + '-to" placeholder="To"/>' +
-                '<input type="text" name="gateway' + i + '-next" placeholder="Next Hop"/>';        
-        row4.appendChild(cell4_1);
-        row4.appendChild(cell4_2);
-        tbody.appendChild(row4);
-
-        table.appendChild(tbody);
         fieldset.appendChild(table);
     }
 }
@@ -719,7 +771,7 @@ function updateSubnetNames(input) {
     var subnetId = input.id;
     var subnetNum = subnetId.substring(6, 7);
 
-    $('[id^=4] select option[value=' + subnetNum + ']').text(
+    $('[id$=subnet-select] option[value=' + subnetNum + ']').text(
             'Subnet ' + subnetNum + ' (' + input.value + ')');
 }
 
@@ -727,6 +779,14 @@ function updateVMNames(input) {
     var vmId = input.id;
     var vmNum = vmId.substring(2, 3);
 
-    $('[id^=5] select option[value=' + vmNum + ']').text(
+    $('[id$=vm-select] option[value=' + vmNum + ']').text(
             'VM ' + vmNum + ' (' + input.value + ')');
+}
+
+function updateGatewayNames(input) {
+    var gatewayId = input.id;
+    var gatewayNum = gatewayId.substring(7, 8);
+    
+    $('[id$=gateway-select] option[value=' + gatewayNum + ']').text(
+            'Gateway ' + gatewayNum + ' (' + input.value + ')');
 }
