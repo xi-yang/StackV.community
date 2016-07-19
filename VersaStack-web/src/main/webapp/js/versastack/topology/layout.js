@@ -54,7 +54,7 @@ define([
                 .linkStrength(10)
                 .friction(0.9)
                 .linkDistance(10)
-                .charge(-1000)
+                .charge(-1000) // usually -1000, 
                 .gravity(0.5)
                 .theta(0.8)
                 .alpha(0.1);
@@ -63,9 +63,12 @@ define([
             //This is significant for topologies
             map_(nodes, function (node) {
                 var choords = node.getCenterOfMass();
+                // recenters nodes if they are out of bounds. 
+                if (choords.x > width || choords.x < 0) choords.x = width / 2; 
+                if (choords.y > height || choords.y < 0) choords.y = height / 2; 
                 node.x = choords.x;
                 node.y = choords.y;
-                if (isNaN(choords.x) || isNaN(choords.y)) console.log("It's NAN in doLayout\n");
+                if (isNaN(choords.x) || isNaN(choords.y)) console.log("It's NAN in doLayout\n");    
             });
         });
         force.start();
