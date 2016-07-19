@@ -268,7 +268,7 @@ function applyTemplate(mode) {
             configureForm('aws');
 
             form.elements['netType'].value = 'internal';
-            form.elements['netCidr'].value = '10.1.0.0/16';
+            form.elements['netCidr'].value = '10.0.0.0/16';
 
             var subnetCounter = document.getElementById('awsStage3-subnet');
             subnetCounter.value = 2;
@@ -282,7 +282,7 @@ function applyTemplate(mode) {
             vmCounter.value = 2;
             setVMs(vmCounter);
 
-            form.elements['subnet1-name'].value = '';
+            form.elements['subnet1-name'].value = 'subnet1';
             form.elements['subnet1-cidr'].value = '10.1.0.0/24';
 
             form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
@@ -291,7 +291,7 @@ function applyTemplate(mode) {
             form.elements['subnet1-route2-next'].value = 'vpn';
             form.elements['subnet1-route-prop'].checked = true;
 
-            form.elements['subnet2-name'].value = '';
+            form.elements['subnet2-name'].value = 'subnet2';
             form.elements['subnet2-cidr'].value = '10.1.1.0/24';
 
             form.elements['vm1-name'].value = 'test_with_vm_types_1';
@@ -305,6 +305,9 @@ function applyTemplate(mode) {
             form.elements['vm2-instance'].value = 't2.small';
             form.elements['vm2-keypair'].value = 'xi-aws-max-dev-key';
             form.elements['vm2-security'].value = 'geni';
+            
+            form.elements['conn-dest'].value = 'urn:publicid:IDN+dragon.maxgigapop.net+interface+CLPK:1-1-2:*';
+            form.elements['conn-vlan'].value = '3023';
         }
         // Basic OPS Template
         else if (mode === 3) {
@@ -354,11 +357,10 @@ function applyTemplate(mode) {
             setGateways(gatewayCounter);
             
             form.elements['gateway1-name'].value = 'cluster-gw1';
-            form.elements['gateway1-type'].value = 'ucs_port_profile';
+            $("#gateway1-type-select").val("port_profile");
             form.elements['gateway1-from'].value = 'MSX-Date-Local';
             form.elements['gateway2-name'].value = 'l2path-aws-dc1';
-            form.elements['gateway2-type'].value = 'ucs_port_profile';
-            form.elements['gateway2-from'].value = 'AWS-DC1';
+            $("#gateway2-type-select").val("stitch_port");
             form.elements['gateway2-to'].value = 'urn:ogf:network:domain=wix.internet2.edu:node=sw.net.wix.internet2.edu:port=13/1:link=al2s?vlan=any';
             
             // SRIOVs
@@ -648,7 +650,9 @@ function setGateways(input) {
         var cell2_1 = document.createElement("td");
         var cell2_2 = document.createElement("td");
         cell2_1.innerHTML = '<td><input type="text" id="gateway' + i + '-tag" onchange="updateGatewayNames(this)" name="gateway' + i + '-name" placeholder="Name"></td>';
-        cell2_2.innerHTML = '<input type="text" name="gateway' + i + '-type" placeholder="Type">';
+        cell2_2.innerHTML = '<select id="gateway' + i + '-type-select" name="gateway' + i + '-type"><option selected disabled>Select the hosting Gateway</option>'
+                + '<option value="port_profile">UCS Port Profile</option>'
+                + '<option value="stitch_port">L2 Stitch Port</option></select>';
         row2.appendChild(cell2_1);
         row2.appendChild(cell2_2);
         tbody.appendChild(row2);

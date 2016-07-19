@@ -900,9 +900,9 @@ public class serviceBeans {
                 wr.flush();
             }
         }
-        logger.log(Level.INFO, "Sending {0} request to URL : {1}", new Object[]{method, url});
+        //logger.log(Level.INFO, "Sending {0} request to URL : {1}", new Object[]{method, url});
         int responseCode = conn.getResponseCode();
-        logger.log(Level.INFO, "Response Code : {0}", responseCode);
+        //logger.log(Level.INFO, "Response Code : {0}", responseCode);
 
         StringBuilder responseStr;
         try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {

@@ -294,13 +294,15 @@ public class ServiceServlet extends HttpServlet {
         JSONObject cloudJSON = new JSONObject();
         cloudJSON.put("type", paraMap.get("netType"));
         cloudJSON.put("cidr", paraMap.get("netCidr"));
-        cloudJSON.put("name", "vpc");
+        cloudJSON.put("name", "vtn1");
         cloudJSON.put("parent", paraMap.get("topoUri"));
 
         // Parse gateways.
+        // AWS
         JSONArray gatewayArr = new JSONArray();
         if (paraMap.containsKey("conn-dest")) {
             JSONObject gatewayJSON = new JSONObject();
+            gatewayJSON.put("name", "aws_dx1");
             gatewayJSON.put("type", "aws_direct_connect");
 
             JSONArray gateToArr = new JSONArray();
@@ -319,16 +321,18 @@ public class ServiceServlet extends HttpServlet {
             gatewayJSON.put("to", gateToArr);
             gatewayArr.add(gatewayJSON);
         }
+        // OpenStack
         for (int i = 1; i <= 10; i++) {
             if (paraMap.containsKey("gateway" + i + "-name")) {
                 JSONObject gatewayJSON = new JSONObject();
                 gatewayJSON.put("name", paraMap.get("gateway" + i + "-name"));
-                gatewayJSON.put("type", paraMap.get("gateway" + i + "-type"));                                
+                gatewayJSON.put("type", "ucs_port_profile");                                
                 
                 if (paraMap.containsKey("gateway" + i + "-from")) {
                     JSONArray fromArr = new JSONArray();
                     JSONObject fromJSON = new JSONObject();
                     fromJSON.put("value", paraMap.get("gateway" + i + "-from"));                    
+                    fromJSON.put("type", paraMap.get("gateway" + i + "-type"));                    
                     
                     fromArr.add(fromJSON);
                     gatewayJSON.put("from", fromArr);                    
@@ -337,6 +341,7 @@ public class ServiceServlet extends HttpServlet {
                     JSONArray toArr = new JSONArray();
                     JSONObject toJSON = new JSONObject();
                     toJSON.put("value", paraMap.get("gateway" + i + "-to"));
+                    toJSON.put("type", paraMap.get("gateway" + i + "-type"));                    
                                         
                     toArr.add(toJSON);
                     gatewayJSON.put("to", toArr);
@@ -364,6 +369,7 @@ public class ServiceServlet extends HttpServlet {
                     if (paraMap.containsKey("subnet" + i + "-route" + j + "-to")) {
                         JSONObject toJSON = new JSONObject();
                         toJSON.put("value", paraMap.get("subnet" + i + "-route" + j + "-to"));
+                        toJSON.put("type", "ipv4-prefix");
                         routeJSON.put("to", toJSON);
                     }
 
@@ -393,6 +399,7 @@ public class ServiceServlet extends HttpServlet {
 
                     JSONObject toJSON = new JSONObject();
                     toJSON.put("value", "0.0.0.0/0");
+                    toJSON.put("type", "ipv4-prefix");
                     routeJSON.put("to", toJSON);
 
                     JSONObject nextJSON = new JSONObject();
@@ -405,6 +412,7 @@ public class ServiceServlet extends HttpServlet {
 
                     JSONObject toJSON = new JSONObject();
                     toJSON.put("value", "0.0.0.0/0");
+                    toJSON.put("type", "ipv4-prefix");
                     routeJSON.put("to", toJSON);
 
                     JSONObject nextJSON = new JSONObject();
@@ -491,6 +499,7 @@ public class ServiceServlet extends HttpServlet {
                             //check if assigning floating IP
                             if (paraMap.containsKey("vm" + j + "-floating")) {
                                 JSONObject interfaceJSON = new JSONObject();
+                                interfaceJSON.put("name", paraMap.get("vm" + j + "-name") + ":eth0");
                                 interfaceJSON.put("type", "Ethernet");
                                 interfaceJSON.put("address", "ipv4+" + paraMap.get("vm" + j + "-floating") + "/255.255.255.0");
                                 interfaceArr.add(interfaceJSON);
@@ -502,6 +511,7 @@ public class ServiceServlet extends HttpServlet {
                                         String addrString = "ipv4+" + paraMap.get("SRIOV" + k + "-ip") + "/255.255.255.0";
                                         addrString += ",mac+" + paraMap.get("SRIOV" + k + "-mac");
                                         sriovJSON.put("address", addrString);
+                                        sriovJSON.put("name", paraMap.get("vm" + j + "-name") + ":eth" + k);
                                         sriovJSON.put("type", "SRIOV");
                                         sriovJSON.put("gateway", paraMap.get("gateway" + paraMap.get("SRIOV" + k + "-gateway") + "-name"));
 
@@ -521,6 +531,7 @@ public class ServiceServlet extends HttpServlet {
                             if (paraMap.containsKey("vm" + j + "-route" + k + "-to")) {
                                 JSONObject toJSON = new JSONObject();
                                 toJSON.put("value", paraMap.get("vm" + j + "-route" + k + "-to"));
+                                toJSON.put("type", "ipv4-prefix");
                                 routeJSON.put("to", toJSON);
                             }
 
@@ -580,7 +591,7 @@ public class ServiceServlet extends HttpServlet {
         ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
         executor.execute(new APIRunner(inputJSON));
 
-        return ("/VersaStack-web/ops/srvc/netcreate.jsp?ret=0");
+        return ("/VersaStack-web/ops/catalog.jsp");
 
     }
 
