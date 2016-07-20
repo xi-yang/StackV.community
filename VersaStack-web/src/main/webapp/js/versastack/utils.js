@@ -78,14 +78,19 @@ define([], function () {
           
           //console.log("in positionMenu: menu.style.left: " + menu.style.left + " , menu.style.top: " + menu.style.top);
     }
-
+    
+    function isURL(str) {
+        var urlPattern = /(http|ftp|https):\/\/[\w-]+(\.[\w-]*)+([\w.,@?^=%&amp;:\/~+#-]*[\w@?^=%&amp;\/~+#-])?/;
+        return urlPattern.test(str);
+    }
     /** PUBLIC INTERFACE **/
     return {
         map_: map_,
         deleteAllChildNodes: deleteAllChildNodes,
         bsShowFadingMessage: bsShowFadingMessage,
         positionUsingPointer: positionUsingPointer,
-        getElementPosition: getElementPosition
+        getElementPosition: getElementPosition, 
+        isURL: isURL
     };
     /** END PUBLIC INTERFACE **/
 

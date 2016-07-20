@@ -3,6 +3,7 @@ define([
     "local/versastack/utils"
 ], function (utils) {
     var map_ = utils.map_;
+    var isURL = utils.isURL;
     function DropDownNode(name, renderApi, type, data, contextMenu) {
         /**@type Array.DropDownNode**/
         this.children = [];
@@ -157,7 +158,9 @@ define([
                 var value = document.createElement("span");               
                 key.className = "panelElementProperty";
                 var property =  that.name.split(":");
-                if (property[0] !== 'format ' && property[0] !== 'value ' && property[1].substring(0) !== "{") {
+                
+                if (property[0] !== 'format ' && property[0] !== 'value ' && property[1].substring(0) !== "{"
+                        && !isURL(that.dataObject)) {
                     key.innerHTML = property[0] + ":";
                     value.innerHTML = property[1]; // just using this because it's there 
                 } else {
