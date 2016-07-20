@@ -14,16 +14,21 @@
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>
+        <script src="/VersaStack-web/js/jquery-ui.min.js"></script>
 
         <link rel="stylesheet" type="text/css" href="/VersaStack-web/css/graphTest.css">
         <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
         <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/VersaStack-web/css/bootstrap.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.min.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.structure.min.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.theme.css">                
         <link rel="stylesheet" href="/VersaStack-web/css/style.css">       
         <link rel="stylesheet" href="/VersaStack-web/css/contextMenu.css">   
         <!-- font awesome icons won't show up otherwise --->
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.min.css">
 
         <script>
             $(document).ready(function () {
@@ -37,6 +42,16 @@
 
                     evt.preventDefault();
                 });
+                
+                  $(function() {
+                     $( "#dialog_policyAction" ).dialog({
+                         autoOpen: false
+                     });
+                     $( "#dialog_policyData" ).dialog({
+                         autoOpen: false
+                     });                     
+                });
+
             });
         </script> 
 
@@ -79,7 +94,8 @@
             var d3;
             var utils;
             var DropDownTree;
-
+            var functionMap = {}; // stores objects for funcitonality such as ContextMenu, tag Dialog, etc 
+            
             var outputApi;
 
             function onload() {
@@ -115,15 +131,18 @@
                                             tagDialog = new TagDialog("${user.getUsername()}");
 
                                             tagDialog.init();
+                                            functionMap['Tag'] = tagDialog;
                                             // possibly pass in map here later for all possible dialogs 
-                                            contextMenu = new ContextMenu(d3, render.API, tagDialog);//, tagDialog);
+                                            contextMenu = new ContextMenu(d3, render.API, functionMap);//, tagDialog);
                                             contextMenu.init();
                                             
                                             outputApi = new outputApi_(render.API, contextMenu, "viz");
 
                                             ModelConstructor = m;
                                             model = new ModelConstructor();
-                                            model.init(1, drawGraph.bind(undefined, outputApi, model), null);                                            
+                                            model.init(1, drawGraph.bind(undefined, outputApi, model), null);    
+                                            
+                                            $("#tagDialog").draggable();
                                        } else {
                                            displayError("Visualization Unavailable", d3_);
                                        }
@@ -137,23 +156,23 @@
                             }); 
                         });
 
-                var request = new XMLHttpRequest();
-                request.open("GET", "/VersaStack-web/data/json/umd-anl-all.json");
-
-                request.setRequestHeader("Accept", "application/json");
-                request.onload = function () {
-                    var modelData = request.responseText;
-
-                    if (modelData.charAt(0) === '<') {
-                        return;
-                    }
-
-                    modelData = JSON.parse(modelData);
-                    $.post("/VersaStack-web/ViewServlet", {newModel: modelData.ttlModel}, function (response) {
-                        // handle response from your servlet.
-                    });
-                };
-                request.send();
+//                var request = new XMLHttpRequest();
+//                request.open("GET", "/VersaStack-web/data/json/umd-anl-all.json");
+//
+//                request.setRequestHeader("Accept", "application/json");
+//                request.onload = function () {
+//                    var modelData = request.responseText;
+//
+//                    if (modelData.charAt(0) === '<') {
+//                        return;
+//                    }
+//
+//                    modelData = JSON.parse(modelData);
+//                    $.post("/VersaStack-web/ViewServlet", {newModel: modelData.ttlModel}, function (response) {
+//                        // handle response from your servlet.
+//                    });
+//                };
+//                request.send();
 
                 $("#loadingPanel").addClass("hide");
                 $("#hoverdiv_viz").removeClass("hide");
@@ -571,18 +590,19 @@
                 $.ajax({
                     crossDomain: true,
                     type: "GET",
-                    url: "/VersaStack-web/restapi/app/service/lastverify/" + UUID,
+                    url: "/VersaStack-web/restapi/app/service/availibleitems/" + UUID,
                     dataType: "json", 
 
                     success: function(data,  textStatus,  jqXHR ) {
-                         if (data.verified_addition === null) {
+                         if (data === null) {
                              bsShowFadingMessage("#servicePanel", "Data not found", "top", 1000);
                          } else {
                             $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
                             $(item).addClass('service-instance-highlighted');
-
-                            var uaObj = JSON.parse(data.verified_addition);
-                            var result = model.makeSubModel([ uaObj  ]);
+                            //alert(data);
+                            // Union of verified addition and unverified reduction
+                            var unionObj = data; 
+                            var result = model.makeSubModel([ unionObj  ]);
                             var modelArr = model.getModelMapValues(result);
 
                             render.API.setServiceHighlights(modelArr);
@@ -622,7 +642,6 @@
                 </div>
             </div>
         </div>        
-        <div class="hide" id="hoverdiv_viz"></div>        
 
         <svg class="loading" id="viz">
         <defs>
@@ -644,6 +663,7 @@
         <feComposite operator="out" in="a" in2="SourceGraphic"/>
     </filter>
     
+    
 <filter id="serviceHighlightOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
    <feFlood flood-color="#66ff66" result="base" />
    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
@@ -655,7 +675,39 @@
    <feComposite result="drop" in="base" in2="mask" operator="in" />
    <feBlend in="SourceGraphic" in2="drop" mode="normal" />
 </filter>
-    
+<filter id="spaDependOnOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+   <feFlood flood-color="#B3F131" result="base" />
+   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+   <feColorMatrix result="mask" in="bigger" type="matrix"
+      values="0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 1 0" />
+   <feComposite result="drop" in="base" in2="mask" operator="in" />
+   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+</filter>
+<filter id="spaExportToOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+   <feFlood flood-color="#23ABA6" result="base" />
+   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+   <feColorMatrix result="mask" in="bigger" type="matrix"
+      values="0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 1 0" />
+   <feComposite result="drop" in="base" in2="mask" operator="in" />
+   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+</filter>
+<filter id="spaImportFromOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+   <feFlood flood-color="#FD3338" result="base" />
+   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+   <feColorMatrix result="mask" in="bigger" type="matrix"
+      values="0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 1 0" />
+   <feComposite result="drop" in="base" in2="mask" operator="in" />
+   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+</filter>    
     <filter id="subnetHighlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
         <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
         <feMorphology operator="dilate" radius="1"/>
@@ -669,6 +721,11 @@
     <filter id="ghost" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
         <feColorMatrix type="saturate" values=".2"/>
     </filter>
+    
+     <marker id="marker_arrow" markerWidth="10" markerHeight="10" refx="15" refy="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="black" />
+    </marker>
+   
     </defs>
     <!--We nest a g in here because the svg tag itself cannot do transforms
         we separate topologies, edges, and nodes to create an explicit z-order
@@ -688,7 +745,8 @@
 
     </g>
     </svg>
- 
+   <div class="hide" id="hoverdiv_viz"></div>        
+
  <!-- CONTEXT MENU -->
   <nav id="context-menu" class="context-menu">
       <ul class="context-menu__items">
@@ -743,6 +801,11 @@
                 </button>
             </div>
         </div>
+    </div>
+    
+    <div id="dialog_policyAction" title="Policy Action">
+    </div>
+    <div id="dialog_policyData" title="Policy Data">
     </div>
 
     <!-- TAG PANEL -->

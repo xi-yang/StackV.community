@@ -41,7 +41,8 @@ define([
         DIALOG_PORT_BUFFER_VERT: 2,
         DIALOG_PORT_BUFFER_HORZ: 3,
         DIALOG_OFFSET_X: 0,
-        DIALOG_OFFSET_Y: -20
+        DIALOG_OFFSET_Y: -20,
+        BASE_ITEM_OPACITY: .05
     };
     var volumeSettings = {
         NODE_SIZE: 30,
@@ -199,11 +200,11 @@ define([
                }
             });       
         }
-        if (!switchPopup[outputApi.svgContainerName]) {
+        if (!switchPopup[outputApi.svgContainerName] || !fullSize) {
             switchPopup[outputApi.svgContainerName] = buildSwitchPopup();
         }
         redraw();
-        var nodeList, edgeList;
+        var nodeList, edgeList, policyList;
         function redraw() {
             svgContainer.select("#topology" + "_" + outputApi.svgContainerName).selectAll("*").remove(); //Clear the previous drawing
             svgContainer.select("#edge1" + "_" + outputApi.svgContainerName).selectAll("*").remove(); //Clear the previous drawing
@@ -215,11 +216,17 @@ define([
             svgContainer.select("#volume" + "_" + outputApi.svgContainerName).selectAll("*").remove();
             
             nodeList = model.listNodes();
+            policyList = model.listPolicies();
             edgeList = model.listEdges();
+            
+            var polEdges = model.policyEdges;
+            for (var i in polEdges) edgeList.push(polEdges[i]);
+
             //Recall that topologies are also considered nodes
             //We render them seperatly to enfore a z-ordering
             map_(nodeList, drawTopology);
             map_(nodeList, drawNode);
+            map_(policyList, drawPolicy);
             drawPopups();
             map_(edgeList, drawEdge);
         }
@@ -240,9 +247,12 @@ define([
                             .on("dblclick", onNodeDblClick.bind(undefined, n))
                             .on("mousemove", onNodeMouseMove.bind(undefined, n))
                             .on("mouseleave", onNodeMouseLeave.bind(undefined, n));                    
-                    if (fullSize) {
+                    if (outputApi.contextMenu) {
                         n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));    
                     } 
+                    if (n.detailsReference) {
+                        n.svgNode.style("opacity", .4);
+                    }
                     n.svgNode.call(makeDragBehaviour(n));
                     
                     setElementSize(n, false);
@@ -250,6 +260,27 @@ define([
                     updateSvgChoordsNode(n);
                 }
         }
+        
+        function drawPolicy(p) {
+            p.svgNode = svgContainer.select("#node" + "_" + outputApi.svgContainerName).append("image")
+                    .attr("xlink:href", p.getIconPath())
+                    .on("click", onPolicyClick.bind(undefined, p))
+                    .on("dblclick", onPolicyDblClick.bind(undefined, p))
+                    .on("mousemove", onPolicyMouseMove.bind(undefined, p))
+                    .on("mouseleave", onPolicyMouseLeave.bind(undefined, p));                    
+//            if (outputApi.contextMenu) {
+//                n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));    
+//            } 
+//            if (n.detailsReference) {
+//                n.svgNode.style("opacity", .4);
+//            }
+            p.svgNode.call(makeDragBehaviour(p));
+
+            setElementSize(p, false);
+            //drawServices(n);
+            updateSvgChoordsPolicy(p);           
+        }
+        
         /**@param {Node} n**/
         function drawTopology(n) {
 
@@ -279,7 +310,7 @@ define([
                     .on("dblclick", onNodeDblClick.bind(undefined, n))
                     .on("mousemove", onNodeMouseMove.bind(undefined, n))
                     .on("mouseleave", onNodeMouseLeave.bind(undefined, n));
-                if (fullSize) {
+                if (outputApi.contextMenu) {
                         n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));    
                 }
                 n.svgNode.call(makeDragBehaviour(n));
@@ -292,9 +323,13 @@ define([
                         .on("dblclick", onNodeDblClick.bind(undefined, n))
                         .on("mousemove", onNodeMouseMove.bind(undefined, n))
                         .on("mouseleave", onNodeMouseLeave.bind(undefined, n));  
-                if (fullSize) {
+                if (outputApi.contextMenu) {
                     n.svgNodeAnchor.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));                
                 }
+                if (n.detailsReference) {
+                    n.svgNode.style("opacity", .4);
+                }
+                
                 n.svgNodeAnchor.call(makeDragBehaviour(n));
                 
                 setElementSize(n, false);
@@ -327,9 +362,13 @@ define([
                         .on("mousemove", onNodeMouseMove.bind(undefined, service))
                         .on("mouseleave", onNodeMouseLeave.bind(undefined, service));
 
-                if (fullSize) {
+                if (outputApi.contextMenu) {
                     service.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, service));
                 }    
+                if (service.detailsReference) {
+                    service.svgNode.style("opacity", .4);
+                }
+                
                 service.svgNode.call(makeDragBehaviour(n));
 
                 setElementSize(service, false);
@@ -464,6 +503,38 @@ define([
             return ans;
         }
 
+        function updateSvgChoordsPolicy(n) {
+            var svg = n.svgNode;
+            var svgSubnet = n.svgNodeSubnetHighlight;
+            if (!svg) {
+                console.log("No svg element in node");
+                return;
+            }
+            if (n.isLeaf()) {
+                svg.attr("x", n.x - n.size / 2);
+                svg.attr("y", n.y - n.size / 2);
+            } else {
+                var path = getTopolgyPath(n);
+                svg.attr("d", topologyPathToString(path));
+            }
+            if (svgSubnet) {
+                if (n.isLeaf()) {
+                    svgSubnet.attr("x", n.x - n.size / 2);
+                    svgSubnet.attr("y", n.y - n.size / 2);
+                } else {
+                    var path = getTopolgyPath(n);
+                    svgSubnet.attr("d", topologyPathToString(path));
+                }
+            }
+            var svgAchor = n.svgNodeAnchor;
+            if (svgAchor) {
+                var choords = n.getCenterOfMass();
+                svgAchor.attr("x", choords.x - settings.TOPOLOGY_ANCHOR_SIZE / 2);
+                svgAchor.attr("y", choords.y - settings.TOPOLOGY_ANCHOR_SIZE / 2);
+            }
+            updateSvgChoordsService(n);
+        }
+
         /**@param {Node} n**/
         function updateSvgChoordsNode(n) {
             var svg = n.svgNode;
@@ -526,20 +597,21 @@ define([
             var tgtLead = e.svgLeadRight;
 
             //Without loss of generality, let src be on the left
-            if (srcChoords.x > tgtChoords.x) {
-                var tmp = src;
-                src = tgt;
-                tgt = tmp;
+            if (e.edgeType !== "dependOn" && e.edgeType !== "importFrom" && e.edgeType !== "exportTo") {                
+                if (srcChoords.x > tgtChoords.x) {
+                    var tmp = src;
+                    src = tgt;
+                    tgt = tmp;
 
-                tmp = srcChoords;
-                srcChoords = tgtChoords;
-                tgtChoords = tmp;
+                    tmp = srcChoords;
+                    srcChoords = tgtChoords;
+                    tgtChoords = tmp;
 
-                tmp = srcLead;
-                srcLead = tgtLead;
-                tgtLead = tmp;
+                    tmp = srcLead;
+                    srcLead = tgtLead;
+                    tgtLead = tmp;
+                }
             }
-
             //if we are drawing to a port, we want a a horizontal line coming out of the port, before switching to the actual edge
             if (src.getType() === "Port") {
                 srcChoords.x += settings.DIALOG_PORT_LEAD;
@@ -561,11 +633,18 @@ define([
             } else {
                 tgtLead.style("visibility", "hidden");
             }
-
-            e.svgNode.attr("x1", srcChoords.x)
-                    .attr("y1", srcChoords.y)
-                    .attr("x2", tgtChoords.x)
-                    .attr("y2", tgtChoords.y);
+            
+            if (e.edgeType === "dependOn" || e.edgeType === "importFrom" || e.edgeType === "exportTo") {                
+                e.svgNode.attr("x1", srcChoords.x)
+                        .attr("y1", srcChoords.y)
+                        .attr("x2", tgtChoords.x  )
+                        .attr("y2", tgtChoords.y );
+            } else {
+                e.svgNode.attr("x1", srcChoords.x)
+                        .attr("y1", srcChoords.y)
+                        .attr("x2", tgtChoords.x)
+                        .attr("y2", tgtChoords.y);                
+            }
         }
 
 
@@ -585,7 +664,11 @@ define([
                         //Fix the topolgies above us
                         var cursor = n._parent;
                         while (cursor) {
-                            updateSvgChoordsNode(cursor);
+                            if (n.getType() === 'Policy') {
+                                updateSvgChoordsPolicy(cursor);
+                            } else { 
+                                updateSvgChoordsNode(cursor);
+                            }
                             cursor = cursor._parent;
                         }
 
@@ -617,6 +700,47 @@ define([
             e.svgNode = svgContainer.select("#edge1" + "_" + outputApi.svgContainerName).append("line")
                     .style("stroke", settings.EDGE_COLOR)
                     .style("stroke-width", settings.EDGE_WIDTH);
+            
+            if (e.edgeType === "dependOn") {
+                //var toAppend = highlightedNode.svgNode.node().cloneNode();
+                d3.select(e.svgNode.node())
+                        .style("stroke", settings.EDGE_COLOR)
+                        .style("stroke-width", settings.EDGE_WIDTH)
+                        .style("filter", "url(#spaDependOnOutline)")
+                        .style("opacity", "1")
+                        .attr("marker-end", "url(#marker_arrow)")
+                        //.attr("pointer-events", "none")
+                        .on("mousemove", onPolicyMouseMove.bind(undefined, e))
+                        .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));                    
+
+                        //.attr("marker-end", "url(#marker_arrow)");
+
+                
+            } else if (e.edgeType === "importFrom") {
+                d3.select(e.svgNode.node())
+                        .style("stroke", settings.EDGE_COLOR)
+                        .style("stroke-width", settings.EDGE_WIDTH)                
+                        .style("filter", "url(#spaImportFromOutline)")
+                        .style("opacity", "1")
+                        .attr("marker-end", "url(#marker_arrow)")                
+                        //.attr("pointer-events", "none")
+                        .on("mousemove", onPolicyMouseMove.bind(undefined, e))
+                        .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));                    
+
+                
+            } else if (e.edgeType === "exportTo") {
+                d3.select(e.svgNode.node())
+                        .style("stroke", settings.EDGE_COLOR)
+                        .style("stroke-width", settings.EDGE_WIDTH)                
+                        .style("filter", "url(#spaExportToOutline)")
+                        .style("opacity", "1")
+                        .attr("marker-end", "url(#marker_arrow)")                
+                        //.attr("pointer-events", "none")
+                         .on("mousemove", onPolicyMouseMove.bind(undefined, e))
+                        .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));                    
+
+            }
+            
             e.svgLeadLeft = svgContainer.select("#edge2" + "_" + outputApi.svgContainerName).append("line")
                     .style("stroke", settings.EDGE_COLOR)
                     .style("stroke-width", settings.EDGE_WIDTH)
@@ -630,7 +754,109 @@ define([
             updateSvgChoordsEdge(e);
         }
 
+        
+        function onPolicyClick(n) {
+             if (d3.event) {
+                //In the case of artificial clicks, d3.event may be null
+                d3.event.stopPropagation(); //prevent the click from being handled by the background, which would hide the panel
+            }
+            if (didDrag) {
+                return;
+            }
+            //debug
+            if (d3.event && d3.event.altKey) {
+                n.isGhost = !n.isGhost;
+                n.svgNode.style("filter", n.isGhost ? "url(#ghost)" : "none");
+                return;
+            }
+            highlightedNode = n;
+            drawHighlight();
+            if (outputApi.getDisplayTree()) {
+                outputApi.setDisplayName(n.getName());
+                /**@type {DropDownTree} displayTree**/
+                var displayTree = outputApi.getDisplayTree();
+                 displayTree.clear();
+                var e = model.elementMap[n.getName()];
+               e.populateProperties(displayTree);
+            
+                if (e.misc_elements.length > 0 )
+                    displayTree.addChild("", "Separator", null);
 
+                 e.populateTreeMenu(displayTree);
+                 displayTree.addToHistory(e.getName(), "Policy");
+                //console.log("API: " + API);
+                //if (API === undefined)
+                   //console.log("i am undefined: ");
+                displayTree.draw();
+                displayTree.topViewShown = false;    
+                if (fullSize) {
+                    displayTree.open();
+                }
+                
+            }
+//            drawPopups();
+            highlightServiceElements(); // show stuff that was highlighting when it has an svg node 
+
+            map_(edgeList, updateSvgChoordsEdge);
+            selectElement(n);
+            selectedNode = n;           
+        }
+        
+        /**
+         * Note that n could also be a topology
+         * @param {Node} n**/
+        function onPolicyDblClick(n) {
+            var policyType = n.getTypeDetailed();
+            if (policyType === "PolicyData") {
+                $("#dialog_policyData").text("");
+                $("#dialog_policyData").append(n.data);
+                $("#dialog_policyData").dialog("open");
+                $('.ui-dialog :button').blur();
+            } else if (policyType === "PolicyAction") {
+                $("#dialog_policyAction").text("");
+                $("#dialog_policyAction").append(n.data);
+                $("#dialog_policyAction").dialog("open");
+                $('.ui-dialog :button').blur();
+            }
+            //We will never send a mouseleave event as the node is being removed
+            outputApi.setHoverVisible(false);
+            var chords = n.getCenterOfMass();
+            n.toggleFold();
+            if (n.isFolded) {
+                //there is no guarantee that n is posistioned anywhere near its children
+                //to solve this, we force n to be located at the click
+                n.x = chords.x;
+                n.y = chords.y;
+            }
+            redraw();
+        }
+        function onPolicyMouseMove(n) {
+            //As we drag a node, the cursor may temporarliy leave the bounding box
+            //of said node, causing flicker of the hoverdiv
+            if (!isDragging) {
+                if  (n.edgeType === "dependOn" || n.edgeType === "importFrom" || n.edgeType === "exportTo") {
+                    outputApi.setHoverText(n.edgeType);                    
+                } else {    
+                    outputApi.setHoverText(n.getName());
+                    setElementSize(n, true);
+
+                }
+                outputApi.setHoverLocation(d3.event.x, d3.event.y);
+                outputApi.setHoverVisible(true);
+            }
+        }
+
+        function onPolicyMouseLeave(n) {
+            //As we drag a node, the cursor may temporarliy leave the bounding box
+            //of said node, causing flicker of the hoverdiv
+            if (!isDragging) {
+                outputApi.setHoverVisible(false);
+                  if  (n.edgeType !== "dependOn" && n.edgeType !== "importFrom" && n.edgeType !== "exportTo") {
+                     setElementSize(n, false);
+                 }
+            }
+        }
+        
         /**
          * Note that n could also be a topology
          * @param {Node} n**/
@@ -650,7 +876,7 @@ define([
             }
             highlightedNode = n;
             drawHighlight();
-            if (fullSize) {
+            if (outputApi.getDisplayTree()) {
                 outputApi.setDisplayName(n.getName());
                 /**@type {DropDownTree} displayTree**/
                 var displayTree = outputApi.getDisplayTree();
@@ -668,6 +894,10 @@ define([
                    //console.log("i am undefined: ");
                 displayTree.draw();
                 displayTree.topViewShown = false;    
+                if (fullSize) {
+                    displayTree.open();
+                }
+                
             }
             // Only show these popups if there are acutally ports and volumes 
             if (n.ports.length !== 0) 
@@ -699,7 +929,7 @@ define([
             }
             highlightedNode = n;
             drawHighlight();
-            if (fullSize) {
+            if (outputApi.getDisplayTree()) {
                 outputApi.setDisplayName(n.getName());
                 var displayTree = outputApi.getDisplayTree();
                 displayTree.clear();
@@ -716,6 +946,9 @@ define([
                    //console.log("i am undefined: ");            
                 displayTree.draw();
                 displayTree.topViewShown = false;
+                if (fullSize) {
+                    displayTree.open();
+                }                
             }
             if (n.getTypeBrief() === "SwitchingService") {
 
@@ -803,7 +1036,7 @@ define([
         }
         
         function selectElement(elem) {
-            if (fullSize) {
+            if (outputApi.getDisplayTree()) {
                 if (!elem) {
                     //deselect element
                     outputApi.setDisplayName("Topologies");
@@ -850,6 +1083,10 @@ define([
                     e.populateTreeMenu(displayTree);
                     e.showRelationships(displayTree);
                     displayTree.draw();
+                    if (fullSize) {
+                        displayTree.open();
+                    }                
+
                 }
             }
             highlightedNode = elem;
@@ -896,7 +1133,9 @@ define([
         function setElementSize(n, enlarge) {
             var size, svg, ds, x, y;
             switch (n.getType()) {
+                
                 case "Node":
+                case "Policy":
                     var size = settings.NODE_SIZE;
                     svg = n.svgNode;
                     x = n.x - settings.NODE_SIZE / 2;
@@ -960,7 +1199,14 @@ define([
             map_(n.children, function (child) {
                 move(child, dx, dy);
             });
-            updateSvgChoordsNode(n);
+            
+            if (n.getType() === 'Policy') {
+                updateSvgChoordsPolicy(n);
+            } else { 
+                updateSvgChoordsNode(n);
+            }
+
+            //updateSvgChoordsNode(n);
         }
         
         function buildVolumeDisplayPopup(n) {
@@ -1073,6 +1319,14 @@ define([
                      }
                      console.log("i'm volume");
                      break;
+                 case "PolicyData":
+                 case "PolicyAction":
+                     selectElement(model.policyMap[name]);    
+                     if (fullSize) {
+                        outputApi.getDisplayTree().addToHistory(name, type);   
+                        outputApi.getDisplayTree().topViewShown = false;
+                     }                    
+                    break;
                  default:
                      selectElement(model.elementMap[name]);
                      

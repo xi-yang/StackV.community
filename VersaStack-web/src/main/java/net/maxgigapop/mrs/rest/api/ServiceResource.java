@@ -43,6 +43,7 @@ import net.maxgigapop.mrs.bean.ServiceInstance;
 import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ServiceInstancePersistenceManager;
 import net.maxgigapop.mrs.rest.api.model.ApiDeltaBase;
+import net.maxgigapop.mrs.rest.api.model.ApiDeltaRetrieval;
 import net.maxgigapop.mrs.rest.api.model.ApiDeltaVerification;
 import org.json.simple.JSONObject;
 
@@ -379,6 +380,36 @@ public class ServiceResource {
             apiDeltaVerification.setReductionVerified(deltaVerification.getReductionVerified() ? "true" : "false");
         }
         return apiDeltaVerification;
+    }
+    
+    @GET
+    @Produces("application/json")
+    @Path("/delta/{svcUUID}")
+    public ApiDeltaRetrieval retrieveDeltaJson(@PathParam("svcUUID") String svcUUID) throws Exception {
+        ApiDeltaRetrieval apiDeltaRetrieval = new ApiDeltaRetrieval();
+        ModelUtil.DeltaRetrieval deltaRetrieval = new ModelUtil.DeltaRetrieval();
+        serviceCallHandler.retrieveDelta(svcUUID, deltaRetrieval, true);
+        apiDeltaRetrieval.setReferenceUUID(deltaRetrieval.getReferenceModelUUID());
+        apiDeltaRetrieval.setServiceModelAddition(deltaRetrieval.getModelAdditionSvc());
+        apiDeltaRetrieval.setServiceModelReduction(deltaRetrieval.getModelReductionSvc());
+        apiDeltaRetrieval.setSystemModelAddition(deltaRetrieval.getModelAdditionSys());
+        apiDeltaRetrieval.setSystemModelReduction(deltaRetrieval.getModelReductionSys());
+        return apiDeltaRetrieval;
+    }
+    
+    @GET
+    @Produces("application/xml")
+    @Path("/delta/{svcUUID}")
+    public ApiDeltaRetrieval retrieveDelta(@PathParam("svcUUID") String svcUUID) throws Exception {
+        ApiDeltaRetrieval apiDeltaRetrieval = new ApiDeltaRetrieval();
+        ModelUtil.DeltaRetrieval deltaRetrieval = new ModelUtil.DeltaRetrieval();
+        serviceCallHandler.retrieveDelta(svcUUID, deltaRetrieval, false);
+        apiDeltaRetrieval.setReferenceUUID(deltaRetrieval.getReferenceModelUUID());
+        apiDeltaRetrieval.setServiceModelAddition(deltaRetrieval.getModelAdditionSvc());
+        apiDeltaRetrieval.setServiceModelReduction(deltaRetrieval.getModelReductionSvc());
+        apiDeltaRetrieval.setSystemModelAddition(deltaRetrieval.getModelAdditionSys());
+        apiDeltaRetrieval.setSystemModelReduction(deltaRetrieval.getModelReductionSys());
+        return apiDeltaRetrieval;
     }
     
 }

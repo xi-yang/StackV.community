@@ -213,6 +213,9 @@ public class CompilerBase {
             if (!stmt.getObject().isResource()) {
                 continue;
             }
+            if (listStmt == null) {
+                throw new EJBException("CompilerBase::listUpDownStatements() found none resource refering to policy action: " + res);
+            }
             listStmt.add(stmt);
             Resource object = stmt.getObject().asResource();
             StmtIterator its2 = object.listProperties();
@@ -226,6 +229,9 @@ public class CompilerBase {
             Statement stmt = its.next();
             if (!stmt.getObject().isResource()) {
                 continue;
+            }
+            if (listStmt == null) {
+                throw new EJBException("CompilerBase::listUpDownStatements() found none resource refering to policy action: " + res);
             }
             listStmt.add(stmt);
             Resource object = stmt.getObject().asResource();
@@ -243,27 +249,6 @@ public class CompilerBase {
             }
             listStmt.add(stmt);
         }
-        // nml/mrs statements to be added back later
-        /*
-        // add mrs:type statement for res type
-        its = model.listStatements(res, Mrs.type, (Resource) null);
-        while (its.hasNext()) {
-            Statement stmt = its.next();
-            if (listStmt == null) {
-                listStmt = new ArrayList<>();
-            }
-            listStmt.add(stmt);
-        }
-        // add spa:value statement for res type
-        its = model.listStatements(res, Mrs.value, (Resource) null);
-        while (its.hasNext()) {
-            Statement stmt = its.next();
-            if (listStmt == null) {
-                listStmt = new ArrayList<>();
-            }
-            listStmt.add(stmt);
-        }
-        */
         its = model.listStatements(res, Spa.type, (Resource) null);
         while (its.hasNext()) {
             Statement stmt = its.next();

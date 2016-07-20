@@ -18,6 +18,39 @@
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>
+        <script src="/VersaStack-web/js/jquery-ui.min.js"></script>
+        <script>
+            //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
+            dojoConfig = {
+                has: {
+                    "dojo-firebug": true,
+                    "dojo-debug-messages": true
+                },
+                async: true,
+                parseOnLoad: true,
+                packages: [
+                    {
+                        name: "d3",
+                        location: "//d3js.org/",
+                        main: "d3.v3"
+                    },
+                    {
+                        name: "local",
+                        location: "/VersaStack-web/js/"
+                    }
+                ]
+            };
+                
+                $(function() {
+                  $( "#dialog_policyAction" ).dialog({
+                      autoOpen: false
+                  });
+                  $( "#dialog_policyData" ).dialog({
+                      autoOpen: false
+                  });                     
+                });                  
+        </script>
+        <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
 
         <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
         <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
@@ -25,8 +58,13 @@
         <link rel="stylesheet" href="/VersaStack-web/css/bootstrap.css">
         <link rel="stylesheet" href="/VersaStack-web/css/style.css">
         <link rel="stylesheet" href="/VersaStack-web/css/driver.css">
-    </head>
+        <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.min.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.structure.min.css">
+        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.theme.css">                
 
+    </head>
+    
     <sql:setDataSource var="front_conn" driver="com.mysql.jdbc.Driver"
                        url="jdbc:mysql://localhost:3306/frontend"
                        user="front_view"  password="frontuser"/>
@@ -161,13 +199,13 @@
                             <tbody class="delta-table-body" id="body-delta-${verification.service_instance_id}">
                                 <tr id="verification-addition-row">
                                     <td>Addition</td>
-                                    <td id="ver-add">${verification.verified_addition}</td>
-                                    <td id="unver-add">${verification.unverified_addition}</td>
+                                    <td id="ver-add"></td>
+                                    <td id="unver-add"></td>
                                 </tr>
                                 <tr id="verification-reduction-row">
                                     <td>Reduction</td>
-                                    <td id="ver-red">${verification.verified_reduction}</td>
-                                    <td id="unver-red">${verification.unverified_reduction}</td>
+                                    <td id="ver-red"></td>
+                                    <td id="unver-red"></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -183,6 +221,8 @@
                 instructionModerate();
                 buttonModerate();
 
+                setRefresh(10); 
+                loadVisualization();                           
                 setRefresh(60);
             });
 
@@ -205,7 +245,7 @@
                     refreshCountdown(time);
                 }, 1000);
             }
-
+                        
             function reloadInstance(time) {
                 enableLoading();
                 
@@ -221,7 +261,9 @@
                     deltaModerate();
                     instructionModerate();
                     buttonModerate();
-
+                    
+                    loadVisualization();
+                    
                     $(".delta-table-header").click(function () {
                         $("#body-" + this.id).toggleClass("hide");
                     });
@@ -243,7 +285,23 @@
                 document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
                 countdown--;
             }
-            
+ 
+            function loadVisualization() {
+                $("#details-viz").load("/VersaStack-web/details_viz.jsp", function() {
+                    $("#ver-add").append($("#va_viz_div"));
+                    $("#ver-add").find("#va_viz_div").removeClass("hidden");
+                   
+                    $("#unver-add").append($("#ua_viz_div"));
+                    $("#unver-add").find("#ua_viz_div").removeClass("hidden");
+
+                    $("#ver-red").append($("#vr_viz_div"));
+                    $("#ver-red").find("#vr_viz_div").removeClass("hidden");
+
+                    $("#unver-red").append($("#ur_viz_div"));     
+                    $("#unver-red").find("#ur_viz_div").removeClass("hidden");
+                });      
+            }
+
             // Moderation Functions
 
             function deltaModerate() {
@@ -416,6 +474,7 @@
                 }
             }
 
-        </script>        
+        </script>    
+        <div id="details-viz" ></div>
     </body>
 </html>

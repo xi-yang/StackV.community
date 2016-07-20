@@ -55,7 +55,7 @@ define(["local/versastack/topology/modelConstants"], function (values) {
                 var elements = this._backing[key];
                 map_(elements, function (element){
                     var errorVal = element.value;
-                     if (errorVal.substring(0,3) === "urn") return 0;
+                    if (errorVal.substring(0,3) === "urn" || errorVal.substring(0,2) === "x-") return 0;
 
                     var name = key.split("#")[1];
                         if (key === "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"){

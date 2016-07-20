@@ -50,7 +50,7 @@ import org.json.simple.parser.ParseException;
 @Stateless
 public class MCE_VirtualNetworkCreation implements IModelComputationElement {
 
-    private static final Logger log = Logger.getLogger(MCE_VMFilterPlacement.class.getName());
+    private static final Logger log = Logger.getLogger(MCE_VirtualNetworkCreation.class.getName());
 
     @Override
     @Asynchronous
@@ -78,7 +78,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
                 + "?policy spa:importFrom ?data. "
                 + "?data spa:type ?dataType. "
                 + "?data spa:value ?dataValue. "
-                + "FILTER (not exists {?policy spa:dependOn ?other}) "
+                + String.format("FILTER (not exists {?policy spa:dependOn ?other} && ?policy = <%s>)", policy.getURI())
                 + "}";
         Map<Resource, List> networkPolicyMap = new HashMap<>();
         Query query = QueryFactory.create(sparqlString);

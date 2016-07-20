@@ -30,6 +30,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.container.AsyncResponse;
@@ -40,6 +41,8 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import web.beans.serviceBeans;
+import com.hp.hpl.jena.ontology.OntModel;
+import net.maxgigapop.mrs.common.ModelUtil;
 
 /**
  * REST Web Service
@@ -166,6 +169,45 @@ public class WebResource {
         }
         return "Added";
     }
+    
+    @DELETE
+    @Path(value = "/label/{username}/delete/{identifier}")
+    public String deleteLabel(@PathParam(value = "username") String username, @PathParam(value = "identifier") String identifier) {
+        try {
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("DELETE FROM `frontend` .`label` WHERE username = ? AND identifier = ?"); 
+            prep.setString(1, username);
+            prep.setString(2, identifier);
+            prep.executeUpdate();
+        } catch (SQLException ex) {
+            return "<<<Failed - " + ex.getMessage() + " - " + ex.getSQLState();
+        }
+        return "Deleted";
+    }
+
+    @DELETE
+    @Path(value = "/label/{username}/clearall")
+    public String clearLabels(@PathParam(value = "username") String username) {
+        try {
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("DELETE FROM `frontend`.`label` WHERE username = ? ");
+            prep.setString(1, username);
+            prep.executeUpdate();
+        } catch (SQLException ex) {
+            return "<<<Failed - " + ex.getMessage() + " - " + ex.getSQLState();
+        }
+        return "Labels Cleared";
+    }
 
     @GET
     @Path("/service/{siUUID}/status")
@@ -265,6 +307,9 @@ public class WebResource {
                 case "fl2p":
                     paraMap = parseFlow(dataJSON, refUuid);
                     break;
+                case "hybridcloud":
+                    paraMap = parseHybridCloud(dataJSON, refUuid);
+                    break;
                 default:
             }            
 
@@ -273,8 +318,10 @@ public class WebResource {
                     + " FROM service WHERE filename = ?");
             prep.setString(1, serviceType);
             rs1 = prep.executeQuery();
-            rs1.next();
-            int serviceID = rs1.getInt(1);
+            int serviceID = -1;
+            while (rs1.next()) {
+                serviceID = rs1.getInt(1);
+            }
             Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
 
             // Install Instance into DB.
@@ -310,6 +357,9 @@ public class WebResource {
                     break;
                 case "fl2p":
                     servBean.createflow(paraMap);
+                    break;
+                case "hybridcloud":
+                    servBean.creatHybridCloud(paraMap);
                     break;
                 default:
             }
@@ -451,6 +501,52 @@ public class WebResource {
             }
 
             return retMap;
+        } catch (SQLException e) {
+            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+            return null;
+        }
+    }
+
+    @GET
+    @Path("/service/availibleitems/{siUUID}")
+    @Produces("application/json")
+    public String getVerificationResultsUnion(@PathParam("siUUID") String serviceUUID) throws Exception {
+        try {
+            HashMap<String, String> retMap = new HashMap<>();
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("SELECT V.* FROM service_instance I, service_verification V WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
+            prep.setString(1, serviceUUID);
+            ResultSet rs1 = prep.executeQuery();
+            String verified_addition = "";
+            String unverified_reduction = "";
+            OntModel vAddition;
+            OntModel uReduction;
+            
+            while (rs1.next()) {
+                verified_addition = rs1.getString("verified_addition");
+                unverified_reduction = rs1.getString("unverified_reduction");
+            }
+                      
+           if (verified_addition  != null && unverified_reduction != null) {
+                vAddition = ModelUtil.unmarshalOntModelJson(verified_addition);
+                uReduction = ModelUtil.unmarshalOntModelJson(unverified_reduction);
+
+                ArrayList<OntModel> modelList = new ArrayList<>();
+                modelList.add(vAddition);
+                modelList.add(uReduction);
+                OntModel newModel = ModelUtil.createUnionOntModel(modelList);
+                return ModelUtil.marshalOntModelJson(newModel);
+           }
+           
+           if (verified_addition != null) return verified_addition;
+           else if (unverified_reduction != null) return unverified_reduction;
+           else return null;
+           
         } catch (SQLException e) {
             Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
             return null;
@@ -643,6 +739,7 @@ public class WebResource {
 
         // Parse Subnets.
         JSONArray subArr = (JSONArray) vcnJSON.get("subnets");
+        int vmCounter = 1;
         for (int i = 0; i < subArr.size(); i++) {
             JSONObject subJSON = (JSONObject) subArr.get(i);
 
@@ -652,7 +749,6 @@ public class WebResource {
             // Parse VMs.
             JSONArray vmArr = (JSONArray) subJSON.get("virtual_machines");
             if (vmArr != null) {
-                int vmCounter = 1;
                 for (Object vmEle : vmArr) {
                     //value format: "vm_name & subnet_index_number & type_detail & host & interfaces"
                     JSONObject vmJSON = (JSONObject) vmEle;
@@ -671,7 +767,9 @@ public class WebResource {
                     // INTERFACES
                     if(vmJSON.containsKey("interfaces")){
                         JSONArray interfaceArr = (JSONArray) vmJSON.get("interfaces");
-                        vmString += "&" + interfaceArr.toString();
+                        if (!interfaceArr.isEmpty()) {
+                            vmString += "&" + interfaceArr.toString();
+                        }
                     }else
                         vmString += "& ";
 //                    HashMap<String, String> interfaceMap = new HashMap<>();
@@ -766,6 +864,14 @@ public class WebResource {
             paraMap.put("gateways", gatewayArr.toString());
         }
             
+        return paraMap;
+    }
+    
+    private HashMap<String, String> parseHybridCloud(JSONObject dataJSON, String refUuid){
+        HashMap<String, String> paraMap = new HashMap<>();
+        paraMap.put("instanceUUID", refUuid);
+        paraMap.put("virtual_clouds", dataJSON.get("virtual_clouds").toString());
+        
         return paraMap;
     }
 

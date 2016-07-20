@@ -4,7 +4,9 @@
  * and open the template in the editor.
  */
 "use strict";
-define([], function () {
+define(["local/versastack/utils"], function (utils) {
+    var bsShowFadingMessage = utils.bsShowFadingMessage;
+    
     function TagDialog (userName) {
         this.currentColor = null;
         this.label = null;
@@ -66,9 +68,22 @@ define([], function () {
                         var tag = document.createElement("li");
                         tag.classList.add("tagPanel-labelItem");
                         tag.classList.add("label-color-" + that.currentColor.toLowerCase());
+                        
+                        var x = document.createElement("i");
+                        x.classList.add("fa");
+                        x.classList.add("fa-times");
+                        x.classList.add("tagDeletionIcon");      
+                        x.onclick = that.deleteTag.bind(undefined, that.label, tag, tagList);
+                        
                         tag.innerHTML = that.label;
                         tag.setAttribute('data-sentData', that.sentData);
-                        tag.onclick = function() {
+                        tag.appendChild(x);
+
+                        tag.onclick = function(e) {
+                             // Don't fire for events triggered by children. 
+                            if (e.target !== this)
+                                return;
+
                             var textField = document.createElement('textarea');
                             textField.innerText = that.getSentData();
                             document.body.appendChild(textField);
@@ -76,20 +91,14 @@ define([], function () {
                             document.execCommand('copy');
                             $(textField).remove();     
                             
-                            $("#tagPanel").popover({content: "Data copied to clipboard", placement: "top", trigger: "manual"});
-                            $("#tagPanel").popover("show");
-                            setTimeout(
-                              function(){$("#tagPanel").popover('hide');$("#tagPanel").popover('destroy');}, 
-                            1000);                             
+                            bsShowFadingMessage("#tagPanel", "Data copied to clipboard.", "top", 1000);
+
                         };
                         tagList.appendChild(tag);
                         that.closeDialog();
                         
-                        $("#tagPanel").popover({content: "Tag added.", placement: "top", trigger: "manual"});
-                        $("#tagPanel").popover("show");
-                        setTimeout(
-                          function(){$("#tagPanel").popover('hide');$("#tagPanel").popover('destroy');}, 
-                        1000);                                                   
+                        bsShowFadingMessage("#tagPanel", "Tag added.", "top", 1000);
+
                     },
                     error: function(jqXHR, textStatus, errorThrown ) {
                        //alert(errorThrown + "\n"+textStatus);
@@ -123,6 +132,27 @@ define([], function () {
             //alert(that.sentData);
             return that.sentData;
         };
+        
+        this.deleteTag = function (identifier, htmlElement, list) {
+                $.ajax({
+                    crossDomain: true,
+                    type: "DELETE",
+                    url: "/VersaStack-web/restapi/app/label/" + userName + "/delete/" + identifier,
+
+                    success: function(data,  textStatus,  jqXHR ) {
+                       bsShowFadingMessage("#tagPanel", "Tag deleted.", "top", 1000);
+                       list.removeChild(htmlElement);
+                    },
+
+                    error: function(jqXHR, textStatus, errorThrown ) {
+                       bsShowFadingMessage("#tagPanel", "Error deleting tag.", "top", 1000);
+
+                       //alert(errorThrown + "\n"+textStatus);
+                       //alert("Error deleting tag.");
+                    }                  
+                });                
+        };
+        
     }
     return TagDialog;
 });

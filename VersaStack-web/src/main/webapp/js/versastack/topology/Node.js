@@ -47,6 +47,7 @@ define(["local/versastack/topology/modelConstants"],
                 this.dx = 0;
                 this.dy = 0;
                 this.size = 0;
+                this.detailsReference = false;
                 
                 this.misc_elements = [];
                 

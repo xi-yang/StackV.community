@@ -157,7 +157,7 @@ define(["local/d3", "local/versastack/utils"],
                             map_(port.childrenPorts, function (child) {
                                 stack.push(child);
                             });
-
+                            
                             var color;
                             if (port.hasAlias() || port.hasChildren()) {
                                 color = that.portColors[port.getVisibleHeight() % that.portColors.length];
@@ -171,6 +171,10 @@ define(["local/d3", "local/versastack/utils"],
                                 port.svgNode = portContainer.append("image")
                                         .attr("xlink:href", port.getIconPath());
                             }
+                           if (port.detailsReference) {
+                                port.svgNode.style("opacity", .4);
+                            }
+
                             port.svgNode
                                 .on("mousemove", function () {
                                     outputApi.setHoverText(port.getName());

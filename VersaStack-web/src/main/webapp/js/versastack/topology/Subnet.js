@@ -8,6 +8,8 @@ define(["local/versastack/topology/modelConstants"], function (values) {
         this._map = map;
         /**@type Array.Port**/
         this.ports = [];
+        this.detailsReference = false;
+        
         //We are reloading this port from a new model
         //Model.js will handle most of the reparsing, but we need to
         //clear out some old data

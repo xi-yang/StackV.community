@@ -455,7 +455,8 @@ public class ServiceServlet extends HttpServlet {
                                 }
                                 vmString += "keypair+" + paraMap.get("vm" + j + "-keypair");
                             }
-                            vmJSON.put("type", vmString);
+                            if (!vmString.isEmpty())
+                                vmJSON.put("type", vmString);
 
                             // not implemented yet
                             JSONArray interfaceArr = new JSONArray();
@@ -492,7 +493,9 @@ public class ServiceServlet extends HttpServlet {
                                 }
                                 vmString += "keypair+" + paraMap.get("vm" + j + "-keypair");
                             }
-                            vmJSON.put("type", vmString);
+                            if (!vmString.isEmpty()) {
+                                vmJSON.put("type", vmString);
+                            }
 
                             //Parse Interfaces: either floating IP or SRIOV connection
                             JSONArray interfaceArr = new JSONArray();
