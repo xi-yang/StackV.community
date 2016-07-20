@@ -53,8 +53,16 @@ define([
                 .size([width, height])
                 .linkStrength(10)
                 .friction(0.9)
-                .linkDistance(10)
-                .charge(-1000) // usually -1000, 
+                .linkDistance(
+                    function(d) { 
+                        if (d.source.getType() === "Policy" || d.target.getType() === "Policy") {
+                            return 120;
+                        } else {
+                            return 10;
+                        }
+                    }     
+                )
+                .charge(-1000) 
                 .gravity(0.5)
                 .theta(0.8)
                 .alpha(0.1);
