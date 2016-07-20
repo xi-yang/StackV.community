@@ -52,6 +52,7 @@ import net.maxgigapop.mrs.common.ModelUtil;
 @Path("app")
 public class WebResource {
 
+    private static final Logger logger = Logger.getLogger(WebResource.class.getName());
     private final String front_db_user = "front_view";
     private final String front_db_pass = "frontuser";
     String host = "http://127.0.0.1:8080/VersaStack-web/restapi";
@@ -929,12 +930,18 @@ public class WebResource {
         URL url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
+        logger.log(Level.INFO, "Sending Propagate Command");
+        logger.log(Level.INFO, "Response Code : {0}", result);
+        
         return result.equalsIgnoreCase("PROPAGATED");
     }
     private boolean forcePropagate(String refUuid) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/propagate_forcedretry", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
+        logger.log(Level.INFO, "Sending Forced Propagate Command");
+        logger.log(Level.INFO, "Response Code : {0}", result);
+        
         return result.equalsIgnoreCase("PROPAGATED");
     }
 
@@ -942,12 +949,18 @@ public class WebResource {
         URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
+        logger.log(Level.INFO, "Sending Commit Command");
+        logger.log(Level.INFO, "Response Code : {0}", result);
+        
         return result.equalsIgnoreCase("COMMITTED");
     }
     private boolean forceCommit(String refUuid) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
+        logger.log(Level.INFO, "Sending Forced Commit Command");
+        logger.log(Level.INFO, "Response Code : {0}", result);
+        
         return result.equalsIgnoreCase("COMMITTED");
     }
 
@@ -955,6 +968,8 @@ public class WebResource {
         URL url = new URL(String.format("%s/service/%s/revert", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
+        logger.log(Level.INFO, "Sending Revert Command");
+        logger.log(Level.INFO, "Response Code : {0}", result);
         
         // Revert now returns service delta UUID; pending changes.
         return true;
@@ -963,7 +978,9 @@ public class WebResource {
         URL url = new URL(String.format("%s/service/%s/revert_forced", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
-        
+        logger.log(Level.INFO, "Sending Forced Revert Command");
+        logger.log(Level.INFO, "Response Code : {0}", result);
+
         // Revert now returns service delta UUID; pending changes.
         return true;
     }    
@@ -973,7 +990,9 @@ public class WebResource {
         URL url = new URL(String.format("%s/service/%s/", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "DELETE", null);
-
+logger.log(Level.INFO, "Sending Delete Command");
+        logger.log(Level.INFO, "Response Code : {0}", result);
+        
         return result;
     }
 
