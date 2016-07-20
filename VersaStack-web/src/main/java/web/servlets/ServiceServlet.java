@@ -421,7 +421,10 @@ public class ServiceServlet extends HttpServlet {
 
                     routeArr.add(routeJSON);
                 }
-                subnetJSON.put("routes", routeArr);
+                
+                if (!routeArr.isEmpty()) {
+                    subnetJSON.put("routes", routeArr);
+                }
 
                 // Process VMs.
                 JSONArray vmArr = new JSONArray();
@@ -430,7 +433,6 @@ public class ServiceServlet extends HttpServlet {
                         JSONObject vmJSON = new JSONObject();
                         if (paraMap.get("submit").equalsIgnoreCase("aws")) {
                             vmJSON.put("name", paraMap.get("vm" + j + "-name"));
-                            vmJSON.put("host", paraMap.get("vm" + j + "-host"));
 
                             // Parse Types.
                             String vmString = "";
@@ -553,8 +555,10 @@ public class ServiceServlet extends HttpServlet {
                                 vmRouteArr.add(routeJSON);
                             }
                         }
-                        vmJSON.put("routes", vmRouteArr);
-
+                        
+                        if (!vmRouteArr.isEmpty()) {
+                            vmJSON.put("routes", vmRouteArr);
+                        }
                         if (!vmJSON.isEmpty()) {
                             vmArr.add(vmJSON);
                         }

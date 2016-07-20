@@ -790,3 +790,51 @@ function updateGatewayNames(input) {
     $('[id$=gateway-select] option[value=' + gatewayNum + ']').text(
             'Gateway ' + gatewayNum + ' (' + input.value + ')');
 }
+
+function validateVCN() {
+    // Stage 2
+    var stage2Valid = true;
+    if ($("input[name='alias']").val() === "") {
+        $("input[name='alias']").addClass("invalid");
+        stage2Valid = false;
+    }
+    if (!stage2Valid) {
+        $("#progressbar li").eq(1).addClass("invalid");
+    }
+
+    // Stage 3
+    var stage3Valid = true;
+
+    if (!stage3Valid) {
+        $("#progressbar li").eq(2).addClass("invalid");
+    }
+
+    // Stage 4
+    var stage4Valid = true;
+
+    if (!stage4Valid) {
+        $("#progressbar li").eq(3).addClass("invalid");
+    }
+
+    // Stage 5
+    var stage5Valid = true;
+
+    if (!stage5Valid) {
+        $("#progressbar li").eq(4).addClass("invalid");
+    }
+
+    // Stage 6
+    var stage6Valid = true;
+
+    if (!stage6Valid) {
+        $("#progressbar li").eq(5).addClass("invalid");
+    }
+
+    if (stage2Valid && stage3Valid && stage4Valid && stage5Valid && stage6Valid) {
+        return true;
+    } else {
+        window.alert("Please Review your Inputs");
+        
+        return false;
+    }
+}

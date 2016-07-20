@@ -1001,6 +1001,11 @@ body {
     color: #2C3E50;
 }
 
+#msform input.invalid {
+    border: 1px solid red;
+    color: red;
+}
+
 #msform .small-counter {
     width: 12%;
     margin-left: 10px;
@@ -1112,6 +1117,14 @@ body {
     z-index: -1; /*put it behind the numbers*/
     transition: all 1s ease;
 }
+#progressbar li.invalid {
+    color: red;
+}
+#progressbar li.invalid:before, #progressbar li.invalid:after {
+    color: white;
+    background: red;
+}
+
 #progressbar li:first-child:after {
     /*connector not needed before the first step*/
     content: none; 
