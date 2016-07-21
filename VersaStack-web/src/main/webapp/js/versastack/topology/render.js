@@ -121,6 +121,7 @@ define([
     
     var lastMouse;
     var switchPopup = {};
+    var topLevelTopologies = [];
     /**@param {outputApi} outputApi
      * @param {Model} model
      * @param (fullSize) boolean
@@ -189,17 +190,6 @@ define([
             }
         } 
         
-        if (fullSize) {
-            // Fixes bug of selectElement(null) having stale model after reloading 
-            svgContainer.on("click", function () {
-               //Clear the selected element.
-               //We check the event path so this only happens if we did not actually click on something
-               var clickedElem = d3.event.path[0];
-               if (clickedElem.id === outputApi.svgContainerName) {
-                   selectElement(null);
-               }
-            });       
-        }
         if (!switchPopup[outputApi.svgContainerName] || !fullSize) {
             switchPopup[outputApi.svgContainerName] = buildSwitchPopup();
         }
@@ -267,7 +257,7 @@ define([
                     .on("click", onPolicyClick.bind(undefined, p))
                     .on("dblclick", onPolicyDblClick.bind(undefined, p))
                     .on("mousemove", onPolicyMouseMove.bind(undefined, p))
-                    .on("mouseleave", onPolicyMouseLeave.bind(undefined, p));                    
+                    .on("mouseleave", onPolicyMouseLeave.bind(undefined, p));        
 //            if (outputApi.contextMenu) {
 //                n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));    
 //            } 
@@ -291,9 +281,6 @@ define([
                 if (!n.volumePopup) {
                     n.volumePopup = buildVolumeDisplayPopup(n);
                 }
-//                console.log("In drawTopology-> n.getHeight = " +  n.getHeight());
-//                console.log("In drawTopology-> n.getDepth = " +  n.getDepth());
-//                console.log("In drawTopology-> n.visibleSize = " +  n.visibleSize());
 
                 //render the convex hull surounding the decendents of n
                 var path = getTopolgyPath(n);
@@ -702,20 +689,14 @@ define([
                     .style("stroke-width", settings.EDGE_WIDTH);
             
             if (e.edgeType === "dependOn") {
-                //var toAppend = highlightedNode.svgNode.node().cloneNode();
                 d3.select(e.svgNode.node())
                         .style("stroke", settings.EDGE_COLOR)
                         .style("stroke-width", settings.EDGE_WIDTH)
                         .style("filter", "url(#spaDependOnOutline)")
                         .style("opacity", "1")
                         .attr("marker-end", "url(#marker_arrow)")
-                        //.attr("pointer-events", "none")
                         .on("mousemove", onPolicyMouseMove.bind(undefined, e))
-                        .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));                    
-
-                        //.attr("marker-end", "url(#marker_arrow)");
-
-                
+                        .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));                                    
             } else if (e.edgeType === "importFrom") {
                 d3.select(e.svgNode.node())
                         .style("stroke", settings.EDGE_COLOR)
@@ -723,11 +704,8 @@ define([
                         .style("filter", "url(#spaImportFromOutline)")
                         .style("opacity", "1")
                         .attr("marker-end", "url(#marker_arrow)")                
-                        //.attr("pointer-events", "none")
                         .on("mousemove", onPolicyMouseMove.bind(undefined, e))
-                        .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));                    
-
-                
+                        .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));                                    
             } else if (e.edgeType === "exportTo") {
                 d3.select(e.svgNode.node())
                         .style("stroke", settings.EDGE_COLOR)
@@ -735,10 +713,8 @@ define([
                         .style("filter", "url(#spaExportToOutline)")
                         .style("opacity", "1")
                         .attr("marker-end", "url(#marker_arrow)")                
-                        //.attr("pointer-events", "none")
-                         .on("mousemove", onPolicyMouseMove.bind(undefined, e))
+                        .on("mousemove", onPolicyMouseMove.bind(undefined, e))
                         .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));                    
-
             }
             
             e.svgLeadLeft = svgContainer.select("#edge2" + "_" + outputApi.svgContainerName).append("line")
@@ -775,26 +751,21 @@ define([
                 outputApi.setDisplayName(n.getName());
                 /**@type {DropDownTree} displayTree**/
                 var displayTree = outputApi.getDisplayTree();
-                 displayTree.clear();
+                displayTree.clear();
                 var e = model.elementMap[n.getName()];
-               e.populateProperties(displayTree);
+                e.populateProperties(displayTree);
             
                 if (e.misc_elements.length > 0 )
                     displayTree.addChild("", "Separator", null);
 
-                 e.populateTreeMenu(displayTree);
-                 displayTree.addToHistory(e.getName(), "Policy");
-                //console.log("API: " + API);
-                //if (API === undefined)
-                   //console.log("i am undefined: ");
+                e.populateTreeMenu(displayTree);
+                displayTree.addToHistory(e.getName(), "Policy");
                 displayTree.draw();
                 displayTree.topViewShown = false;    
                 if (fullSize) {
                     displayTree.open();
                 }
-                
             }
-//            drawPopups();
             highlightServiceElements(); // show stuff that was highlighting when it has an svg node 
 
             map_(edgeList, updateSvgChoordsEdge);
@@ -880,24 +851,20 @@ define([
                 outputApi.setDisplayName(n.getName());
                 /**@type {DropDownTree} displayTree**/
                 var displayTree = outputApi.getDisplayTree();
-                 displayTree.clear();
+                displayTree.clear();
                 var e = model.elementMap[n.getName()];
-               e.populateProperties(displayTree);
+                e.populateProperties(displayTree);
             
                 if (e.misc_elements.length > 0 )
                     displayTree.addChild("", "Separator", null);
 
-                 e.populateTreeMenu(displayTree);
-                 displayTree.addToHistory(e.getName(), "Node");
-                //console.log("API: " + API);
-                //if (API === undefined)
-                   //console.log("i am undefined: ");
+                e.populateTreeMenu(displayTree);
+                displayTree.addToHistory(e.getName(), "Node");
                 displayTree.draw();
                 displayTree.topViewShown = false;    
                 if (fullSize) {
                     displayTree.open();
-                }
-                
+                }                
             }
             // Only show these popups if there are acutally ports and volumes 
             if (n.ports.length !== 0) 
@@ -941,9 +908,6 @@ define([
 
                 e.populateTreeMenu(displayTree);
                 displayTree.addToHistory(e.getName(), "Service");
-                //console.log("API: " + API);
-                //if (API === undefined)
-                   //console.log("i am undefined: ");            
                 displayTree.draw();
                 displayTree.topViewShown = false;
                 if (fullSize) {
@@ -971,7 +935,6 @@ define([
         function removeServiceHighlights() {
             serviceHighlightedNodes = [];
             previousHighlightedNodes = [];
-
         }
         
         function highlightServiceElements(){
@@ -986,14 +949,6 @@ define([
 
                 for (var i in serviceHighlightedNodes) {
                     var type = serviceHighlightedNodes[i].getType();
-
-                    if (type === "Port") {
-                        //serviceHighlightedNodes[i].ancestorNode.portPopup.setVisible(true);
-                        //drawPopups();                
-                    } else if (type === "Volume") {
-                        //serviceHighlightedNodes[i].parentNode.volumePopup.setVisible(true);
-                        //drawPopups();
-                    }
 
                     if (serviceHighlightedNodes[i] && serviceHighlightedNodes[i].svgNode) {
 
@@ -1042,33 +997,29 @@ define([
                     outputApi.setDisplayName("Topologies");
                     var displayTree = outputApi.getDisplayTree();
                     outputApi.getDisplayTree().clear();
-                    // Tried to optimize where I can by saving the topLevelTopologies
-                    // here, still some delay. 
-                    // Changing everything so that you only populate the display
-                    // tree when the drop down node is clicked, how long would that take? 
-    //               if ( typeof selectElement.topLevelTopologies === 'undefined' ) {
-                            // It has not... perform the initialization
-                           var topLevelTopologies = [];
-                            for (var key in model.elementMap) {
-                                var e = model.elementMap[key];
-                                if (e.getType() === "Topology" && e.topLevel) {
-                                    topLevelTopologies.push(e);                                
-                                    var child = displayTree.addChild(e.getName(), "Element", e);
-                                    e.populateTreeMenu(child);
-                                }
-                            }
-                       // }
-    //                } else {
-    //                    for (var i in selectElement.topLevelTopologies) {
-    //                        e = selectElement.topLevelTopologies[i];
-    //                        var child = displayTree.addChild(e.getName(), "Element");
-    //                        e.populateTreeMenu(child);
-    //                        
-    //                    }
-    //                }
+                    
+                    if (topLevelTopologies.length === 0) {
+                        for (var key in model.elementMap) {
+                             var e = model.elementMap[key];
+                             if (e.getType() === "Topology" && e.topLevel) {
+                                 topLevelTopologies.push(e);                                
+                                 var child = displayTree.addChild(e.getName(), "Element", e);
+                                 e.populateTreeMenu(child);
+                             }
+                        }
+                        // if still no top level topoligies  
+                        if (topLevelTopologies.length === 0) {
+                            displayTree.addChild("No top level topologies.", "Title", "No top level topologies.");
+                        }
+                    } else {
+                        for (var i in topLevelTopologies) {
+                            var topology = topLevelTopologies[i];
+                            var child = displayTree.addChild(topology.getName(), "Element", e);
+                            topology.populateTreeMenu(child);                        
+                        }
+                    }
+                    
                     displayTree.draw();
-                    console.log("versionalID: " + model.versionID);
-                    //outputApi.getDisplayTree().clear();
                 } else {
                     outputApi.setDisplayName(elem.getName());
                     /**@type {DropDownTree} displayTree**/
@@ -1093,7 +1044,7 @@ define([
             drawHighlight();
             selectedNode = elem;
         }
-        ;
+        
         /**
          * Note that n could also be a topology
          * @param {Node} n**/
@@ -1206,7 +1157,6 @@ define([
                 updateSvgChoordsNode(n);
             }
 
-            //updateSvgChoordsNode(n);
         }
         
         function buildVolumeDisplayPopup(n) {
@@ -1257,11 +1207,6 @@ define([
                     .setTextSize(switchSettings.DIALOG_TAB_TEXT_SIZE);
         }
         function clickNode(name, type) {
-            //console.log(" a bunch of stuff ");
-           //nodeList = model.listNodes();
-           //var portList = model.listPorts();
-
-           // eventually we want to use type their type for this , not a given type. 
            var element = model.elementMap[name];
            if (element === undefined) {
                if (fullSize) {
@@ -1328,8 +1273,7 @@ define([
                      }                    
                     break;
                  default:
-                     selectElement(model.elementMap[name]);
-                     
+                     selectElement(model.elementMap[name]);                    
                      if (fullSize) {
                         outputApi.getDisplayTree().addToHistory(name, type);
                         outputApi.getDisplayTree().topViewShown = false;
