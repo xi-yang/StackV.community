@@ -341,3 +341,6 @@ body{
 #service-instance-table tr {
     background: url(/VersaStack-web/img/noise-diagonal.png);	
 }
+.jSonDialog{
+    text-align:left;
+}

@@ -49,7 +49,8 @@
                      });
                      $( "#dialog_policyData" ).dialog({
                          autoOpen: false
-                     });                     
+                     });           
+                     
                 });
 
             });
@@ -151,28 +152,9 @@
                                    error: function(jqXHR, textStatus, errorThrown ) {
                                         console.log("Debugging: timeout at start..");
                                         displayError("Visualization Unavailable", d3_);
-                                     //alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
                                    }
                             }); 
                         });
-
-//                var request = new XMLHttpRequest();
-//                request.open("GET", "/VersaStack-web/data/json/umd-anl-all.json");
-//
-//                request.setRequestHeader("Accept", "application/json");
-//                request.onload = function () {
-//                    var modelData = request.responseText;
-//
-//                    if (modelData.charAt(0) === '<') {
-//                        return;
-//                    }
-//
-//                    modelData = JSON.parse(modelData);
-//                    $.post("/VersaStack-web/ViewServlet", {newModel: modelData.ttlModel}, function (response) {
-//                        // handle response from your servlet.
-//                    });
-//                };
-//                request.send();
 
                 $("#loadingPanel").addClass("hide");
                 $("#hoverdiv_viz").removeClass("hide");
@@ -255,7 +237,29 @@
                 });               
 
                 $("#modelButton").click(function (evt) {
-                    window.open('/VersaStack-web/modelView.jsp', 'newwindow', config = 'height=1200,width=400, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no');
+                   var string = model.modelString;
+                   
+                   // We detach DOM children and append them back to the model view
+                   // dialog after it's been opened to save time when opening dialogs
+                   // that have large amounts of text 
+                   // Reference: http://johnculviner.com/a-jquery-ui-dialog-open-performance-issue-and-how-to-fix-it/
+                   var detached = $("#dialog_modelView").children().detach();
+
+                    $( "#dialog_modelView").dialog( {
+                       autoOpen: false, 
+                       width: 600,
+                       height: ($(window).height() * (3/4)),
+                       open: function() {
+                           detached.appendTo($("#dialog_modelView"));
+                           $("#dialog_modelView").html("<pre class=\"jSonDialog\">" + string + "</pre>");
+                       }
+                    });
+
+                    $("#dialog_modelView").dialog("open");
+                    
+                    // JQuery UI automatically focuses on the first dialog, we remove all
+                    // focus by using the blur method. 
+                    $('.ui-dialog :button').blur();
                 });
 
                 $("#displayPanel-tab").click(function (evt) {
@@ -806,6 +810,9 @@
     <div id="dialog_policyAction" title="Policy Action">
     </div>
     <div id="dialog_policyData" title="Policy Data">
+    </div>
+
+    <div id="dialog_modelView" title="Model View">
     </div>
 
     <!-- TAG PANEL -->
