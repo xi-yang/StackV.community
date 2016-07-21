@@ -809,7 +809,7 @@ define([
             var policyType = n.getTypeDetailed();
             if (policyType === "PolicyData") {
                 $("#dialog_policyData").text("");
-                $("#dialog_policyData").append(n.data);
+                $("#dialog_policyData").append("<pre class=\"jSonDialog\">" + n.data + "</pre>");
                 $("#dialog_policyData").dialog("open");
                 $('.ui-dialog :button').blur();
             } else if (policyType === "PolicyAction") {
