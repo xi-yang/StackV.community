@@ -277,7 +277,7 @@ function applyTemplate(mode) {
             configureForm('aws');
 
             form.elements['netType'].value = 'internal';
-            form.elements['netCidr'].value = '10.0.0.0/16';
+            form.elements['netCidr'].value = '10.1.0.0/16';
 
             var subnetCounter = document.getElementById('awsStage3-subnet');
             subnetCounter.value = 2;
@@ -499,7 +499,6 @@ function setVMs(input) {
     $("#" + stage + "-route-table tr").remove();
     fieldset.innerHTML = "";
 
-
     var start = 1;
     for (i = start; i <= input.value; i++) {
         // Set stage 3 data table
@@ -533,7 +532,6 @@ function setVMs(input) {
             body1.toggleClass("fade-hide");
             body2.toggleClass("fade-hide");
         });
-
 
         var row2 = document.createElement("tr");
         var cell2_1 = document.createElement("td");
@@ -806,55 +804,45 @@ function validateVCN() {
 
     // Stage 2
     if ($("input[name='alias']").val() === "") {
-        invalidArr.push("#2-" + type + "1");
+        invalidArr.push("Alias field is empty.");
         
         $("#progressbar li").eq(1).addClass("invalid");
         $("input[name='alias']").addClass("invalid");
     }
 
     // Stage 3
-    var stage3Valid = true;
-
-    if (!stage3Valid) {
-        $("#progressbar li").eq(2).addClass("invalid");
-    }
+    
 
     // Stage 4
-    var stage4Valid = true;
-
-    if (!stage4Valid) {
-        $("#progressbar li").eq(3).addClass("invalid");
-    }
+    
 
     // Stage 5
-    var stage5Valid = true;
-
-    if (!stage5Valid) {
-        $("#progressbar li").eq(4).addClass("invalid");
-    }
+    
 
     // Stage 6
-    var stage6Valid = true;
+    
 
-    if (!stage6Valid) {
-        $("#progressbar li").eq(5).addClass("invalid");
-    }
-
+    // Results
     if (invalidArr.length === 0) {
         return true;
     } else {
-        infoAlert("Invalid Inputs");
+        infoAlert("Invalid Inputs", invalidArr);
         
         return false;
     }
 }
 
-function infoAlert(title) {
+function infoAlert(title, arr) {
     $("#black-screen").removeClass("off");
     $("#info-panel").addClass("active");
     
     if (title === "Invalid Inputs") {
         $("#info-panel-title").html(title);
-        $("#info-panel-div").html("There are invalid inputs in your form.");
-    }    
+        var arrString = "";
+        for (i = 0; i < arr.length(); i++) {
+            arrString += arr[i] + "\r\n";
+        }
+        
+        $("#info-panel-div").html(arrString);
+    }
 }
