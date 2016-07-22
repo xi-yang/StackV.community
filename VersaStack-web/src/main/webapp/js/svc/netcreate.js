@@ -69,6 +69,11 @@ $(function () {
 
         body.toggleClass("hide");
     });
+    
+    $("#info-panel").click(function () {
+        $("#black-screen").addClass("off");
+        $(this).removeClass("active");
+    });
 
     $("#progressbar li").click(function () {
         if (animating || $(this).hasClass('disabled'))
@@ -120,6 +125,8 @@ function configureForm(type) {
     tbody.appendChild(row1);    
 
     if (type === 'aws') {
+        $("#msform").addClass("aws");
+        
         $("#progressbar li").eq(4).addClass("disabled");
         $("#progressbar li").eq(5).addClass("disabled");
 
@@ -131,6 +138,8 @@ function configureForm(type) {
         row2.appendChild(cell2_1);
         row2.appendChild(cell2_2);
         tbody.appendChild(row2);
+    } else {
+        $("#msform").addClass("ops");
     }
 }
 
@@ -792,14 +801,15 @@ function updateGatewayNames(input) {
 }
 
 function validateVCN() {
+    var invalidArr = new Array();
+    var type = $("#msform").attr('class');
+
     // Stage 2
-    var stage2Valid = true;
     if ($("input[name='alias']").val() === "") {
-        $("input[name='alias']").addClass("invalid");
-        stage2Valid = false;
-    }
-    if (!stage2Valid) {
+        invalidArr.push("#2-" + type + "1");
+        
         $("#progressbar li").eq(1).addClass("invalid");
+        $("input[name='alias']").addClass("invalid");
     }
 
     // Stage 3
@@ -830,11 +840,21 @@ function validateVCN() {
         $("#progressbar li").eq(5).addClass("invalid");
     }
 
-    if (stage2Valid && stage3Valid && stage4Valid && stage5Valid && stage6Valid) {
+    if (invalidArr.length === 0) {
         return true;
     } else {
-        window.alert("Please Review your Inputs");
+        infoAlert("Invalid Inputs");
         
         return false;
     }
+}
+
+function infoAlert(title) {
+    $("#black-screen").removeClass("off");
+    $("#info-panel").addClass("active");
+    
+    if (title === "Invalid Inputs") {
+        $("#info-panel-title").html(title);
+        $("#info-panel-div").html("There are invalid inputs in your form.");
+    }    
 }

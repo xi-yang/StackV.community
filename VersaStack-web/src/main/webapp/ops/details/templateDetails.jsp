@@ -221,7 +221,6 @@
                 instructionModerate();
                 buttonModerate();
 
-                setRefresh(10); 
                 loadVisualization();                           
                 setRefresh(60);
             });

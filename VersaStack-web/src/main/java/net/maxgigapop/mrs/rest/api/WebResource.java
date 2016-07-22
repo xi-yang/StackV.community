@@ -399,6 +399,7 @@ public class WebResource {
                 case "force_cancel":
                     setSuperState(refUuid, 2);
                     forceCancelInstance(refUuid);
+                    break;
                     
                 case "reinstate":
                     setSuperState(refUuid, 4);
