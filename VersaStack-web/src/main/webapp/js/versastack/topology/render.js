@@ -258,12 +258,12 @@ define([
                     .on("dblclick", onPolicyDblClick.bind(undefined, p))
                     .on("mousemove", onPolicyMouseMove.bind(undefined, p))
                     .on("mouseleave", onPolicyMouseLeave.bind(undefined, p));        
-//            if (outputApi.contextMenu) {
-//                n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));    
-//            } 
-//            if (n.detailsReference) {
-//                n.svgNode.style("opacity", .4);
-//            }
+            if (outputApi.contextMenu) {
+                p.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, p));    
+            } 
+            if (p.detailsReference) {
+                p.svgNode.style("opacity", .4);
+            }
             p.svgNode.call(makeDragBehaviour(p));
 
             setElementSize(p, false);
