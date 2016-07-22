@@ -217,7 +217,7 @@
             }
 
             function buttonInit() { //@
-                $("#testButton").click(function (evt) {
+                $("#recenterButton").click(function (evt) {
                     outputApi.resetZoom();
                     var width = document.documentElement.clientWidth / outputApi.getZoom();
                     var height = document.documentElement.clientHeight / outputApi.getZoom();
@@ -628,7 +628,7 @@
             <div id="displayPanel-contents">
                 <button id="modelButton">Display Model</button>
                 <button id="fullDiaplayButton">Toggle Full Model</button>
-                <button id="testButton">test</button> <!-- @ -->
+                <button id="recenterButton">Recenter</button> <!-- @ -->
                 <div id="displayName"></div>
                 <div id="treeMenu"></div>                
             </div>
