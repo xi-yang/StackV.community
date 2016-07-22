@@ -57,7 +57,7 @@
                     <li class="disabled">SRIOV</li>                    
                     <li class="disabled">Summary</li>
                 </ul>
-                
+
                 <fieldset class="active-fs" id="0-mode-select" style="z-index: 4;">
                     <div><button type="button" class="action-button" onclick="applyTemplate(0)">Start from Scratch</button></div>
                     <h3 class="fs-title">Templates</h3>
@@ -93,11 +93,11 @@
                                             <option value="${driver.topologyUri}">${driver.topologyUri}</option>
                                         </c:forEach>
                                     </select>        
-                               </td>
+                                </td>
                             </tr>
                         </thead>
                         <tbody id="awsStage2-network">
-                            
+
                         </tbody>
                     </table>
                     <input type="button" name="previous" class="reset action-button" value="Previous" />
@@ -142,7 +142,7 @@
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="button" name="next" class="next action-button" value="Next" />                    
                 </fieldset>
-                
+
                 <!-- Stage 7: Summary -->
                 <fieldset id="7-aws-1">
                     <h2 class="fs-title">Summary</h2>
@@ -177,11 +177,11 @@
                                             <option value="${driver.topologyUri}">${driver.topologyUri}</option>
                                         </c:forEach>
                                     </select>        
-                               </td>
+                                </td>
                             </tr>
                         </thead>
                         <tbody id="opsStage2-network">
-                            
+
                         </tbody>
                     </table>
                     <input type="button" name="previous" class="reset action-button" value="Previous" />
@@ -200,7 +200,7 @@
                 </fieldset>                                                             
                 <fieldset id="3-ops-2">
                     <fieldset class="subfs" id="opsStage3-subnet-fs">
-                        
+
                     </fieldset>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
@@ -220,13 +220,13 @@
                 </fieldset>                                                             
                 <fieldset id="4-ops-2">
                     <fieldset class="subfs" id="opsStage4-vm-fs">
-                        
+
                     </fieldset>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="button" name="next" class="next action-button" value="Next" />                    
                 </fieldset>
-                
+
                 <!-- Stage 5: Gateways -->
                 <fieldset id="5-ops-1">
                     <h2 class="fs-title">Gateways</h2>
@@ -243,7 +243,7 @@
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="button" name="next" class="next action-button" value="Next" />                    
                 </fieldset>
-                
+
                 <!-- Stage 6: SRIOV -->
                 <fieldset id="6-ops-1">
                     <h2 class="fs-title">SRIOV</h2>
@@ -262,7 +262,7 @@
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="button" name="next" class="next action-button" value="Next" />                    
                 </fieldset>                                
-                
+
                 <!-- Stage 7: Summary -->
                 <fieldset id="7-ops-1">
                     <h2 class="fs-title">Summary</h2>
@@ -272,7 +272,12 @@
                     <button type="submit" name="submit" class="action-button" value="ops">Submit</button>                    
                 </fieldset>
             </form>
-
+            <div id="info-panel">
+                <h3 class="fs-subtitle" id="info-panel-title"></h3>
+                <div id="info-panel-div">
+                    
+                </div>
+            </div>
         </div>
         <!-- TAG PANEL -->       
         <div id="tag-panel"> 
