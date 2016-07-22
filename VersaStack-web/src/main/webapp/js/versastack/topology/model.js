@@ -52,6 +52,7 @@ define([
             // If ready, load the live model. Otherwise, load the static model. 
             request.open("GET", "/VersaStack-web/restapi/model/"); 
             //request.open("GET", "/VersaStack-web/data/json/spa-rvtk-versastack-qa1-1vm.json");
+            //request.open("GET", "/VersaStack-web/data/json/aws-blank.json");
             requestModel();
             
             function requestModel() {
@@ -88,8 +89,9 @@ define([
                         map[newNode.value][values.type] = [{type: 'uri', value: values.namedIndividual}, {type: 'uri', value: values.node}];
                     }
     //            map=data;
+                    that.modelString = JSON.stringify(map, null, '\t');
                     console.log("\n\nmap from request \n\n");
-                    console.log(JSON.stringify(map, null, 2));
+                    console.log(that.modelString);
 
                     /*
                      * We begin by extracting all nodes/topologies
@@ -268,7 +270,7 @@ define([
                                         if_key = if_key.value;
 
                                         var i_f = that.policyMap[if_key];                                       
-                                        var toAdd = new Edge(i_f, policy);
+                                        var toAdd = new Edge(i_f, policy); 
                                         toAdd.edgeType = "importFrom";
                                         that.policyEdges.push(toAdd);                                                                     
                                     });
@@ -1093,7 +1095,7 @@ define([
                                         if_key = if_key.value;
 
                                         var i_f = that.policyMap[if_key];                                       
-                                        var toAdd = new Edge(i_f, policy);
+                                        var toAdd = new Edge(i_f, policy); 
                                         toAdd.edgeType = "importFrom";
                                         that.policyEdges.push(toAdd);                                                                     
                                     });
