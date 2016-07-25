@@ -226,6 +226,16 @@ function previousStage(current_fs, incoming_fs) {
     });
 }
 
+function startEditor(mode) {
+    $("#mode-select").css("top", "-50%");
+    
+    if (mode === 0) {
+        $("#wizardform").removeClass("hide");
+    } else {
+        $("#msform").removeClass("hide");
+    }
+}
+
 function applyTemplate(mode) {
     var form = document.getElementById('msform');
     $("#black-screen").addClass("off");
@@ -235,13 +245,13 @@ function applyTemplate(mode) {
 
     if (mode === 0) {
         base_fs = $('#1-base-1');
-        mode_fs = $('#0-mode-select');
+        mode_fs = $('#0-template-select');
         nextStage(mode_fs, base_fs);
     }
     else {
         // Basic AWS Template
         if (mode === 1) {
-            current_fs = $("#0-mode-select");
+            current_fs = $("#0-template-select");
             next_fs = $("#2-aws-1");
             configureForm('aws');
 
@@ -272,7 +282,7 @@ function applyTemplate(mode) {
         }
         // AWS w/ VMs Template
         else if (mode === 2) {
-            current_fs = $("#0-mode-select");
+            current_fs = $("#0-template-select");
             next_fs = $("#2-aws-1");
             configureForm('aws');
 
@@ -320,7 +330,7 @@ function applyTemplate(mode) {
         }
         // Basic OPS Template
         else if (mode === 3) {
-            current_fs = $("#0-mode-select");
+            current_fs = $("#0-template-select");
             next_fs = $("#2-ops-1");
             configureForm('ops');                        
             

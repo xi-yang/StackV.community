@@ -43,8 +43,13 @@
         <!-- MAIN PANEL -->
         <div id="black-screen"></div>
         <div id="main-pane">
+            <fieldset id="mode-panel">
+                <div><button type="button" class="action-button" onclick="startEditor(0)">Start Wizard</button></div>               
+                <div><button type="button" class="action-button" onclick="startEditor(1)">Start from Scratch</button></div>
+            </fieldset>
+
             <!-- Multistep form -->
-            <form action="/VersaStack-web/ServiceServlet" method="post" id="msform" onsubmit="return validateVCN()">
+            <form action="/VersaStack-web/ServiceServlet" method="post" class="disabled stageform" id="msform" onsubmit="return validateVCN()">
                 <input type="hidden" name="username" value="${user.getUsername()}"/>
                 <input type="hidden" name="netCreate" value="true"/>
                 <!-- Progress Bar -->
@@ -58,7 +63,7 @@
                     <li class="disabled">Summary</li>
                 </ul>
 
-                <fieldset class="active-fs" id="0-mode-select" style="z-index: 4;">
+                <fieldset class="active-fs" id="0-template-select" style="z-index: 4;">
                     <div><button type="button" class="action-button" onclick="applyTemplate(0)">Start from Scratch</button></div>
                     <h3 class="fs-title">Templates</h3>
                     <div><button type="button" class="action-button" onclick="applyTemplate(1)">Basic AWS</button></div>
@@ -151,11 +156,6 @@
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <button type="submit" name="submit" class="action-button" value="aws">Submit</button>                    
                 </fieldset>
-
-
-
-
-
 
 
                 <!-- Openstack -->
@@ -275,7 +275,7 @@
             <div id="info-panel">
                 <h3 class="fs-subtitle" id="info-panel-title"></h3>
                 <div id="info-panel-div">
-                    
+
                 </div>
             </div>
         </div>
