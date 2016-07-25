@@ -170,7 +170,7 @@
                             </tr>
                             <tr>
                                 <td>
-                                    <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance WHERE driverEjbPath='java:module/AwsDriver'" var="driverlist" />
+                                    <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance WHERE driverEjbPath='java:module/OpenStackDriver'" var="driverlist" />
                                     <select name="topoUri" >
                                         <option selected disabled value="test">Choose the driver topology URI</option>
                                         <c:forEach var="driver" items="${driverlist.rows}">
