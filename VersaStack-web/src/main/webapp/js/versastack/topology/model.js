@@ -695,6 +695,9 @@ define([
                     return that.portMap[urn];
                 case "Volume":
                     return that.volumeMap[urn];
+                case "Subnet":
+                case "SwitchingSubnet":
+                    return that.subnetMap[urn];
                 default: return null;
             }
         };
@@ -732,6 +735,10 @@ define([
                 case "Volume":
                     return new Volume(that.volumeMap[urn]._backing, 
                                       that.volumeMap[urn]._map);
+                case "Subnet":
+                case "SwitchingSubnet":
+                    return new Subnet(that.subnetMap[urn]._backing, 
+                                      that.subnetMap[urn]._map);
                 default: return null;
             }
         };
