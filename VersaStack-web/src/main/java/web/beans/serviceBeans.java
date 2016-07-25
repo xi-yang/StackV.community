@@ -623,8 +623,8 @@ public class serviceBeans {
                                     String ip = null;
                                     String mac = null;
                                     for (String str : addArr) {
-                                        ip = str.contains("ip") ? str.substring(5) : ip;
-                                        mac = str.contains("mac") ? str.substring(4) : mac;
+                                        ip = str.contains("ipv4") ? str.substring(str.indexOf("ipv4")+5) : ip;
+                                        mac = str.contains("mac") ? str.substring(str.indexOf("mac")+4) : mac;
                                     }
 
                                     //Find sriov parameter from Gateways.
@@ -878,7 +878,6 @@ public class serviceBeans {
         for (Object obj : vcnArr) {
             JSONObject vcnJson = (JSONObject) obj;
             String topoUri = (String) vcnJson.get("parent");
-            topoUriList.add(topoUri);
             String driverType = "";
             String vcnName = (String) vcnJson.get("name");
             vcnJson.remove("name");
@@ -930,6 +929,9 @@ public class serviceBeans {
                 }
             }
 
+            //absence check ?
+            JSONArray gatewayArr = (JSONArray) vcnJson.get("gateways");
+            
             //find driver type
             Properties rains_connectionProps = new Properties();
             rains_connectionProps.put("user", rains_db_user);
@@ -1023,6 +1025,8 @@ public class serviceBeans {
             } else if (driverType.equals("ops")) {
                 int sriovCounter = 1;
                 String dependOn = "";
+                String createPathExportTo = "";
+                JSONObject connCriteriaValue = new JSONObject();
                 String providesVolume = "";
                 String svcDeltaCeph = "";
                 svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_clouds:tag+" + vcnName + "&gt;\n"
@@ -1049,7 +1053,7 @@ public class serviceBeans {
                         if (vmJson.containsKey("ceph_rbd")) {
                             JSONArray cephArr = (JSONArray) vmJson.get("ceph_rbd");
                             for (int ceph = 0; ceph < cephArr.size(); ceph++) {
-                                JSONObject cephJson = (JSONObject) cephArr.get(i);
+                                JSONObject cephJson = (JSONObject) cephArr.get(ceph);
                                 nodeHasVolume += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":volume+ceph" + ceph + "&gt;, ";
                                 svcDeltaCeph += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":volume+ceph" + ceph + "&gt;\n"
                                         + "   a  mrs:Volume;\n"
@@ -1118,92 +1122,188 @@ public class serviceBeans {
                                         String ip = null;
                                         String mac = null;
                                         for (String str : addArr) {
-                                            ip = str.contains("ip") ? str.substring(5) : ip;
-                                            mac = str.contains("mac") ? str.substring(4) : mac;
+                                            ip = str.contains("ipv4") ? str.substring(str.indexOf("ipv4")+5) : ip;
+                                            mac = str.contains("mac") ? str.substring(str.indexOf("mac")+4) : mac;
                                         }
                                         JSONArray routeArr = (JSONArray) interJson.get("routes");
 
-                                        svcDelta += "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;\n"
-                                                + "    a            spa:PolicyAction ;\n"
-                                                + "    spa:type     \"MCE_UcsSriovStitching\" ;\n"
-                                                + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;, "
-                                                + "&lt;x-policy-annotation:action:create-" + vmName + "-eth0&gt;, "
-                                                + "&lt;x-policy-annotation:action:create-aws-ops-path&gt;;\n"
-                                                + "    spa:importFrom &lt;x-policy-annotation:data:sriov-criteria" + sriovCounter + "&gt;, "
-                                                + "&lt;x-policy-annotation:data:aws-ops-criteriaexport&gt; .\n\n"
-                                                + "&lt;x-policy-annotation:data:sriov-criteria" + sriovCounter + "&gt;\n"
-                                                + "    a            spa:PolicyData;\n"
-                                                + "    spa:type     \"JSON\";\n"
-                                                + "    spa:format    \"\"\"{\n"
-                                                + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "\",\n"
-                                                + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%\n"
-                                                + "       \"mac_address\": \"" + mac + "\""
-                                                + (ip == null ? "" : ",\n       \"ip_address\": \"" + ip + "\"");
-                                        if (routeArr != null) {
-                                            for (Object r : routeArr) {
-                                                JSONObject route = (JSONObject) r;
-                                                if (route.containsKey("to")) {
-                                                    JSONObject value = (JSONObject) route.get("to");
-                                                    route.put("to", value.get("value"));
-                                                }
-                                                if (route.containsKey("from")) {
-                                                    JSONObject value = (JSONObject) route.get("from");
-                                                    route.put("from", value.get("value"));
-                                                }
-                                                if (route.containsKey("next_hop")) {
-                                                    JSONObject value = (JSONObject) route.get("next_hop");
-                                                    route.put("next_hop", value.get("value"));
-                                                }
-                                            }
-                                            svcDelta += ",\n       \"routes\": " + routeArr.toString().replace("\\", "");
-                                        }
-                                        svcDelta += "\n    }\"\"\" .\n\n";
+                                        //Find sriov parameter from Gateways.
+                                        for (Object gwEle : gatewayArr) {
+                                            JSONObject gwJSON = (JSONObject) gwEle;
+                                            if (gwJSON.get("name").equals(gateway)) {
+                                                if (gwJSON.get("type").equals("inter_cloud_network")) {
+                                                    svcDelta += "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;\n"
+                                                            + "    a            spa:PolicyAction ;\n"
+                                                            + "    spa:type     \"MCE_UcsSriovStitching\" ;\n"
+                                                            + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;, "
+                                                            + "&lt;x-policy-annotation:action:create-" + vmName + "-eth0&gt;, "
+                                                            + "&lt;x-policy-annotation:action:create-aws-ops-path&gt;;\n"
+                                                            + "    spa:importFrom &lt;x-policy-annotation:data:sriov-criteria" + sriovCounter + "&gt;, "
+                                                            + "&lt;x-policy-annotation:data:aws-ops-criteriaexport&gt; .\n\n"
+                                                            + "&lt;x-policy-annotation:data:sriov-criteria" + sriovCounter + "&gt;\n"
+                                                            + "    a            spa:PolicyData;\n"
+                                                            + "    spa:type     \"JSON\";\n"
+                                                            + "    spa:format    \"\"\"{\n"
+                                                            + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "\",\n"
+                                                            + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%\n"
+                                                            + "       \"mac_address\": \"" + mac + "\""
+                                                            + (ip == null ? "" : ",\n       \"ip_address\": \"" + ip + "\"");
 
-                                        if (vmJson.containsKey("quagga_bgp")) {
-                                            JSONObject quaggaJson = (JSONObject) vmJson.get("quagga_bgp");
-                                            if(!quaggaJson.containsKey("as_number"))
-                                                quaggaJson.put("as_number", "%$..customer_asn%");
-                                            if(!quaggaJson.containsKey("router_id"))
-                                                quaggaJson.put("router_id", "%$..customer_ip%");                                            
-                                            JSONArray neighborArr = (JSONArray) quaggaJson.get("neighbors");
-                                            for(Object neighborObj : neighborArr){
-                                                JSONObject neighborJson = (JSONObject) neighborObj;
-                                                if(!neighborJson.containsKey("remote_ip"))
-                                                    neighborJson.put("remote_ip", "%$..amazon_ip%");
-                                                if(!neighborJson.containsKey("local_ip"))
-                                                    neighborJson.put("local_ip", "%$..customer_ip%");
+                                                    if (routeArr != null) {
+                                                        for (Object r : routeArr) {
+                                                            JSONObject route = (JSONObject) r;
+                                                            if (route.containsKey("to")) {
+                                                                JSONObject value = (JSONObject) route.get("to");
+                                                                route.put("to", value.get("value"));
+                                                            }
+                                                            if (route.containsKey("from")) {
+                                                                JSONObject value = (JSONObject) route.get("from");
+                                                                route.put("from", value.get("value"));
+                                                            }
+                                                            if (route.containsKey("next_hop")) {
+                                                                JSONObject value = (JSONObject) route.get("next_hop");
+                                                                route.put("next_hop", value.get("value"));
+                                                            }
+                                                        }
+                                                        svcDelta += ",\n       \"routes\": " + routeArr.toString().replace("\\", "");
+                                                    }
+                                                    svcDelta += "\n    }\"\"\" .\n\n";
+                                                    if (gwJSON.containsKey("to") && ((JSONArray)gwJSON.get("to")).size() == 1 && ((JSONObject)((JSONArray)gwJSON.get("to")).get(0)).containsKey("type") 
+                                                            && ((JSONObject)((JSONArray)gwJSON.get("to")).get(0)).get("type").equals("peer_cloud")) {
+                                                        String peerCloudNet = ((JSONObject)((JSONArray)gwJSON.get("to")).get(0)).get("value").toString();
+                                                        if (peerCloudNet.contains("?vlan=")) {
+                                                            peerCloudNet = peerCloudNet.replace("?vlan=", "\":{\"vlan_tag\":\"");
+                                                            peerCloudNet += "\"}\n";
+                                                        } else {
+                                                            peerCloudNet += "\":{\"vlan_tag\":\"any\"}\n";
+                                                        }
+                                                        svcDelta += "&lt;x-policy-annotation:data:aws-ops-criteria&gt;\n"
+                                                            + "    a            spa:PolicyData;\n"
+                                                            + "    spa:type     \"JSON\";\n"
+                                                            + "    spa:value    \"\"\"{\n"
+                                                            + "        \"urn:ogf:network:vo1_maxgigapop_net:link=conn1\": {\n"
+                                                            + "            \"" + topoUri + "\":{\"vlan_tag\":\"any\"},\n"
+                                                            + "            \"" + peerCloudNet
+                                                            + "        }\n"
+                                                            + "    }\"\"\".\n\n";
+                                                    } else {
+                                                        //@TODO: throw exception for format error!
+                                                    }
+                                                    if (vmJson.containsKey("quagga_bgp")) {
+                                                        JSONObject quaggaJson = (JSONObject) vmJson.get("quagga_bgp");
+                                                        if(!quaggaJson.containsKey("as_number"))
+                                                            quaggaJson.put("as_number", "%$..customer_asn%");
+                                                        if(!quaggaJson.containsKey("router_id"))
+                                                            quaggaJson.put("router_id", "%$..customer_ip%");                                            
+                                                        JSONArray neighborArr = (JSONArray) quaggaJson.get("neighbors");
+                                                        for(Object neighborObj : neighborArr){
+                                                            JSONObject neighborJson = (JSONObject) neighborObj;
+                                                            if(!neighborJson.containsKey("remote_ip"))
+                                                                neighborJson.put("remote_ip", "%$..amazon_ip%");
+                                                            if(!neighborJson.containsKey("local_ip"))
+                                                                neighborJson.put("local_ip", "%$..customer_ip%");
+                                                        }
+                                                        JSONArray quaggaNetworks = (JSONArray) quaggaJson.get("networks");
+                                                        quaggaJson.remove("networks");
+
+                                                        svcDelta += "&lt;x-policy-annotation:action:nfv-quagga-bgp" + sriovCounter + "&gt;\n"
+                                                                + "    a            spa:PolicyAction ;\n"
+                                                                + "    spa:type     \"MCE_NfvBgpRouting\";\n"
+                                                                + "    spa:dependOn &lt;x-policy-annotation:action:create-dc1&gt;, "
+                                                                + "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;;\n"
+                                                                + "    spa:importFrom &lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-remote&gt;, "
+                                                                + "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-local&gt;.\n\n"
+                                                                + "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-remote&gt;\n"
+                                                                + "    a            spa:PolicyData ;\n"
+                                                                + "    spa:type     \"JSON\" ;\n"
+                                                                + "    spa:format   \"\"\""+ quaggaJson.toString() +"\"\"\" .\n\n"
+                                                                + "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-local&gt;\n"
+                                                                + "    a            spa:PolicyData ;\n"
+                                                                + "    spa:type     \"JSON\" ;\n"
+                                                                + "    spa:value   \"\"\"{\n"
+                                                                + "       \"parent\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "\",\n"
+                                                                + "       \"networks\":"+ quaggaNetworks.toString().replace("\\", "") +"\n"
+                                                                + "    }\"\"\" .\n\n";
+                                                        dependOn += "&lt;x-policy-annotation:action:nfv-quagga-bgp" + sriovCounter + "&gt;, ";
+                                                        awsExportTo += "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-remote&gt;, ";
+                                                    }
+                                                    else {
+                                                        dependOn += "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;, ";
+                                                    }
+                                                    dependOn += "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;, ";
+                                                    creatPathExportTo += "&lt;x-policy-annotation:data:sriov-criteria" + sriovCounter + "&gt;, ";                                                    
+                                                } else if (gwJSON.get("type").equals("ucs_port_profile")) {
+                                                    //sriov port_profile
+                                                    if (gwJSON.containsKey("from")) {
+                                                        JSONArray fromArr = (JSONArray) gwJSON.get("from");
+                                                        JSONObject fromJSON = (JSONObject) fromArr.get(0);
+                                                        if (fromJSON.get("type").equals("port_profile")) {
+                                                            //construct models;
+                                                            dependOn += "&lt;x-policy-annotation:action:ucs-sriov-stitch-external-" + vmName + "-sriov" + i + "&gt;, ";
+                                                            svcDelta += "&lt;x-policy-annotation:action:ucs-sriov-stitch-external-" + vmName + "-sriov" + i + "&gt;\n"
+                                                                    + "    a            spa:PolicyAction ;\n"
+                                                                    + "    spa:type     \"MCE_UcsSriovStitching\" ;\n"
+                                                                    + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;, &lt;x-policy-annotation:action:create-" + vmName + "-eth0&gt;;\n"
+                                                                    + "    spa:importFrom &lt;x-policy-annotation:data:sriov-criteria-external-" + vmName + "-sriov" + i + "&gt;.\n"
+                                                                    + "\n"
+                                                                    + "&lt;x-policy-annotation:data:sriov-criteria-external-" + vmName + "-sriov" + i + "&gt;\n"
+                                                                    + "    a            spa:PolicyData;\n"
+                                                                    + "    spa:type     \"JSON\";\n"
+                                                                    + "    spa:value    \"\"\"{\n"
+                                                                    + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "\",\n"
+                                                                    + "       \"to_port_profile\": \"" + (String) fromJSON.get("value") + "\",\n"
+                                                                    + "       \"mac_address\": \"" + mac + "\""
+                                                                    + (ip == null? "": ",\n       \"ip_address\": \"" + ip + "\"")
+                                                                    + ((routeArr == null || routeArr.isEmpty()) ? "" : ",\n       \"routes\": " + routeArr.toString().replace("\\", ""))
+                                                                    + "\n    }\"\"\" .\n\n";
+                                                        }
+                                                    }
+                                                    //sriov stitch_port
+                                                    if (gwJSON.containsKey("to")) {
+                                                        JSONArray toArr = (JSONArray) gwJSON.get("to");
+                                                        JSONObject toJSON = (JSONObject) toArr.get(0);
+                                                        if (toJSON.get("type").equals("stitch_port")) {
+                                                            //construct models;
+                                                            dependOn += "&lt;x-policy-annotation:action:ucs-" + vmName + "-sriov" + i + "-stitch&gt;, ";
+                                                            svcDelta += "&lt;x-policy-annotation:action:ucs-" + vmName + "-sriov" + i + "-stitch&gt;\n"
+                                                                    + "    a            spa:PolicyAction ;\n"
+                                                                    + "    spa:type     \"MCE_UcsSriovStitching\" ;\n"
+                                                                    + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;, &lt;x-policy-annotation:action:create-path&gt;;\n"
+                                                                    + "    spa:importFrom &lt;x-policy-annotation:data:" + vmName + "-sriov" + i + "-criteria&gt; .\n"
+                                                                    + "\n"
+                                                                    + "&lt;x-policy-annotation:data:" + vmName + "-sriov" + i + "-criteria&gt;\n"
+                                                                    + "    a            spa:PolicyData;\n"
+                                                                    + "    spa:type     \"JSON\";\n"
+                                                                    + "    spa:format    \"\"\"{\n"
+                                                                    + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "\",\n"
+                                                                    + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn" + (String) gwJSON.get("name") + "%\n"
+                                                                    + "       \"mac_address\": \"" + mac + "\""
+                                                                    + (ip == null? "": ",\n       \"ip_address\": \"" + ip + "\"")
+                                                                    + ((routeArr == null || routeArr.isEmpty()) ? "" : ",\n       \"routes\": " + routeArr.toString().replace("\\", ""))
+                                                                    + "\n    }\"\"\" .\n\n";
+                                                            createPathExportTo += "&lt;x-policy-annotation:data:" + vmName + "-sriov" + i + "-criteria&gt;, ";
+                                                            if (!connCriteriaValue.containsKey("urn:ogf:network:vo1_maxgigapop_net:link=conn" + (String) gwJSON.get("name"))) {
+                                                                JSONObject vlanTag = new JSONObject();
+                                                                String dest = (String) toJSON.get("value");
+                                                                String vlan = "any";
+                                                                if (dest.contains("?vlan=")) {
+                                                                    dest = dest.substring(0, dest.indexOf("?vlan"));
+                                                                    vlan = dest.substring(dest.indexOf("?vlan=") + 6);
+                                                                }
+                                                                vlanTag.put("vlan_tag", vlan);
+                                                                JSONObject path = new JSONObject();
+                                                                path.put(topoUri, vlanTag);
+                                                                path.put(dest.replace("\\", ""), vlanTag);
+                                                                connCriteriaValue.put("urn:ogf:network:vo1_maxgigapop_net:link=conn" + (String) gwJSON.get("name"), path);
+                                                            }
+                                                        }
+                                                    }                                                    
+                                                } else {
+                                                    // @error handling !
+                                                }
                                             }
-                                            JSONArray quaggaNetworks = (JSONArray) quaggaJson.get("networks");
-                                            quaggaJson.remove("networks");
-                                            
-                                            svcDelta += "&lt;x-policy-annotation:action:nfv-quagga-bgp" + sriovCounter + "&gt;\n"
-                                                    + "    a            spa:PolicyAction ;\n"
-                                                    + "    spa:type     \"MCE_NfvBgpRouting\";\n"
-                                                    + "    spa:dependOn &lt;x-policy-annotation:action:create-dc1&gt;, "
-                                                    + "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;;\n"
-                                                    + "    spa:importFrom &lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-remote&gt;, "
-                                                    + "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-local&gt;.\n\n"
-                                                    + "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-remote&gt;\n"
-                                                    + "    a            spa:PolicyData ;\n"
-                                                    + "    spa:type     \"JSON\" ;\n"
-                                                    + "    spa:format   \"\"\""+ quaggaJson.toString() +"\"\"\" .\n\n"
-                                                    + "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-local&gt;\n"
-                                                    + "    a            spa:PolicyData ;\n"
-                                                    + "    spa:type     \"JSON\" ;\n"
-                                                    + "    spa:value   \"\"\"{\n"
-                                                    + "       \"parent\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "\",\n"
-                                                    + "       \"networks\":"+ quaggaNetworks.toString().replace("\\", "") +"\n"
-                                                    + "    }\"\"\" .\n\n";
-                                            dependOn += "&lt;x-policy-annotation:action:nfv-quagga-bgp" + sriovCounter + "&gt;, ";
-                                            awsExportTo += "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-remote&gt;, ";
                                         }
-                                        else {
-                                            dependOn += "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;, ";
-                                        }
-                                        dependOn += "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;, ";
-                                        creatPathExportTo += "&lt;x-policy-annotation:data:sriov-criteria" + sriovCounter + "&gt;, ";
                                         sriovCounter++;
-                                        break;
                                     }
                                 }
                             } else {
@@ -1229,6 +1329,19 @@ public class serviceBeans {
                         + "   a  nml:Topology;\n"
                         + "   spa:type spa:Abstraction;\n"
                         + "   spa:dependOn  " + dependOn.substring(0, dependOn.length() - 2) + ".\n\n";
+                
+                if (!createPathExportTo.isEmpty()) {
+                    svcDelta += "&lt;x-policy-annotation:action:create-path&gt;\n"
+                            + "    a            spa:PolicyAction ;\n"
+                            + "    spa:type     \"MCE_MPVlanConnection\" ;\n"
+                            + "    spa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;\n"
+                            + "    spa:exportTo " + createPathExportTo.substring(0, (createPathExportTo.length() - 2)) + ".\n"
+                            + "\n"
+                            + "&lt;x-policy-annotation:data:conn-criteria&gt;\n"
+                            + "    a            spa:PolicyData;\n"
+                            + "    spa:type     \"JSON\";\n"
+                            + "    spa:value    \"\"\"" + connCriteriaValue.toString() + "\"\"\".\n\n";
+                }
             }
 
             svcDelta += "&lt;x-policy-annotation:data:" + vcnName + "-criteria&gt;\n"
@@ -1254,15 +1367,6 @@ public class serviceBeans {
                 + "    spa:format   \"\"\"{\n"
                 + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%\n"
                 + "    }\"\"\" .\n\n"
-                + "&lt;x-policy-annotation:data:aws-ops-criteria&gt;\n"
-                + "    a            spa:PolicyData;\n"
-                + "    spa:type     \"JSON\";\n"
-                + "    spa:value    \"\"\"{\n"
-                + "        \"urn:ogf:network:vo1_maxgigapop_net:link=conn1\": {\n"
-                + "            \"" + topoUriList.get(0) + "\":{\"vlan_tag\":\"any\"},\n"
-                + "            \"" + topoUriList.get(1) + "\":{\"vlan_tag\":\"any\"}\n"
-                + "        }\n"
-                + "    }\"\"\".\n\n"
                 + "</modelAddition>\n\n"
                 + "</serviceDelta>";
 
