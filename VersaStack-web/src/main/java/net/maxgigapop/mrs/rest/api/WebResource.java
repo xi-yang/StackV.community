@@ -956,7 +956,7 @@ public class WebResource {
         return result.equalsIgnoreCase("COMMITTED");
     }
     private boolean forceCommit(String refUuid) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
+        URL url = new URL(String.format("%s/service/%s/commit_forced", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
         logger.log(Level.INFO, "Sending Forced Commit Command");

@@ -28,9 +28,9 @@ Z-indexes:
 loading-panel: 10
 nav: 6
 sidebar-toggle: 5
+mode-panel: 5
 sidebar: 4
 info-panel: 4
-mode-select: 4
 black-screen: 3
 
 */
@@ -796,20 +796,41 @@ body {
 #info-panel .active {
     top: 0%;
 }
-
+#mode-panel {        
+    top: 20%;
+    left: 35%;
+    width: 30%;
+    padding: 20px 10px 30px 10px;
+    margin: 10px auto;
+    position: absolute;
+    background-color: white;
+    box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.4);
+    border-radius: 5px;
+    z-index: 5;
+    font-size: .9em;
+    transition: all 1s ease-in;
+}
 
 
 
 
 
 /*form styles*/
-#msform {
+.stageform {
     width: 600px;
     margin: 50px auto;
     text-align: center;
     position: relative;
+    opacity: 1;
+    display: block;
+    
+    transition: all 1s ease-out;
 }
-#msform fieldset {
+.stageform.disabled {
+    opacity: 0;
+    display: none;
+}
+.stageform fieldset {
     background: white;
     border: 0 none;
     border-radius: 3px;
@@ -823,10 +844,10 @@ body {
     position: absolute;
 }
 /*Hide all except first fieldset*/
-#msform fieldset:not(:first-of-type) {
+.stageform fieldset:not(:first-of-type) {
     display: none;
 }
-#msform .subfs {
+.stageform .subfs {
     width: 100%;
     position: absolute;
     left: 0px;
@@ -869,7 +890,7 @@ body {
 }
 
 /*inputs*/
-#msform input, #msform textarea {
+.stageform input, .stageform textarea, #mode-panel input {
     margin: 1px 5px;
     padding: 5px;
     border: 1px solid #ccc;
@@ -880,17 +901,17 @@ body {
     color: #2C3E50;
 }
 
-#msform input.invalid {
+.stageform input.invalid {
     border: 1px solid red;
     color: red;
 }
 
-#msform .small-counter {
+.stageform .small-counter {
     width: 12%;
     margin-left: 10px;
 }
 
-#msform label {
+.stageform label {
     margin: 10px 20px;
     float: left;
     font-size: 90%;
@@ -898,7 +919,7 @@ body {
 }
 
 /*buttons*/
-#msform .action-button {
+.stageform .action-button, #mode-panel .action-button {
     width: 30%;
     background: #50657c;
     font-weight: bold;
@@ -911,7 +932,8 @@ body {
     
     transition: all .5s ease;
 }
-#msform .action-button:hover, #msform .action-button:focus {
+.stageform .action-button:hover, .stageform .action-button:focus,
+#mode-panel .action-button:hover, #mode-panel .action-button:focus {
     background: #8398af;
     box-shadow: 0 0 0 2px white, 0 0 0 3px #50657c;
 }
