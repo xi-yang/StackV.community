@@ -808,7 +808,7 @@ body {
     border-radius: 5px;
     z-index: 5;
     font-size: .9em;
-    transition: all 1s ease-in;
+    transition: all 1s ease;
 }
 
 
@@ -822,13 +822,11 @@ body {
     text-align: center;
     position: relative;
     opacity: 1;
-    display: block;
     
     transition: all 1s ease-out;
 }
 .stageform.disabled {
     opacity: 0;
-    display: none;
 }
 .stageform fieldset {
     background: white;

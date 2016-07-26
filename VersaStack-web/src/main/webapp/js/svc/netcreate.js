@@ -227,12 +227,12 @@ function previousStage(current_fs, incoming_fs) {
 }
 
 function startEditor(mode) {
-    $("#mode-select").css("top", "-50%");
+    $("#mode-panel").css("top", "-50%");
     
     if (mode === 0) {
-        $("#wizardform").removeClass("hide");
+        $("#wizardform");
     } else {
-        $("#msform").removeClass("hide");
+        $("#msform").removeClass("disabled");
     }
 }
 
