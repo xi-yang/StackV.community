@@ -84,23 +84,21 @@
                 <fieldset id='2-aws-1'>
                     <h2 class="fs-title">Network Description</h2>
                     <h3 class="fs-subtitle">Basic Network Details</h3>
-                    <table class="fs-table" id="awsStage2-table">
-                        <thead>
-                            <tr>                            
-                                <td><input type="text" name="alias" placeholder="Instance Alias" /></td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance WHERE driverEjbPath='java:module/AwsDriver'" var="driverlist" />
-                                    <select name="topoUri" >
-                                        <option selected disabled value="test">Choose the driver topology URI</option>
-                                        <c:forEach var="driver" items="${driverlist.rows}">
-                                            <option value="${driver.topologyUri}">${driver.topologyUri}</option>
-                                        </c:forEach>
-                                    </select>        
-                                </td>
-                            </tr>
+                    <table class="fs-table">
+                        <thead id="awsStage2-base">
+
                         </thead>
+                        <tr>
+                            <td>
+                                <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance WHERE driverEjbPath='java:module/AwsDriver'" var="driverlist" />
+                                <select name="topoUri" >
+                                    <option selected disabled value="test">Choose the driver topology URI</option>
+                                    <c:forEach var="driver" items="${driverlist.rows}">
+                                        <option value="${driver.topologyUri}">${driver.topologyUri}</option>
+                                    </c:forEach>
+                                </select>        
+                            </td>
+                        </tr>
                         <tbody id="awsStage2-network">
 
                         </tbody>
@@ -163,23 +161,21 @@
                 <fieldset id='2-ops-1'>
                     <h2 class="fs-title">Network Description</h2>
                     <h3 class="fs-subtitle">Basic Network Details</h3>
-                    <table class="fs-table" id="opsStage2-table">
-                        <thead>
-                            <tr>                            
-                                <td><input type="text" name="alias" placeholder="Instance Alias" /></td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance WHERE driverEjbPath='java:module/OpenStackDriver'" var="driverlist" />
-                                    <select name="topoUri" >
-                                        <option selected disabled value="test">Choose the driver topology URI</option>
-                                        <c:forEach var="driver" items="${driverlist.rows}">
-                                            <option value="${driver.topologyUri}">${driver.topologyUri}</option>
-                                        </c:forEach>
-                                    </select>        
-                                </td>
-                            </tr>
+                    <table class="fs-table">
+                        <thead id="opsStage2-base">                
+
                         </thead>
+                        <tr>
+                            <td>
+                                <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance WHERE driverEjbPath='java:module/OpenStackDriver'" var="driverlist" />
+                                <select name="topoUri" >
+                                    <option selected disabled value="test">Choose the driver topology URI</option>
+                                    <c:forEach var="driver" items="${driverlist.rows}">
+                                        <option value="${driver.topologyUri}">${driver.topologyUri}</option>
+                                    </c:forEach>
+                                </select>        
+                            </td>
+                        </tr>
                         <tbody id="opsStage2-network">
 
                         </tbody>
