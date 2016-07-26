@@ -817,16 +817,16 @@ body {
 
 /*form styles*/
 .stageform {
+    bottom: 0%;
     width: 600px;
     margin: 50px auto;
     text-align: center;
     position: relative;
-    opacity: 1;
     
-    transition: all 1s ease-out;
+    transition: all 1s ease;
 }
 .stageform.disabled {
-    opacity: 0;
+    bottom: -100%;
 }
 .stageform fieldset {
     background: white;

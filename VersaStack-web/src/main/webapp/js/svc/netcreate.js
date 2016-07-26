@@ -112,6 +112,8 @@ $(function () {
 function configureForm(type) {
     $("#progressbar li").removeClass("disabled");
     
+    var thead = document.getElementById(type + "Stage2-base");
+    thead.innerHTML = "";
     var tbody = document.getElementById(type + "Stage2-network");
     tbody.innerHTML = "";
     
@@ -124,20 +126,32 @@ function configureForm(type) {
     row1.appendChild(cell1_2);
     tbody.appendChild(row1);    
 
+    var row2 = document.createElement("tr");
+    var cell2_1 = document.createElement("td");
+    cell2_1.innerHTML = '<input type="text" name="alias" placeholder="Instance Alias" />';
+    row2.appendChild(cell2_1);
+    thead.appendChild(row2);
+
     if (type === 'aws') {
         $("#msform").addClass("aws");
         
         $("#progressbar li").eq(4).addClass("disabled");
         $("#progressbar li").eq(5).addClass("disabled");
 
-        var row2 = document.createElement("tr");
-        var cell2_1 = document.createElement("td");
-        var cell2_2 = document.createElement("td");
-        cell2_1.innerHTML = '<input type="text" name="conn-dest" placeholder="Direct Connect Destination" />';
-        cell2_2.innerHTML = '<input type="text" name="conn-vlan" placeholder="Direct Connect VLAN" />';
-        row2.appendChild(cell2_1);
-        row2.appendChild(cell2_2);
-        tbody.appendChild(row2);
+        var arow1 = document.createElement("tr");
+        var acell1_1 = document.createElement("td");
+        acell1_1.innerHTML = '<input type="text" name="conn-dest" placeholder="Direct Connect Destination" />';
+        arow1.appendChild(acell1_1);
+        thead.appendChild(arow1);
+
+        var arow2 = document.createElement("tr");
+        var acell2_1 = document.createElement("td");
+        var acell2_2 = document.createElement("td");
+        acell2_1.innerHTML = '<input type="text" name="conn-dest" placeholder="Direct Connect Destination" />';
+        acell2_2.innerHTML = '<input type="text" name="conn-vlan" placeholder="Direct Connect VLAN" />';
+        arow2.appendChild(acell2_1);
+        arow2.appendChild(acell2_2);
+        tbody.appendChild(arow2);
     } else {
         $("#msform").addClass("ops");
     }
@@ -230,7 +244,7 @@ function startEditor(mode) {
     $("#mode-panel").css("top", "-50%");
     
     if (mode === 0) {
-        $("#wizardform");
+        $("#wizardform").removeClass("disabled");
     } else {
         $("#msform").removeClass("disabled");
     }
@@ -456,9 +470,19 @@ function setSubnets(input) {
         row2.appendChild(cell2_1);
         row2.appendChild(cell2_2);
         tbody1.appendChild(row2);
+                        
+        var row3 = document.createElement("tr");
+        var cell3_1 = document.createElement("td");
+        if (stage.substring(0, 3) === 'aws') {
+            cell3_1.innerHTML = '<label><input type = "checkbox" name = "subnet' + i + '-route-prop" value = "true"> Enable VPN Routes Propagation</label>';
+        } else if (stage.substring(0, 3) === 'ops') {
+            cell3_1.innerHTML = '<label><input type = "checkbox" name = "subnet' + i + '-route-default" value = "true"> Enable Default Routing</label>';
+        }
+        row3.appendChild(cell3_1);
+        tbody1.appendChild(row3);
+        
         table.appendChild(tbody1);
         table.appendChild(tbody2);
-
         fieldset.appendChild(table);
 
         // Set inputs for subnet routes
@@ -480,14 +504,6 @@ function setSubRoutes(input) {
     table.innerHTML = "";
 
     var subRouteCount = input.value;
-    var row = table.insertRow(0);
-    var cell = row.insertCell(0);
-    if (subnetId.substring(0, 3) === 'aws') {
-        cell.innerHTML = '<label><input type = "checkbox" name = "subnet' + subnetNum + '-route-prop" value = "true"> Enable VPN Routes Propagation</label>';
-    } else if (subnetId.substring(0, 3) === 'ops') {
-        cell.innerHTML = '<label><input type = "checkbox" name = "subnet' + subnetNum + '-route-default" value = "true"> Enable Default Routing</label>';
-    }
-
     for (j = 1; j <= subRouteCount; j++) {
         var row3 = table.insertRow(j - 1);
         var cell3_1 = row3.insertCell(0);

@@ -771,6 +771,8 @@ public class WebResource {
                         JSONArray interfaceArr = (JSONArray) vmJSON.get("interfaces");
                         if (!interfaceArr.isEmpty()) {
                             vmString += "&" + interfaceArr.toString();
+                        } else {
+                            vmString += "& ";
                         }
                     }else
                         vmString += "& ";
