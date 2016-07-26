@@ -49,7 +49,7 @@
             </fieldset>
 
             <!-- Multistep form -->
-            <form action="/VersaStack-web/ServiceServlet" method="post" class="disabled stageform" id="msform" onsubmit="return validateVCN()">
+            <form action="/VersaStack-web/ServiceServlet" method="post" class="stageform disabled" id="msform" onsubmit="return validateVCN()">
                 <input type="hidden" name="username" value="${user.getUsername()}"/>
                 <input type="hidden" name="netCreate" value="true"/>
                 <!-- Progress Bar -->
