@@ -44,16 +44,34 @@
         <div id="black-screen"></div>
         <div id="main-pane">
             <fieldset id="mode-panel">
-                <div><button type="button" class="action-button" onclick="startEditor(0)">Start Wizard</button></div>               
-                <div><button type="button" class="action-button" onclick="startEditor(1)">Start from Scratch</button></div>
+                <div><button type="button" class="action-button" onclick="startEditor(0)">Launch Wizard</button></div>               
+                <div><button type="button" class="action-button" onclick="startEditor(1)">Launch Editor</button></div>
             </fieldset>
+            
+            <!-- Wizard form -->
+            <form action="/VersaStack-web/ServiceServlet" method="post" class="stageform disabled" id="wizform" onsubmit="return validateVCN()">
+                <input type="hidden" name="username" value="${user.getUsername()}"/>
+                <input type="hidden" name="netCreate" value="true"/>
+                
+                <fieldset id="0-base-select" style="z-index: 4;">                   
+                    <h3 class="fs-title">Choose a Base</h3>
+                    <div><button type="button" class="action-button" onclick="wizardBase(1)">Base 1</button></div>
+                    <div><button type="button" class="action-button" onclick="wizardBase(2)">Base 2</button></div>
+                    <div><button type="button" class="action-button" onclick="wizardBase(3)">Base 3</button></div>
+                </fieldset>
+                
+                <!-- Stage 1: -->
+                <fieldset>
+                    
+                </fieldset>
+            </form>
 
             <!-- Multistep form -->
             <form action="/VersaStack-web/ServiceServlet" method="post" class="stageform disabled" id="msform" onsubmit="return validateVCN()">
                 <input type="hidden" name="username" value="${user.getUsername()}"/>
                 <input type="hidden" name="netCreate" value="true"/>
                 <!-- Progress Bar -->
-                <ul class="aws-progress" id="progressbar">
+                <ul class="vcn-progress" id="progressbar">
                     <li class="disabled active">Service Host</li>
                     <li class="disabled">Network</li>
                     <li class="disabled">Subnets</li>
@@ -63,7 +81,7 @@
                     <li class="disabled">Summary</li>
                 </ul>
 
-                <fieldset class="active-fs" id="0-template-select" style="z-index: 4;">
+                <fieldset id="0-template-select" style="z-index: 4;">
                     <div><button type="button" class="action-button" onclick="applyTemplate(0)">Start from Scratch</button></div>
                     <h3 class="fs-title">Templates</h3>
                     <div><button type="button" class="action-button" onclick="applyTemplate(1)">Basic AWS</button></div>

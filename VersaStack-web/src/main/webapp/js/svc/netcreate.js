@@ -109,6 +109,18 @@ $(function () {
     });
 });
 
+function startEditor(mode) {
+    $("#mode-panel").css("top", "-50%");
+    
+    if (mode === 0) {
+        $("#wizform").removeClass("disabled");
+        $("#0-base-select").addClass("active-fs");
+    } else {
+        $("#msform").removeClass("disabled");
+        $("#0-template-select").addClass("active-fs");
+    }
+}
+
 function configureForm(type) {
     $("#progressbar li").removeClass("disabled");
     
@@ -238,16 +250,6 @@ function previousStage(current_fs, incoming_fs) {
         //this comes from the custom easing plugin
         easing: 'easeInOutBack'
     });
-}
-
-function startEditor(mode) {
-    $("#mode-panel").css("top", "-50%");
-    
-    if (mode === 0) {
-        $("#wizardform").removeClass("disabled");
-    } else {
-        $("#msform").removeClass("disabled");
-    }
 }
 
 function applyTemplate(mode) {

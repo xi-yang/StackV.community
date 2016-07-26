@@ -12,7 +12,7 @@ $(function () {
         $("#sidebar-toggle").click(function (evt) {
             $("#sidebar-toggle-1").toggleClass("img-off");
             $("#sidebar-toggle-2").toggleClass("img-off");
-            
+
             $("#sidebar-contents").toggleClass("sidebar-open");
             $("#main-pane").toggleClass("sidebar-open");
 
@@ -563,7 +563,6 @@ function addLink() {
 }
 
 // API CALLS
-
 function checkInstance(uuid) {
     var apiUrl = baseUrl + '/VersaStack-web/restapi/service/' + uuid + '/status';
     $.ajax({
@@ -582,11 +581,9 @@ function propagateInstance(uuid) {
         url: apiUrl,
         type: 'PUT',
         success: function (result) {
-            // Do something with the result
+            window.location.reload(true);
         }
     });
-
-    window.location.reload(true);
 }
 
 function commitInstance(uuid) {
@@ -595,11 +592,9 @@ function commitInstance(uuid) {
         url: apiUrl,
         type: 'PUT',
         success: function (result) {
-            // Do something with the result
+            window.location.reload(true);
         }
     });
-
-    window.location.reload(true);
 }
 
 function revertInstance(uuid) {
@@ -608,11 +603,9 @@ function revertInstance(uuid) {
         url: apiUrl,
         type: 'PUT',
         success: function (result) {
-            // Do something with the result
+            window.location.reload(true);
         }
     });
-
-    window.location.reload(true);
     //window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
@@ -622,11 +615,9 @@ function cancelInstance(uuid) {
         url: apiUrl,
         type: 'PUT',
         success: function (result) {
-            // Do something with the result
+            window.location.reload(true);
         }
     });
-
-    window.location.reload(true);
     //window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 function forceCancelInstance(uuid) {
@@ -635,11 +626,9 @@ function forceCancelInstance(uuid) {
         url: apiUrl,
         type: 'PUT',
         success: function (result) {
-            // Do something with the result
+            window.location.reload(true);
         }
     });
-
-    window.location.reload(true);
     //window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
@@ -649,11 +638,9 @@ function reinstateInstance(uuid) {
         url: apiUrl,
         type: 'PUT',
         success: function (result) {
-            // Do something with the result
+            window.location.reload(true);
         }
     });
-
-    window.location.reload(true);
     //window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 function forceReinstateInstance(uuid) {
@@ -662,11 +649,9 @@ function forceReinstateInstance(uuid) {
         url: apiUrl,
         type: 'PUT',
         success: function (result) {
-            // Do something with the result
+            window.location.reload(true);
         }
     });
-
-    window.location.reload(true);
     //window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
@@ -676,11 +661,9 @@ function forceRetryInstance(uuid) {
         url: apiUrl,
         type: 'PUT',
         success: function (result) {
-            // Do something with the result
+            window.location.reload(true);
         }
     });
-
-    window.location.reload(true);
     //window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
@@ -690,11 +673,9 @@ function modifyInstance(uuid) {
         url: apiUrl,
         type: 'PUT',
         success: function (result) {
-            // Do something with the result
+            window.location.reload(true);
         }
     });
-
-    window.location.reload(true);
     //window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 function forceModifyInstance(uuid) {
@@ -703,11 +684,9 @@ function forceModifyInstance(uuid) {
         url: apiUrl,
         type: 'PUT',
         success: function (result) {
-            // Do something with the result
+            window.location.reload(true);
         }
     });
-
-    window.location.reload(true);
     //window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
@@ -717,11 +696,9 @@ function verifyInstance(uuid) {
         url: apiUrl,
         type: 'PUT',
         success: function (result) {
-            // Do something with the result
+            window.location.reload(true);
         }
     });
-
-    window.location.reload(true);
     //window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
@@ -731,11 +708,10 @@ function deleteInstance(uuid) {
         url: apiUrl,
         type: 'PUT',
         success: function (result) {
-            console.log("DELETION SUCCESS?!");
+            console.log("DELETION SUCCESSFUL");
+            window.location.replace('/VersaStack-web/ops/catalog.jsp');
         }
     });
-
-    window.location.replace('/VersaStack-web/ops/catalog.jsp');
 }
 
 // TEMPLATING
