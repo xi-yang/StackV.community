@@ -1239,14 +1239,14 @@ public class serviceBeans {
                                                         JSONObject fromJSON = (JSONObject) fromArr.get(0);
                                                         if (fromJSON.get("type").equals("port_profile")) {
                                                             //construct models;
-                                                            dependOn += "&lt;x-policy-annotation:action:ucs-sriov-stitch-external-" + vmName + "-sriov" + i + "&gt;, ";
-                                                            svcDelta += "&lt;x-policy-annotation:action:ucs-sriov-stitch-external-" + vmName + "-sriov" + i + "&gt;\n"
+                                                            dependOn += "&lt;x-policy-annotation:action:ucs-sriov-stitch-external-" + vmName + "-sriov" + sriovCounter + "&gt;, ";
+                                                            svcDelta += "&lt;x-policy-annotation:action:ucs-sriov-stitch-external-" + vmName + "-sriov" + sriovCounter + "&gt;\n"
                                                                     + "    a            spa:PolicyAction ;\n"
                                                                     + "    spa:type     \"MCE_UcsSriovStitching\" ;\n"
                                                                     + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;, &lt;x-policy-annotation:action:create-" + vmName + "-eth0&gt;;\n"
-                                                                    + "    spa:importFrom &lt;x-policy-annotation:data:sriov-criteria-external-" + vmName + "-sriov" + i + "&gt;.\n"
+                                                                    + "    spa:importFrom &lt;x-policy-annotation:data:sriov-criteria-external-" + vmName + "-sriov" + sriovCounter + "&gt;.\n"
                                                                     + "\n"
-                                                                    + "&lt;x-policy-annotation:data:sriov-criteria-external-" + vmName + "-sriov" + i + "&gt;\n"
+                                                                    + "&lt;x-policy-annotation:data:sriov-criteria-external-" + vmName + "-sriov" + sriovCounter + "&gt;\n"
                                                                     + "    a            spa:PolicyData;\n"
                                                                     + "    spa:type     \"JSON\";\n"
                                                                     + "    spa:value    \"\"\"{\n"
@@ -1264,14 +1264,14 @@ public class serviceBeans {
                                                         JSONObject toJSON = (JSONObject) toArr.get(0);
                                                         if (toJSON.get("type").equals("stitch_port")) {
                                                             //construct models;
-                                                            dependOn += "&lt;x-policy-annotation:action:ucs-" + vmName + "-sriov" + i + "-stitch&gt;, ";
-                                                            svcDelta += "&lt;x-policy-annotation:action:ucs-" + vmName + "-sriov" + i + "-stitch&gt;\n"
+                                                            dependOn += "&lt;x-policy-annotation:action:ucs-" + vmName + "-sriov" + sriovCounter + "-stitch&gt;, ";
+                                                            svcDelta += "&lt;x-policy-annotation:action:ucs-" + vmName + "-sriov" + sriovCounter + "-stitch&gt;\n"
                                                                     + "    a            spa:PolicyAction ;\n"
                                                                     + "    spa:type     \"MCE_UcsSriovStitching\" ;\n"
                                                                     + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;, &lt;x-policy-annotation:action:create-path&gt;;\n"
-                                                                    + "    spa:importFrom &lt;x-policy-annotation:data:" + vmName + "-sriov" + i + "-criteria&gt; .\n"
+                                                                    + "    spa:importFrom &lt;x-policy-annotation:data:" + vmName + "-sriov" + sriovCounter + "-criteria&gt; .\n"
                                                                     + "\n"
-                                                                    + "&lt;x-policy-annotation:data:" + vmName + "-sriov" + i + "-criteria&gt;\n"
+                                                                    + "&lt;x-policy-annotation:data:" + vmName + "-sriov" + sriovCounter + "-criteria&gt;\n"
                                                                     + "    a            spa:PolicyData;\n"
                                                                     + "    spa:type     \"JSON\";\n"
                                                                     + "    spa:format    \"\"\"{\n"
@@ -1281,7 +1281,7 @@ public class serviceBeans {
                                                                     + (ip == null? "": ",\n       \"ip_address\": \"" + ip + "\"")
                                                                     + ((routeArr == null || routeArr.isEmpty()) ? "" : ",\n       \"routes\": " + routeArr.toString().replace("\\", ""))
                                                                     + "\n    }\"\"\" .\n\n";
-                                                            createPathExportTo += "&lt;x-policy-annotation:data:" + vmName + "-sriov" + i + "-criteria&gt;, ";
+                                                            createPathExportTo += "&lt;x-policy-annotation:data:" + vmName + "-sriov" + sriovCounter + "-criteria&gt;, ";
                                                             if (!connCriteriaValue.containsKey("urn:ogf:network:vo1_maxgigapop_net:link=conn" + (String) gwJSON.get("name"))) {
                                                                 JSONObject vlanTag = new JSONObject();
                                                                 String dest = (String) toJSON.get("value");
