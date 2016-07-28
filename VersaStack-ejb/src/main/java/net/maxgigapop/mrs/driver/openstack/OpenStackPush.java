@@ -896,7 +896,9 @@ public class OpenStackPush {
             } else if (o.get("request").toString().equals("CephStorageRequest")) {
                 String servername = (String) o.get("server name");
                 String volumeName = (String) o.get("volume name");
-                String diskSize = (String) o.get("disk size");
+                String diskSize = (String) o.get("disk size"); 
+                Integer sizeMB = Integer.parseInt(diskSize)*1024; // convert gb into mb
+                diskSize = sizeMB.toString();
                 String mountPoint = (String) o.get("mount point");
                 String deviceId =  (String) o.get("device id");
                 String status =  (String) o.get("status");
