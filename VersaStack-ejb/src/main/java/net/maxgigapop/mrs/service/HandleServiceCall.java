@@ -481,6 +481,7 @@ public class HandleServiceCall {
         return reverseSvcDelta.getReferenceUUID();
     }
 
+    //By default, this only checks the last service delta. If multiPropagate==true, check all deltas.
     public String checkStatus(String serviceInstanceUuid) {
         ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
         if (serviceInstance == null) {
@@ -493,12 +494,24 @@ public class HandleServiceCall {
             return serviceInstance.getStatus();
         }
         Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
+        //@TODO? change (multiPropagate==true) into using another property?
+        String multiPropagate = serviceInstance.getProperty("multiPropagate");
+        boolean checkAllDeltas = false;
+        if (multiPropagate != null && multiPropagate.equalsIgnoreCase("true")) {
+            checkAllDeltas = true;
+        }
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
+            if (!checkAllDeltas && itSD.hasNext()) {
+                continue;
+            }
             if (serviceDelta.getSystemDelta() == null) {
                 throw new EJBException(HandleServiceCall.class.getName() + ".checkStatus (by " + serviceInstance + ") encounters " + serviceDelta + " without compiled systemDelta.");
             }
             if (serviceDelta.getStatus().equals("READY")) {
+                continue;
+            }
+            if (serviceDelta.getStatus().equals("FAILED")) {
                 continue;
             }
             if (!serviceDelta.getStatus().equals("COMMITTED")) {
@@ -535,6 +548,9 @@ public class HandleServiceCall {
         itSD = serviceInstance.getServiceDeltas().iterator();
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
+            if (!checkAllDeltas && itSD.hasNext()) {
+                continue;
+            }
             if (serviceDelta.getStatus().equals("FAILED")) {
                 failed = true;
                 break;

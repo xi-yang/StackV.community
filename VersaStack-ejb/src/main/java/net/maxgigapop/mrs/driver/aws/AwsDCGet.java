@@ -100,6 +100,16 @@ public class AwsDCGet {
         return client;
     }
 
+    //get the VirtualInterface by Vlan
+    public String getVirtualInterfaceByVlan(String vlan) {
+        for (VirtualInterface vif: virtualInterfaces) {
+            if (vif.getVlan().toString().equals(vlan)) {
+                return vif.getVirtualInterfaceId();
+            }
+        }
+        return null;
+    }
+    
     /**
      * ****************************************************************
      * function to wait for directconnect virtual interface deletion

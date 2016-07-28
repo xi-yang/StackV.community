@@ -146,14 +146,13 @@ public class AwsModelBuilder {
             String[] invalidStates = {VirtualInterfaceState.Deleted.toString(), VirtualInterfaceState.Deleting.toString()};
             if ((Arrays.asList(invalidStates).contains(virtualInterfaceState))) {
                 continue;
-            }
-            Resource VLAN_LABEL_GROUP = RdfOwl.createResource(model, ResourceTool.getResourceUri(vlanNum, AwsPrefix.labelGroup,vi.getVirtualInterfaceId(),vlanNum ), Nml.LabelGroup);
-            model.add(model.createStatement(VLAN_LABEL_GROUP, Nml.values, vlanNum));
-            
-            Resource VIRTUAL_INTERFACE = RdfOwl.createResource(model, ResourceTool.getResourceUri(vi.getVirtualInterfaceId(),AwsPrefix.vif,vi.getVirtualInterfaceId()), biPort);
+            }            
+            Resource VIRTUAL_INTERFACE = RdfOwl.createResource(model, ResourceTool.getResourceUri(vi.getVirtualInterfaceId(), AwsPrefix.vif, directConnect.getURI(), vi.getVlan().toString()), biPort);
             model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.name, vi.getVirtualInterfaceId()));
             model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.type, "direct-connect-vif"));
             model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.value, "direct-connect-vif+"+vi.getVirtualInterfaceType()));
+            Resource VLAN_LABEL_GROUP = RdfOwl.createResource(model, ResourceTool.getResourceUri(vlanNum, AwsPrefix.labelGroup, VIRTUAL_INTERFACE.getURI(),vlanNum), Nml.LabelGroup);
+            model.add(model.createStatement(VLAN_LABEL_GROUP, Nml.values, vlanNum));
             model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabelGroup, VLAN_LABEL_GROUP));
             model.add(model.createStatement(VLAN_LABEL_GROUP, Nml.labeltype, vlan));
             model.add(model.createStatement(directConnect, hasBidirectionalPort, VIRTUAL_INTERFACE));
@@ -186,7 +185,7 @@ public class AwsModelBuilder {
                 VirtualInterfaceState.Pending.toString(), VirtualInterfaceState.Verifying.toString(), "down"};
             if(virtualGatewayId != null && (Arrays.asList(acceptedStates).contains(virtualInterfaceState)))
             {
-                Resource VLAN_LABEL = RdfOwl.createResource(model, ResourceTool.getResourceUri(vlanNum, AwsPrefix.label,vi.getVirtualInterfaceId(),vlanNum), Nml.Label);
+                Resource VLAN_LABEL = RdfOwl.createResource(model, ResourceTool.getResourceUri(vlanNum, AwsPrefix.label,VIRTUAL_INTERFACE.getURI(),vlanNum), Nml.Label);
                 model.add(model.createStatement(VLAN_LABEL, Nml.labeltype, vlan));
                 model.add(model.createStatement(VLAN_LABEL, Nml.value, vlanNum));
                 model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabel, VLAN_LABEL));
