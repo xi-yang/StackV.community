@@ -83,6 +83,10 @@ define([], function () {
         var urlPattern = /(http|ftp|https):\/\/[\w-]+(\.[\w-]*)+([\w.,@?^=%&amp;:\/~+#-]*[\w@?^=%&amp;\/~+#-])?/;
         return urlPattern.test(str);
     }
+    
+    function getRenderedElementParentDiv(elem) {
+       return  $(elem.svgNode.node()).closest('.details_viz').attr('id'); 
+    }
     /** PUBLIC INTERFACE **/
     return {
         map_: map_,
@@ -90,7 +94,8 @@ define([], function () {
         bsShowFadingMessage: bsShowFadingMessage,
         positionUsingPointer: positionUsingPointer,
         getElementPosition: getElementPosition, 
-        isURL: isURL
+        isURL: isURL,
+        getRenderedElementParentDiv: getRenderedElementParentDiv
     };
     /** END PUBLIC INTERFACE **/
 
