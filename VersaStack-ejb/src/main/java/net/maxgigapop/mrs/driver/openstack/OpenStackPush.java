@@ -1265,14 +1265,15 @@ public class OpenStackPush {
                 //2.2to get the private ip of the network interface
                 query = "SELECT ?address ?value WHERE {<" + port.asResource() + ">  mrs:hasNetworkAddress  ?address ."
                         + "?address mrs:type \"ipv4:private\" ."
-                        + "?address mrs:value ?value }";
+                        + "?address mrs:value ?value "
+                        + "}";
                 ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
                 String privateAddress = "any";
                 if (r1.hasNext()) {
-
                     QuerySolution querySolution1 = r1.next();
                     RDFNode value = querySolution1.get("value");
-                    privateAddress = value.asLiteral().toString();
+                    //privateAddress = value.asLiteral().toString();
+                    log.warning(String.format("Overiding the specifci private IP %s into 'any' for port: %s.", value.toString(), portName));
                 }
                 //2.3 find the subnet that has the port previously found
                 query = "SELECT ?subnet WHERE {?subnet a mrs:SwitchingSubnet. ?subnet  nml:hasBidirectionalPort <" + port.asResource() + ">"
