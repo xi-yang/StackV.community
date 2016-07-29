@@ -24,9 +24,9 @@ public class AwsPrefix {
 
     public static String instance = prefix+":vpc+%s:subnet+%s:instance+%s";
 
-    public static String label = prefix+":vif+%s:label+%s";
+    public static String label = "%s:label+%s";
 
-    public static String labelGroup = prefix+":vif+%s:labelgroup+%s";
+    public static String labelGroup = "%s:labelgroup+%s";
     
     public static String nic = prefix+":vpc+%s:subnet+%s:nic+%s";
     
@@ -52,7 +52,7 @@ public class AwsPrefix {
 
     public static String switchingService = prefix+":vpc+%s:switchingservice";
 
-    public static String vif = prefix+":vif+%s";
+    public static String vif = "%s:dxvif+vlan%s";
 
     public static String vlan = prefix+":vif+%s:vlan+%s";
 

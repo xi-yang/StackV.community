@@ -32,7 +32,11 @@ public class ResourceTool {
                 name = versaStackPrefix + name;
             } else {
                 pattern = String.format(pattern, patterParam);
-                name = versaStackPrefix + pattern;
+                if (pattern.startsWith(versaStackPrefix)) {
+                    name = pattern;
+                } else {
+                    name = versaStackPrefix + pattern;
+                }
             }
             return name;
         }

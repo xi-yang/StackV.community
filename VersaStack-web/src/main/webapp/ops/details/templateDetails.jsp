@@ -469,6 +469,10 @@
                 var verificationState = document.getElementById("instance-verification").innerHTML;
 
                 if (superState === 'Create') {
+                    // State 0 - Stuck 
+                    if (subState === 'INIT' && verificationState === "") {
+                        $("#instance-fdelete").toggleClass("hide");
+                    }
                     // State 1 - Ready & Verifying
                     if (subState === 'READY' && verificationState === '0') {
 

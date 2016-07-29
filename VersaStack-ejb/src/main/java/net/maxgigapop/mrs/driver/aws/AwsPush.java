@@ -16,8 +16,6 @@ import com.amazonaws.services.directconnect.model.ConfirmPrivateVirtualInterface
 import com.amazonaws.services.directconnect.model.DeleteVirtualInterfaceRequest;
 import com.amazonaws.services.directconnect.model.DeleteVirtualInterfaceResult;
 import com.amazonaws.services.ec2.AmazonEC2Client;
-import com.amazonaws.services.ec2.model.RunInstancesRequest;
-import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
 import com.amazonaws.services.ec2.model.*;
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
@@ -180,6 +178,9 @@ public class AwsPush {
 
         //attach volumes that need to be atatched to existing instances
         requests += attachVolumeRequests(modelRef, modelAdd);
+
+        //associate elastic IP 
+        requests += associateElasticIpRequests(modelRef, modelAdd);
         return requests;
     }
 
@@ -342,12 +343,19 @@ public class AwsPush {
 
             } else if (request.contains("DeleteVirtualInterface")) {
                 String[] parameters = request.split("\\s+");
+                // if parameters[1] is an integer map it into dxvif id
+                String virtualInterfaceId = parameters[1];
+                if (Character.isDigit(virtualInterfaceId.charAt(0))) {
+                    virtualInterfaceId = dcClient.getVirtualInterfaceByVlan(virtualInterfaceId);
+                }
+                if (virtualInterfaceId == null || !virtualInterfaceId.startsWith("dxvif")) {
+                    throw new EJBException(String.format("unrecognized virtualInterface ID or VLAN %s", parameters[1])); 
+                }
                 DeleteVirtualInterfaceRequest interfaceRequest = new DeleteVirtualInterfaceRequest();
-                interfaceRequest.withVirtualInterfaceId(parameters[1]);
+                interfaceRequest.withVirtualInterfaceId(virtualInterfaceId);
 
                 DeleteVirtualInterfaceResult interfaceResult = dc.deleteVirtualInterface(interfaceRequest);
-                dcClient.dxvifDeletionCheck(interfaceRequest.getVirtualInterfaceId());
-                
+                dcClient.dxvifDeletionCheck(interfaceRequest.getVirtualInterfaceId());                
             } else if (request.contains("DeleteVpnGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
 
@@ -581,8 +589,16 @@ public class AwsPush {
 
             } else if (request.contains("AcceptVirtualInterface")) {
                 String[] parameters = request.split("\\s+");
+                // if parameters[1] is an integer map it into dxvif id
+                String virtualInterfaceId = parameters[1];
+                if (Character.isDigit(virtualInterfaceId.charAt(0))) {
+                    virtualInterfaceId = dcClient.getVirtualInterfaceByVlan(virtualInterfaceId);
+                }
+                if (virtualInterfaceId == null || !virtualInterfaceId.startsWith("dxvif")) {
+                    throw new EJBException(String.format("unrecognized virtualInterface ID or VLAN %s", parameters[1])); 
+                }
                 ConfirmPrivateVirtualInterfaceRequest interfaceRequest = new ConfirmPrivateVirtualInterfaceRequest();
-                interfaceRequest.withVirtualInterfaceId(parameters[1])
+                interfaceRequest.withVirtualInterfaceId(virtualInterfaceId)
                         .withVirtualGatewayId(ec2Client.getVpnGatewayId(parameters[2]));
 
                 ConfirmPrivateVirtualInterfaceResult interfaceResult = dc.confirmPrivateVirtualInterface(interfaceRequest);
@@ -672,7 +688,13 @@ public class AwsPush {
                 AssociateAddressRequest associateAddressRequest = new AssociateAddressRequest();
                 associateAddressRequest.withAllocationId(publicIp.getAllocationId())
                         .withNetworkInterfaceId(ec2Client.getResourceId(parameters[2]));
-                ec2.associateAddress(associateAddressRequest);
+                try {
+                    ec2.associateAddress(associateAddressRequest);
+                } catch (com.amazonaws.AmazonServiceException ex) {
+                    if (ex.getErrorCode().startsWith("InvalidAddress")) {
+                        logger.warning("Invalid Elastic IP address " + parameters[2] + " - not assocaited to Instance " + parameters[2]);
+                    } // also drop other exception quietly
+                }
 
             } else if (request.contains("AttachNetworkInterfaceRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -838,7 +860,14 @@ public class AwsPush {
 
                 ec2.attachVolume(volumeRequest);
                 ec2Client.volumeAttachmentCheck(ec2Client.getVolumeId(parameters[2]));
-            }
+            } else if (request.contains("AssociateElasticIpRequest")) {
+                String[] parameters = request.split("\\s+");
+
+                AssociateAddressRequest elasticIpRequest = new AssociateAddressRequest();
+                elasticIpRequest.withInstanceId(ec2Client.getInstanceId(parameters[1]))
+                        .withPublicIp(parameters[2].split("/")[0]);
+                ec2.associateAddress(elasticIpRequest);
+            } 
         }
     }
 
@@ -2952,7 +2981,7 @@ public class AwsPush {
             }
 
             //make sure the virtual private gateway has not been associated with other dx virtual interface
-            query = "SELECT ?other WHERE {"
+            query = "SELECT ?other ?name WHERE {"
                     + "<" + gateway.asResource() + "> nml:isAlias ?other. "
                     + "?other  a  nml:BidirectionalPort. "
                     + "?other mrs:type \"direct-connect-vif\" "
@@ -2965,8 +2994,25 @@ public class AwsPush {
             }
             
             String gatewayIdTag = ResourceTool.getResourceName(gateway.asResource().toString(), AwsPrefix.gateway);
-            String interfaceId = ResourceTool.getResourceName(vInterface.asResource().toString(), AwsPrefix.vif);
-
+            String interfaceId = null;
+            query = "SELECT ?name WHERE {"
+                    + "<" + vInterface.asResource() + "> nml:name ?name. "
+                    + "}";
+            r1 = executeQuery(query, emptyModel, model);
+            if (r1.hasNext()) {
+                interfaceId = r1.nextSolution().get("name").toString();
+            }
+            if (interfaceId == null) {
+                query = "SELECT ?vlan WHERE {"
+                        + "<" + vInterface.asResource() + "> nml:hasLabel ?label. "
+                        + "?label nml:value ?vlan. "
+                        + "}";
+                r1 = executeQuery(query, emptyModel, model);
+                if (!r1.hasNext()) {
+                    continue;
+                }
+                interfaceId = r1.nextSolution().get("vlan").toString();
+            }
             requests += String.format("AcceptVirtualInterface %s %s \n", interfaceId, gatewayIdTag);
         }
         return requests;
@@ -3031,11 +3077,53 @@ public class AwsPush {
             }
 
             String gatewayIdTag = ResourceTool.getResourceName(gateway.asResource().toString(), AwsPrefix.gateway);
-            String interfaceId = ResourceTool.getResourceName(vInterface.asResource().toString(), AwsPrefix.vif);
-
+            String interfaceId = null;
+            query = "SELECT ?name WHERE {"
+                    + "<" + vInterface.asResource() + "> nml:name ?name. "
+                    + "}";
+            r1 = executeQuery(query, emptyModel, model);
+            if (r1.hasNext()) {
+                interfaceId = r1.nextSolution().get("name").toString();
+            }
+            if (interfaceId == null) {
+                query = "SELECT ?vlan WHERE {"
+                        + "<" + vInterface.asResource() + "> nml:hasLabel ?label. "
+                        + "?label nml:value ?vlan. "
+                        + "}";
+                r1 = executeQuery(query, emptyModel, model);
+                if (!r1.hasNext()) {
+                    continue;
+                }
+                interfaceId = r1.nextSolution().get("vlan").toString();
+            }
+            
             requests += String.format("DeleteVirtualInterface %s %s \n", interfaceId, gatewayIdTag);
         }
         return requests;
     }
 
+    public String associateElasticIpRequests(OntModel model, OntModel modelAdd) {
+        String requests = "";
+
+        // check if node/port has floating-ip or elastic-ip annotion 
+        String query = "SELECT ?node ?port ?fip WHERE {"
+                + "?node nml:hasBidirectionalPort ?port ."
+                + "?node a nml:Node. "
+                + "?port mrs:hasNetworkAddress ?addr. "
+                + "?addr mrs:type ?fiptype. "
+                + "?addr mrs:value ?fip. "
+                + "FILTER (?fiptype = \"floating-ip\" || ?fiptype = \"elastic-ip\") "
+                + "}";
+        ResultSet r = executeQuery(query, emptyModel, modelAdd);
+        if (r.hasNext()) {
+            QuerySolution q = r.next();
+            RDFNode server = q.get("node");
+            RDFNode fip = q.get("fip");
+            String nodeIdTag = ResourceTool.getResourceName(server.asResource().toString(), AwsPrefix.instance);
+            String instanceId = ec2Client.getInstanceId(nodeIdTag);
+            String floatingIp = fip.toString();
+            requests  +=  String.format("AssociateElasticIpRequest %s %s \n", instanceId, floatingIp);
+        }
+        return requests;
+    }    
 }

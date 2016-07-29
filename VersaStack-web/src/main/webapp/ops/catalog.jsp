@@ -65,8 +65,7 @@
                                         <c:otherwise>
                                         <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}'>
                                         </c:otherwise>
-                                    </c:choose>    
-                                            
+                                    </c:choose>                                                
                                             <td>${instance[3]}</td>        
                                             <td>${instance[0]}</td>
                                             <td>${instance[1]}</td>
