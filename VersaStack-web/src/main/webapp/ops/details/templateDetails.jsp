@@ -41,14 +41,6 @@
                 ]
             };
                 
-                $(function() {
-                  $( "#dialog_policyAction" ).dialog({
-                      autoOpen: false
-                  });
-                  $( "#dialog_policyData" ).dialog({
-                      autoOpen: false
-                  });                     
-                });                  
         </script>
         <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
 
@@ -174,9 +166,58 @@
                                     <td></td>
                                     <td>${delta.delta}</td>
                                 </tr>
+                            <tr>                               
+                                <td colspan="2">       
+                                    <button  class="details-model-toggle" onclick="toggleTextModel('.${delta.type}-delta-table', '#delta-${delta.type}');">Toggle Text Model</button>          
+                                </td>
+                            </tr>                                
                             </tbody>
                         </table>
                     </c:forEach>
+                                    
+                    <table class="management-table hide service-delta-table">
+                        <thead class="delta-table-header">
+                            <tr>
+                                <th>Service Delta</th>
+                                <th>Addition</th>
+                                <th>Reduction</th>
+                            </tr>
+                        </thead>
+                        <tbody class="delta-table-body">
+                            <tr id="serv-delta-row">
+                                <td></td>
+                                <td id="serv-add"></td>
+                                <td id="serv-red"></td>
+                            </tr>
+                            <tr>                               
+                                <td colspan="3" >       
+                                    <button class="details-model-toggle" onclick="toggleTextModel('.service-delta-table', '#delta-Service');">Toggle Text Model</button>          
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                                    
+                    <table class="management-table hide system-delta-table">
+                        <thead class="delta-table-header">
+                            <tr>
+                                <th>System Delta</th>
+                                <th>Addition</th>
+                                <th>Reduction</th>
+                            </tr>
+                        </thead>
+                        <tbody class="delta-table-body">
+                            <tr id="sys-delta-row">
+                                <td></td>
+                                <td id="sys-add"></td>
+                                <td id="sys-red"></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3">
+                                    <button class="details-model-toggle" onclick="toggleTextModel('.system-delta-table', '#delta-System');">Toggle Text Model</button>                                
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
 
                     <sql:query dataSource="${front_conn}" sql="SELECT V.service_instance_id, V.verification_run, V.creation_time, V.addition, V.reduction, V.verified_reduction, V.verified_addition, V.unverified_reduction, V.unverified_addition
                                FROM service_verification V, service_instance I WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id" var="verificationlist">
@@ -207,6 +248,11 @@
                                     <td id="ver-red"></td>
                                     <td id="unver-red"></td>
                                 </tr>
+                                <tr>
+                                    <td colspan="3">
+                                        <button class="details-model-toggle" onclick="toggleTextModel('.verification-table', '#delta-System');">Toggle Text Model</button>                                
+                                    </td>
+                                </tr>                              
                             </tbody>
                         </table>
                     </c:forEach>
@@ -287,6 +333,7 @@
  
             function loadVisualization() {
                 $("#details-viz").load("/VersaStack-web/details_viz.jsp", function() {
+                    // Loading Verification visualization
                     $("#ver-add").append($("#va_viz_div"));
                     $("#ver-add").find("#va_viz_div").removeClass("hidden");
                    
@@ -298,9 +345,56 @@
 
                     $("#unver-red").append($("#ur_viz_div"));     
                     $("#unver-red").find("#ur_viz_div").removeClass("hidden");
+                    
+                    // Loading Service Delta visualization
+                    $("#delta-Service").addClass("hide"); 
+                    $(".service-delta-table").removeClass("hide");
+                    
+                    $("#serv-add").append($("#serva_viz_div"));
+                    $("#serv-add").find("#serva_viz_div").removeClass("hidden");
+
+                    $("#serv-red").append($("#servr_viz_div"));     
+                    $("#serv-red").find("#servr_viz_div").removeClass("hidden");
+
+                    // Loading System Delta visualization 
+                    var subState = document.getElementById("instance-substate").innerHTML;
+                    var verificationTime = document.getElementById("verification-time").innerHTML;
+                    if ((subState !== 'READY' && subState === 'FAILED') || verificationTime === '') {                       
+                        $("#delta-System").addClass("hide"); 
+                        $(".system-delta-table").removeClass("hide");
+                        
+                        // Toggle button should toggle  between system delta visualization and delta-System table
+                        // if the verification failed
+                        document.querySelector(".system-delta-table .details-model-toggle").onclick =  function () {
+                            toggleTextModel('.system-delta-table', '#delta-System');
+                        };
+                        
+                        $("#sys-red").append($("#sysr_viz_div"));
+                        $("#sys-add").append($("#sysa_viz_div"));     
+
+                        $("#sys-red").find("#sysr_viz_div").removeClass("hidden");
+                        $("#sys-add").find("#sysa_viz_div").removeClass("hidden");                    
+                    } else {
+                        // Toggle button should toggle between  verification visualization and delta-System table
+                        // if the verification succeeded
+                        document.querySelector("#delta-System .details-model-toggle").onclick = function () {
+                            toggleTextModel('.verification-table', '#delta-System');
+                        };                        
+                    }
                 });      
             }
-
+            
+            function toggleTextModel(viz_table, text_table) {
+                if (!$(viz_table.toLowerCase()).length) {
+                   alert("Visualization not found");
+                } else if (!$(text_table).length) {
+                   alert("Text model not found");               
+                } else {
+                    $(viz_table.toLowerCase()).toggleClass("hide");
+                    $(text_table).toggleClass("hide");                    
+                }
+            } 
+            
             // Moderation Functions
 
             function deltaModerate() {
@@ -324,7 +418,7 @@
                     if (verificationReduction === '' || (verRed === '{ }' && unverRed === '{ }')) {
                         $("#verification-reduction-row").addClass("hide");
                     }
-                }
+                } 
             }
 
             function instructionModerate() {
