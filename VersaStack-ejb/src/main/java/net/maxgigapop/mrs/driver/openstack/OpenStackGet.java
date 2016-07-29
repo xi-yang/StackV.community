@@ -420,7 +420,7 @@ public class OpenStackGet {
             return r.getName();
         }
     }
-
+    
     //get the name of a server 
     public String getServereName(Server r) {
         String name = r.getName();

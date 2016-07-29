@@ -458,7 +458,13 @@ public class OpenStackPush {
                                                             }
 
                                                             String portid = client.getPort(router_name + "port" + i).getId();
-                                                            rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
+                                                            try {// catch and ignore exception as a hack for reinstate
+                                                                rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
+                                                            } catch (org.openstack4j.api.exceptions.ClientResponseException ex) {
+                                                                if (ex.getMessage().contains("Router already has a port on subnet")) {
+                                                                    ;
+                                                                }
+                                                            }
                                                         }
                                                         i++;
                                                         j++;

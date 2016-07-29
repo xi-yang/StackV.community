@@ -180,6 +180,7 @@ public class OpenStackNeutronModelBuilder {
             String hypervisorname = server.getHypervisorHostname();
             String imageid = server.getImageId();
             String flavorid = server.getFlavorId();
+            String keypair = server.getKeyName();
             String server_name = openstackget.getServereName(server);
 
             Resource HOST = RdfOwl.createResource(model, topologyURI + ":" + "host+" + hostID, node);
@@ -194,6 +195,7 @@ public class OpenStackNeutronModelBuilder {
             model.add(model.createStatement(HOST, hasNode, VM));
             model.add(model.createStatement(VM, type, "image+" + imageid));
             model.add(model.createStatement(VM, type, "flavor+" + flavorid));
+            model.add(model.createStatement(VM, type, "keypair+" + keypair));
 
             for (Port port : openstackget.getServerPorts(server)) {
                 String PortName = openstackget.getResourceName(port);
@@ -644,22 +646,33 @@ public class OpenStackNeutronModelBuilder {
         //BUILDING THE ROUTING TABLE
         for (Router r : openstackget.getRouters()) {
             String routername = openstackget.getResourceName(r);
+            String routerShortName = routername;
+            if (begain_with_uri(routerShortName, topologyURI)) {
+                routerShortName = routerShortName.substring(topologyURI.length());
+            }
             for (Port port : openstackget.getPorts()) {
                 if (port.getDeviceId().equals(r.getId())) {
 
                     for (String DES_SUB : openstackget.getPortSubnetID(port)) {
-                        String DES_SUB_NAME = openstackget.getResourceName(openstackget.getSubnet(DES_SUB));
                         Subnet s = openstackget.getSubnet(DES_SUB);
                         DES_SUB = openstackget.getResourceName(s);
+                        String subnetShortName = DES_SUB; 
+                        if (begain_with_uri(subnetShortName, topologyURI)){
+                            subnetShortName = subnetShortName.substring(topologyURI.length());
+                        }
                         String net_ID = s.getNetworkId();
                         String NET_ID = openstackget.getResourceName(openstackget.getNetwork(net_ID));
-                        Resource SUBNET = RdfOwl.createResource(model, ResourceTool.getResourceUri(DES_SUB, OpenstackPrefix.subnet, NET_ID, DES_SUB), switchingSubnet);
+                        String networkShortName = DES_SUB; 
+                        if (begain_with_uri(networkShortName, topologyURI)){
+                            networkShortName = networkShortName.substring(topologyURI.length());
+                        }
+                        Resource SUBNET = RdfOwl.createResource(model, ResourceTool.getResourceUri(DES_SUB, OpenstackPrefix.subnet, networkShortName, DES_SUB), switchingSubnet);
                         for (IP ip2 : port.getFixedIps()) {
                             String INTERFACE_IP = ip2.getIpAddress();
-                            Resource ROUTER_INTERFACE_ROUTE_NEXTHOP = RdfOwl.createResource(model, ResourceTool.getResourceUri(INTERFACE_IP, OpenstackPrefix.router_interface_next_hop, routername, INTERFACE_IP), networkAddress);
+                            Resource ROUTER_INTERFACE_ROUTE_NEXTHOP = RdfOwl.createResource(model, ResourceTool.getResourceUri(INTERFACE_IP, OpenstackPrefix.router_interface_next_hop, routerShortName, INTERFACE_IP), networkAddress);
                             Resource ROUTER_INTERFACE_ROUTINGTABLE = null;
                             ROUTER_INTERFACE_ROUTINGTABLE = RdfOwl.createResource(model, ResourceTool.getResourceUri(routername, OpenstackPrefix.router_interface_routingtable, routername), Mrs.RoutingTable);
-                            Resource ROUTER_INTERFACE_ROUTE = RdfOwl.createResource(model, ResourceTool.getResourceUri(INTERFACE_IP, OpenstackPrefix.router_interface_route, routername, INTERFACE_IP), route);
+                            Resource ROUTER_INTERFACE_ROUTE = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetShortName, OpenstackPrefix.router_interface_route, routerShortName, subnetShortName), route);
                             model.add(model.createStatement(routingService, providesRoutingTable, ROUTER_INTERFACE_ROUTINGTABLE));
                             model.add(model.createStatement(routingService, providesRoute, ROUTER_INTERFACE_ROUTE));
                             model.add(model.createStatement(ROUTER_INTERFACE_ROUTINGTABLE, hasRoute, ROUTER_INTERFACE_ROUTE));
@@ -670,7 +683,7 @@ public class OpenStackNeutronModelBuilder {
                             model.add(model.createStatement(ROUTER_INTERFACE_ROUTE_NEXTHOP, value, INTERFACE_IP));
                         }
                     }
-
+                    
                 }
             }
             //router host route
@@ -782,4 +795,5 @@ public class OpenStackNeutronModelBuilder {
             return false;
         }
     }
+    
 }

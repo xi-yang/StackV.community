@@ -306,10 +306,16 @@ public class AwsModelBuilder {
                 if (!instances.isEmpty()) {
                     for (Instance i : instances) {
                         String instanceId = ec2Client.getIdTag(i.getInstanceId());
+                        String instanceType = i.getInstanceType();
+                        String imageName = i.getImageId();
+                        String keyName = i.getKeyName();
                         Resource INSTANCE = RdfOwl.createResource(model, ResourceTool.getResourceUri(instanceId,AwsPrefix.instance,vpcId,subnetId,instanceId), node);
                         model.add(model.createStatement(VPC, hasNode, INSTANCE));
                         model.add(model.createStatement(ec2Service, providesVM, INSTANCE));
                         model.add(model.createStatement(INSTANCE, providedByService, ec2Service));
+                        model.add(model.createStatement(INSTANCE, Mrs.type, "instance+"+instanceType));
+                        model.add(model.createStatement(INSTANCE, Mrs.type, "image+"+imageName));
+                        model.add(model.createStatement(INSTANCE, Mrs.type, "keypair+"+keyName));
 
                         //put all the voumes attached to this instance into the model
                         for (Volume vol : ec2Client.getVolumesWithAttachement(i)) {
@@ -464,6 +470,7 @@ public class AwsModelBuilder {
             Resource BUCKET = RdfOwl.createResource(model, ResourceTool.getResourceUri(b.getName(),AwsPrefix.bucket,b.getName()), bucket);
             model.add(model.createStatement(s3Service, providesBucket, BUCKET));
             model.add(model.createStatement(awsTopology, hasBucket, BUCKET));
+            model.add(model.createStatement(BUCKET, Nml.name, b.getName()));
         }
 
         //create abstraction for batch resources

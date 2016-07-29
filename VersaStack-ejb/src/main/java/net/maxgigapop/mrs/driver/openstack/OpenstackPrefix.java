@@ -67,7 +67,7 @@ public class OpenstackPrefix {
     
     public static String router_interface_routingtable  = prefix+":router+%s:routingtable-router-interface";
     
-    public static String router_interface_route  = prefix+":router+%s:interfaceip+%s:router-interface-route";
+    public static String router_interface_route  = prefix+":router+%s:interfaceto+%s:router-interface-route";
     
     public static String router_interface_next_hop  = prefix+":router+%s:router-interface-nexthop+%s:-router-interface-route-nexthop";
     
