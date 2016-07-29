@@ -151,10 +151,20 @@
             var utils;
             var DropDownTree;
             var functionMap = {}; // stores objects for funcitonality such as ContextMenu, tag Dialog, etc 
-
+            var modelMap = {}; // stores models in <visualization div, model> format 
+            var outputApiMap = {};
             var outputApi;
 
             function onload() {
+               $(function() {
+                     $( "#dialog_policyAction" ).dialog({
+                         autoOpen: false
+                     });
+                     $( "#dialog_policyData" ).dialog({
+                         autoOpen: false
+                     });           
+                     
+                });
                 require(["local/versastack/topology/model",
                     "local/versastack/topology/layout",
                     "local/versastack/topology/render",
@@ -178,13 +188,15 @@
                                             utils = utils_;
                                             map_ = utils.map_;
                                             bsShowFadingMessage = utils.bsShowFadingMessage;
+        
+
                                             // possibly pass in map here later for all possible dialogs 
                                             ContextMenu = c; 
                                             DropDownTree = tree;
-                                            functionMap['ModelBrowser'] = function(o) {
+                                            functionMap['ModelBrowser'] = function(o, m) {
                                                 var browser = document.querySelector("#displayPanel");
                                                 browser.classList.add( "displayPanel-active");
-                                                render.API.selectElement(o);
+                                                render.API.selectElement(o, outputApiMap[m]);
                                                 
                                             };
                                             
@@ -233,18 +245,18 @@
             
 
                 
-            function recenterGraph(outputApi, model) {
-                outputApi.resetZoom();
-                var width = $("#va_viz").closest("td").width();
-                var height = $( "#va_viz").closest("td").height();
+            function recenterGraph(o, model) {
+                o.resetZoom();
+                var width = $("#" + o.svgContainerName).closest("td").width();
+                var height = $("#" + o.svgContainerName).closest("td").height();
 
                 layout.stop();
                 //layout.force().gravity(1).charge(-900).start();
-                layout.testLayout(model, null, width, height);
-                layout.testLayout(model, null, width, height); 
+                layout.doLayout(model, null, width, height);
+                layout.doLayout(model, null, width, height); 
 
-                outputApi.resetZoom();
-                render.doRender(outputApi, model);
+                o.resetZoom();
+                render.doRender(o, model, false, modelMap);
             }
 
            function displayError(error, d3_obj) {
@@ -258,15 +270,15 @@
             }
             
            
-            function drawGraph(outputApi, model) {
-                var width =  $("#va_viz").closest("td").width();//document.documentElement.clientWidth / settings.INIT_ZOOM;
-                var height = $( "#va_viz").closest("td").height(); //document.documentElement.clientHeight / settings.INIT_ZOOM;
+            function drawGraph(outputApi, model2) {
+                var width =  $("#" + outputApi.svgContainerName).closest("td").width();//document.documentElement.clientWidth / settings.INIT_ZOOM;
+                var height = $( "#" + outputApi.svgContainerName).closest("td").height(); //document.documentElement.clientHeight / settings.INIT_ZOOM;
                 //TODO, figure out why we need to call this twice
                 //If we do not, the layout does to converge as nicely, even if we double the number of iterations
-                layout.doLayout(model, null, width, height);
-                layout.doLayout(model, null, width, height);
+                layout.doLayout(model2, null, width, height);
+                layout.doLayout(model2, null, width, height);
                 outputApi.setZoom(.8);
-                render.doRender(outputApi, model, false);
+                render.doRender(outputApi, model2, false, modelMap);
 //                animStart(30);
             }
             function displayError(error, d3_obj, viz_id) {
@@ -297,6 +309,94 @@
             
             function renderModels() {
                 var UUID = location.search.split("?uuid=")[1];
+                
+                 $.ajax({
+                    crossDomain: true,
+                    type: "GET",
+                    url: "/VersaStack-web/restapi/service/delta/" + UUID,
+                    dataType: "json", 
+
+                    success: function(data,  textStatus,  jqXHR ) {
+                         if (data.serviceModelAddition) {
+                            var servAObj = JSON.parse(data.serviceModelAddition);
+                            var servAModel = new ModelConstructor();
+                            servAModel.makeServiceDtlModel(servAObj, model);
+                            modelMap["serva_viz"] = servAModel;
+                            var outputApi = new outputApi_(render.API, contextMenu, "serva_viz");
+                            outputApiMap["serva_viz"] = outputApi;
+                            drawGraph(outputApi, servAModel);
+                            $("#serva_viz_recenter_button").click(function (evt) {
+                                recenterGraph(outputApi, servAModel);
+                                evt.preventDefault();
+                            });                            
+                         }  else {
+                             displayError("Empty", d3,"serva_viz");
+                             $("#serva_viz_recenter_button").attr('disabled','disabled'); 
+                         }
+                        
+                        if (data.serviceModelReduction) {
+                            var servRObj = JSON.parse(data.serviceModelReduction);
+                            var servRModel = new ModelConstructor();
+                            servRModel.makeServiceDtlModel(servRObj, model);
+                            modelMap["servr_viz"] = servRModel;
+                            var outputApi2 = new outputApi_(render.API, contextMenu, "servr_viz");
+                            outputApiMap["servr_viz"] = outputApi2;
+                            drawGraph(outputApi2, servRModel);   
+                            $("#servr_viz_recenter_button").click(function (evt) {
+                                recenterGraph(outputApi2, servRModel);
+                                evt.preventDefault();
+                            });                            
+                        } else {
+                            displayError("Empty", d3,"servr_viz");
+                            $("#servr_viz_recenter_button").attr('disabled','disabled');                         
+                        }
+
+                        if (data.systemModelAddition) {
+                            var sysAObj = JSON.parse(data.systemModelAddition);
+                            var sysAModel = new ModelConstructor();
+                            sysAModel.initWithMap(sysAObj, model);
+                            modelMap["sysa_viz"] = sysAModel;
+                            var outputApi3 = new outputApi_(render.API, contextMenu, "sysa_viz");
+                            outputApiMap["sysa_viz"] = outputApi3;                            
+                            drawGraph(outputApi3, sysAModel);   
+                            $("#sysa_viz_recenter_button").click(function (evt) {
+                                recenterGraph(outputApi2, sysAModel);
+                                evt.preventDefault();
+                            });                            
+                        } else {
+                            displayError("Empty", d3,"sysa_viz");
+                            $("#sysa_viz_recenter_button").attr('disabled','disabled');                         
+                        }
+
+                        if (data.systemModelReduction) {
+                            var sysrObj = JSON.parse(data.systemModelReduction);
+                            var sysrModel = new ModelConstructor();
+                            sysrModel.initWithMap(sysrObj, model);
+                            modelMap["sysr_viz"] = sysrModel;
+                            var outputApi4 = new outputApi_(render.API, contextMenu, "sysr_viz");
+                            outputApiMap["sysr_viz"] = outputApi4;                                                        
+                            drawGraph(outputApi4, sysrModel);   
+                            $("#sysr_viz_recenter_button").click(function (evt) {
+                                recenterGraph(outputApi2, sysrModel);
+                                evt.preventDefault();
+                            });                            
+                        } else {
+                            displayError("Empty", d3,"sysr_viz");
+                            $("#sysr_viz_recenter_button").attr('disabled','disabled');                         
+                        }
+        
+                    },
+
+                    error: function(jqXHR, textStatus, errorThrown ) {
+                        //alert("Error getting status.");
+                       // alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
+                       displayError("Unavailable", d3, "serva_viz");
+                       displayError("Unavailable", d3, "servr_viz");
+                       displayError("Unavailable", d3, "sysa_viz");
+                       displayError("Unavailable", d3, "sysr_viz");
+                    }
+               });                 
+                
                 $.ajax({
                     crossDomain: true,
                     type: "GET",
@@ -308,10 +408,12 @@
                             var vaObj = JSON.parse(data.verified_addition);
                             var vaModel = new ModelConstructor();
                             vaModel.initWithMap(vaObj, model);
-                            var outputApi = new outputApi_(render.API, contextMenu, "va_viz");
-                            drawGraph(outputApi, vaModel);
+                            modelMap["va_viz"] = vaModel;
+                            var outputApi5 = new outputApi_(render.API, contextMenu, "va_viz");
+                            outputApiMap["va_viz"] = outputApi5;                                                                                    
+                            drawGraph(outputApi5, vaModel);
                             $("#va_viz_recenter_button").click(function (evt) {
-                                recenterGraph(outputApi, vaModel);
+                                recenterGraph(outputApi5, vaModel);
                                 evt.preventDefault();
                             });                            
                          }  else {
@@ -323,10 +425,12 @@
                             var vrObj = JSON.parse(data.verified_reduction);
                             var vrModel = new ModelConstructor();
                             vrModel.initWithMap(vrObj, model);
-                            var outputApi2 = new outputApi_(render.API, contextMenu, "vr_viz");
-                            drawGraph(outputApi2, vrModel);   
+                            modelMap["vr_viz"] = vrModel;
+                            var outputApi6 = new outputApi_(render.API, contextMenu, "vr_viz");
+                            outputApiMap["vr_viz"] = outputApi6;                                                                                                                
+                            drawGraph(outputApi6, vrModel);   
                             $("#vr_viz_recenter_button").click(function (evt) {
-                                recenterGraph(outputApi2, vrModel);
+                                recenterGraph(outputApi6, vrModel);
                                 evt.preventDefault();
                             });                            
                         } else {
@@ -338,10 +442,12 @@
                             var uaObj = JSON.parse(data.unverified_addition);
                             var uaModel = new ModelConstructor();
                             uaModel.initWithMap(uaObj, model);
-                            var outputApi3 = new outputApi_(render.API, contextMenu, "ua_viz");
-                            drawGraph(outputApi3, uaModel); 
+                            modelMap["ua_viz"] = uaModel;
+                            var outputApi7 = new outputApi_(render.API, contextMenu, "ua_viz");
+                            outputApiMap["ua_viz"] = outputApi7;                                                                                                                                            
+                            drawGraph(outputApi7, uaModel); 
                             $("#ua_viz_recenter_button").click(function (evt) {
-                                recenterGraph(outputApi3, uaModel);
+                                recenterGraph(outputApi7, uaModel);
                                 evt.preventDefault();
                             });                           
                         } else {
@@ -353,10 +459,12 @@
                             var urObj = JSON.parse(data.unverified_reduction);
                             var urModel = new ModelConstructor();
                             urModel.initWithMap(urObj, model);
-                            var outputApi4 = new outputApi_(render.API, contextMenu, "ur_viz");
-                            drawGraph(outputApi4, urModel);
+                            modelMap["ur_viz"] = urModel;
+                            var outputApi8 = new outputApi_(render.API, contextMenu, "ur_viz");
+                            outputApiMap["ur_viz"] = outputApi8;                                                                                                                                                                    
+                            drawGraph(outputApi8, urModel);
                             $("#ur_viz_recenter_button").click(function (evt) {
-                                recenterGraph(outputApi4, urModel);
+                                recenterGraph(outputApi8, urModel);
                                 evt.preventDefault();
                             });                                  
                         } else {
@@ -368,11 +476,10 @@
                     error: function(jqXHR, textStatus, errorThrown ) {
                         //alert("Error getting status.");
                        // alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
-                       alert("not found");
-                       showDiactivatedViz("va_viz");
-                       showDiactivatedViz("ur_viz");
-                       showDiactivatedViz("ua_viz");
-                       showDiactivatedViz("vr_viz");
+                       displayError("Unavailable", d3,"va_viz");
+                       displayError("Unavailable", d3,"ur_viz");
+                       displayError("Unavailable", d3,"ua_viz");
+                       displayError("Unavailable", d3,"vr_viz");
                     }
                });                     
                 
@@ -388,7 +495,7 @@
                 };
 
                 
-                var displayTree = new DropDownTree(document.getElementById("treeMenu"));
+                var displayTree = new DropDownTree(document.getElementById("treeMenu"), that);
                 displayTree.renderApi = this.renderApi;
                 displayTree.contextMenu = this.contextMenu;
 
@@ -883,6 +990,433 @@
                                 </svg> 
                                 <button  class="details-viz-recenter-button" id="ur_viz_recenter_button">Recenter</button>
                             </div>
+            
+                            <div id="sysa_viz_div" class="hidden">
+                                    <div class="hover_div" id="hoverdiv_sysa_viz"></div>        
+
+                                    <svg class ="details_viz" id="sysa_viz">
+                                    <defs>
+                                    <!--When we highlight topologies without specifiyng a width and length, the get clipped
+                                    The x,y offset are so we avoid clipping the top and left edges.
+                                    I simply added zeroes until this worked in all cases I tested (the extreme case being a vertical or horizontal topology
+                                    We could highlight the element entirly with this filter by using feBlend instead of feComposite,
+                                    However, then (in the case of topologies) the outline would be stuck with the same opacity as the entire element, which is not desireable
+                                    Instead, we will simply duplicate the selected element, and show its outline as an overlay
+                                    -->
+                                <filter id="outline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+                                    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
+                                    <feMorphology operator="dilate" radius="1"/>
+                                    <feColorMatrix result="a" type="matrix"
+                                                   values="0 0 0 0 .7
+                                                   0 0 0 0 1
+                                                   0 0 0 0 0
+                                                   0 0 0 1 0" />
+                                    <feComposite operator="out" in="a" in2="SourceGraphic"/>
+                                </filter>
+
+                            <filter id="serviceHighlightOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+                               <feFlood flood-color="#66ff66" result="base" />
+                               <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+                               <feColorMatrix result="mask" in="bigger" type="matrix"
+                                  values="0 0 0 0 0
+                                          0 0 0 0 0
+                                          0 0 0 0 0
+                                          0 0 0 1 0" />
+                               <feComposite result="drop" in="base" in2="mask" operator="in" />
+                               <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+                            </filter>
+                                <filter id="spaDependOnOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+                                   <feFlood flood-color="#B3F131" result="base" />
+                                   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+                                   <feColorMatrix result="mask" in="bigger" type="matrix"
+                                      values="0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 1 0" />
+                                   <feComposite result="drop" in="base" in2="mask" operator="in" />
+                                   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+                                </filter>
+                                <filter id="spaExportToOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+                                   <feFlood flood-color="#23ABA6" result="base" />
+                                   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+                                   <feColorMatrix result="mask" in="bigger" type="matrix"
+                                      values="0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 1 0" />
+                                   <feComposite result="drop" in="base" in2="mask" operator="in" />
+                                   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+                                </filter>
+                                <filter id="spaImportFromOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+                                   <feFlood flood-color="#FD3338" result="base" />
+                                   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+                                   <feColorMatrix result="mask" in="bigger" type="matrix"
+                                      values="0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 1 0" />
+                                   <feComposite result="drop" in="base" in2="mask" operator="in" />
+                                   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+                                </filter>    
+                                <filter id="subnetHighlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+                                    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
+                                    <feMorphology operator="dilate" radius="1"/>
+                                    <feColorMatrix result="a" type="matrix"
+                                                   values="0 0 0 0 0
+                                                   0 0 0 0 .8
+                                                   0 0 0 0 .3
+                                                   0 0 0 1 0" />
+                                    <feComposite operator="out" in="a" in2="SourceGraphic"/>
+                                </filter>
+                                <filter id="ghost" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+                                    <feColorMatrix type="saturate" values=".2"/>
+                                </filter>
+                                    
+     
+                                <marker id="marker_arrow" markerWidth="10" markerHeight="10" refx="15" refy="3" orient="auto" markerUnits="strokeWidth">
+                                 <path d="M0,0 L0,6 L9,3 z" fill="black" />
+                               </marker>
+                                </defs>
+                                <!--We nest a g in here because the svg tag itself cannot do transforms
+                                    we separate topologies, edges, and nodes to create an explicit z-order
+                                -->
+                                <g id="transform_sysa_viz">
+                                <g id="topology_sysa_viz"/>
+                                <g id="edge1_sysa_viz"/>
+                                <g id="anchor_sysa_viz"/>
+                                <g id="node_sysa_viz"/>
+                                <g id="dialogBox_sysa_viz"/>
+                                <g id="volumeDialogBox_sysa_viz"/>
+                                <g id="switchPopup_sysa_viz"/>
+                                <g id="parentPort_sysa_viz"/>
+                                <g id="edge2_sysa_viz" />
+                                <g id="port_sysa_viz"/>
+                                <g id="volume_sysa_viz"/>
+
+                                </g>
+                                </svg> 
+                                <button  class="details-viz-recenter-button" id="sysa_viz_recenter_button">Recenter</button>
+                            </div>
+
+                            <div id="serva_viz_div" class="hidden">
+                                    <div class="hover_div" id="hoverdiv_serva_viz"></div>        
+
+                                    <svg class ="details_viz" id="serva_viz">
+                                    <defs>
+                                    <!--When we highlight topologies without specifiyng a width and length, the get clipped
+                                    The x,y offset are so we avoid clipping the top and left edges.
+                                    I simply added zeroes until this worked in all cases I tested (the extreme case being a vertical or horizontal topology
+                                    We could highlight the element entirly with this filter by using feBlend instead of feComposite,
+                                    However, then (in the case of topologies) the outline would be stuck with the same opacity as the entire element, which is not desireable
+                                    Instead, we will simply duplicate the selected element, and show its outline as an overlay
+                                    -->
+                                <filter id="outline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+                                    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
+                                    <feMorphology operator="dilate" radius="1"/>
+                                    <feColorMatrix result="a" type="matrix"
+                                                   values="0 0 0 0 .7
+                                                   0 0 0 0 1
+                                                   0 0 0 0 0
+                                                   0 0 0 1 0" />
+                                    <feComposite operator="out" in="a" in2="SourceGraphic"/>
+                                </filter>
+
+                            <filter id="serviceHighlightOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+                               <feFlood flood-color="#66ff66" result="base" />
+                               <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+                               <feColorMatrix result="mask" in="bigger" type="matrix"
+                                  values="0 0 0 0 0
+                                          0 0 0 0 0
+                                          0 0 0 0 0
+                                          0 0 0 1 0" />
+                               <feComposite result="drop" in="base" in2="mask" operator="in" />
+                               <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+                            </filter>
+                                <filter id="spaDependOnOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+                                   <feFlood flood-color="#B3F131" result="base" />
+                                   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+                                   <feColorMatrix result="mask" in="bigger" type="matrix"
+                                      values="0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 1 0" />
+                                   <feComposite result="drop" in="base" in2="mask" operator="in" />
+                                   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+                                </filter>
+                                <filter id="spaExportToOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+                                   <feFlood flood-color="#23ABA6" result="base" />
+                                   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+                                   <feColorMatrix result="mask" in="bigger" type="matrix"
+                                      values="0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 1 0" />
+                                   <feComposite result="drop" in="base" in2="mask" operator="in" />
+                                   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+                                </filter>
+                                <filter id="spaImportFromOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+                                   <feFlood flood-color="#FD3338" result="base" />
+                                   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+                                   <feColorMatrix result="mask" in="bigger" type="matrix"
+                                      values="0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 1 0" />
+                                   <feComposite result="drop" in="base" in2="mask" operator="in" />
+                                   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+                                </filter>    
+                                <filter id="subnetHighlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+                                    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
+                                    <feMorphology operator="dilate" radius="1"/>
+                                    <feColorMatrix result="a" type="matrix"
+                                                   values="0 0 0 0 0
+                                                   0 0 0 0 .8
+                                                   0 0 0 0 .3
+                                                   0 0 0 1 0" />
+                                    <feComposite operator="out" in="a" in2="SourceGraphic"/>
+                                </filter>
+                                <filter id="ghost" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+                                    <feColorMatrix type="saturate" values=".2"/>
+                                </filter>
+                                    
+     
+                                <marker id="marker_arrow" markerWidth="10" markerHeight="10" refx="15" refy="3" orient="auto" markerUnits="strokeWidth">
+                                 <path d="M0,0 L0,6 L9,3 z" fill="black" />
+                               </marker>
+                                </defs>
+                                <!--We nest a g in here because the svg tag itself cannot do transforms
+                                    we separate topologies, edges, and nodes to create an explicit z-order
+                                -->
+                                <g id="transform_serva_viz">
+                                <g id="topology_serva_viz"/>
+                                <g id="edge1_serva_viz"/>
+                                <g id="anchor_serva_viz"/>
+                                <g id="node_serva_viz"/>
+                                <g id="dialogBox_serva_viz"/>
+                                <g id="volumeDialogBox_serva_viz"/>
+                                <g id="switchPopup_serva_viz"/>
+                                <g id="parentPort_serva_viz"/>
+                                <g id="edge2_serva_viz" />
+                                <g id="port_serva_viz"/>
+                                <g id="volume_serva_viz"/>
+
+                                </g>
+                                </svg> 
+                                <button  class="details-viz-recenter-button" id="serva_viz_recenter_button">Recenter</button>
+                            </div>
+
+                            <div id="servr_viz_div" class="hidden">
+                                    <div class="hover_div" id="hoverdiv_servr_viz"></div>        
+
+                                    <svg class ="details_viz" id="servr_viz">
+                                    <defs>
+                                    <!--When we highlight topologies without specifiyng a width and length, the get clipped
+                                    The x,y offset are so we avoid clipping the top and left edges.
+                                    I simply added zeroes until this worked in all cases I tested (the extreme case being a vertical or horizontal topology
+                                    We could highlight the element entirly with this filter by using feBlend instead of feComposite,
+                                    However, then (in the case of topologies) the outline would be stuck with the same opacity as the entire element, which is not desireable
+                                    Instead, we will simply duplicate the selected element, and show its outline as an overlay
+                                    -->
+                                <filter id="outline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+                                    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
+                                    <feMorphology operator="dilate" radius="1"/>
+                                    <feColorMatrix result="a" type="matrix"
+                                                   values="0 0 0 0 .7
+                                                   0 0 0 0 1
+                                                   0 0 0 0 0
+                                                   0 0 0 1 0" />
+                                    <feComposite operator="out" in="a" in2="SourceGraphic"/>
+                                </filter>
+
+                            <filter id="serviceHighlightOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+                               <feFlood flood-color="#66ff66" result="base" />
+                               <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+                               <feColorMatrix result="mask" in="bigger" type="matrix"
+                                  values="0 0 0 0 0
+                                          0 0 0 0 0
+                                          0 0 0 0 0
+                                          0 0 0 1 0" />
+                               <feComposite result="drop" in="base" in2="mask" operator="in" />
+                               <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+                            </filter>
+                                <filter id="spaDependOnOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+                                   <feFlood flood-color="#B3F131" result="base" />
+                                   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+                                   <feColorMatrix result="mask" in="bigger" type="matrix"
+                                      values="0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 1 0" />
+                                   <feComposite result="drop" in="base" in2="mask" operator="in" />
+                                   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+                                </filter>
+                                <filter id="spaExportToOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+                                   <feFlood flood-color="#23ABA6" result="base" />
+                                   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+                                   <feColorMatrix result="mask" in="bigger" type="matrix"
+                                      values="0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 1 0" />
+                                   <feComposite result="drop" in="base" in2="mask" operator="in" />
+                                   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+                                </filter>
+                                <filter id="spaImportFromOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+                                   <feFlood flood-color="#FD3338" result="base" />
+                                   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+                                   <feColorMatrix result="mask" in="bigger" type="matrix"
+                                      values="0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 1 0" />
+                                   <feComposite result="drop" in="base" in2="mask" operator="in" />
+                                   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+                                </filter>    
+                                <filter id="subnetHighlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+                                    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
+                                    <feMorphology operator="dilate" radius="1"/>
+                                    <feColorMatrix result="a" type="matrix"
+                                                   values="0 0 0 0 0
+                                                   0 0 0 0 .8
+                                                   0 0 0 0 .3
+                                                   0 0 0 1 0" />
+                                    <feComposite operator="out" in="a" in2="SourceGraphic"/>
+                                </filter>
+                                <filter id="ghost" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+                                    <feColorMatrix type="saturate" values=".2"/>
+                                </filter>
+                                    
+     
+                                <marker id="marker_arrow" markerWidth="10" markerHeight="10" refx="15" refy="3" orient="auto" markerUnits="strokeWidth">
+                                 <path d="M0,0 L0,6 L9,3 z" fill="black" />
+                               </marker>
+                                </defs>
+                                <!--We nest a g in here because the svg tag itself cannot do transforms
+                                    we separate topologies, edges, and nodes to create an explicit z-order
+                                -->
+                                <g id="transform_servr_viz">
+                                <g id="topology_servr_viz"/>
+                                <g id="edge1_servr_viz"/>
+                                <g id="anchor_servr_viz"/>
+                                <g id="node_servr_viz"/>
+                                <g id="dialogBox_servr_viz"/>
+                                <g id="volumeDialogBox_servr_viz"/>
+                                <g id="switchPopup_servr_viz"/>
+                                <g id="parentPort_servr_viz"/>
+                                <g id="edge2_servr_viz" />
+                                <g id="port_servr_viz"/>
+                                <g id="volume_servr_viz"/>
+
+                                </g>
+                                </svg> 
+                                <button  class="details-viz-recenter-button" id="servr_viz_recenter_button">Recenter</button>
+                            </div>
+                            <div id="sysr_viz_div" class="hidden">
+                                    <div class="hover_div" id="hoverdiv_sysr_viz"></div>        
+
+                                    <svg class ="details_viz" id="sysr_viz">
+                                    <defs>
+                                    <!--When we highlight topologies without specifiyng a width and length, the get clipped
+                                    The x,y offset are so we avoid clipping the top and left edges.
+                                    I simply added zeroes until this worked in all cases I tested (the extreme case being a vertical or horizontal topology
+                                    We could highlight the element entirly with this filter by using feBlend instead of feComposite,
+                                    However, then (in the case of topologies) the outline would be stuck with the same opacity as the entire element, which is not desireable
+                                    Instead, we will simply duplicate the selected element, and show its outline as an overlay
+                                    -->
+                                <filter id="outline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+                                    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
+                                    <feMorphology operator="dilate" radius="1"/>
+                                    <feColorMatrix result="a" type="matrix"
+                                                   values="0 0 0 0 .7
+                                                   0 0 0 0 1
+                                                   0 0 0 0 0
+                                                   0 0 0 1 0" />
+                                    <feComposite operator="out" in="a" in2="SourceGraphic"/>
+                                </filter>
+
+                            <filter id="serviceHighlightOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+                               <feFlood flood-color="#66ff66" result="base" />
+                               <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+                               <feColorMatrix result="mask" in="bigger" type="matrix"
+                                  values="0 0 0 0 0
+                                          0 0 0 0 0
+                                          0 0 0 0 0
+                                          0 0 0 1 0" />
+                               <feComposite result="drop" in="base" in2="mask" operator="in" />
+                               <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+                            </filter>
+                                <filter id="spaDependOnOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+                                   <feFlood flood-color="#B3F131" result="base" />
+                                   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+                                   <feColorMatrix result="mask" in="bigger" type="matrix"
+                                      values="0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 1 0" />
+                                   <feComposite result="drop" in="base" in2="mask" operator="in" />
+                                   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+                                </filter>
+                                <filter id="spaExportToOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+                                   <feFlood flood-color="#23ABA6" result="base" />
+                                   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+                                   <feColorMatrix result="mask" in="bigger" type="matrix"
+                                      values="0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 1 0" />
+                                   <feComposite result="drop" in="base" in2="mask" operator="in" />
+                                   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+                                </filter>
+                                <filter id="spaImportFromOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+                                   <feFlood flood-color="#FD3338" result="base" />
+                                   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+                                   <feColorMatrix result="mask" in="bigger" type="matrix"
+                                      values="0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 0 0
+                                              0 0 0 1 0" />
+                                   <feComposite result="drop" in="base" in2="mask" operator="in" />
+                                   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+                                </filter>    
+                                <filter id="subnetHighlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+                                    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
+                                    <feMorphology operator="dilate" radius="1"/>
+                                    <feColorMatrix result="a" type="matrix"
+                                                   values="0 0 0 0 0
+                                                   0 0 0 0 .8
+                                                   0 0 0 0 .3
+                                                   0 0 0 1 0" />
+                                    <feComposite operator="out" in="a" in2="SourceGraphic"/>
+                                </filter>
+                                <filter id="ghost" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+                                    <feColorMatrix type="saturate" values=".2"/>
+                                </filter>
+                                    
+     
+                                <marker id="marker_arrow" markerWidth="10" markerHeight="10" refx="15" refy="3" orient="auto" markerUnits="strokeWidth">
+                                 <path d="M0,0 L0,6 L9,3 z" fill="black" />
+                               </marker>
+                                </defs>
+                                <!--We nest a g in here because the svg tag itself cannot do transforms
+                                    we separate topologies, edges, and nodes to create an explicit z-order
+                                -->
+                                <g id="transform_sysr_viz">
+                                <g id="topology_sysr_viz"/>
+                                <g id="edge1_sysr_viz"/>
+                                <g id="anchor_sysr_viz"/>
+                                <g id="node_sysr_viz"/>
+                                <g id="dialogBox_sysr_viz"/>
+                                <g id="volumeDialogBox_sysr_viz"/>
+                                <g id="switchPopup_sysr_viz"/>
+                                <g id="parentPort_sysr_viz"/>
+                                <g id="edge2_sysr_viz" />
+                                <g id="port_sysr_viz"/>
+                                <g id="volume_sysr_viz"/>
+
+                                </g>
+                                </svg> 
+                                <button  class="details-viz-recenter-button" id="sysr_viz_recenter_button">Recenter</button>
+                            </div>            
         </div>
         <script> onload(); </script>
          <!-- CONTEXT MENU -->
