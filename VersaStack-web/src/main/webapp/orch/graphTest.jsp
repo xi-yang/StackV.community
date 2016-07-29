@@ -332,7 +332,7 @@
                     return d3.select("#" + this.svgContainerName);
                 };
 
-                var displayTree = new DropDownTree(document.getElementById("treeMenu"));
+                var displayTree = new DropDownTree(document.getElementById("treeMenu"), that);
                 displayTree.renderApi = this.renderApi;
                 displayTree.contextMenu = this.contextMenu;
 

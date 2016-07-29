@@ -4,13 +4,14 @@ define([
 ], function (utils) {
     var map_ = utils.map_;
     var isURL = utils.isURL;
-    function DropDownNode(name, renderApi, type, data, contextMenu) {
+    function DropDownNode(name, renderApi, type, data, contextMenu, outputApi) {
         /**@type Array.DropDownNode**/
         this.children = [];
         this.name = name;
         this.renderApi = renderApi;
         this.contextMenu = contextMenu;
         this.type = type;
+        this.outputApi = outputApi;
         // data associated with the node
         // so for example, the element or the key, value pair. 
         // { key: "key", value: "value", type : "type" }
@@ -19,7 +20,7 @@ define([
         var that = this;
 
         this.addChild = function (name, type, data) {
-            var ans = new DropDownNode(name, that.renderApi, type, data, that.contextMenu); // changed this.renderApi to that.renderApi
+            var ans = new DropDownNode(name, that.renderApi, type, data, that.contextMenu, that.outputApi); // changed this.renderApi to that.renderApi
             this.children.push(ans);
             return ans;
         };
@@ -120,7 +121,7 @@ define([
                    link.className = "urnLink clicked";
                    if (that.renderApi !== null && that.renderApi !== undefined){
                         console.log(" what is this: " + that.renderApi);
-                        that.renderApi.clickNode(that.name, that.type);
+                        that.renderApi.clickNode(that.name, that.type, that.outputApi);
                         
                     }
                 };
@@ -140,7 +141,7 @@ define([
                 link.onclick = function () {
                    link.className = "urnLink clicked";
                    console.log(" what is this: " + that.renderApi);
-                   that.renderApi.clickNode(property[0], that.type);          
+                   that.renderApi.clickNode(property[0], that.type, that.outputApi);          
                 };                
                 link.innerHTML = property[0];
                 

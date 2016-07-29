@@ -126,10 +126,11 @@ define([
      * @param {Model} model
      * @param (fullSize) boolean
      **/
-    function doRender(outputApi, model, fullSize) {
+    function doRender(outputApi, model, fullSize, modelMap) {
         // default parameter
         var fullSize = typeof fullSize !== 'undefined' ?  fullSize : true;
-
+        var modelMap = typeof modelMap !== 'undefined' ?  modelMap : null;
+        
         var svgContainer = outputApi.getSvgContainer();
         if (firstRun) {
             firstRun = false;
@@ -195,30 +196,49 @@ define([
         }
         redraw();
         var nodeList, edgeList, policyList;
-        function redraw() {
-            svgContainer.select("#topology" + "_" + outputApi.svgContainerName).selectAll("*").remove(); //Clear the previous drawing
-            svgContainer.select("#edge1" + "_" + outputApi.svgContainerName).selectAll("*").remove(); //Clear the previous drawing
-            svgContainer.select("#edge2" + "_" + outputApi.svgContainerName).selectAll("*").remove(); //Clear the previous drawing
-            svgContainer.select("#node" + "_" + outputApi.svgContainerName).selectAll("*").remove(); //Clear the previous drawing
-            svgContainer.select("#anchor" + "_" + outputApi.svgContainerName).selectAll("*").remove(); //Clear the previous drawing
-            svgContainer.select("#parentPort" + "_" + outputApi.svgContainerName).selectAll("*").remove();
-            svgContainer.select("#switchPopup" + "_" + outputApi.svgContainerName).selectAll("*").remove();
-            svgContainer.select("#volume" + "_" + outputApi.svgContainerName).selectAll("*").remove();
-            
-            nodeList = model.listNodes();
-            policyList = model.listPolicies();
-            edgeList = model.listEdges();
-            
-            var polEdges = model.policyEdges;
+        function redraw(currentOutputApi) {
+            if (!fullSize && currentOutputApi) {
+                var svgc = d3.select("#" + currentOutputApi.svgContainerName);
+                var svgcn = currentOutputApi.svgContainerName;
+                var currentModel = modelMap[currentOutputApi.svgContainerName];
+                var nList = currentModel.listNodes();
+                var pList = currentModel.listPolicies();
+                var eList = currentModel.listEdges();
+            } else {
+                var svgc = svgContainer;
+                var svgcn = outputApi.svgContainerName;
+                var currentModel = model;
+                var nList = currentModel.listNodes();
+                var pList = currentModel.listPolicies();
+                var eList = currentModel.listEdges();                
+                
+                nodeList = nList;
+                policyList = pList;
+                edgeList = eList;
+            }
+            svgc.select("#topology" + "_" + svgcn).selectAll("*").remove(); //Clear the previous drawing
+            svgc.select("#edge1" + "_" + svgcn).selectAll("*").remove(); //Clear the previous drawing
+            svgc.select("#edge2" + "_" + svgcn).selectAll("*").remove(); //Clear the previous drawing
+            svgc.select("#node" + "_" + svgcn).selectAll("*").remove(); //Clear the previous drawing
+            svgc.select("#anchor" + "_" + svgcn).selectAll("*").remove(); //Clear the previous drawing
+            svgc.select("#parentPort" + "_" + svgcn).selectAll("*").remove();
+            svgc.select("#switchPopup" + "_" + svgcn).selectAll("*").remove();
+            svgc.select("#volume" + "_" + svgcn).selectAll("*").remove();
+                        
+            var polEdges = currentModel.policyEdges;
             for (var i in polEdges) edgeList.push(polEdges[i]);
 
             //Recall that topologies are also considered nodes
             //We render them seperatly to enfore a z-ordering
-            map_(nodeList, drawTopology);
-            map_(nodeList, drawNode);
-            map_(policyList, drawPolicy);
-            drawPopups();
-            map_(edgeList, drawEdge);
+            map_(nList, drawTopology);
+            map_(nList, drawNode);
+            map_(pList, drawPolicy);
+            if (!fullSize && currentOutputApi) {
+                drawPopups(currentOutputApi);
+            } else {
+                drawPopups();
+            }
+            map_(eList, drawEdge);
         }
         redraw_ = redraw;
         /**@param {Node} n**/
@@ -363,19 +383,30 @@ define([
             updateSvgChoordsService(n);
         }
 
-        function drawPopups() {
-            svgContainer.select("#dialogBox" + "_" + outputApi.svgContainerName).selectAll("*").remove();
-            svgContainer.select("#port" + "_" + outputApi.svgContainerName).selectAll("*").remove();
-            svgContainer.select("#parentPort" + "_" + outputApi.svgContainerName).selectAll("*").remove();
+        function drawPopups(currentOutputApi) {
+            if (!fullSize && currentOutputApi) {
+                var svgc = d3.select("#" + currentOutputApi.svgContainerName);
+                var svgcn = currentOutputApi.svgContainerName;
+                var currentModel = modelMap[currentOutputApi.svgContainerName];
+                var nList  = currentModel.listNodes();
+            } else {
+                var svgc = svgContainer;
+                var svgcn = outputApi.svgContainerName;
+                var currentModel = model;
+                var nList = nodeList;
+            }
+            svgc.select("#dialogBox" + "_" + svgcn).selectAll("*").remove();
+            svgc.select("#port" + "_" + svgcn).selectAll("*").remove();
+            svgc.select("#parentPort" + "_" + svgcn).selectAll("*").remove();
 
-            svgContainer.select("#volumeDialogBox" + "_" + outputApi.svgContainerName).selectAll("*").remove();
-            svgContainer.select("#volume" + "_" + outputApi.svgContainerName).selectAll("*").remove();
+            svgc.select("#volumeDialogBox" + "_" + svgcn).selectAll("*").remove();
+            svgc.select("#volume" + "_" + svgcn).selectAll("*").remove();
     
-            map_(nodeList, function (n) {
+            map_(nList, function (n) {
                 n.portPopup.render();
                 n.volumePopup.render();
             });
-            switchPopup[outputApi.svgContainerName].render();
+            switchPopup[svgcn].render();
         }
 
         /**@param {Node} n**/
@@ -780,7 +811,12 @@ define([
             var policyType = n.getTypeDetailed();
             if (policyType === "PolicyData") {
                 $("#dialog_policyData").text("");
-                $("#dialog_policyData").append("<pre class=\"jSonDialog\">" + n.data + "</pre>");
+                
+                if (n.data === undefined)
+                    $("#dialog_policyData").append("<pre class=\"jSonDialog\">" + n.data + "</pre>");
+                else 
+                    $("#dialog_policyData").append("<pre class=\"jSonDialog\">N/A</pre>");
+                
                 $("#dialog_policyData").dialog("open");
                 $('.ui-dialog :button').blur();
             } else if (policyType === "PolicyAction") {
@@ -990,17 +1026,25 @@ define([
             }
         }
         
-        function selectElement(elem) {
+        function selectElement(elem, currentOutputApi) {
+            if (!fullSize && currentOutputApi) {
+              var o = currentOutputApi;
+              var m = modelMap[o.svgContainerName];  
+            } else {
+              var m = model;
+              var o = outputApi;
+            }
+            
             if (outputApi.getDisplayTree()) {
                 if (!elem) {
                     //deselect element
-                    outputApi.setDisplayName("Topologies");
-                    var displayTree = outputApi.getDisplayTree();
-                    outputApi.getDisplayTree().clear();
+                    o.setDisplayName("Topologies");
+                    var displayTree = o.getDisplayTree();
+                    o.getDisplayTree().clear();
                     
                     if (topLevelTopologies.length === 0) {
-                        for (var key in model.elementMap) {
-                             var e = model.elementMap[key];
+                        for (var key in m.elementMap) {
+                             var e = m.elementMap[key];
                              if (e.getType() === "Topology" && e.topLevel) {
                                  topLevelTopologies.push(e);                                
                                  var child = displayTree.addChild(e.getName(), "Element", e);
@@ -1021,11 +1065,11 @@ define([
                     
                     displayTree.draw();
                 } else {
-                    outputApi.setDisplayName(elem.getName());
+                    o.setDisplayName(elem.getName());
                     /**@type {DropDownTree} displayTree**/
-                    var displayTree = outputApi.getDisplayTree();
+                    var displayTree = o.getDisplayTree();
                     displayTree.clear();
-                    var e = model.elementMap[elem.getName()];
+                    var e = m.elementMap[elem.getName()];
                     e.populateProperties(displayTree);
 
                     if (e.misc_elements.length > 0 )
@@ -1206,8 +1250,16 @@ define([
                     .setInnerBuffer(switchSettings.DIALOG_INNER_BUFFER)
                     .setTextSize(switchSettings.DIALOG_TAB_TEXT_SIZE);
         }
-        function clickNode(name, type) {
-           var element = model.elementMap[name];
+        function clickNode(name, type, currentOutputApi) {
+            if (!fullSize && currentOutputApi) {
+              var o = currentOutputApi;  
+              var m = modelMap[o.svgContainerName];
+            } else {
+              var o = outputApi;
+              var m = model;
+            }
+            
+           var element = m.elementMap[name];
            if (element === undefined) {
                if (fullSize) {
                    alert("Element not found. Please enter valid URN.");
@@ -1218,10 +1270,10 @@ define([
                 switch (type) {
                  case "Topology":
                  case "Node":
-                     onNodeClick(model.nodeMap[name]);
-                     if (fullSize) {
-                        outputApi.getDisplayTree().addToHistory(name, type);
-                        outputApi.getDisplayTree().topViewShown = false;
+                     onNodeClick(m.nodeMap[name]);
+                     if (o.getDisplayTree()) {
+                        o.getDisplayTree().addToHistory(name, type);
+                        o.getDisplayTree().topViewShown = false;
                      }
                      console.log("i'm node: " + model.nodeMap[name].getName());
 
@@ -1240,43 +1292,43 @@ define([
                  case "DataTransferClusterService":
                  case "NetworkObject":
                  case "Service":
-                     onServiceClick(model.serviceMap[name]);
-                     if (fullSize) {
-                        outputApi.getDisplayTree().addToHistory(name, type);
-                        outputApi.getDisplayTree().topViewShown = false;
+                     onServiceClick(m.serviceMap[name]);
+                     if (o.getDisplayTree()) {
+                        o.getDisplayTree().addToHistory(name, type);
+                        o.getDisplayTree().topViewShown = false;
                      }
                      console.log("i'm service");
                      break;
                  case "Port":
                  case "BidirectionalPort":
-                     selectElement(model.portMap[name]);
-                     if (fullSize) {
-                        outputApi.getDisplayTree().addToHistory(name, type);  
-                        outputApi.getDisplayTree().topViewShown = false;
+                     selectElement(m.portMap[name], currentOutputApi);
+                     if (o.getDisplayTree()) {
+                        o.getDisplayTree().addToHistory(name, type);  
+                        o.getDisplayTree().topViewShown = false;
                      }
                      console.log("i'm port");
                      break;
                  case "Volume":
-                     selectElement(model.volumeMap[name]);    
-                     if (fullSize) {
-                        outputApi.getDisplayTree().addToHistory(name, type);   
-                        outputApi.getDisplayTree().topViewShown = false;
+                     selectElement(m.volumeMap[name], currentOutputApi);    
+                     if (o.getDisplayTree()) {
+                        o.getDisplayTree().addToHistory(name, type);   
+                        o.getDisplayTree().topViewShown = false;
                      }
                      console.log("i'm volume");
                      break;
                  case "PolicyData":
                  case "PolicyAction":
-                     selectElement(model.policyMap[name]);    
-                     if (fullSize) {
-                        outputApi.getDisplayTree().addToHistory(name, type);   
-                        outputApi.getDisplayTree().topViewShown = false;
+                     selectElement(m.policyMap[name], currentOutputApi);    
+                     if (o.getDisplayTree()) {
+                        o.getDisplayTree().addToHistory(name, type);   
+                        o.getDisplayTree().topViewShown = false;
                      }                    
                     break;
                  default:
-                     selectElement(model.elementMap[name]);                    
-                     if (fullSize) {
-                        outputApi.getDisplayTree().addToHistory(name, type);
-                        outputApi.getDisplayTree().topViewShown = false;
+                     selectElement(m.elementMap[name], currentOutputApi);                    
+                     if (o.getDisplayTree()) {
+                        o.getDisplayTree().addToHistory(name, type);
+                        o.getDisplayTree().topViewShown = false;
                      }
                      console.log("I'm element");
                      break;
@@ -1290,8 +1342,13 @@ define([
         API["doRender"] = doRender;
         API["drawHighlight"] = drawHighlight;
         API["selectElement"] = selectElement;
-        API["layoutEdges"] = function () {
-            map_(edgeList, updateSvgChoordsEdge);
+        API["layoutEdges"] = function (o) {
+            if (!fullSize) {
+              var e = modelMap[o.svgContainerName].listEdges();
+            } else {
+              var e = edgeList;
+            }
+            map_(e, updateSvgChoordsEdge);
         };
         API["clickNode"] = clickNode;
         API["highlightServiceElements"] = highlightServiceElements;

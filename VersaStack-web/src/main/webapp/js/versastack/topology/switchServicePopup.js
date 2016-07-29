@@ -168,7 +168,7 @@ define(["local/d3", "local/versastack/utils"],
 //                    outputApi.setDisplayName(clickSubnet.getName());
 //                    var displayTree = outputApi.getDisplayTree();
 //                    displayTree.clear();
-                    outputApi.renderApi.clickNode(clickSubnet.getName(), 'Subnet');
+                    outputApi.renderApi.clickNode(clickSubnet.getName(), 'Subnet', that.outputApi);
 //                    subnet.populateTreeMenu(displayTree);
 //                    displayTree.draw();
                     eraseHighlights();

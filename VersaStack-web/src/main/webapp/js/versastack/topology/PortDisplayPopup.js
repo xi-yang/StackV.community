@@ -191,13 +191,13 @@ define(["local/d3", "local/versastack/utils"],
                                     that.updateSvgChoordsPort(port);
                                 })
                                 .on("click", function () {
-                                    renderApi.selectElement(port);
+                                    renderApi.selectElement(port, that.outputApi);
                                 })
                                 .on("dblclick", function () {
                                     port.setFolded(!port.getFolded());
-                                    renderApi.redrawPopups();
+                                    renderApi.redrawPopups(that.outputApi);
                                     renderApi.drawHighlight();
-                                    renderApi.layoutEdges();
+                                    renderApi.layoutEdges(that.outputApi);
                                 });
                             if (that.outputApi.contextMenu){
                                 port.svgNode.on("contextmenu", that.outputApi.contextMenu.renderedElemContextListener.bind(undefined, port));                      
@@ -321,7 +321,7 @@ define(["local/d3", "local/versastack/utils"],
                             that.updateSvgChoords();
                             renderApi.drawHighlight();
                             renderApi.highlightServiceElements();
-                            renderApi.layoutEdges();
+                            renderApi.layoutEdges(that.outputApi);
                         })
                         .on("dragstart", function () {
                             lastMouse = d3.event.sourceEvent;
