@@ -377,6 +377,7 @@
                     } else {
                         // Toggle button should toggle between  verification visualization and delta-System table
                         // if the verification succeeded
+                        $("#delta-System").insertAfter(".verification-table");
                         document.querySelector("#delta-System .details-model-toggle").onclick = function () {
                             toggleTextModel('.verification-table', '#delta-System');
                         };                        
