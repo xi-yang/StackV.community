@@ -40,15 +40,15 @@
                     }
                 ]
             };
-                
-                $(function() {
-                  $( "#dialog_policyAction" ).dialog({
-                      autoOpen: false
-                  });
-                  $( "#dialog_policyData" ).dialog({
-                      autoOpen: false
-                  });                     
-                });                  
+
+            $(function () {
+                $("#dialog_policyAction").dialog({
+                    autoOpen: false
+                });
+                $("#dialog_policyData").dialog({
+                    autoOpen: false
+                });
+            });
         </script>
         <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
 
@@ -64,7 +64,7 @@
         <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.theme.css">                
 
     </head>
-    
+
     <sql:setDataSource var="front_conn" driver="com.mysql.jdbc.Driver"
                        url="jdbc:mysql://localhost:3306/frontend"
                        user="front_view"  password="frontuser"/>
@@ -82,7 +82,7 @@
                 <button type="button" id="button-service-return">Back to Catalog</button>                 
             </div> 
             <div id="instance-panel">
-                <sql:query dataSource="${front_conn}" sql="SELECT S.name, I.alias_name, X.super_state, V.verification_state FROM service S, service_instance I, service_state X, service_verification V
+                <sql:query dataSource="${front_conn}" sql="SELECT S.name, I.creation_time, I.alias_name, X.super_state, V.verification_state FROM service S, service_instance I, service_state X, service_verification V
                            WHERE I.referenceUUID = ? AND I.service_instance_id = V.service_instance_id AND S.service_id = I.service_id AND X.service_state_id = I.service_state_id" var="instancelist">
                     <sql:param value="${param.uuid}" />
                 </sql:query>
@@ -114,8 +114,12 @@
                                 <td>${instance.alias_name}</td>
                             </tr>
                             <tr>
-                                <td>Instance Reference UUID</td>
+                                <td>Reference UUID</td>
                                 <td>${param.uuid}</td>
+                            </tr>
+                            <tr>
+                                <td>Creation Time</td>
+                                <td id="instance-creation-time">${instance.creation_time}</td>
                             </tr>
                             <tr>
                                 <td>Instance State</td>
@@ -221,7 +225,7 @@
                 instructionModerate();
                 buttonModerate();
 
-                loadVisualization();                           
+                loadVisualization();
                 setRefresh(60);
             });
 
@@ -244,10 +248,10 @@
                     refreshCountdown(time);
                 }, 1000);
             }
-                        
+
             function reloadInstance(time) {
                 enableLoading();
-                
+
                 var manual = false;
                 if (typeof time === "undefined") {
                     time = countdown;
@@ -260,9 +264,9 @@
                     deltaModerate();
                     instructionModerate();
                     buttonModerate();
-                    
+
                     loadVisualization();
-                    
+
                     $(".delta-table-header").click(function () {
                         $("#body-" + this.id).toggleClass("hide");
                     });
@@ -273,7 +277,7 @@
                     } else {
                         document.getElementById('refresh-button').innerHTML = 'Manually RefreshNow ';
                     }
-                    
+
                     setTimeout(function () {
                         disableLoading();
                     }, 750);
@@ -284,21 +288,21 @@
                 document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
                 countdown--;
             }
- 
+
             function loadVisualization() {
-                $("#details-viz").load("/VersaStack-web/details_viz.jsp", function() {
+                $("#details-viz").load("/VersaStack-web/details_viz.jsp", function () {
                     $("#ver-add").append($("#va_viz_div"));
                     $("#ver-add").find("#va_viz_div").removeClass("hidden");
-                   
+
                     $("#unver-add").append($("#ua_viz_div"));
                     $("#unver-add").find("#ua_viz_div").removeClass("hidden");
 
                     $("#ver-red").append($("#vr_viz_div"));
                     $("#ver-red").find("#vr_viz_div").removeClass("hidden");
 
-                    $("#unver-red").append($("#ur_viz_div"));     
+                    $("#unver-red").append($("#ur_viz_div"));
                     $("#unver-red").find("#ur_viz_div").removeClass("hidden");
-                });      
+                });
             }
 
             // Moderation Functions
@@ -376,7 +380,7 @@
 
                 if (superState === 'Create') {
                     // State 0 - Stuck 
-                    if (subState === 'INIT' && verificationState === "") {
+                    if (verificationState === "") {
                         $("#instance-fdelete").toggleClass("hide");
                     }
                     // State 1 - Ready & Verifying
@@ -410,6 +414,10 @@
                     }
                 }
                 else if (superState === 'Cancel') {
+                    // State 0 - Stuck 
+                    if (verificationState === "") {
+                        $("#instance-fdelete").toggleClass("hide");
+                    }
                     // State 1 - Ready & Verifying
                     if (subState === 'READY' && verificationState === '0') {
 
@@ -428,7 +436,7 @@
                     }
                     // State 4 - Failed & Verifying
                     else if (subState === 'FAILED' && verificationState === '0') {
-
+                        
                     }
                     // State 5 - Failed & Verified
                     else if (subState === 'FAILED' && verificationState === '1') {
@@ -445,6 +453,10 @@
                     }
                 }
                 else if (superState === 'Reinstate') {
+                    // State 0 - Stuck 
+                    if (verificationState === "") {
+                        $("#instance-fdelete").toggleClass("hide");
+                    }
                     // State 1 - Ready & Verifying
                     if (subState === 'READY' && verificationState === '0') {
 
