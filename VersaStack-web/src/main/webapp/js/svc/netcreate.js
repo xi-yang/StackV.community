@@ -861,7 +861,7 @@ function infoAlert(title, arr) {
     if (title === "Invalid Inputs") {
         $("#info-panel-title").html(title);
         var arrString = "";
-        for (i = 0; i < arr.length(); i++) {
+        for (i = 0; i < arr.length; i++) {
             arrString += arr[i] + "\r\n";
         }
         

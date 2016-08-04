@@ -5,7 +5,57 @@
     "data": {
         "virtual_clouds": [
             {
+                "type": "internal",
+                "parent": "urn:ogf:network:aws.amazon.com:aws-cloud",
                 "name": "vtn1",
+                "cidr": "10.0.0.0/16",
+                "subnets": [
+                    {
+                        "name": "subnet1",
+                        "cidr": "10.0.0.0/24",
+                        "virtual_machines": [
+                            {
+                                "name": "ec2-vpc1-vm1",
+                                "type": "instance+m4.large,secgroup+geni,keypair+driver_key,image+ami-0d1bf860"
+                            }
+                        ],
+                        "routes": [
+                            {
+                                "to": {
+                                    "value": "0.0.0.0/0"
+                                },
+                                "from": {
+                                    "value": "vpn"
+                                },
+                                "next_hop": {
+                                    "value": "vpn"
+                                }
+                            },
+                            {
+                                "to": {
+                                    "value": "206.196.0.0/16"
+                                },
+                                "next_hop": {
+                                    "value": "internet"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "routes": [
+                    {
+                        "to": {
+                            "value": "0.0.0.0/0",
+                            "type": "ipv4-prefix"
+                        },
+                        "next_hop": {
+                            "value": "internet"
+                        }
+                    }
+                ]
+            },
+            {
+                "name": "vtn2",
                 "type": "internal",
                 "parent": "urn:ogf:network:openstack.com:openstack-cloud",
                 "cidr": "10.1.0.0/16",
@@ -106,57 +156,7 @@
                         "cidr": "10.1.0.0/24"
                     }
                 ]
-            },
-            {
-                "type": "internal",
-                "parent": "urn:ogf:network:aws.amazon.com:aws-cloud",
-                "name": "vpc1",
-                "cidr": "10.0.0.0/16",
-                "subnets": [
-                    {
-                        "name": "subnet1",
-                        "cidr": "10.0.0.0/24",
-                        "virtual_machines": [
-                            {
-                                "name": "ec2-vpc1-vm1",
-                                "type": "instance+m4.large,secgroup+geni,keypair+driver_key,image+ami-0d1bf860"
-                            }
-                        ],
-                        "routes": [
-                            {
-                                "to": {
-                                    "value": "0.0.0.0/0"
-                                },
-                                "from": {
-                                    "value": "vpn"
-                                },
-                                "next_hop": {
-                                    "value": "vpn"
-                                }
-                            },
-                            {
-                                "to": {
-                                    "value": "206.196.0.0/16"
-                                },
-                                "next_hop": {
-                                    "value": "internet"
-                                }
-                            }
-                        ]
-                    }
-                ],
-                "routes": [
-                    {
-                        "to": {
-                            "value": "0.0.0.0/0",
-                            "type": "ipv4-prefix"
-                        },
-                        "next_hop": {
-                            "value": "internet"
-                        }
-                    }
-                ]
-            }
+            }            
         ]
     }
 }

@@ -59,6 +59,7 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import web.beans.serviceBeans;
 import com.hp.hpl.jena.ontology.OntModel;
+import java.io.FileWriter;
 import net.maxgigapop.mrs.common.ModelUtil;
 
 /**
@@ -275,7 +276,13 @@ public class WebResource {
                 Object obj = parser.parse(inputString);
                 inputJSON = (JSONObject) obj;
 
-                System.out.println("Service API- inputJSON: " + inputJSON.toJSONString());
+                //System.out.println("Service API- inputJSON: " + inputJSON.toJSONString());
+                
+                try (FileWriter file = new FileWriter("/Users/rikenavadur/NetBeansProjects/StateProcessing/VersaStack/VersaStack-web/src/main/webapp/data/json/hybrid_test.json")) {
+			file.write(inputJSON.toJSONString());
+			System.out.println("Successfully Copied JSON Object to File...");
+			System.out.println("\nJSON Object: " + inputJSON);
+		}
             } catch (ParseException ex) {
                 Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
             }

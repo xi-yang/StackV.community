@@ -40,6 +40,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 import javax.servlet.AsyncContext;
@@ -320,339 +321,6 @@ public class ServiceServlet extends HttpServlet {
         JSONObject dataJSON = new JSONObject();
         inputJSON.put("user", paraMap.get("username"));
         inputJSON.put("type", "netcreate");
-        inputJSON.put("alias", paraMap.get("alias"));
-
-        JSONArray cloudArr = new JSONArray();
-        for (int type = 1; type <= 2; type++) {
-            String typeStr;
-            if (type == 1) {
-                typeStr = "aws-";
-            } else {
-                typeStr = "ops-";
-            }
-            
-            JSONObject cloudJSON = new JSONObject();
-            cloudJSON.put("type", paraMap.get(typeStr + "netType"));
-            cloudJSON.put("cidr", paraMap.get(typeStr + "netCidr"));
-            cloudJSON.put("name", "vtn" + type);
-            cloudJSON.put("parent", paraMap.get(typeStr + "topoUri"));
-
-            // Parse gateways.
-            // AWS
-            JSONArray gatewayArr = new JSONArray();
-            if (paraMap.containsKey(typeStr + "conn-dest")) {
-                JSONObject gatewayJSON = new JSONObject();
-                gatewayJSON.put("name", "aws_dx1");
-                gatewayJSON.put("type", "aws_direct_connect");
-
-                JSONArray gateToArr = new JSONArray();
-                JSONObject gateToJSON = new JSONObject();
-
-                String connString = paraMap.get(typeStr + "conn-dest");
-                if (paraMap.containsKey(typeStr + "conn-vlan")) {
-                    connString += "?vlan=" + paraMap.get(typeStr + "conn-vlan");
-                } else {
-                    connString += "?vlan=any";
-                }
-                gateToJSON.put("value", connString);
-                gateToJSON.put("type", "stitch_port");
-
-                gateToArr.add(gateToJSON);
-                gatewayJSON.put("to", gateToArr);
-                gatewayArr.add(gatewayJSON);
-            }
-            // OpenStack
-            for (int i = 1; i <= 10; i++) {
-                if (paraMap.containsKey("gateway" + i + "-name")) {
-                    JSONObject gatewayJSON = new JSONObject();
-                    gatewayJSON.put("name", paraMap.get("gateway" + i + "-name"));
-                    gatewayJSON.put("type", "ucs_port_profile");
-
-                    if (paraMap.containsKey("gateway" + i + "-from")) {
-                        JSONArray fromArr = new JSONArray();
-                        JSONObject fromJSON = new JSONObject();
-                        fromJSON.put("value", paraMap.get("gateway" + i + "-from"));
-                        fromJSON.put("type", paraMap.get("gateway" + i + "-type"));
-
-                        fromArr.add(fromJSON);
-                        gatewayJSON.put("from", fromArr);
-                    }
-                    if (paraMap.containsKey("gateway" + i + "-to")) {
-                        JSONArray toArr = new JSONArray();
-                        JSONObject toJSON = new JSONObject();
-                        toJSON.put("value", paraMap.get("gateway" + i + "-to"));
-                        toJSON.put("type", paraMap.get("gateway" + i + "-type"));
-
-                        toArr.add(toJSON);
-                        gatewayJSON.put("to", toArr);
-                    }
-
-                    gatewayArr.add(gatewayJSON);
-                }
-            }
-            cloudJSON.put("gateways", gatewayArr);
-
-            // Process each subnet.
-            JSONArray subnetArr = new JSONArray();
-            for (int i = 1; i <= 10; i++) {
-                if (paraMap.containsKey(typeStr + "subnet" + i + "-cidr")) {
-                    JSONObject subnetJSON = new JSONObject();
-                    subnetJSON.put("cidr", paraMap.get(typeStr + "subnet" + i + "-cidr"));
-
-                    subnetJSON.put("name", paraMap.containsKey(typeStr + "subnet" + i + "-name") ? paraMap.get(typeStr + "subnet" + i + "-name") : " ");
-
-                    // Process each routes.
-                    JSONArray routeArr = new JSONArray();
-                    for (int j = 1; j <= 10; j++) {
-                        // Check for subroute existence.
-                        JSONObject routeJSON = new JSONObject();
-                        if (paraMap.containsKey(typeStr + "subnet" + i + "-route" + j + "-to")) {
-                            JSONObject toJSON = new JSONObject();
-                            toJSON.put("value", paraMap.get(typeStr + "subnet" + i + "-route" + j + "-to"));
-                            toJSON.put("type", "ipv4-prefix");
-                            routeJSON.put("to", toJSON);
-                        }
-
-                        if (paraMap.containsKey(typeStr + "subnet" + i + "-route" + j + "-from")) {
-                            JSONObject fromJSON = new JSONObject();
-                            fromJSON.put("value", paraMap.get(typeStr + "subnet" + i + "-route" + j + "-from"));
-                            routeJSON.put("from", fromJSON);
-                        }
-                        if (paraMap.containsKey(typeStr + "subnet" + i + "-route" + j + "-next")) {
-                            JSONObject nextJSON = new JSONObject();
-                            nextJSON.put("value", paraMap.get(typeStr + "subnet" + i + "-route" + j + "-next"));
-                            routeJSON.put("next_hop", nextJSON);
-                        }
-
-                        if (!routeJSON.isEmpty()) {
-                            routeArr.add(routeJSON);
-                        }
-                    }
-
-                    // Apply route propagation
-                    if (paraMap.containsKey(typeStr + "subnet" + i + "-route-prop")) {
-                        JSONObject routeJSON = new JSONObject();
-
-                        JSONObject fromJSON = new JSONObject();
-                        fromJSON.put("value", "vpn");
-                        routeJSON.put("from", fromJSON);
-
-                        JSONObject toJSON = new JSONObject();
-                        toJSON.put("value", "0.0.0.0/0");
-                        toJSON.put("type", "ipv4-prefix");
-                        routeJSON.put("to", toJSON);
-
-                        JSONObject nextJSON = new JSONObject();
-                        nextJSON.put("value", "vpn");
-                        routeJSON.put("next_hop", nextJSON);
-
-                        routeArr.add(routeJSON);
-                    } else if (paraMap.containsKey(typeStr + "subnet" + i + "-route-default")) {
-                        JSONObject routeJSON = new JSONObject();
-
-                        JSONObject toJSON = new JSONObject();
-                        toJSON.put("value", "0.0.0.0/0");
-                        toJSON.put("type", "ipv4-prefix");
-                        routeJSON.put("to", toJSON);
-
-                        JSONObject nextJSON = new JSONObject();
-                        nextJSON.put("value", "internet");
-                        routeJSON.put("next_hop", nextJSON);
-
-                        routeArr.add(routeJSON);
-                    }
-
-                    if (!routeArr.isEmpty()) {
-                        subnetJSON.put("routes", routeArr);
-                    }
-
-                    // Process VMs.
-                    JSONArray vmArr = new JSONArray();
-                    for (int j = 1; j <= 10; j++) {
-                        if (paraMap.containsKey(typeStr + "vm" + j + "-subnet") && (Integer.parseInt(paraMap.get(typeStr + "vm" + j + "-subnet")) == i)) {
-                            JSONObject vmJSON = new JSONObject();
-                            if (typeStr.equals("aws-")) {
-                                vmJSON.put("name", paraMap.get(typeStr + "vm" + j + "-name"));
-
-                                // Parse Types.
-                                String vmString = "";
-                                if (paraMap.containsKey(typeStr + "vm" + j + "-instance")) {
-                                    vmString += "instance+" + paraMap.get(typeStr + "vm" + j + "-instance");
-                                }
-                                if (paraMap.containsKey(typeStr + "vm" + j + "-security")) {
-                                    if (!vmString.isEmpty()) {
-                                        vmString += ",";
-                                    }
-                                    vmString += "secgroup+" + paraMap.get(typeStr + "vm" + j + "-security");
-                                }
-                                if (paraMap.containsKey(typeStr + "vm" + j + "-image")) {
-                                    if (!vmString.isEmpty()) {
-                                        vmString += ",";
-                                    }
-                                    vmString += "image+" + paraMap.get(typeStr + "vm" + j + "-image");
-                                }
-                                if (paraMap.containsKey(typeStr + "vm" + j + "-keypair")) {
-                                    if (!vmString.isEmpty()) {
-                                        vmString += ",";
-                                    }
-                                    vmString += "keypair+" + paraMap.get(typeStr + "vm" + j + "-keypair");
-                                }
-                                if (!vmString.isEmpty()) {
-                                    vmJSON.put("type", vmString);
-                                }
-
-                                // not implemented yet
-                                JSONArray interfaceArr = new JSONArray();
-                                if (true) {
-                                    JSONObject interfaceJSON = new JSONObject();
-
-                                    interfaceArr.add(interfaceJSON);
-                                }
-                            } else if (typeStr.equals("ops-")) {
-                                vmJSON.put("name", paraMap.get(typeStr + "vm" + j + "-name"));
-                                vmJSON.put("host", paraMap.get(typeStr + "vm" + j + "-host"));
-
-                                // Parse Types.
-                                String vmString = "";
-                                if (paraMap.containsKey(typeStr + "vm" + j + "-instance")) {
-                                    vmString += "instance+" + paraMap.get(typeStr + "vm" + j + "-instance");
-                                }
-                                if (paraMap.containsKey(typeStr + "vm" + j + "-security")) {
-                                    if (!vmString.isEmpty()) {
-                                        vmString += ",";
-                                    }
-                                    vmString += "secgroup+" + paraMap.get(typeStr + "vm" + j + "-security");
-                                }
-                                if (paraMap.containsKey(typeStr + "vm" + j + "-image")) {
-                                    if (!vmString.isEmpty()) {
-                                        vmString += ",";
-                                    }
-                                    vmString += "image+" + paraMap.get(typeStr + "vm" + j + "-image");
-                                }
-                                if (paraMap.containsKey(typeStr + "vm" + j + "-keypair")) {
-                                    if (!vmString.isEmpty()) {
-                                        vmString += ",";
-                                    }
-                                    vmString += "keypair+" + paraMap.get(typeStr + "vm" + j + "-keypair");
-                                }
-                                if (!vmString.isEmpty()) {
-                                    vmJSON.put("type", vmString);
-                                }
-
-                                //Parse Interfaces: either floating IP or SRIOV connection
-                                JSONArray interfaceArr = new JSONArray();
-                                //check if assigning floating IP
-                                if (paraMap.containsKey(typeStr + "vm" + j + "-floating")) {
-                                    JSONObject interfaceJSON = new JSONObject();
-                                    interfaceJSON.put("name", paraMap.get(typeStr + "vm" + j + "-name") + ":eth0");
-                                    interfaceJSON.put("type", "Ethernet");
-                                    interfaceJSON.put("address", "ipv4+" + paraMap.get(typeStr + "vm" + j + "-floating") + "/255.255.255.0");
-                                    interfaceArr.add(interfaceJSON);
-
-                                    //Process SRIOV only when a floating IP is assigned
-                                    for (int k = 1; k <= 10; k++) {
-                                        if (paraMap.containsKey("SRIOV" + k + "-ip") && Integer.parseInt(paraMap.get("SRIOV" + k + "-vm")) == j) {
-                                            JSONObject sriovJSON = new JSONObject();
-                                            String addrString = "ipv4+" + paraMap.get("SRIOV" + k + "-ip") + "/255.255.255.0";
-                                            addrString += ",mac+" + paraMap.get("SRIOV" + k + "-mac");
-                                            sriovJSON.put("address", addrString);
-                                            sriovJSON.put("name", paraMap.get(typeStr + "vm" + j + "-name") + ":eth" + k);
-                                            sriovJSON.put("type", "SRIOV");
-                                            sriovJSON.put("gateway", paraMap.get("gateway" + paraMap.get("SRIOV" + k + "-gateway") + "-name"));
-
-                                            interfaceArr.add(sriovJSON);
-                                        }
-
-                                    }
-                                }
-                                vmJSON.put("interfaces", interfaceArr);
-                            }
-
-                            // Process each routes.
-                            JSONArray vmRouteArr = new JSONArray();
-                            for (int k = 1; k <= 10; k++) {
-                                // Check for subroute existence.
-                                JSONObject routeJSON = new JSONObject();
-                                if (paraMap.containsKey(typeStr + "vm" + j + "-route" + k + "-to")) {
-                                    JSONObject toJSON = new JSONObject();
-                                    toJSON.put("value", paraMap.get(typeStr + "vm" + j + "-route" + k + "-to"));
-                                    toJSON.put("type", "ipv4-prefix");
-                                    routeJSON.put("to", toJSON);
-                                }
-
-                                if (paraMap.containsKey(typeStr + "vm" + j + "-route" + k + "-from")) {
-                                    JSONObject fromJSON = new JSONObject();
-                                    fromJSON.put("value", paraMap.get(typeStr + "vm" + j + "-route" + k + "-from"));
-                                    routeJSON.put("from", fromJSON);
-                                }
-                                if (paraMap.containsKey(typeStr + "vm" + j + "-route" + k + "-next")) {
-                                    JSONObject nextJSON = new JSONObject();
-                                    nextJSON.put("value", paraMap.get(typeStr + "vm" + j + "-route" + k + "-next"));
-                                    routeJSON.put("next_hop", nextJSON);
-                                }
-
-                                if (!routeJSON.isEmpty()) {
-                                    vmRouteArr.add(routeJSON);
-                                }
-                            }
-
-                            if (!vmRouteArr.isEmpty()) {
-                                vmJSON.put("routes", vmRouteArr);
-                            }
-                            if (!vmJSON.isEmpty()) {
-                                vmArr.add(vmJSON);
-                            }
-                        }
-                    }
-                    subnetJSON.put("virtual_machines", vmArr);
-                    subnetArr.add(subnetJSON);
-                }
-            }
-            cloudJSON.put("subnets", subnetArr);
-
-            // Parse network routes.
-            JSONArray netRouteArr = new JSONArray();
-            JSONObject netRouteJSON = new JSONObject();
-
-            JSONObject toJSON = new JSONObject();
-            toJSON.put("value", "0.0.0.0/0");
-            toJSON.put("type", "ipv4-prefix");
-            netRouteJSON.put("to", toJSON);
-
-            JSONObject nextJSON = new JSONObject();
-            nextJSON.put("value", "internet");
-            netRouteJSON.put("next_hop", nextJSON);
-
-            netRouteArr.add(netRouteJSON);
-            cloudJSON.put("routes", netRouteArr);
-
-            cloudArr.add(cloudJSON);
-        }
-        dataJSON.put("virtual_clouds", cloudArr);
-        inputJSON.put("data", dataJSON);
-
-        request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
-        AsyncContext asyncCtx = request.startAsync();
-        asyncCtx.addListener(new AppAsyncListener());
-        asyncCtx.setTimeout(300000);
-
-        ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
-        executor.execute(new APIRunner(inputJSON));
-
-        return ("/VersaStack-web/ops/catalog.jsp");
-    }
-
-    public String parseHybridCloud(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {
-        for (Object key : paraMap.keySet().toArray()) {
-            if (paraMap.get((String) key).isEmpty()) {
-                paraMap.remove((String) key);
-            }
-        }
-
-        JSONObject inputJSON = new JSONObject();
-        JSONObject dataJSON = new JSONObject();
-        inputJSON.put("user", paraMap.get("username"));
-        inputJSON.put("type", "hybridcloud");
         inputJSON.put("alias", paraMap.get("alias"));
 
         JSONArray cloudArr = new JSONArray();
@@ -952,6 +620,371 @@ public class ServiceServlet extends HttpServlet {
         cloudJSON.put("routes", netRouteArr);
 
         cloudArr.add(cloudJSON);
+        dataJSON.put("virtual_clouds", cloudArr);
+        inputJSON.put("data", dataJSON);
+
+        request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
+        AsyncContext asyncCtx = request.startAsync();
+        asyncCtx.addListener(new AppAsyncListener());
+        asyncCtx.setTimeout(300000);
+
+        ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
+        executor.execute(new APIRunner(inputJSON));
+
+        return ("/VersaStack-web/ops/catalog.jsp");
+    }
+
+    public String parseHybridCloud(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {
+        for (Object key : paraMap.keySet().toArray()) {
+            if (paraMap.get((String) key).isEmpty()) {
+                paraMap.remove((String) key);
+            }
+        }
+
+        JSONObject inputJSON = new JSONObject();
+        JSONObject dataJSON = new JSONObject();
+        inputJSON.put("user", paraMap.get("username"));
+        inputJSON.put("type", "hybridcloud");
+        inputJSON.put("alias", paraMap.get("alias"));
+
+        JSONArray cloudArr = new JSONArray();
+        for (int type = 1; type <= 2; type++) {
+            String typeStr;
+            if (type == 1) {
+                typeStr = "aws-";
+            } else {
+                typeStr = "ops-";
+            }
+
+            JSONObject cloudJSON = new JSONObject();
+            cloudJSON.put("type", paraMap.get(typeStr + "netType"));
+            cloudJSON.put("cidr", paraMap.get(typeStr + "netCidr"));
+            cloudJSON.put("name", "vtn" + type);
+            cloudJSON.put("parent", paraMap.get(typeStr + "topoUri"));
+
+            // Parse gateways.
+            // AWS
+            JSONArray gatewayArr = new JSONArray();
+            if (type == 1 && paraMap.containsKey(typeStr + "conn-dest")) {
+                JSONObject gatewayJSON = new JSONObject();
+                gatewayJSON.put("name", "aws_dx1");
+                gatewayJSON.put("type", "aws_direct_connect");
+
+                JSONArray gateToArr = new JSONArray();
+                JSONObject gateToJSON = new JSONObject();
+
+                String connString = paraMap.get(typeStr + "conn-dest");
+                if (paraMap.containsKey(typeStr + "conn-vlan")) {
+                    connString += "?vlan=" + paraMap.get(typeStr + "conn-vlan");
+                } else {
+                    connString += "?vlan=any";
+                }
+                gateToJSON.put("value", connString);
+                gateToJSON.put("type", "stitch_port");
+
+                gateToArr.add(gateToJSON);
+                gatewayJSON.put("to", gateToArr);
+                gatewayArr.add(gatewayJSON);
+            }
+            // OpenStack
+            if (type == 2) {
+                for (int i = 1; i <= 10; i++) {
+                    if (paraMap.containsKey("gateway" + i + "-name")) {
+                        JSONObject gatewayJSON = new JSONObject();
+                        gatewayJSON.put("name", paraMap.get("gateway" + i + "-name"));
+                        gatewayJSON.put("type", "ucs_port_profile");
+
+                        if (paraMap.containsKey("gateway" + i + "-from")) {
+                            JSONArray fromArr = new JSONArray();
+                            JSONObject fromJSON = new JSONObject();
+                            fromJSON.put("value", paraMap.get("gateway" + i + "-from"));
+                            fromJSON.put("type", paraMap.get("gateway" + i + "-type"));
+
+                            fromArr.add(fromJSON);
+                            gatewayJSON.put("from", fromArr);
+                        }
+                        if (paraMap.containsKey("gateway" + i + "-to")) {
+                            JSONArray toArr = new JSONArray();
+                            JSONObject toJSON = new JSONObject();
+                            toJSON.put("value", paraMap.get("gateway" + i + "-to"));
+                            toJSON.put("type", paraMap.get("gateway" + i + "-type"));
+
+                            toArr.add(toJSON);
+                            gatewayJSON.put("to", toArr);
+                        }
+
+                        gatewayArr.add(gatewayJSON);
+                    }
+                }
+                cloudJSON.put("gateways", gatewayArr);
+            }
+
+            // Process each subnet.
+            JSONArray subnetArr = new JSONArray();
+            for (int i = 1; i <= 10; i++) {
+                if (paraMap.containsKey(typeStr + "subnet" + i + "-cidr")) {
+                    JSONObject subnetJSON = new JSONObject();
+                    subnetJSON.put("cidr", paraMap.get(typeStr + "subnet" + i + "-cidr"));
+                    subnetJSON.put("name", paraMap.containsKey(typeStr + "subnet" + i + "-name") ? paraMap.get(typeStr + "subnet" + i + "-name") : " ");
+
+                    // Process each routes.
+                    JSONArray routeArr = new JSONArray();
+                    for (int j = 1; j <= 10; j++) {
+                        // Check for subroute existence.
+                        JSONObject routeJSON = new JSONObject();
+                        if (paraMap.containsKey(typeStr + "subnet" + i + "-route" + j + "-to")) {
+                            JSONObject toJSON = new JSONObject();
+                            toJSON.put("value", paraMap.get(typeStr + "subnet" + i + "-route" + j + "-to"));
+                            toJSON.put("type", "ipv4-prefix");
+                            routeJSON.put("to", toJSON);
+                        }
+
+                        if (paraMap.containsKey(typeStr + "subnet" + i + "-route" + j + "-from")) {
+                            JSONObject fromJSON = new JSONObject();
+                            fromJSON.put("value", paraMap.get(typeStr + "subnet" + i + "-route" + j + "-from"));
+                            routeJSON.put("from", fromJSON);
+                        }
+                        if (paraMap.containsKey(typeStr + "subnet" + i + "-route" + j + "-next")) {
+                            JSONObject nextJSON = new JSONObject();
+                            nextJSON.put("value", paraMap.get(typeStr + "subnet" + i + "-route" + j + "-next"));
+                            routeJSON.put("next_hop", nextJSON);
+                        }
+
+                        if (!routeJSON.isEmpty()) {
+                            routeArr.add(routeJSON);
+                        }
+                    }
+
+                    // Apply route propagation
+                    if (paraMap.containsKey(typeStr + "subnet" + i + "-route-prop")) {
+                        JSONObject routeJSON = new JSONObject();
+
+                        JSONObject fromJSON = new JSONObject();
+                        fromJSON.put("value", "vpn");
+                        routeJSON.put("from", fromJSON);
+
+                        JSONObject toJSON = new JSONObject();
+                        toJSON.put("value", "0.0.0.0/0");
+                        routeJSON.put("to", toJSON);
+
+                        JSONObject nextJSON = new JSONObject();
+                        nextJSON.put("value", "vpn");
+                        routeJSON.put("next_hop", nextJSON);
+
+                        routeArr.add(routeJSON);
+                    } else if (paraMap.containsKey(typeStr + "subnet" + i + "-route-default")) {
+                        JSONObject routeJSON = new JSONObject();
+
+                        JSONObject toJSON = new JSONObject();
+                        toJSON.put("value", "0.0.0.0/0");
+                        toJSON.put("type", "ipv4-prefix");
+                        routeJSON.put("to", toJSON);
+
+                        JSONObject nextJSON = new JSONObject();
+                        nextJSON.put("value", "internet");
+                        routeJSON.put("next_hop", nextJSON);
+
+                        routeArr.add(routeJSON);
+                    }
+
+                    if (!routeArr.isEmpty()) {
+                        subnetJSON.put("routes", routeArr);
+                    }
+
+                    // Process VMs.
+                    JSONArray vmArr = new JSONArray();
+                    for (int j = 1; j <= 10; j++) {
+                        if (paraMap.containsKey(typeStr + "vm" + j + "-subnet") && (Integer.parseInt(paraMap.get(typeStr + "vm" + j + "-subnet")) == i)) {
+                            JSONObject vmJSON = new JSONObject();
+                            if (typeStr.equals("aws-")) {
+                                vmJSON.put("name", paraMap.get(typeStr + "vm" + j + "-name"));
+
+                                // Parse Types.
+                                String vmString = "";
+                                if (paraMap.containsKey(typeStr + "vm" + j + "-instance")) {
+                                    vmString += "instance+" + paraMap.get(typeStr + "vm" + j + "-instance");
+                                }
+                                if (paraMap.containsKey(typeStr + "vm" + j + "-security")) {
+                                    if (!vmString.isEmpty()) {
+                                        vmString += ",";
+                                    }
+                                    vmString += "secgroup+" + paraMap.get(typeStr + "vm" + j + "-security");
+                                }
+                                if (paraMap.containsKey(typeStr + "vm" + j + "-image")) {
+                                    if (!vmString.isEmpty()) {
+                                        vmString += ",";
+                                    }
+                                    vmString += "image+" + paraMap.get(typeStr + "vm" + j + "-image");
+                                }
+                                if (paraMap.containsKey(typeStr + "vm" + j + "-keypair")) {
+                                    if (!vmString.isEmpty()) {
+                                        vmString += ",";
+                                    }
+                                    vmString += "keypair+" + paraMap.get(typeStr + "vm" + j + "-keypair");
+                                }
+                                if (!vmString.isEmpty()) {
+                                    vmJSON.put("type", vmString);
+                                }
+
+                                // not implemented yet
+                                JSONArray interfaceArr = new JSONArray();
+                                if (true) {
+                                    JSONObject interfaceJSON = new JSONObject();
+
+                                    interfaceArr.add(interfaceJSON);
+                                }
+                            } else if (typeStr.equals("ops-")) {
+                                vmJSON.put("name", paraMap.get(typeStr + "vm" + j + "-name"));
+                                vmJSON.put("host", paraMap.get(typeStr + "vm" + j + "-host"));
+
+                                // Parse Types.
+                                String vmString = "";
+                                if (paraMap.containsKey(typeStr + "vm" + j + "-instance")) {
+                                    vmString += "instance+" + paraMap.get(typeStr + "vm" + j + "-instance");
+                                }
+                                if (paraMap.containsKey(typeStr + "vm" + j + "-security")) {
+                                    if (!vmString.isEmpty()) {
+                                        vmString += ",";
+                                    }
+                                    vmString += "secgroup+" + paraMap.get(typeStr + "vm" + j + "-security");
+                                }
+                                if (paraMap.containsKey(typeStr + "vm" + j + "-image")) {
+                                    if (!vmString.isEmpty()) {
+                                        vmString += ",";
+                                    }
+                                    vmString += "image+" + paraMap.get(typeStr + "vm" + j + "-image");
+                                }
+                                if (paraMap.containsKey(typeStr + "vm" + j + "-keypair")) {
+                                    if (!vmString.isEmpty()) {
+                                        vmString += ",";
+                                    }
+                                    vmString += "keypair+" + paraMap.get(typeStr + "vm" + j + "-keypair");
+                                }
+                                if (!vmString.isEmpty()) {
+                                    vmJSON.put("type", vmString);
+                                }
+
+                                //Parse Interfaces: either floating IP or SRIOV connection
+                                JSONArray interfaceArr = new JSONArray();
+                                //check if assigning floating IP
+                                if (paraMap.containsKey(typeStr + "vm" + j + "-floating")) {
+                                    JSONObject interfaceJSON = new JSONObject();
+                                    interfaceJSON.put("name", paraMap.get(typeStr + "vm" + j + "-name") + ":eth0");
+                                    interfaceJSON.put("type", "Ethernet");
+                                    interfaceJSON.put("address", "ipv4+" + paraMap.get(typeStr + "vm" + j + "-floating"));
+                                    interfaceArr.add(interfaceJSON);
+
+                                    //Process SRIOV only when a floating IP is assigned
+                                    for (int k = 1; k <= 10; k++) {
+                                        if (paraMap.containsKey("SRIOV" + k + "-ip") && Integer.parseInt(paraMap.get("SRIOV" + k + "-vm")) == j) {
+                                            JSONObject sriovJSON = new JSONObject();
+                                            String addrString = "ipv4+" + paraMap.get("SRIOV" + k + "-ip");
+                                            addrString += ",mac+" + paraMap.get("SRIOV" + k + "-mac");
+                                            sriovJSON.put("address", addrString);
+                                            sriovJSON.put("name", paraMap.get(typeStr + "vm" + j + "-name") + ":eth" + k);
+                                            sriovJSON.put("type", "SRIOV");
+                                            sriovJSON.put("gateway", paraMap.get("gateway" + paraMap.get("SRIOV" + k + "-gateway") + "-name"));
+
+                                            interfaceArr.add(sriovJSON);
+                                        }
+
+                                    }
+                                }
+                                vmJSON.put("interfaces", interfaceArr);
+
+                                //Parse CEPH volumes
+                                JSONArray volumeArr = new JSONArray();
+                                for (int k = 1; k <= 10; k++) {
+                                    if (paraMap.containsKey(typeStr + "vm" + j + "-volume" + k + "-mount")) {
+                                        JSONObject volumeJSON = new JSONObject();
+
+                                        volumeJSON.put("mount_point", paraMap.get(typeStr + "vm" + j + "-volume" + k + "-mount"));
+                                        volumeJSON.put("disk_gb", paraMap.get(typeStr + "vm" + j + "-volume" + k + "-size"));
+
+                                        volumeArr.add(volumeJSON);
+                                    }
+                                }
+                                vmJSON.put("ceph_rbd", volumeArr);
+
+                                //Parse BGP
+                                JSONObject bgpJSON = new JSONObject();
+                                if (paraMap.containsKey(typeStr + "vm" + j + "-bgp-number")) {
+                                    JSONArray neighborArr = new JSONArray();
+                                    JSONObject neighborJSON = new JSONObject();
+
+                                    neighborJSON.put("remote_asn", paraMap.get(typeStr + "vm" + j + "-bgp-number"));
+                                    neighborJSON.put("bgp_authkey", paraMap.get(typeStr + "vm" + j + "-bgp-key"));
+                                    neighborArr.add(neighborJSON);
+                                    bgpJSON.put("neighbors", neighborArr);
+
+                                    JSONArray networkArr = new JSONArray();
+                                    String[] networkSplit = paraMap.get(typeStr + "vm" + j + "-bgp-networks").split(",");
+                                    networkArr.addAll(Arrays.asList(networkSplit));
+                                    bgpJSON.put("networks", networkArr);
+                                }
+                                vmJSON.put("quagga_bgp", bgpJSON);
+                            }
+
+                            // Process each routes.
+                            JSONArray vmRouteArr = new JSONArray();
+                            for (int k = 1; k <= 10; k++) {
+                                // Check for subroute existence.
+                                JSONObject routeJSON = new JSONObject();
+                                if (paraMap.containsKey(typeStr + "vm" + j + "-route" + k + "-to")) {
+                                    JSONObject toJSON = new JSONObject();
+                                    toJSON.put("value", paraMap.get(typeStr + "vm" + j + "-route" + k + "-to"));
+                                    //toJSON.put("type", "ipv4-prefix");
+                                    routeJSON.put("to", toJSON);
+                                }
+
+                                if (paraMap.containsKey(typeStr + "vm" + j + "-route" + k + "-from")) {
+                                    JSONObject fromJSON = new JSONObject();
+                                    fromJSON.put("value", paraMap.get(typeStr + "vm" + j + "-route" + k + "-from"));
+                                    routeJSON.put("from", fromJSON);
+                                }
+                                if (paraMap.containsKey(typeStr + "vm" + j + "-route" + k + "-next")) {
+                                    JSONObject nextJSON = new JSONObject();
+                                    nextJSON.put("value", paraMap.get(typeStr + "vm" + j + "-route" + k + "-next"));
+                                    routeJSON.put("next_hop", nextJSON);
+                                }
+
+                                if (!routeJSON.isEmpty()) {
+                                    vmRouteArr.add(routeJSON);
+                                }
+                            }
+
+                            if (!vmRouteArr.isEmpty()) {
+                                vmJSON.put("routes", vmRouteArr);
+                            }
+                            if (!vmJSON.isEmpty()) {
+                                vmArr.add(vmJSON);
+                            }
+                        }
+                    }
+                    subnetJSON.put("virtual_machines", vmArr);
+                    subnetArr.add(subnetJSON);
+                }
+            }
+            cloudJSON.put("subnets", subnetArr);
+
+            // Parse network routes.
+            JSONArray netRouteArr = new JSONArray();
+            JSONObject netRouteJSON = new JSONObject();
+
+            JSONObject toJSON = new JSONObject();
+            toJSON.put("value", "0.0.0.0/0");
+            toJSON.put("type", "ipv4-prefix");
+            netRouteJSON.put("to", toJSON);
+
+            JSONObject nextJSON = new JSONObject();
+            nextJSON.put("value", "internet");
+            netRouteJSON.put("next_hop", nextJSON);
+
+            netRouteArr.add(netRouteJSON);
+            cloudJSON.put("routes", netRouteArr);
+
+            cloudArr.add(cloudJSON);
+        }
         dataJSON.put("virtual_clouds", cloudArr);
         inputJSON.put("data", dataJSON);
 

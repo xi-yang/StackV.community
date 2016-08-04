@@ -681,16 +681,12 @@ body {
 #status-table {
     margin: 20px auto;
     width: 90%;
-    display: block;
-    overflow: scroll;
     max-height: 100%;
 }
 #wizard-table {
     float: left;
     width: 40%;
     margin: 10px;
-    display: block;
-    overflow: scroll;
     max-height: 100%;
 }
 #editor-table {
@@ -698,9 +694,7 @@ body {
     width: 40%;
     margin: 10px;
 }
-#editor-table tbody {
-    display: block;
-    overflow: scroll;
+#editor-table tbody {   
     max-height: 100%;
 }
 
@@ -867,9 +861,9 @@ body {
     z-index: 4;
     font-size: .9em;    
 
-    transition: all 1s ease-out;
+    transition: all .5s ease-out;
 }
-#info-panel .active {
+#info-panel.active {
     top: 0%;
 }
 #mode-panel {        

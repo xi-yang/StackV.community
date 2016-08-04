@@ -190,143 +190,92 @@ function applyTemplate(mode) {
     animating = true;
 
     if (mode === 0) {
-        base_div = $('#1-base-1');
         template_div = $('#0-1');
-        nextStage(template_div, base_div);
+        next_div = $('#2-1');
+        nextStage(template_div, next_div);
     }
     else {
-        // Basic AWS Template
+        // Basic Hybrid Cloud Template
         if (mode === 1) {
-            current_div = $("#0-template-select");
-            next_div = $("#2-aws-1");
-            configureForm('aws');
+            current_div = $("#0-1");
+            next_div = $("#2-1");
 
-            form.elements['netType'].value = 'internal';
-            form.elements['netCidr'].value = '10.1.0.0/16';
+            // Stage 1
 
+            // Stage 2           
+            form.elements['aws-netType'].value = 'internal';
+            form.elements['aws-netCidr'].value = '10.0.0.0/16';
+
+            form.elements['ops-netType'].value = 'internal';
+            form.elements['ops-netCidr'].value = '10.1.0.0/16';
+
+            // Stage 3
             var subnetCounter = document.getElementById('awsStage3-subnet');
-            subnetCounter.value = 2;
+            subnetCounter.value = 1;
             setSubnets(subnetCounter);
-
             var sub1RouteCounter = document.getElementById('awsStage3-subnet1-routes');
-            sub1RouteCounter.value = 2;
+            sub1RouteCounter.value = 1;
             setSubRoutes(sub1RouteCounter);
 
-            form.elements['subnet1-name'].value = '';
-            form.elements['subnet1-cidr'].value = '10.1.0.0/24';
-            form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
-            form.elements['subnet1-route1-next'].value = 'internet';
-            form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
-            form.elements['subnet1-route2-next'].value = 'vpn';
-            form.elements['subnet1-route-prop'].checked = true;
-
-            form.elements['subnet2-name'].value = '';
-            form.elements['subnet2-cidr'].value = '10.1.1.0/24';
-
-            form.elements['conn-dest'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*';
-            form.elements['conn-vlan'].value = 'any';
-        }
-        // AWS w/ VMs Template
-        else if (mode === 2) {
-            current_div = $("#0-template-select");
-            next_div = $("#2-aws-1");
-            configureForm('aws');
-
-            form.elements['netType'].value = 'internal';
-            form.elements['netCidr'].value = '10.1.0.0/16';
-
-            var subnetCounter = document.getElementById('awsStage3-subnet');
-            subnetCounter.value = 2;
-            setSubnets(subnetCounter);
-
-            var sub1RouteCounter = document.getElementById('awsStage3-subnet1-routes');
-            sub1RouteCounter.value = 2;
-            setSubRoutes(sub1RouteCounter);
-
-            var vmCounter = document.getElementById('awsStage4-vm');
-            vmCounter.value = 2;
-            setVMs(vmCounter);
-
-            form.elements['subnet1-name'].value = 'subnet1';
-            form.elements['subnet1-cidr'].value = '10.1.0.0/24';
-
-            form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
-            form.elements['subnet1-route1-next'].value = 'internet';
-            form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
-            form.elements['subnet1-route2-next'].value = 'vpn';
-            form.elements['subnet1-route-prop'].checked = true;
-
-            form.elements['subnet2-name'].value = 'subnet2';
-            form.elements['subnet2-cidr'].value = '10.1.1.0/24';
-
-            form.elements['vm1-name'].value = 'test_with_vm_types_1';
-            $("#awsStage4-vm1-table select").val("1");
-            form.elements['vm1-image'].value = 'ami-08111162';
-            form.elements['vm1-instance'].value = 't2.micro';
-
-            form.elements['vm2-name'].value = 'test_with_vm_types_2';
-            $("#awsStage4-vm2-table select").val("2");
-            form.elements['vm2-image'].value = 'ami-fce3c696';
-            form.elements['vm2-instance'].value = 't2.small';
-            form.elements['vm2-keypair'].value = 'xi-aws-max-dev-key';
-            form.elements['vm2-security'].value = 'geni';
-
-            form.elements['conn-dest'].value = 'urn:publicid:IDN+dragon.maxgigapop.net+interface+CLPK:1-1-2:*';
-            form.elements['conn-vlan'].value = '3023';
-        }
-        // Basic OPS Template
-        else if (mode === 3) {
-            current_div = $("#0-template-select");
-            next_div = $("#2-ops-1");
-            configureForm('ops');
-
-            // Network
-            form.elements['netType'].value = 'internal';
-            form.elements['netCidr'].value = '10.0.0.0/16';
-
-            // Subnets
             var subnetCounter = document.getElementById('opsStage3-subnet');
             subnetCounter.value = 1;
             setSubnets(subnetCounter);
 
-            var sub1RouteCounter = document.getElementById('opsStage3-subnet1-routes');
-            sub1RouteCounter.value = 1;
-            setSubRoutes(sub1RouteCounter);
+            form.elements['aws-subnet1-name'].value = 'subnet1';
+            form.elements['aws-subnet1-cidr'].value = '10.0.0.0/24';
+            form.elements['aws-subnet1-route1-to'].value = '206.196.0.0/16';
+            form.elements['aws-subnet1-route1-next'].value = 'internet';
+            form.elements['aws-subnet1-route-prop'].checked = true;
 
-            form.elements['subnet1-name'].value = 'subnet1';
-            form.elements['subnet1-cidr'].value = '10.0.0.0/24';
-            form.elements['subnet1-route-default'].checked = true;
+            form.elements['ops-subnet1-name'].value = 'subnet1';
+            form.elements['ops-subnet1-cidr'].value = '10.1.0.0/24';
+            form.elements['ops-subnet1-route-default'].checked = true;
 
-            // VMs
-            var vmCounter = document.getElementById('opsStage4-vm');
+            // Stage 4
+            var vmCounter = document.getElementById('awsStage4-vm');
             vmCounter.value = 1;
             setVMs(vmCounter);
 
-            var vm1RouteCounter = document.getElementById('opsStage4-vm1-routes');
-            vm1RouteCounter.value = 1;
-            setVMRoutes(vm1RouteCounter);
+            var vmCounter = document.getElementById('opsStage4-vm');
+            vmCounter.value = 1;
+            setVMs(vmCounter);
+            var vm1VolumeCounter = document.getElementById('opsStage4-vm1-volumes');
+            vm1VolumeCounter.value = 2;
+            setVMVolumes(vm1VolumeCounter);
 
-            form.elements['vm1-name'].value = 'ops-vtn1-vm1';
+            form.elements['aws-vm1-name'].value = 'ec2-vpc1-vm1';
+            $("#awsStage4-vm1-table select").val("1");
+            form.elements['aws-vm1-image'].value = 'ami-0d1bf860';
+            form.elements['aws-vm1-instance'].value = 'm4.large';
+            form.elements['aws-vm1-keypair'].value = 'driver_key';
+            form.elements['aws-vm1-security'].value = 'geni';
+
+            form.elements['ops-vm1-name'].value = 'ops-vtn1-vm1';
             $("#opsStage4-vm1-table select").val("1");
-            form.elements['vm1-instance'].value = '2';
-            form.elements['vm1-keypair'].value = 'icecube_key';
-            form.elements['vm1-security'].value = 'rains';
-            form.elements['vm1-floating'].value = '206.196.180.148';
-            form.elements['vm1-host'].value = 'msx3';
-            form.elements['vm1-route1-to'].value = '192.168.1.0/24';
-            form.elements['vm1-route1-next'].value = '192.168.1.1';
+            form.elements['ops-vm1-instance'].value = '2';
+            form.elements['ops-vm1-keypair'].value = 'demo_key';
+            form.elements['ops-vm1-security'].value = 'rains';
+            form.elements['ops-vm1-floating'].value = '10.10.252.164/24';
+            form.elements['ops-vm1-host'].value = 'rvtk-compute3';
+            form.elements['ops-vm1-bgp-number'].value = '7224';
+            form.elements['ops-vm1-bgp-key'].value = 'versastack';
+            form.elements['ops-vm1-bgp-networks'].value = '10.10.0.0/16';
+            form.elements['ops-vm1-volume1-size'].value = '1024';
+            form.elements['ops-vm1-volume1-mount'].value = '/mnt/ceph0_1tb';
+            form.elements['ops-vm1-volume2-size'].value = '1024';
+            form.elements['ops-vm1-volume2-mount'].value = '/mnt/ceph1_1tb';
 
             // Gateways    
             var gatewayCounter = document.getElementById('opsStage5-gateway');
             gatewayCounter.value = 2;
             setGateways(gatewayCounter);
 
-            form.elements['gateway1-name'].value = 'cluster-gw1';
+            form.elements['gateway1-name'].value = 'ceph-net';
             $("#gateway1-type-select").val("port_profile");
-            form.elements['gateway1-from'].value = 'MSX-Date-Local';
-            form.elements['gateway2-name'].value = 'l2path-aws-dc1';
-            $("#gateway2-type-select").val("stitch_port");
-            form.elements['gateway2-to'].value = 'urn:ogf:network:domain=wix.internet2.edu:node=sw.net.wix.internet2.edu:port=13/1:link=al2s?vlan=any';
+            form.elements['gateway1-from'].value = 'Ceph-Storage';
+            form.elements['gateway2-name'].value = 'intercloud-1';
+            $("#gateway2-type-select").val("peer_cloud");
+            form.elements['gateway2-to'].value = 'urn:ogf:network:aws.amazon.com:aws-cloud?vlan=any';
 
             // SRIOVs
             var SRIOVCounter = document.getElementById('opsStage6-sriov');
@@ -342,7 +291,6 @@ function applyTemplate(mode) {
             form.elements['SRIOV2-name'].value = 'ops-vtn1:vm1:eth2';
             form.elements['SRIOV2-ip'].value = '10.10.0.1';
             form.elements['SRIOV2-mac'].value = '11:22:22:33:33:02';
-
         }
 
         nextStage(current_div, next_div);
@@ -472,6 +420,8 @@ function setVMs(input) {
         tbody1.className = 'fade-hide';
         var tbody2 = document.createElement("tbody");
         tbody2.className = 'fade-hide';
+        var tbody3 = document.createElement("tbody");
+        tbody3.className = 'fade-hide';
 
         var row1 = document.createElement("tr");
         row1.className = 'subfs-headrow closed';
@@ -488,10 +438,12 @@ function setVMs(input) {
             var head = $(this).parent();
             var body1 = head.next();
             var body2 = body1.next();
+            var body3 = body2.next();
 
             $(this).toggleClass("closed");
             body1.toggleClass("fade-hide");
             body2.toggleClass("fade-hide");
+            body3.toggleClass("fade-hide");
         });
 
         var row2 = document.createElement("tr");
@@ -539,10 +491,26 @@ function setVMs(input) {
             row5.appendChild(cell5_1);
             row5.appendChild(cell5_2);
             tbody1.appendChild(row5);
+            
+            var row6 = document.createElement("tr");
+            var cell6_1 = document.createElement("td");
+            var cell6_2 = document.createElement("td");
+            cell6_1.innerHTML = '<input type="text" name="' + type + 'vm' + i + '-bgp-number" placeholder="BGP AS Number">';
+            cell6_2.innerHTML = '<input type="text" name="' + type + 'vm' + i + '-bgp-key" placeholder="BGP Authentication Key">';
+            row6.appendChild(cell6_1);
+            row6.appendChild(cell6_2);
+            tbody1.appendChild(row6);
+            
+            var row7 = document.createElement("tr");
+            var cell7_1 = document.createElement("td");
+            cell7_1.innerHTML = '<input type="text" name="' + type + 'vm' + i + '-bgp-networks" placeholder="BGP Networks (in comma-separated list)">';
+            row7.appendChild(cell7_1);
+            tbody1.appendChild(row7);
         }
 
         table.appendChild(tbody1);
         table.appendChild(tbody2);
+        table.appendChild(tbody3);
         fieldset.appendChild(table);
 
         // Set inputs for vm routes
@@ -552,7 +520,11 @@ function setVMs(input) {
         cell.innerHTML = '<div class="fs-subtext">How many routes for VM ' + i + '?   ' +
                 '<input type="number" class="small-counter" id="' + stage + i + '-routes" ' +
                 'onfocus="this.oldvalue = this.value;" ' +
-                'onchange="setVMRoutes(this)" /></div>';
+                'onchange="setVMRoutes(this)" /></div>' +
+                '<div class="fs-subtext">How many Ceph RBD volumes for VM ' + i + '?   ' +
+                '<input type="number" class="small-counter" id="' + stage + i + '-volumes" ' +
+                'onfocus="this.oldvalue = this.value;" ' +
+                'onchange="setVMVolumes(this)" /></div>';
     }
 }
 
@@ -566,12 +538,31 @@ function setVMRoutes(input) {
 
     var vmRouteCount = input.value;
     for (j = 1; j <= vmRouteCount; j++) {
-        var row3 = table.insertRow(j - 1);
-        var cell3_1 = row3.insertCell(0);
+        var row = table.insertRow(j - 1);
+        var cell = row.insertCell(0);
 
-        cell3_1.innerHTML = '<input type="text" name="' + type + 'vm' + vmNum + '-route' + j + '-from" placeholder="From"/>' +
+        cell.innerHTML = '<input type="text" name="' + type + 'vm' + vmNum + '-route' + j + '-from" placeholder="From"/>' +
                 '<input type="text" name="' + type + 'vm' + vmNum + '-route' + j + '-to" placeholder="To"/>' +
                 '<input type="text" name="' + type + 'vm' + vmNum + '-route' + j + '-next" placeholder="Next Hop"/>';
+    }
+}
+
+function setVMVolumes(input) {
+    // Grab correct vm table
+    var type = input.id.substring(0, 3) + "-";
+    var vmId = input.id.substring(0, input.id.length - 8);
+    var table = document.getElementById(vmId + '-table').getElementsByTagName('tbody')[2];
+    var vmNum = vmId.substring(vmId.length - 1);
+    table.innerHTML = "";
+
+    var vmVolumeCount = input.value;
+    for (j = 1; j <= vmVolumeCount; j++) {
+        var row = table.insertRow(j - 1);
+        var cell1 = row.insertCell(0);
+        var cell2 = row.insertCell(0);
+
+        cell1.innerHTML = '<input type="text" name="' + type + 'vm' + vmNum + '-volume' + j + '-mount" placeholder="Mount point"/>';
+        cell2.innerHTML = '<input type="text" name="' + type + 'vm' + vmNum + '-volume' + j + '-size" placeholder="Disk size (in GB)"/>';        
     }
 }
 
@@ -621,6 +612,7 @@ function setGateways(input) {
         cell2_1.innerHTML = '<td><input type="text" id="gateway' + i + '-tag" onchange="updateGatewayNames(this)" name="gateway' + i + '-name" placeholder="Name"></td>';
         cell2_2.innerHTML = '<select id="gateway' + i + '-type-select" name="gateway' + i + '-type"><option selected disabled>Select the hosting Gateway</option>'
                 + '<option value="port_profile">UCS Port Profile</option>'
+                + '<option value="peer_cloud">Inter-cloud Network</option>'
                 + '<option value="stitch_port">L2 Stitch Port</option></select>';
         row2.appendChild(cell2_1);
         row2.appendChild(cell2_2);
@@ -801,7 +793,7 @@ function infoAlert(title, arr) {
     if (title === "Invalid Inputs") {
         $("#info-panel-title").html(title);
         var arrString = "";
-        for (i = 0; i < arr.length(); i++) {
+        for (i = 0; i < arr.length; i++) {
             arrString += arr[i] + "\r\n";
         }
 

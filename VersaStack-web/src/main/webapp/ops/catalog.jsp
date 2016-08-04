@@ -47,7 +47,8 @@
                             <th>Instance Alias</th>
                             <th>Service Type</th>
                             <th>Instance UUID</th>
-                            <th><div>Instance Status</div>                           
+                            <th><div style="float: left;">Instance Status</div>                           
+                    <button class="button-header" id="refresh-button" onclick="reloadTracker()">Manually Refresh Now</button>
                     <div id="refresh-panel">
                         Auto-Refresh Interval
                         <select id="refresh-timer" onchange="timerChange(this)">
@@ -56,8 +57,7 @@
                             <option value="10">10 sec.</option>
                             <option value="30">30 sec.</option>
                             <option value="60" selected>60 sec.</option>
-                        </select>
-                        <button class="button-header" id="refresh-button" onclick="reloadTracker()">Manually Refresh Now</button>
+                        </select>                        
                     </div>
                     </th>
                     </tr>

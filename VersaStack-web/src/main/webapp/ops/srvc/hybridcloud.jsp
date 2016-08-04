@@ -65,15 +65,20 @@
                 </fieldset>
 
                 <!-- Stage 1: Hybrid Clouds --> 
-                <fieldset id='1-base-1'>
-                    <h2 class="fs-title">Hybrid Cloud Information</h2>
-                    <input type="text" name="alias" placeholder="Instance Alias" />
-
+                <fieldset id='1-base-1'>                   
                     <input type="button" name="next" class="next action-button" value="Next" />                    
                 </fieldset>
 
                 <!-- Stage 2: Network -->
                 <fieldset id='2-1'>
+                    <h2 class="fs-title">Hybrid Cloud Information</h2>                    
+                    <table class="fs-table">
+                        <tr>
+                            <td><input type="text" name="alias" placeholder="Instance Alias" /></td>
+                            <td><input type="text" name="hybrid-vlan" placeholder="Hybrid VLAN" /></td>
+                        </tr>
+                    </table>
+                    <br>
                     <h2 class="fs-title">AWS Network Description</h2>
                     <h3 class="fs-subtitle">Basic Network Details</h3>
                     <table class="fs-table">
