@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost:3306
--- Generation Time: Jun 02, 2016 at 08:07 PM
+-- Generation Time: Jul 27, 2016 at 06:48 PM
 -- Server version: 5.5.42
 -- PHP Version: 5.6.7
 
@@ -27,7 +27,7 @@ DROP TABLE IF EXISTS `acl`;
 CREATE TABLE `acl` (
   `acl_id` int(11) NOT NULL,
   `service_id` int(11) NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Dumping data for table `acl`
@@ -43,7 +43,8 @@ INSERT INTO `acl` (`acl_id`, `service_id`) VALUES
 (9, 9),
 (10, 10),
 (11, 11),
-(12, 12);
+(12, 12),
+(13, 13);
 
 -- --------------------------------------------------------
 
@@ -70,6 +71,7 @@ INSERT INTO `acl_entry_group` (`acl_id`, `usergroup_id`) VALUES
 (10, 1),
 (11, 1),
 (12, 1),
+(13, 1),
 (2, 2),
 (3, 2),
 (11, 2);
@@ -136,7 +138,7 @@ CREATE TABLE `service` (
   `filename` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
   `description` varchar(140) COLLATE utf8_unicode_ci NOT NULL,
   `atomic` tinyint(1) NOT NULL DEFAULT '0'
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Dumping data for table `service`
@@ -424,12 +426,12 @@ ALTER TABLE `usergroup`
 -- AUTO_INCREMENT for table `acl`
 --
 ALTER TABLE `acl`
-  MODIFY `acl_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=13;
+  MODIFY `acl_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=14;
 --
 -- AUTO_INCREMENT for table `service`
 --
 ALTER TABLE `service`
-  MODIFY `service_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=13;
+  MODIFY `service_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=14;
 --
 -- AUTO_INCREMENT for table `service_delta`
 --
