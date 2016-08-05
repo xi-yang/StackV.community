@@ -90,31 +90,29 @@
                 </table>
             </div>
 
-            <sql:query dataSource="${front_conn}" sql="SELECT DISTINCT S.name, S.filename, S.description FROM service S JOIN acl A, acl_entry_group G, acl_entry_user U 
-                       WHERE S.atomic = 0 AND A.service_id = S.service_id 
-                       AND ((A.acl_id = G.acl_id AND G.usergroup_id = ?) OR (A.acl_id = U.acl_id AND U.user_id = ?))" var="servlist">
-                <sql:param value="${user.getActiveUsergroup()}" />
-                <sql:param value="${user.getId()}" />
-            </sql:query>
-
             <div id="catalog-panel">
+                
+                <sql:query dataSource="${front_conn}" sql="SELECT DISTINCT W.name, W.description, W.editable FROM service_wizard W WHERE W.user_id = ? OR W.user_id IS NULL" var="wizlist">
+                    <sql:param value="${user.getId()}" />
+                </sql:query>
+                
                 <table class="management-table" id="wizard-table">
                     <thead>
                         <tr>
-                            <th>Service Name</th>
+                            <th>Profile Name</th>
                             <th>Description</th>
                             <th></th>
                         </tr>
                     </thead>
                     <tbody>
-                        <c:forEach var="service" items="${servlist.rows}">
+                        <c:forEach var="service" items="${wizlist.rows}">
                             <tr>
                                 <td>${service.name}</td>
                                 <td>${service.description}</td>
                                 <td>
                                     <jsp:element name="button">
-                                        <jsp:attribute name="class">button-service-select</jsp:attribute>
-                                        <jsp:attribute name="id">${service.filename}</jsp:attribute>
+                                        <jsp:attribute name="class">button-profile-select</jsp:attribute>
+                                        <jsp:attribute name="id">${service.name}</jsp:attribute>
                                         <jsp:body>Select</jsp:body>
                                     </jsp:element>
                                 </td>
@@ -122,6 +120,13 @@
                         </c:forEach>
                     </tbody>
                 </table>
+
+                <sql:query dataSource="${front_conn}" sql="SELECT DISTINCT S.name, S.filename, S.description FROM service S JOIN acl A, acl_entry_group G, acl_entry_user U 
+                           WHERE S.atomic = 0 AND A.service_id = S.service_id 
+                           AND ((A.acl_id = G.acl_id AND G.usergroup_id = ?) OR (A.acl_id = U.acl_id AND U.user_id = ?))" var="servlist">
+                    <sql:param value="${user.getActiveUsergroup()}" />
+                    <sql:param value="${user.getId()}" />
+                </sql:query>
 
                 <table class="management-table" id="editor-table">
                     <thead>
