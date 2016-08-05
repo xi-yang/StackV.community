@@ -178,7 +178,7 @@ define(["local/d3", "local/versastack/utils"],
                             port.svgNode
                                 .on("mousemove", function () {
                                     outputApi.setHoverText(port.getName());
-                                    outputApi.setHoverLocation(d3.event.x, d3.event.y);
+                                    outputApi.setHoverLocation(d3.event.clientX, d3.event.clientY);
                                     outputApi.setHoverVisible(true);
                                     if (!port.hasChildren()) {
                                         port.enlarged = true;

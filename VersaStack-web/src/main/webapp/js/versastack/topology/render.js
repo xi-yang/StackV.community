@@ -848,7 +848,7 @@ define([
                     setElementSize(n, true);
 
                 }
-                outputApi.setHoverLocation(d3.event.x, d3.event.y);
+                outputApi.setHoverLocation(d3.event.clientX, d3.event.clientY);
                 outputApi.setHoverVisible(true);
             }
         }
@@ -1110,7 +1110,7 @@ define([
             //of said node, causing flicker of the hoverdiv
             if (!isDragging) {
                 outputApi.setHoverText(n.getName());
-                outputApi.setHoverLocation(d3.event.x, d3.event.y);
+                outputApi.setHoverLocation(d3.event.clientX, d3.event.clientY);
                 outputApi.setHoverVisible(true);
                 setElementSize(n, true);
             }
