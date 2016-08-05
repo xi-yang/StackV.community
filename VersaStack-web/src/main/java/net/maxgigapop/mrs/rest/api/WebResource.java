@@ -384,7 +384,7 @@ public class WebResource {
                     servBean.createflow(paraMap);
                     break;
                 case "hybridcloud":
-                    servBean.creatHybridCloud(paraMap);
+                    servBean.createHybridCloud(paraMap);
                     break;
                 default:
             }

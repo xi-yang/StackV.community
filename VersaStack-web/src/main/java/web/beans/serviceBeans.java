@@ -859,16 +859,16 @@ public class serviceBeans {
 
             return 0;
 
-        } catch (Exception e) {
+        } catch (IOException | InterruptedException e) {
             return 1;//connection error
         }
     }
     
-    public int creatHybridCloud(Map<String, String> paraMap)  {
+    public int createHybridCloud(Map<String, String> paraMap)  {
         String refUuid = null;
         JSONParser jsonParser = new JSONParser();
         JSONArray vcnArr = null;
-        ArrayList<String> topoUriList = new ArrayList<String>();
+        ArrayList<String> topoUriList = new ArrayList<>();
         String creatPathExportTo = "";
         //Mapping from paraMap to local variables
         for (Map.Entry<String, String> entry : paraMap.entrySet()) {
