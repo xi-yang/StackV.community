@@ -808,13 +808,6 @@ public class serviceBeans {
                 + "</modelAddition>\n\n"
                 + "</serviceDelta>";
 
-        try {
-            PrintWriter out = new PrintWriter("/Users/rikenavadur/test.ttl");
-            out.println(svcDelta);
-            out.close();
-        } catch (Exception e) {
-
-        }
         //System.out.println(svcDelta);
 
         // Cache serviceDelta.
@@ -1288,13 +1281,6 @@ public class serviceBeans {
                 + "</modelAddition>\n\n"
                 + "</serviceDelta>";
 
-        try {
-            PrintWriter out = new PrintWriter("/Users/rikenavadur/test.ttl");
-            out.println(svcDelta);
-            out.close();
-        } catch (Exception e) {
-
-        }
         //System.out.println(svcDelta);
 
         // Cache serviceDelta.

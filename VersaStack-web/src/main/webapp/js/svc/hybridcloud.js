@@ -409,6 +409,25 @@ function setVMs(input) {
     fieldset.innerHTML = "";
 
     var start = 1;
+    
+    /*
+     * 
+    var row6 = document.createElement("tr");
+    var cell6_1 = document.createElement("td");
+    var cell6_2 = document.createElement("td");
+    cell6_1.innerHTML = '<input type="text" name="' + type + 'vm' + i + '-bgp-number" placeholder="BGP AS Number">';
+    cell6_2.innerHTML = '<input type="text" name="' + type + 'vm' + i + '-bgp-key" placeholder="BGP Authentication Key">';
+    row6.appendChild(cell6_1);
+    row6.appendChild(cell6_2);
+    tbody1.appendChild(row6);
+
+    var row7 = document.createElement("tr");
+    var cell7_1 = document.createElement("td");
+    cell7_1.innerHTML = '<input type="text" name="' + type + 'vm' + i + '-bgp-networks" placeholder="BGP Networks (in comma-separated list)">';
+    row7.appendChild(cell7_1);
+    tbody1.appendChild(row7);
+     */
+    
     for (i = start; i <= input.value; i++) {
         // Set stage 3 data table
         var table = document.createElement("table");
@@ -491,21 +510,6 @@ function setVMs(input) {
             row5.appendChild(cell5_1);
             row5.appendChild(cell5_2);
             tbody1.appendChild(row5);
-            
-            var row6 = document.createElement("tr");
-            var cell6_1 = document.createElement("td");
-            var cell6_2 = document.createElement("td");
-            cell6_1.innerHTML = '<input type="text" name="' + type + 'vm' + i + '-bgp-number" placeholder="BGP AS Number">';
-            cell6_2.innerHTML = '<input type="text" name="' + type + 'vm' + i + '-bgp-key" placeholder="BGP Authentication Key">';
-            row6.appendChild(cell6_1);
-            row6.appendChild(cell6_2);
-            tbody1.appendChild(row6);
-            
-            var row7 = document.createElement("tr");
-            var cell7_1 = document.createElement("td");
-            cell7_1.innerHTML = '<input type="text" name="' + type + 'vm' + i + '-bgp-networks" placeholder="BGP Networks (in comma-separated list)">';
-            row7.appendChild(cell7_1);
-            tbody1.appendChild(row7);
         }
 
         table.appendChild(tbody1);
@@ -562,7 +566,7 @@ function setVMVolumes(input) {
         var cell2 = row.insertCell(0);
 
         cell1.innerHTML = '<input type="text" name="' + type + 'vm' + vmNum + '-volume' + j + '-mount" placeholder="Mount point"/>';
-        cell2.innerHTML = '<input type="text" name="' + type + 'vm' + vmNum + '-volume' + j + '-size" placeholder="Disk size (in GB)"/>';        
+        cell2.innerHTML = '<input type="text" name="' + type + 'vm' + vmNum + '-volume' + j + '-size" placeholder="Disk size (in GB)"/>';
     }
 }
 

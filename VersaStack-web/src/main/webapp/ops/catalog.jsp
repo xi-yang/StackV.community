@@ -91,11 +91,11 @@
             </div>
 
             <div id="catalog-panel">
-                
-                <sql:query dataSource="${front_conn}" sql="SELECT DISTINCT W.name, W.description, W.editable FROM service_wizard W WHERE W.user_id = ? OR W.user_id IS NULL" var="wizlist">
+
+                <sql:query dataSource="${front_conn}" sql="SELECT DISTINCT W.name, W.description, W.editable, W.service_wizard_id FROM service_wizard W WHERE W.user_id = ? OR W.user_id IS NULL" var="wizlist">
                     <sql:param value="${user.getId()}" />
                 </sql:query>
-                
+
                 <table class="management-table" id="wizard-table">
                     <thead>
                         <tr>
@@ -105,14 +105,14 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <c:forEach var="service" items="${wizlist.rows}">
+                        <c:forEach var="profile" items="${wizlist.rows}">
                             <tr>
-                                <td>${service.name}</td>
-                                <td>${service.description}</td>
+                                <td>${profile.name}</td>
+                                <td>${profile.description}</td>
                                 <td>
                                     <jsp:element name="button">
                                         <jsp:attribute name="class">button-profile-select</jsp:attribute>
-                                        <jsp:attribute name="id">${service.name}</jsp:attribute>
+                                        <jsp:attribute name="id">${profile.service_wizard_id}</jsp:attribute>
                                         <jsp:body>Select</jsp:body>
                                     </jsp:element>
                                 </td>
@@ -156,7 +156,12 @@
             <br>
             <button type="button" class="hide" id="button-service-cancel">Cancel</button>
             <div id="service-specific"></div>
+            <div id="info-panel">
+                <h3 class="fs-subtitle" id="info-panel-title"></h3>
+                <div id="info-panel-div">
 
+                </div>
+            </div>
             <!-- LOADING PANEL -->
             <div id="loading-panel"></div>
             <!-- TAG PANEL -->
