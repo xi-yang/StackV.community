@@ -262,6 +262,29 @@ public class WebResource {
         });
     }
 
+    @PUT
+    @Path(value = "/profile/{identifier}")
+    public void executeProfile(@Suspended final AsyncResponse asyncResponse, @PathParam(value = "identifier") final int identifier) throws SQLException {
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM service_wizard WHERE `service_wizard_id` = ?");
+        prep.setInt(1, identifier);
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {            
+            final String inputString = rs1.getString("wizard_json");
+            executorService.execute(new Runnable() {
+                @Override
+                public void run() {
+                    asyncResponse.resume(doCreateService(inputString));
+                }
+            });
+        }
+    }
+
     // Async Methods -----------------------------------------------------------
     private String doCreateService(String inputString) {
         try {
@@ -276,13 +299,7 @@ public class WebResource {
                 Object obj = parser.parse(inputString);
                 inputJSON = (JSONObject) obj;
 
-                //System.out.println("Service API- inputJSON: " + inputJSON.toJSONString());
-                
-                try (FileWriter file = new FileWriter("/Users/rikenavadur/NetBeansProjects/StateProcessing/VersaStack/VersaStack-web/src/main/webapp/data/json/hybrid_test.json")) {
-			file.write(inputJSON.toJSONString());
-			System.out.println("Successfully Copied JSON Object to File...");
-			System.out.println("\nJSON Object: " + inputJSON);
-		}
+                System.out.println("Service API:: inputJSON: " + inputJSON.toJSONString());
             } catch (ParseException ex) {
                 Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
             }

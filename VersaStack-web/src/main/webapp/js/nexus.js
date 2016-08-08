@@ -19,6 +19,12 @@ $(function () {
             evt.preventDefault();
         });
     });
+    
+    $("#info-panel").click(function (evt) {
+        $("#info-panel").removeClass("active");
+        
+        evt.preventDefault();
+    });
 
     $(".button-service-select").click(function (evt) {
         $ref = "/VersaStack-web/ops/srvc/" + this.id.toLowerCase() + ".jsp";
@@ -27,6 +33,24 @@ $(function () {
         //$("#service-overview").toggleClass("hide");
         //$("#button-service-cancel").toggleClass("hide");
         //$("#service-specific").load($ref);
+        evt.preventDefault();
+    });
+
+    $(".button-profile-select").click(function (evt) {
+        var apiUrl = baseUrl + '/VersaStack-web/restapi/app/profile/' + this.id;
+        $.ajax({
+            url: apiUrl,
+            type: 'PUT',
+            success: function (result) {
+                $("#info-panel-div").html("Profile Initiated.");
+                $("#info-panel").addClass("active");
+            },
+            error: function(textStatus, errorThrown) {
+                console.log(textStatus);
+                console.log(errorThrown);
+            }
+        });
+
         evt.preventDefault();
     });
 
