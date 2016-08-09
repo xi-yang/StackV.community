@@ -106,6 +106,9 @@
                 width: content-box;
                 font-size: 150%;
                 overflow-wrap: break-word;
+                /* For firefox */
+                white-space: pre-wrap;
+                word-break: break-all;
             }
 
             #displayPanel-actions {    
@@ -301,6 +304,50 @@
                         '                                                   0 0 0 1 0" />'+
                         '                                    <feComposite operator="out" in="a" in2="SourceGraphic"/>'+
                         '                                </filter>'+
+                        '                                <filter id="spaImportFromOutlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%" >'+
+                        '                                   <feFlood flood-color="#FD3338" result="base" />'+
+                        '                                   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>'+
+                        '                                   <feColorMatrix result="mask" in="bigger" type="matrix"'+
+                        '                                      values="0 0 0 0 0'+
+                        '                                              0 0 0 0 0'+
+                        '                                              0 0 0 0 0'+
+                        '                                              0 0 0 1 0" />'+
+                        '                                   <feComposite result="drop" in="base" in2="mask" operator="in" />'+
+                        '                                   <feBlend in="SourceGraphic" in2="drop" mode="normal" />'+
+                        '                                </filter>    '+         
+                        '                                <filter id="spaExportToOutlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%" >'+
+                        '                                   <feFlood flood-color="#23ABA6" result="base" />'+
+                        '                                   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>'+
+                        '                                   <feColorMatrix result="mask" in="bigger" type="matrix"'+
+                        '                                      values="0 0 0 0 0'+
+                        '                                              0 0 0 0 0'+
+                        '                                              0 0 0 0 0'+
+                        '                                              0 0 0 1 0" />'+
+                        '                                   <feComposite result="drop" in="base" in2="mask" operator="in" />'+
+                        '                                   <feBlend in="SourceGraphic" in2="drop" mode="normal" />'+
+                        '                                </filter>'+    
+                        '                                <filter id="spaDependOnOutlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%" >'+
+                        '                                   <feFlood flood-color="#B3F131" result="base" />'+
+                        '                                   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>'+
+                        '                                   <feColorMatrix result="mask" in="bigger" type="matrix"'+
+                        '                                      values="0 0 0 0 0'+
+                        '                                              0 0 0 0 0'+
+                        '                                              0 0 0 0 0'+
+                        '                                              0 0 0 1 0" />'+
+                        '                                   <feComposite result="drop" in="base" in2="mask" operator="in" />'+
+                        '                                   <feBlend in="SourceGraphic" in2="drop" mode="normal" />'+
+                        '                                </filter>'+      
+                        '                                <filter id="outlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%">'+
+                        '                                    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->'+
+                        '                                    <feMorphology operator="dilate" radius="1"/>'+
+                        '                                    <feColorMatrix result="a" type="matrix"'+
+                        '                                                   values="0 0 0 0 .7'+
+                        '                                                   0 0 0 0 1'+
+                        '                                                   0 0 0 0 0'+
+                        '                                                   0 0 0 1 0" />'+
+                        '                                    <feComposite operator="out" in="a" in2="SourceGraphic"/>'+
+                        '                                </filter>'+
+                        
                         '                                <filter id="ghost" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">'+
                         '                                    <feColorMatrix type="saturate" values=".2"/>'+
                         '                                </filter>'+
@@ -716,13 +763,13 @@
                     this._updateTransform();
                 };
                 var svg = document.getElementById(this.svgContainerName);
-                svg.addEventListener("mousewheel", function (e) {
+                svg.addEventListener("wheel", function (e) {
                     e.preventDefault();
                     //The OSX trackpad seems to produce scrolls two orders of magnitude large when using pinch to zoom,
                     //so we ignore the magnitude entirely
-                    that.zoom(Math.sign(e.wheelDeltaY) * settings.ZOOM_FACTOR, e.offsetX, e.offsetY);
+                    that.zoom(Math.sign(-e.deltaY) * settings.ZOOM_FACTOR, e.offsetX, e.offsetY);
                     return false;
-                }, false);
+                }, false); 
 
                 //Interface to (de)select elements for interaction with the form
                 //If the provided element is currently being used in the form, remove it from the form,

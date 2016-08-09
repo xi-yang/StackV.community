@@ -95,7 +95,10 @@ define([], function () {
         positionUsingPointer: positionUsingPointer,
         getElementPosition: getElementPosition, 
         isURL: isURL,
-        getRenderedElementParentDiv: getRenderedElementParentDiv
+        getRenderedElementParentDiv: getRenderedElementParentDiv,
+        isFirefox: function() {
+            return typeof InstallTrigger !== 'undefined';
+        }
     };
     /** END PUBLIC INTERFACE **/
 

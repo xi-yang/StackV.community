@@ -14,6 +14,7 @@ define([
 ], function (d3, utils, PortDisplayPopup, SwitchPopup, VolumeDisplayPopup, values) {
 
     var map_ = utils.map_;
+    var isFirefox = utils.isFirefox;
     var settings = {
         NODE_SIZE: 30,
         SERVICE_SIZE: 10,
@@ -723,29 +724,41 @@ define([
                 d3.select(e.svgNode.node())
                         .style("stroke", settings.EDGE_COLOR)
                         .style("stroke-width", settings.EDGE_WIDTH)
-                        .style("filter", "url(#spaDependOnOutline)")
                         .style("opacity", "1")
                         .attr("marker-end", "url(#marker_arrow)")
                         .on("mousemove", onPolicyMouseMove.bind(undefined, e))
-                        .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));                                    
+                        .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));   
+                if (isFirefox()) {
+                    d3.select(e.svgNode.node()).style("filter", "url(#spaDependOnOutlineFF)");
+                } else {
+                    d3.select(e.svgNode.node()).style("filter", "url(#spaDependOnOutline)");
+                }
             } else if (e.edgeType === "importFrom") {
-                d3.select(e.svgNode.node())
-                        .style("stroke", settings.EDGE_COLOR)
-                        .style("stroke-width", settings.EDGE_WIDTH)                
-                        .style("filter", "url(#spaImportFromOutline)")
-                        .style("opacity", "1")
-                        .attr("marker-end", "url(#marker_arrow)")                
-                        .on("mousemove", onPolicyMouseMove.bind(undefined, e))
-                        .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));                                    
+                 d3.select(e.svgNode.node())
+                    .style("stroke", settings.EDGE_COLOR)
+                    .style("stroke-width", settings.EDGE_WIDTH)                
+                    .style("opacity", "1")
+                    .attr("marker-end", "url(#marker_arrow)")                
+                    .on("mousemove", onPolicyMouseMove.bind(undefined, e))
+                    .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));   
+                if (isFirefox()) {
+                    d3.select(e.svgNode.node()).style("filter", "url(#spaImportFromOutlineFF)");
+                } else {
+                    d3.select(e.svgNode.node()).style("filter", "url(#spaImportFromOutline)");
+                }
             } else if (e.edgeType === "exportTo") {
                 d3.select(e.svgNode.node())
                         .style("stroke", settings.EDGE_COLOR)
                         .style("stroke-width", settings.EDGE_WIDTH)                
-                        .style("filter", "url(#spaExportToOutline)")
                         .style("opacity", "1")
                         .attr("marker-end", "url(#marker_arrow)")                
                         .on("mousemove", onPolicyMouseMove.bind(undefined, e))
-                        .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));                    
+                        .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));
+                if (isFirefox()) {
+                    d3.select(e.svgNode.node()).style("filter", "url(#spaExportToOutlineFF)");
+                } else {
+                    d3.select(e.svgNode.node()).style("filter", "url(#spaExportToOutline)");
+                }
             }
             
             e.svgLeadLeft = svgContainer.select("#edge2" + "_" + outputApi.svgContainerName).append("line")
@@ -990,9 +1003,16 @@ define([
 
                         var toAppend = serviceHighlightedNodes[i].svgNode.node().cloneNode();
                         previousHighlightedNodes.push(d3.select(toAppend)
-                                .style("filter", "url(#subnetHighlight)")
-                                .style("opacity", "1")
-                                .attr("pointer-events", "none"));
+                                    .style("opacity", "1")
+                                    .attr("pointer-events", "none"));
+                            
+                        var last = previousHighlightedNodes.length - 1;
+                        if (!isFirefox()) {
+                            previousHighlightedNodes[last].style("filter", "url(#subnetHighlight)"); 
+                        } else {
+                            previousHighlightedNodes[last].style("filter", "url(#subnetHighlightFF)");
+                        }
+                                    
                         var parentNode = serviceHighlightedNodes[i].svgNode.node().parentNode;
                         if (parentNode) {
                             //If we are coming out of a fold, the parentNode might no longer exist
@@ -1012,9 +1032,15 @@ define([
             if (highlightedNode && highlightedNode.svgNode) {
                 var toAppend = highlightedNode.svgNode.node().cloneNode();
                 previousHighlight = d3.select(toAppend)
-                        .style("filter", "url(#outline)")
-                        .style("opacity", "1")
-                        .attr("pointer-events", "none");
+                            .style("opacity", "1")
+                            .attr("pointer-events", "none");                    
+
+                if (!isFirefox()) {
+                    previousHighlight.style("filter", "url(#outline)");
+                } else {
+                    previousHighlight.style("filter", "url(#outlineFF)");
+                }
+                                            
                 var parentNode = highlightedNode.svgNode.node().parentNode;
                 if (parentNode) {
                     //If we are coming out of a fold, the parentNode might no longer exist
