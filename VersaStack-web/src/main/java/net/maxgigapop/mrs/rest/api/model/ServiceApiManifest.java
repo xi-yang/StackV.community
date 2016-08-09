@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2016 University of Maryland
- * Created by: Xi Yang 2014
+ * Created by: Xi Yang 2015
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy 
  * of this software and/or hardware specification (the “Work”) to deal in the 
@@ -23,8 +23,7 @@
 
 package net.maxgigapop.mrs.rest.api.model;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Date;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
@@ -32,33 +31,41 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  *
- * @author max
+ * @author xyang
  */
-@XmlRootElement(name = "driverInstance")
+@XmlRootElement(name = "serviceManifest")
 @XmlAccessorType(XmlAccessType.FIELD)
-public class ApiDriverInstance {
+public class ServiceApiManifest {
+    @XmlElement
+    protected String serviceUUID = null;
+    @XmlElement
+    protected String jsonTemplate = null;
+    @XmlElement
+    protected String jsonModel = null;
 
-    @XmlElement(required = true)
-    protected Map<String, String> properties = new HashMap<String, String>();
-
-    public Map<String, String> getProperties() {
-        return properties;
+    public String getServiceUUID() {
+        return serviceUUID;
     }
 
-    public void setProperties(Map<String, String> properties) {
-        this.properties = properties;
+    public void setServiceUUID(String serviceUUID) {
+        this.serviceUUID = serviceUUID;
     }
 
-    public String getTopologyUri() throws Exception {
-        if (!properties.containsKey("topologyUri")) {
-            throw new Exception("Can't find topologyUri");
-        } else {
-            return properties.get("topologyUri");
-        }
+    public String getJsonTemplate() {
+        return jsonTemplate;
     }
-//    @Override
-//    public String toString() {
-//        return "net.maxgigapop.mrs.model.DriverInstance[ topologyUri=" + topologyUri + " ]";
-//    }
 
+    public void setJsonTemplate(String jsonTemplate) {
+        this.jsonTemplate = jsonTemplate;
+    }
+
+    public String getJsonModel() {
+        return jsonModel;
+    }
+
+    public void setJsonModel(String jsonModel) {
+        this.jsonModel = jsonModel;
+    }
+    
+    
 }
