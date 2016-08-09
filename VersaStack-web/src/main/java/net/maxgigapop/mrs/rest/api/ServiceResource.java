@@ -437,8 +437,42 @@ public class ServiceResource {
     @Consumes("application/json")
     @Produces("application/json")
     public ServiceApiManifest resolveManifest(ServiceApiManifest manifest) {
-        //@TODO: if manifest.getJsonModel() == null, get serviceDelta.modelAddition into manifest.jsonTemplate
-        JSONObject joManifest = resolveManifestJsonTemplate(manifest.getJsonTemplate(), manifest.getJsonModel());
+        // if manifest.getJsonModel() == null, get serviceDelta.modelAddition into manifest.jsonTemplate
+        String jsonModel = manifest.getJsonModel();
+        if (jsonModel == null) {
+            /*
+            if (manifest.getServiceUUID() == null) {
+                throw new EJBException("resolveManifest must have either input model or serviceUUID");
+            }
+            ModelUtil.DeltaRetrieval deltaRetrieval = new ModelUtil.DeltaRetrieval();
+            serviceCallHandler.retrieveDelta(manifest.getServiceUUID(), deltaRetrieval, true);
+            jsonModel = deltaRetrieval.getModelAdditionSys();
+            if (jsonModel == null) {
+                throw new EJBException("resolveManifest cannot get verified modelAddition for service UUID="+manifest.getServiceUUID());
+            }
+            */
+            return resolveServiceManifest(manifest.getServiceUUID(), manifest);
+        }
+        JSONObject joManifest = resolveManifestJsonTemplate(manifest.getJsonTemplate(), jsonModel);
+        manifest.setJsonTemplate(joManifest.toJSONString());
+        manifest.setJsonModel(null);
+        return manifest;
+    }
+    
+    @POST
+    @Path("/manifest/{svcUUID}")
+    @Consumes("application/json")
+    @Produces("application/json")
+    public ServiceApiManifest resolveServiceManifest(@PathParam("svcUUID") String svcUUID, ServiceApiManifest manifest) {
+        // if manifest.getJsonModel() == null, get serviceDelta.modelAddition into manifest.jsonTemplate
+        manifest.setServiceUUID(svcUUID);
+        ModelUtil.DeltaVerification deltaVerification = new ModelUtil.DeltaVerification();
+        serviceCallHandler.verifyDelta(manifest.getServiceUUID(), deltaVerification, true);
+        String jsonModel = deltaVerification.getModelAdditionVerified();
+        if (jsonModel == null) {
+            throw new EJBException("resolveServiceManifest cannot get verified modelAddition for service UUID="+manifest.getServiceUUID());
+        }
+        JSONObject joManifest = resolveManifestJsonTemplate(manifest.getJsonTemplate(), jsonModel);
         manifest.setJsonTemplate(joManifest.toJSONString());
         manifest.setJsonModel(null);
         return manifest;

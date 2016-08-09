@@ -36,10 +36,10 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name = "serviceManifest")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ServiceApiManifest {
-    @XmlElement
-    protected String serviceUUID = null;
-    @XmlElement
-    protected String jsonTemplate = null;
+    @XmlElement(required = true)
+    protected String serviceUUID = "";
+    @XmlElement(required = true)
+    protected String jsonTemplate = "";
     @XmlElement
     protected String jsonModel = null;
 
