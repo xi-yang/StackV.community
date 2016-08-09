@@ -39,52 +39,87 @@
         <div id="sidebar">            
         </div>
         <!-- MAIN PANEL -->
-        <div id="main-pane">                                   
-            <div id="service-overview">                
-                <div id="instance-panel">
-                    <table class="management-table" id="status-table">
-                        <thead>
-                            <tr>
-                                <th>Instance Alias</th>
-                                <th>Service Type</th>
-                                <th>Instance UUID</th>
-                                <th>Instance Status     <button class="button-header" id="refresh-button" onclick="reloadTracker()">Manually Refresh Now</button></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <c:forEach var="instance" items="${serv.instanceStatusCheck()}">
-                                <!--Details page redirection-->
-                                <c:choose>                                    
-                                    <c:when test="${instance[0]} == 'Dynamic Network Connection'"><!--DNC-->
-                                        <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}&type=dnc'>
-                                        </c:when>                                        
-                                        <c:when test="${instance[0]} == 'Network Creation'"><!--VCN-->
-                                        <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}&type=netcreate'>
-                                        </c:when>
+        <div id="main-pane">                                                 
+            <div id="instance-panel">
+                <table class="management-table" id="status-table">
+                    <thead>
+                        <tr>
+                            <th>Instance Alias</th>
+                            <th>Service Type</th>
+                            <th>Instance UUID</th>
+                            <th><div style="float: left;">Instance Status</div>                           
+                    <button class="button-header" id="refresh-button" onclick="reloadTracker()">Manually Refresh Now</button>
+                    <div id="refresh-panel">
+                        Auto-Refresh Interval
+                        <select id="refresh-timer" onchange="timerChange(this)">
+                            <option value="off">Off</option>
+                            <option value="5">5 sec.</option>
+                            <option value="10">10 sec.</option>
+                            <option value="30">30 sec.</option>
+                            <option value="60" selected>60 sec.</option>
+                        </select>                        
+                    </div>
+                    </th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                        <c:forEach var="instance" items="${serv.instanceStatusCheck()}">
+                            <!--Details page redirection-->
+                            <c:choose>                                    
+                                <c:when test="${instance[0]} == 'Dynamic Network Connection'"><!--DNC-->
+                                    <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}&type=dnc'>
+                                    </c:when>                                        
+                                    <c:when test="${instance[0]} == 'Network Creation'"><!--VCN-->
+                                    <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}&type=netcreate'>
+                                    </c:when>
+                                    <c:when test="${instance[0]} == 'Hybrid Cloud'"><!--VCN-->
+                                    <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}&type=hybridcloud'>
+                                    </c:when>
 
-                                        <c:otherwise>
-                                        <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}'>
-                                        </c:otherwise>
-                                    </c:choose>                                                
-                                            <td>${instance[3]}</td>        
-                                            <td>${instance[0]}</td>
-                                            <td>${instance[1]}</td>
-                                            <td>${instance[2]}</td>
-                                        </tr>
-                            </c:forEach>
-                        </tbody>
-                    </table>
-                </div>
-                <div id="refresh-panel">
-                    Auto-Refresh Interval
-                    <select id="refresh-timer" onchange="timerChange(this)">
-                        <option value="off">Off</option>
-                        <option value="5">5 sec.</option>
-                        <option value="10">10 sec.</option>
-                        <option value="30">30 sec.</option>
-                        <option value="60" selected>60 sec.</option>
-                    </select>
-                </div>
+                                    <c:otherwise>
+                                    <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}'>
+                                    </c:otherwise>
+                                </c:choose>                                                
+                                <td>${instance[3]}</td>        
+                                <td>${instance[0]}</td>
+                                <td>${instance[1]}</td>
+                                <td>${instance[2]}</td>
+                            </tr>
+                        </c:forEach>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="catalog-panel">
+
+                <sql:query dataSource="${front_conn}" sql="SELECT DISTINCT W.name, W.description, W.editable, W.service_wizard_id FROM service_wizard W WHERE W.user_id = ? OR W.user_id IS NULL" var="wizlist">
+                    <sql:param value="${user.getId()}" />
+                </sql:query>
+
+                <table class="management-table" id="wizard-table">
+                    <thead>
+                        <tr>
+                            <th>Profile Name</th>
+                            <th>Description</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <c:forEach var="profile" items="${wizlist.rows}">
+                            <tr>
+                                <td>${profile.name}</td>
+                                <td>${profile.description}</td>
+                                <td>
+                                    <jsp:element name="button">
+                                        <jsp:attribute name="class">button-profile-select</jsp:attribute>
+                                        <jsp:attribute name="id">${profile.service_wizard_id}</jsp:attribute>
+                                        <jsp:body>Select</jsp:body>
+                                    </jsp:element>
+                                </td>
+                            </tr>
+                        </c:forEach>
+                    </tbody>
+                </table>
 
                 <sql:query dataSource="${front_conn}" sql="SELECT DISTINCT S.name, S.filename, S.description FROM service S JOIN acl A, acl_entry_group G, acl_entry_user U 
                            WHERE S.atomic = 0 AND A.service_id = S.service_id 
@@ -93,7 +128,7 @@
                     <sql:param value="${user.getId()}" />
                 </sql:query>
 
-                <table class="management-table" id="service-table">                    
+                <table class="management-table" id="editor-table">
                     <thead>
                         <tr>
                             <th>Service Name</th>
@@ -121,7 +156,12 @@
             <br>
             <button type="button" class="hide" id="button-service-cancel">Cancel</button>
             <div id="service-specific"></div>
-            
+            <div id="info-panel">
+                <h3 class="fs-subtitle" id="info-panel-title"></h3>
+                <div id="info-panel-div">
+
+                </div>
+            </div>
             <!-- LOADING PANEL -->
             <div id="loading-panel"></div>
             <!-- TAG PANEL -->
@@ -130,11 +170,11 @@
         <!-- JS -->
         <script>
             $(function () {
-                setRefresh(60); 
-                
-                $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", null);        
+                setRefresh(60);
+
+                $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", null);
             });
-            
+
             function timerChange(sel) {
                 clearInterval(refreshTimer);
                 clearInterval(countdownTimer);
@@ -144,40 +184,46 @@
                     document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
                 }
             }
-            
+
             function setRefresh(time) {
                 countdown = time;
-                refreshTimer = setInterval(function(){reloadTracker(time);}, (time * 1000));
-                countdownTimer = setInterval(function(){refreshCountdown(time);}, 1000);
+                refreshTimer = setInterval(function () {
+                    reloadTracker(time);
+                }, (time * 1000));
+                countdownTimer = setInterval(function () {
+                    refreshCountdown(time);
+                }, 1000);
             }
-            
-            function reloadTracker(time) {  
+
+            function reloadTracker(time) {
                 enableLoading();
-                
+
                 var manual = false;
                 if (typeof time === "undefined") {
                     time = countdown;
                 }
-                if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') { 
+                if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
                     manual = true;
                 }
-                
-                $('#instance-panel').load(document.URL +  ' #instance-panel', function() {
+
+                $('#instance-panel').load(document.URL + ' #status-table', function () {
                     $(".clickable-row").click(function () {
-                        window.document.location = $(this).data("href");                                                
-                    }); 
-                    
-                    if (manual === false) {                        
+                        window.document.location = $(this).data("href");
+                    });
+
+                    if (manual === false) {
                         countdown = time;
                         document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-                    } else { document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now'; }
-                    
+                    } else {
+                        document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
+                    }
+
                     setTimeout(function () {
                         disableLoading();
                     }, 750);
-                }); 
+                });
             }
-            
+
             function refreshCountdown() {
                 document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
                 countdown--;
