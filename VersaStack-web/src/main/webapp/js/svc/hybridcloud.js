@@ -63,7 +63,7 @@ $(function () {
         current_div = $("#" + curr_id);
 
         var next_index = $("#progressbar li").index(this) + 1;
-        var next_superid = next_index + curr_id.substring(1, 5);
+        var next_superid = next_index + "-1";
 
         var next_div_list = $("[id^=" + next_superid + "]");
         if (next_div_list.last().children().first().children().length === 0) {
@@ -256,14 +256,16 @@ function applyTemplate(mode) {
             form.elements['ops-vm1-keypair'].value = 'demo_key';
             form.elements['ops-vm1-security'].value = 'rains';
             form.elements['ops-vm1-floating'].value = '10.10.252.164/24';
-            form.elements['ops-vm1-host'].value = 'rvtk-compute3';
-            form.elements['ops-vm1-bgp-number'].value = '7224';
-            form.elements['ops-vm1-bgp-key'].value = 'versastack';
-            form.elements['ops-vm1-bgp-networks'].value = '10.10.0.0/16';
+            form.elements['ops-vm1-host'].value = 'rvtk-compute3';            
             form.elements['ops-vm1-volume1-size'].value = '1024';
             form.elements['ops-vm1-volume1-mount'].value = '/mnt/ceph0_1tb';
             form.elements['ops-vm1-volume2-size'].value = '1024';
             form.elements['ops-vm1-volume2-mount'].value = '/mnt/ceph1_1tb';
+            
+            form.elements['bgp-number'].value = '7224';
+            form.elements['bgp-key'].value = 'versastack';
+            form.elements['bgp-networks'].value = '10.10.0.0/16';
+            $("#opsStage4-bgp-table select").val("1");
 
             // Gateways    
             var gatewayCounter = document.getElementById('opsStage5-gateway');
@@ -274,7 +276,7 @@ function applyTemplate(mode) {
             $("#gateway1-type-select").val("port_profile");
             form.elements['gateway1-from'].value = 'Ceph-Storage';
             form.elements['gateway2-name'].value = 'intercloud-1';
-            $("#gateway2-type-select").val("peer_cloud");
+            $("#gateway2-type-select").val("inter_cloud_network");
             form.elements['gateway2-to'].value = 'urn:ogf:network:aws.amazon.com:aws-cloud?vlan=any';
 
             // SRIOVs
@@ -409,25 +411,39 @@ function setVMs(input) {
     fieldset.innerHTML = "";
 
     var start = 1;
-    
-    /*
-     * 
-    var row6 = document.createElement("tr");
-    var cell6_1 = document.createElement("td");
-    var cell6_2 = document.createElement("td");
-    cell6_1.innerHTML = '<input type="text" name="' + type + 'vm' + i + '-bgp-number" placeholder="BGP AS Number">';
-    cell6_2.innerHTML = '<input type="text" name="' + type + 'vm' + i + '-bgp-key" placeholder="BGP Authentication Key">';
-    row6.appendChild(cell6_1);
-    row6.appendChild(cell6_2);
-    tbody1.appendChild(row6);
 
-    var row7 = document.createElement("tr");
-    var cell7_1 = document.createElement("td");
-    cell7_1.innerHTML = '<input type="text" name="' + type + 'vm' + i + '-bgp-networks" placeholder="BGP Networks (in comma-separated list)">';
-    row7.appendChild(cell7_1);
-    tbody1.appendChild(row7);
-     */
-    
+    if (type === 'ops-') {
+        var toptable = document.createElement("table");
+        toptable.className = 'subfs-table';
+        toptable.id = "opsStage4-bgp-table";
+        var tbody = document.createElement("tbody");
+        var row6 = document.createElement("tr");
+        var cell6_1 = document.createElement("td");
+        var cell6_2 = document.createElement("td");
+        cell6_1.innerHTML = '<input type="text" name="bgp-number" placeholder="BGP AS Number">';
+        cell6_2.innerHTML = '<input type="text" name="bgp-key" placeholder="BGP Authentication Key">';
+        row6.appendChild(cell6_1);
+        row6.appendChild(cell6_2);
+        tbody.appendChild(row6);
+
+        var row7 = document.createElement("tr");
+        var cell7_1 = document.createElement("td");
+        var cell7_2 = document.createElement("td");
+        cell7_1.innerHTML = '<input type="text" name="bgp-networks" placeholder="BGP Networks (in comma-separated list)">';                        
+        var selectString = '<select name="bgp-vm"><option selected disabled>Select the VM host</option>';
+        for (i = start; i <= input.value; i++) {
+            selectString += '<option value="' + i + '">VM ' + i + '</option>';
+        }
+        selectString += '</select>';
+        cell7_2.innerHTML = selectString;
+        row7.appendChild(cell7_1);
+        row7.appendChild(cell7_2);
+        tbody.appendChild(row7);
+
+        toptable.appendChild(tbody);
+        fieldset.appendChild(toptable);
+    }
+
     for (i = start; i <= input.value; i++) {
         // Set stage 3 data table
         var table = document.createElement("table");
@@ -615,8 +631,8 @@ function setGateways(input) {
         var cell2_2 = document.createElement("td");
         cell2_1.innerHTML = '<td><input type="text" id="gateway' + i + '-tag" onchange="updateGatewayNames(this)" name="gateway' + i + '-name" placeholder="Name"></td>';
         cell2_2.innerHTML = '<select id="gateway' + i + '-type-select" name="gateway' + i + '-type"><option selected disabled>Select the hosting Gateway</option>'
-                + '<option value="port_profile">UCS Port Profile</option>'
-                + '<option value="peer_cloud">Inter-cloud Network</option>'
+                + '<option value="ucs_port_profile">UCS Port Profile</option>'
+                + '<option value="inter_cloud_network">Inter-cloud Network</option>'
                 + '<option value="stitch_port">L2 Stitch Port</option></select>';
         row2.appendChild(cell2_1);
         row2.appendChild(cell2_2);

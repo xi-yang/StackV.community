@@ -359,7 +359,11 @@ public class ServiceServlet extends HttpServlet {
             if (paraMap.containsKey("gateway" + i + "-name")) {
                 JSONObject gatewayJSON = new JSONObject();
                 gatewayJSON.put("name", paraMap.get("gateway" + i + "-name"));
-                gatewayJSON.put("type", "ucs_port_profile");
+                if (paraMap.containsKey("gateway" + i + "type-select")) {
+                    gatewayJSON.put("type", paraMap.get("gateway" + i + "type-select"));
+                } else {
+                    gatewayJSON.put("type", "ucs_port_profile");
+                }                
 
                 if (paraMap.containsKey("gateway" + i + "-from")) {
                     JSONArray fromArr = new JSONArray();
@@ -908,17 +912,18 @@ public class ServiceServlet extends HttpServlet {
 
                                 //Parse BGP
                                 JSONObject bgpJSON = new JSONObject();
-                                if (paraMap.containsKey(typeStr + "vm" + j + "-bgp-number")) {
+                                if (paraMap.containsKey("bgp-number") && paraMap.containsKey("bgp-vm") 
+                                        && (Integer.parseInt(paraMap.get("bgp-vm")) == j)) {
                                     JSONArray neighborArr = new JSONArray();
                                     JSONObject neighborJSON = new JSONObject();
 
-                                    neighborJSON.put("remote_asn", paraMap.get(typeStr + "vm" + j + "-bgp-number"));
-                                    neighborJSON.put("bgp_authkey", paraMap.get(typeStr + "vm" + j + "-bgp-key"));
+                                    neighborJSON.put("remote_asn", paraMap.get("bgp-number"));
+                                    neighborJSON.put("bgp_authkey", paraMap.get("bgp-key"));
                                     neighborArr.add(neighborJSON);
                                     bgpJSON.put("neighbors", neighborArr);
 
                                     JSONArray networkArr = new JSONArray();
-                                    String[] networkSplit = paraMap.get(typeStr + "vm" + j + "-bgp-networks").split(",");
+                                    String[] networkSplit = paraMap.get("bgp-networks").split(",");
                                     networkArr.addAll(Arrays.asList(networkSplit));
                                     bgpJSON.put("networks", networkArr);
                                 }

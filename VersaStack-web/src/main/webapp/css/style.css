@@ -851,7 +851,7 @@ body {
 }
 
 #info-panel {    
-    top: -100%;
+    top: 100%;
     width: 500px;
     padding: 20px 10px 30px 10px;
     margin: 10px auto;
@@ -865,7 +865,7 @@ body {
     transition: all .5s ease-out;
 }
 #info-panel.active {
-    top: 0%;
+    top: -20%;
 }
 #mode-panel {        
     top: 20%;

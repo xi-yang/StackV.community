@@ -1256,6 +1256,7 @@ public class serviceBeans {
         awsDxStitching += awsExportTo.isEmpty()? ".\n\n" : 
                 ";\n    spa:exportTo " + awsExportTo.substring(0,awsExportTo.length()-2) + ".\n\n";
 
+        // creatPath is required.
         svcDelta += awsDxStitching
                 + "&lt;x-policy-annotation:action:create-aws-ops-path&gt;\n"
                 + "    a            spa:PolicyAction ;\n"
