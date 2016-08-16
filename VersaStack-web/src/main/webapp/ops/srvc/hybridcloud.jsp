@@ -241,6 +241,21 @@
 
                     <h2 class="fs-title">OpenStack Summary</h2>
                     <h3 class="fs-subtitle">(Summary Module still in development)</h3>
+                    
+                    <br>
+                    <table class="subfs-table" id="profile-table">
+                        <thead>
+                            <tr>
+                                <td><label>Save as Profile <input type="checkbox" name="profile-check" /></label></td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><input type="text" name="profile-name"/></td>
+                                <td><input type="text" name="profile-description"/></td>
+                            </tr>
+                        </tbody>
+                    </table>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <button type="submit" name="submit" class="action-button" value="ops">Submit</button>  

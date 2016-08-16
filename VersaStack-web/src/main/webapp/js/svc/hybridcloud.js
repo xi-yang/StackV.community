@@ -256,12 +256,12 @@ function applyTemplate(mode) {
             form.elements['ops-vm1-keypair'].value = 'demo_key';
             form.elements['ops-vm1-security'].value = 'rains';
             form.elements['ops-vm1-floating'].value = '10.10.252.164/24';
-            form.elements['ops-vm1-host'].value = 'rvtk-compute3';            
+            form.elements['ops-vm1-host'].value = 'rvtk-compute3';
             form.elements['ops-vm1-volume1-size'].value = '1024';
             form.elements['ops-vm1-volume1-mount'].value = '/mnt/ceph0_1tb';
             form.elements['ops-vm1-volume2-size'].value = '1024';
             form.elements['ops-vm1-volume2-mount'].value = '/mnt/ceph1_1tb';
-            
+
             form.elements['bgp-number'].value = '7224';
             form.elements['bgp-key'].value = 'versastack';
             form.elements['bgp-networks'].value = '10.10.0.0/16';
@@ -412,7 +412,7 @@ function setVMs(input) {
 
     var start = 1;
 
-    if (type === 'ops-') {
+    if (vmCount > 0 && type === 'ops-') {
         var toptable = document.createElement("table");
         toptable.className = 'subfs-table';
         toptable.id = "opsStage4-bgp-table";
@@ -429,7 +429,7 @@ function setVMs(input) {
         var row7 = document.createElement("tr");
         var cell7_1 = document.createElement("td");
         var cell7_2 = document.createElement("td");
-        cell7_1.innerHTML = '<input type="text" name="bgp-networks" placeholder="BGP Networks (in comma-separated list)">';                        
+        cell7_1.innerHTML = '<input type="text" name="bgp-networks" placeholder="BGP Networks (in comma-separated list)">';
         var selectString = '<select name="bgp-vm"><option selected disabled>Select the VM host</option>';
         for (i = start; i <= input.value; i++) {
             selectString += '<option value="' + i + '">VM ' + i + '</option>';
@@ -795,6 +795,16 @@ function validateHybrid() {
 
     // Stage 6
 
+
+    // Stage 7
+    if ($("input[name='profile-check']").is(':checked')) {
+        if ($("input[name='profile-name']").val() === "") {
+            invalidArr.push("Profiles require a name in order to be saved. Please try again.");
+
+            $("#progressbar li").eq(6).addClass("invalid");
+            $("input[name='profile-name']").addClass("invalid");
+        }
+    }
 
     // Results
     if (invalidArr.length === 0) {
