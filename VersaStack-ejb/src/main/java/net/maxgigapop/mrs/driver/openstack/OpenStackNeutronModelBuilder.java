@@ -76,7 +76,6 @@ import org.openstack4j.openstack.networking.domain.NeutronRouterInterface;
  */
 public class OpenStackNeutronModelBuilder {
     private static final Logger log = Logger.getLogger(OpenStackNeutronModelBuilder.class.getName());
-    private static final String uri = "urn:ogf:network:";
 
     public static OntModel createOntology(String url, String NATServer, String topologyURI, String user_name, String password, String tenantName,
             String adminUsername, String adminPassword, String adminTenant, OntModel modelExt) throws IOException, Exception {
@@ -665,8 +664,8 @@ public class OpenStackNeutronModelBuilder {
         for (Router r : openstackget.getRouters()) {
             String routername = openstackget.getResourceName(r);
             String routerShortName = routername;
-            if (begain_with_uri(routerShortName, topologyURI)) {
-                routerShortName = routerShortName.substring(topologyURI.length());
+            if (begain_with_uri(routerShortName, ResourceTool.versaStackPrefix)) {
+                routerShortName = routerShortName.substring(ResourceTool.versaStackPrefix.length());
             }
             for (Port port : openstackget.getPorts()) {
                 if (port.getDeviceId().equals(r.getId())) {
@@ -675,14 +674,14 @@ public class OpenStackNeutronModelBuilder {
                         Subnet s = openstackget.getSubnet(DES_SUB);
                         DES_SUB = openstackget.getResourceName(s);
                         String subnetShortName = DES_SUB; 
-                        if (begain_with_uri(subnetShortName, topologyURI)){
-                            subnetShortName = subnetShortName.substring(topologyURI.length());
+                        if (begain_with_uri(subnetShortName, ResourceTool.versaStackPrefix)){
+                            subnetShortName = subnetShortName.substring(ResourceTool.versaStackPrefix.length());
                         }
                         String net_ID = s.getNetworkId();
                         String NET_ID = openstackget.getResourceName(openstackget.getNetwork(net_ID));
-                        String networkShortName = DES_SUB; 
-                        if (begain_with_uri(networkShortName, topologyURI)){
-                            networkShortName = networkShortName.substring(topologyURI.length());
+                        String networkShortName = NET_ID; 
+                        if (begain_with_uri(networkShortName, ResourceTool.versaStackPrefix)){
+                            networkShortName = networkShortName.substring(ResourceTool.versaStackPrefix.length());
                         }
                         Resource SUBNET = RdfOwl.createResource(model, ResourceTool.getResourceUri(DES_SUB, OpenstackPrefix.subnet, networkShortName, DES_SUB), switchingSubnet);
                         for (IP ip2 : port.getFixedIps()) {

@@ -33,7 +33,7 @@ import javax.ejb.EJBException;
  */
 public class ResourceTool {
 
-    private static final String versaStackPrefix = "urn:ogf:network:";
+    public static final String versaStackPrefix = "urn:ogf:network:";
 
     public static String getResourceUri(String name, String pattern, String... patterParam) {
         String uri;
