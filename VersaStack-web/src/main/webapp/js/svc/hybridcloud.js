@@ -53,6 +53,14 @@ $(function () {
         $(this).removeClass("active");
     });
 
+    $("#profile-save-label").click(function () {
+        if ($("#profile-save-check").is(':checked')) {
+            $("#profile-save-body").removeClass("fade-hide");
+        } else {
+            $("#profile-save-body").addClass("fade-hide");
+        }
+    });
+
     $("#progressbar li").click(function () {
         if (animating || $(this).hasClass('disabled'))
             return false;
@@ -797,7 +805,7 @@ function validateHybrid() {
 
 
     // Stage 7
-    if ($("input[name='profile-check']").is(':checked')) {
+    if ($("input[name='profile-save']").is(':checked')) {
         if ($("input[name='profile-name']").val() === "") {
             invalidArr.push("Profiles require a name in order to be saved. Please try again.");
 

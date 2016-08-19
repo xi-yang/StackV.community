@@ -1672,6 +1672,52 @@ public class serviceBeans {
         }
     }
 
+    public int getServiceID(String filename) {
+        try {
+            Connection front_conn;
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("SELECT service_id FROM service WHERE filename = ?");
+            prep.setString(1, filename);
+            ResultSet rs1 = prep.executeQuery();
+            while (rs1.next()) {
+                return rs1.getInt(1);
+            }
+
+            return -1;
+        } catch (SQLException ex) {
+            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+            return -1;
+        }
+    }
+
+    public int getUserID(String username) {
+        try {
+            Connection front_conn;
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("SELECT user_id FROM user_info WHERE username = ?");
+            prep.setString(1, username);
+            ResultSet rs1 = prep.executeQuery();
+            while (rs1.next()) {
+                return rs1.getInt(1);
+            }
+
+            return -1;
+        } catch (SQLException ex) {
+            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+            return -1;
+        }
+    }
+
 // ------------------------- DEPRECATED SERVICES -------------------------------
     /**
      *

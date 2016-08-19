@@ -246,13 +246,13 @@
                     <table class="subfs-table" id="profile-table">
                         <thead>
                             <tr>
-                                <td><label>Save as Profile <input type="checkbox" name="profile-check" /></label></td>
+                                <td><label id="profile-save-label">Save as Profile <input type="checkbox" id="profile-save-check" name="profile-save" /></label></td>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="fade-hide" id="profile-save-body">
                             <tr>
-                                <td><input type="text" name="profile-name"/></td>
-                                <td><input type="text" name="profile-description"/></td>
+                                <td><input type="text" name="profile-name" placeholder="Profile Name" /></td>
+                                <td><input type="text" name="profile-description" placeholder="Profile Description" /></td>
                             </tr>
                         </tbody>
                     </table>

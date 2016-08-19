@@ -40,6 +40,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.sql.PreparedStatement;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -55,6 +56,8 @@ import web.async.DriverWorker;
 public class ServiceServlet extends HttpServlet {
 
     serviceBeans servBean = new serviceBeans();
+    private final String front_db_user = "front_view";
+    private final String front_db_pass = "frontuser";
     String host = "http://localhost:8080/VersaStack-web/restapi";
 
     @Override
@@ -363,7 +366,7 @@ public class ServiceServlet extends HttpServlet {
                     gatewayJSON.put("type", paraMap.get("gateway" + i + "type-select"));
                 } else {
                     gatewayJSON.put("type", "ucs_port_profile");
-                }                
+                }
 
                 if (paraMap.containsKey("gateway" + i + "-from")) {
                     JSONArray fromArr = new JSONArray();
@@ -912,7 +915,7 @@ public class ServiceServlet extends HttpServlet {
 
                                 //Parse BGP
                                 JSONObject bgpJSON = new JSONObject();
-                                if (paraMap.containsKey("bgp-number") && paraMap.containsKey("bgp-vm") 
+                                if (paraMap.containsKey("bgp-number") && paraMap.containsKey("bgp-vm")
                                         && (Integer.parseInt(paraMap.get("bgp-vm")) == j)) {
                                     JSONArray neighborArr = new JSONArray();
                                     JSONObject neighborJSON = new JSONObject();
@@ -992,6 +995,28 @@ public class ServiceServlet extends HttpServlet {
         }
         dataJSON.put("virtual_clouds", cloudArr);
         inputJSON.put("data", dataJSON);
+
+        if (paraMap.containsKey("profile-save")) {
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+            
+            int serviceID = servBean.getServiceID("hybridcloud");
+            int userID = servBean.getUserID(paraMap.get("username"));
+
+            // Install Profileinto DB.
+            PreparedStatement prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` "
+                    + "(`service_id`, `user_id`, `name`, `wizard_json`, `description`, `editable`) VALUES (?, ?, ?, ?, ?, ?)");
+            prep.setInt(1, serviceID);
+            prep.setInt(2, userID);
+            prep.setString(3, paraMap.get("profile-name"));
+            prep.setString(4, inputJSON.toString());
+            prep.setString(5, paraMap.get("profile-description"));
+            prep.setInt(6, 0);
+            prep.executeUpdate();
+        }
 
         request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
         AsyncContext asyncCtx = request.startAsync();
