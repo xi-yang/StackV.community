@@ -373,6 +373,8 @@
                     var verificationTime = document.getElementById("verification-time").innerHTML;
                     if ((subState !== 'READY' && subState === 'FAILED') || verificationTime === '') {                       
                         $("#delta-System").addClass("hide"); 
+                        $("#delta-System").insertAfter(".system-delta-table");
+
                         $(".system-delta-table").removeClass("hide");
                         
                         // Toggle button should toggle  between system delta visualization and delta-System table
