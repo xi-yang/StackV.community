@@ -81,7 +81,7 @@
             <div id="button-panel">
                 <button type="button" id="button-service-return">Back to Catalog</button>                 
             </div> 
-            <div id="instance-panel">
+            <div id="details-panel">
                 <sql:query dataSource="${front_conn}" sql="SELECT S.name, I.creation_time, I.alias_name, X.super_state, V.verification_state FROM service S, service_instance I, service_state X, service_verification V
                            WHERE I.referenceUUID = ? AND I.service_instance_id = V.service_instance_id AND S.service_id = I.service_id AND X.service_state_id = I.service_state_id" var="instancelist">
                     <sql:param value="${param.uuid}" />

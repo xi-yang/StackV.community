@@ -664,12 +664,23 @@ body {
     margin-left: 10px;
 }
 
+#details-panel {
+    padding: 10px 10px;
+    height: 40%;
+    width: calc(100% - 80px);
+    position: absolute;
+}
 #instance-panel {
     padding: 10px 10px;
     top: 10%;
     height: 40%;
     width: calc(100% - 80px);
     position: absolute;
+    overflow-y: scroll;    
+}
+#instance-panel ::-webkit-scrollbar {
+    width: 0px;  /* remove scrollbar space */
+    background: transparent;  /* optional: just make scrollbar invisible */
 }
 #catalog-panel {
     padding: 10px 10px;
@@ -677,6 +688,11 @@ body {
     height: 40%;
     width: calc(100% - 80px);
     position: absolute;
+    overflow-y: scroll;    
+}
+#instance-panel ::-webkit-scrollbar {
+    width: 0px;  /* remove scrollbar space */
+    background: transparent;  /* optional: just make scrollbar invisible */
 }
 
 #status-table {

@@ -127,10 +127,6 @@ public class ServiceServlet extends HttpServlet {
                     // Driver
                     response.sendRedirect(createDriverInstance(request, paraMap));
                     break;
-                case "vmadd":
-                    // VM
-                    response.sendRedirect(createVMInstance(paraMap));
-                    break;
                 case "netcreate":
                     // Virtual Cloud Network
                     response.sendRedirect(parseFullNetwork(request, paraMap));
@@ -251,66 +247,6 @@ public class ServiceServlet extends HttpServlet {
         executor.execute(new DriverWorker(asyncCtx, paraMap));
 
         return ("/VersaStack-web/ops/srvc/driver.jsp?ret=0");
-    }
-
-    public String createVMInstance(HashMap<String, String> paraMap) {
-        int retCode = -1;
-
-        // Handle templates 
-        // AWS
-        if (paraMap.containsKey("template1")) {
-            paraMap.put("topologyUri", "urn:ogf:network:aws.amazon.com:aws-cloud");
-            paraMap.put("vmType", "aws");
-            paraMap.put("region", "us-east-1");
-            paraMap.put("ostype", "windows");
-            paraMap.put("vmQuantity", "1");
-            paraMap.put("instanceType", "instance1");
-            paraMap.put("vpcID", "urn:ogf:network:aws.amazon.com:aws-cloud:vpc-45143020");
-            paraMap.put("subnets", "urn:ogf:network:aws.amazon.com:aws-cloud:subnet-a8a632f1,10.0.1.0");
-            paraMap.put("volumes", "8,standard,/dev/xvda,snapshot\\r\\n");
-            paraMap.put("driverType", "aws");
-            paraMap.put("graphTopo", "none");
-        }
-
-        if (paraMap.get("driverType").equals("aws")) {
-            if (!paraMap.get("graphTopo").equalsIgnoreCase("none")) {
-                paraMap.put("topologyUri", paraMap.get("graphTopo"));
-            }
-
-            // Format volumes
-            String volString = "";
-
-            // Include root
-            volString += paraMap.get("root-size") + ",";
-            volString += paraMap.get("root-type") + ",";
-            volString += paraMap.get("root-path") + ",";
-            volString += paraMap.get("root-snapshot") + "\r\n";
-            paraMap.remove("root-size");
-            paraMap.remove("root-type");
-            paraMap.remove("root-path");
-            paraMap.remove("root-snapshot");
-
-            for (int i = 1; i <= 10; i++) {
-                if (paraMap.containsKey(i + "-path")) {
-                    volString += paraMap.get(i + "-size") + ",";
-                    volString += paraMap.get(i + "-type") + ",";
-                    volString += paraMap.get(i + "-path") + ",";
-                    volString += paraMap.get(i + "-snapshot") + "\r\n";
-                    paraMap.remove(i + "-size");
-                    paraMap.remove(i + "-type");
-                    paraMap.remove(i + "-path");
-                    paraMap.remove(i + "-snapshot");
-                }
-            }
-            paraMap.put("volumes", volString);
-
-            paraMap.remove("install");
-
-            for (int i = 0; i < Integer.parseInt(paraMap.get("vmQuantity")); i++) {
-                retCode = servBean.vmInstall(paraMap);
-            }
-        }
-        return ("/VersaStack-web/ops/srvc/vmadd.jsp?ret=" + retCode);
     }
 
     public String parseFullNetwork(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {
