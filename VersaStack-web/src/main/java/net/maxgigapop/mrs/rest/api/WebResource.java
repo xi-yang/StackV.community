@@ -60,7 +60,6 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import web.beans.serviceBeans;
 import com.hp.hpl.jena.ontology.OntModel;
-import java.io.FileWriter;
 import net.maxgigapop.mrs.common.ModelUtil;
 
 /**
@@ -798,15 +797,6 @@ public class WebResource {
         return paraMap;
     }
 
-    /*
-     paraMap.put("topoUri", "urn:ogf:network:openstack.com:openstack-cloud");
-     paraMap.put("netCidr", "10.1.0.0/16");
-     paraMap.put("driverType","ops");
-     paraMap.put("subnet1", "name+ &cidr+10.0.0.0/24&routesto+0.0.0.0/0,nextHop+internet");
-     paraMap.put("subnet2", "name+ &cidr+10.1.1.0/24");
-     paraMap.put("vm1", "vm_OPS&1& &m1.medium&icecube_key&rains&msx1&206.196.180.148&urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&aa:bb:cc:00:00:12&10.10.0.1/30&to+192.168.0.0/24,next_hop+10.10.0.2\r\nto+206.196.179.0/24,next_hop+10.10.0.2");
-     //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name&host&floating_IP&sriov_destination&sriov_mac_address&sriov_ip_address&sriov_routes"
-     */
     private HashMap<String, String> parseNet(JSONObject dataJSON, String refUuid) {
         HashMap<String, String> paraMap = new HashMap<>();
         paraMap.put("instanceUUID", refUuid);
@@ -978,14 +968,6 @@ public class WebResource {
     }
 
     // Utility Methods ---------------------------------------------------------
-    /*
-    
-     JSONArray Arr = (JSONArray) JSON.get("");
-     for (int i = 0; i < Arr.size(); i++) {
-     JSONObject JSON = (JSONObject) Arr.get(i);
-     }
-    
-     */
     private void setSuperState(String refUuid, int superStateId) throws SQLException {
         Connection front_conn;
         Properties front_connectionProps = new Properties();

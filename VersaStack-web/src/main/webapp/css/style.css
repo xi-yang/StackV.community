@@ -399,7 +399,7 @@ body {
     width: 100%;
     padding: 40px;
     padding-top: 77px;    
-
+    overflow: hidden;
     -webkit-transition: all 400ms ease-in-out;
     transition: all 400ms ease-in-out;
 }
@@ -432,8 +432,8 @@ body {
     width: 100%;
 }
 
-#group-overview-table {
-    width: 400px;
+#group-overview-table { 
+   width: 400px;
 }
 
 #edit-table {
@@ -664,12 +664,23 @@ body {
     margin-left: 10px;
 }
 
+#details-panel {
+    padding: 10px 10px;
+    height: 40%;
+    width: calc(100% - 80px);
+    position: absolute;
+}
 #instance-panel {
     padding: 10px 10px;
     top: 10%;
     height: 40%;
     width: calc(100% - 80px);
     position: absolute;
+    overflow-y: scroll;    
+}
+#instance-panel ::-webkit-scrollbar {
+    width: 0px;  /* remove scrollbar space */
+    background: transparent;  /* optional: just make scrollbar invisible */
 }
 #catalog-panel {
     padding: 10px 10px;
@@ -677,6 +688,11 @@ body {
     height: 40%;
     width: calc(100% - 80px);
     position: absolute;
+    overflow-y: scroll;    
+}
+#instance-panel ::-webkit-scrollbar {
+    width: 0px;  /* remove scrollbar space */
+    background: transparent;  /* optional: just make scrollbar invisible */
 }
 
 #status-table {
@@ -854,11 +870,12 @@ body {
 }
 
 #info-panel {    
-    top: -100%;
+    top: -25%;
     width: 500px;
+    left: calc(50% - 250px);
     padding: 20px 10px 30px 10px;
     margin: 10px auto;
-    position: relative;
+    position: absolute;
     background-color: white;
     box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.4);
     border-radius: 5px;
@@ -868,7 +885,7 @@ body {
     transition: all .5s ease-out;
 }
 #info-panel.active {
-    top: 0%;
+    top: 30%;
 }
 #mode-panel {        
     top: 20%;

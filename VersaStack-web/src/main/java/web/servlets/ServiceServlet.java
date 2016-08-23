@@ -40,6 +40,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.sql.PreparedStatement;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -55,6 +56,8 @@ import web.async.DriverWorker;
 public class ServiceServlet extends HttpServlet {
 
     serviceBeans servBean = new serviceBeans();
+    private final String front_db_user = "front_view";
+    private final String front_db_pass = "frontuser";
     String host = "http://localhost:8080/VersaStack-web/restapi";
 
     @Override
@@ -123,10 +126,6 @@ public class ServiceServlet extends HttpServlet {
                 case "driver":
                     // Driver
                     response.sendRedirect(createDriverInstance(request, paraMap));
-                    break;
-                case "vmadd":
-                    // VM
-                    response.sendRedirect(createVMInstance(paraMap));
                     break;
                 case "netcreate":
                     // Virtual Cloud Network
@@ -250,66 +249,6 @@ public class ServiceServlet extends HttpServlet {
         return ("/VersaStack-web/ops/srvc/driver.jsp?ret=0");
     }
 
-    public String createVMInstance(HashMap<String, String> paraMap) {
-        int retCode = -1;
-
-        // Handle templates 
-        // AWS
-        if (paraMap.containsKey("template1")) {
-            paraMap.put("topologyUri", "urn:ogf:network:aws.amazon.com:aws-cloud");
-            paraMap.put("vmType", "aws");
-            paraMap.put("region", "us-east-1");
-            paraMap.put("ostype", "windows");
-            paraMap.put("vmQuantity", "1");
-            paraMap.put("instanceType", "instance1");
-            paraMap.put("vpcID", "urn:ogf:network:aws.amazon.com:aws-cloud:vpc-45143020");
-            paraMap.put("subnets", "urn:ogf:network:aws.amazon.com:aws-cloud:subnet-a8a632f1,10.0.1.0");
-            paraMap.put("volumes", "8,standard,/dev/xvda,snapshot\\r\\n");
-            paraMap.put("driverType", "aws");
-            paraMap.put("graphTopo", "none");
-        }
-
-        if (paraMap.get("driverType").equals("aws")) {
-            if (!paraMap.get("graphTopo").equalsIgnoreCase("none")) {
-                paraMap.put("topologyUri", paraMap.get("graphTopo"));
-            }
-
-            // Format volumes
-            String volString = "";
-
-            // Include root
-            volString += paraMap.get("root-size") + ",";
-            volString += paraMap.get("root-type") + ",";
-            volString += paraMap.get("root-path") + ",";
-            volString += paraMap.get("root-snapshot") + "\r\n";
-            paraMap.remove("root-size");
-            paraMap.remove("root-type");
-            paraMap.remove("root-path");
-            paraMap.remove("root-snapshot");
-
-            for (int i = 1; i <= 10; i++) {
-                if (paraMap.containsKey(i + "-path")) {
-                    volString += paraMap.get(i + "-size") + ",";
-                    volString += paraMap.get(i + "-type") + ",";
-                    volString += paraMap.get(i + "-path") + ",";
-                    volString += paraMap.get(i + "-snapshot") + "\r\n";
-                    paraMap.remove(i + "-size");
-                    paraMap.remove(i + "-type");
-                    paraMap.remove(i + "-path");
-                    paraMap.remove(i + "-snapshot");
-                }
-            }
-            paraMap.put("volumes", volString);
-
-            paraMap.remove("install");
-
-            for (int i = 0; i < Integer.parseInt(paraMap.get("vmQuantity")); i++) {
-                retCode = servBean.vmInstall(paraMap);
-            }
-        }
-        return ("/VersaStack-web/ops/srvc/vmadd.jsp?ret=" + retCode);
-    }
-
     public String parseFullNetwork(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {
         for (Object key : paraMap.keySet().toArray()) {
             if (paraMap.get((String) key).isEmpty()) {
@@ -359,7 +298,11 @@ public class ServiceServlet extends HttpServlet {
             if (paraMap.containsKey("gateway" + i + "-name")) {
                 JSONObject gatewayJSON = new JSONObject();
                 gatewayJSON.put("name", paraMap.get("gateway" + i + "-name"));
-                gatewayJSON.put("type", "ucs_port_profile");
+                if (paraMap.containsKey("gateway" + i + "type-select")) {
+                    gatewayJSON.put("type", paraMap.get("gateway" + i + "type-select"));
+                } else {
+                    gatewayJSON.put("type", "ucs_port_profile");
+                }
 
                 if (paraMap.containsKey("gateway" + i + "-from")) {
                     JSONArray fromArr = new JSONArray();
@@ -908,17 +851,18 @@ public class ServiceServlet extends HttpServlet {
 
                                 //Parse BGP
                                 JSONObject bgpJSON = new JSONObject();
-                                if (paraMap.containsKey(typeStr + "vm" + j + "-bgp-number")) {
+                                if (paraMap.containsKey("bgp-number") && paraMap.containsKey("bgp-vm")
+                                        && (Integer.parseInt(paraMap.get("bgp-vm")) == j)) {
                                     JSONArray neighborArr = new JSONArray();
                                     JSONObject neighborJSON = new JSONObject();
 
-                                    neighborJSON.put("remote_asn", paraMap.get(typeStr + "vm" + j + "-bgp-number"));
-                                    neighborJSON.put("bgp_authkey", paraMap.get(typeStr + "vm" + j + "-bgp-key"));
+                                    neighborJSON.put("remote_asn", paraMap.get("bgp-number"));
+                                    neighborJSON.put("bgp_authkey", paraMap.get("bgp-key"));
                                     neighborArr.add(neighborJSON);
                                     bgpJSON.put("neighbors", neighborArr);
 
                                     JSONArray networkArr = new JSONArray();
-                                    String[] networkSplit = paraMap.get(typeStr + "vm" + j + "-bgp-networks").split(",");
+                                    String[] networkSplit = paraMap.get("bgp-networks").split(",");
                                     networkArr.addAll(Arrays.asList(networkSplit));
                                     bgpJSON.put("networks", networkArr);
                                 }
@@ -987,6 +931,28 @@ public class ServiceServlet extends HttpServlet {
         }
         dataJSON.put("virtual_clouds", cloudArr);
         inputJSON.put("data", dataJSON);
+
+        if (paraMap.containsKey("profile-save")) {
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+            
+            int serviceID = servBean.getServiceID("hybridcloud");
+            int userID = servBean.getUserID(paraMap.get("username"));
+
+            // Install Profileinto DB.
+            PreparedStatement prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` "
+                    + "(`service_id`, `user_id`, `name`, `wizard_json`, `description`, `editable`) VALUES (?, ?, ?, ?, ?, ?)");
+            prep.setInt(1, serviceID);
+            prep.setInt(2, userID);
+            prep.setString(3, paraMap.get("profile-name"));
+            prep.setString(4, inputJSON.toString());
+            prep.setString(5, paraMap.get("profile-description"));
+            prep.setInt(6, 0);
+            prep.executeUpdate();
+        }
 
         request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
         AsyncContext asyncCtx = request.startAsync();

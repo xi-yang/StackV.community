@@ -20,9 +20,7 @@
         <script src="/VersaStack-web/js/nexus.js"></script>
         <script src="/VersaStack-web/js/svc/hybridcloud.js"></script>
         <script src="../../js/svc/hybridcloud.js" type="text/javascript"></script>
-        <!-- jQuery easing plugin -->
-        <script src="http://thecodeplayer.com/uploads/js/jquery.easing.min.js" type="text/javascript"></script>
-
+    
         <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
         <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
@@ -241,6 +239,21 @@
 
                     <h2 class="fs-title">OpenStack Summary</h2>
                     <h3 class="fs-subtitle">(Summary Module still in development)</h3>
+                    
+                    <br>
+                    <table class="subfs-table" id="profile-table">
+                        <thead>
+                            <tr>
+                                <td><label id="profile-save-label">Save as Profile <input type="checkbox" id="profile-save-check" name="profile-save" /></label></td>
+                            </tr>
+                        </thead>
+                        <tbody class="fade-hide" id="profile-save-body">
+                            <tr>
+                                <td><input type="text" name="profile-name" placeholder="Profile Name" /></td>
+                                <td><input type="text" name="profile-description" placeholder="Profile Description" /></td>
+                            </tr>
+                        </tbody>
+                    </table>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <button type="submit" name="submit" class="action-button" value="ops">Submit</button>  
