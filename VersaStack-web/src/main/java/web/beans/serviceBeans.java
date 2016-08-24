@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import static java.lang.Thread.sleep;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -444,6 +445,14 @@ public class serviceBeans {
                 vmList.add(entry.getValue());
             }
             //example for vm : vm1&0
+        }
+        
+        try {
+            URL url = new URL(String.format("%s/service/property/%s/host/", host, refUuid));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            executeHttpMethod(url, connection, "POST", driverType);
+        } catch (IOException ex) {
+            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
         }
 
         JSONObject network = new JSONObject();
