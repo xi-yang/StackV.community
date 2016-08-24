@@ -39,6 +39,7 @@
         <div id="sidebar">            
         </div>
         <!-- MAIN PANEL -->
+        <div id="black-screen" class="off"></div>
         <div id="main-pane">                                                 
             <div id="instance-panel">
                 <table class="management-table" id="status-table">

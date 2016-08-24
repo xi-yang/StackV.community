@@ -22,6 +22,7 @@ $(function () {
     
     $("#info-panel").click(function (evt) {
         $("#info-panel").removeClass("active");
+        $("#black-screen").addClass("off");
         
         evt.preventDefault();
     });
@@ -44,6 +45,7 @@ $(function () {
             success: function (result) {
                 $("#info-panel-div").html("Profile Initiated.");
                 $("#info-panel").addClass("active");
+                $("#black-screen").removeClass("off");
             },
             error: function(textStatus, errorThrown) {
                 console.log(textStatus);
