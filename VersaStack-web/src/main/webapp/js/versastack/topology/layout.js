@@ -27,9 +27,7 @@ define([
                 edges.push(polEdges[i]);
             }
         } 
-        
-        if (edges[0] === undefined) edges.splice(0,1);
-        
+                
         if (lockNodes) {
             map_(lockNodes, function (node) {
                 if (node.isLeaf()) {
@@ -53,8 +51,16 @@ define([
                 .size([width, height])
                 .linkStrength(10)
                 .friction(0.9)
-                .linkDistance(10)
-                .charge(-1000) // usually -1000, 
+                .linkDistance(
+                    function(d) { 
+                        if (d.source.getType() === "Policy" || d.target.getType() === "Policy") {
+                            return 120;
+                        } else {
+                            return 10;
+                        }
+                    }     
+                )
+                .charge(-1000) 
                 .gravity(0.5)
                 .theta(0.8)
                 .alpha(0.1);
@@ -96,6 +102,19 @@ define([
         var nodes = model.listNodes();
         var edges = model.listEdges();
 
+        // lay out policies as nodes ...
+        var policies = model.listPolicies();
+        for (var i in policies) nodes.push(policies[i]);
+        
+        // same with policy edges
+        var polEdges = model.policyEdges;
+        for (var i in polEdges) {
+            polEdges[i]._isProper();
+            if (polEdges[i]) {
+                edges.push(polEdges[i]);
+            }
+        } 
+        
         if (lockNodes) {
             map_(lockNodes, function (node) {
                 if (node.isLeaf()) {
@@ -119,7 +138,15 @@ define([
                 .size([width, height])
                 .linkStrength(10)
                 .friction(0.5)
-                .linkDistance(10)
+                .linkDistance(
+                    function(d) { 
+                        if (d.source.getType() === "Policy" || d.target.getType() === "Policy") {
+                            return 120;
+                        } else {
+                            return 10;
+                        }
+                    }     
+                )
                 .charge(-700)
                 .gravity(1)
                 .theta(0.8)
@@ -129,9 +156,12 @@ define([
             //This is significant for topologies
             map_(nodes, function (node) {
                 var choords = node.getCenterOfMass();
+                // recenters nodes if they are out of bounds. 
+                if (choords.x > width || choords.x < 0) choords.x = width / 2; 
+                if (choords.y > height || choords.y < 0) choords.y = height / 2; 
                 node.x = choords.x;
                 node.y = choords.y;
-                if (isNaN(choords.x) || isNaN(choords.y)) console.log("It's NAN in doLayout\n");
+                if (isNaN(choords.x) || isNaN(choords.y)) console.log("It's NAN in doLayout\n");    
             });
         });
         force.start();

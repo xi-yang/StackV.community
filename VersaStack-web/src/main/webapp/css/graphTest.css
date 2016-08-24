@@ -24,7 +24,7 @@ html{
     z-index: 3;
     
     -webkit-transition: right 0.5s ease-in-out;
-    transition: right 0.5s ease-in-out;
+    transition: right 0.5s ease-in-out;    
 }
 
 #displayPanel.display-open {
@@ -160,6 +160,11 @@ body{
     width: content-box;
     font-size: 150%;
     overflow-wrap: break-word;
+    
+    /*for Firefox*/
+    white-space: pre-wrap;
+    word-break: break-all;
+    
 }
 
 #filterPanel {
@@ -340,4 +345,7 @@ body{
 
 #service-instance-table tr {
     background: url(/VersaStack-web/img/noise-diagonal.png);	
+}
+.jSonDialog{
+    text-align:left;
 }

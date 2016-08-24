@@ -178,7 +178,7 @@ define(["local/d3", "local/versastack/utils"],
                             port.svgNode
                                 .on("mousemove", function () {
                                     outputApi.setHoverText(port.getName());
-                                    outputApi.setHoverLocation(d3.event.x, d3.event.y);
+                                    outputApi.setHoverLocation(d3.event.clientX, d3.event.clientY);
                                     outputApi.setHoverVisible(true);
                                     if (!port.hasChildren()) {
                                         port.enlarged = true;
@@ -191,13 +191,13 @@ define(["local/d3", "local/versastack/utils"],
                                     that.updateSvgChoordsPort(port);
                                 })
                                 .on("click", function () {
-                                    renderApi.selectElement(port);
+                                    renderApi.selectElement(port, that.outputApi);
                                 })
                                 .on("dblclick", function () {
                                     port.setFolded(!port.getFolded());
-                                    renderApi.redrawPopups();
+                                    renderApi.redrawPopups(that.outputApi);
                                     renderApi.drawHighlight();
-                                    renderApi.layoutEdges();
+                                    renderApi.layoutEdges(that.outputApi);
                                 });
                             if (that.outputApi.contextMenu){
                                 port.svgNode.on("contextmenu", that.outputApi.contextMenu.renderedElemContextListener.bind(undefined, port));                      
@@ -321,7 +321,7 @@ define(["local/d3", "local/versastack/utils"],
                             that.updateSvgChoords();
                             renderApi.drawHighlight();
                             renderApi.highlightServiceElements();
-                            renderApi.layoutEdges();
+                            renderApi.layoutEdges(that.outputApi);
                         })
                         .on("dragstart", function () {
                             lastMouse = d3.event.sourceEvent;

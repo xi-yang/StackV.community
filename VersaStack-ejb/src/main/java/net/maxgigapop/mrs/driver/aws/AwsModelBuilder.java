@@ -1,7 +1,25 @@
- /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/*
+ * Copyright (c) 2013-2016 University of Maryland
+ * Created by: Miguel Uzcategui 2015
+ * Modified by: Xi Yang 2015-2016
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Work.
+
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * IN THE WORK.
  */
 package net.maxgigapop.mrs.driver.aws;
 
@@ -146,14 +164,13 @@ public class AwsModelBuilder {
             String[] invalidStates = {VirtualInterfaceState.Deleted.toString(), VirtualInterfaceState.Deleting.toString()};
             if ((Arrays.asList(invalidStates).contains(virtualInterfaceState))) {
                 continue;
-            }
-            Resource VLAN_LABEL_GROUP = RdfOwl.createResource(model, ResourceTool.getResourceUri(vlanNum, AwsPrefix.labelGroup,vi.getVirtualInterfaceId(),vlanNum ), Nml.LabelGroup);
-            model.add(model.createStatement(VLAN_LABEL_GROUP, Nml.values, vlanNum));
-            
-            Resource VIRTUAL_INTERFACE = RdfOwl.createResource(model, ResourceTool.getResourceUri(vi.getVirtualInterfaceId(),AwsPrefix.vif,vi.getVirtualInterfaceId()), biPort);
+            }            
+            Resource VIRTUAL_INTERFACE = RdfOwl.createResource(model, ResourceTool.getResourceUri(vi.getVirtualInterfaceId(), AwsPrefix.vif, directConnect.getURI(), vi.getVlan().toString()), biPort);
             model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.name, vi.getVirtualInterfaceId()));
             model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.type, "direct-connect-vif"));
             model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.value, "direct-connect-vif+"+vi.getVirtualInterfaceType()));
+            Resource VLAN_LABEL_GROUP = RdfOwl.createResource(model, ResourceTool.getResourceUri(vlanNum, AwsPrefix.labelGroup, VIRTUAL_INTERFACE.getURI(),vlanNum), Nml.LabelGroup);
+            model.add(model.createStatement(VLAN_LABEL_GROUP, Nml.values, vlanNum));
             model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabelGroup, VLAN_LABEL_GROUP));
             model.add(model.createStatement(VLAN_LABEL_GROUP, Nml.labeltype, vlan));
             model.add(model.createStatement(directConnect, hasBidirectionalPort, VIRTUAL_INTERFACE));
@@ -186,7 +203,7 @@ public class AwsModelBuilder {
                 VirtualInterfaceState.Pending.toString(), VirtualInterfaceState.Verifying.toString(), "down"};
             if(virtualGatewayId != null && (Arrays.asList(acceptedStates).contains(virtualInterfaceState)))
             {
-                Resource VLAN_LABEL = RdfOwl.createResource(model, ResourceTool.getResourceUri(vlanNum, AwsPrefix.label,vi.getVirtualInterfaceId(),vlanNum), Nml.Label);
+                Resource VLAN_LABEL = RdfOwl.createResource(model, ResourceTool.getResourceUri(vlanNum, AwsPrefix.label,VIRTUAL_INTERFACE.getURI(),vlanNum), Nml.Label);
                 model.add(model.createStatement(VLAN_LABEL, Nml.labeltype, vlan));
                 model.add(model.createStatement(VLAN_LABEL, Nml.value, vlanNum));
                 model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabel, VLAN_LABEL));
@@ -307,10 +324,16 @@ public class AwsModelBuilder {
                 if (!instances.isEmpty()) {
                     for (Instance i : instances) {
                         String instanceId = ec2Client.getIdTag(i.getInstanceId());
+                        String instanceType = i.getInstanceType();
+                        String imageName = i.getImageId();
+                        String keyName = i.getKeyName();
                         Resource INSTANCE = RdfOwl.createResource(model, ResourceTool.getResourceUri(instanceId,AwsPrefix.instance,vpcId,subnetId,instanceId), node);
                         model.add(model.createStatement(VPC, hasNode, INSTANCE));
                         model.add(model.createStatement(ec2Service, providesVM, INSTANCE));
                         model.add(model.createStatement(INSTANCE, providedByService, ec2Service));
+                        model.add(model.createStatement(INSTANCE, Mrs.type, "instance+"+instanceType));
+                        model.add(model.createStatement(INSTANCE, Mrs.type, "image+"+imageName));
+                        model.add(model.createStatement(INSTANCE, Mrs.type, "keypair+"+keyName));
 
                         //put all the voumes attached to this instance into the model
                         for (Volume vol : ec2Client.getVolumesWithAttachement(i)) {
@@ -465,6 +488,7 @@ public class AwsModelBuilder {
             Resource BUCKET = RdfOwl.createResource(model, ResourceTool.getResourceUri(b.getName(),AwsPrefix.bucket,b.getName()), bucket);
             model.add(model.createStatement(s3Service, providesBucket, BUCKET));
             model.add(model.createStatement(awsTopology, hasBucket, BUCKET));
+            model.add(model.createStatement(BUCKET, Nml.name, b.getName()));
         }
 
         //create abstraction for batch resources

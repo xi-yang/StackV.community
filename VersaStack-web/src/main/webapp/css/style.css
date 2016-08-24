@@ -745,6 +745,9 @@ body {
     padding: 12px 15px;
 }
 
+.details-model-toggle {
+    float:right;
+}
 /* Animations */
 
 #loading-panel {

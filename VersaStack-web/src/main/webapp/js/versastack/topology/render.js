@@ -14,6 +14,7 @@ define([
 ], function (d3, utils, PortDisplayPopup, SwitchPopup, VolumeDisplayPopup, values) {
 
     var map_ = utils.map_;
+    var isFirefox = utils.isFirefox;
     var settings = {
         NODE_SIZE: 30,
         SERVICE_SIZE: 10,
@@ -121,14 +122,16 @@ define([
     
     var lastMouse;
     var switchPopup = {};
+    var topLevelTopologies = [];
     /**@param {outputApi} outputApi
      * @param {Model} model
      * @param (fullSize) boolean
      **/
-    function doRender(outputApi, model, fullSize) {
+    function doRender(outputApi, model, fullSize, modelMap) {
         // default parameter
         var fullSize = typeof fullSize !== 'undefined' ?  fullSize : true;
-
+        var modelMap = typeof modelMap !== 'undefined' ?  modelMap : null;
+        
         var svgContainer = outputApi.getSvgContainer();
         if (firstRun) {
             firstRun = false;
@@ -189,46 +192,54 @@ define([
             }
         } 
         
-        if (fullSize) {
-            // Fixes bug of selectElement(null) having stale model after reloading 
-            svgContainer.on("click", function () {
-               //Clear the selected element.
-               //We check the event path so this only happens if we did not actually click on something
-               var clickedElem = d3.event.path[0];
-               if (clickedElem.id === outputApi.svgContainerName) {
-                   selectElement(null);
-               }
-            });       
-        }
         if (!switchPopup[outputApi.svgContainerName] || !fullSize) {
             switchPopup[outputApi.svgContainerName] = buildSwitchPopup();
         }
         redraw();
         var nodeList, edgeList, policyList;
-        function redraw() {
-            svgContainer.select("#topology" + "_" + outputApi.svgContainerName).selectAll("*").remove(); //Clear the previous drawing
-            svgContainer.select("#edge1" + "_" + outputApi.svgContainerName).selectAll("*").remove(); //Clear the previous drawing
-            svgContainer.select("#edge2" + "_" + outputApi.svgContainerName).selectAll("*").remove(); //Clear the previous drawing
-            svgContainer.select("#node" + "_" + outputApi.svgContainerName).selectAll("*").remove(); //Clear the previous drawing
-            svgContainer.select("#anchor" + "_" + outputApi.svgContainerName).selectAll("*").remove(); //Clear the previous drawing
-            svgContainer.select("#parentPort" + "_" + outputApi.svgContainerName).selectAll("*").remove();
-            svgContainer.select("#switchPopup" + "_" + outputApi.svgContainerName).selectAll("*").remove();
-            svgContainer.select("#volume" + "_" + outputApi.svgContainerName).selectAll("*").remove();
-            
-            nodeList = model.listNodes();
-            policyList = model.listPolicies();
-            edgeList = model.listEdges();
-            
-            var polEdges = model.policyEdges;
+        function redraw(currentOutputApi) {
+            if (!fullSize && currentOutputApi) {
+                var svgc = d3.select("#" + currentOutputApi.svgContainerName);
+                var svgcn = currentOutputApi.svgContainerName;
+                var currentModel = modelMap[currentOutputApi.svgContainerName];
+                var nList = currentModel.listNodes();
+                var pList = currentModel.listPolicies();
+                var eList = currentModel.listEdges();
+            } else {
+                var svgc = svgContainer;
+                var svgcn = outputApi.svgContainerName;
+                var currentModel = model;
+                var nList = currentModel.listNodes();
+                var pList = currentModel.listPolicies();
+                var eList = currentModel.listEdges();                
+                
+                nodeList = nList;
+                policyList = pList;
+                edgeList = eList;
+            }
+            svgc.select("#topology" + "_" + svgcn).selectAll("*").remove(); //Clear the previous drawing
+            svgc.select("#edge1" + "_" + svgcn).selectAll("*").remove(); //Clear the previous drawing
+            svgc.select("#edge2" + "_" + svgcn).selectAll("*").remove(); //Clear the previous drawing
+            svgc.select("#node" + "_" + svgcn).selectAll("*").remove(); //Clear the previous drawing
+            svgc.select("#anchor" + "_" + svgcn).selectAll("*").remove(); //Clear the previous drawing
+            svgc.select("#parentPort" + "_" + svgcn).selectAll("*").remove();
+            svgc.select("#switchPopup" + "_" + svgcn).selectAll("*").remove();
+            svgc.select("#volume" + "_" + svgcn).selectAll("*").remove();
+                        
+            var polEdges = currentModel.policyEdges;
             for (var i in polEdges) edgeList.push(polEdges[i]);
 
             //Recall that topologies are also considered nodes
             //We render them seperatly to enfore a z-ordering
-            map_(nodeList, drawTopology);
-            map_(nodeList, drawNode);
-            map_(policyList, drawPolicy);
-            drawPopups();
-            map_(edgeList, drawEdge);
+            map_(nList, drawTopology);
+            map_(nList, drawNode);
+            map_(pList, drawPolicy);
+            if (!fullSize && currentOutputApi) {
+                drawPopups(currentOutputApi);
+            } else {
+                drawPopups();
+            }
+            map_(eList, drawEdge);
         }
         redraw_ = redraw;
         /**@param {Node} n**/
@@ -267,13 +278,13 @@ define([
                     .on("click", onPolicyClick.bind(undefined, p))
                     .on("dblclick", onPolicyDblClick.bind(undefined, p))
                     .on("mousemove", onPolicyMouseMove.bind(undefined, p))
-                    .on("mouseleave", onPolicyMouseLeave.bind(undefined, p));                    
-//            if (outputApi.contextMenu) {
-//                n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));    
-//            } 
-//            if (n.detailsReference) {
-//                n.svgNode.style("opacity", .4);
-//            }
+                    .on("mouseleave", onPolicyMouseLeave.bind(undefined, p));        
+            if (outputApi.contextMenu) {
+                p.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, p));    
+            } 
+            if (p.detailsReference) {
+                p.svgNode.style("opacity", .4);
+            }
             p.svgNode.call(makeDragBehaviour(p));
 
             setElementSize(p, false);
@@ -291,9 +302,6 @@ define([
                 if (!n.volumePopup) {
                     n.volumePopup = buildVolumeDisplayPopup(n);
                 }
-//                console.log("In drawTopology-> n.getHeight = " +  n.getHeight());
-//                console.log("In drawTopology-> n.getDepth = " +  n.getDepth());
-//                console.log("In drawTopology-> n.visibleSize = " +  n.visibleSize());
 
                 //render the convex hull surounding the decendents of n
                 var path = getTopolgyPath(n);
@@ -376,19 +384,30 @@ define([
             updateSvgChoordsService(n);
         }
 
-        function drawPopups() {
-            svgContainer.select("#dialogBox" + "_" + outputApi.svgContainerName).selectAll("*").remove();
-            svgContainer.select("#port" + "_" + outputApi.svgContainerName).selectAll("*").remove();
-            svgContainer.select("#parentPort" + "_" + outputApi.svgContainerName).selectAll("*").remove();
+        function drawPopups(currentOutputApi) {
+            if (!fullSize && currentOutputApi) {
+                var svgc = d3.select("#" + currentOutputApi.svgContainerName);
+                var svgcn = currentOutputApi.svgContainerName;
+                var currentModel = modelMap[currentOutputApi.svgContainerName];
+                var nList  = currentModel.listNodes();
+            } else {
+                var svgc = svgContainer;
+                var svgcn = outputApi.svgContainerName;
+                var currentModel = model;
+                var nList = nodeList;
+            }
+            svgc.select("#dialogBox" + "_" + svgcn).selectAll("*").remove();
+            svgc.select("#port" + "_" + svgcn).selectAll("*").remove();
+            svgc.select("#parentPort" + "_" + svgcn).selectAll("*").remove();
 
-            svgContainer.select("#volumeDialogBox" + "_" + outputApi.svgContainerName).selectAll("*").remove();
-            svgContainer.select("#volume" + "_" + outputApi.svgContainerName).selectAll("*").remove();
+            svgc.select("#volumeDialogBox" + "_" + svgcn).selectAll("*").remove();
+            svgc.select("#volume" + "_" + svgcn).selectAll("*").remove();
     
-            map_(nodeList, function (n) {
+            map_(nList, function (n) {
                 n.portPopup.render();
                 n.volumePopup.render();
             });
-            switchPopup[outputApi.svgContainerName].render();
+            switchPopup[svgcn].render();
         }
 
         /**@param {Node} n**/
@@ -702,43 +721,44 @@ define([
                     .style("stroke-width", settings.EDGE_WIDTH);
             
             if (e.edgeType === "dependOn") {
-                //var toAppend = highlightedNode.svgNode.node().cloneNode();
                 d3.select(e.svgNode.node())
                         .style("stroke", settings.EDGE_COLOR)
                         .style("stroke-width", settings.EDGE_WIDTH)
-                        .style("filter", "url(#spaDependOnOutline)")
                         .style("opacity", "1")
                         .attr("marker-end", "url(#marker_arrow)")
-                        //.attr("pointer-events", "none")
                         .on("mousemove", onPolicyMouseMove.bind(undefined, e))
-                        .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));                    
-
-                        //.attr("marker-end", "url(#marker_arrow)");
-
-                
+                        .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));   
+                if (isFirefox()) {
+                    d3.select(e.svgNode.node()).style("filter", "url(#spaDependOnOutlineFF)");
+                } else {
+                    d3.select(e.svgNode.node()).style("filter", "url(#spaDependOnOutline)");
+                }
             } else if (e.edgeType === "importFrom") {
-                d3.select(e.svgNode.node())
-                        .style("stroke", settings.EDGE_COLOR)
-                        .style("stroke-width", settings.EDGE_WIDTH)                
-                        .style("filter", "url(#spaImportFromOutline)")
-                        .style("opacity", "1")
-                        .attr("marker-end", "url(#marker_arrow)")                
-                        //.attr("pointer-events", "none")
-                        .on("mousemove", onPolicyMouseMove.bind(undefined, e))
-                        .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));                    
-
-                
+                 d3.select(e.svgNode.node())
+                    .style("stroke", settings.EDGE_COLOR)
+                    .style("stroke-width", settings.EDGE_WIDTH)                
+                    .style("opacity", "1")
+                    .attr("marker-end", "url(#marker_arrow)")                
+                    .on("mousemove", onPolicyMouseMove.bind(undefined, e))
+                    .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));   
+                if (isFirefox()) {
+                    d3.select(e.svgNode.node()).style("filter", "url(#spaImportFromOutlineFF)");
+                } else {
+                    d3.select(e.svgNode.node()).style("filter", "url(#spaImportFromOutline)");
+                }
             } else if (e.edgeType === "exportTo") {
                 d3.select(e.svgNode.node())
                         .style("stroke", settings.EDGE_COLOR)
                         .style("stroke-width", settings.EDGE_WIDTH)                
-                        .style("filter", "url(#spaExportToOutline)")
                         .style("opacity", "1")
                         .attr("marker-end", "url(#marker_arrow)")                
-                        //.attr("pointer-events", "none")
-                         .on("mousemove", onPolicyMouseMove.bind(undefined, e))
-                        .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));                    
-
+                        .on("mousemove", onPolicyMouseMove.bind(undefined, e))
+                        .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));
+                if (isFirefox()) {
+                    d3.select(e.svgNode.node()).style("filter", "url(#spaExportToOutlineFF)");
+                } else {
+                    d3.select(e.svgNode.node()).style("filter", "url(#spaExportToOutline)");
+                }
             }
             
             e.svgLeadLeft = svgContainer.select("#edge2" + "_" + outputApi.svgContainerName).append("line")
@@ -775,26 +795,21 @@ define([
                 outputApi.setDisplayName(n.getName());
                 /**@type {DropDownTree} displayTree**/
                 var displayTree = outputApi.getDisplayTree();
-                 displayTree.clear();
+                displayTree.clear();
                 var e = model.elementMap[n.getName()];
-               e.populateProperties(displayTree);
+                e.populateProperties(displayTree);
             
                 if (e.misc_elements.length > 0 )
                     displayTree.addChild("", "Separator", null);
 
-                 e.populateTreeMenu(displayTree);
-                 displayTree.addToHistory(e.getName(), "Policy");
-                //console.log("API: " + API);
-                //if (API === undefined)
-                   //console.log("i am undefined: ");
+                e.populateTreeMenu(displayTree);
+                displayTree.addToHistory(e.getName(), "Policy");
                 displayTree.draw();
                 displayTree.topViewShown = false;    
                 if (fullSize) {
                     displayTree.open();
                 }
-                
             }
-//            drawPopups();
             highlightServiceElements(); // show stuff that was highlighting when it has an svg node 
 
             map_(edgeList, updateSvgChoordsEdge);
@@ -809,7 +824,12 @@ define([
             var policyType = n.getTypeDetailed();
             if (policyType === "PolicyData") {
                 $("#dialog_policyData").text("");
-                $("#dialog_policyData").append(n.data);
+                
+                if (n.data === undefined)
+                    $("#dialog_policyData").append("<pre class=\"jSonDialog\">" + n.data + "</pre>");
+                else 
+                    $("#dialog_policyData").append("<pre class=\"jSonDialog\">N/A</pre>");
+                
                 $("#dialog_policyData").dialog("open");
                 $('.ui-dialog :button').blur();
             } else if (policyType === "PolicyAction") {
@@ -841,7 +861,7 @@ define([
                     setElementSize(n, true);
 
                 }
-                outputApi.setHoverLocation(d3.event.x, d3.event.y);
+                outputApi.setHoverLocation(d3.event.clientX, d3.event.clientY);
                 outputApi.setHoverVisible(true);
             }
         }
@@ -880,24 +900,20 @@ define([
                 outputApi.setDisplayName(n.getName());
                 /**@type {DropDownTree} displayTree**/
                 var displayTree = outputApi.getDisplayTree();
-                 displayTree.clear();
+                displayTree.clear();
                 var e = model.elementMap[n.getName()];
-               e.populateProperties(displayTree);
+                e.populateProperties(displayTree);
             
                 if (e.misc_elements.length > 0 )
                     displayTree.addChild("", "Separator", null);
 
-                 e.populateTreeMenu(displayTree);
-                 displayTree.addToHistory(e.getName(), "Node");
-                //console.log("API: " + API);
-                //if (API === undefined)
-                   //console.log("i am undefined: ");
+                e.populateTreeMenu(displayTree);
+                displayTree.addToHistory(e.getName(), "Node");
                 displayTree.draw();
                 displayTree.topViewShown = false;    
                 if (fullSize) {
                     displayTree.open();
-                }
-                
+                }                
             }
             // Only show these popups if there are acutally ports and volumes 
             if (n.ports.length !== 0) 
@@ -941,9 +957,6 @@ define([
 
                 e.populateTreeMenu(displayTree);
                 displayTree.addToHistory(e.getName(), "Service");
-                //console.log("API: " + API);
-                //if (API === undefined)
-                   //console.log("i am undefined: ");            
                 displayTree.draw();
                 displayTree.topViewShown = false;
                 if (fullSize) {
@@ -971,7 +984,6 @@ define([
         function removeServiceHighlights() {
             serviceHighlightedNodes = [];
             previousHighlightedNodes = [];
-
         }
         
         function highlightServiceElements(){
@@ -987,21 +999,20 @@ define([
                 for (var i in serviceHighlightedNodes) {
                     var type = serviceHighlightedNodes[i].getType();
 
-                    if (type === "Port") {
-                        //serviceHighlightedNodes[i].ancestorNode.portPopup.setVisible(true);
-                        //drawPopups();                
-                    } else if (type === "Volume") {
-                        //serviceHighlightedNodes[i].parentNode.volumePopup.setVisible(true);
-                        //drawPopups();
-                    }
-
                     if (serviceHighlightedNodes[i] && serviceHighlightedNodes[i].svgNode) {
 
                         var toAppend = serviceHighlightedNodes[i].svgNode.node().cloneNode();
                         previousHighlightedNodes.push(d3.select(toAppend)
-                                .style("filter", "url(#subnetHighlight)")
-                                .style("opacity", "1")
-                                .attr("pointer-events", "none"));
+                                    .style("opacity", "1")
+                                    .attr("pointer-events", "none"));
+                            
+                        var last = previousHighlightedNodes.length - 1;
+                        if (!isFirefox()) {
+                            previousHighlightedNodes[last].style("filter", "url(#subnetHighlight)"); 
+                        } else {
+                            previousHighlightedNodes[last].style("filter", "url(#subnetHighlightFF)");
+                        }
+                                    
                         var parentNode = serviceHighlightedNodes[i].svgNode.node().parentNode;
                         if (parentNode) {
                             //If we are coming out of a fold, the parentNode might no longer exist
@@ -1021,9 +1032,15 @@ define([
             if (highlightedNode && highlightedNode.svgNode) {
                 var toAppend = highlightedNode.svgNode.node().cloneNode();
                 previousHighlight = d3.select(toAppend)
-                        .style("filter", "url(#outline)")
-                        .style("opacity", "1")
-                        .attr("pointer-events", "none");
+                            .style("opacity", "1")
+                            .attr("pointer-events", "none");                    
+
+                if (!isFirefox()) {
+                    previousHighlight.style("filter", "url(#outline)");
+                } else {
+                    previousHighlight.style("filter", "url(#outlineFF)");
+                }
+                                            
                 var parentNode = highlightedNode.svgNode.node().parentNode;
                 if (parentNode) {
                     //If we are coming out of a fold, the parentNode might no longer exist
@@ -1035,46 +1052,50 @@ define([
             }
         }
         
-        function selectElement(elem) {
+        function selectElement(elem, currentOutputApi) {
+            if (!fullSize && currentOutputApi) {
+              var o = currentOutputApi;
+              var m = modelMap[o.svgContainerName];  
+            } else {
+              var m = model;
+              var o = outputApi;
+            }
+            
             if (outputApi.getDisplayTree()) {
                 if (!elem) {
                     //deselect element
-                    outputApi.setDisplayName("Topologies");
-                    var displayTree = outputApi.getDisplayTree();
-                    outputApi.getDisplayTree().clear();
-                    // Tried to optimize where I can by saving the topLevelTopologies
-                    // here, still some delay. 
-                    // Changing everything so that you only populate the display
-                    // tree when the drop down node is clicked, how long would that take? 
-    //               if ( typeof selectElement.topLevelTopologies === 'undefined' ) {
-                            // It has not... perform the initialization
-                           var topLevelTopologies = [];
-                            for (var key in model.elementMap) {
-                                var e = model.elementMap[key];
-                                if (e.getType() === "Topology" && e.topLevel) {
-                                    topLevelTopologies.push(e);                                
-                                    var child = displayTree.addChild(e.getName(), "Element", e);
-                                    e.populateTreeMenu(child);
-                                }
-                            }
-                       // }
-    //                } else {
-    //                    for (var i in selectElement.topLevelTopologies) {
-    //                        e = selectElement.topLevelTopologies[i];
-    //                        var child = displayTree.addChild(e.getName(), "Element");
-    //                        e.populateTreeMenu(child);
-    //                        
-    //                    }
-    //                }
+                    o.setDisplayName("Topologies");
+                    var displayTree = o.getDisplayTree();
+                    o.getDisplayTree().clear();
+                    
+                    if (topLevelTopologies.length === 0) {
+                        for (var key in m.elementMap) {
+                             var e = m.elementMap[key];
+                             if (e.getType() === "Topology" && e.topLevel) {
+                                 topLevelTopologies.push(e);                                
+                                 var child = displayTree.addChild(e.getName(), "Element", e);
+                                 e.populateTreeMenu(child);
+                             }
+                        }
+                        // if still no top level topoligies  
+                        if (topLevelTopologies.length === 0) {
+                            displayTree.addChild("No top level topologies.", "Title", "No top level topologies.");
+                        }
+                    } else {
+                        for (var i in topLevelTopologies) {
+                            var topology = topLevelTopologies[i];
+                            var child = displayTree.addChild(topology.getName(), "Element", e);
+                            topology.populateTreeMenu(child);                        
+                        }
+                    }
+                    
                     displayTree.draw();
-                    console.log("versionalID: " + model.versionID);
-                    //outputApi.getDisplayTree().clear();
                 } else {
-                    outputApi.setDisplayName(elem.getName());
+                    o.setDisplayName(elem.getName());
                     /**@type {DropDownTree} displayTree**/
-                    var displayTree = outputApi.getDisplayTree();
+                    var displayTree = o.getDisplayTree();
                     displayTree.clear();
-                    var e = model.elementMap[elem.getName()];
+                    var e = m.elementMap[elem.getName()];
                     e.populateProperties(displayTree);
 
                     if (e.misc_elements.length > 0 )
@@ -1093,7 +1114,7 @@ define([
             drawHighlight();
             selectedNode = elem;
         }
-        ;
+        
         /**
          * Note that n could also be a topology
          * @param {Node} n**/
@@ -1115,7 +1136,7 @@ define([
             //of said node, causing flicker of the hoverdiv
             if (!isDragging) {
                 outputApi.setHoverText(n.getName());
-                outputApi.setHoverLocation(d3.event.x, d3.event.y);
+                outputApi.setHoverLocation(d3.event.clientX, d3.event.clientY);
                 outputApi.setHoverVisible(true);
                 setElementSize(n, true);
             }
@@ -1206,7 +1227,6 @@ define([
                 updateSvgChoordsNode(n);
             }
 
-            //updateSvgChoordsNode(n);
         }
         
         function buildVolumeDisplayPopup(n) {
@@ -1256,13 +1276,16 @@ define([
                     .setInnerBuffer(switchSettings.DIALOG_INNER_BUFFER)
                     .setTextSize(switchSettings.DIALOG_TAB_TEXT_SIZE);
         }
-        function clickNode(name, type) {
-            //console.log(" a bunch of stuff ");
-           //nodeList = model.listNodes();
-           //var portList = model.listPorts();
-
-           // eventually we want to use type their type for this , not a given type. 
-           var element = model.elementMap[name];
+        function clickNode(name, type, currentOutputApi) {
+            if (!fullSize && currentOutputApi) {
+              var o = currentOutputApi;  
+              var m = modelMap[o.svgContainerName];
+            } else {
+              var o = outputApi;
+              var m = model;
+            }
+            
+           var element = m.elementMap[name];
            if (element === undefined) {
                if (fullSize) {
                    alert("Element not found. Please enter valid URN.");
@@ -1273,10 +1296,10 @@ define([
                 switch (type) {
                  case "Topology":
                  case "Node":
-                     onNodeClick(model.nodeMap[name]);
-                     if (fullSize) {
-                        outputApi.getDisplayTree().addToHistory(name, type);
-                        outputApi.getDisplayTree().topViewShown = false;
+                     onNodeClick(m.nodeMap[name]);
+                     if (o.getDisplayTree()) {
+                        o.getDisplayTree().addToHistory(name, type);
+                        o.getDisplayTree().topViewShown = false;
                      }
                      console.log("i'm node: " + model.nodeMap[name].getName());
 
@@ -1295,44 +1318,43 @@ define([
                  case "DataTransferClusterService":
                  case "NetworkObject":
                  case "Service":
-                     onServiceClick(model.serviceMap[name]);
-                     if (fullSize) {
-                        outputApi.getDisplayTree().addToHistory(name, type);
-                        outputApi.getDisplayTree().topViewShown = false;
+                     onServiceClick(m.serviceMap[name]);
+                     if (o.getDisplayTree()) {
+                        o.getDisplayTree().addToHistory(name, type);
+                        o.getDisplayTree().topViewShown = false;
                      }
                      console.log("i'm service");
                      break;
                  case "Port":
                  case "BidirectionalPort":
-                     selectElement(model.portMap[name]);
-                     if (fullSize) {
-                        outputApi.getDisplayTree().addToHistory(name, type);  
-                        outputApi.getDisplayTree().topViewShown = false;
+                     selectElement(m.portMap[name], currentOutputApi);
+                     if (o.getDisplayTree()) {
+                        o.getDisplayTree().addToHistory(name, type);  
+                        o.getDisplayTree().topViewShown = false;
                      }
                      console.log("i'm port");
                      break;
                  case "Volume":
-                     selectElement(model.volumeMap[name]);    
-                     if (fullSize) {
-                        outputApi.getDisplayTree().addToHistory(name, type);   
-                        outputApi.getDisplayTree().topViewShown = false;
+                     selectElement(m.volumeMap[name], currentOutputApi);    
+                     if (o.getDisplayTree()) {
+                        o.getDisplayTree().addToHistory(name, type);   
+                        o.getDisplayTree().topViewShown = false;
                      }
                      console.log("i'm volume");
                      break;
                  case "PolicyData":
                  case "PolicyAction":
-                     selectElement(model.policyMap[name]);    
-                     if (fullSize) {
-                        outputApi.getDisplayTree().addToHistory(name, type);   
-                        outputApi.getDisplayTree().topViewShown = false;
+                     selectElement(m.policyMap[name], currentOutputApi);    
+                     if (o.getDisplayTree()) {
+                        o.getDisplayTree().addToHistory(name, type);   
+                        o.getDisplayTree().topViewShown = false;
                      }                    
                     break;
                  default:
-                     selectElement(model.elementMap[name]);
-                     
-                     if (fullSize) {
-                        outputApi.getDisplayTree().addToHistory(name, type);
-                        outputApi.getDisplayTree().topViewShown = false;
+                     selectElement(m.elementMap[name], currentOutputApi);                    
+                     if (o.getDisplayTree()) {
+                        o.getDisplayTree().addToHistory(name, type);
+                        o.getDisplayTree().topViewShown = false;
                      }
                      console.log("I'm element");
                      break;
@@ -1346,8 +1368,13 @@ define([
         API["doRender"] = doRender;
         API["drawHighlight"] = drawHighlight;
         API["selectElement"] = selectElement;
-        API["layoutEdges"] = function () {
-            map_(edgeList, updateSvgChoordsEdge);
+        API["layoutEdges"] = function (o) {
+            if (!fullSize) {
+              var e = modelMap[o.svgContainerName].listEdges();
+            } else {
+              var e = edgeList;
+            }
+            map_(e, updateSvgChoordsEdge);
         };
         API["clickNode"] = clickNode;
         API["highlightServiceElements"] = highlightServiceElements;

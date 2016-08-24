@@ -22,6 +22,7 @@
  */
 package net.maxgigapop.mrs.rest.api;
 
+import net.maxgigapop.mrs.service.ServiceManifest;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -601,6 +602,42 @@ public class WebResource {
         }
     }
 
+    @GET
+    @Path("/manifest/{svcUUID}")
+    @Produces("application/json")
+    public String getManifest(@PathParam("svcUUID") String svcUUID) {        
+        try {                        
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+            PreparedStatement prep = front_conn.prepareStatement("select v.verified_addition, s.name, si.alias_name "
+                    + " from service_instance as si, service_verification as v, service as s "
+                    + " where v.service_instance_id = si.service_instance_id and si.referenceUUID = ? "
+                    + " and si.service_id = s.service_id");
+            prep.setString(1, svcUUID);
+            ResultSet rs1 = prep.executeQuery();
+            if (!rs1.next()) {
+                throw new EJBException("Unrecognized service UUID=" + svcUUID); 
+            }
+            String verifiedModel = rs1.getString("v.verified_addition");
+            String serviceType = rs1.getString("s.name");
+            String serviceAlias = rs1.getString("si.alias_name");
+            JSONObject jsonManifest = new JSONObject();
+            jsonManifest.put("uuid", svcUUID);
+            jsonManifest.put("type", serviceType);
+            jsonManifest.put("alias", serviceAlias);
+            //@TODO: get /restapi/model through API for now / will use frontend cache in future
+            JSONObject jsonManifestData = ServiceManifest.generateManifest(verifiedModel, serviceType);
+            jsonManifest.put("manifest", jsonManifestData);
+            return jsonManifest.toJSONString();
+        } catch (SQLException e) {
+            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+            return null;
+        }
+    }
+    
     // Operation Methods -------------------------------------------------------
     /**
      * Deletes a service instance.

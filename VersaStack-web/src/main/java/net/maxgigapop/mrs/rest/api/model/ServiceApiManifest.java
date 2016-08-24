@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2016 University of Maryland
- * Created by: Xi Yang 2013
+ * Created by: Xi Yang 2015
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy 
  * of this software and/or hardware specification (the “Work”) to deal in the 
@@ -21,28 +21,51 @@
  * IN THE WORK.
  */
 
-package net.maxgigapop.mrs.bean;
+package net.maxgigapop.mrs.rest.api.model;
 
-import javax.persistence.Entity;
-import javax.persistence.Inheritance;
-import javax.persistence.InheritanceType;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
+import java.util.Date;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  *
  * @author xyang
  */
-@Entity
-@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-public class DriverModel extends ModelBase {
+@XmlRootElement(name = "serviceManifest")
+@XmlAccessorType(XmlAccessType.FIELD)
+public class ServiceApiManifest {
+    @XmlElement(required = true)
+    protected String serviceUUID = "";
+    @XmlElement(required = true)
+    protected String jsonTemplate = "";
+    @XmlElement
+    protected String jsonModel = null;
 
-    @ManyToOne
-    @JoinColumn(name = "driverInstanceId")
-    protected DriverInstance driverInstance = null;
-
-    @Override
-    public String toString() {
-        return "net.maxgigapop.mrs.model.DriverModel[ id=" + id + " ]";
+    public String getServiceUUID() {
+        return serviceUUID;
     }
+
+    public void setServiceUUID(String serviceUUID) {
+        this.serviceUUID = serviceUUID;
+    }
+
+    public String getJsonTemplate() {
+        return jsonTemplate;
+    }
+
+    public void setJsonTemplate(String jsonTemplate) {
+        this.jsonTemplate = jsonTemplate;
+    }
+
+    public String getJsonModel() {
+        return jsonModel;
+    }
+
+    public void setJsonModel(String jsonModel) {
+        this.jsonModel = jsonModel;
+    }
+    
+    
 }

@@ -9,6 +9,8 @@ define(["local/versastack/utils"], function (utils) {
     function ContextMenu(d3, renderApi, functionMap) {
         var positionUsingPointer = utils.positionUsingPointer;
         var getElementPosition = utils.getElementPosition;
+        var getRenderedElementParentDiv = utils.getRenderedElementParentDiv;
+
         var d3 = d3; // d3 context 
         var renderApi = renderApi;
         var that = this;
@@ -310,7 +312,10 @@ define(["local/versastack/utils"], function (utils) {
                 if (func) {
                     switch(funcName) {
                         case "Tag": func.openDialog(that.selectedObject); break;
-                        case "ModelBrowser": positionDisplayPanel("displayPanel", event); func(that.selectedObject);  break;
+                        case "ModelBrowser":
+                            positionDisplayPanel("displayPanel", event);
+                            func(that.selectedObject, getRenderedElementParentDiv(that.selectedObject)); 
+                            break;
                     }
                 } else {
                     console.log("Debugging: in ContextMenu.js::: Menu Item Not Found");

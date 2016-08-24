@@ -168,7 +168,7 @@ define(["local/d3", "local/versastack/utils"],
 //                    outputApi.setDisplayName(clickSubnet.getName());
 //                    var displayTree = outputApi.getDisplayTree();
 //                    displayTree.clear();
-                    outputApi.renderApi.clickNode(clickSubnet.getName(), 'Subnet');
+                    outputApi.renderApi.clickNode(clickSubnet.getName(), 'Subnet', that.outputApi);
 //                    subnet.populateTreeMenu(displayTree);
 //                    displayTree.draw();
                     eraseHighlights();
@@ -233,7 +233,7 @@ define(["local/d3", "local/versastack/utils"],
                                 outputApi.setHoverText(subnet.getName());
                                 outputApi.setHoverVisible(true);
                             }
-                            outputApi.setHoverLocation(d3.event.x, d3.event.y);
+                            outputApi.setHoverLocation(d3.event.clientX, d3.event.clientY);
 
                         };
                         var OnMouseLeave = function () {
