@@ -79,6 +79,7 @@ a.hover {
 
 body {
     background: linear-gradient(rgba(75,75,75,0.3), rgba(0,0,0,0.4)), url('/VersaStack-web/img/background.png');
+    background-attachment: fixed;
     font-family: 'Roboto', sans-serif;
     text-align: center;
     margin: 0px;
@@ -399,7 +400,7 @@ body {
     width: 100%;
     padding: 40px;
     padding-top: 77px;    
-    overflow: hidden;
+    
     -webkit-transition: all 400ms ease-in-out;
     transition: all 400ms ease-in-out;
 }
