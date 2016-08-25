@@ -746,7 +746,7 @@
         <feColorMatrix type="saturate" values=".2"/>
     </filter>
     
-     <marker id="marker_arrow" markerWidth="10" markerHeight="10" refx="15" refy="3" orient="auto" markerUnits="strokeWidth">
+     <marker id="marker_arrow_viz" markerWidth="10" markerHeight="10" refx="15" refy="3" orient="auto" markerUnits="strokeWidth">
       <path d="M0,0 L0,6 L9,3 z" fill="black" />
     </marker>
    

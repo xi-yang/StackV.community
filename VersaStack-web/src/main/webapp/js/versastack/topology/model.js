@@ -1120,7 +1120,7 @@ define([
                         val.name = key;
                         //console.log("JSON.stringify(element, null, 2): " + JSON.stringify(val, null, 2));
                         var hostURN = baseModel.getHostNodeURN(key);
-                        if (hostURN) {
+                        if (hostURN && !val[values.type]) {
                             that.nodeMap[hostURN] = new Node(baseModel.nodeMap[hostURN]._backing, 
                                                                           baseModel.nodeMap[hostURN].map);
                             that.nodeMap[hostURN].detailsReference = true;
@@ -1645,10 +1645,10 @@ define([
                     
                     for (var key in that.nodeMap) {
                         var node = that.nodeMap[key];
-                        if (node) {
+                        if (node.isRoot) {
                             rootNodes.push(node);
                         }
-                    }                    
+                    }
         };
         
         this.getVersion = function () {
