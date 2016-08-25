@@ -725,7 +725,7 @@ define([
                         .style("stroke", settings.EDGE_COLOR)
                         .style("stroke-width", settings.EDGE_WIDTH)
                         .style("opacity", "1")
-                        .attr("marker-end", "url(#marker_arrow)")
+                        .attr("marker-end", "url(#marker_arrow_" + outputApi.svgContainerName + ")")
                         .on("mousemove", onPolicyMouseMove.bind(undefined, e))
                         .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));   
                 if (isFirefox()) {
@@ -738,7 +738,7 @@ define([
                     .style("stroke", settings.EDGE_COLOR)
                     .style("stroke-width", settings.EDGE_WIDTH)                
                     .style("opacity", "1")
-                    .attr("marker-end", "url(#marker_arrow)")                
+                    .attr("marker-end", "url(#marker_arrow_" + outputApi.svgContainerName + ")")                
                     .on("mousemove", onPolicyMouseMove.bind(undefined, e))
                     .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));   
                 if (isFirefox()) {
@@ -751,7 +751,7 @@ define([
                         .style("stroke", settings.EDGE_COLOR)
                         .style("stroke-width", settings.EDGE_WIDTH)                
                         .style("opacity", "1")
-                        .attr("marker-end", "url(#marker_arrow)")                
+                        .attr("marker-end", "url(#marker_arrow_" + outputApi.svgContainerName + ")")                
                         .on("mousemove", onPolicyMouseMove.bind(undefined, e))
                         .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));
                 if (isFirefox()) {
