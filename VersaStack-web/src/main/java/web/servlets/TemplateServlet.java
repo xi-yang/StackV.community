@@ -1,6 +1,6 @@
 /* 
  * Copyright (c) 2013-2016 University of Maryland
- * Created by: Alberto Jimenez
+ * Created by: Alberto Jimenez 2016
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy 
  * of this software and/or hardware specification (the “Work”) to deal in the 
