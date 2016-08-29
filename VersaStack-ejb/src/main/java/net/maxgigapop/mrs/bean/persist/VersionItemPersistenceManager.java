@@ -80,11 +80,11 @@ public class VersionItemPersistenceManager extends PersistenceManager {
 
     public static VersionItem getHeadByVersionItem(VersionItem vi) {
         if (vi == null) {
-            throw new EJBException(String.format("VersionItemPersistenceManager::refreshToHead encounters null VG"));
+            throw new EJBException(String.format("VersionItemPersistenceManager::getHeadByVersionItem encounters null VG"));
         }
         DriverInstance di = vi.getDriverInstance();
         if (di == null) {
-            throw new EJBException(String.format("VersionItemPersistenceManager::refreshToHead has null dirverInstance in %s", vi));
+            throw new EJBException(String.format("VersionItemPersistenceManager::getHeadByVersionItem has null dirverInstance in %s", vi));
         }
         return getHeadByDriverInstance(di);
     }
@@ -100,7 +100,7 @@ public class VersionItemPersistenceManager extends PersistenceManager {
                 VersionItemPersistenceManager.delete(vi);
             }
         } catch (Exception e) {
-            throw new EJBException(String.format("VersionItemPersistenceManager::getHeadByDriverInstance raised exception: %s", e.getMessage()));
+            throw new EJBException(String.format("VersionItemPersistenceManager::deleteByDriverInstance raised exception: %s", e.getMessage()));
         }
     }
     
@@ -122,7 +122,7 @@ public class VersionItemPersistenceManager extends PersistenceManager {
                 }
             }
         } catch (Exception e) {
-            throw new EJBException(String.format("VersionItemPersistenceManager::getHeadByDriverInstance raised exception: %s", e.getMessage()));
+            ;
         }
     }
 }
