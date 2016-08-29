@@ -196,11 +196,11 @@ public class ServiceManifest {
                 }
                 return joArrRet;
             }
-            return String.format("{\"error\":\"querySparsqlTemplateJson - template contains non-json text: %s ", template);
+            throw new EJBException("error: querySparsqlTemplateJson - template contains non-json text: %s " + template);
         } catch (ParseException ex) {
-            return String.format("{\"error\":\"querySparsqlTemplateJson failed to parse: %s due to %s ", template, ex);
+            throw new EJBException("error: querySparsqlTemplateJson failed to parse: %s due to %s "+template, ex);
         } catch (EJBException ex) {
-            return String.format("{\"error\":\"querySparsqlTemplateJson failed due to %s ", ex);
+            throw new EJBException("error: querySparsqlTemplateJson failed due to %s ", ex);
         }
     }
 
