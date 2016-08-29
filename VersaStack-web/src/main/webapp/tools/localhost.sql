@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost:3306
--- Generation Time: Jun 02, 2016 at 08:07 PM
+-- Generation Time: Aug 05, 2016 at 08:47 PM
 -- Server version: 5.5.42
 -- PHP Version: 5.6.7
 
@@ -27,7 +27,7 @@ DROP TABLE IF EXISTS `acl`;
 CREATE TABLE `acl` (
   `acl_id` int(11) NOT NULL,
   `service_id` int(11) NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Dumping data for table `acl`
@@ -43,7 +43,8 @@ INSERT INTO `acl` (`acl_id`, `service_id`) VALUES
 (9, 9),
 (10, 10),
 (11, 11),
-(12, 12);
+(12, 12),
+(13, 13);
 
 -- --------------------------------------------------------
 
@@ -70,6 +71,7 @@ INSERT INTO `acl_entry_group` (`acl_id`, `usergroup_id`) VALUES
 (10, 1),
 (11, 1),
 (12, 1),
+(13, 1),
 (2, 2),
 (3, 2),
 (11, 2);
@@ -136,7 +138,7 @@ CREATE TABLE `service` (
   `filename` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
   `description` varchar(140) COLLATE utf8_unicode_ci NOT NULL,
   `atomic` tinyint(1) NOT NULL DEFAULT '0'
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Dumping data for table `service`
@@ -199,7 +201,7 @@ CREATE TABLE `service_instance` (
   `referenceUUID` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `alias_name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `service_state_id` int(11) DEFAULT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=48 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -244,6 +246,30 @@ CREATE TABLE `service_verification` (
   `reduction` varchar(45) COLLATE utf8_unicode_ci DEFAULT NULL,
   `addition` varchar(45) COLLATE utf8_unicode_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `service_wizard`
+--
+
+DROP TABLE IF EXISTS `service_wizard`;
+CREATE TABLE `service_wizard` (
+  `service_wizard_id` int(11) NOT NULL,
+  `service_id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `name` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
+  `wizard_json` longtext COLLATE utf8_unicode_ci NOT NULL,
+  `description` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `editable` tinyint(1) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Dumping data for table `service_wizard`
+--
+
+INSERT INTO `service_wizard` (`service_wizard_id`, `service_id`, `user_id`, `name`, `wizard_json`, `description`, `editable`) VALUES
+(1, 13, NULL, 'Test Name', '{"test_key": "test_val"}', 'Test Description', 0);
 
 -- --------------------------------------------------------
 
@@ -395,6 +421,13 @@ ALTER TABLE `service_verification`
   ADD PRIMARY KEY (`service_instance_id`);
 
 --
+-- Indexes for table `service_wizard`
+--
+ALTER TABLE `service_wizard`
+  ADD PRIMARY KEY (`service_wizard_id`),
+  ADD KEY `service_id` (`service_id`);
+
+--
 -- Indexes for table `user_belongs`
 --
 ALTER TABLE `user_belongs`
@@ -424,12 +457,12 @@ ALTER TABLE `usergroup`
 -- AUTO_INCREMENT for table `acl`
 --
 ALTER TABLE `acl`
-  MODIFY `acl_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=13;
+  MODIFY `acl_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=14;
 --
 -- AUTO_INCREMENT for table `service`
 --
 ALTER TABLE `service`
-  MODIFY `service_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=13;
+  MODIFY `service_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=14;
 --
 -- AUTO_INCREMENT for table `service_delta`
 --
@@ -444,12 +477,17 @@ ALTER TABLE `service_history`
 -- AUTO_INCREMENT for table `service_instance`
 --
 ALTER TABLE `service_instance`
-  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=48;
+  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=54;
 --
 -- AUTO_INCREMENT for table `service_state`
 --
 ALTER TABLE `service_state`
   MODIFY `service_state_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '	',AUTO_INCREMENT=6;
+--
+-- AUTO_INCREMENT for table `service_wizard`
+--
+ALTER TABLE `service_wizard`
+  MODIFY `service_wizard_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=2;
 --
 -- AUTO_INCREMENT for table `user_info`
 --
@@ -511,6 +549,12 @@ ALTER TABLE `service_instance`
 --
 ALTER TABLE `service_verification`
   ADD CONSTRAINT `service_verification-service_instance` FOREIGN KEY (`service_instance_id`) REFERENCES `service_instance` (`service_instance_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
+
+--
+-- Constraints for table `service_wizard`
+--
+ALTER TABLE `service_wizard`
+  ADD CONSTRAINT `service_wizard-service` FOREIGN KEY (`service_id`) REFERENCES `service` (`service_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `user_belongs`

@@ -2,7 +2,7 @@
 
 Box shadow 1:   box-shadow: 0 5px 12px 2px rgba(0, 0, 0, 0.4);
 
-Color Codes:
+Color Codes: GENERAL - Hue 212
 
 Nav: rgba(20,25,31,.75)
 
@@ -20,6 +20,7 @@ Normal Blue: #50657c
 Light Blue: #5297e0
 
 
+Dark Blue Text: #2C3E50
 */
 
 /*
@@ -62,13 +63,13 @@ a.hover {
     pointer-events: none;
     z-index: 3;    
     background-color: rgba(0,0,0,0.4);
-    
+
     transition: opacity 1s ease;
 }
 
 #black-screen.off {
     opacity: 0;
-    
+
     transition: opacity 1s ease;
 }
 
@@ -78,6 +79,7 @@ a.hover {
 
 body {
     background: linear-gradient(rgba(75,75,75,0.3), rgba(0,0,0,0.4)), url('/VersaStack-web/img/background.png');
+    background-attachment: fixed;
     font-family: 'Roboto', sans-serif;
     text-align: center;
     margin: 0px;
@@ -398,7 +400,7 @@ body {
     width: 100%;
     padding: 40px;
     padding-top: 77px;    
-
+    
     -webkit-transition: all 400ms ease-in-out;
     transition: all 400ms ease-in-out;
 }
@@ -410,7 +412,7 @@ body {
 }
 
 .management-table {
-    background: #f5f5f5;
+    background: #ffffff;
     border-collapse: separate;
     box-shadow: 0 5px 12px 2px rgba(0, 0, 0, 0.4);
     font-size: 12px;
@@ -431,8 +433,8 @@ body {
     width: 100%;
 }
 
-#group-overview-table {
-    width: 400px;
+#group-overview-table { 
+   width: 400px;
 }
 
 #edit-table {
@@ -507,12 +509,9 @@ body {
 }
 
 .management-table th {
-    background: url(/VersaStack-web/img/noise-diagonal.png), linear-gradient(#777, #444);
-    border-left: 1px solid #555;
-    border-right: 1px solid #777;
-    border-top: 1px solid #555;
-    border-bottom: 1px solid #333;
-    box-shadow: inset 0 1px 0 #999;
+    background: url(/VersaStack-web/img/noise-diagonal.png), linear-gradient(#46586d, #364454);
+
+    box-shadow: inset 0 1px 0 #a2b1c3;
     color: #fff;
     font-weight: bold;
     padding: 10px 15px;
@@ -531,11 +530,16 @@ body {
     width: 100%;
 }
 .management-table th:first-child {
-    border-left: 1px solid #777;	
-    box-shadow: inset 1px 1px 0 #999;
+
+    box-shadow: inset 1px 1px 0 #a2b1c3;
+}
+.management-table th:not(:first-child) {
+    border-right: 1px solid #a2b1c3;	
+    box-shadow: inset 1px 1px 0 #a2b1c3;
 }
 .management-table th:last-child {
-    box-shadow: inset -1px 1px 0 #999;
+    border-right: none;
+    box-shadow: inset -1px 1px 0 #a2b1c3;
 }
 .management-table td {
     border-right: 1px solid #fff;
@@ -557,7 +561,7 @@ body {
     background: url(/VersaStack-web/img/noise-diagonal.png);	
 }
 .management-table tr:nth-child(odd) td {
-    background: #f1f1f1 url(/VersaStack-web/img/noise-diagonal.png);	
+    background: #fafafa url(/VersaStack-web/img/noise-diagonal.png);	
 }
 .management-table tr:last-of-type td {
     box-shadow: inset 0 -1px 0 #fff; 
@@ -623,7 +627,7 @@ body {
 }
 
 .button-header {
-    background-color: #555555;
+    background-color: #50657c;
     float: right;
 }
 
@@ -655,7 +659,91 @@ body {
 #refresh-panel {
     display: inline;
     vertical-align: text-top;
-    color: #ffffff
+    color: #ffffff;
+    float: right;
+    margin-right: 10px;
+    margin-left: 10px;
+}
+
+#details-panel {
+    padding: 10px 10px;
+    height: 40%;
+    width: calc(100% - 80px);
+    position: absolute;
+}
+#instance-panel {
+    padding: 10px 10px;
+    top: 10%;
+    height: 40%;
+    width: calc(100% - 80px);
+    position: absolute;
+    overflow-y: scroll;    
+}
+#instance-panel ::-webkit-scrollbar {
+    width: 0px;  /* remove scrollbar space */
+    background: transparent;  /* optional: just make scrollbar invisible */
+}
+#catalog-panel {
+    padding: 10px 10px;
+    top: 50%;
+    height: 40%;
+    width: calc(100% - 80px);
+    position: absolute;
+    overflow-y: scroll;    
+}
+#instance-panel ::-webkit-scrollbar {
+    width: 0px;  /* remove scrollbar space */
+    background: transparent;  /* optional: just make scrollbar invisible */
+}
+
+#status-table {
+    margin: 20px auto;
+    width: 80%;
+    max-height: 100%;
+}
+#wizard-table {
+    float: left;
+    width: 40%;
+    margin: 10px;
+    max-height: 100%;
+}
+#editor-table {
+    float: right;
+    width: 40%;
+    margin: 10px;
+}
+#editor-table tbody {   
+    max-height: 100%;
+}
+
+.v2-table {
+    background: white;
+    border: 0 none;
+    border-radius: 3px;
+    box-shadow: 0 0 20px 2px rgba(0, 0, 0, 0.4);
+    color: #2C3E50;
+}
+.v2-table tr::selection {
+    background: #333;
+    color: #fff;
+    text-shadow: 0 0 transparent;
+}
+.v2-table td {
+    border-top: 1px solid #e8edff;
+    padding: 10px 15px;
+}
+.v2-table td:not(:first-child) {
+    border-left: 1px solid #2C3E50;
+}
+.v2-table td:last-child {
+    border-left: none;
+}
+
+.v2-table th {
+    font-size: 14px;
+    font-weight: normal;
+    text-align: center;
+    padding: 12px 15px;
 }
 
 .details-model-toggle {
@@ -675,7 +763,7 @@ body {
     -o-transition: opacity .75s ease-in;
     -ms-transition: opacity .75s ease-in;
     transition: opacity .75s ease-in;
-    
+
     opacity: 0;
     position: absolute;
     width: 32px;
@@ -685,7 +773,7 @@ body {
     z-index: 10;
 }
 
-#instance-panel {
+#instance-panel, #catalog-panel {
     -webkit-transition: opacity .75s ease-in;
     -moz-transition: opacity .75s ease-in;
     -o-transition: opacity .75s ease-in;
@@ -727,13 +815,13 @@ body {
 
 #sidebar-toggle img {
     position: absolute;
-    
+
     transition: opacity .5s ease-in-out;
 }
 
 #sidebar-toggle img.img-off {
     opacity: 0;
-    
+
     transition: opacity .5s ease-in-out;
 }
 
@@ -783,21 +871,22 @@ body {
 }
 
 #info-panel {    
-    top: -100%;
+    top: -25%;
     width: 500px;
+    left: calc(50% - 250px);
     padding: 20px 10px 30px 10px;
     margin: 10px auto;
-    position: relative;
+    position: absolute;
     background-color: white;
     box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.4);
     border-radius: 5px;
     z-index: 4;
     font-size: .9em;    
-        
-    transition: all 1s ease-out;
+
+    transition: all .5s ease-out;
 }
-#info-panel .active {
-    top: 0%;
+#info-panel.active {
+    top: 30%;
 }
 #mode-panel {        
     top: 20%;
@@ -825,7 +914,7 @@ body {
     margin: 50px auto;
     text-align: center;
     position: relative;
-    
+
     transition: all 1s ease;
 }
 .stageform.disabled {
@@ -835,31 +924,34 @@ body {
     background: white;
     border: 0 none;
     border-radius: 3px;
+    display: none;
     box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.4);
     padding: 20px 30px;
+    margin-bottom: 20px;
 
     box-sizing: border-box;
     width: 100%;
 
     /*stacking fieldsets above each other*/
-    position: absolute;
-}
-/*Hide all except first fieldset*/
-.stageform fieldset:not(:first-of-type) {
-    display: none;
+    position: relative;
 }
 .stageform .subfs {
     width: 100%;
-    position: absolute;
+    position: relative;
     left: 0px;
     top: 110%;
     padding-left: 0px;
     padding-right: 0px;
+    display: block;    
+}
+
+.stagediv.active-div, .stageform .active-fs {
+    display: block;
 }
 
 .fade-hide {
     display: none;
-    
+
     opacity: 0;
     transition: opacity 1s ease;
 }
@@ -880,7 +972,7 @@ body {
 .subfs-table .subfs-headrow {
     border-top: 1px solid #969696;
     border-bottom: 1px solid #969696;    
-    
+
     transition: background-color 0.5s ease;
     transition: color 0.5s ease;
 }
@@ -930,7 +1022,7 @@ body {
     cursor: pointer;
     padding: 10px 5px;
     margin: 10px 5px;
-    
+
     transition: all .5s ease;
 }
 .stageform .action-button:hover, .stageform .action-button:focus,
@@ -991,7 +1083,7 @@ body {
     position: relative;
     transition: all 1s ease;
 }
-.vcn-progress li {
+.vcn-progress li, .hc-progress li {
     width: 14.2%;
 }
 #progressbar li:before {

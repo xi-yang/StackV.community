@@ -1,7 +1,26 @@
-    /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/* 
+ * Copyright (c) 2013-2016 University of Maryland
+ * Created by: Alberto Jimenez 2015
+ * Modified by: Tao-Hung Yang 2016
+ * Modified by: Xi Yang 2016
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Work.
+ * 
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * IN THE WORK.
  */
 package net.maxgigapop.mrs.rest.api;
 
@@ -101,40 +120,40 @@ public class WebResource {
 
         return retList;
     }
-    
+
     @GET
     @Path("/label/{user}")
     @Produces("application/json")
-    public ArrayList<ArrayList<String>> getLabels(@PathParam("user") String username) {        
+    public ArrayList<ArrayList<String>> getLabels(@PathParam("user") String username) {
         ArrayList<ArrayList<String>> retList = new ArrayList<>();
-        try {            
-            
+        try {
+
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
             Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-            
+
             PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM label WHERE username = ?");
             prep.setString(1, username);
             ResultSet rs1 = prep.executeQuery();
             while (rs1.next()) {
                 ArrayList<String> labelList = new ArrayList<>();
-                
+
                 labelList.add(rs1.getString("identifier"));
                 labelList.add(rs1.getString("label"));
                 labelList.add(rs1.getString("color"));
-                
+
                 retList.add(labelList);
             }
-            
+
             return retList;
         } catch (SQLException e) {
             Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
             return null;
         }
     }
-        
+
     @PUT
     @Path(value = "/label")
     @Consumes(value = {"application/json", "application/xml"})
@@ -171,7 +190,7 @@ public class WebResource {
         }
         return "Added";
     }
-    
+
     @DELETE
     @Path(value = "/label/{username}/delete/{identifier}")
     public String deleteLabel(@PathParam(value = "username") String username, @PathParam(value = "identifier") String identifier) {
@@ -182,7 +201,7 @@ public class WebResource {
             Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
-            PreparedStatement prep = front_conn.prepareStatement("DELETE FROM `frontend` .`label` WHERE username = ? AND identifier = ?"); 
+            PreparedStatement prep = front_conn.prepareStatement("DELETE FROM `frontend` .`label` WHERE username = ? AND identifier = ?");
             prep.setString(1, username);
             prep.setString(2, identifier);
             prep.executeUpdate();
@@ -245,6 +264,29 @@ public class WebResource {
         });
     }
 
+    @PUT
+    @Path(value = "/profile/{identifier}")
+    public void executeProfile(@Suspended final AsyncResponse asyncResponse, @PathParam(value = "identifier") final int identifier) throws SQLException {
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM service_wizard WHERE `service_wizard_id` = ?");
+        prep.setInt(1, identifier);
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {            
+            final String inputString = rs1.getString("wizard_json");
+            executorService.execute(new Runnable() {
+                @Override
+                public void run() {
+                    asyncResponse.resume(doCreateService(inputString));
+                }
+            });
+        }
+    }
+
     // Async Methods -----------------------------------------------------------
     private String doCreateService(String inputString) {
         try {
@@ -258,8 +300,8 @@ public class WebResource {
             try {
                 Object obj = parser.parse(inputString);
                 inputJSON = (JSONObject) obj;
-                
-                System.out.println("Service API- inputJSON: " + inputJSON.toJSONString());
+
+                System.out.println("Service API:: inputJSON: " + inputJSON.toJSONString());
             } catch (ParseException ex) {
                 Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -270,7 +312,7 @@ public class WebResource {
             String userID = "";
 
             JSONObject dataJSON = (JSONObject) inputJSON.get("data");
-            
+
             // Find user ID.
             Connection front_conn;
             try {
@@ -278,7 +320,7 @@ public class WebResource {
             } catch (InstantiationException | IllegalAccessException | ClassNotFoundException ex) {
                 Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
             }
-            
+
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
@@ -313,7 +355,7 @@ public class WebResource {
                     paraMap = parseHybridCloud(dataJSON, refUuid);
                     break;
                 default:
-            }            
+            }
 
             // Initialize service parameters.
             prep = front_conn.prepareStatement("SELECT service_id"
@@ -336,19 +378,19 @@ public class WebResource {
             prep.setString(5, alias);
             prep.setInt(6, 1);
             prep.executeUpdate();
-            
+
             int instanceID = servBean.getInstanceID(refUuid);
-            
+
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_history` "
                     + "(`service_history_id`, `service_state_id`, `service_instance_id`) VALUES (1, 1, ?)");
             prep.setInt(1, instanceID);
             prep.executeUpdate();
-            
+
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_verification` "
                     + "(`service_instance_id`) VALUES (?)");
             prep.setInt(1, instanceID);
-            prep.executeUpdate();           
-            
+            prep.executeUpdate();
+
             // Execute service creation.
             switch (serviceType) {
                 case "dnc":
@@ -361,11 +403,11 @@ public class WebResource {
                     servBean.createflow(paraMap);
                     break;
                 case "hybridcloud":
-                    servBean.creatHybridCloud(paraMap);
+                    servBean.createHybridCloud(paraMap);
                     break;
                 default:
             }
-            
+
             // Verify creation.
             verify(refUuid);
 
@@ -392,6 +434,7 @@ public class WebResource {
         long endTime;
 
         try {
+            clearVerification(refUuid);
             switch (action) {
                 case "cancel":
                     setSuperState(refUuid, 2);
@@ -401,7 +444,7 @@ public class WebResource {
                     setSuperState(refUuid, 2);
                     forceCancelInstance(refUuid);
                     break;
-                    
+
                 case "reinstate":
                     setSuperState(refUuid, 4);
                     cancelInstance(refUuid);
@@ -409,13 +452,14 @@ public class WebResource {
                 case "force_reinstate":
                     setSuperState(refUuid, 4);
                     forceCancelInstance(refUuid);
-                    break;                    
-                    
+                    break;
+
                 case "force_retry":
                     forceRetryInstance(refUuid);
-                    break;                         
+                    break;
 
                 case "delete":
+                case "force_delete":
                     deleteInstance(refUuid);
 
                     endTime = System.currentTimeMillis();
@@ -433,12 +477,12 @@ public class WebResource {
                             + Thread.currentThread().getName() + "::ID="
                             + Thread.currentThread().getId() + "::Time Taken="
                             + (endTime - startTime) + " ms.");
-                    return "Verification Complete.\r\n";                    
+                    return "Verification Complete.\r\n";
 
                 default:
                     return "Error! Invalid Action.\r\n";
             }
-            
+
             endTime = System.currentTimeMillis();
             System.out.println("Async API Operate End::Name="
                     + Thread.currentThread().getName() + "::ID="
@@ -476,7 +520,7 @@ public class WebResource {
             return null;
         }
     }
-    
+
     @GET
     @Path("/service/lastverify/{siUUID}")
     @Produces("application/json")
@@ -529,13 +573,13 @@ public class WebResource {
             String unverified_reduction = "";
             OntModel vAddition;
             OntModel uReduction;
-            
+
             while (rs1.next()) {
                 verified_addition = rs1.getString("verified_addition");
                 unverified_reduction = rs1.getString("unverified_reduction");
             }
-                      
-           if (verified_addition  != null && unverified_reduction != null) {
+
+            if (verified_addition != null && unverified_reduction != null) {
                 vAddition = ModelUtil.unmarshalOntModelJson(verified_addition);
                 uReduction = ModelUtil.unmarshalOntModelJson(unverified_reduction);
 
@@ -544,12 +588,16 @@ public class WebResource {
                 modelList.add(uReduction);
                 OntModel newModel = ModelUtil.createUnionOntModel(modelList);
                 return ModelUtil.marshalOntModelJson(newModel);
-           }
-           
-           if (verified_addition != null) return verified_addition;
-           else if (unverified_reduction != null) return unverified_reduction;
-           else return null;
-           
+            }
+
+            if (verified_addition != null) {
+                return verified_addition;
+            } else if (unverified_reduction != null) {
+                return unverified_reduction;
+            } else {
+                return null;
+            }
+
         } catch (SQLException e) {
             Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
             return null;
@@ -657,23 +705,22 @@ public class WebResource {
 
             while (true) {
                 instanceState = status(refUuid);
-                if (instanceState.equals("READY")) {                    
+                if (instanceState.equals("READY")) {
                     verify(refUuid);
-                   
+
                     return 0;
                 } else if (!instanceState.equals("COMMITTED")) {
                     return 5;
                 }
                 Thread.sleep(5000);
             }
-            
 
         } catch (IOException | InterruptedException ex) {
             Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
             return -1;
         }
     }
-    
+
     private int forceCancelInstance(String refUuid) throws SQLException {
         boolean result;
         try {
@@ -725,9 +772,7 @@ public class WebResource {
         }
     }
 
-
     // Parsing Methods ---------------------------------------------------------
-    
     // @TODO: PRETTY MUCH UNDOING SERVLET CODE?
     private HashMap<String, String> parseDNC(JSONObject dataJSON, String refUuid) {
         HashMap<String, String> paraMap = new HashMap<>();
@@ -754,16 +799,6 @@ public class WebResource {
         return paraMap;
     }
 
-    
-    /*
-     paraMap.put("topoUri", "urn:ogf:network:openstack.com:openstack-cloud");
-     paraMap.put("netCidr", "10.1.0.0/16");
-     paraMap.put("driverType","ops");
-     paraMap.put("subnet1", "name+ &cidr+10.0.0.0/24&routesto+0.0.0.0/0,nextHop+internet");
-     paraMap.put("subnet2", "name+ &cidr+10.1.1.0/24");
-     paraMap.put("vm1", "vm_OPS&1& &m1.medium&icecube_key&rains&msx1&206.196.180.148&urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*&aa:bb:cc:00:00:12&10.10.0.1/30&to+192.168.0.0/24,next_hop+10.10.0.2\r\nto+206.196.179.0/24,next_hop+10.10.0.2");
-     //value format: "vm_name&subnet_index_number&image_type&instance_type&keypair_name&security_group_name&host&floating_IP&sriov_destination&sriov_mac_address&sriov_ip_address&sriov_routes"
-     */
     private HashMap<String, String> parseNet(JSONObject dataJSON, String refUuid) {
         HashMap<String, String> paraMap = new HashMap<>();
         paraMap.put("instanceUUID", refUuid);
@@ -791,28 +826,29 @@ public class WebResource {
                 for (Object vmEle : vmArr) {
                     //value format: "vm_name & subnet_index_number & type_detail & host & interfaces"
                     JSONObject vmJSON = (JSONObject) vmEle;
-                                                                                
+
                     // Name
                     String vmString = (String) vmJSON.get("name");
                     // Subnet Index
                     vmString += "&" + (i + 1);
 
                     // TYPES
-                    vmString += vmJSON.containsKey("type")? "&" + (String) vmJSON.get("type") : "& ";
+                    vmString += vmJSON.containsKey("type") ? "&" + (String) vmJSON.get("type") : "& ";
 
                     // VM Host
-                    vmString += vmJSON.containsKey("host")? "&" + (String) vmJSON.get("host") : "& ";
-                    
+                    vmString += vmJSON.containsKey("host") ? "&" + (String) vmJSON.get("host") : "& ";
+
                     // INTERFACES
-                    if(vmJSON.containsKey("interfaces")){
+                    if (vmJSON.containsKey("interfaces")) {
                         JSONArray interfaceArr = (JSONArray) vmJSON.get("interfaces");
                         if (!interfaceArr.isEmpty()) {
                             vmString += "&" + interfaceArr.toString();
                         } else {
                             vmString += "& ";
                         }
-                    }else
+                    } else {
                         vmString += "& ";
+                    }
 //                    HashMap<String, String> interfaceMap = new HashMap<>();
 //                    int SRIOVCounter = 1;
 //                    if (vmJSON.containsKey("interfaces")) {
@@ -858,7 +894,7 @@ public class WebResource {
 
                     routeString += "\r\n";
                 }
-                
+
                 if (!routeString.equals("routes")) {
                     routeString = routeString.substring(0, routeString.length() - 2);
                 }
@@ -868,7 +904,7 @@ public class WebResource {
             if (!routeString.equals("routes")) {
                 subString += "&" + routeString;
             }
-            
+
             paraMap.put("subnet" + (i + 1), subString);
         }
 
@@ -900,19 +936,19 @@ public class WebResource {
         paraMap.put("netRoutes", netRouteString);
 
         // Parse Gateways.
-        if(vcnJSON.get("gateways") != null){
-            JSONArray gatewayArr = (JSONArray)vcnJSON.get("gateways");
+        if (vcnJSON.get("gateways") != null) {
+            JSONArray gatewayArr = (JSONArray) vcnJSON.get("gateways");
             paraMap.put("gateways", gatewayArr.toString());
         }
-            
+
         return paraMap;
     }
-    
-    private HashMap<String, String> parseHybridCloud(JSONObject dataJSON, String refUuid){
+
+    private HashMap<String, String> parseHybridCloud(JSONObject dataJSON, String refUuid) {
         HashMap<String, String> paraMap = new HashMap<>();
         paraMap.put("instanceUUID", refUuid);
         paraMap.put("virtual_clouds", dataJSON.get("virtual_clouds").toString());
-        
+
         return paraMap;
     }
 
@@ -934,15 +970,6 @@ public class WebResource {
     }
 
     // Utility Methods ---------------------------------------------------------
-    /*
-    
-     JSONArray Arr = (JSONArray) JSON.get("");
-     for (int i = 0; i < Arr.size(); i++) {
-     JSONObject JSON = (JSONObject) Arr.get(i);
-     }
-    
-     */
-
     private void setSuperState(String refUuid, int superStateId) throws SQLException {
         Connection front_conn;
         Properties front_connectionProps = new Properties();
@@ -956,9 +983,9 @@ public class WebResource {
         prep.setInt(1, superStateId);
         prep.setString(2, refUuid);
         prep.executeUpdate();
-        
+
         int instanceID = servBean.getInstanceID(refUuid);
-                       
+
         prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_history` (`service_state_id`, `service_instance_id`) "
                 + "VALUES (?, ?)");
         prep.setInt(1, superStateId);
@@ -972,16 +999,17 @@ public class WebResource {
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
         logger.log(Level.INFO, "Sending Propagate Command");
         logger.log(Level.INFO, "Response Code : {0}", result);
-        
+
         return result.equalsIgnoreCase("PROPAGATED");
     }
+
     private boolean forcePropagate(String refUuid) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/propagate_forcedretry", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
         logger.log(Level.INFO, "Sending Forced Propagate Command");
         logger.log(Level.INFO, "Response Code : {0}", result);
-        
+
         return result.equalsIgnoreCase("PROPAGATED");
     }
 
@@ -991,16 +1019,17 @@ public class WebResource {
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
         logger.log(Level.INFO, "Sending Commit Command");
         logger.log(Level.INFO, "Response Code : {0}", result);
-        
+
         return result.equalsIgnoreCase("COMMITTED");
     }
+
     private boolean forceCommit(String refUuid) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/commit_forced", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
         logger.log(Level.INFO, "Sending Forced Commit Command");
         logger.log(Level.INFO, "Response Code : {0}", result);
-        
+
         return result.equalsIgnoreCase("COMMITTED");
     }
 
@@ -1010,10 +1039,11 @@ public class WebResource {
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
         logger.log(Level.INFO, "Sending Revert Command");
         logger.log(Level.INFO, "Response Code : {0}", result);
-        
+
         // Revert now returns service delta UUID; pending changes.
         return true;
-    }    
+    }
+
     private boolean forceRevert(String refUuid) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/revert_forced", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
@@ -1023,8 +1053,7 @@ public class WebResource {
 
         // Revert now returns service delta UUID; pending changes.
         return true;
-    }    
-    
+    }
 
     private String delete(String refUuid) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/", host, refUuid));
@@ -1032,7 +1061,7 @@ public class WebResource {
         String result = servBean.executeHttpMethod(url, propagate, "DELETE", null);
         logger.log(Level.INFO, "Sending Delete Command");
         logger.log(Level.INFO, "Response Code : {0}", result);
-        
+
         return result;
     }
 
@@ -1064,7 +1093,7 @@ public class WebResource {
              additionVerified = "true" or "false" in string,
              }
              */
-            
+
             // Pull data from JSON.
             JSONObject verifyJSON = new JSONObject();
             try {
@@ -1073,8 +1102,8 @@ public class WebResource {
             } catch (ParseException ex) {
                 Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
                 throw new IOException("Parse Error within Verification: " + ex.getMessage());
-            }           
-            
+            }
+
             // Update verification results cache.
             prep = front_conn.prepareStatement("UPDATE `service_verification` SET `delta_uuid`=?,`creation_time`=?,`verified_reduction`=?,`verified_addition`=?,`unverified_reduction`=?,`unverified_addition`=?,`reduction`=?,`addition`=?, `verification_run`=? WHERE `service_instance_id`=?");
             prep.setString(1, (String) verifyJSON.get("referenceUUID"));
@@ -1091,7 +1120,7 @@ public class WebResource {
 
             if (verifyJSON.containsKey("reductionVerified") && (verifyJSON.get("reductionVerified") != null) && ((String) verifyJSON.get("reductionVerified")).equals("false")) {
                 redVerified = false;
-            } 
+            }
             if (verifyJSON.containsKey("additionVerified") && (verifyJSON.get("additionVerified") != null) && ((String) verifyJSON.get("additionVerified")).equals("false")) {
                 addVerified = false;
             }
@@ -1117,6 +1146,25 @@ public class WebResource {
         prep.executeUpdate();
 
         return false;
+    }
+
+    private boolean clearVerification(String refUuid) throws SQLException {
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+        PreparedStatement prep;
+
+        int instanceID = servBean.getInstanceID(refUuid);
+
+        prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = ? WHERE `service_verification`.`service_instance_id` = ?");
+        prep.setNull(1, java.sql.Types.INTEGER);
+        prep.setInt(2, instanceID);
+        prep.executeUpdate();
+
+        return true;
     }
 
     private String superStatus(String refUuid) throws SQLException {

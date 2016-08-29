@@ -233,7 +233,7 @@ define(["local/d3", "local/versastack/utils"],
                                 outputApi.setHoverText(subnet.getName());
                                 outputApi.setHoverVisible(true);
                             }
-                            outputApi.setHoverLocation(d3.event.x, d3.event.y);
+                            outputApi.setHoverLocation(d3.event.clientX, d3.event.clientY);
 
                         };
                         var OnMouseLeave = function () {

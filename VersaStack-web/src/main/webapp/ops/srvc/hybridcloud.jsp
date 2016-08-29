@@ -14,15 +14,15 @@
 <html >    
     <head>   
         <meta charset="UTF-8">
-        <title>Virtual Cloud Network Service</title>
+        <title>Hybrid Cloud Service</title>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>
-        <script src="/VersaStack-web/js/svc/netcreate.js"></script>
-
+        <script src="/VersaStack-web/js/svc/hybridcloud.js"></script>
+        <script src="../../js/svc/hybridcloud.js" type="text/javascript"></script>
         <!-- jQuery easing plugin -->
         <script src="http://thecodeplayer.com/uploads/js/jquery.easing.min.js" type="text/javascript"></script>
-
+    
         <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
         <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
@@ -44,126 +44,74 @@
         <div id="black-screen"></div>
         <div id="main-pane">           
             <!-- Multistep form -->
-            <form action="/VersaStack-web/ServiceServlet" method="post" class="stageform" id="msform" onsubmit="return validateVCN()">
+            <form action="/VersaStack-web/ServiceServlet" method="post" class="stageform" id="msform" onsubmit="return validateHybrid()">
                 <input type="hidden" name="username" value="${user.getUsername()}"/>
-                <input type="hidden" name="netCreate" value="true"/>
+                <input type="hidden" name="hybridCloud" value="true"/>
                 <!-- Progress Bar -->
-                <ul class="vcn-progress" id="progressbar">
-                    <li class="disabled active">Service Host</li>
-                    <li class="disabled">Network</li>
-                    <li class="disabled">Subnets</li>
-                    <li class="disabled">VMs</li>
-                    <li class="disabled">Gateways</li>
-                    <li class="disabled">SRIOV</li>                    
-                    <li class="disabled">Summary</li>
+                <ul class="hc-progress" id="progressbar">
+                    <li class="active">Hybrid Clouds</li>
+                    <li>Network</li>
+                    <li>Subnets</li>
+                    <li>VMs</li>
+                    <li>Gateways</li>
+                    <li>SRIOV</li>                    
+                    <li>Summary</li>
                 </ul>
 
-                <fieldset class="active-fs" id="0-template-select" style="z-index: 4;">
+                <fieldset class="active-fs" id="0-1" style="z-index: 4;">
                     <div><button type="button" class="action-button" onclick="applyTemplate(0)">Start from Scratch</button></div>
                     <h3 class="fs-title">Templates</h3>
-                    <div><button type="button" class="action-button" onclick="applyTemplate(1)">Basic AWS</button></div>
-                    <div><button type="button" class="action-button" onclick="applyTemplate(2)">AWS w/ VMs</button></div>
-                    <div><button type="button" class="action-button" onclick="applyTemplate(3)">Basic OpenStack</button></div>
+                    <div><button type="button" class="action-button" onclick="applyTemplate(1)">Basic Hybrid Cloud</button></div>
                 </fieldset>
 
-                <!-- Stage 1: Host --> 
-                <fieldset id='1-base-1'>
-                    <h2 class="fs-title">Select your Host</h2>
-                    <h3 class="fs-subtitle"></h3>
-                    <button type="button" name="type" class="stage1-next action-button" value="aws">AWS</button>
-                    <button type="button" name="type" class="stage1-next action-button" value="ops">Openstack</button>
+                <!-- Stage 1: Hybrid Clouds --> 
+                <fieldset id='1-base-1'>                   
+                    <input type="button" name="next" class="next action-button" value="Next" />                    
                 </fieldset>
 
-                <!-- AWS -->
                 <!-- Stage 2: Network -->
-                <fieldset id='2-aws-1'>
-                    <h2 class="fs-title">Network Description</h2>
+                <fieldset id='2-1'>
+                    <h2 class="fs-title">Hybrid Cloud Information</h2>                    
+                    <table class="fs-table">
+                        <tr>
+                            <td><input type="text" name="alias" placeholder="Instance Alias" /></td>
+                            <td><input type="text" name="hybrid-vlan" placeholder="Hybrid VLAN" /></td>
+                        </tr>
+                    </table>
+                    <br>
+                    <h2 class="fs-title">AWS Network Description</h2>
                     <h3 class="fs-subtitle">Basic Network Details</h3>
                     <table class="fs-table">
-                        <thead id="awsStage2-base">
- 
-                       </thead>
                         <tr>
                             <td>
                                 <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance WHERE driverEjbPath='java:module/AwsDriver'" var="driverlist" />
-                                <select name="topoUri" >
+                                <select name="aws-topoUri" >
                                     <option selected disabled value="test">Choose the driver topology URI</option>
                                     <c:forEach var="driver" items="${driverlist.rows}">
                                         <option value="${driver.topologyUri}">${driver.topologyUri}</option>
                                     </c:forEach>
                                 </select>        
                             </td>
-                        </tr>
+                        </tr> 
                         <tbody id="awsStage2-network">
-
+                            <tr>
+                                <td><input type="text" name="aws-netType" placeholder="Network Type" /></td>
+                                <td><input type="text" name="aws-netCidr" placeholder="Network CIDR" /></td>
+                            </tr>    
+                            <tr>
+                                <td><input type="text" name="aws-conn-dest" placeholder="Direct Connect Destination" /></td>
+                                <td><input type="text" name="aws-conn-vlan" placeholder="Direct Connect VLAN" /></td>
+                            </tr>
                         </tbody>
                     </table>
-                    <input type="button" name="previous" class="reset action-button" value="Previous" />
-                    <input type="button" name="next" class="next action-button" value="Next" />
-                </fieldset>
-
-                <!-- Stage 3: Subnets -->                    
-                <fieldset id="3-aws-1">
-                    <h2 class="fs-title">Subnets</h2>
-                    <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="awsStage3-subnet" onfocus="this.oldvalue = this.value;" onchange="setSubnets(this)"/></h3>
-                    <table class="subfs-table" id="awsStage3-subnet-route-table">
-
-                    </table>
-                    <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <input type="button" name="next" id="awsStage3" class="next action-button" value="Next" /> 
-                </fieldset>                                                             
-                <fieldset id="3-aws-2">
-                    <fieldset class="subfs" id="awsStage3-subnet-fs">
-
-                    </fieldset>
-
-                    <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <input type="button" name="next" class="next action-button" value="Next" />                    
-                </fieldset>
-
-                <!-- Stage 4: VMs -->                    
-                <fieldset id="4-aws-1">
-                    <h2 class="fs-title">Virtual Machines</h2>
-                    <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="awsStage4-vm" onfocus="this.oldvalue = this.value;" onchange="setVMs(this)"/></h3>
-                    <table class="subfs-table" id="awsStage4-vm-route-table">
-
-                    </table>
-
-                    <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <input type="button" name="next" id="awsStage4" class="next action-button" value="Next" />
-                </fieldset>                                                             
-                <fieldset id="4-aws-2">
-                    <fieldset class="subfs" id="awsStage4-vm-fs">
-
-                    </fieldset>
-
-                    <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <input type="button" name="next" class="next action-button" value="Next" />                    
-                </fieldset>
-
-                <!-- Stage 7: Summary -->
-                <fieldset id="7-aws-1">
-                    <h2 class="fs-title">Summary</h2>
-                    <h3 class="fs-subtitle">(Summary Module still in development)</h3>
-
-                    <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <button type="submit" name="submit" class="action-button" value="aws">Submit</button>                    
-                </fieldset>
-
-
-                <!-- Openstack -->
-                <!-- Stage 2: Network -->
-                <fieldset id='2-ops-1'>
-                    <h2 class="fs-title">Network Description</h2>
+                    <br>
+                    <h2 class="fs-title">OpenStack Network Description</h2>
                     <h3 class="fs-subtitle">Basic Network Details</h3>
                     <table class="fs-table">
-                        <thead id="opsStage2-base">                
-
-                        </thead>
                         <tr>
                             <td>
                                 <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance WHERE driverEjbPath='java:module/OpenStackDriver'" var="driverlist" />
-                                <select name="topoUri" >
+                                <select name="ops-topoUri" >
                                     <option selected disabled value="test">Choose the driver topology URI</option>
                                     <c:forEach var="driver" items="${driverlist.rows}">
                                         <option value="${driver.topologyUri}">${driver.topologyUri}</option>
@@ -172,24 +120,43 @@
                             </td>
                         </tr>
                         <tbody id="opsStage2-network">
-
+                            <tr>
+                                <td><input type="text" name="ops-netType" placeholder="Network Type" /></td>
+                                <td><input type="text" name="ops-netCidr" placeholder="Network CIDR" /></td>
+                            </tr>
                         </tbody>
                     </table>
-                    <input type="button" name="previous" class="reset action-button" value="Previous" />
-                    <input type="button" name="next" class="next action-button" value="Next" />
+
+                    <input type="button" name="previous" class="previous action-button" value="Previous" />
+                    <input type="button" name="next" class="next action-button" value="Next" />                    
                 </fieldset>
 
+
+
                 <!-- Stage 3: Subnets -->                    
-                <fieldset id="3-ops-1">
-                    <h2 class="fs-title">Subnets</h2>
+                <fieldset id="3-1">
+                    <h2 class="fs-title">AWS Subnets</h2>
+                    <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="awsStage3-subnet" onfocus="this.oldvalue = this.value;" onchange="setSubnets(this)"/></h3>
+                    <table class="subfs-table" id="awsStage3-subnet-route-table">
+
+                    </table>
+                    <br>
+                    <h2 class="fs-title">OpenStack Subnets</h2>
                     <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="opsStage3-subnet" onfocus="this.oldvalue = this.value;" onchange="setSubnets(this)"/></h3>
                     <table class="subfs-table" id="opsStage3-subnet-route-table">
 
                     </table>
+
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <input type="button" name="next" id="opsStage3" class="next action-button" value="Next" /> 
+                    <input type="button" name="next" class="next action-button" value="Next" />                    
                 </fieldset>                                                             
-                <fieldset id="3-ops-2">
+
+
+                <fieldset id="3-2">
+                    <fieldset class="subfs" id="awsStage3-subnet-fs">
+
+                    </fieldset>
+                    <br>
                     <fieldset class="subfs" id="opsStage3-subnet-fs">
 
                     </fieldset>
@@ -198,18 +165,28 @@
                     <input type="button" name="next" class="next action-button" value="Next" />                    
                 </fieldset>
 
-                <!-- Stage 4: VMs -->                    
-                <fieldset id="4-ops-1">
-                    <h2 class="fs-title">Virtual Machines</h2>
+                <!-- Stage 4: VMs --> 
+                <fieldset id="4-1">
+                    <h2 class="fs-title">AWS Virtual Machines</h2>
+                    <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="awsStage4-vm" onfocus="this.oldvalue = this.value;" onchange="setVMs(this)"/></h3>
+                    <table class="subfs-table" id="awsStage4-vm-route-table">
+
+                    </table>
+                    <br>
+                    <h2 class="fs-title">OpenStack Virtual Machines</h2>
                     <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="opsStage4-vm" onfocus="this.oldvalue = this.value;" onchange="setVMs(this)"/></h3>
                     <table class="subfs-table" id="opsStage4-vm-route-table">
 
                     </table>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <input type="button" name="next" id="opsStage4" class="next action-button" value="Next" />
-                </fieldset>                                                             
-                <fieldset id="4-ops-2">
+                    <input type="button" name="next" class="next action-button" value="Next" />                    
+                </fieldset>
+                <fieldset id="4-2">
+                    <fieldset class="subfs" id="awsStage4-vm-fs">
+
+                    </fieldset>
+                    <br>
                     <fieldset class="subfs" id="opsStage4-vm-fs">
 
                     </fieldset>
@@ -219,32 +196,35 @@
                 </fieldset>
 
                 <!-- Stage 5: Gateways -->
-                <fieldset id="5-ops-1">
-                    <h2 class="fs-title">Gateways</h2>
+                <fieldset id="5-1">
+                    <h2 class="fs-title">OpenStack Gateways</h2>
                     <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="opsStage5-gateway" onfocus="this.oldvalue = this.value;" onchange="setGateways(this)"/></h3>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <input type="button" name="next" id="opsStage5" class="next action-button" value="Next" /> 
-                </fieldset>                                                             
-                <fieldset id="5-ops-2">
+                    <input type="button" name="next" class="next action-button" value="Next" />                    
+                </fieldset>  
+
+
+                <fieldset id="5-2">
                     <fieldset class="subfs" id="opsStage5-gateway-fs">
 
-                    </fieldset>
+                    </fieldset>        
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="button" name="next" class="next action-button" value="Next" />                    
                 </fieldset>
 
                 <!-- Stage 6: SRIOV -->
-                <fieldset id="6-ops-1">
+                <fieldset id="6-1">
                     <h2 class="fs-title">SRIOV</h2>
                     <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="opsStage6-sriov" onfocus="this.oldvalue = this.value;" onchange="setSRIOV(this)"/></h3>
                     <table class="subfs-table" id="opsStage6-sriov-route-table">
 
                     </table>
+
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <input type="button" name="next" id="opsStage6" class="next action-button" value="Next" /> 
-                </fieldset>                                                             
+                    <input type="button" name="next" class="next action-button" value="Next" />                    
+                </fieldset>
                 <fieldset id="6-ops-2">
                     <fieldset class="subfs" id="opsStage6-sriov-fs">
 
@@ -252,17 +232,35 @@
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="button" name="next" class="next action-button" value="Next" />                    
-                </fieldset>                                
+                </fieldset>
 
                 <!-- Stage 7: Summary -->
-                <fieldset id="7-ops-1">
-                    <h2 class="fs-title">Summary</h2>
+                <fieldset id="7-1">
+                    <h2 class="fs-title">AWS Summary</h2>
                     <h3 class="fs-subtitle">(Summary Module still in development)</h3>
 
+                    <h2 class="fs-title">OpenStack Summary</h2>
+                    <h3 class="fs-subtitle">(Summary Module still in development)</h3>
+                    
+                    <br>
+                    <table class="subfs-table" id="profile-table">
+                        <thead>
+                            <tr>
+                                <td><label id="profile-save-label">Save as Profile <input type="checkbox" id="profile-save-check" name="profile-save" /></label></td>
+                            </tr>
+                        </thead>
+                        <tbody class="fade-hide" id="profile-save-body">
+                            <tr>
+                                <td><input type="text" name="profile-name" placeholder="Profile Name" /></td>
+                                <td><input type="text" name="profile-description" placeholder="Profile Description" /></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <button type="submit" name="submit" class="action-button" value="ops">Submit</button>                    
+                    <button type="submit" name="submit" class="action-button" value="ops">Submit</button>  
                 </fieldset>
-            </form>
+            </form>      
             <div id="info-panel">
                 <h3 class="fs-subtitle" id="info-panel-title"></h3>
                 <div id="info-panel-div">
