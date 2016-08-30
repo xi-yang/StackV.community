@@ -1432,7 +1432,7 @@ public class serviceBeans {
                                         }
                                     }
                                 } else {
-                                    svcDelta += ".\n\n";
+                                    svcDelta += "\n\n";
                                 }
                             }
                         }
