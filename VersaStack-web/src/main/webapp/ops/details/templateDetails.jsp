@@ -314,7 +314,7 @@
                     manual = true;
                 }
 
-                $('#instance-panel').load(document.URL + ' #instance-panel', function () {
+                $('#details-panel').load(document.URL + ' #details-panel', function () {
                     deltaModerate();
                     instructionModerate();
                     buttonModerate();
