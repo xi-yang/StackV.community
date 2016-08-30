@@ -101,16 +101,15 @@ public class ServiceManifest {
         } catch (Exception ex) {
             throw new EJBException(ServiceManifest.class.getName()+" generateManifest failed to parse: "+jsonModel, ex);
         }
-        /*
         SystemModelCoordinator systemModelCoordinator = null;
         try {
             Context ejbCxt = new InitialContext();
-            systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:global/VersaStack-ear-1.0-SNAPSHOT/VersaStack-ejb-1.0-SNAPSHOT/SystemModelCoordinator");
+            //systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:global/VersaStack-ear-1.0-SNAPSHOT/VersaStack-ejb-1.0-SNAPSHOT/SystemModelCoordinator");
+            systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:modules/SystemModelCoordinator");
         } catch (NamingException ex) {
             throw new EJBException(ServiceManifest.class.getName() + " failed to inject systemModelCoordinator", ex);
         }
         OntModel omRef = systemModelCoordinator.getCachedOntModel();
-        */
         return (JSONObject)querySparsqlTemplateJson(serviceTemplate, omAdd);
     }
     
