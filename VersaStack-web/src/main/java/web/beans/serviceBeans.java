@@ -1518,9 +1518,9 @@ public class serviceBeans {
                 sleep(5000);//wait for 5 seconds and check again later
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
                 result = this.executeHttpMethod(url, status, "GET", null);
-                if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
+                /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
                     throw new EJBException("Ready Check Failed!");
-                }
+                }*/
             }
 
             return 0;
