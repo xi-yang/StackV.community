@@ -45,6 +45,7 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.ejb.EJBException;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -448,7 +449,7 @@ public class serviceBeans {
             }
             //example for vm : vm1&0
         }
-        
+
         try {
             URL url = new URL(String.format("%s/service/property/%s/host/", host, refUuid));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -830,7 +831,7 @@ public class serviceBeans {
             HttpURLConnection compile = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, compile, "POST", svcDelta);
             if (!result.contains("referenceVersion")) {
-                return 2;//Error occurs when interacting with back-end system
+                throw new EJBException("Service Delta Failed!");
             }
 
             // Cache System Delta
@@ -840,13 +841,13 @@ public class serviceBeans {
             HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, propagate, "PUT", null);
             if (!result.equals("PROPAGATED")) {
-                return 2;//Error occurs when interacting with back-end system
+                throw new EJBException("Propagate Failed!");
             }
             url = new URL(String.format("%s/service/%s/commit", host, refUuid));
             HttpURLConnection commit = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, commit, "PUT", null);
             if (!result.equals("COMMITTED")) {
-                return 2;//Error occurs when interacting with back-end system
+                throw new EJBException("Commit Failed!");
             }
             url = new URL(String.format("%s/service/%s/status", host, refUuid));
             while (!result.equals("READY")) {
@@ -854,7 +855,7 @@ public class serviceBeans {
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
                 result = this.executeHttpMethod(url, status, "GET", null);
                 if (!result.equals("COMMITTED")) {
-                    return 3;//Fail to create network
+                    throw new EJBException("Ready Check Failed!");
                 }
             }
 
@@ -996,7 +997,7 @@ public class serviceBeans {
                     temp.put("type", "vpn");
                     gatewaysJson.add(temp);
                     vcnJson.put("gateways", gatewaysJson);
-                    svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_clouds:tag+" + vcnName + "&gt;\n"
+                    svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_clouds:tag+" + vcnName + "&gt;.\n"
                             + "    a                         nml:Topology ;\n"
                             + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vcnName + "&gt;,"
                             + " &lt;x-policy-annotation:action:create-dc1&gt;.\n\n"
