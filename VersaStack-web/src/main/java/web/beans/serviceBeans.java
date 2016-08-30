@@ -862,11 +862,11 @@ public class serviceBeans {
             return 0;
 
         } catch (IOException | InterruptedException e) {
-            return 1;//connection error
+            throw new EJBException("Fatal Error -- " + e.getLocalizedMessage());
         }
     }
 
-    public int createHybridCloud(Map<String, String> paraMap) {
+    public int createHybridCloud(Map<String, String> paraMap) throws EJBException {
         String refUuid = null;
         JSONParser jsonParser = new JSONParser();
         JSONArray vcnArr = null;
@@ -997,7 +997,7 @@ public class serviceBeans {
                     temp.put("type", "vpn");
                     gatewaysJson.add(temp);
                     vcnJson.put("gateways", gatewaysJson);
-                    svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_clouds:tag+" + vcnName + "&gt;.\n"
+                    svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_clouds:tag+" + vcnName + "&gt;\n"
                             + "    a                         nml:Topology ;\n"
                             + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vcnName + "&gt;,"
                             + " &lt;x-policy-annotation:action:create-dc1&gt;.\n\n"
@@ -1117,7 +1117,7 @@ public class serviceBeans {
                                     + "    }\"\"\" .\n\n"
                                     + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0&gt;\n"
                                     + "    a            nml:BidirectionalPort ;\n"
-                                    + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "-eth0&gt; ";
+                                    + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "-eth0&gt;.";
 
                             if (!vmJson.containsKey("interfaces")) {
                                 svcDelta += ".\n\n";
@@ -1495,7 +1495,7 @@ public class serviceBeans {
             HttpURLConnection compile = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, compile, "POST", svcDelta);
             if (!result.contains("referenceVersion")) {
-                return 2;//Error occurs when interacting with back-end system
+                throw new EJBException("Service Delta Failed!");
             }
 
             // Cache System Delta
@@ -1505,13 +1505,13 @@ public class serviceBeans {
             HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, propagate, "PUT", null);
             if (!result.equals("PROPAGATED")) {
-                return 2;//Error occurs when interacting with back-end system
+                throw new EJBException("Propagate Failed!");
             }
             url = new URL(String.format("%s/service/%s/commit", host, refUuid));
             HttpURLConnection commit = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, commit, "PUT", null);
             if (!result.equals("COMMITTED")) {
-                return 2;//Error occurs when interacting with back-end system
+                throw new EJBException("Commit Failed!");
             }
             url = new URL(String.format("%s/service/%s/status", host, refUuid));
             while (!result.equals("READY")) {
@@ -1519,14 +1519,14 @@ public class serviceBeans {
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
                 result = this.executeHttpMethod(url, status, "GET", null);
                 if (!result.equals("COMMITTED")) {
-                    return 3;//Fail to create network
+                    throw new EJBException("Ready Check Failed!");
                 }
             }
 
             return 0;
 
-        } catch (Exception e) {
-            return 1;//connection error
+        } catch (IOException | InterruptedException e) {
+            throw new EJBException("Fatal Error -- " + e.getLocalizedMessage());
         }
     }
 
