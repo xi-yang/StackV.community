@@ -925,7 +925,7 @@ define([
             };
         };    
  
-        this.makeServiceDtlModel = function (map) {
+        this.makeServiceDtlModel = function (map, baseModel) {
             that.nodeMap = {};
             that.elementMap = {};
             that.policyMap = {};
@@ -936,6 +936,19 @@ define([
                 val.name = key;
 
                 var types = val[values.type];
+                var detailsReference = false;
+                if (!types) {
+                    if(val[values.topoType]) {
+                        types = val[values.topoType];
+                    } else if (baseModel.getBaseOrigin(key)) {
+                        types = baseModel.getBaseOrigin(key)._map[key][values.type];
+                        val[values.type] = types;
+                        detailsReference = true;
+                    } else {
+                        continue;
+                    }
+                }
+
                 that.elementMap[key] = new Element(val, map, that.elementMap);
 
                 map_(types, function (type) {
