@@ -855,9 +855,9 @@ public class serviceBeans {
                 sleep(5000);//wait for 5 seconds and check again later
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
                 result = this.executeHttpMethod(url, status, "GET", null);
-                if (!result.equals("COMMITTED")) {
+                /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
                     throw new EJBException("Ready Check Failed!");
-                }
+                }*/
             }
 
             return 0;
@@ -1414,9 +1414,9 @@ public class serviceBeans {
             HttpURLConnection compile = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, compile, "POST", svcDelta);
             if (!result.contains("referenceVersion")) {
-                return 2;//Error occurs when interacting with back-end system
+                throw new EJBException("Service Delta Failed!");
             }
-            
+
             // Cache System Delta
             cacheSystemDelta(instanceID, historyID, result);
 
@@ -1424,28 +1424,28 @@ public class serviceBeans {
             HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, propagate, "PUT", null);
             if (!result.equals("PROPAGATED")) {
-                return 2;//Error occurs when interacting with back-end system
+                throw new EJBException("Propagate Failed!");
             }
             url = new URL(String.format("%s/service/%s/commit", host, refUuid));
             HttpURLConnection commit = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, commit, "PUT", null);
             if (!result.equals("COMMITTED")) {
-                return 2;//Error occurs when interacting with back-end system
+                throw new EJBException("Commit Failed!");
             }
             url = new URL(String.format("%s/service/%s/status", host, refUuid));
             while (!result.equals("READY")) {
                 sleep(5000);//wait for 5 seconds and check again later
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
                 result = this.executeHttpMethod(url, status, "GET", null);
-                if (!result.equals("COMMITTED")) {
-                    return 3;//Fail to create network
-                }                
+                /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
+                    throw new EJBException("Ready Check Failed!");
+                }*/
             }
 
             return 0;
             
-        } catch (Exception e) {
-            return 1;//connection error
+        }  catch (IOException | InterruptedException e) {
+            throw new EJBException("Fatal Error -- " + e.getLocalizedMessage());
         }
     }
 
