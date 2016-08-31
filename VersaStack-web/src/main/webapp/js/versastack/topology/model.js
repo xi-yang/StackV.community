@@ -1156,10 +1156,14 @@ define([
                         var types = val[values.type];
                         var detailsReference = false;
                         if (!types) {
-                            if (baseModel.getBaseOrigin(key)) {
+                            if(val[values.topoType]) {
+                                types = val[values.topoType];
+                            } else if (baseModel.getBaseOrigin(key)) {
                                 types = baseModel.getBaseOrigin(key)._map[key][values.type];
                                 val[values.type] = types;
                                 detailsReference = true;
+                            } else {
+                                continue;
                             }
                         }
                         
