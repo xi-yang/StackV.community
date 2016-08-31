@@ -1,4 +1,4 @@
-/*
+<!--
  * Copyright (c) 2013-2016 University of Maryland
  * Created by: Antonio Heard 2016
 
@@ -19,7 +19,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
  * IN THE WORK.
- */
+ !-->
 
 
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
