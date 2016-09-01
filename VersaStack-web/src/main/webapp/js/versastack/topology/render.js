@@ -848,7 +848,7 @@ define([
             if (policyType === "PolicyData") {
                 $("#dialog_policyData").text("");
                 
-                if (n.data === undefined)
+                if (n.data !== undefined)
                     $("#dialog_policyData").append("<pre class=\"jSonDialog\">" + n.data + "</pre>");
                 else 
                     $("#dialog_policyData").append("<pre class=\"jSonDialog\">N/A</pre>");

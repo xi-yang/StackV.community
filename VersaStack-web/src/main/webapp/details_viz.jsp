@@ -166,6 +166,9 @@
                 position: absolute; 
                 width: 0;                
             }
+            .jSonDialog{
+                 text-align:left;
+            }
         </style>
        
         <script type="text/javascript">
@@ -399,7 +402,7 @@
                          if (data.serviceModelAddition && data.serviceModelAddition !==  "{ }") {
                             var servAObj = JSON.parse(data.serviceModelAddition);
                             var servAModel = new ModelConstructor();
-                            servAModel.initWithMap(servAObj, model);
+                            servAModel.makeServiceDtlModel(servAObj, model);
                             modelMap["serva_viz"] = servAModel;
                             var outputApi = new outputApi_(render.API, contextMenu, "serva_viz");
                             outputApiMap["serva_viz"] = outputApi;
@@ -417,7 +420,7 @@
                         if (data.serviceModelReduction && data.serviceModelReduction !==  "{ }") {
                             var servRObj = JSON.parse(data.serviceModelReduction);
                             var servRModel = new ModelConstructor();
-                            servRModel.initWithMap(servRObj, model);
+                            servRModel.makeServiceDtlModel(servRObj, model);
                             modelMap["servr_viz"] = servRModel;
                             var outputApi2 = new outputApi_(render.API, contextMenu, "servr_viz");
                             outputApiMap["servr_viz"] = outputApi2;
