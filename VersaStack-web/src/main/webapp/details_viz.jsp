@@ -166,6 +166,9 @@
                 position: absolute; 
                 width: 0;                
             }
+            .jSonDialog{
+                 text-align:left;
+            }
         </style>
        
         <script type="text/javascript">
