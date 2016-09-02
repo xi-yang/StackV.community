@@ -246,7 +246,6 @@ public class ServiceManifest {
     static private JSONArray handleSparsqlJsonMap(JSONObject jo, OntModel model, OntModel modelRef) {
         JSONArray joArr = new JSONArray();
         String sparql = null;
-        String sparqlFull = null;
         boolean required = true;
         JSONObject varMap = null;
         if (jo.containsKey("sparql")) {
@@ -255,10 +254,6 @@ public class ServiceManifest {
         } else {
             joArr.add(jo);
             return joArr;
-        }
-        if (jo.containsKey("sparql-ext")) {
-            sparqlFull = (String) jo.get("sparql-ext");
-            jo.remove("sparql-ext");
         }
         if (jo.containsKey("required")) {
             if (((String) jo.get("required")).equals("false")) {
@@ -294,7 +289,8 @@ public class ServiceManifest {
                 newVarMap.put(var, varMapped);
             }
             JSONParser parser = new JSONParser();
-            if (sparqlFull != null && modelRef != null) {
+            if (jo.containsKey("sparql-ext") && modelRef != null) {
+                String sparqlFull = (String) jo.get("sparql-ext");
                 sparqlFull = replaceSparqlVars(sparqlFull, newVarMap);
                 ResultSet rsFull = ModelUtil.sparqlQuery(modelRef, sparqlFull);
                 while (rsFull.hasNext()) {
@@ -314,6 +310,9 @@ public class ServiceManifest {
                         JSONObject joResolved = (JSONObject) obj;
                         // add new resolvedVars into joResolved
                         joResolved.put("varmap", newVarMap);
+                        if (joResolved.containsKey("sparql-ext")) {
+                            joResolved.remove("sparql-ext");
+                        }
                         // add joResolved into joArr
                         joArr.add(joResolved);
                     } catch (ParseException ex) {
@@ -330,12 +329,18 @@ public class ServiceManifest {
                     JSONObject joResolved = (JSONObject) obj;
                     // add new resolvedVars into joResolved
                     joResolved.put("varmap", newVarMap);
+                    if (joResolved.containsKey("sparql-ext")) {
+                        joResolved.remove("sparql-ext");
+                    }
                     // add joResolved into joArr
                     joArr.add(joResolved);
                 } catch (ParseException ex) {
                     throw new EJBException("handleSparsqlJsonMap failed parse json: " + json);
                 }
             }
+        }
+        if (jo.containsKey("sparql-ext")) {
+            jo.remove("sparql-ext");
         }
         return joArr;
     }
