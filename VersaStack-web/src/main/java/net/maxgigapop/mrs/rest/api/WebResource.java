@@ -849,22 +849,16 @@ public class WebResource {
                     } else {
                         vmString += "& ";
                     }
-//                    HashMap<String, String> interfaceMap = new HashMap<>();
-//                    int SRIOVCounter = 1;
-//                    if (vmJSON.containsKey("interfaces")) {
-//                        JSONArray interfaceArr = (JSONArray) vmJSON.get("interfaces");
-//                        for (Object obj : interfaceArr) {
-//                            JSONObject interfaceJSON = (JSONObject) obj;
-//                            
-//                            String typeString = (String) interfaceJSON.get("type");
-//                            String addressString = (String) interfaceJSON.get("address");
-//                            if (typeString.equalsIgnoreCase("Ethernet")) {
-//                                interfaceMap.put("float", addressString.split("\\+")[1]);
-//                            } else if (typeString.equalsIgnoreCase("SRIOV")) {
-//                                
-//                            }                            
-//                        }                        
-//                    }
+                    
+                    // CephRBD
+                    if (vmJSON.containsKey("ceph_rbd")) {
+                        JSONArray rbdArr = (JSONArray) vmJSON.get("ceph_rbd");
+                        if (!rbdArr.isEmpty()) {
+                            vmString += "&" + rbdArr.toString();
+                        } else {
+                            vmString += "& ";
+                        }
+                    }
                     paraMap.put("vm" + vmCounter++, vmString);
                 }
             }

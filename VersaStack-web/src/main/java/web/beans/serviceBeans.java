@@ -607,6 +607,8 @@ public class serviceBeans {
                 String createPathExportTo = "";
                 String dependOn = "";
                 JSONObject connCriteriaValue = new JSONObject();
+                String providesVolume = "";
+                String svcDeltaCeph = "";
 
                 for (String vm : vmList) {
                     String[] vmPara = vm.split("&");
@@ -759,6 +761,28 @@ public class serviceBeans {
                     } else {
                         svcDelta += ".\n\n";
                     }
+                    if (!vmPara[5].equals(" ")) {
+                        String nodeHasVolume = "";
+                        try {
+                            JSONArray cephRbdArr = (JSONArray) jsonParser.parse(vmPara[5]);
+                            int volNum = 0;
+                            for (Object obj : cephRbdArr) {
+                                JSONObject rbdJSON = (JSONObject) obj;
+                                nodeHasVolume += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":volume+ceph" + volNum + "&gt;, ";
+                                svcDeltaCeph += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":volume+ceph" + volNum + "&gt;\n"
+                                        + "   a  mrs:Volume;\n"
+                                        + "   mrs:disk_gb \""+ (String) rbdJSON.get("disk_gb") +"\";\n"
+                                        + "   mrs:mount_point \""+ (String) rbdJSON.get("mount_point") +"\".\n\n";
+                                volNum++;
+                            }
+                            providesVolume += nodeHasVolume;
+                        } catch (Exception ex) {
+                            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                        if (!nodeHasVolume.isEmpty()) {
+                            svcDeltaCeph += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n" + "    mrs:hasVolume       " + nodeHasVolume.substring(0,nodeHasVolume.length()-2) + ".\n\n";
+                        }
+                    } 
                     svcDelta += "&lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;\n"
                             + "    a            spa:PolicyAction ;\n"
                             + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
@@ -796,6 +820,12 @@ public class serviceBeans {
                             + "    spa:value    \"\"\"" + connCriteriaValue.toString() + "\"\"\".\n\n";
                 }
 
+                if(!providesVolume.isEmpty()){
+                    svcDeltaCeph += "&lt;urn:ogf:network:openstack.com:openstack-cloud:ceph-rbd&gt;\n"
+                            + "   mrs:providesVolume " + providesVolume.substring(0,providesVolume.length()-2) + " .\n\n";
+                    svcDelta += svcDeltaCeph;
+                }
+                
                 if (!dependOn.isEmpty()) {
                     svcDelta += "&lt;" + topoUri + ":vt&gt;\n"
                             + "   a  nml:Topology;\n"
