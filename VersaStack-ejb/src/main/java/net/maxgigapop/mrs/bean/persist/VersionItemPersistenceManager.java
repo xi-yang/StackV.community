@@ -122,7 +122,7 @@ public class VersionItemPersistenceManager extends PersistenceManager {
                 }
             }
         } catch (Exception e) {
-            ;
+            throw new EJBException(String.format("VersionItemPersistenceManager::cleanupAllBefore raised exception: %s", e.getMessage()));
         }
     }
 }

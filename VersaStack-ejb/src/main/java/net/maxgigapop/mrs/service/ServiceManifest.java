@@ -101,7 +101,6 @@ public class ServiceManifest {
         } catch (Exception ex) {
             throw new EJBException(ServiceManifest.class.getName()+" generateManifest failed to parse: "+jsonModel, ex);
         }
-        /*
         SystemModelCoordinator systemModelCoordinator = null;
         try {
             Context ejbCxt = new InitialContext();
@@ -110,8 +109,7 @@ public class ServiceManifest {
             throw new EJBException(ServiceManifest.class.getName() + " failed to inject systemModelCoordinator", ex);
         }
         OntModel omRef = systemModelCoordinator.getCachedOntModel();
-        */
-        return (JSONObject)querySparsqlTemplateJson(serviceTemplate, omAdd);
+        return (JSONObject)querySparsqlTemplateJson(serviceTemplate, omAdd, omRef);
     }
     
     static public JSONArray generateManifestDncLinks (OntModel model) {
@@ -143,7 +141,7 @@ public class ServiceManifest {
 "    \"sparql\": \"SELECT ?vpc ?vpc_cidr WHERE { ?aws nml:hasTopology ?vpc. ?vpc_svc mrs:providesVPC ?vpc. ?vpc nml:hasService ?vpc_rt_svc. ?vpc_rt_svc mrs:providesRoute ?vpc_local_rt. ?vpc_local_rt mrs:nextHop \\\"local\\\". ?vpc_local_rt mrs:routeTo ?vpc_cidr_na. ?vpc_cidr_na mrs:type \\\"ipv4-prefix\\\". ?vpc_cidr_na  mrs:value ?vpc_cidr. }\",\n" +
 "    \"required\": \"true\"\n" +
 "}";
-        return (JSONObject)querySparsqlTemplateJson(awsManifestTemplate, model);
+        return (JSONObject)querySparsqlTemplateJson(awsManifestTemplate, model, null);
     }
     
     static public JSONObject generateManifestVcnOps (OntModel model) {
@@ -172,25 +170,25 @@ public class ServiceManifest {
     }
     
     // top method to parse / query JSON template
-    static public Object querySparsqlTemplateJson(String template, OntModel model) {
+    static public Object querySparsqlTemplateJson(String template, OntModel model, OntModel modelRef) {
         //parse temlate into json
         JSONParser parser = new JSONParser();
         try {
             Object obj = parser.parse(template);
             if (obj instanceof JSONObject) {
                 JSONObject jo = (JSONObject) obj;
-                JSONArray joArr = handleSparsqlJsonMap(jo, model);
+                JSONArray joArr = handleSparsqlJsonMap(jo, model, modelRef);
                 if (joArr != null && !joArr.isEmpty()) {
-                    querySparsqlTemplateJsonRecursive ((JSONObject)joArr.get(0), model);
+                    querySparsqlTemplateJsonRecursive ((JSONObject)joArr.get(0), model, modelRef);
                 }
                 return joArr.get(0);
             } else if (obj instanceof JSONArray) {
                 JSONArray joArrRet = new JSONArray();
                 for (Object subObj: (JSONArray)obj) {
                     JSONObject jo = (JSONObject) subObj;
-                    JSONArray joArr = handleSparsqlJsonMap(jo, model);
+                    JSONArray joArr = handleSparsqlJsonMap(jo, model, modelRef);
                     if (joArr != null && !joArr.isEmpty()) {
-                        querySparsqlTemplateJsonRecursive (jo, model);
+                        querySparsqlTemplateJsonRecursive (jo, model, modelRef);
                     }
                     joArrRet.add(joArr.get(0));
                 }
@@ -205,7 +203,7 @@ public class ServiceManifest {
     }
 
     // common methods to parse / query JSON joTemplate ... 
-    static private void querySparsqlTemplateJsonRecursive(JSONObject joTemplate, OntModel model) {
+    static private void querySparsqlTemplateJsonRecursive(JSONObject joTemplate, OntModel model, OntModel modelRef) {
         JSONArray jaRecursive = new JSONArray();
         JSONObject joVarMap = null;
         if (joTemplate.containsKey("varmap") ) {
@@ -220,7 +218,7 @@ public class ServiceManifest {
                 if (joVarMap != null) {
                     ((JSONObject) obj).put("varmap", joVarMap);
                 }
-                JSONArray jaResolved = handleSparsqlJsonMap((JSONObject)obj, model);
+                JSONArray jaResolved = handleSparsqlJsonMap((JSONObject)obj, model, modelRef);
                 if (jaResolved == null) {
                     itKey.remove();
                 } else {
@@ -231,7 +229,7 @@ public class ServiceManifest {
                 if (joVarMap != null) {
                     ((JSONObject)((JSONArray)obj).get(0)).put("varmap", joVarMap);
                 }
-                JSONArray jaResolved = handleSparsqlJsonMap((JSONObject)((JSONArray)obj).get(0), model);
+                JSONArray jaResolved = handleSparsqlJsonMap((JSONObject)((JSONArray)obj).get(0), model, modelRef);
                 if (jaResolved == null) {
                     itKey.remove();
                 } else {
@@ -241,11 +239,11 @@ public class ServiceManifest {
             }
         }
         for (Object subObj : jaRecursive) {
-            querySparsqlTemplateJsonRecursive((JSONObject) subObj, model);
+            querySparsqlTemplateJsonRecursive((JSONObject) subObj, model, modelRef);
         }
     }
     
-    static private JSONArray handleSparsqlJsonMap(JSONObject jo, OntModel model) {
+    static private JSONArray handleSparsqlJsonMap(JSONObject jo, OntModel model, OntModel modelRef) {
         JSONArray joArr = new JSONArray();
         String sparql = null;
         boolean required = true;
@@ -258,7 +256,7 @@ public class ServiceManifest {
             return joArr;
         }
         if (jo.containsKey("required")) {
-            if (((String)jo.get("required")).equals("false")) {
+            if (((String) jo.get("required")).equals("false")) {
                 required = false;
             }
             jo.remove("required");
@@ -281,7 +279,6 @@ public class ServiceManifest {
             }
         }
         while (rs.hasNext()) {
-            String json = jo.toJSONString();
             QuerySolution qs = rs.next();
             JSONObject newVarMap = (JSONObject)varMap.clone();
             // add resolved variables into varMap.clone
@@ -291,20 +288,59 @@ public class ServiceManifest {
                 String varMapped = qs.get(var).toString();
                 newVarMap.put(var, varMapped);
             }
-            // replace every vaiable in json
-            json = replaceTemplateVars(json, newVarMap);
             JSONParser parser = new JSONParser();
-            try {
-                // parse json into joResolved
-                Object obj = parser.parse(json);
-                JSONObject joResolved = (JSONObject)obj;
-                // add new resolvedVars into joResolved
-                joResolved.put("varmap", newVarMap);
-                // add joResolved into joArr
-                joArr.add(joResolved);
-            } catch (ParseException ex) {
-                throw new EJBException("handleSparsqlJsonMap failed parse json: "+json);
+            if (jo.containsKey("sparql-ext") && modelRef != null) {
+                String sparqlFull = (String) jo.get("sparql-ext");
+                sparqlFull = replaceSparqlVars(sparqlFull, newVarMap);
+                ResultSet rsFull = ModelUtil.sparqlQuery(modelRef, sparqlFull);
+                while (rsFull.hasNext()) {
+                    qs = rsFull.next();
+                    itVar = qs.varNames();
+                    while (itVar.hasNext()) {
+                        String var = itVar.next();
+                        String varMapped = qs.get(var).toString();
+                        newVarMap.put(var, varMapped);
+                    }
+                    String json = jo.toJSONString();
+                    // replace every vaiable in json
+                    json = replaceTemplateVars(json, newVarMap);
+                    try {
+                        // parse json into joResolved
+                        Object obj = parser.parse(json);
+                        JSONObject joResolved = (JSONObject) obj;
+                        // add new resolvedVars into joResolved
+                        joResolved.put("varmap", newVarMap);
+                        if (joResolved.containsKey("sparql-ext")) {
+                            joResolved.remove("sparql-ext");
+                        }
+                        // add joResolved into joArr
+                        joArr.add(joResolved);
+                    } catch (ParseException ex) {
+                        throw new EJBException("handleSparsqlJsonMap failed parse json: " + json);
+                    }
+                }
+            } else {
+                String json = jo.toJSONString();
+                // replace every vaiable in json
+                json = replaceTemplateVars(json, newVarMap);
+                try {
+                    // parse json into joResolved
+                    Object obj = parser.parse(json);
+                    JSONObject joResolved = (JSONObject) obj;
+                    // add new resolvedVars into joResolved
+                    joResolved.put("varmap", newVarMap);
+                    if (joResolved.containsKey("sparql-ext")) {
+                        joResolved.remove("sparql-ext");
+                    }
+                    // add joResolved into joArr
+                    joArr.add(joResolved);
+                } catch (ParseException ex) {
+                    throw new EJBException("handleSparsqlJsonMap failed parse json: " + json);
+                }
             }
+        }
+        if (jo.containsKey("sparql-ext")) {
+            jo.remove("sparql-ext");
         }
         return joArr;
     }
