@@ -41,7 +41,7 @@ html {
 }
 
 a {
-    color: #B60000;
+    color: white;
     text-decoration:none;
 }
 
@@ -86,7 +86,7 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     height: 100%;
-    overflow-x: hidden;
+    //overflow-x: hidden;
 }
 .login {
     padding: 5px;
@@ -685,11 +685,15 @@ body {
 }
 #catalog-panel {
     padding: 10px 10px;
-    top: 50%;
-    height: 40%;
-    width: calc(100% - 80px);
+    bottom: 0;
+    left: 0;
+    height: 50%;
+    width: 85%;
     position: absolute;
     overflow-y: scroll;    
+}
+#catalog-panel.closed {
+    bottom: calc(-50% + 42px);
 }
 #instance-panel ::-webkit-scrollbar {
     width: 0px;  /* remove scrollbar space */
@@ -701,18 +705,13 @@ body {
     width: 80%;
     max-height: 100%;
 }
-#wizard-table {
+#catalog-tab-content {
+    background: rgba(255,255,255,.3);
+}
+.tab-table {
     float: left;
-    width: 40%;
-    margin: 10px;
-    max-height: 100%;
-}
-#editor-table {
-    float: right;
-    width: 40%;
-    margin: 10px;
-}
-#editor-table tbody {   
+    width: calc(100% - 40px);
+    margin: 20px;
     max-height: 100%;
 }
 
@@ -774,11 +773,11 @@ body {
 }
 
 #instance-panel, #catalog-panel {
-    -webkit-transition: opacity .75s ease-in;
-    -moz-transition: opacity .75s ease-in;
-    -o-transition: opacity .75s ease-in;
-    -ms-transition: opacity .75s ease-in;
-    transition: opacity .75s ease-in;
+    -webkit-transition: all .75s ease-in;
+    -moz-transition: all .75s ease-in;
+    -o-transition: all .75s ease-in;
+    -ms-transition: all .75s ease-in;
+    transition: all .75s ease-in;
 }
 
 #main-pane.loading #loading-panel {

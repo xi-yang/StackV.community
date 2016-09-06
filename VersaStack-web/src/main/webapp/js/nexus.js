@@ -85,6 +85,12 @@ $(function () {
     $(".delta-table-header").click(function () {
         $("#body-" + this.id).toggleClass("hide");
     });
+    
+    $(".nav-tabs li").click(function () {
+        if (this.className === 'active') {
+            $("#catalog-panel").toggleClass("hidden");
+        }
+    });
 
     clearCounters();
 });
