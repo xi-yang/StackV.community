@@ -761,7 +761,7 @@ public class serviceBeans {
                     } else {
                         svcDelta += ".\n\n";
                     }
-                    if (!vmPara[5].equals(" ")) {
+                    if (vmPara.length > 5 && !vmPara[5].equals(" ")) {
                         String nodeHasVolume = "";
                         try {
                             JSONArray cephRbdArr = (JSONArray) jsonParser.parse(vmPara[5]);
