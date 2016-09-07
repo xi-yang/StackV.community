@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<serviceManifest>
+<serviceUUID></serviceUUID>
+<jsonTemplate>
+{
+	"Virtual Cloud Networks": [
+		{
+			"Virtual Netwwork Name": "?vpc?",
+			"L2 Subnets": [
+				{
+					"Subnet Name": "?subnet?",
+					"CIDR (IPv4 Range)": "?subnet_cidr?",
+					"Virtual Machines": [
+						{
+							"VM URI": "?vm?",
+							"Instruction": "To access the VM: ssh -i ?vm_keyname? user@?vm_public_ip? ",
+							"sparql": "SELECT ?vm ?vm_keyname ?vm_keyname ?vm_public_ip WHERE { ?subnet nml:hasBidirectionalPort ?vm_eth0. ?vm  nml:hasBidirectionalPort ?vm_eth0. ?ec2 mrs:providesVM ?vm. OPTIONAL { ?vm mrs:type ?vm_keyname. FILTER (regex(?vm_keyname,'^keypair.+$')) } OPTIONAL { ?vm nml:hasBidirectionalPort ?vm_eth0. ?vm_eth0 mrs:hasNetworkAddress ?vm_public_na.?vm_public_na mrs:type \"floating-ip\".  ?vm_public_na mrs:value ?vm_public_ip. } }",
+							"required": "false",
+         						"SR-IOV vNICs": [{
+								"vNIC URI": "?vnic?",
+								"Port Profile": "?port_profile?",
+								"IP Address": "?vnic_ipv4?",
+								"Mac Address": "?vnic_mac?",
+								"sparql": "SELECT ?vnic ?vnic_mac ?vnic_ipv4  WHERE { ?vm nml:hasBidirectionalPort ?vnic. ?vmfex mrs:providesVNic ?vnic. OPTIONAL { ?vnic mrs:hasNetworkAddress ?vnic_mac_na. ?vnic_mac_na mrs:type \"mac-address\". ?vnic_mac_na mrs:value ?vnic_mac. } OPTIONAL { ?vnic mrs:hasNetworkAddress ?vnic_ipv4_na. ?vnic_ipv4_na mrs:type \"ipv4-address\". ?vnic_ipv4_na mrs:value ?vnic_ipv4. } }",
+								"sparql-ext": "SELECT ?port_profile WHERE { ?sw_profile nml:hasBidirectionalPort ?vnic. ?sw_profile a mrs:SwitchingSubnet. ?sw_profile mrs:type \"Cisco_UCS_Port_Profile\".  ?sw_profile mrs:value ?port_profile. }",
+								"required": "false"
+							}],
+							"Ceph RBDs": [{
+								"Volume URI": "?vol?",	
+								"Volume Size (GB)": "?vol_gb?",	
+								"Mount Point": "?vol_mount?",	
+								"sparql": "SELECT ?vol ?rbd_svc WHERE { ?vm mrs:hasVolume ?vol. ?rbd_svc mrs:providesVolume ?vol. }",
+								"sparql-ext": "SELECT ?vol_gb ?vol_mount WHERE { ?rbd_svc a mrs:BlockStorageService. ?rbd_svc mrs:type \"ceph-rbd\". ?vol mrs:disk_gb ?vol_gb. ?vol mrs:mount_point ?vol_mount. }",
+								"required": "false"
+							}]
+						}
+					],
+					"Instruction": "",
+					"sparql": "SELECT ?subnet ?subnet_cidr WHERE {?vpc nml:hasService ?vpc_sw_svc. ?vpc_sw_svc mrs:providesSubnet ?subnet. ?subnet mrs:hasNetworkAddress ?subnet_na. ?subnet_na mrs:type \"ipv4-prefix\". ?subnet_na mrs:value ?subnet_cidr.}",
+					"required": "false"
+				}
+			]
+		}
+	],
+	"sparql": "SELECT ?vpc ?vpc_cidr WHERE {?ops nml:hasTopology ?vpc. ?vpc_svc mrs:providesVPC ?vpc.}",
+	"required": "true"
+}
+</jsonTemplate>
+</serviceManifest>
