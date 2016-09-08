@@ -91,7 +91,7 @@
                 </table>
             </div>
 
-            <div id="catalog-panel">
+            <div class="closed" id="catalog-panel">
                 <ul class="nav nav-tabs">
                     <li class="active"><a data-toggle="tab" href="#wizard-tab">Wizard</a></li>
                     <li><a data-toggle="tab" href="#editor-tab">Editor</a></li>
