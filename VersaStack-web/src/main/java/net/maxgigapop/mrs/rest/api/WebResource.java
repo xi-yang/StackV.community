@@ -858,6 +858,20 @@ public class WebResource {
                         } else {
                             vmString += "& ";
                         }
+                    } else {
+                        vmString += "& ";
+                    }
+                    
+                    // VM Routes
+                    if (vmJSON.containsKey("routes")) {
+                        JSONArray routeArr = (JSONArray) vmJSON.get("routes");
+                        if (!routeArr.isEmpty()) {
+                            vmString += "&" + routeArr.toString();
+                        } else {
+                            vmString += "& ";
+                        }
+                    } else {
+                        vmString += "& ";
                     }
                     paraMap.put("vm" + vmCounter++, vmString);
                 }

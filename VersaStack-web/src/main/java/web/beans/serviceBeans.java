@@ -625,6 +625,14 @@ public class serviceBeans {
                             + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt;\n"
                             + "    a            nml:BidirectionalPort;\n"
                             + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "-eth0&gt;";
+                    JSONArray vmRouteArr = null;
+                    if (!vmPara[6].equals(" ")) {
+                        try {
+                            vmRouteArr = (JSONArray) jsonParser.parse(vmPara[6]);
+                        } catch (Exception ex) {
+                            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    } 
                     if (!vmPara[4].equals(" ")) {
                         try {
                             JSONArray interfaceArr = (JSONArray) jsonParser.parse(vmPara[4]);
@@ -680,8 +688,12 @@ public class serviceBeans {
                                                     routeArr.add(rt);
                                                 }
                                             }
-
-                                            //sriov port_profile
+                                            // add VM level routes
+                                            if (vmRouteArr != null && !vmRouteArr.isEmpty()) {
+                                                routeArr.addAll(vmRouteArr);
+                                                vmRouteArr = null;
+                                            }
+                                            // sriov port_profile
                                             if (gwJSON.containsKey("from")) {
                                                 JSONArray fromArr = (JSONArray) gwJSON.get("from");
                                                 JSONObject fromJSON = (JSONObject) fromArr.get(0);
@@ -761,7 +773,7 @@ public class serviceBeans {
                     } else {
                         svcDelta += ".\n\n";
                     }
-                    if (vmPara.length > 5 && !vmPara[5].equals(" ")) {
+                    if (!vmPara[5].equals(" ")) {
                         String nodeHasVolume = "";
                         try {
                             JSONArray cephRbdArr = (JSONArray) jsonParser.parse(vmPara[5]);
@@ -783,6 +795,7 @@ public class serviceBeans {
                             svcDeltaCeph += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n" + "    mrs:hasVolume       " + nodeHasVolume.substring(0,nodeHasVolume.length()-2) + ".\n\n";
                         }
                     } 
+
                     svcDelta += "&lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;\n"
                             + "    a            spa:PolicyAction ;\n"
                             + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
@@ -1142,7 +1155,12 @@ public class serviceBeans {
                                 + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0&gt;\n"
                                 + "    a            nml:BidirectionalPort ;\n"
                                 + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "-eth0&gt; ";
-
+                        // VM level routes
+                        JSONArray vmRouteArr = null;
+                        if (vmJson.containsKey("routes")) {
+                            vmRouteArr = (JSONArray) vmJson.get("routes");
+                        }
+                        // interfaces
                         if (!vmJson.containsKey("interfaces")) {
                             svcDelta += ".\n\n";
                         } else {
@@ -1180,7 +1198,10 @@ public class serviceBeans {
                                             mac = str.contains("mac") ? str.substring(str.indexOf("mac")+4) : mac;
                                         }
                                         JSONArray routeArr = (JSONArray) interJson.get("routes");
-
+                                        if (vmRouteArr != null && !vmRouteArr.isEmpty()) {
+                                            routeArr.addAll(vmRouteArr);
+                                            vmRouteArr = null;
+                                        }
                                         //Find sriov parameter from Gateways.
                                         for (Object gwEle : gatewayArr) {
                                             JSONObject gwJSON = (JSONObject) gwEle;
@@ -1259,7 +1280,6 @@ public class serviceBeans {
                                                         }
                                                         JSONArray quaggaNetworks = (JSONArray) quaggaJson.get("networks");
                                                         quaggaJson.remove("networks");
-
                                                         svcDelta += "&lt;x-policy-annotation:action:nfv-quagga-bgp" + sriovCounter + "&gt;\n"
                                                                 + "    a            spa:PolicyAction ;\n"
                                                                 + "    spa:type     \"MCE_NfvBgpRouting\";\n"
