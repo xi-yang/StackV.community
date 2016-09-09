@@ -400,8 +400,7 @@ body {
     width: 100%;
     padding: 40px;
     padding-top: 77px;    
-    overflow-y: hidden;
-    
+
     -webkit-transition: all 400ms ease-in-out;
     transition: all 400ms ease-in-out;
 }
@@ -435,7 +434,7 @@ body {
 }
 
 #group-overview-table { 
-   width: 400px;
+    width: 400px;
 }
 
 #edit-table {
@@ -693,7 +692,8 @@ body {
     position: absolute;
 }
 #catalog-panel.closed {
-    bottom: calc(-50% + 42px);
+    overflow: hidden;
+    height: 42px;
 }
 #instance-panel ::-webkit-scrollbar {
     width: 0px;  /* remove scrollbar space */

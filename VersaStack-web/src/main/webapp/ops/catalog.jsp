@@ -93,8 +93,8 @@
 
             <div class="closed" id="catalog-panel">
                 <ul class="nav nav-tabs">
-                    <li class="active"><a data-toggle="tab" href="#wizard-tab">Wizard</a></li>
-                    <li><a data-toggle="tab" href="#editor-tab">Editor</a></li>
+                    <li class="active"><a data-toggle="tab" href="#wizard-tab">Profiles</a></li>
+                    <li><a data-toggle="tab" href="#editor-tab">Intents</a></li>
                 </ul>
 
                 <div class="tab-content" id="catalog-tab-content">
