@@ -288,8 +288,13 @@
                        "<g id=\"edge2_" + prefix + "_viz\" />" +
                        "<g id=\"port_" + prefix + "_viz\"/>" +
                        "<g id=\"volume_" + prefix + "_viz\"/></g>" + 
-                       "</svg>" + 
-                       "<button class=\"details-viz-button\" id=\"" + prefix + "_viz_recenter_button\">Recenter</button>" +
+                       "</svg>" ;
+                       
+                       if (prefix === "va") {
+                           viz += "<button class=\"details-viz-button\" id=\"manifest_button\" onclick=\"showManifest()\">Display Manifest</button>";
+                       }
+                       
+                       viz += "<button class=\"details-viz-button\" id=\"" + prefix + "_viz_recenter_button\">Recenter</button>" +
                        "<button  class=\"details-viz-button\" id=\"" + prefix + "_viz_toggle_model\">View Text Model</button>" +
                        "</div>" ;   
 
@@ -359,7 +364,9 @@
                //var viz_table = viz_container.closest("table");
                //viz_table.find("th:nth-child(" + index + ")").css( "color", "#ccc");
             }
-            
+            function showManifest() {
+                  window.open('/VersaStack-web/ops/details/manifestPortal.jsp?uuid=' + location.search.split("?uuid=")[1], 'newwindow', config = 'height=1200,width=700, top=0,left=800, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no');
+            }
             function createTextToggle(prefix, textModel) {
                 var button =  $("#" + prefix + "_viz_toggle_model");
                 var viz_svg = button.siblings(".details_viz");
