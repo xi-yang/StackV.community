@@ -487,6 +487,7 @@
                     // State 0 - Stuck 
                     if (verificationState === "") {
                         $("#instance-fdelete").toggleClass("hide");
+                        $("#instance-fcancel").toggleClass("hide");
                     }
                     // State 1 - Ready & Verifying
                     if (subState === 'READY' && verificationState === '0') {
@@ -522,6 +523,7 @@
                     // State 0 - Stuck 
                     if (verificationState === "") {
                         $("#instance-fdelete").toggleClass("hide");
+                        $("#instance-fcancel").toggleClass("hide");
                     }
                     // State 1 - Ready & Verifying
                     if (subState === 'READY' && verificationState === '0') {
@@ -561,6 +563,7 @@
                     // State 0 - Stuck 
                     if (verificationState === "") {
                         $("#instance-fdelete").toggleClass("hide");
+                        $("#instance-fcancel").toggleClass("hide");
                     }
                     // State 1 - Ready & Verifying
                     if (subState === 'READY' && verificationState === '0') {
