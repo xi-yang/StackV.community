@@ -434,7 +434,7 @@ public class ServiceResource {
     
     @POST
     @Path("/manifest")
-    @Consumes("application/json")
+    @Consumes({"application/json","application/xml"})
     @Produces("application/json")
     public ServiceApiManifest resolveManifest(ServiceApiManifest manifest) {
         // if manifest.getJsonModel() == null, get serviceDelta.modelAddition into manifest.jsonTemplate
@@ -461,7 +461,7 @@ public class ServiceResource {
     
     @POST
     @Path("/manifest/{svcUUID}")
-    @Consumes("application/json")
+    @Consumes({"application/json","application/xml"})
     @Produces("application/json")
     public ServiceApiManifest resolveServiceManifest(@PathParam("svcUUID") String svcUUID, ServiceApiManifest manifest) {
         // if manifest.getJsonModel() == null, get serviceDelta.modelAddition into manifest.jsonTemplate

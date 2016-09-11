@@ -22,7 +22,7 @@
         <script src="../../js/svc/hybridcloud.js" type="text/javascript"></script>
         <!-- jQuery easing plugin -->
         <script src="http://thecodeplayer.com/uploads/js/jquery.easing.min.js" type="text/javascript"></script>
-    
+
         <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
         <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
@@ -49,7 +49,7 @@
                 <input type="hidden" name="hybridCloud" value="true"/>
                 <!-- Progress Bar -->
                 <ul class="hc-progress" id="progressbar">
-                    <li class="active">Hybrid Clouds</li>
+                    <li class="disabled active">Hybrid Clouds</li>
                     <li>Network</li>
                     <li>Subnets</li>
                     <li>VMs</li>
@@ -75,7 +75,6 @@
                     <table class="fs-table">
                         <tr>
                             <td><input type="text" name="alias" placeholder="Instance Alias" /></td>
-                            <td><input type="text" name="hybrid-vlan" placeholder="Hybrid VLAN" /></td>
                         </tr>
                     </table>
                     <br>
@@ -95,11 +94,7 @@
                         </tr> 
                         <tbody id="awsStage2-network">
                             <tr>
-                                <td><input type="text" name="aws-netType" placeholder="Network Type" /></td>
                                 <td><input type="text" name="aws-netCidr" placeholder="Network CIDR" /></td>
-                            </tr>    
-                            <tr>
-                                <td><input type="text" name="aws-conn-dest" placeholder="Direct Connect Destination" /></td>
                                 <td><input type="text" name="aws-conn-vlan" placeholder="Direct Connect VLAN" /></td>
                             </tr>
                         </tbody>
@@ -121,7 +116,6 @@
                         </tr>
                         <tbody id="opsStage2-network">
                             <tr>
-                                <td><input type="text" name="ops-netType" placeholder="Network Type" /></td>
                                 <td><input type="text" name="ops-netCidr" placeholder="Network CIDR" /></td>
                             </tr>
                         </tbody>
@@ -207,25 +201,28 @@
 
                 <fieldset id="5-2">
                     <fieldset class="subfs" id="opsStage5-gateway-fs">
-
+                        <table class="subfs-table" id="opsStage5-gateway0-table">
+                            <thead>
+                                <tr class="subfs-headrow">
+                                    <th>Intercloud Gateway</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><input type="text" id="gateway0-tag" onchange="updateGatewayNames(this)" name="gateway0-name" value="intercloud-1"></td>
+                                    <td><input type="hidden" name="gateway0-type-select" value="inter_cloud_network"></td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </fieldset>        
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="button" name="next" class="next action-button" value="Next" />                    
                 </fieldset>
 
-                <!-- Stage 6: SRIOV -->
+                <!-- Stage 6: SRIOV -->                
                 <fieldset id="6-1">
-                    <h2 class="fs-title">SRIOV</h2>
-                    <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="opsStage6-sriov" onfocus="this.oldvalue = this.value;" onchange="setSRIOV(this)"/></h3>
-                    <table class="subfs-table" id="opsStage6-sriov-route-table">
-
-                    </table>
-
-                    <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <input type="button" name="next" class="next action-button" value="Next" />                    
-                </fieldset>
-                <fieldset id="6-ops-2">
                     <fieldset class="subfs" id="opsStage6-sriov-fs">
 
                     </fieldset>
@@ -241,7 +238,7 @@
 
                     <h2 class="fs-title">OpenStack Summary</h2>
                     <h3 class="fs-subtitle">(Summary Module still in development)</h3>
-                    
+
                     <br>
                     <table class="subfs-table" id="profile-table">
                         <thead>
@@ -258,6 +255,7 @@
                     </table>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
+                    <input type="button" name="save" class="profile-save action-button" value="Save" />
                     <button type="submit" name="submit" class="action-button" value="ops">Submit</button>  
                 </fieldset>
             </form>      

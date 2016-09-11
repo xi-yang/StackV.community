@@ -352,15 +352,17 @@ public class OpenStackNeutronModelBuilder {
                         // ipaddr
                         if (jsonObj.containsKey("ipaddr") && !((String) jsonObj.get("ipaddr")).isEmpty()) {
                             String ip = ((String) jsonObj.get("ipaddr")).replaceAll("/", "_");
-                            Resource vnicIP = RdfOwl.createResource(model, ResourceTool.getResourceUri((String) jsonObj.get("ipaddr"), OpenstackPrefix.public_address, server_name + ":" + vnicName, (String) jsonObj.get("ipaddr")), Mrs.NetworkAddress);
+                            Resource vnicIP = RdfOwl.createResource(model, ResourceTool.getResourceUri(ip, OpenstackPrefix.public_address, server_name + ":" + vnicName, ip), Mrs.NetworkAddress);
                             model.add(model.createStatement(vnicIP, Mrs.type, "ipv4-address"));
+                            model.add(model.createStatement(vnicIP, Mrs.value, (String) jsonObj.get("ipaddr")));
                             model.add(model.createStatement(sriovPort, Mrs.hasNetworkAddress, vnicIP));
                         }
                         // macaddr
                         if (jsonObj.containsKey("macaddr") && !((String) jsonObj.get("macaddr")).isEmpty()) {
                             String mac = ((String) jsonObj.get("macaddr")).replaceAll(":", "_");
-                            Resource vnicMAC = RdfOwl.createResource(model, ResourceTool.getResourceUri(mac, OpenstackPrefix.mac_address, server_name + ":" + vnicName, (String) jsonObj.get("macaddr")), Mrs.NetworkAddress);
+                            Resource vnicMAC = RdfOwl.createResource(model, ResourceTool.getResourceUri(mac, OpenstackPrefix.mac_address, server_name + ":" + vnicName, mac), Mrs.NetworkAddress);
                             model.add(model.createStatement(vnicMAC, Mrs.type, "mac-address"));
+                            model.add(model.createStatement(vnicMAC, Mrs.value, (String) jsonObj.get("macaddr")));
                             model.add(model.createStatement(sriovPort, Mrs.hasNetworkAddress, vnicMAC));
                         }
 

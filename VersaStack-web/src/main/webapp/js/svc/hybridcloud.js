@@ -62,7 +62,7 @@ $(function () {
     });
 
     $("#progressbar li").click(function () {
-        if (animating || $(this).hasClass('disabled'))
+        if (animating || $(this).hasClass('disabled') || $("#progressbar li").index(this) === 0)
             return false;
         animating = true;
 
@@ -362,16 +362,6 @@ function setSubnets(input) {
         row2.appendChild(cell2_2);
         tbody1.appendChild(row2);
 
-        var row3 = document.createElement("tr");
-        var cell3_1 = document.createElement("td");
-        if (stage.substring(0, 3) === 'aws') {
-            cell3_1.innerHTML = '<label><input type = "checkbox" name = "' + type + 'subnet' + i + '-route-prop" value = "true"> Enable VPN Routes Propagation</label>';
-        } else if (stage.substring(0, 3) === 'ops') {
-            cell3_1.innerHTML = '<label><input type = "checkbox" name = "' + type + 'subnet' + i + '-route-default" value = "true"> Enable Default Routing</label>';
-        }
-        row3.appendChild(cell3_1);
-        tbody1.appendChild(row3);
-
         table.appendChild(tbody1);
         table.appendChild(tbody2);
         fieldset.appendChild(table);
@@ -545,14 +535,21 @@ function setVMs(input) {
         var row = vmTable.insertRow(i - 1);
         var cell = row.insertCell(0);
 
-        cell.innerHTML = '<div class="fs-subtext">How many routes for VM ' + i + '?   ' +
-                '<input type="number" class="small-counter" id="' + stage + i + '-routes" ' +
-                'onfocus="this.oldvalue = this.value;" ' +
-                'onchange="setVMRoutes(this)" /></div>' +
-                '<div class="fs-subtext">How many Ceph RBD volumes for VM ' + i + '?   ' +
-                '<input type="number" class="small-counter" id="' + stage + i + '-volumes" ' +
-                'onfocus="this.oldvalue = this.value;" ' +
-                'onchange="setVMVolumes(this)" /></div>';
+        if (stage.substring(0, 3) === 'ops') {
+            cell.innerHTML = '<div class="fs-subtext">How many SRIOV for VM ' + i + '?   ' +
+                    '<input type="number" class="small-counter" id="' + stage + i + '-sriov" ' +
+                    'onfocus="this.oldvalue = this.value;" ' +
+                    'onchange="setVMSRIOV(this)" /></div>' +
+                    '<div class="fs-subtext">How many Ceph RBD volumes for VM ' + i + '?   ' +
+                    '<input type="number" class="small-counter" id="' + stage + i + '-volumes" ' +
+                    'onfocus="this.oldvalue = this.value;" ' +
+                    'onchange="setVMVolumes(this)" /></div>';
+        } else {
+            cell.innerHTML = '<div class="fs-subtext">How many SRIOV for VM ' + i + '?   ' +
+                    '<input type="number" class="small-counter" id="' + stage + i + '-sriov" ' +
+                    'onfocus="this.oldvalue = this.value;" ' +
+                    'onchange="setVMSRIOV(this)" /></div>';
+        }
     }
 }
 
@@ -639,9 +636,9 @@ function setGateways(input) {
         var cell2_2 = document.createElement("td");
         cell2_1.innerHTML = '<td><input type="text" id="gateway' + i + '-tag" onchange="updateGatewayNames(this)" name="gateway' + i + '-name" placeholder="Name"></td>';
         cell2_2.innerHTML = '<select id="gateway' + i + '-type-select" name="gateway' + i + '-type"><option selected disabled>Select the hosting Gateway</option>'
-                + '<option value="ucs_port_profile">UCS Port Profile</option>'
-                + '<option value="inter_cloud_network">Inter-cloud Network</option>'
-                + '<option value="stitch_port">L2 Stitch Port</option></select>';
+                + '<option value="ucs">UCS Port Profile</option>'
+                + '<option value="intercloud">Inter-cloud Network</option>'
+                + '<option value="stitch">L2 Stitch Port</option></select>';
         row2.appendChild(cell2_1);
         row2.appendChild(cell2_2);
         tbody.appendChild(row2);
@@ -649,9 +646,7 @@ function setGateways(input) {
         var row4 = document.createElement("tr");
         var cell4_1 = document.createElement("td");
         var cell4_2 = document.createElement("td");
-        cell4_1.innerHTML = '<input type="text" name="gateway' + i + '-from" placeholder="From"/>' +
-                '<input type="text" name="gateway' + i + '-to" placeholder="To"/>' +
-                '<input type="text" name="gateway' + i + '-next" placeholder="Next Hop"/>';
+        cell4_1.innerHTML = '<input type="text" name="gateway' + i + '-value" placeholder="Value"/>';
         row4.appendChild(cell4_1);
         row4.appendChild(cell4_2);
         tbody.appendChild(row4);
@@ -790,6 +785,12 @@ function validateHybrid() {
 
         $("#progressbar li").eq(1).addClass("invalid");
         $("input[name='alias']").addClass("invalid");
+    }
+    if ($("input[name='aws-conn-vlan']").val() === "") {
+        invalidArr.push("Direct Connect VLAN field is empty.");
+
+        $("#progressbar li").eq(1).addClass("invalid");
+        $("input[name='aws-conn-vlan']").addClass("invalid");
     }
 
     // Stage 3

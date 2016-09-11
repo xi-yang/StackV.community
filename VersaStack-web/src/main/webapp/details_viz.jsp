@@ -1,3 +1,27 @@
+<!--
+ * Copyright (c) 2013-2016 University of Maryland
+ * Created by: Antonio Heard 2016
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Work.
+
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * IN THE WORK.
+ !-->
+
+
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page errorPage = "/VersaStack-web/errorPage.jsp" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
@@ -142,6 +166,9 @@
                 position: absolute; 
                 width: 0;                
             }
+            .jSonDialog{
+                 text-align:left;
+            }
         </style>
        
         <script type="text/javascript">
@@ -261,8 +288,13 @@
                        "<g id=\"edge2_" + prefix + "_viz\" />" +
                        "<g id=\"port_" + prefix + "_viz\"/>" +
                        "<g id=\"volume_" + prefix + "_viz\"/></g>" + 
-                       "</svg>" + 
-                       "<button class=\"details-viz-button\" id=\"" + prefix + "_viz_recenter_button\">Recenter</button>" +
+                       "</svg>" ;
+                       
+                       if (prefix === "va") {
+                           viz += "<button class=\"details-viz-button\" id=\"manifest_button\" onclick=\"showManifest()\">Display Manifest</button>";
+                       }
+                       
+                       viz += "<button class=\"details-viz-button\" id=\"" + prefix + "_viz_recenter_button\">Recenter</button>" +
                        "<button  class=\"details-viz-button\" id=\"" + prefix + "_viz_toggle_model\">View Text Model</button>" +
                        "</div>" ;   
 
@@ -332,7 +364,9 @@
                //var viz_table = viz_container.closest("table");
                //viz_table.find("th:nth-child(" + index + ")").css( "color", "#ccc");
             }
-            
+            function showManifest() {
+                  window.open('/VersaStack-web/ops/details/manifestPortal.jsp?uuid=' + location.search.split("?uuid=")[1], 'newwindow', config = 'height=1200,width=700, top=0,left=800, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no');
+            }
             function createTextToggle(prefix, textModel) {
                 var button =  $("#" + prefix + "_viz_toggle_model");
                 var viz_svg = button.siblings(".details_viz");

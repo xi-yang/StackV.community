@@ -314,7 +314,7 @@
                     manual = true;
                 }
 
-                $('#instance-panel').load(document.URL + ' #instance-panel', function () {
+                $('#details-panel').load(document.URL + ' #details-panel', function () {
                     deltaModerate();
                     instructionModerate();
                     buttonModerate();
@@ -487,6 +487,7 @@
                     // State 0 - Stuck 
                     if (verificationState === "") {
                         $("#instance-fdelete").toggleClass("hide");
+                        $("#instance-fcancel").toggleClass("hide");
                     }
                     // State 1 - Ready & Verifying
                     if (subState === 'READY' && verificationState === '0') {
@@ -522,6 +523,7 @@
                     // State 0 - Stuck 
                     if (verificationState === "") {
                         $("#instance-fdelete").toggleClass("hide");
+                        $("#instance-fcancel").toggleClass("hide");
                     }
                     // State 1 - Ready & Verifying
                     if (subState === 'READY' && verificationState === '0') {
@@ -561,6 +563,7 @@
                     // State 0 - Stuck 
                     if (verificationState === "") {
                         $("#instance-fdelete").toggleClass("hide");
+                        $("#instance-fcancel").toggleClass("hide");
                     }
                     // State 1 - Ready & Verifying
                     if (subState === 'READY' && verificationState === '0') {

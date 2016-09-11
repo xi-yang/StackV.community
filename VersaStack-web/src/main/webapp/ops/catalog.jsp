@@ -91,68 +91,78 @@
                 </table>
             </div>
 
-            <div id="catalog-panel">
+            <div class="closed" id="catalog-panel">
+                <ul class="nav nav-tabs">
+                    <li class="active"><a data-toggle="tab" href="#wizard-tab">Profiles</a></li>
+                    <li><a data-toggle="tab" href="#editor-tab">Intents</a></li>
+                </ul>
 
-                <sql:query dataSource="${front_conn}" sql="SELECT DISTINCT W.name, W.description, W.editable, W.service_wizard_id FROM service_wizard W WHERE W.user_id = ? OR W.user_id IS NULL" var="wizlist">
-                    <sql:param value="${user.getId()}" />
-                </sql:query>
+                <div class="tab-content" id="catalog-tab-content">
+                    <div id="wizard-tab" class="tab-pane fadeIn active">
+                        <sql:query dataSource="${front_conn}" sql="SELECT DISTINCT W.name, W.description, W.editable, W.service_wizard_id FROM service_wizard W WHERE W.user_id = ? OR W.user_id IS NULL" var="wizlist">
+                            <sql:param value="${user.getId()}" />
+                        </sql:query>
 
-                <table class="management-table" id="wizard-table">
-                    <thead>
-                        <tr>
-                            <th>Profile Name</th>
-                            <th>Description</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <c:forEach var="profile" items="${wizlist.rows}">
-                            <tr>
-                                <td>${profile.name}</td>
-                                <td>${profile.description}</td>
-                                <td>
-                                    <jsp:element name="button">
-                                        <jsp:attribute name="class">button-profile-select</jsp:attribute>
-                                        <jsp:attribute name="id">${profile.service_wizard_id}</jsp:attribute>
-                                        <jsp:body>Select</jsp:body>
-                                    </jsp:element>
-                                </td>
-                            </tr>
-                        </c:forEach>
-                    </tbody>
-                </table>
+                        <table class="management-table tab-table">
+                            <thead>
+                                <tr>
+                                    <th>Profile Name</th>
+                                    <th>Description</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <c:forEach var="profile" items="${wizlist.rows}">
+                                    <tr>
+                                        <td>${profile.name}</td>
+                                        <td>${profile.description}</td>
+                                        <td>
+                                            <jsp:element name="button">
+                                                <jsp:attribute name="class">button-profile-select</jsp:attribute>
+                                                <jsp:attribute name="id">${profile.service_wizard_id}</jsp:attribute>
+                                                <jsp:body>Select</jsp:body>
+                                            </jsp:element>
+                                        </td>
+                                    </tr>
+                                </c:forEach>
+                            </tbody>
+                        </table>
+                    </div>
 
-                <sql:query dataSource="${front_conn}" sql="SELECT DISTINCT S.name, S.filename, S.description FROM service S JOIN acl A, acl_entry_group G, acl_entry_user U 
-                           WHERE S.atomic = 0 AND A.service_id = S.service_id 
-                           AND ((A.acl_id = G.acl_id AND G.usergroup_id = ?) OR (A.acl_id = U.acl_id AND U.user_id = ?))" var="servlist">
-                    <sql:param value="${user.getActiveUsergroup()}" />
-                    <sql:param value="${user.getId()}" />
-                </sql:query>
+                    <div id="editor-tab" class="tab-pane fade">
+                        <sql:query dataSource="${front_conn}" sql="SELECT DISTINCT S.name, S.filename, S.description FROM service S JOIN acl A, acl_entry_group G, acl_entry_user U 
+                                   WHERE S.atomic = 0 AND A.service_id = S.service_id 
+                                   AND ((A.acl_id = G.acl_id AND G.usergroup_id = ?) OR (A.acl_id = U.acl_id AND U.user_id = ?))" var="servlist">
+                            <sql:param value="${user.getActiveUsergroup()}" />
+                            <sql:param value="${user.getId()}" />
+                        </sql:query>
 
-                <table class="management-table" id="editor-table">
-                    <thead>
-                        <tr>
-                            <th>Service Name</th>
-                            <th>Description</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <c:forEach var="service" items="${servlist.rows}">
-                            <tr>
-                                <td>${service.name}</td>
-                                <td>${service.description}</td>
-                                <td>
-                                    <jsp:element name="button">
-                                        <jsp:attribute name="class">button-service-select</jsp:attribute>
-                                        <jsp:attribute name="id">${service.filename}</jsp:attribute>
-                                        <jsp:body>Select</jsp:body>
-                                    </jsp:element>
-                                </td>
-                            </tr>
-                        </c:forEach>
-                    </tbody>
-                </table>
+                        <table class="management-table tab-table">
+                            <thead>
+                                <tr>
+                                    <th>Service Name</th>
+                                    <th>Description</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <c:forEach var="service" items="${servlist.rows}">
+                                    <tr>
+                                        <td>${service.name}</td>
+                                        <td>${service.description}</td>
+                                        <td>
+                                            <jsp:element name="button">
+                                                <jsp:attribute name="class">button-service-select</jsp:attribute>
+                                                <jsp:attribute name="id">${service.filename}</jsp:attribute>
+                                                <jsp:body>Select</jsp:body>
+                                            </jsp:element>
+                                        </td>
+                                    </tr>
+                                </c:forEach>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
             <br>
             <button type="button" class="hide" id="button-service-cancel">Cancel</button>

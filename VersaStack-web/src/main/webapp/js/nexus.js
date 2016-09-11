@@ -19,11 +19,11 @@ $(function () {
             evt.preventDefault();
         });
     });
-    
+
     $("#info-panel").click(function (evt) {
         $("#info-panel").removeClass("active");
         $("#black-screen").addClass("off");
-        
+
         evt.preventDefault();
     });
 
@@ -39,15 +39,15 @@ $(function () {
 
     $(".button-profile-select").click(function (evt) {
         var apiUrl = baseUrl + '/VersaStack-web/restapi/app/profile/' + this.id;
+        $("#info-panel-div").html("Profile Initiated.");
+        $("#info-panel").addClass("active");
         $.ajax({
             url: apiUrl,
             type: 'PUT',
             success: function (result) {
-                $("#info-panel-div").html("Profile Initiated.");
-                $("#info-panel").addClass("active");
                 $("#black-screen").removeClass("off");
             },
-            error: function(textStatus, errorThrown) {
+            error: function (textStatus, errorThrown) {
                 console.log(textStatus);
                 console.log(errorThrown);
             }
@@ -84,6 +84,15 @@ $(function () {
 
     $(".delta-table-header").click(function () {
         $("#body-" + this.id).toggleClass("hide");
+    });
+
+    $(".nav-tabs li").click(function () {
+        if ($(this).parent().parent().hasClass("closed")) {
+            $("#catalog-panel").removeClass("closed");
+        }
+        else if (this.className === 'active') {
+            $("#catalog-panel").toggleClass("closed");
+        }
     });
 
     clearCounters();
