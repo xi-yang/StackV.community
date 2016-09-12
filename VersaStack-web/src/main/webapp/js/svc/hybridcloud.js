@@ -404,9 +404,13 @@ function setVMs(input) {
     var stage = input.id;
     var old = input.oldvalue;
     var fieldset = document.getElementById(stage + "-fs");
+    var SRIOVfieldset = document.getElementById("opsStage6-sriov-fs");
     var vmTable = document.getElementById(stage + "-route-table");
     $("#" + stage + "-route-table tr").remove();
     fieldset.innerHTML = "";
+    if (type === "ops-") {
+        SRIOVfieldset.innerHTML = "";
+    }
 
     var start = 1;
 
@@ -531,24 +535,28 @@ function setVMs(input) {
         table.appendChild(tbody3);
         fieldset.appendChild(table);
 
-        // Set inputs for vm routes
-        var row = vmTable.insertRow(i - 1);
-        var cell = row.insertCell(0);
-
         if (stage.substring(0, 3) === 'ops') {
-            cell.innerHTML = '<div class="fs-subtext">How many SRIOV for VM ' + i + '?   ' +
-                    '<input type="number" class="small-counter" id="' + stage + i + '-sriov" ' +
+            var SRIOVfs = document.createElement("fieldset");
+            SRIOVfs.className = 'subfs';
+            SRIOVfs.id = "opsStage6-vm" + i + "-sriov-fs";
+            SRIOVfieldset.appendChild(SRIOVfs);
+
+            // Set secondary vm routes
+            var row = vmTable.insertRow(i - 1);
+            var cell = row.insertCell(0);
+
+            cell.innerHTML = '<div class="fs-subtext">How many routes for VM ' + i + '?   ' +
+                    '<input type="number" class="small-counter" id="' + stage + i + '-routes" ' +
+                    'onfocus="this.oldvalue = this.value;" ' +
+                    'onchange="setVMRoutes(this)" /></div>' +
+                    '<div class="fs-subtext">How many SRIOV for VM ' + i + '?   ' +
+                    '<input type="number" class="small-counter" id="opsStage6-vm' + i + '-sriov" ' +
                     'onfocus="this.oldvalue = this.value;" ' +
                     'onchange="setVMSRIOV(this)" /></div>' +
                     '<div class="fs-subtext">How many Ceph RBD volumes for VM ' + i + '?   ' +
                     '<input type="number" class="small-counter" id="' + stage + i + '-volumes" ' +
                     'onfocus="this.oldvalue = this.value;" ' +
                     'onchange="setVMVolumes(this)" /></div>';
-        } else {
-            cell.innerHTML = '<div class="fs-subtext">How many SRIOV for VM ' + i + '?   ' +
-                    '<input type="number" class="small-counter" id="' + stage + i + '-sriov" ' +
-                    'onfocus="this.oldvalue = this.value;" ' +
-                    'onchange="setVMSRIOV(this)" /></div>';
         }
     }
 }
@@ -657,7 +665,7 @@ function setGateways(input) {
 }
 
 var SRIOVCount;
-function setSRIOV(input) {
+function setVMSRIOV(input) {
     SRIOVCount = input.value;
 
     var stage = input.id;
