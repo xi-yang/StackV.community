@@ -91,14 +91,14 @@
                 </table>
             </div>
 
-            <div class="closed" id="catalog-panel">
+            <div id="catalog-panel">
                 <ul class="nav nav-tabs">
-                    <li class="active"><a data-toggle="tab" href="#wizard-tab">Profiles</a></li>
-                    <li><a data-toggle="tab" href="#editor-tab">Intents</a></li>
+                    <li><a data-toggle="tab" href="#wizard-tab">Profiles</a></li>
+                    <li class="active"><a data-toggle="tab" href="#editor-tab">Intents</a></li>
                 </ul>
 
                 <div class="tab-content" id="catalog-tab-content">
-                    <div id="wizard-tab" class="tab-pane fadeIn active">
+                    <div id="wizard-tab" class="tab-pane fadeIn">
                         <sql:query dataSource="${front_conn}" sql="SELECT DISTINCT W.name, W.description, W.editable, W.service_wizard_id FROM service_wizard W WHERE W.user_id = ? OR W.user_id IS NULL" var="wizlist">
                             <sql:param value="${user.getId()}" />
                         </sql:query>
@@ -129,7 +129,7 @@
                         </table>
                     </div>
 
-                    <div id="editor-tab" class="tab-pane fade">
+                    <div id="editor-tab" class="tab-pane fadeIn active">
                         <sql:query dataSource="${front_conn}" sql="SELECT DISTINCT S.name, S.filename, S.description FROM service S JOIN acl A, acl_entry_group G, acl_entry_user U 
                                    WHERE S.atomic = 0 AND A.service_id = S.service_id 
                                    AND ((A.acl_id = G.acl_id AND G.usergroup_id = ?) OR (A.acl_id = U.acl_id AND U.user_id = ?))" var="servlist">

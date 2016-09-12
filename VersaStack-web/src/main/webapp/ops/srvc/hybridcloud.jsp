@@ -201,20 +201,7 @@
 
                 <fieldset id="5-2">
                     <fieldset class="subfs" id="opsStage5-gateway-fs">
-                        <table class="subfs-table" id="opsStage5-gateway0-table">
-                            <thead>
-                                <tr class="subfs-headrow">
-                                    <th>Intercloud Gateway</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td><input type="text" id="gateway0-tag" onchange="updateGatewayNames(this)" name="gateway0-name" value="intercloud-1"></td>
-                                    <td><input type="hidden" name="gateway0-type-select" value="inter_cloud_network"></td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        
                     </fieldset>        
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
