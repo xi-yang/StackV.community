@@ -609,6 +609,45 @@ function setGateways(input) {
 
     fieldset.innerHTML = "";
 
+    var table = document.createElement("table");
+    table.className = 'subfs-table';
+    table.id = stage + i + '-table';
+
+    var thead = document.createElement("thead");
+    var tbody = document.createElement("tbody");
+    tbody.className = 'fade-hide';
+
+    var row1 = document.createElement("tr");
+    row1.className = 'subfs-headrow closed';
+    var cell1_1 = document.createElement("th");
+    var cell1_2 = document.createElement("th");
+    cell1_1.innerHTML = 'Intercloud Gateway';
+    row1.appendChild(cell1_1);
+    row1.appendChild(cell1_2);
+    row1.innerHTML += '<br>';
+    thead.appendChild(row1);
+    table.appendChild(thead);
+
+    row1.addEventListener('click', function () {
+        var head = $(this).parent();
+        var body = head.next();
+
+        $(this).toggleClass("closed");
+        body.toggleClass("fade-hide");
+    });
+
+    var row2 = document.createElement("tr");
+    var cell2_1 = document.createElement("td");
+    var cell2_2 = document.createElement("td");
+    cell2_1.innerHTML = '<td><input type="text" id="gateway0-tag" onchange="updateGatewayNames(this)" name="gateway0-name" value="intercloud-1"></td>';
+    cell2_2.innerHTML = '<select id="gateway0-type-select" name="gateway0-type"><option selected value="intercloud">Inter-cloud Network</option></select>';
+    row2.appendChild(cell2_1);
+    row2.appendChild(cell2_2);
+    tbody.appendChild(row2);
+
+    table.appendChild(tbody);
+    fieldset.appendChild(table);
+
     var start = 1;
     for (i = start; i <= input.value; i++) {
         // Set stage 3 data table
@@ -670,6 +709,7 @@ function setVMSRIOV(input) {
 
     var stage = input.id;
     var old = input.oldvalue;
+    var vm = input.id.substring(12, 13);
     var fieldset = document.getElementById(stage + "-fs");
     var subTable = document.getElementById(stage + "-route-table");
 
@@ -718,12 +758,7 @@ function setVMSRIOV(input) {
         }
         selectString1 += '</select>';
 
-        var selectString2 = '<select name="SRIOV' + i + '-vm" id="SRIOV' + i + '-vm-select"><option selected disabled>Select the hosting VM</option>';
-        for (j = 1; j <= vmCount; j++) {
-            var vmTag = document.getElementById("vm" + j + "-tag");
-
-            selectString2 += '<option value="' + j + '">VM ' + j + ' (' + vmTag.value + ')</option>';
-        }
+        var selectString2 = '<select name="SRIOV' + i + '-vm" id="SRIOV' + i + '-vm-select"><option value="' + vm + '">VM ' + vm + '</option>';
         selectString2 += '</select>';
 
         var row2 = document.createElement("tr");
