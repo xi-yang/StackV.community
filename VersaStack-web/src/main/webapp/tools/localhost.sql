@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost:3306
--- Generation Time: Aug 05, 2016 at 08:47 PM
+-- Generation Time: Sep 13, 2016 at 05:01 PM
 -- Server version: 5.5.42
 -- PHP Version: 5.6.7
 
@@ -155,7 +155,7 @@ INSERT INTO `service` (`service_id`, `name`, `filename`, `description`, `atomic`
 (10, 'Virtual Cloud Network', 'netcreate', 'Network Creation Pilot Testbed', 0),
 (11, 'Dynamic Network Connection', 'dnc', 'Creation of new network connections.', 0),
 (12, 'Flow based Layer2 Protection', 'fl2p', 'Switching of protection and recovery path.', 1),
-(13, 'Hybrid Cloud', 'hybridcloud', 'Hybrid Cloud Service', 0);
+(13, 'Advanced Hybrid Cloud', 'hybridcloud', 'Advanced Hybrid Cloud Service.', 0);
 
 -- --------------------------------------------------------
 
@@ -171,7 +171,7 @@ CREATE TABLE `service_delta` (
   `type` varchar(60) COLLATE utf8_unicode_ci NOT NULL,
   `referenceUUID` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `delta` longtext COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -184,7 +184,7 @@ CREATE TABLE `service_history` (
   `service_history_id` int(11) NOT NULL,
   `service_instance_id` int(11) NOT NULL,
   `service_state_id` int(11) NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -201,7 +201,7 @@ CREATE TABLE `service_instance` (
   `referenceUUID` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `alias_name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `service_state_id` int(11) DEFAULT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -262,14 +262,15 @@ CREATE TABLE `service_wizard` (
   `wizard_json` longtext COLLATE utf8_unicode_ci NOT NULL,
   `description` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `editable` tinyint(1) NOT NULL DEFAULT '0'
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Dumping data for table `service_wizard`
 --
 
 INSERT INTO `service_wizard` (`service_wizard_id`, `service_id`, `user_id`, `name`, `wizard_json`, `description`, `editable`) VALUES
-(1, 13, NULL, 'Test Name', '{"test_key": "test_val"}', 'Test Description', 0);
+(1, 13, NULL, 'Hybrid Cloud Test', '{\n    "user": "admin",\n    "type": "hybridcloud",\n    "alias": "hybrid-full-1a",\n    "data": {\n        "virtual_clouds": [\n            {\n                "type": "internal",\n                "parent": "urn:ogf:network:aws.amazon.com:aws-cloud",\n                "name": "vtn1",\n                "cidr": "10.0.0.0/16",\n                "subnets": [\n                    {\n                        "name": "subnet1",\n                        "cidr": "10.0.0.0/24",\n                        "virtual_machines": [\n                            {\n                                "name": "ec2-vpc1-vm1",\n                                "type": "instance+m4.large,secgroup+geni,keypair+driver_key,image+ami-0d1bf860"\n                            }\n                        ],\n                        "routes": [\n                            {\n                                "to": {\n                                    "value": "0.0.0.0/0"\n                                },\n                                "from": {\n                                    "value": "vpn"\n                                },\n                                "next_hop": {\n                                    "value": "vpn"\n                                }\n                            },\n                            {\n                                "to": {\n                                    "value": "206.196.0.0/16"\n                                },\n                                "next_hop": {\n                                    "value": "internet"\n                                }\n                            }\n                        ]\n                    }\n                ],\n                "routes": [\n                    {\n                        "to": {\n                            "value": "0.0.0.0/0",\n                            "type": "ipv4-prefix"\n                        },\n                        "next_hop": {\n                            "value": "internet"\n                        }\n                    }\n                ]\n            },\n            {\n                "name": "vtn2",\n                "type": "internal",\n                "parent": "urn:ogf:network:openstack.com:openstack-cloud",\n                "cidr": "10.1.0.0/16",\n                "routes": [\n                    {\n                        "to": {\n                            "value": "0.0.0.0/0",\n                            "type": "ipv4-prefix"\n                        },\n                        "next_hop": {\n                            "value": "internet"\n                        }\n                    }\n                ],\n                "gateways": [\n                    {\n                        "name": "ceph-net",\n                        "from": [\n                            {\n                                "type": "port_profile",\n                                "value": "Ceph-Storage"\n                            }\n                        ],\n                        "type": "ucs_port_profile"\n                    },\n                    {\n                        "name": "intercloud-1",\n                        "to": [\n                            {\n                                "type": "peer_cloud",\n                                "value": "urn:ogf:network:aws.amazon.com:aws-cloud?vlan=any"\n                            }\n                        ],\n                        "type": "inter_cloud_network"\n                    }\n                ],\n                "subnets": [\n                    {\n                        "routes": [\n                            {\n                                "to": {\n                                    "value": "0.0.0.0/0",\n                                    "type": "ipv4-prefix"\n                                },\n                                "next_hop": {\n                                    "value": "internet"\n                                }\n                            }\n                        ],\n                        "virtual_machines": [\n                            {\n                                "name": "ops-vtn1-vm1",\n                                "type": "instance+2,secgroup+rains,keypair+demo-key",\n                                "host": "rvtk-compute3",\n                                "interfaces": [\n                                    {\n                                        "address": "ipv4+10.10.252.164/24",\n                                        "name": "ops-vtn1:vm2:eth0",\n                                        "type": "Ethernet"\n                                    },\n                                    {\n                                        "address": "ipv4+10.10.0.1/24,mac+aa:bb:cc:ff:01:11",\n                                        "name": "ops-vtn1:vm2:eth1",\n                                        "type": "SRIOV",\n                                        "gateway": "intercloud-1"\n                                    },\n                                    {\n                                        "address": "ipv4+10.10.200.164/24,mac+aa:bb:cc:ff:01:12",\n                                        "name": "ops-vtn1:vm2:eth2",\n                                        "type": "SRIOV",\n                                        "gateway": "ceph-net"\n                                    }\n                                ],\n                                "ceph_rbd": [\n                                    {\n                                        "disk_gb": "1024",\n                                        "mount_point": "/mnt/ceph0_1tb"\n                                    },\n                                    {\n                                        "disk_gb": "1024",\n                                        "mount_point": "/mnt/ceph1_1tb"\n                                    }\n                                ],\n                                "quagga_bgp": {\n                                    "neighbors": [\n                                        {\n                                            "remote_asn": "7224",\n                                            "bgp_authkey": "versastack"\n                                        }\n                                    ],\n                                    "networks": [\n                                        "10.10.0.0/16"\n                                    ]\n                                }\n                            }\n                        ],\n                        "name": "subnet1",\n                        "cidr": "10.1.0.0/24"\n                    }\n                ]\n            }            \n        ]\n    }\n}\n', 'Test Profile for Hybrid Cloud', 0),
+(3, 13, 1, 'Demo Test', '{\n	"user": "admin",\n	"type": "hybridcloud",\n	"alias": "TechX2016.AHC.SDX.demo2",\n	"data": {\n		"virtual_clouds": [\n			{\n				"name": "vtn1",\n				"type": "internal",\n				"parent": "urn:ogf:network:openstack.com:openstack-cloud",\n				"cidr": "10.1.0.0/16",\n				"routes": [\n					{\n						"to": {\n							"value": "0.0.0.0/0",\n							"type": "ipv4-prefix"\n						},\n						"next_hop": {\n							"value": "internet"\n						}\n					}\n				],\n				"gateways": [\n					{\n						"name": "ceph-net",\n						"from": [\n							{\n								"type": "port_profile",\n								"value": "Ceph-Storage"\n							}\n						],\n						"type": "ucs_port_profile"\n					}, \n					{\n						"name": "external-net",\n						"from": [\n							{\n								"type": "port_profile",\n								"value": "External-Access"\n							}\n						],\n						"type": "ucs_port_profile"\n					}, \n					{\n						"name": "intercloud-1",\n						"to": [\n							{\n								"type": "peer_cloud",\n								"value": "urn:ogf:network:aws.amazon.com:aws-cloud?vlan=any"\n							}\n						],\n						"type": "inter_cloud_network"\n					} \n				],\n				"subnets": [\n					{\n						"routes": [\n							{\n								"to": {\n									"value": "0.0.0.0/0",\n									"type": "ipv4-prefix"\n								},\n								"next_hop": {\n									"value": "internet"\n								}\n                                                        }\n						],\n						"virtual_machines": [\n							{\n								"name": "ops-vtn1-vm1",\n                                                                "type": "instance+5,secgroup+rains,keypair+demo-key,image+3de656bd-21d5-4c46-89c0-cfdeb7d9c590",\n								"host": "rvtk-compute2",\n								"interfaces": [\n									{\n										"address": "ipv4+10.10.252.202/24",\n										"name": "ops-vtn1:vm1:eth0",\n										"type": "Ethernet"\n									},\n									{\n										"address": "ipv4+10.10.0.1/24,mac+aa:bb:cc:dd:10:01",\n										"name": "ops-vtn1:vm1:eth1",\n										"type": "SRIOV",\n										"gateway": "intercloud-1"\n									},\n									{\n										"address": "ipv4+10.10.200.202/24,mac+aa:bb:cc:dd:02:02",\n										"name": "ops-vtn1:vm1:eth2",\n										"type": "SRIOV",\n										"gateway": "ceph-net"\n									},\n									{\n										"address": "ipv4+206.196.179.157/28,mac+aa:bb:cc:dd:01:57",\n										"name": "ops-vtn1:vm1:eth3",\n										"type": "SRIOV",\n										"gateway": "external-net",\n										"routes": [\n                                                        				{\n                                    				                            "to":  {\n												"type": "ipv4-prefix",\n												"value": "206.196.0.0/16"\n											    },\n                         				                                    "next_hop": {\n												"value": "206.196.179.145"\n											    }\n                                                        				}\n										]\n									}\n								],\n								"quagga_bgp": {\n									"neighbors": [\n										{\n											"remote_asn": "7224",\n											"bgp_authkey": "versastack"\n										}\n									],\n									"networks": [\n										"10.10.0.0/16"\n									]\n								}\n							},\n							{\n								"name": "ops-vtn1-vm2",\n                                                                "type": "instance+5,secgroup+rains,keypair+demo-key,image+3de656bd-21d5-4c46-89c0-cfdeb7d9c590",\n								"host": "rvtk-compute6",\n								"interfaces": [\n									{\n										"address": "ipv4+10.10.252.217/24",\n										"name": "ops-vtn1:vm2:eth0",\n										"type": "Ethernet"\n									},\n									{\n										"address": "ipv4+10.10.0.17/24,mac+aa:bb:cc:dd:10:17",\n										"name": "ops-vtn1:vm2:eth1",\n										"type": "SRIOV",\n										"gateway": "intercloud-1",\n										"routes": [\n                                                        				{\n                                    				                            "to":  {\n												"type": "ipv4-prefix",\n												"value": "10.0.0.0/16"\n											    },\n                         				                                    "next_hop": {\n												"value": "10.10.0.2"\n											    }\n                                                        				}\n										]\n									},\n									{\n										"address": "ipv4+10.10.200.217/24,mac+aa:bb:cc:dd:02:17",\n										"name": "ops-vtn1:vm2:eth2",\n										"type": "SRIOV",\n										"gateway": "ceph-net"\n									}\n								]\n							}, \n							{\n								"name": "ops-vtn1-vm3",\n                                                                "type": "instance+5,secgroup+rains,keypair+demo-key,image+3de656bd-21d5-4c46-89c0-cfdeb7d9c590",\n								"host": "rvtk-compute7",\n								"interfaces": [\n									{\n										"address": "ipv4+10.10.252.219/24",\n										"name": "ops-vtn1:vm3:eth0",\n										"type": "Ethernet"\n									},\n									{\n										"address": "ipv4+10.10.0.19/24,mac+aa:bb:cc:dd:10:19",\n										"name": "ops-vtn1:vm3:eth1",\n										"type": "SRIOV",\n										"gateway": "intercloud-1",\n										"routes": [\n                                                        				{\n                                    				                            "to":  {\n												"type": "ipv4-prefix",\n												"value": "10.0.0.0/16"\n											    },\n                         				                                    "next_hop": {\n												"value": "10.10.0.2"\n											    }\n                                                        				}\n										]\n									},\n									{\n										"address": "ipv4+10.10.200.219/24,mac+aa:bb:cc:dd:02:19",\n										"name": "ops-vtn1:vm3:eth2",\n										"type": "SRIOV",\n										"gateway": "ceph-net"\n									}\n								]\n							}\n						],\n						"name": "subnet1",\n						"cidr": "10.1.0.0/24"\n					}\n				]\n			},\n			{\n				"type": "internal",\n				"parent": "urn:ogf:network:aws.amazon.com:aws-cloud",\n				"name": "vpc1",\n				"cidr": "10.0.0.0/16",\n				"subnets": [\n					{\n						"name": "subnet1",\n						"cidr": "10.0.0.0/24",\n						"virtual_machines": [\n							{\n								"name": "ec2-vpc1-vm1",\n                                                                "type": "instance+m4.xlarge,secgroup+geni,keypair+xi-aws-max-dev-key,image+ami-b66ae0a1"\n							},\n							{\n								"name": "ec2-vpc1-vm2",\n                                                                "type": "instance+m4.xlarge,secgroup+geni,keypair+xi-aws-max-dev-key,image+ami-b66ae0a1"\n							},\n							{\n								"name": "ec2-vpc1-vm3",\n                                                                "type": "instance+m4.xlarge,secgroup+geni,keypair+xi-aws-max-dev-key,image+ami-b66ae0a1"\n							}\n						],\n						"routes": [\n							{\n								"to": {\n									"value": "0.0.0.0/0"\n								},\n								"from": {\n									"value": "vpn"\n								},\n								"next_hop": {\n									"value": "vpn"\n								}\n							},\n							{\n								"to": {\n									"value": "0.0.0.0/0"\n								},\n								"next_hop": {\n									"value": "internet"\n								}\n							}\n						]\n					}\n				],\n				"routes": [\n					{\n						"to": {\n							"value": "0.0.0.0/0",\n							"type": "ipv4-prefix"\n						},\n						"next_hop": {\n							"value": "internet"\n						}\n					}\n				]\n			}\n		]\n	}\n}\n', 'Test for upcoming Demo', 0);
 
 -- --------------------------------------------------------
 
@@ -467,17 +468,17 @@ ALTER TABLE `service`
 -- AUTO_INCREMENT for table `service_delta`
 --
 ALTER TABLE `service_delta`
-  MODIFY `service_delta_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=5;
+  MODIFY `service_delta_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=6;
 --
 -- AUTO_INCREMENT for table `service_history`
 --
 ALTER TABLE `service_history`
-  MODIFY `service_history_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=8;
+  MODIFY `service_history_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=2;
 --
 -- AUTO_INCREMENT for table `service_instance`
 --
 ALTER TABLE `service_instance`
-  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=54;
+  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=12;
 --
 -- AUTO_INCREMENT for table `service_state`
 --
@@ -487,7 +488,7 @@ ALTER TABLE `service_state`
 -- AUTO_INCREMENT for table `service_wizard`
 --
 ALTER TABLE `service_wizard`
-  MODIFY `service_wizard_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=2;
+  MODIFY `service_wizard_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=4;
 --
 -- AUTO_INCREMENT for table `user_info`
 --

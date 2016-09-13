@@ -231,6 +231,42 @@ public class WebResource {
     }
 
     @GET
+    @Path("/profile/{wizardId}")
+    @Produces("application/json")
+    public String getProfileJSON(@PathParam("wizardId") int wizardId) {
+        try {
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("SELECT wizard_json FROM service_wizard WHERE service_wizard_id = ?");
+            prep.setInt(1, wizardId);
+            ResultSet rs1 = prep.executeQuery();
+            while (rs1.next()) {
+                return rs1.getString(1);
+            }
+
+            return "";
+        } catch (SQLException e) {
+            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+            return null;
+        }
+    }
+
+    @POST
+    @Path(value = "/profile/")
+    public void executeProfile(@Suspended final AsyncResponse asyncResponse, final String inputString) {
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                asyncResponse.resume(doCreateService(inputString));
+            }
+        });
+    }
+
+    @GET
     @Path("/service/{siUUID}/status")
     public String checkStatus(@PathParam("siUUID") String svcInstanceUUID) {
         String retString = "";
@@ -262,29 +298,6 @@ public class WebResource {
                 asyncResponse.resume(doOperate(refUuid, action));
             }
         });
-    }
-
-    @PUT
-    @Path(value = "/profile/{identifier}")
-    public void executeProfile(@Suspended final AsyncResponse asyncResponse, @PathParam(value = "identifier") final int identifier) throws SQLException {
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
-        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                front_connectionProps);
-
-        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM service_wizard WHERE `service_wizard_id` = ?");
-        prep.setInt(1, identifier);
-        ResultSet rs1 = prep.executeQuery();
-        while (rs1.next()) {            
-            final String inputString = rs1.getString("wizard_json");
-            executorService.execute(new Runnable() {
-                @Override
-                public void run() {
-                    asyncResponse.resume(doCreateService(inputString));
-                }
-            });
-        }
     }
 
     // Async Methods -----------------------------------------------------------
@@ -607,8 +620,8 @@ public class WebResource {
     @GET
     @Path("/manifest/{svcUUID}")
     @Produces("application/json")
-    public String getManifest(@PathParam("svcUUID") String svcUUID) {        
-        try {                        
+    public String getManifest(@PathParam("svcUUID") String svcUUID) {
+        try {
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
@@ -621,7 +634,7 @@ public class WebResource {
             prep.setString(1, svcUUID);
             ResultSet rs1 = prep.executeQuery();
             if (!rs1.next()) {
-                throw new EJBException("Unrecognized service UUID=" + svcUUID); 
+                throw new EJBException("Unrecognized service UUID=" + svcUUID);
             }
             String verifiedModel = rs1.getString("v.verified_addition");
             String serviceType = rs1.getString("s.name");
@@ -639,7 +652,7 @@ public class WebResource {
             return null;
         }
     }
-    
+
     // Operation Methods -------------------------------------------------------
     /**
      * Deletes a service instance.
@@ -849,7 +862,7 @@ public class WebResource {
                     } else {
                         vmString += "& ";
                     }
-                    
+
                     // CephRBD
                     if (vmJSON.containsKey("ceph_rbd")) {
                         JSONArray rbdArr = (JSONArray) vmJSON.get("ceph_rbd");
@@ -861,7 +874,7 @@ public class WebResource {
                     } else {
                         vmString += "& ";
                     }
-                    
+
                     // VM Routes
                     if (vmJSON.containsKey("routes")) {
                         JSONArray routeArr = (JSONArray) vmJSON.get("routes");

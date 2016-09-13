@@ -169,8 +169,11 @@
             <div id="service-specific"></div>
             <div id="info-panel">
                 <h3 class="fs-subtitle" id="info-panel-title"></h3>
-                <div id="info-panel-div">
-
+                <div id="info-panel-text">
+                    <textarea id="info-panel-text-area" style="height: 250px;width: 80%;"></textarea>
+                </div>
+                <div id="info-panel-button">
+                    <button class="button-profile-submit">Submit</button>
                 </div>
             </div>
             <!-- LOADING PANEL -->

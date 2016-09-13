@@ -20,13 +20,6 @@ $(function () {
         });
     });
 
-    $("#info-panel").click(function (evt) {
-        $("#info-panel").removeClass("active");
-        $("#black-screen").addClass("off");
-
-        evt.preventDefault();
-    });
-
     $(".button-service-select").click(function (evt) {
         $ref = "/VersaStack-web/ops/srvc/" + this.id.toLowerCase() + ".jsp";
         window.location.href = $ref;
@@ -39,13 +32,33 @@ $(function () {
 
     $(".button-profile-select").click(function (evt) {
         var apiUrl = baseUrl + '/VersaStack-web/restapi/app/profile/' + this.id;
-        $("#info-panel-div").html("Profile Initiated.");
-        $("#info-panel").addClass("active");
         $.ajax({
             url: apiUrl,
-            type: 'PUT',
+            type: 'GET',
             success: function (result) {
                 $("#black-screen").removeClass("off");
+                $("#info-panel").addClass("active");
+                $("#info-panel-title").html("Profile Details");
+                $("#info-panel-text-area").val(JSON.stringify(result));
+            },
+            error: function (textStatus, errorThrown) {
+                console.log(textStatus);
+                console.log(errorThrown);
+            }
+        });
+
+        evt.preventDefault();
+    });
+
+    $(".button-profile-submit").click(function (evt) {
+        var apiUrl = baseUrl + '/VersaStack-web/restapi/app/profile/';
+        $.ajax({
+            url: apiUrl,
+            type: 'POST',
+            data: $("#info-panel-text-area").html(),
+            success: function (result) {
+                $("#black-screen").addClass("off");
+                $("#info-panel").removeClass("active");
             },
             error: function (textStatus, errorThrown) {
                 console.log(textStatus);
@@ -84,6 +97,11 @@ $(function () {
 
     $(".delta-table-header").click(function () {
         $("#body-" + this.id).toggleClass("hide");
+    });
+    
+    $("#black-screen").click(function () {
+        $("#black-screen").addClass("off");
+        $("#info-panel").removeClass("active");
     });
 
     $(".nav-tabs li").click(function () {

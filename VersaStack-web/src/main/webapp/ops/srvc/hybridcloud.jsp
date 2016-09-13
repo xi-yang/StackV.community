@@ -51,9 +51,9 @@
                 <ul class="hc-progress" id="progressbar">
                     <li class="disabled active">Hybrid Clouds</li>
                     <li>Network</li>
-                    <li>Subnets</li>
-                    <li>VMs</li>
+                    <li>Subnets</li>                    
                     <li>Gateways</li>
+                    <li>VMs</li>
                     <li>SRIOV</li>                    
                     <li>Summary</li>
                 </ul>
@@ -158,51 +158,51 @@
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="button" name="next" class="next action-button" value="Next" />                    
                 </fieldset>
-
-                <!-- Stage 4: VMs --> 
+                
+                <!-- Stage 4: Gateways -->
                 <fieldset id="4-1">
-                    <h2 class="fs-title">AWS Virtual Machines</h2>
-                    <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="awsStage4-vm" onfocus="this.oldvalue = this.value;" onchange="setVMs(this)"/></h3>
-                    <table class="subfs-table" id="awsStage4-vm-route-table">
-
-                    </table>
-                    <br>
-                    <h2 class="fs-title">OpenStack Virtual Machines</h2>
-                    <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="opsStage4-vm" onfocus="this.oldvalue = this.value;" onchange="setVMs(this)"/></h3>
-                    <table class="subfs-table" id="opsStage4-vm-route-table">
-
-                    </table>
-
-                    <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <input type="button" name="next" class="next action-button" value="Next" />                    
-                </fieldset>
-                <fieldset id="4-2">
-                    <fieldset class="subfs" id="awsStage4-vm-fs">
-
-                    </fieldset>
-                    <br>
-                    <fieldset class="subfs" id="opsStage4-vm-fs">
-
-                    </fieldset>
-
-                    <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <input type="button" name="next" class="next action-button" value="Next" />                    
-                </fieldset>
-
-                <!-- Stage 5: Gateways -->
-                <fieldset id="5-1">
                     <h2 class="fs-title">OpenStack Gateways</h2>
-                    <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="opsStage5-gateway" onfocus="this.oldvalue = this.value;" onchange="setGateways(this)"/></h3>
+                    <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="opsStage4-gateway" onfocus="this.oldvalue = this.value;" onchange="setGateways(this)"/></h3>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="button" name="next" class="next action-button" value="Next" />                    
                 </fieldset>  
 
 
-                <fieldset id="5-2">
-                    <fieldset class="subfs" id="opsStage5-gateway-fs">
+                <fieldset id="4-2">
+                    <fieldset class="subfs" id="opsStage4-gateway-fs">
                         
                     </fieldset>        
+
+                    <input type="button" name="previous" class="previous action-button" value="Previous" />
+                    <input type="button" name="next" class="next action-button" value="Next" />                    
+                </fieldset>
+
+                <!-- Stage 5: VMs --> 
+                <fieldset id="5-1">
+                    <h2 class="fs-title">AWS Virtual Machines</h2>
+                    <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="awsStage5-vm" onfocus="this.oldvalue = this.value;" onchange="setVMs(this)"/></h3>
+                    <table class="subfs-table" id="awsStage5-vm-route-table">
+
+                    </table>
+                    <br>
+                    <h2 class="fs-title">OpenStack Virtual Machines</h2>
+                    <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="opsStage5-vm" onfocus="this.oldvalue = this.value;" onchange="setVMs(this)"/></h3>
+                    <table class="subfs-table" id="opsStage5-vm-route-table">
+
+                    </table>
+
+                    <input type="button" name="previous" class="previous action-button" value="Previous" />
+                    <input type="button" name="next" class="next action-button" value="Next" />                    
+                </fieldset>
+                <fieldset id="5-2">
+                    <fieldset class="subfs" id="awsStage5-vm-fs">
+
+                    </fieldset>
+                    <br>
+                    <fieldset class="subfs" id="opsStage5-vm-fs">
+
+                    </fieldset>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="button" name="next" class="next action-button" value="Next" />                    
@@ -242,7 +242,7 @@
                     </table>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <input type="button" name="save" class="profile-save action-button" value="Save" />
+                    <input type="button" name="save" class="profile-save-button action-button" value="Save" />
                     <button type="submit" name="submit" class="action-button" value="ops">Submit</button>  
                 </fieldset>
             </form>      

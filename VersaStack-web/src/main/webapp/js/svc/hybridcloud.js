@@ -211,10 +211,8 @@ function applyTemplate(mode) {
             // Stage 1
 
             // Stage 2           
-            form.elements['aws-netType'].value = 'internal';
             form.elements['aws-netCidr'].value = '10.0.0.0/16';
 
-            form.elements['ops-netType'].value = 'internal';
             form.elements['ops-netCidr'].value = '10.1.0.0/16';
 
             // Stage 3
@@ -273,7 +271,7 @@ function applyTemplate(mode) {
             form.elements['bgp-number'].value = '7224';
             form.elements['bgp-key'].value = 'versastack';
             form.elements['bgp-networks'].value = '10.10.0.0/16';
-            $("#opsStage4-bgp-table select").val("1");
+            $("#ops4-bgp-table select").val("1");
 
             // Gateways    
             var gatewayCounter = document.getElementById('opsStage5-gateway');
@@ -288,9 +286,6 @@ function applyTemplate(mode) {
             form.elements['gateway2-to'].value = 'urn:ogf:network:aws.amazon.com:aws-cloud?vlan=any';
 
             // SRIOVs
-            var SRIOVCounter = document.getElementById('opsStage6-sriov');
-            SRIOVCounter.value = 2;
-            setSRIOV(SRIOVCounter);
             $("#SRIOV1-vm-select").val("1");
             $("#SRIOV1-gateway-select").val("1");
             form.elements['SRIOV1-name'].value = 'ops-vtn1-vm1';
@@ -307,11 +302,16 @@ function applyTemplate(mode) {
     }
 }
 
-var subnetCount;
+var awsSubnetCount;
+var opsSubnetCount;
 function setSubnets(input) {
-    subnetCount = input.value;
-
     var type = input.id.substring(0, 3) + "-";
+    if (type === 'aws-') {
+        awsSubnetCount = input.value;
+    } else if (type === 'ops-') {
+        opsSubnetCount = input.value;
+    }
+
     var stage = input.id;
     var old = input.oldvalue;
     var fieldset = document.getElementById(stage + "-fs");
@@ -356,7 +356,7 @@ function setSubnets(input) {
         var row2 = document.createElement("tr");
         var cell2_1 = document.createElement("td");
         var cell2_2 = document.createElement("td");
-        cell2_1.innerHTML = '<input type="text" name="' + type + 'subnet' + i + '-name" id="subnet' + i + '-tag" onchange="updateSubnetNames(this)" placeholder="Name"/>';
+        cell2_1.innerHTML = '<input type="text" name="' + type + 'subnet' + i + '-name" id="' + type + 'subnet' + i + '-tag" onchange="updateSubnetNames(this)" placeholder="Name"/>';
         cell2_2.innerHTML = '<input type="text" name="' + type + 'subnet' + i + '-cidr" placeholder="CIDR Block"/>';
         row2.appendChild(cell2_1);
         row2.appendChild(cell2_2);
@@ -396,11 +396,19 @@ function setSubRoutes(input) {
     }
 }
 
-var vmCount;
+var awsVmCount;
+var opsVmCount;
 function setVMs(input) {
-    vmCount = input.value;
-
+    var subnetCount;
     var type = input.id.substring(0, 3) + "-";
+    if (type === 'aws-') {
+        awsVmCount = input.value;
+        subnetCount = awsSubnetCount;
+    } else if (type === 'ops-') {
+        opsVmCount = input.value;
+        subnetCount = opsSubnetCount;
+    }
+
     var stage = input.id;
     var old = input.oldvalue;
     var fieldset = document.getElementById(stage + "-fs");
@@ -413,11 +421,10 @@ function setVMs(input) {
     }
 
     var start = 1;
-
-    if (vmCount > 0 && type === 'ops-') {
+    if (opsVmCount > 0 && type === 'ops-') {
         var toptable = document.createElement("table");
         toptable.className = 'subfs-table';
-        toptable.id = "opsStage4-bgp-table";
+        toptable.id = "opsStage5-bgp-table";
         var tbody = document.createElement("tbody");
         var row6 = document.createElement("tr");
         var cell6_1 = document.createElement("td");
@@ -489,7 +496,7 @@ function setVMs(input) {
 
         var selectString = '<select name="' + type + 'vm' + i + '-subnet" id="vm' + i + '-subnet-select"><option selected disabled>Select the subnet host</option>';
         for (j = 1; j <= subnetCount; j++) {
-            var subnetTag = document.getElementById("subnet" + j + "-tag");
+            var subnetTag = document.getElementById(type + "subnet" + j + "-tag");
 
             selectString += '<option value="' + j + '">Subnet ' + j + ' (' + subnetTag.value + ')</option>';
         }
@@ -703,10 +710,7 @@ function setGateways(input) {
     }
 }
 
-var SRIOVCount;
 function setVMSRIOV(input) {
-    SRIOVCount = input.value;
-
     var stage = input.id;
     var old = input.oldvalue;
     var vm = input.id.substring(12, 13);
@@ -751,7 +755,7 @@ function setVMSRIOV(input) {
         });
 
         var selectString1 = '<select name="SRIOV' + i + '-gateway" id="SRIOV' + i + '-gateway-select"><option selected disabled>Select the hosting Gateway</option>';
-        for (j = 1; j <= gatewayCount; j++) {
+        for (j = 0; j <= gatewayCount; j++) {
             var gatewayTag = document.getElementById("gateway" + j + "-tag");
 
             selectString1 += '<option value="' + j + '">Gateway ' + j + ' (' + gatewayTag.value + ')</option>';
