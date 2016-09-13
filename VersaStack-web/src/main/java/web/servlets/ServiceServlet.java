@@ -831,7 +831,7 @@ public class ServiceServlet extends HttpServlet {
 
                                     //Process SRIOV only when a floating IP is assigned
                                     for (int k = 1; k <= 10; k++) {
-                                        if (paraMap.containsKey("SRIOV" + k + "-ip") && Integer.parseInt(paraMap.get("SRIOV" + k + "-vm")) == j) {
+                                        if (paraMap.containsKey("SRIOV" + k + "-ip") && Integer.parseInt(paraMap.get("SRIOV" + k + "-vm").trim()) == j) {
                                             JSONObject sriovJSON = new JSONObject();
                                             String addrString = "ipv4+" + paraMap.get("SRIOV" + k + "-ip");
                                             addrString += ",mac+" + paraMap.get("SRIOV" + k + "-mac");

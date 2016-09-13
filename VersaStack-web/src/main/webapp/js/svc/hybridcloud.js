@@ -61,6 +61,10 @@ $(function () {
         }
     });
 
+    $("#profile-save-button").click(function () {
+        
+    });
+
     $("#progressbar li").click(function () {
         if (animating || $(this).hasClass('disabled') || $("#progressbar li").index(this) === 0)
             return false;

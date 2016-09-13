@@ -87,7 +87,7 @@
                     <sql:param value="${param.uuid}" />
                 </sql:query>
 
-                <c:forEach var="instance" items="${instancelist.rows}"> 
+                <c:forEach var="instance" items="${instancelist.rows}">
                     <div id="instance-verification" class="hide">${instance.verification_state}</div>
                     <table class="management-table" id="details-table">
                         <thead>
