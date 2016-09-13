@@ -51,6 +51,7 @@
         <style>
             .manifest-list{
                 /*list-style:none;*/
+                padding-left: 1.5em;
             }
         </style>
     </head>
@@ -75,29 +76,50 @@
                     </tbody>
                  </table>
                                 <script>
-                        function parseMap(map, container, container_type) {
+                                    /* ALERT CHECK IF MAP IS ARRAY
+                                     * 
+                                     * 
+                                     * 
+                                     * 
+                                     * 
+                                     * ALERT CHECK IF MAP IS ARRAY 
+                                     */
+                        function parseMap(map, container, container_type, base) {
                             for (var key in map) {
                                 var string = "";
                                 if (container_type === "table") {
-                                    string = $("<tr><td>" + key + "</td></tr>");
-                                    container.append(string);
-                                    var new_container = string;
+                                    if (map.constructor !== Array) {
+                                        string = $("<tr><td>" + key + "</td></tr>");
+                                        container.append(string);
+                                        var new_container = string;
+                                     } else {
+                                         var new_container = container;
+                                     }
                                     var isMap = Object.keys(map[key]).length > 0;
                                     var isString = (typeof map[key]) === "string";
-                                    if ((map[key].constructor === Array || isMap) && !isString) {
+                                    if ((map[key].constructor === Array) && !isString) {
                                         var n1 = $("<td></td>");
                                         new_container.append(n1);
-                                        var n3 = $("<ul class=\"manifest-list\"></ul>");
+                                        //container.append(n1);
+                                        var n3 = $("<ul class=\"manifest-list\" style=\"padding-left:.5em;\"></ul>");
                                         n1.append(n3);
                                         for (var i in map[key]) {
                                             if ((typeof map[key[i]]) === "string" ) {
                                                 string += "<li><b> " + i + "</b>: " + map[key][i] + "</li>";
                                                 container.append(string);   
                                                 string = "";
-                                            } else {
-                                                parseMap(map[key][i], n3,"list");
+                                            } else if (map[key][i].constructor === Array)   {
+                                                parseMap(map[key][i], n3,"list", base);
                                             }
                                         }
+                                    } else if (isMap  && !isString) {
+                                        var n1 = $("<td></td>");
+                                        new_container.append(n1);
+                                        //container.append(n1);
+                                        var n3 = $("<ul class=\"manifest-list\" style=\"padding-left:0;\"></ul>");
+                                        n1.append(n3);
+
+                                       parseMap(map[key], n3,"list", base);
                                     } else {
                                         string = $("<td>" + map[key] + "</td>");
                                         new_container.append(string);
@@ -108,16 +130,24 @@
                                     if ((map[key].constructor === Array || isMap) && !isString) {
                                         var n3 = $("<ul class=\"manifest-list\"></ul>");
                                         if (map[key].constructor === Array)  {
+                                           // if ($.trim(key).length !== 1) { // hack will replace 
+                                                var item = $("<li><b>"+key+"</b></li>");
+                                                n3.append(item);
+                                                //item.append(n3);
+                                           // }
                                             container.append(n3);
                                         } else {
                                             if ($.trim(key).length !== 1) { // hack will replace 
                                                 var item = $("<li><b>"+key+"</b></li>");
-                                                container.append(item);
-                                                item.append(n3);
+                                                //container.append(item);
+                                                //item.append(n3);
+                                                n3.append(item);
+                                                container.append(n3);
                                             } else {
                                                 var item = $("<li></li>");
+                                                   item.append(n3);
+
                                                 container.append(item);
-                                                item.append(n3);
 
                                                 //container.append(n3);
                                             }
@@ -128,9 +158,33 @@
                                                 n3.append(string);    
                                                 string = "";
                                             } else {
-                                                parseMap(map[key][i], n3,"list");
+                                               // if ()
+                                               //if ((map[key][i].constructor === Array && map[key][i].constructor.length > 1) || map[key][i].constructor === Object) {
+                                                //if (!isNaN($.trim(key))) {
+                                                    var bullet = $("<li></li>");
+                                                    n3.append(bullet);
+                                                
+                                                    var newList = $("<ul class=\"manifest-list\"></ul>");
+                                                    bullet.append(newList);
+                                                //bullet.append(newList);
+                                                    parseMap(map[key][i], newList,"list", base);
+                                                //} else {
+                                                 //  parseMap(map[key][i], n3,"list", base);
+
+                                                //}
+                                                // to set back just use N3
                                             }
                                         }                                        
+                                    } else {
+                                        if ($.trim(map[key]) !== '') {
+                                            
+                                            var n3 = $("<ul class=\"manifest-list\"></ul>");
+                                           
+                                            string = $("<li><b> " + key + "</b>: " + map[key] + "</li>");
+                                            n3.append(string);
+                                            container.append(n3);
+                                            //container.append(string);                                        
+                                        }
                                     }                                 
                                 }                        
                             }
@@ -160,26 +214,37 @@
                                 loadManifest("ahc-manifest-template.xml");
                                 break;
                         }
-                        
+                        loadManifest();
                         function loadManifest(templateURL) {
                             $.get( {
                                 url: "/VersaStack-web/data/xml/manifest-templates/" + templateURL, 
+                               // url: "/VersaStack-web/data/xml/manifest-templates/"    + "manifest-ahc1.json",
                                 success: function( data ) {
-                                    var dnc_template = data; //JSON.parse($(data).find("jsonTemplate").text());
+//                                     var manifest = JSON.parse(data.jsonTemplate);
+//                                     var name = Object.keys(manifest)[0];
+//                                     manifest = manifest[name];
+//                                     var baseTable =  $("#manifest_table_body");
+//                                     baseTable.append("<tr><td colspan=\"2\"><b>" + name + "</b><br/><b>UUID</b>: " + data.serviceUUID  +"</td></tr>");
+//                                    parseMap(manifest, baseTable, "table", baseTable);
+
+                                    var template = data; //JSON.parse($(data).find("jsonTemplate").text());
                                     //alert(JSON.stringify(dnc_template));
                                     $.ajax({
                                         type: "POST",
                                         crossDomain: true,
                                         url: "/VersaStack-web/restapi/service/manifest/" + UUID,
-                                        data: dnc_template,
+                                        data: template,
                                         headers: { 
                                             'Accept': 'application/json',
                                             'Content-Type': 'application/xml'
                                         },
                                         success: function(data,  textStatus,  jqXHR ) {
-
                                             var manifest = JSON.parse(data.jsonTemplate);
-                                            var baseTable =  $("#manifest_table_body");
+                                            var name = Object.keys(manifest)[0];
+                                            manifest = manifest[name];
+                                        var baseTable =  $("#manifest_table_body");
+                                             baseTable.append("<tr><td colspan=\"2\"><b>" + name + "</b><br/><b>UUID</b>: " + data.serviceUUID  +"</td></tr>");
+
                                             parseMap(manifest, baseTable, "table");
                                         },
                                         error: function(jqXHR, textStatus, errorThrown ) {
@@ -192,9 +257,9 @@
                                 }, 
                                 dataType: "text" 
                               });
-                          }
-                        
-//                         baseTable.append("<tr><td colspan=\"2\"><b>" + map["type"] + "</b><br/><b>Alias</b>: " + map["alias"] + "<br/>" +  "<b>UUID</b>: " + map["uuid"] +"</td></tr>");
+                                                          //    dataType: "json" 
+                    }     
+                          
                </script>
 
         </div>
