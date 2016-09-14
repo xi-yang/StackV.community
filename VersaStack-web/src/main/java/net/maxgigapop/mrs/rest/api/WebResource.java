@@ -257,6 +257,7 @@ public class WebResource {
 
     @POST
     @Path(value = "/profile/")
+    @Consumes(value = {"application/json", "application/xml"})
     public void executeProfile(@Suspended final AsyncResponse asyncResponse, final String inputString) {
         executorService.execute(new Runnable() {
             @Override

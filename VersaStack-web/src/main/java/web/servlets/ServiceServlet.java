@@ -633,9 +633,9 @@ public class ServiceServlet extends HttpServlet {
             // OpenStack
             if (type == 2) {
                 for (int i = 0; i <= 10; i++) {
-                    if (paraMap.containsKey("gateway" + i + "-name")) {
+                    if (paraMap.containsKey("gateway" + i + "-type")) {
                         JSONObject gatewayJSON = new JSONObject();
-                        gatewayJSON.put("name", paraMap.get("gateway" + i + "-name"));
+                        gatewayJSON.put("name", paraMap.containsKey("gateway" + i + "-name") ? paraMap.get("gateway" + i + "-name") : ("gateway" + i));
                         String gatewayType = paraMap.get("gateway" + i + "-type");
                         
                         switch (gatewayType) {
@@ -789,7 +789,7 @@ public class ServiceServlet extends HttpServlet {
                                     interfaceArr.add(interfaceJSON);
                                 }
                             } else if (typeStr.equals("ops-")) {
-                                vmJSON.put("name", paraMap.get(typeStr + "vm" + j + "-name"));
+                                vmJSON.put("name", paraMap.containsKey(typeStr + "vm" + j + "-name") ? paraMap.get(typeStr + "vm" + j + "-name") : ("vm" + i));
                                 vmJSON.put("host", paraMap.get(typeStr + "vm" + j + "-host"));
 
                                 // Parse Types.

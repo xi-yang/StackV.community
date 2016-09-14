@@ -92,7 +92,7 @@
             </div>
 
             <div id="catalog-panel">
-                <ul class="nav nav-tabs">
+                <ul class="nav nav-tabs catalog-tabs">
                     <li><a data-toggle="tab" href="#wizard-tab">Profiles</a></li>
                     <li class="active"><a data-toggle="tab" href="#editor-tab">Intents</a></li>
                 </ul>

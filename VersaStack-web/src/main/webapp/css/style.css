@@ -36,6 +36,10 @@ black-screen: 3
 
 */
 
+::-webkit-scrollbar {
+    display:none;
+}
+
 html {
     height: 100%;
 }
@@ -342,6 +346,16 @@ body {
 .panel .table td {
     border-color: #eee;
 
+}
+
+.catalog-tabs li {
+    width: 50%;
+}
+.catalog-tabs li a {
+    background: linear-gradient(rgba(75,75,75,0.3), rgba(0,0,0,0.4)), url('/VersaStack-web/img/background.png')
+}
+.catalog-tabs li.active a {
+    background: white;
 }
 
 #nav {
@@ -671,19 +685,19 @@ body {
     position: absolute;
 }
 #instance-panel {
-    padding: 10px 10px;
+    padding: 5px 5px;
     top: 10%;
-    height: 70%;
+    height: 90%;
     width: calc(100% - 80px);
     position: absolute;
     overflow-y: scroll;    
 }
-#instance-panel ::-webkit-scrollbar {
+#instance-panel::-webkit-scrollbar {
     width: 0px;  /* remove scrollbar space */
     background: transparent;  /* optional: just make scrollbar invisible */
 }
 #catalog-panel {
-    padding: 10px 10px;
+    padding: 10px 10px 0 10px;
     bottom: 0;
     left: 0;
     height: 50%;
@@ -705,9 +719,9 @@ body {
     max-height: 100%;
 }
 #catalog-tab-content {
-    background: rgba(255,255,255,.3);
+    background: linear-gradient(rgba(75,75,75,0.3), rgba(0,0,0,0.4)), url('/VersaStack-web/img/background.png');
     width: 100%;
-    height: 100%;
+    height: calc(100% - 32px);
     border-right: 1px solid white;
     border-left: 1px solid white;
 }

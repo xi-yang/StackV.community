@@ -51,21 +51,23 @@ $(function () {
     });
 
     $(".button-profile-submit").click(function (evt) {
-        var apiUrl = baseUrl + '/VersaStack-web/restapi/app/profile/';
+        var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service';
         $.ajax({
             url: apiUrl,
             type: 'POST',
-            data: $("#info-panel-text-area").html(),
+            data: $("#info-panel-text-area").val(),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
             success: function (result) {
-                $("#black-screen").addClass("off");
-                $("#info-panel").removeClass("active");
+
             },
             error: function (textStatus, errorThrown) {
                 console.log(textStatus);
                 console.log(errorThrown);
             }
         });
-
+        $("#black-screen").addClass("off");
+        $("#info-panel").removeClass("active");
         evt.preventDefault();
     });
 
@@ -98,7 +100,7 @@ $(function () {
     $(".delta-table-header").click(function () {
         $("#body-" + this.id).toggleClass("hide");
     });
-    
+
     $("#black-screen").click(function () {
         $("#black-screen").addClass("off");
         $("#info-panel").removeClass("active");
