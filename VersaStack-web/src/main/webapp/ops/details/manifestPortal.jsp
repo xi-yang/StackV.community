@@ -210,7 +210,7 @@
                                     dataType: "text" 
                                   });
                                 break;
-                            case "Hybrid Cloud":
+                            case "Advanced Hybrid Cloud":
                                 loadManifest("ahc-manifest-template.xml");
                                 break;
                         }
