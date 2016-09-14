@@ -40,6 +40,7 @@ $(function () {
                 $("#info-panel").addClass("active");
                 $("#info-panel-title").html("Profile Details");
                 $("#info-panel-text-area").val(JSON.stringify(result));
+                prettyPrintInfo();
             },
             error: function (textStatus, errorThrown) {
                 console.log(textStatus);
@@ -123,6 +124,12 @@ function detailsLoad() {
     $ref = "/VersaStack-web/ops/details/dncDetails.jsp?uuid=" + uuid + " #instance-pane";
 
     $("service-specific").load($ref);
+}
+function prettyPrintInfo() {
+    var ugly = document.getElementById('info-panel-text-area').value;
+    var obj = JSON.parse(ugly);
+    var pretty = JSON.stringify(obj, undefined, 4);
+    document.getElementById('info-panel-text-area').value = pretty;
 }
 
 //Select Function

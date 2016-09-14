@@ -687,7 +687,7 @@ body {
 #instance-panel {
     padding: 5px 5px;
     top: 10%;
-    height: 90%;
+    height: calc(90% - 42px);
     width: calc(100% - 80px);
     position: absolute;
     overflow-y: scroll;    
@@ -887,9 +887,9 @@ body {
 }
 
 #info-panel {    
-    top: -50%;
-    width: 50%;
-    left: 25%;
+    top: -75%;
+    width: 60%;
+    left: 20%;
     padding: 20px 10px 30px 10px;
     margin: 10px auto;
     position: absolute;
@@ -902,7 +902,7 @@ body {
     transition: all .5s ease-out;
 }
 #info-panel.active {
-    top: 30%;
+    top: 15%;
 }
 #mode-panel {        
     top: 20%;
