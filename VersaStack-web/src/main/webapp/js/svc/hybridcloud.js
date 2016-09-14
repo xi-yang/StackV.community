@@ -781,7 +781,7 @@ function setVMSRIOV(input) {
         var row3 = document.createElement("tr");
         var cell3_1 = document.createElement("td");
         var cell3_2 = document.createElement("td");
-        cell3_1.innerHTML = '<input type="text" name="vm' + vm + '-SRIOV' + i + '-name" id="SRIOV' + i + '-tag" placeholder="Name"/>';
+        cell3_1.innerHTML = '<input type="text" name="vm' + vm + '-SRIOV' + i + '-name" placeholder="Name"/>';
         row3.appendChild(cell3_1);
         row3.appendChild(cell3_2);
         tbody1.appendChild(row3);
