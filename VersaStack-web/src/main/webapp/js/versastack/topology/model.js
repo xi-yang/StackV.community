@@ -680,6 +680,12 @@ define([
             var e = that.elementMap[urn];
             
             if (!e) return null;
+            
+            // only get host URN for non-nodes & non-topologies 
+            var currentType = e.getType();
+            if (currentType === "Node" || currentType === "Topology")
+                return null;
+            
             for (var rel in e.relationship_to){
                 if (that.elementMap[rel].getType() === "Node" ||
                     that.elementMap[rel].getType() === "Topology")
@@ -1152,19 +1158,19 @@ define([
                     for (var key in map) {
                         var val = map[key];
                         val.name = key;
-                        //console.log("JSON.stringify(element, null, 2): " + JSON.stringify(val, null, 2));
+                        //console.log("JSON.stringify(element, null, 2): " + JSON.stringify(val, null, 2));                   
                         var hostURN = baseModel.getHostNodeURN(key);
                         if (hostURN && !val[values.type]) {
                             that.nodeMap[hostURN] = new Node(baseModel.nodeMap[hostURN]._backing, 
-                                                                          baseModel.nodeMap[hostURN].map);
+                                                                      baseModel.nodeMap[hostURN].map);
                             that.nodeMap[hostURN].detailsReference = true;
-                            
+
                             that.elementMap[hostURN] = new Element(baseModel.nodeMap[hostURN]._backing, 
-                                                                   baseModel.nodeMap[hostURN].map, 
-                                                                   that.elementMap);
+                                                               baseModel.nodeMap[hostURN].map, 
+                                                               that.elementMap);
                             that.elementMap[hostURN].topLevel = true;        
-                                                                          
-                        }
+
+                        }               
                         
                         var types = val[values.type];
                         var detailsReference = false;
@@ -1177,7 +1183,7 @@ define([
                                 detailsReference = true;
                             } else {
                                 continue;
-                            }
+                            }                            
                         }
                         
                         that.elementMap[key] = new Element(val, map, that.elementMap);
