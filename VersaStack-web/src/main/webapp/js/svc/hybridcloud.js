@@ -741,7 +741,7 @@ function setVMSRIOV(input) {
         row1.className = 'subfs-headrow closed';
         var cell1_1 = document.createElement("th");
         var cell1_2 = document.createElement("th");
-        cell1_1.innerHTML = 'SRIOV ' + i;
+        cell1_1.innerHTML = 'VM ' + vm + ' - SRIOV ' + i;
         row1.appendChild(cell1_1);
         row1.appendChild(cell1_2);
         row1.innerHTML += '<br>';
@@ -758,7 +758,7 @@ function setVMSRIOV(input) {
             body2.toggleClass("fade-hide");
         });
 
-        var selectString1 = '<select name="SRIOV' + i + '-gateway" id="SRIOV' + i + '-gateway-select"><option selected disabled>Select the hosting Gateway</option>';
+        var selectString1 = '<select name="vm' + vm + '-SRIOV' + i + '-gateway" id="vm' + vm + '-SRIOV' + i + '-gateway-select"><option selected disabled>Select the hosting Gateway</option>';
         for (j = 0; j <= gatewayCount; j++) {
             var gatewayTag = document.getElementById("gateway" + j + "-tag");
 
@@ -766,7 +766,7 @@ function setVMSRIOV(input) {
         }
         selectString1 += '</select>';
 
-        var selectString2 = '<select name="SRIOV' + i + '-vm" id="SRIOV' + i + '-vm-select"><option value="' + vm + '">VM ' + vm + '</option>';
+        var selectString2 = '<select name="" id="vm' + vm + '-SRIOV' + i + '-vm-select"><option value="' + vm + '">VM ' + vm + '</option>';
         selectString2 += '</select>';
 
         var row2 = document.createElement("tr");
@@ -781,7 +781,7 @@ function setVMSRIOV(input) {
         var row3 = document.createElement("tr");
         var cell3_1 = document.createElement("td");
         var cell3_2 = document.createElement("td");
-        cell3_1.innerHTML = '<input type="text" name="SRIOV' + i + '-name" id="SRIOV' + i + '-tag" placeholder="Name"/>';
+        cell3_1.innerHTML = '<input type="text" name="vm' + vm + '-SRIOV' + i + '-name" id="SRIOV' + i + '-tag" placeholder="Name"/>';
         row3.appendChild(cell3_1);
         row3.appendChild(cell3_2);
         tbody1.appendChild(row3);
@@ -789,8 +789,8 @@ function setVMSRIOV(input) {
         var row4 = document.createElement("tr");
         var cell4_1 = document.createElement("td");
         var cell4_2 = document.createElement("td");
-        cell4_1.innerHTML = '<input type="text" name="SRIOV' + i + '-ip" placeholder="IP Address"/>';
-        cell4_2.innerHTML = '<input type="text" name="SRIOV' + i + '-mac" placeholder="MAC Address"/>';
+        cell4_1.innerHTML = '<input type="text" name="vm' + vm + '-SRIOV' + i + '-ip" placeholder="IP Address"/>';
+        cell4_2.innerHTML = '<input type="text" name="vm' + vm + '-SRIOV' + i + '-mac" placeholder="MAC Address"/>';
         row4.appendChild(cell4_1);
         row4.appendChild(cell4_2);
         tbody1.appendChild(row4);
