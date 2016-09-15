@@ -136,8 +136,8 @@ public class AwsDCGet {
     public void dxvifDeletionCheck(String id) {
         DescribeVirtualInterfacesRequest request = new DescribeVirtualInterfacesRequest();
         request.withVirtualInterfaceId(id);
-        long delay = 1000L;
-        long delayMax = 16000L;
+        long delay = 2000L;
+        long delayMax = 64000L;
         while (true) {
             delay *= 2;
             try {

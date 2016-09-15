@@ -416,6 +416,8 @@ public class OpenStackNeutronModelBuilder {
                     // the VM server hasVolume
                     String volumeName = (String) jsonObj.get("volume");
                     String diskSize =  (String) jsonObj.get("size");
+                    Long longDiskSize = Long.parseLong(diskSize)/1024;
+                    diskSize = longDiskSize.toString();
                     String mountPoint =  (String) jsonObj.get("mount");
                     Resource resVolume = RdfOwl.createResource(model, ResourceTool.getResourceUri(volumeName, OpenstackPrefix.volume, volumeName), Mrs.Volume);
                     model.add(model.createStatement(VM, Mrs.hasVolume, resVolume));
