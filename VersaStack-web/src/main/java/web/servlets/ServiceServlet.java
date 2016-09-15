@@ -859,7 +859,9 @@ public class ServiceServlet extends HttpServlet {
                                         volumeArr.add(volumeJSON);
                                     }
                                 }
-                                vmJSON.put("ceph_rbd", volumeArr);
+                                if (!volumeArr.isEmpty()) {
+                                    vmJSON.put("ceph_rbd", volumeArr);
+                                }
 
                                 //Parse BGP
                                 JSONObject bgpJSON = new JSONObject();
@@ -878,7 +880,9 @@ public class ServiceServlet extends HttpServlet {
                                     networkArr.addAll(Arrays.asList(networkSplit));
                                     bgpJSON.put("networks", networkArr);
                                 }
-                                vmJSON.put("quagga_bgp", bgpJSON);
+                                if (!bgpJSON.isEmpty()) {
+                                    vmJSON.put("quagga_bgp", bgpJSON);
+                                }
                             }
 
                             // Process each routes.
