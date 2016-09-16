@@ -220,11 +220,7 @@
 
                 <!-- Stage 7: Summary -->
                 <fieldset id="7-1">
-                    <h2 class="fs-title">AWS Summary</h2>
-                    <h3 class="fs-subtitle">(Summary Module still in development)</h3>
-
-                    <h2 class="fs-title">OpenStack Summary</h2>
-                    <h3 class="fs-subtitle">(Summary Module still in development)</h3>
+                    <h2 class="fs-title">Final Submission</h2>
 
                     <br>
                     <table class="subfs-table" id="profile-table">
