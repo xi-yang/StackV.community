@@ -101,7 +101,40 @@ define([], function () {
           
           //console.log("in positionMenu: menu.style.left: " + menu.style.left + " , menu.style.top: " + menu.style.top);
     }
-    
+         function positionDisplayPanel(elementID, e) {
+            var clickCoords = getElementPosition(e);
+            var clickCoordsX = clickCoords.x;
+            var clickCoordsY = clickCoords.y;
+
+            var element = document.querySelector("#" + elementID);
+
+            var elemWidth = element.offsetWidth + 4;
+            var elemHeight = getHeight("#" + elementID) + 4; //element.offsetHeight + 4;
+
+            var windowWidth = window.innerWidth;
+            var windowHeight = window.innerHeight;
+
+            element.style.left = clickCoordsX + 20 + "px";
+            element.style.top = clickCoordsY - elemHeight + "px";
+            
+        }   
+        
+        function getHeight(elementName) {
+            var previousCss  = $(elementName).attr("style");
+
+            $(elementName)
+                .css({
+                    position:   'absolute', // Optional if #myDiv is already absolute
+                    visibility: 'hidden',
+                    display:    'block'
+                });
+
+            var optionHeight = $(elementName).height();
+
+            $(elementName).attr("style", previousCss ? previousCss : "");
+            return optionHeight;
+        }
+
     function isURL(str) {
         var urlPattern = /(http|ftp|https):\/\/[\w-]+(\.[\w-]*)+([\w.,@?^=%&amp;:\/~+#-]*[\w@?^=%&amp;\/~+#-])?/;
         return urlPattern.test(str);
@@ -119,6 +152,7 @@ define([], function () {
         getElementPosition: getElementPosition, 
         isURL: isURL,
         getRenderedElementParentDiv: getRenderedElementParentDiv,
+        positionDisplayPanel: positionDisplayPanel,
         isFirefox: function() {
             return typeof InstallTrigger !== 'undefined';
         }

@@ -331,8 +331,8 @@ define(["local/versastack/utils"], function (utils) {
                     switch(funcName) {
                         case "Tag": func.openDialog(that.selectedObject); break;
                         case "ModelBrowser":
-                            positionDisplayPanel("displayPanel", event);
-                            func(that.selectedObject, getRenderedElementParentDiv(that.selectedObject)); 
+                            //positionDisplayPanel("displayPanel", event);
+                            func(that.selectedObject, getRenderedElementParentDiv(that.selectedObject), event); 
                             break;
                     }
                 } else {

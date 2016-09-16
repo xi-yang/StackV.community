@@ -38,6 +38,7 @@ define([
 
     var map_ = utils.map_;
     var isFirefox = utils.isFirefox;
+    var getRenderedElementParentDiv = utils.getRenderedElementParentDiv;
     var settings = {
         NODE_SIZE: 30,
         SERVICE_SIZE: 10,
@@ -150,10 +151,11 @@ define([
      * @param {Model} model
      * @param (fullSize) boolean
      **/
-    function doRender(outputApi, model, fullSize, modelMap) {
+    function doRender(outputApi, model, fullSize, modelMap, outputApiMap) {
         // default parameter
         var fullSize = typeof fullSize !== 'undefined' ?  fullSize : true;
         var modelMap = typeof modelMap !== 'undefined' ?  modelMap : null;
+        var outputApiMap = typeof outputApiMap !== 'undefined' ?  outputApiMap : null;
         
         var svgContainer = outputApi.getSvgContainer();
         if (firstRun) {
@@ -798,7 +800,18 @@ define([
         }
 
         
-        function onPolicyClick(n) {
+        function onPolicyClick(n, currentOutputApi) {
+            if (!fullSize && currentOutputApi) {
+              var o = currentOutputApi;  
+              var m = modelMap[o.svgContainerName];
+            } else if (!fullSize) { 
+              var divname = getRenderedElementParentDiv(n);
+              var o = outputApiMap[divname];
+              var m = modelMap[o.svgContainerName];
+            } else{ 
+              var o = outputApi;
+              var m = model;
+            }
              if (d3.event) {
                 //In the case of artificial clicks, d3.event may be null
                 d3.event.stopPropagation(); //prevent the click from being handled by the background, which would hide the panel
@@ -814,12 +827,12 @@ define([
             }
             highlightedNode = n;
             drawHighlight();
-            if (outputApi.getDisplayTree()) {
-                outputApi.setDisplayName(n.getName());
+            if (o.getDisplayTree()) {
+                o.setDisplayName(n.getName());
                 /**@type {DropDownTree} displayTree**/
-                var displayTree = outputApi.getDisplayTree();
+                var displayTree = o.getDisplayTree();
                 displayTree.clear();
-                var e = model.elementMap[n.getName()];
+                var e = m.elementMap[n.getName()];
                 e.populateProperties(displayTree);
             
                 if (e.misc_elements.length > 0 )
@@ -903,7 +916,18 @@ define([
         /**
          * Note that n could also be a topology
          * @param {Node} n**/
-        function onNodeClick(n) {
+        function onNodeClick(n, currentOutputApi) {
+            if (!fullSize && currentOutputApi) {
+              var o = currentOutputApi;  
+              var m = modelMap[o.svgContainerName];
+            } else if (!fullSize) { 
+              var divname = getRenderedElementParentDiv(n);
+              var o = outputApiMap[divname];
+              var m = modelMap[o.svgContainerName];
+            } else{ 
+              var o = outputApi;
+              var m = model;
+            }
             if (d3.event) {
                 //In the case of artificial clicks, d3.event may be null
                 d3.event.stopPropagation(); //prevent the click from being handled by the background, which would hide the panel
@@ -919,12 +943,12 @@ define([
             }
             highlightedNode = n;
             drawHighlight();
-            if (outputApi.getDisplayTree()) {
-                outputApi.setDisplayName(n.getName());
+            if (o.getDisplayTree()) {
+                o.setDisplayName(n.getName());
                 /**@type {DropDownTree} displayTree**/
-                var displayTree = outputApi.getDisplayTree();
+                var displayTree = o.getDisplayTree();
                 displayTree.clear();
-                var e = model.elementMap[n.getName()];
+                var e = m.elementMap[n.getName()];
                 e.populateProperties(displayTree);
             
                 if (e.misc_elements.length > 0 )

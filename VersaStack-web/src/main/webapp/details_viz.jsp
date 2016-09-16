@@ -79,7 +79,7 @@
               margin:auto;
               margin-top:10px;
             }*/
-            #displayPanel {
+            .displayPanel {
               text-align:center;
               background-color:#EDEDED;
               width:25%;
@@ -94,7 +94,7 @@
               z-index:1;
             }
 
-            #displayPanel.displayPanel-active {display:block;}
+            .displayPanel.displayPanel-active {display:block;}
             .urnLink {
                 color:blue;
                 cursor:pointer;
@@ -112,10 +112,16 @@
             .dropDownArrow {cursor:pointer;}
 
             .treeMenu{
+            
                 margin-left:15px;
                 text-align: left;
+/*                min-height:150px;
+                max-height:250px;
+                overflow-y:scroll;
+                overflow: -moz-scrollbars-vertical;
+                clear:both;*/
             }
-            #treeMenu {
+            .treeMenu-container {
                 min-height:150px;
                 max-height:250px;
                 overflow-y:scroll;
@@ -123,7 +129,7 @@
                 clear:both;
                 /* webkit scrollbar stuff */
             }
-            #displayName {
+            .displayName {
                 text-align: center;
                 visibility: visible;
                 padding: 7px;
@@ -135,27 +141,27 @@
                 word-break: break-all;
             }
 
-            #displayPanel-actions {    
+            .displayPanel-actions {    
             /*    bottom: 20px;
                 position: absolute;   */
                 padding-bottom: 2%;
 
             }
 
-            #displayPanelBar {
+            .displayPanelBar {
                 width:100%;
                 cursor:default;
             }
-            #displayPanelCloser{
+            .displayPanelCloser{
               color:grey;
               cursor:pointer;
             }
 
-            #displayPanelCloserBar{
+            .displayPanelCloserBar{
               padding-left:95%;    
               border-bottom: black 1px solid;
             }
-            #displayPanel-contents{ 
+            .displayPanel-contents{ 
                 padding-right: 3%;
             }
             .details-viz-button{
@@ -224,13 +230,15 @@
                                             utils = utils_;
                                             map_ = utils.map_;
                                             bsShowFadingMessage = utils.bsShowFadingMessage;
-        
+                                            positionDisplayPanel =   utils.positionDisplayPanel;
 
                                             // possibly pass in map here later for all possible dialogs 
                                             ContextMenu = c; 
                                             DropDownTree = tree;
-                                            functionMap['ModelBrowser'] = function(o, m) {
-                                                var browser = document.querySelector("#displayPanel");
+                                            functionMap['ModelBrowser'] = function(o, m, e) {
+                                                positionDisplayPanel( m + "_displayPanel", e);
+                                                var browser = document.querySelector("#" + m + "_displayPanel");
+                                                $(".displayPanel").removeClass("displayPanel-active");
                                                 browser.classList.add( "displayPanel-active");
                                                 render.API.selectElement(o, outputApiMap[m]);
                                                 
@@ -261,10 +269,41 @@
 //                                     //alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
 //                                   }
 //                            }); 
-                            document.getElementById("displayPanelCloser").onclick = function() {
-                             $("#displayPanel").removeClass( "displayPanel-active");
-                            };
+                            $(".displayPanelCloser").on("click", function(){
+                                  $(".displayPanel").removeClass("displayPanel-active");
+
+                            }); 
+                            
+//                            document.getElementById("displayPanelCloser").onclick = function() {
+//                              // $("#displayPanel").removeClass( "displayPanel-active");
+//                                $(".displayPanel").removeClass("displayPanel-active");
+//
+//                            };
                         });                
+            }
+            
+            function make_display_panel(div_id, prefix) {
+                var display_panel = "<div class=\"displayPanel\" id=\"" + prefix + "_displayPanel\"> "+
+                      "<div class=\"displayPanelBar\">" +
+                        "<div class=\"displayPanelCloserBar\"> " +
+                        "<i id=\"displayPanelCloser\" class=\"fa fa-times displayPanelCloser\" aria-hidden=\"true\"></i>" + 
+                            "</div>" +
+                        "</div>" + 
+                    "<div class=\"displayPanel-contents\">" + 
+                        "<div class=\"displayName\" id=\"" + prefix + "_displayName\"></div>" +
+                     "   <div class=\"treeMenu-container\" id=\"" + prefix + "_treeMenu\"></div>    "    +        
+                    "</div>" +
+                    "<div class=\"displayPanel-actions-container\">" +
+                        "<div id=\"displayPanel-actions\">" +
+                          "  <button id=\"" + prefix + "_backButton\">Back</button>" +
+                         "   <button id=\"" + prefix + "_forwardButton\">Forward</button>" +
+                        "</div>" + 
+                   " </div>" + 
+                 "  </div>  "  ;   
+                  var div = document.getElementById(div_id);
+                  div.insertAdjacentHTML("beforeend", display_panel);
+                //$("#" + div_id).append(display_panel);
+
             }
             
             function make_viz(div_id, prefix) {
@@ -336,7 +375,7 @@
                 layout.doLayout(model2, null, width, height);
                 layout.doLayout(model2, null, width, height);
                 outputApi.setZoom(.8);
-                render.doRender(outputApi, model2, false, modelMap);
+                render.doRender(outputApi, model2, false, modelMap, outputApiMap);
 //                animStart(30);
             }
             function displayError(error, d3_obj, viz_id) {
@@ -398,7 +437,7 @@
             
             function renderModels() {
                 var UUID = location.search.split("?uuid=")[1];
-                
+       
                  $.ajax({
                     crossDomain: true,
                     type: "GET",
@@ -600,7 +639,7 @@
                 };
 
                 
-                var displayTree = new DropDownTree(document.getElementById("treeMenu"), that);
+                var displayTree = new DropDownTree(document.getElementById(that.svgContainerName + "_treeMenu"), that);
                 displayTree.renderApi = this.renderApi;
                 displayTree.contextMenu = this.contextMenu;
 
@@ -609,7 +648,7 @@
                 };
 
                 this.setDisplayName = function (name) {
-                    document.getElementById("displayName").innerText = name;
+                    document.getElementById(that.svgContainerName + "_displayName").innerText = name;
                 };
 
                 var zoomFactor = settings.INIT_ZOOM;
@@ -772,7 +811,7 @@
                     }
                 });
                 
-                $("#displayPanel").draggable({handle: "#displayPanelBar"});                
+                $(".displayPanel").draggable({handle: "#displayPanelBar"});                
             }
         </script>        
         <!-- MAIN PANEL -->
@@ -787,6 +826,15 @@
             make_viz("pane", "serva");        
             make_viz("pane", "servr");
             make_viz("pane", "sysr");
+            make_display_panel("pane", "va_viz");
+            make_display_panel("pane", "vr_viz");
+            make_display_panel("pane", "ua_viz");
+            make_display_panel("pane", "ur_viz");
+            make_display_panel("pane", "sysa_viz");
+            make_display_panel("pane", "serva_viz");
+            make_display_panel("pane", "servr_viz"); 
+            make_display_panel("pane", "sysr_viz");            
+
             onload(); 
         </script>
          <!-- CONTEXT MENU -->
@@ -803,7 +851,7 @@
     <div id="dialog_policyData" title="Policy Data">
     </div>
         
-          <div id="displayPanel">
+<!--          <div id="displayPanel">
                       <div id="displayPanelBar">
             <div id="displayPanelCloserBar">
                 <i id="displayPanelCloser" class="fa fa-times" aria-hidden="true"></i>
@@ -820,7 +868,7 @@
                     <button id="forwardButton">Forward</button>
                 </div>
             </div>
-           </div>       
+           </div>       -->
          
          <!-- DEFINITION SVG -->
              <svg id="definition_svg" visibility = "hidden" >

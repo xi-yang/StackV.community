@@ -38,29 +38,29 @@ define([
         this.outputApi = outputApi;
         var currentIndex = -1;
         var lastIndex = -1;
-        
 
                 
         var that = this;
         
         // Code for all functionality related to the Model Browser goes here. 
         // going back and forth in stuff that already exists 
-        $("#backButton").on('click',  function() {
-            console.log("I'm in back : currentIndex: " + currentIndex + " lastIndex: " + lastIndex);
+        $("#" + that.outputApi.svgContainerName + "_backButton").on('click',  function() {
+                console.log("I'm in back : currentIndex: " + currentIndex + " lastIndex: " + lastIndex);
 
-            if (that.history.length > 0  && currentIndex - 1 >= 0 ) {
-               currentIndex--;
-               that.renderApi.clickNode(that.history[currentIndex][0], that.history[currentIndex][1], that.outputApi);
-            }
+                if (that.history.length > 0  && currentIndex - 1 >= 0 ) {
+                    currentIndex--;
+                    that.renderApi.clickNode(that.history[currentIndex][0], that.history[currentIndex][1], that.outputApi);
+                }
+            
         });
 
-        $("#forwardButton").on('click',  function() { 
-              console.log("I'm in forward: currentIndex: " + currentIndex + " lastIndex: " + lastIndex);
+        $("#" + that.outputApi.svgContainerName + "_forwardButton").on('click',  function() { 
+                console.log("I'm in forward: currentIndex: " + currentIndex + " lastIndex: " + lastIndex);
                            
-             if (that.history.length > 0  && currentIndex + 1 <= lastIndex ) {
-               currentIndex++;
-               that.renderApi.clickNode(that.history[currentIndex][0], that.history[currentIndex][1], that.outputApi);
-            }               
+                if (that.history.length > 0  && currentIndex + 1 <= lastIndex ) {
+                    currentIndex++;
+                    that.renderApi.clickNode(that.history[currentIndex][0], that.history[currentIndex][1], that.outputApi);
+                }              
         });        
        
         this.addToHistory = function(name, type) {

@@ -658,8 +658,8 @@
             </div>
             <div id="displayPanel-actions-container">
                 <div id="displayPanel-actions">
-                    <button id="backButton">Back</button>
-                    <button id="forwardButton">Forward</button>
+                    <button id="viz_backButton">Back</button>
+                    <button id="viz_forwardButton">Forward</button>
                     <div id="URISeachContainer" style="float:right;padding-left:10px;">
                         Search
                         <input type="text" name="Search" id="URISearchInput" placeholder="Enter URI">
