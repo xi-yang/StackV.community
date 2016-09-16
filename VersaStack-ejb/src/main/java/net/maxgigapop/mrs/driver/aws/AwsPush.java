@@ -458,7 +458,7 @@ public class AwsPush {
                 ec2Client.vpcStatusCheck(vpcId, VpcState.Available.name().toLowerCase());
                 //tag the routing table of the 
                 RouteTable mainTable = null;
-                for (int retry = 0; retry < 6; retry++) {
+                for (int retry = 0; retry < 12; retry++) {
                     DescribeRouteTablesResult tablesResult = this.ec2.describeRouteTables();
                     for (RouteTable tb : tablesResult.getRouteTables()) {
                         if (tb.getVpcId().equals(vpcId)) {
