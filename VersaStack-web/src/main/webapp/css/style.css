@@ -719,7 +719,7 @@ body {
     max-height: 100%;
 }
 #catalog-tab-content {
-    background: linear-gradient(rgba(75,75,75,0.3), rgba(0,0,0,0.4)), url('/VersaStack-web/img/background.png');
+    background: linear-gradient(rgba(0, 0, 0, 0.3),#333), url('/VersaStack-web/img/background.png');
     width: 100%;
     height: calc(100% - 32px);
     border-right: 1px solid white;

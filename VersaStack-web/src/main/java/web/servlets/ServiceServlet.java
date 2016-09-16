@@ -831,14 +831,14 @@ public class ServiceServlet extends HttpServlet {
 
                                     //Process SRIOV only when a floating IP is assigned
                                     for (int k = 1; k <= 10; k++) {
-                                        if (paraMap.containsKey("SRIOV" + k + "-ip") && Integer.parseInt(paraMap.get("SRIOV" + k + "-vm").trim()) == j) {
+                                        if (paraMap.containsKey("vm" + j + "-SRIOV" + k + "-ip")) {
                                             JSONObject sriovJSON = new JSONObject();
-                                            String addrString = "ipv4+" + paraMap.get("SRIOV" + k + "-ip");
-                                            addrString += ",mac+" + paraMap.get("SRIOV" + k + "-mac");
+                                            String addrString = "ipv4+" + paraMap.get("vm" + j + "-SRIOV" + k + "-ip");
+                                            addrString += ",mac+" + paraMap.get("vm" + j + "-SRIOV" + k + "-mac");
                                             sriovJSON.put("address", addrString);
                                             sriovJSON.put("name", paraMap.get(typeStr + "vm" + j + "-name") + ":eth" + k);
                                             sriovJSON.put("type", "SRIOV");
-                                            sriovJSON.put("gateway", paraMap.get("gateway" + paraMap.get("SRIOV" + k + "-gateway") + "-name"));
+                                            sriovJSON.put("gateway", paraMap.get("gateway" + paraMap.get("vm" + j + "-SRIOV" + k + "-gateway") + "-name"));
                                             
                                             interfaceArr.add(sriovJSON);
                                         }
@@ -859,7 +859,9 @@ public class ServiceServlet extends HttpServlet {
                                         volumeArr.add(volumeJSON);
                                     }
                                 }
-                                vmJSON.put("ceph_rbd", volumeArr);
+                                if (!volumeArr.isEmpty()) {
+                                    vmJSON.put("ceph_rbd", volumeArr);
+                                }
 
                                 //Parse BGP
                                 JSONObject bgpJSON = new JSONObject();
@@ -878,7 +880,9 @@ public class ServiceServlet extends HttpServlet {
                                     networkArr.addAll(Arrays.asList(networkSplit));
                                     bgpJSON.put("networks", networkArr);
                                 }
-                                vmJSON.put("quagga_bgp", bgpJSON);
+                                if (!bgpJSON.isEmpty()) {
+                                    vmJSON.put("quagga_bgp", bgpJSON);
+                                }
                             }
 
                             // Process each routes.

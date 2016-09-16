@@ -690,7 +690,11 @@ public class serviceBeans {
                                             }
                                             // add VM level routes
                                             if (vmRouteArr != null && !vmRouteArr.isEmpty()) {
-                                                routeArr.addAll(vmRouteArr);
+                                                if (routeArr == null) {
+                                                    routeArr = vmRouteArr;
+                                                } else {
+                                                    routeArr.addAll(vmRouteArr);
+                                                }
                                                 vmRouteArr = null;
                                             }
                                             // sriov port_profile
@@ -1199,7 +1203,11 @@ public class serviceBeans {
                                         }
                                         JSONArray routeArr = (JSONArray) interJson.get("routes");
                                         if (vmRouteArr != null && !vmRouteArr.isEmpty()) {
-                                            routeArr.addAll(vmRouteArr);
+                                            if (routeArr == null) {
+                                                routeArr = vmRouteArr;
+                                            } else {
+                                                routeArr.addAll(vmRouteArr);
+                                            }
                                             vmRouteArr = null;
                                         }
                                         //Find sriov parameter from Gateways.

@@ -5,7 +5,7 @@
 {
 	"Virtual Cloud Networks": [
 		{
-			"Virtual Netwwork Name": "?vpc?",
+			"Virtual Network Name": "?vpc?",
 			"L2 Subnets": [
 				{
 					"Subnet Name": "?subnet?",
@@ -13,8 +13,9 @@
 					"Virtual Machines": [
 						{
 							"VM URI": "?vm?",
+                                                        "Private IP": "?vm_private_ip?",
 							"Instruction": "To access the VM: ssh -i ?vm_keyname? user@?vm_public_ip? ",
-							"sparql": "SELECT ?vm ?vm_keyname ?vm_keyname ?vm_public_ip WHERE { ?subnet nml:hasBidirectionalPort ?vm_eth0. ?vm  nml:hasBidirectionalPort ?vm_eth0. ?ec2 mrs:providesVM ?vm. OPTIONAL { ?vm mrs:type ?vm_keyname. FILTER (regex(?vm_keyname,'^keypair.+$')) } OPTIONAL { ?vm nml:hasBidirectionalPort ?vm_eth0. ?vm_eth0 mrs:hasNetworkAddress ?vm_public_na.?vm_public_na mrs:type \"floating-ip\".  ?vm_public_na mrs:value ?vm_public_ip. } }",
+							"sparql": "SELECT ?vm ?vm_keyname ?vm_keyname ?vm_public_ip ?vm_private_ip WHERE { ?subnet nml:hasBidirectionalPort ?vm_eth0. ?vm  nml:hasBidirectionalPort ?vm_eth0. ?ec2 mrs:providesVM ?vm. ?vm_eth0 mrs:hasNetworkAddress ?vm_private_na. ?vm_private_na mrs:type \"ipv4:private\". ?vm_private_na mrs:value ?vm_private_ip. OPTIONAL { ?vm mrs:type ?vm_keyname. FILTER (regex(?vm_keyname,'^keypair.+$')) } OPTIONAL { ?vm nml:hasBidirectionalPort ?vm_eth0. ?vm_eth0 mrs:hasNetworkAddress ?vm_public_na.?vm_public_na mrs:type \"floating-ip\".  ?vm_public_na mrs:value ?vm_public_ip. } }",
 							"required": "false",
          						"SR-IOV vNICs": [{
 								"vNIC URI": "?vnic?",
