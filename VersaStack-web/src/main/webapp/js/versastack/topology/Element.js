@@ -59,6 +59,10 @@ define(["local/versastack/topology/modelConstants"], function (values) {
            
             var types = this._backing[values.type];
             
+            if (!types) {
+                types = this._backing[values.topoType];
+            }
+            
             var arr = map_(types, function (type) {
                 type = type.value;
 
@@ -68,7 +72,11 @@ define(["local/versastack/topology/modelConstants"], function (values) {
             var index = arr.indexOf("http://www.w3.org/2002/07/owl#NamedIndividual");
             if (index > -1)
                 arr.splice(index, 1);
-            return arr[0].split("#")[1];
+            
+            if (arr[0].indexOf("#") >= 0)
+                return arr[0].split("#")[1];
+            else 
+                return arr[0];
         };
         
         this.populateProperties = function (tree) {
