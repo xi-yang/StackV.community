@@ -641,7 +641,7 @@ define([
             var tgtLead = e.svgLeadRight;
 
             //Without loss of generality, let src be on the left
-            if (e.edgeType !== "dependOn" && e.edgeType !== "importFrom" && e.edgeType !== "exportTo") {                
+            if (e.edgeType === null) {                
                 if (srcChoords.x > tgtChoords.x) {
                     var tmp = src;
                     src = tgt;
@@ -678,7 +678,7 @@ define([
                 tgtLead.style("visibility", "hidden");
             }
             
-            if (e.edgeType === "dependOn" || e.edgeType === "importFrom" || e.edgeType === "exportTo") {                
+            if (e.edgeType !== null) {                
                 e.svgNode.attr("x1", srcChoords.x)
                         .attr("y1", srcChoords.y)
                         .attr("x2", tgtChoords.x  )
@@ -784,6 +784,14 @@ define([
                 } else {
                     d3.select(e.svgNode.node()).style("filter", "url(#spaExportToOutline)");
                 }
+            } else if (e.edgeType !== null) {
+                d3.select(e.svgNode.node())
+                        .style("stroke", settings.EDGE_COLOR)
+                        .style("stroke-width", settings.EDGE_WIDTH)                
+                        .style("opacity", "1")
+                        .attr("marker-end", "url(#marker_arrow_" + outputApi.svgContainerName + ")")                
+                        .on("mousemove", onPolicyMouseMove.bind(undefined, e))
+                        .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));
             }
             
             e.svgLeadLeft = svgContainer.select("#edge2" + "_" + outputApi.svgContainerName).append("line")
@@ -890,7 +898,7 @@ define([
             //As we drag a node, the cursor may temporarliy leave the bounding box
             //of said node, causing flicker of the hoverdiv
             if (!isDragging) {
-                if  (n.edgeType === "dependOn" || n.edgeType === "importFrom" || n.edgeType === "exportTo") {
+                if  (n.edgeType !== undefined && n.edgeType !== null) {
                     outputApi.setHoverText(n.edgeType);                    
                 } else {    
                     outputApi.setHoverText(n.getName());
@@ -907,7 +915,7 @@ define([
             //of said node, causing flicker of the hoverdiv
             if (!isDragging) {
                 outputApi.setHoverVisible(false);
-                  if  (n.edgeType !== "dependOn" && n.edgeType !== "importFrom" && n.edgeType !== "exportTo") {
+                  if  (n.edgeType === null) {
                      setElementSize(n, false);
                  }
             }

@@ -1076,6 +1076,33 @@ define([
                for (var key in node_) {
                    console.log("key: " + key);
                    switch (key) {
+                       case values.providesVolume:
+                       case values.providesRoutingTable:
+                       case values.providesRoute:
+                       case values.providesVM:
+                       case values.providesVPC:
+                       case values.providesBucket:
+                       case values.hasBidirectionalPort:
+                       case values.hasService:
+                       case values.hasVolume:
+                       case values.hasNetworkAddress:
+                       case values.hasLabel:
+                       case values.hasLabelGroup:                          
+                       case values.providesSubnet:
+                       case values.hasTag: 
+                       case values.hasNode:
+                       case values.hasTopology:
+                       case values.hasFileSystem:
+                       case values.hasBucket:
+                           var dos = node_[key];
+                           map_(dos, function (do_key) {
+                               do_key = do_key.value;
+                               var d_o = that.nodeMap[do_key];
+                               var toAdd = new Edge(node, d_o);
+                               toAdd.edgeType = key.split("#")[1];
+                               that.policyEdges.push(toAdd);
+                           });                                    
+                            break;
                        case values.spaDependOn:
                            var dos = node_[key];
                            map_(dos, function (do_key) {
