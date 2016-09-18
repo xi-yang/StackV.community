@@ -813,7 +813,7 @@
                     }
                 });
                 
-                $(".displayPanel").draggable({handle: "#displayPanelBar"});                
+                $(".displayPanel").draggable({handle: ".displayPanelBar"});                
             }
         </script>        
         <!-- MAIN PANEL -->
