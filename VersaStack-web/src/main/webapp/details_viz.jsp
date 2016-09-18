@@ -422,8 +422,10 @@
                 button.click(function(evt) {
                      if (!viz_svg.hasClass("hide")) {
                         viz_svg.addClass("hide");
+                        button.html("View Visualization");
                         $("#" + prefix + "_text_div").removeClass("hide");
                     } else {
+                        button.html("View Text Model");
                         $("#" + prefix + "_text_div").addClass("hide");
                         viz_svg.removeClass("hide");
                     }
