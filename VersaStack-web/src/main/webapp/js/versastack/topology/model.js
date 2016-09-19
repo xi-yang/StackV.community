@@ -687,9 +687,12 @@ define([
                 return null;
             
             for (var rel in e.relationship_to){
-                if (that.elementMap[rel].getType() === "Node" ||
-                    that.elementMap[rel].getType() === "Topology")
-                    return rel;
+                if (rel.indexOf("provides") >= 0 || 
+                    rel.indexOf("has") >= 0 ) {
+                    if (that.elementMap[rel].getType() === "Node" ||
+                        that.elementMap[rel].getType() === "Topology")
+                        return rel;
+                }
             }
             return null;
         };
@@ -1207,7 +1210,7 @@ define([
                             } else if (baseModel.getBaseOrigin(key)) {
                                 types = baseModel.getBaseOrigin(key)._map[key][values.type];
                                 val[values.type] = types;
-                                detailsReference = true;
+                                //detailsReference = true;
                             } else {
                                 continue;
                             }                            
