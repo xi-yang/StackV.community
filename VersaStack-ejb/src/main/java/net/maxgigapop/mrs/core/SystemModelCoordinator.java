@@ -102,7 +102,14 @@ public class SystemModelCoordinator {
                 this.systemVersionGroup.createUnionModel();
             }
         } else {
-            VersionGroup newVersionGroup = systemCallHandler.updateHeadVersionGroup(systemVersionGroup.getRefUuid());
+            VersionGroup newVersionGroup = null;
+            try {
+                newVersionGroup = systemCallHandler.updateHeadVersionGroup(systemVersionGroup.getRefUuid());
+            } catch (Exception ex) {
+                this.systemVersionGroup = null;
+                bootStrapped = false;
+                return;
+            }
             if (newVersionGroup != null && !newVersionGroup.equals(systemVersionGroup)) {
                 this.systemVersionGroup = newVersionGroup;
                 this.systemVersionGroup.createUnionModel();
@@ -110,7 +117,7 @@ public class SystemModelCoordinator {
         }
         if (!bootStrapped) {
             // cleanning up from recovery
-            VersionGroupPersistenceManager.cleanupAndUpdateAll();
+            VersionGroupPersistenceManager.cleanupAndUpdateAll(systemVersionGroup);
             Date before24h = new Date(System.currentTimeMillis()-24*60*60*1000);
             VersionItemPersistenceManager.cleanupAllBefore(before24h);
             bootStrapped = true;

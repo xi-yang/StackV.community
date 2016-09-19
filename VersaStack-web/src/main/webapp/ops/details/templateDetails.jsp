@@ -178,15 +178,15 @@
                                     <td></td>
                                     <td>${delta.delta}</td>
                                 </tr>
-                            <tr>                               
-                                <td colspan="2">       
-                                    <button  class="details-model-toggle" onclick="toggleTextModel('.${delta.type}-delta-table', '#delta-${delta.type}');">Toggle Text Model</button>          
-                                </td>
-                            </tr>                                
+                                <tr>                               
+                                    <td colspan="2">       
+                                        <button  class="details-model-toggle" onclick="toggleTextModel('.${delta.type}-delta-table', '#delta-${delta.type}');">Toggle Text Model</button>          
+                                    </td>
+                                </tr>                                
                             </tbody>
                         </table>
                     </c:forEach>
-                                    
+
                     <table class="management-table hide service-delta-table">
                         <thead class="delta-table-header">
                             <tr>
@@ -208,7 +208,7 @@
                             </tr>
                         </tbody>
                     </table>
-                                    
+
                     <table class="management-table hide system-delta-table">
                         <thead class="delta-table-header">
                             <tr>
@@ -344,7 +344,7 @@
             }
 
             function loadVisualization() {
-                $("#details-viz").load("/VersaStack-web/details_viz.jsp", function() {
+                $("#details-viz").load("/VersaStack-web/details_viz.jsp", function () {
                     // Loading Verification visualization
                     $("#ver-add").append($("#va_viz_div"));
                     $("#ver-add").find("#va_viz_div").removeClass("hidden");
@@ -357,59 +357,59 @@
 
                     $("#unver-red").append($("#ur_viz_div"));
                     $("#unver-red").find("#ur_viz_div").removeClass("hidden");
-                    
+
                     // Loading Service Delta visualization
-                    $("#delta-Service").addClass("hide"); 
+                    $("#delta-Service").addClass("hide");
                     $(".service-delta-table").removeClass("hide");
-                    
+
                     $("#serv-add").append($("#serva_viz_div"));
                     $("#serv-add").find("#serva_viz_div").removeClass("hidden");
 
-                    $("#serv-red").append($("#servr_viz_div"));     
+                    $("#serv-red").append($("#servr_viz_div"));
                     $("#serv-red").find("#servr_viz_div").removeClass("hidden");
 
                     // Loading System Delta visualization 
                     var subState = document.getElementById("instance-substate").innerHTML;
                     var verificationTime = document.getElementById("verification-time").innerHTML;
-                    if ((subState !== 'READY' && subState === 'FAILED') || verificationTime === '') {                       
-                        $("#delta-System").addClass("hide"); 
+                    if ((subState !== 'READY' && subState === 'FAILED') || verificationTime === '') {
+                        $("#delta-System").addClass("hide");
                         $("#delta-System").insertAfter(".system-delta-table");
 
                         $(".system-delta-table").removeClass("hide");
-                        
+
                         // Toggle button should toggle  between system delta visualization and delta-System table
                         // if the verification failed
-                        document.querySelector(".system-delta-table .details-model-toggle").onclick =  function () {
+                        document.querySelector(".system-delta-table .details-model-toggle").onclick = function () {
                             toggleTextModel('.system-delta-table', '#delta-System');
                         };
-                        
+
                         $("#sys-red").append($("#sysr_viz_div"));
-                        $("#sys-add").append($("#sysa_viz_div"));     
+                        $("#sys-add").append($("#sysa_viz_div"));
 
                         $("#sys-red").find("#sysr_viz_div").removeClass("hidden");
-                        $("#sys-add").find("#sysa_viz_div").removeClass("hidden");                    
+                        $("#sys-add").find("#sysa_viz_div").removeClass("hidden");
                     } else {
                         // Toggle button should toggle between  verification visualization and delta-System table
                         // if the verification succeeded
                         $("#delta-System").insertAfter(".verification-table");
                         document.querySelector("#delta-System .details-model-toggle").onclick = function () {
                             toggleTextModel('.verification-table', '#delta-System');
-                        };                        
+                        };
                     }
-                });      
+                });
             }
-            
+
             function toggleTextModel(viz_table, text_table) {
                 if (!$(viz_table.toLowerCase()).length) {
-                   alert("Visualization not found");
+                    alert("Visualization not found");
                 } else if (!$(text_table).length) {
-                   alert("Text model not found");               
+                    alert("Text model not found");
                 } else {
                     $(viz_table.toLowerCase()).toggleClass("hide");
-                    $(text_table).toggleClass("hide");                    
+                    $(text_table).toggleClass("hide");
                 }
-            } 
-            
+            }
+
             // Moderation Functions
 
             function deltaModerate() {
@@ -433,7 +433,7 @@
                     if (verificationReduction === '' || (verRed === '{ }' && unverRed === '{ }')) {
                         $("#verification-reduction-row").addClass("hide");
                     }
-                } 
+                }
             }
 
             function instructionModerate() {
@@ -543,7 +543,7 @@
                     }
                     // State 4 - Failed & Verifying
                     else if (subState === 'FAILED' && verificationState === '0') {
-                        
+
                     }
                     // State 5 - Failed & Verified
                     else if (subState === 'FAILED' && verificationState === '1') {

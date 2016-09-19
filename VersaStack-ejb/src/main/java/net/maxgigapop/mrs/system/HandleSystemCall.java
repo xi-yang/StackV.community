@@ -473,7 +473,7 @@ public class HandleSystemCall {
         // remove all related versionItems
         VersionItemPersistenceManager.deleteByDriverInstance(di);
         // remove all empty versionGroups
-        VersionGroupPersistenceManager.cleanupAll();
+        VersionGroupPersistenceManager.cleanupAll(null);
         // delete this driverInstance from db
         DriverInstancePersistenceManager.delete(di);
         // set system ready status to false and rebootstrap

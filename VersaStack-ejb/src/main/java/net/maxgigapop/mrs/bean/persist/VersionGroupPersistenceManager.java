@@ -111,18 +111,31 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
         return vg;
     }
 
-    public static void cleanupAll() {
+    public static void cleanupAll(VersionGroup butVG) {
         try {
-            Query q = createQuery(String.format("FROM %s", VersionGroup.class.getSimpleName()));
+            // remove all VGs that has no dependency (by systemDelta)
+            Query q = createQuery(String.format("FROM %s vg WHERE NOT EXISTS (FROM %s as delta WHERE delta.referenceVersionGroup = vg)", VersionGroup.class.getSimpleName(), SystemDelta.class.getSimpleName()));
             List<VersionGroup> listVG = (List<VersionGroup>) q.getResultList();
-            if (listVG == null) {
-                return;
-            }
-            Iterator<VersionGroup> it = listVG.iterator();
-            while (it.hasNext()) {
-                VersionGroup vg = it.next();
-                if (vg.getVersionItems() == null || vg.getVersionItems().isEmpty()) {
+            if (listVG != null) {
+                Iterator<VersionGroup> it = listVG.iterator();
+                while (it.hasNext()) {
+                    VersionGroup vg = it.next();
+                    if (butVG != null && vg.getRefUuid().equals(butVG.getRefUuid())) {
+                        continue;
+                    }
                     VersionGroupPersistenceManager.delete(vg);
+                }
+            }
+            // remove all empty VGs
+            q = createQuery(String.format("FROM %s", VersionGroup.class.getSimpleName()));
+            listVG = (List<VersionGroup>) q.getResultList();
+            if (listVG != null) {
+                Iterator<VersionGroup> it = listVG.iterator();
+                while (it.hasNext()) {
+                    VersionGroup vg = it.next();
+                    if (vg.getVersionItems() == null || vg.getVersionItems().isEmpty()) {
+                        VersionGroupPersistenceManager.delete(vg);
+                    }
                 }
             }
         } catch (Exception e) {
@@ -130,10 +143,24 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
         }
     }
     
-    public static void cleanupAndUpdateAll() {
+    public static void cleanupAndUpdateAll(VersionGroup butVG) {
         try {
-            Query q = createQuery(String.format("FROM %s", VersionGroup.class.getSimpleName()));
+            // remove all VGs that has no dependency (by systemDelta)
+            Query q = createQuery(String.format("FROM %s vg WHERE NOT EXISTS (FROM %s as delta WHERE delta.referenceVersionGroup = vg)", VersionGroup.class.getSimpleName(), SystemDelta.class.getSimpleName()));
             List<VersionGroup> listVG = (List<VersionGroup>) q.getResultList();
+            if (listVG != null) {
+                Iterator<VersionGroup> it = listVG.iterator();
+                while (it.hasNext()) {
+                    VersionGroup vg = it.next();
+                    if (butVG != null && vg.getRefUuid().equals(butVG.getRefUuid())) {
+                        continue;
+                    }
+                    VersionGroupPersistenceManager.delete(vg);
+                }
+            }
+            // remove all empty VGs and update the non-empty
+            q = createQuery(String.format("FROM %s", VersionGroup.class.getSimpleName()));
+            listVG = (List<VersionGroup>) q.getResultList();
             if (listVG == null) {
                 return;
             }
@@ -141,8 +168,10 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
             while (it.hasNext()) {
                 VersionGroup vg = it.next();
                 if (vg.getVersionItems() == null || vg.getVersionItems().isEmpty()) {
-                    VersionGroupPersistenceManager.delete(vg);
+                    //@TODO: probe -> exception here (deletion may not be needed any way)
+                    //VersionGroupPersistenceManager.delete(vg);
                 } else {
+                    //@TODO: probe further: the update may create empty VGs
                     VersionGroupPersistenceManager.refreshToHead(vg, true);
                 }
                 

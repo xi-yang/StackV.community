@@ -1103,18 +1103,6 @@ public class WebResource {
             URL url = new URL(String.format("%s/service/verify/%s", host, refUuid));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String result = servBean.executeHttpMethod(url, conn, "GET", null);
-            /*
-             { 
-             referenceUUID = service_delta_uuid,
-             creationTime = date / time string,
-             verifiedModelReduction = verified_model in string,
-             unverifiedModelReduction = verified_model in string,
-             reductionVerified = "true" or "false" in string,
-             verifiedModelAddition = verified_model in string,
-             unverifiedModelAddition = verified_model in string,
-             additionVerified = "true" or "false" in string,
-             }
-             */
 
             // Pull data from JSON.
             JSONObject verifyJSON = new JSONObject();

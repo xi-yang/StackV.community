@@ -158,7 +158,7 @@
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="button" name="next" class="next action-button" value="Next" />                    
                 </fieldset>
-                
+
                 <!-- Stage 4: Gateways -->
                 <fieldset id="4-1">
                     <h2 class="fs-title">OpenStack Gateways</h2>
@@ -171,7 +171,7 @@
 
                 <fieldset id="4-2">
                     <fieldset class="subfs" id="opsStage4-gateway-fs">
-                        
+
                     </fieldset>        
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
