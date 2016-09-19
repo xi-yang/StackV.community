@@ -723,7 +723,7 @@ public class WebResource {
                     verify(refUuid);
 
                     return 0;
-                } else if (!instanceState.equals("COMMITTED")) {
+                } else if (!(instanceState.equals("COMMITTED") || instanceState.equals("FAILED"))) {
                     return 5;
                 }
                 Thread.sleep(5000);
@@ -748,7 +748,7 @@ public class WebResource {
                     verify(refUuid);
 
                     return 0;
-                } else if (!instanceState.equals("COMMITTED")) {
+                } else if (!(instanceState.equals("COMMITTED") || instanceState.equals("FAILED"))) {
                     return 5;
                 }
                 Thread.sleep(5000);
@@ -773,7 +773,7 @@ public class WebResource {
                     verify(refUuid);
 
                     return 0;
-                } else if (!instanceState.equals("COMMITTED")) {
+                } else if (!(instanceState.equals("COMMITTED") || instanceState.equals("FAILED"))) {
                     return 5;
                 }
                 Thread.sleep(5000);
