@@ -687,8 +687,8 @@ define([
                 return null;
             
             for (var rel in e.relationship_to){
-                if (rel.indexOf("provides") >= 0 || 
-                    rel.indexOf("has") >= 0 ) {
+                if (e.relationship_to[rel].indexOf("provides") >= 0 || 
+                    e.relationship_to[rel].indexOf("has") >= 0 ) {
                     if (that.elementMap[rel].getType() === "Node" ||
                         that.elementMap[rel].getType() === "Topology")
                         return rel;
