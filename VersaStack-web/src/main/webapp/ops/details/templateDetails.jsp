@@ -489,6 +489,7 @@
                         $("#instance-fdelete").toggleClass("hide");
                         $("#instance-fcancel").toggleClass("hide");
                         $("#instance-fretry").toggleClass("hide");
+                        $("#instance-reverify").toggleClass("hide");
                     }
                     // State 1 - Ready & Verifying
                     if (subState === 'READY' && verificationState === '0') {
@@ -525,6 +526,7 @@
                     if (verificationState === "") {
                         $("#instance-fdelete").toggleClass("hide");
                         $("#instance-fretry").toggleClass("hide");
+                        $("#instance-reverify").toggleClass("hide");
                     }
                     // State 1 - Ready & Verifying
                     if (subState === 'READY' && verificationState === '0') {
@@ -565,6 +567,7 @@
                     if (verificationState === "") {
                         $("#instance-fdelete").toggleClass("hide");
                         $("#instance-fretry").toggleClass("hide");
+                        $("#instance-reverify").toggleClass("hide");
                     }
                     // State 1 - Ready & Verifying
                     if (subState === 'READY' && verificationState === '0') {
