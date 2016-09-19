@@ -632,7 +632,7 @@ public class serviceBeans {
                         } catch (Exception ex) {
                             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
                         }
-                    } 
+                    }
                     if (!vmPara[4].equals(" ")) {
                         try {
                             JSONArray interfaceArr = (JSONArray) jsonParser.parse(vmPara[4]);
@@ -787,8 +787,8 @@ public class serviceBeans {
                                 nodeHasVolume += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":volume+ceph" + volNum + "&gt;, ";
                                 svcDeltaCeph += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":volume+ceph" + volNum + "&gt;\n"
                                         + "   a  mrs:Volume;\n"
-                                        + "   mrs:disk_gb \""+ (String) rbdJSON.get("disk_gb") +"\";\n"
-                                        + "   mrs:mount_point \""+ (String) rbdJSON.get("mount_point") +"\".\n\n";
+                                        + "   mrs:disk_gb \"" + (String) rbdJSON.get("disk_gb") + "\";\n"
+                                        + "   mrs:mount_point \"" + (String) rbdJSON.get("mount_point") + "\".\n\n";
                                 volNum++;
                             }
                             providesVolume += nodeHasVolume;
@@ -796,9 +796,9 @@ public class serviceBeans {
                             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
                         }
                         if (!nodeHasVolume.isEmpty()) {
-                            svcDeltaCeph += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n" + "    mrs:hasVolume       " + nodeHasVolume.substring(0,nodeHasVolume.length()-2) + ".\n\n";
+                            svcDeltaCeph += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n" + "    mrs:hasVolume       " + nodeHasVolume.substring(0, nodeHasVolume.length() - 2) + ".\n\n";
                         }
-                    } 
+                    }
 
                     svcDelta += "&lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;\n"
                             + "    a            spa:PolicyAction ;\n"
@@ -837,12 +837,12 @@ public class serviceBeans {
                             + "    spa:value    \"\"\"" + connCriteriaValue.toString() + "\"\"\".\n\n";
                 }
 
-                if(!providesVolume.isEmpty()){
+                if (!providesVolume.isEmpty()) {
                     svcDeltaCeph += "&lt;urn:ogf:network:openstack.com:openstack-cloud:ceph-rbd&gt;\n"
-                            + "   mrs:providesVolume " + providesVolume.substring(0,providesVolume.length()-2) + " .\n\n";
+                            + "   mrs:providesVolume " + providesVolume.substring(0, providesVolume.length() - 2) + " .\n\n";
                     svcDelta += svcDeltaCeph;
                 }
-                
+
                 if (!dependOn.isEmpty()) {
                     svcDelta += "&lt;" + topoUri + ":vt&gt;\n"
                             + "   a  nml:Topology;\n"
@@ -903,8 +903,8 @@ public class serviceBeans {
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
                 result = this.executeHttpMethod(url, status, "GET", null);
                 /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
-                    throw new EJBException("Ready Check Failed!");
-                }*/
+                 throw new EJBException("Ready Check Failed!");
+                 }*/
             }
 
             return 0;
@@ -914,16 +914,16 @@ public class serviceBeans {
         }
     }
 
-    public int createHybridCloud(Map<String, String> paraMap)  {
+    public int createHybridCloud(Map<String, String> paraMap) {
         String refUuid = null;
         JSONParser jsonParser = new JSONParser();
         JSONArray vcnArr = null;
         String creatPathExportTo = "";
         //Mapping from paraMap to local variables
         for (Map.Entry<String, String> entry : paraMap.entrySet()) {
-            if (entry.getKey().equalsIgnoreCase("instanceUUID"))
+            if (entry.getKey().equalsIgnoreCase("instanceUUID")) {
                 refUuid = entry.getValue();
-            else if (entry.getKey().equalsIgnoreCase("virtual_clouds")) {
+            } else if (entry.getKey().equalsIgnoreCase("virtual_clouds")) {
                 try {
                     vcnArr = (JSONArray) jsonParser.parse(entry.getValue());
                 } catch (ParseException ex) {
@@ -934,7 +934,7 @@ public class serviceBeans {
 
         String deltaUUID = UUID.randomUUID().toString();
         String awsExportTo = "";
-        String awsDxStitching = "";        
+        String awsDxStitching = "";
         String svcDelta = "<serviceDelta>\n<uuid>" + deltaUUID
                 + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
                 + "\n\n<modelAddition>\n"
@@ -945,7 +945,7 @@ public class serviceBeans {
                 + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
                 + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n"
                 + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n";
-        
+
         for (Object obj : vcnArr) {
             JSONObject vcnJson = (JSONObject) obj;
             String topoUri = (String) vcnJson.get("parent");
@@ -1002,7 +1002,7 @@ public class serviceBeans {
 
             //absence check ?
             JSONArray gatewayArr = (JSONArray) vcnJson.get("gateways");
-            
+
             //find driver type
             Properties rains_connectionProps = new Properties();
             rains_connectionProps.put("user", rains_db_user);
@@ -1128,8 +1128,8 @@ public class serviceBeans {
                                 nodeHasVolume += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":volume+ceph" + ceph + "&gt;, ";
                                 svcDeltaCeph += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":volume+ceph" + ceph + "&gt;\n"
                                         + "   a  mrs:Volume;\n"
-                                        + "   mrs:disk_gb \""+ (String) cephJson.get("disk_gb") +"\";\n"
-                                        + "   mrs:mount_point \""+ (String) cephJson.get("mount_point") +"\".\n\n";
+                                        + "   mrs:disk_gb \"" + (String) cephJson.get("disk_gb") + "\";\n"
+                                        + "   mrs:mount_point \"" + (String) cephJson.get("mount_point") + "\".\n\n";
                             }
                             providesVolume += nodeHasVolume;
                         }
@@ -1137,7 +1137,7 @@ public class serviceBeans {
                         svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "&gt;\n"
                                 + "    a                         nml:Node ;\n"
                                 + (vmType == null ? "" : "    mrs:type       \"" + vmType + "\";\n")
-                                + (nodeHasVolume.isEmpty() ? "" : "    mrs:hasVolume       " + nodeHasVolume.substring(0,nodeHasVolume.length()-2) + ";\n")
+                                + (nodeHasVolume.isEmpty() ? "" : "    mrs:hasVolume       " + nodeHasVolume.substring(0, nodeHasVolume.length() - 2) + ";\n")
                                 + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0&gt; ;\n"
                                 + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;.\n\n"
                                 + "&lt;x-policy-annotation:action:create-" + vmName + "&gt;\n"
@@ -1198,8 +1198,8 @@ public class serviceBeans {
                                         String ip = null;
                                         String mac = null;
                                         for (String str : addArr) {
-                                            ip = str.contains("ipv4") ? str.substring(str.indexOf("ipv4")+5) : ip;
-                                            mac = str.contains("mac") ? str.substring(str.indexOf("mac")+4) : mac;
+                                            ip = str.contains("ipv4") ? str.substring(str.indexOf("ipv4") + 5) : ip;
+                                            mac = str.contains("mac") ? str.substring(str.indexOf("mac") + 4) : mac;
                                         }
                                         JSONArray routeArr = (JSONArray) interJson.get("routes");
                                         if (vmRouteArr != null && !vmRouteArr.isEmpty()) {
@@ -1251,9 +1251,9 @@ public class serviceBeans {
                                                         svcDelta += ",\n       \"routes\": " + routeArr.toString().replace("\\", "");
                                                     }
                                                     svcDelta += "\n    }\"\"\" .\n\n";
-                                                    if (gwJSON.containsKey("to") && ((JSONArray)gwJSON.get("to")).size() == 1 && ((JSONObject)((JSONArray)gwJSON.get("to")).get(0)).containsKey("type") 
-                                                            && ((JSONObject)((JSONArray)gwJSON.get("to")).get(0)).get("type").equals("peer_cloud")) {
-                                                        String peerCloudNet = ((JSONObject)((JSONArray)gwJSON.get("to")).get(0)).get("value").toString();
+                                                    if (gwJSON.containsKey("to") && ((JSONArray) gwJSON.get("to")).size() == 1 && ((JSONObject) ((JSONArray) gwJSON.get("to")).get(0)).containsKey("type")
+                                                            && ((JSONObject) ((JSONArray) gwJSON.get("to")).get(0)).get("type").equals("peer_cloud")) {
+                                                        String peerCloudNet = ((JSONObject) ((JSONArray) gwJSON.get("to")).get(0)).get("value").toString();
                                                         if (peerCloudNet.contains("?vlan=")) {
                                                             peerCloudNet = peerCloudNet.replace("?vlan=", "\":{\"vlan_tag\":\"");
                                                             peerCloudNet += "\"}\n";
@@ -1261,30 +1261,34 @@ public class serviceBeans {
                                                             peerCloudNet += "\":{\"vlan_tag\":\"any\"}\n";
                                                         }
                                                         svcDelta += "&lt;x-policy-annotation:data:aws-ops-criteria&gt;\n"
-                                                            + "    a            spa:PolicyData;\n"
-                                                            + "    spa:type     \"JSON\";\n"
-                                                            + "    spa:value    \"\"\"{\n"
-                                                            + "        \"urn:ogf:network:vo1_maxgigapop_net:link=conn1\": {\n"
-                                                            + "            \"" + topoUri + "\":{\"vlan_tag\":\"any\"},\n"
-                                                            + "            \"" + peerCloudNet
-                                                            + "        }\n"
-                                                            + "    }\"\"\".\n\n";
+                                                                + "    a            spa:PolicyData;\n"
+                                                                + "    spa:type     \"JSON\";\n"
+                                                                + "    spa:value    \"\"\"{\n"
+                                                                + "        \"urn:ogf:network:vo1_maxgigapop_net:link=conn1\": {\n"
+                                                                + "            \"" + topoUri + "\":{\"vlan_tag\":\"any\"},\n"
+                                                                + "            \"" + peerCloudNet
+                                                                + "        }\n"
+                                                                + "    }\"\"\".\n\n";
                                                     } else {
                                                         //@TODO: throw exception for format error!
                                                     }
                                                     if (vmJson.containsKey("quagga_bgp")) {
                                                         JSONObject quaggaJson = (JSONObject) vmJson.get("quagga_bgp");
-                                                        if(!quaggaJson.containsKey("as_number"))
+                                                        if (!quaggaJson.containsKey("as_number")) {
                                                             quaggaJson.put("as_number", "%$..customer_asn%");
-                                                        if(!quaggaJson.containsKey("router_id"))
-                                                            quaggaJson.put("router_id", "%$..customer_ip%");                                            
+                                                        }
+                                                        if (!quaggaJson.containsKey("router_id")) {
+                                                            quaggaJson.put("router_id", "%$..customer_ip%");
+                                                        }
                                                         JSONArray neighborArr = (JSONArray) quaggaJson.get("neighbors");
-                                                        for(Object neighborObj : neighborArr){
+                                                        for (Object neighborObj : neighborArr) {
                                                             JSONObject neighborJson = (JSONObject) neighborObj;
-                                                            if(!neighborJson.containsKey("remote_ip"))
+                                                            if (!neighborJson.containsKey("remote_ip")) {
                                                                 neighborJson.put("remote_ip", "%$..amazon_ip%");
-                                                            if(!neighborJson.containsKey("local_ip"))
+                                                            }
+                                                            if (!neighborJson.containsKey("local_ip")) {
                                                                 neighborJson.put("local_ip", "%$..customer_ip%");
+                                                            }
                                                         }
                                                         JSONArray quaggaNetworks = (JSONArray) quaggaJson.get("networks");
                                                         quaggaJson.remove("networks");
@@ -1298,22 +1302,21 @@ public class serviceBeans {
                                                                 + "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-remote&gt;\n"
                                                                 + "    a            spa:PolicyData ;\n"
                                                                 + "    spa:type     \"JSON\" ;\n"
-                                                                + "    spa:format   \"\"\""+ quaggaJson.toString() +"\"\"\" .\n\n"
+                                                                + "    spa:format   \"\"\"" + quaggaJson.toString() + "\"\"\" .\n\n"
                                                                 + "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-local&gt;\n"
                                                                 + "    a            spa:PolicyData ;\n"
                                                                 + "    spa:type     \"JSON\" ;\n"
                                                                 + "    spa:value   \"\"\"{\n"
                                                                 + "       \"parent\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "\",\n"
-                                                                + "       \"networks\":"+ quaggaNetworks.toString().replace("\\", "") +"\n"
+                                                                + "       \"networks\":" + quaggaNetworks.toString().replace("\\", "") + "\n"
                                                                 + "    }\"\"\" .\n\n";
                                                         dependOn += "&lt;x-policy-annotation:action:nfv-quagga-bgp" + sriovCounter + "&gt;, ";
                                                         awsExportTo += "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-remote&gt;, ";
-                                                    }
-                                                    else {
+                                                    } else {
                                                         dependOn += "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;, ";
                                                     }
                                                     dependOn += "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;, ";
-                                                    creatPathExportTo += "&lt;x-policy-annotation:data:sriov-criteria" + sriovCounter + "&gt;, ";                                                    
+                                                    creatPathExportTo += "&lt;x-policy-annotation:data:sriov-criteria" + sriovCounter + "&gt;, ";
                                                 } else if (gwJSON.get("type").equals("ucs_port_profile")) {
                                                     //sriov port_profile
                                                     if (gwJSON.containsKey("from")) {
@@ -1335,7 +1338,7 @@ public class serviceBeans {
                                                                     + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "\",\n"
                                                                     + "       \"to_port_profile\": \"" + (String) fromJSON.get("value") + "\",\n"
                                                                     + "       \"mac_address\": \"" + mac + "\""
-                                                                    + (ip == null? "": ",\n       \"ip_address\": \"" + ip + "\"")
+                                                                    + (ip == null ? "" : ",\n       \"ip_address\": \"" + ip + "\"")
                                                                     + ((routeArr == null || routeArr.isEmpty()) ? "" : ",\n       \"routes\": " + routeArr.toString().replace("\\", ""))
                                                                     + "\n    }\"\"\" .\n\n";
                                                         }
@@ -1360,7 +1363,7 @@ public class serviceBeans {
                                                                     + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "\",\n"
                                                                     + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn" + (String) gwJSON.get("name") + "%\n"
                                                                     + "       \"mac_address\": \"" + mac + "\""
-                                                                    + (ip == null? "": ",\n       \"ip_address\": \"" + ip + "\"")
+                                                                    + (ip == null ? "" : ",\n       \"ip_address\": \"" + ip + "\"")
                                                                     + ((routeArr == null || routeArr.isEmpty()) ? "" : ",\n       \"routes\": " + routeArr.toString().replace("\\", ""))
                                                                     + "\n    }\"\"\" .\n\n";
                                                             createPathExportTo += "&lt;x-policy-annotation:data:" + vmName + "-sriov" + sriovCounter + "-criteria&gt;, ";
@@ -1379,7 +1382,7 @@ public class serviceBeans {
                                                                 connCriteriaValue.put("urn:ogf:network:vo1_maxgigapop_net:link=conn" + (String) gwJSON.get("name"), path);
                                                             }
                                                         }
-                                                    }                                                    
+                                                    }
                                                 } else {
                                                     // @error handling !
                                                 }
@@ -1394,10 +1397,10 @@ public class serviceBeans {
                         }
                     }
                 }
-                
-                if(!providesVolume.isEmpty()){
+
+                if (!providesVolume.isEmpty()) {
                     svcDeltaCeph += "&lt;urn:ogf:network:openstack.com:openstack-cloud:ceph-rbd&gt;\n"
-                            + "   mrs:providesVolume " + providesVolume.substring(0,providesVolume.length()-2) + " .\n\n";
+                            + "   mrs:providesVolume " + providesVolume.substring(0, providesVolume.length() - 2) + " .\n\n";
                 }
 
                 svcDelta += svcDeltaCeph
@@ -1411,7 +1414,7 @@ public class serviceBeans {
                         + "   a  nml:Topology;\n"
                         + "   spa:type spa:Abstraction;\n"
                         + "   spa:dependOn  " + dependOn.substring(0, dependOn.length() - 2) + ".\n\n";
-                
+
                 if (!createPathExportTo.isEmpty()) {
                     svcDelta += "&lt;x-policy-annotation:action:create-path&gt;\n"
                             + "    a            spa:PolicyAction ;\n"
@@ -1432,9 +1435,9 @@ public class serviceBeans {
                     + "    spa:value    \"\"\"" + vcnJson.toString().replace("\\", "")
                     + "\"\"\".\n\n";
         }
-        
-        awsDxStitching += awsExportTo.isEmpty()? ".\n\n" : 
-                ";\n    spa:exportTo " + awsExportTo.substring(0,awsExportTo.length()-2) + ".\n\n";
+
+        awsDxStitching += awsExportTo.isEmpty() ? ".\n\n"
+                : ";\n    spa:exportTo " + awsExportTo.substring(0, awsExportTo.length() - 2) + ".\n\n";
 
         svcDelta += awsDxStitching
                 + "&lt;x-policy-annotation:action:create-aws-ops-path&gt;\n"
@@ -1496,13 +1499,13 @@ public class serviceBeans {
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
                 result = this.executeHttpMethod(url, status, "GET", null);
                 /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
-                    throw new EJBException("Ready Check Failed!");
-                }*/
+                 throw new EJBException("Ready Check Failed!");
+                 }*/
             }
 
             return 0;
-            
-        }  catch (IOException | InterruptedException e) {
+
+        } catch (IOException | InterruptedException e) {
             throw new EJBException("Fatal Error -- " + e.getLocalizedMessage());
         }
     }
