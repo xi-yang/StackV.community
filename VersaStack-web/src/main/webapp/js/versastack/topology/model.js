@@ -1,4 +1,25 @@
-/**
+/*
+ * Copyright (c) 2013-2016 University of Maryland
+ * Modified by: Antonio Heard 2016
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Work.
+
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * IN THE WORK.
+
  * The goal of this class is to download the model from the back-end and convert
  * it into a format more convinient for displaying graphically.
  * 
@@ -52,6 +73,7 @@ define([
             // If ready, load the live model. Otherwise, load the static model. 
             request.open("GET", "/VersaStack-web/restapi/model/"); 
             //request.open("GET", "/VersaStack-web/data/json/spa-rvtk-versastack-qa1-1vm.json");
+            //request.open("GET", "/VersaStack-web/data/json/aws-blank.json");
             requestModel();
             
             function requestModel() {
@@ -88,8 +110,9 @@ define([
                         map[newNode.value][values.type] = [{type: 'uri', value: values.namedIndividual}, {type: 'uri', value: values.node}];
                     }
     //            map=data;
+                    that.modelString = JSON.stringify(map, null, '\t');
                     console.log("\n\nmap from request \n\n");
-                    console.log(JSON.stringify(map, null, 2));
+                    console.log(that.modelString);
 
                     /*
                      * We begin by extracting all nodes/topologies
@@ -268,7 +291,7 @@ define([
                                         if_key = if_key.value;
 
                                         var i_f = that.policyMap[if_key];                                       
-                                        var toAdd = new Edge(i_f, policy);
+                                        var toAdd = new Edge(i_f, policy); 
                                         toAdd.edgeType = "importFrom";
                                         that.policyEdges.push(toAdd);                                                                     
                                     });
@@ -344,6 +367,7 @@ define([
 
                                         var subnet = that.subnetMap[subnetKey];
                                         service.subnets.push(subnet);
+                                        subnet.origin = service;
                                     });
                                     break;
                                 case values.spaDependOn:
@@ -656,10 +680,19 @@ define([
             var e = that.elementMap[urn];
             
             if (!e) return null;
+            
+            // only get host URN for non-nodes & non-topologies 
+            var currentType = e.getType();
+            if (currentType === "Node" || currentType === "Topology")
+                return null;
+            
             for (var rel in e.relationship_to){
-                if (that.elementMap[rel].getType() === "Node" ||
-                    that.elementMap[rel].getType() === "Topology")
-                    return rel;
+                if (e.relationship_to[rel].indexOf("provides") >= 0 || 
+                    e.relationship_to[rel].indexOf("has") >= 0 ) {
+                    if (that.elementMap[rel].getType() === "Node" ||
+                        that.elementMap[rel].getType() === "Topology")
+                        return rel;
+                }
             }
             return null;
         };
@@ -693,6 +726,9 @@ define([
                     return that.portMap[urn];
                 case "Volume":
                     return that.volumeMap[urn];
+                case "Subnet":
+                case "SwitchingSubnet":
+                    return that.subnetMap[urn];
                 default: return null;
             }
         };
@@ -730,10 +766,14 @@ define([
                 case "Volume":
                     return new Volume(that.volumeMap[urn]._backing, 
                                       that.volumeMap[urn]._map);
+                case "Subnet":
+                case "SwitchingSubnet":
+                    return new Subnet(that.subnetMap[urn]._backing, 
+                                      that.subnetMap[urn]._map);
                 default: return null;
             }
         };
-               
+                
         this.makeSubModel = function(mapList) { 
 
             var nodeMap = {};
@@ -893,7 +933,246 @@ define([
                 volumeMap: volumeMap
             };
         };    
-                    
+ 
+        this.makeServiceDtlModel = function (map, baseModel) {
+            that.nodeMap = {};
+            that.elementMap = {};
+            that.policyMap = {};
+            that.policyEdges = [];
+            
+            for (var key in map) {
+                var val = map[key];
+                val.name = key;
+
+                var types = val[values.type];
+                var detailsReference = false;
+                if (!types) {
+                    if(val[values.topoType]) {
+                        types = val[values.topoType];
+                    } else if (baseModel.getBaseOrigin(key)) {
+                        types = baseModel.getBaseOrigin(key)._map[key][values.type];
+                        val[values.type] = types;
+                        detailsReference = true;
+                    } else {
+                        continue;
+                    }
+                }
+
+                that.elementMap[key] = new Element(val, map, that.elementMap);
+
+                map_(types, function (type) {
+                  type = type.value;
+
+                  // Adding every element to the elementMap for the 
+                  // displayPanel.  Ifnoring elemnets with the type "NamedIndividual"
+                  if (type.split("#")[1] === "NamedIndividual") return "";//                                                
+
+                  switch (type) {
+                      // Fallthrough group 
+                      case values.topology:
+                      case values.node:
+                      case values.bidirectionalPort:
+                      case values.switchingService:
+                      case values.topopolgySwitchingService:
+                      case values.hypervisorService:
+                      case values.routingService:
+                      case values.virtualCloudService:
+                      case values.blockStorageService:
+                      case values.objectStorageService:
+                      case values.virtualSwitchingService:
+                      case values.hypervisorBypassInterfaceService:
+                      case values.storageService:
+                      case values.IOPerformanceMeasurementService:
+                      case values.DataTransferService:
+                      case values.DataTransferClusterService:
+                      case values.NetworkObject:
+                      case values.switchingSubnet:
+                      case values.labelGroup:
+                      case values.label:
+                      case values.networkAdress:
+                      case values.bucket:
+                      case values.tag:
+                      case values.route:
+                      case values.volume:
+                      case values.routingTable:
+                      case values.ontology:
+                      case values.POSIX_IOBenchmark:
+                      case values.address:
+                          var toAdd;
+                          toAdd = new Node(val, map);
+                          toAdd.isTopology = type === values.topology;
+                          that.nodeMap[key] = toAdd;
+                          break;                             
+                      case values.spaPolicyData:
+                      case values.spaPolicyAction:
+                          var toAdd;
+                          toAdd = new Policy(val, map);
+
+                          that.policyMap[key] = toAdd;
+                          break;                                        
+                      default:
+                          console.log("Unknown type: " + type);
+                          break;
+                    }
+                });     
+            }
+            
+            for (var key in that.policyMap) {
+                var policy = that.policyMap[key];
+                var policy_ = policy._backing;
+                for (var key in policy_) {
+                    switch(key) {
+                        case values.spaType:
+                            if (policy.getTypeDetailed() === "PolicyAction")
+                            policy.data = policy_[key][0].value;
+                            break;
+                        case values.spaImportFrom:
+                            var ifs = policy_[key];
+                            map_(ifs, function (if_key) {
+                                if_key = if_key.value;
+
+                                var i_f = that.policyMap[if_key];                                       
+                                var toAdd = new Edge(i_f, policy); 
+                                toAdd.edgeType = "importFrom";
+                                that.policyEdges.push(toAdd);                                                                     
+                            });
+                            break;
+                        case values.spaExportTo:
+                            var ets = policy_[key];
+                            map_(ets, function (et_key) {
+                                et_key = et_key.value;
+                                var e_t = that.policyMap[et_key];
+                                var toAdd = new Edge(policy, e_t);
+                                toAdd.edgeType = "exportTo";
+                                that.policyEdges.push(toAdd);     
+                            });                                    
+                            break;
+                        case values.spaDependOn:
+                            var dos = policy_[key];
+                            map_(dos, function (do_key) {
+                                do_key = do_key.value;
+                                var d_o = that.policyMap[do_key];
+                                var toAdd = new Edge(policy, d_o);
+                                toAdd.edgeType = "dependOn";
+                                that.policyEdges.push(toAdd);                                                                    
+                             });
+                            break;
+                        case values.spaValue:
+                            if (policy.getTypeDetailed() === "PolicyData")
+                            policy.data = policy_[key][0].value;
+                            break;
+                        case values.spaFormat:
+                            if (policy.getTypeDetailed() === "PolicyData")
+                            policy.data = policy_[key][0].value;                                    
+                            break;
+                        default:
+                            console.log("Unknown policy attribute: " + key);
+                    }
+                }
+            }
+            //Associate ports and subnodes with their parent node
+           //Create services
+           for (var key in that.nodeMap) {
+               /**@type Node**/
+               var node = that.nodeMap[key];
+               var node_ = node._backing;
+               for (var key in node_) {
+                   console.log("key: " + key);
+                   switch (key) {
+                       case values.providesVolume:
+                       case values.providesRoutingTable:
+                       case values.providesRoute:
+                       case values.providesVM:
+                       case values.providesVPC:
+                       case values.providesBucket:
+                       case values.hasBidirectionalPort:
+                       case values.hasService:
+                       case values.hasVolume:
+                       case values.hasNetworkAddress:
+                       case values.hasLabel:
+                       case values.hasLabelGroup:                          
+                       case values.providesSubnet:
+                       case values.hasTag: 
+                       case values.hasNode:
+                       case values.hasTopology:
+                       case values.hasFileSystem:
+                       case values.hasBucket:
+                           var dos = node_[key];
+                           map_(dos, function (do_key) {
+                               do_key = do_key.value;
+                               var d_o = that.nodeMap[do_key];
+                               var toAdd = new Edge(node, d_o);
+                               toAdd.edgeType = key.split("#")[1];
+                               that.policyEdges.push(toAdd);
+                           });                                    
+                            break;
+                       case values.spaDependOn:
+                           var dos = node_[key];
+                           map_(dos, function (do_key) {
+                               do_key = do_key.value;
+                               var d_o = that.policyMap[do_key];
+                               var toAdd = new Edge(node, d_o);
+                               toAdd.edgeType = "dependOn";
+                               that.policyEdges.push(toAdd);
+                           });                                    
+                           break;                                                                          
+                       default:                         
+                           console.log("Unknown key: " + key);
+                   }
+               }
+           }
+           
+        // Storing the relationships between all of the elemnts
+        // Relationships stored in an <Element, Type> map, storing the
+        // element it has the relationship to and what the relationship
+        // is. 
+        for (var key in that.elementMap) {               
+            var src_element = that.elementMap[key];
+            if ((src_element.getType() === "Node" ||
+                    src_element.getType() === "Topology")
+                    && that.nodeMap[src_element.getName()].isLeaf()) 
+            {
+                src_element.topLevel = false;
+            }
+            if (src_element !== undefined) {
+                var src_element_ = src_element._backing;
+                for (var key in src_element_) {
+
+                    // Elements with key 'name' are always undefined. 
+                    if (key === "name") continue;
+
+                    var elements = src_element_[key];
+                    map_(elements, function (element){
+                        var errorVal = element.value;
+                        element = that.elementMap[element.value];
+                        if (element) {
+                            var relationship =  key.split("#")[1];
+                            var src_type = src_element.getType();
+                            var type = element.getType();
+                            if ((type !== "Topology" && type !== "Node") ||
+                                ((src_type === "Topology" || src_type === "Node")  && 
+                                (relationship === "hasTopology")))
+                            {
+                                element.topLevel = false;
+                            }
+                            element.relationship_to[src_element.getName()] = relationship;
+                            src_element.misc_elements.push(element);                                  
+                        } else {
+                            //  console.log("name: " + key.split("#")[1] + " value: " + errorVal);
+                        }
+                    }); 
+                }
+            }
+        }
+           
+            for (var key in that.nodeMap) {
+                var node = that.nodeMap[key];
+                if (node) {
+                    rootNodes.push(node);
+                }
+            }                   
+        };
+        
         this.initWithMap = function(map, baseModel) {
                     versionID = map.version;
                     
@@ -909,230 +1188,139 @@ define([
                     for (var key in map) {
                         var val = map[key];
                         val.name = key;
-                        //console.log("JSON.stringify(element, null, 2): " + JSON.stringify(val, null, 2));
+                        //console.log("JSON.stringify(element, null, 2): " + JSON.stringify(val, null, 2));                   
                         var hostURN = baseModel.getHostNodeURN(key);
-                        if (hostURN) {
+                        if (hostURN && !val[values.type]) {
                             that.nodeMap[hostURN] = new Node(baseModel.nodeMap[hostURN]._backing, 
-                                                                          baseModel.nodeMap[hostURN].map);
+                                                                      baseModel.nodeMap[hostURN].map);
                             that.nodeMap[hostURN].detailsReference = true;
-                            
+
                             that.elementMap[hostURN] = new Element(baseModel.nodeMap[hostURN]._backing, 
-                                                                   baseModel.nodeMap[hostURN].map, 
-                                                                   that.elementMap);
+                                                               baseModel.nodeMap[hostURN].map, 
+                                                               that.elementMap);
                             that.elementMap[hostURN].topLevel = true;        
-                                                                          
-                        }
+
+                        }               
                         
                         var types = val[values.type];
                         var detailsReference = false;
                         if (!types) {
-                            if (baseModel.getBaseOrigin(key)) {
+                            if(val[values.topoType]) {
+                                types = val[values.topoType];
+                            } else if (baseModel.getBaseOrigin(key)) {
                                 types = baseModel.getBaseOrigin(key)._map[key][values.type];
                                 val[values.type] = types;
-                                detailsReference = true;
-                            }
+                                //detailsReference = true;
+                            } else {
+                                continue;
+                            }                            
                         }
                         
-                        if (!types) {
-                           // var hostURN = baseModel.getHostNodeURN(key);
-                            var obj = baseModel.getBaseOrigin(key);
-                           // if (hostURN) that.nodeMap[hostURN] = new Node(baseModel.nodeMap[hostURN]._backing, 
-                           //                                               baseModel.nodeMap[hostURN].map);
-                            that.elementMap[key] = new Element(obj._backing, obj._map, that.elementMap);
-                            that.elementMap[key].topLevel = true;        
+                        that.elementMap[key] = new Element(val, map, that.elementMap);
+                        that.elementMap[key].topLevel = true;        
 
-                            if (obj) {
-                                switch(obj.getType()){
-                                 case "Topology":
-                                 case "Node":
-                                      that.nodeMap[key] = obj;
-                                      break;
-                                 case "SwitchingService":
-                                 case "HypervisorService":
-                                 case "RoutingService":
-                                 case "VirtualCloudService":
-                                 case "BlockStorageService":
-                                 case "ObjectStorageService":
-                                 case "VirtualSwitchService":
-                                 case "HypervisorBypassInterfaceService":
-                                 case "StorageService":
-                                 case "IOPerformanceMeasurementService":
-                                 case "DataTransferService":
-                                 case "DataTransferClusterService":
-                                 case "NetworkObject":
-                                 case "Service":
-                                     that.serviceMap[key] = obj;
-                                     break;
-                                 case "Port":
-                                 case "BidirectionalPort":
-                                     that.portMap[key] = obj;
-                                     break;
-                                 case "Volume":
-                                     that.volumeMap[key] = obj;
-                                     break;
-                                }
-                            }                        
-                        } else {
-                            that.elementMap[key] = new Element(val, map, that.elementMap);
-                            that.elementMap[key].topLevel = true;        
+                        map_(types, function (type) {
+                            type = type.value;
 
-                            map_(types, function (type) {
-                                type = type.value;
+                            // Adding every element to the elementMap for the 
+                            // displayPanel.  Ifnoring elemnets with the type "NamedIndividual"
+                            if (type.split("#")[1] === "NamedIndividual") return "";//                                                
 
-                                // Adding every element to the elementMap for the 
-                                // displayPanel.  Ifnoring elemnets with the type "NamedIndividual"
-                                if (type.split("#")[1] === "NamedIndividual") return "";//                                                
+                            switch (type) {
+                                // Fallthrough group 
+                                case values.topology:
+                                case values.node:
+                                    console.log("type: " + type);
+                                    var toAdd;
+                                    toAdd = new Node(val, map);
+                                    toAdd.isTopology = type === values.topology;
+                                    if (detailsReference) toAdd.detailsReference = true;
+                                    that.nodeMap[key] = toAdd;
+                                    break;
 
-                                switch (type) {
+                                case values.bidirectionalPort:
+                                    var toAdd;
+                                    toAdd = new Port(val, map);
+                                    if (detailsReference) toAdd.detailsReference = true;                                        
+                                    that.portMap[key] = toAdd;
+                                    break;
+
+                                    // Fallthrough group     
+                                case values.switchingService:
+                                case values.topopolgySwitchingService:
+                                case values.hypervisorService:
+                                case values.routingService:
+                                case values.virtualCloudService:
+                                case values.blockStorageService:
+                                    var toAdd;
+                                    toAdd = new Service(val, map);
+                                    if (detailsReference) toAdd.detailsReference = true;                                        
+                                    that.serviceMap[key] = toAdd;
+                                    break;
+
                                     // Fallthrough group 
-                                    case values.topology:
-                                    case values.node:
-                                        console.log("type: " + type);
-                                        var toAdd;
-                                        toAdd = new Node(val, map);
-                                        toAdd.isTopology = type === values.topology;
-                                        if (detailsReference) toAdd.detailsReference = true;
-                                        that.nodeMap[key] = toAdd;
-                                        break;
-
-                                    case values.bidirectionalPort:
-                                        var toAdd;
-                                        toAdd = new Port(val, map);
-                                        if (detailsReference) toAdd.detailsReference = true;                                        
-                                        that.portMap[key] = toAdd;
-                                        break;
-
-                                        // Fallthrough group     
-                                    case values.switchingService:
-                                    case values.topopolgySwitchingService:
-                                    case values.hypervisorService:
-                                    case values.routingService:
-                                    case values.virtualCloudService:
-                                    case values.blockStorageService:
-                                        var toAdd;
-                                        toAdd = new Service(val, map);
-                                        if (detailsReference) toAdd.detailsReference = true;                                        
-                                        that.serviceMap[key] = toAdd;
-                                        break;
-
-                                        // Fallthrough group 
-                                    case values.objectStorageService:
-                                    case values.virtualSwitchingService:
-                                    case values.hypervisorBypassInterfaceService:
-                                    case values.storageService:
-                                    case values.IOPerformanceMeasurementService:
-                                    case values.DataTransferService:
-                                    case values.DataTransferClusterService:
-                                    case values.NetworkObject:
-                                        var toAdd;
-                                        toAdd = new Service(val, map);
-                                        if (detailsReference) toAdd.detailsReference = true;                                        
-                                        that.serviceMap[key] = toAdd;
-                                        break;
-
-                                    case values.switchingSubnet:
-                                        var toAdd;
-                                        toAdd = new Subnet(val, map);
-                                        if (detailsReference) toAdd.detailsReference = true;                                        
-                                        that.subnetMap[key] = toAdd;
-                                        break;
-                                    case values.namedIndividual://All elements have this
-                                        break;
-
-                                    //fallthrough group x 
-                                    case values.labelGroup:
-                                    case values.label:
-                                    case values.networkAdress:
-                                    case values.bucket:
-                                    case values.tag:
-                                    case values.route:
-                                        break;
-                                    case values.volume:
-                                        var toAdd;
-                                        toAdd = new Volume(val, map);
-
-                                        toAdd.isTopology = type === values.topology;
-                                         if (detailsReference) toAdd.detailsReference = true;                                       
-                                        that.volumeMap[key] = toAdd;
-                                        break;
-
-                                    // fallthrough group x 
-                                    case values.routingTable:
-                                    case values.ontology:
-                                    case values.POSIX_IOBenchmark:
-                                    case values.address:
-                                        break;
-                                    case values.spaPolicyData:
-                                    case values.spaPolicyAction:
-                                        var toAdd;
-                                        toAdd = new Policy(val, map);
-                                        if (detailsReference) toAdd.detailsReference = true;                                       
-
-                                        that.policyMap[key] = toAdd;
-                                        break;                                        
-                                    default:
-                                        console.log("Unknown type: " + type);
-                                        break;
-                                }
-                            });                                                
-                        }
-                    }
-
-                    for (var key in that.policyMap) {
-                        var policy = that.policyMap[key];
-                        var policy_ = policy._backing;
-                        for (var key in policy_) {
-                            switch(key) {
-                                case values.spaType:
-                                    if (policy.getTypeDetailed() === "PolicyAction")
-                                    policy.data = policy_[key][0].value;
+                                case values.objectStorageService:
+                                case values.virtualSwitchingService:
+                                case values.hypervisorBypassInterfaceService:
+                                case values.storageService:
+                                case values.IOPerformanceMeasurementService:
+                                case values.DataTransferService:
+                                case values.DataTransferClusterService:
+                                case values.NetworkObject:
+                                    var toAdd;
+                                    toAdd = new Service(val, map);
+                                    if (detailsReference) toAdd.detailsReference = true;                                        
+                                    that.serviceMap[key] = toAdd;
                                     break;
-                                case values.spaImportFrom:
-                                    var ifs = policy_[key];
-                                    map_(ifs, function (if_key) {
-                                        if_key = if_key.value;
 
-                                        var i_f = that.policyMap[if_key];                                       
-                                        var toAdd = new Edge(i_f, policy);
-                                        toAdd.edgeType = "importFrom";
-                                        that.policyEdges.push(toAdd);                                                                     
-                                    });
+                                case values.switchingSubnet:
+                                    var toAdd;
+                                    toAdd = new Subnet(val, map);
+                                    if (detailsReference) toAdd.detailsReference = true;                                        
+                                    that.subnetMap[key] = toAdd;
                                     break;
-                                case values.spaExportTo:
-                                    var ets = policy_[key];
-                                    map_(ets, function (et_key) {
-                                        et_key = et_key.value;
-                                        var e_t = that.policyMap[et_key];
-                                        var toAdd = new Edge(policy, e_t);
-                                        toAdd.edgeType = "exportTo";
-                                        that.policyEdges.push(toAdd);     
-                                    });                                    
+                                case values.namedIndividual://All elements have this
                                     break;
-                                case values.spaDependOn:
-                                    var dos = policy_[key];
-                                    map_(dos, function (do_key) {
-                                        do_key = do_key.value;
-                                        var d_o = that.policyMap[do_key];
-                                        var toAdd = new Edge(policy, d_o);
-                                        toAdd.edgeType = "dependOn";
-                                        that.policyEdges.push(toAdd);                                                                    
-                                     });
+
+                                //fallthrough group x 
+                                case values.labelGroup:
+                                case values.label:
+                                case values.networkAdress:
+                                case values.bucket:
+                                case values.tag:
+                                case values.route:
                                     break;
-                                case values.spaValue:
-                                    if (policy.getTypeDetailed() === "PolicyData")
-                                    policy.data = policy_[key][0].value;
+                                case values.volume:
+                                    var toAdd;
+                                    toAdd = new Volume(val, map);
+
+                                    toAdd.isTopology = type === values.topology;
+                                     if (detailsReference) toAdd.detailsReference = true;                                       
+                                    that.volumeMap[key] = toAdd;
                                     break;
-                                case values.spaFormat:
-                                    if (policy.getTypeDetailed() === "PolicyData")
-                                    policy.data = policy_[key][0].value;                                    
+
+                                // fallthrough group x 
+                                case values.routingTable:
+                                case values.ontology:
+                                case values.POSIX_IOBenchmark:
+                                case values.address:
                                     break;
+                                case values.spaPolicyData:
+                                case values.spaPolicyAction:
+                                    var toAdd;
+                                    toAdd = new Policy(val, map);
+                                    if (detailsReference) toAdd.detailsReference = true;                                       
+
+                                    that.policyMap[key] = toAdd;
+                                    break;                                        
                                 default:
-                                    console.log("Unknown policy attribute: " + key);
+                                    console.log("Unknown type: " + type);
+                                    break;
                             }
-                        }
+                        });                                                
+
                     }
                     
-
                     for (var key in that.serviceMap) {
 
                         var service = that.serviceMap[key];
@@ -1172,6 +1360,7 @@ define([
                                         var subnet = that.subnetMap[subnetKey];
                                         if (subnet) {
                                             service.subnets.push(subnet);
+                                            subnet.origin = service;
                                         }
                                     });
                                     break;
@@ -1192,6 +1381,62 @@ define([
                         }
 
                     }
+
+                    for (var key in that.policyMap) {
+                        var policy = that.policyMap[key];
+                        var policy_ = policy._backing;
+                        for (var key in policy_) {
+                            switch(key) {
+                                case values.spaType:
+                                    if (policy.getTypeDetailed() === "PolicyAction")
+                                    policy.data = policy_[key][0].value;
+                                    break;
+                                case values.spaImportFrom:
+                                    var ifs = policy_[key];
+                                    map_(ifs, function (if_key) {
+                                        if_key = if_key.value;
+
+                                        var i_f = that.policyMap[if_key];                                       
+                                        var toAdd = new Edge(i_f, policy); 
+                                        toAdd.edgeType = "importFrom";
+                                        that.policyEdges.push(toAdd);                                                                     
+                                    });
+                                    break;
+                                case values.spaExportTo:
+                                    var ets = policy_[key];
+                                    map_(ets, function (et_key) {
+                                        et_key = et_key.value;
+                                        var e_t = that.policyMap[et_key];
+                                        var toAdd = new Edge(policy, e_t);
+                                        toAdd.edgeType = "exportTo";
+                                        that.policyEdges.push(toAdd);     
+                                    });                                    
+                                    break;
+                                case values.spaDependOn:
+                                    var dos = policy_[key];
+                                    map_(dos, function (do_key) {
+                                        do_key = do_key.value;
+                                        var d_o = that.policyMap[do_key];
+                                        var toAdd = new Edge(policy, d_o);
+                                        toAdd.edgeType = "dependOn";
+                                        that.policyEdges.push(toAdd);                                                                    
+                                     });
+                                    break;
+                                case values.spaValue:
+                                    if (policy.getTypeDetailed() === "PolicyData")
+                                    policy.data = policy_[key][0].value;
+                                    break;
+                                case values.spaFormat:
+                                    if (policy.getTypeDetailed() === "PolicyData")
+                                    policy.data = policy_[key][0].value;                                    
+                                    break;
+                                default:
+                                    console.log("Unknown policy attribute: " + key);
+                            }
+                        }
+                    }
+                    
+
 
                     //Complete the ports
                     //  Create aliases between our Port objects
@@ -1474,10 +1719,10 @@ define([
                     
                     for (var key in that.nodeMap) {
                         var node = that.nodeMap[key];
-                        if (node) {
+                        if (node.isRoot) {
                             rootNodes.push(node);
                         }
-                    }                    
+                    }
         };
         
         this.getVersion = function () {

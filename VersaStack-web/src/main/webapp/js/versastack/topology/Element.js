@@ -1,3 +1,26 @@
+/*
+ * Copyright (c) 2013-2016 University of Maryland
+ * Modified by: Antonio Heard 2016
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Work.
+
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * IN THE WORK.
+ */
+
 "use strict";
 define(["local/versastack/topology/modelConstants"], function (values) {
     function Element(backing, map, elementMap) {
@@ -36,6 +59,10 @@ define(["local/versastack/topology/modelConstants"], function (values) {
            
             var types = this._backing[values.type];
             
+            if (!types) {
+                types = this._backing[values.topoType];
+            }
+            
             var arr = map_(types, function (type) {
                 type = type.value;
 
@@ -45,7 +72,11 @@ define(["local/versastack/topology/modelConstants"], function (values) {
             var index = arr.indexOf("http://www.w3.org/2002/07/owl#NamedIndividual");
             if (index > -1)
                 arr.splice(index, 1);
-            return arr[0].split("#")[1];
+            
+            if (arr[0].indexOf("#") >= 0)
+                return arr[0].split("#")[1];
+            else 
+                return arr[0];
         };
         
         this.populateProperties = function (tree) {

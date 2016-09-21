@@ -14,7 +14,7 @@
 <html >    
     <head>   
         <meta charset="UTF-8">
-        <title>Staging Test</title>
+        <title>Virtual Cloud Network Service</title>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>
@@ -42,13 +42,13 @@
         <div id="sidebar"></div>
         <!-- MAIN PANEL -->
         <div id="black-screen"></div>
-        <div id="main-pane">
+        <div id="main-pane">           
             <!-- Multistep form -->
-            <form action="/VersaStack-web/ServiceServlet" method="post" id="msform">
+            <form action="/VersaStack-web/ServiceServlet" method="post" class="stageform" id="msform" onsubmit="return validateVCN()">
                 <input type="hidden" name="username" value="${user.getUsername()}"/>
                 <input type="hidden" name="netCreate" value="true"/>
                 <!-- Progress Bar -->
-                <ul class="aws-progress" id="progressbar">
+                <ul class="vcn-progress" id="progressbar">
                     <li class="disabled active">Service Host</li>
                     <li class="disabled">Network</li>
                     <li class="disabled">Subnets</li>
@@ -57,8 +57,8 @@
                     <li class="disabled">SRIOV</li>                    
                     <li class="disabled">Summary</li>
                 </ul>
-                
-                <fieldset class="active-fs" id="0-mode-select" style="z-index: 4;">
+
+                <fieldset class="active-fs" id="0-template-select" style="z-index: 4;">
                     <div><button type="button" class="action-button" onclick="applyTemplate(0)">Start from Scratch</button></div>
                     <h3 class="fs-title">Templates</h3>
                     <div><button type="button" class="action-button" onclick="applyTemplate(1)">Basic AWS</button></div>
@@ -79,25 +79,23 @@
                 <fieldset id='2-aws-1'>
                     <h2 class="fs-title">Network Description</h2>
                     <h3 class="fs-subtitle">Basic Network Details</h3>
-                    <table class="fs-table" id="awsStage2-table">
-                        <thead>
-                            <tr>                            
-                                <td><input type="text" name="alias" placeholder="Instance Alias" /></td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance WHERE driverEjbPath='java:module/AwsDriver'" var="driverlist" />
-                                    <select name="topoUri" >
-                                        <option selected disabled value="test">Choose the driver topology URI</option>
-                                        <c:forEach var="driver" items="${driverlist.rows}">
-                                            <option value="${driver.topologyUri}">${driver.topologyUri}</option>
-                                        </c:forEach>
-                                    </select>        
-                               </td>
-                            </tr>
-                        </thead>
+                    <table class="fs-table">
+                        <thead id="awsStage2-base">
+ 
+                       </thead>
+                        <tr>
+                            <td>
+                                <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance WHERE driverEjbPath='java:module/AwsDriver'" var="driverlist" />
+                                <select name="topoUri" >
+                                    <option selected disabled value="test">Choose the driver topology URI</option>
+                                    <c:forEach var="driver" items="${driverlist.rows}">
+                                        <option value="${driver.topologyUri}">${driver.topologyUri}</option>
+                                    </c:forEach>
+                                </select>        
+                            </td>
+                        </tr>
                         <tbody id="awsStage2-network">
-                            
+
                         </tbody>
                     </table>
                     <input type="button" name="previous" class="reset action-button" value="Previous" />
@@ -142,7 +140,7 @@
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="button" name="next" class="next action-button" value="Next" />                    
                 </fieldset>
-                
+
                 <!-- Stage 7: Summary -->
                 <fieldset id="7-aws-1">
                     <h2 class="fs-title">Summary</h2>
@@ -153,35 +151,28 @@
                 </fieldset>
 
 
-
-
-
-
-
                 <!-- Openstack -->
                 <!-- Stage 2: Network -->
                 <fieldset id='2-ops-1'>
                     <h2 class="fs-title">Network Description</h2>
                     <h3 class="fs-subtitle">Basic Network Details</h3>
-                    <table class="fs-table" id="opsStage2-table">
-                        <thead>
-                            <tr>                            
-                                <td><input type="text" name="alias" placeholder="Instance Alias" /></td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance WHERE driverEjbPath='java:module/AwsDriver'" var="driverlist" />
-                                    <select name="topoUri" >
-                                        <option selected disabled value="test">Choose the driver topology URI</option>
-                                        <c:forEach var="driver" items="${driverlist.rows}">
-                                            <option value="${driver.topologyUri}">${driver.topologyUri}</option>
-                                        </c:forEach>
-                                    </select>        
-                               </td>
-                            </tr>
+                    <table class="fs-table">
+                        <thead id="opsStage2-base">                
+
                         </thead>
+                        <tr>
+                            <td>
+                                <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance WHERE driverEjbPath='java:module/OpenStackDriver'" var="driverlist" />
+                                <select name="topoUri" >
+                                    <option selected disabled value="test">Choose the driver topology URI</option>
+                                    <c:forEach var="driver" items="${driverlist.rows}">
+                                        <option value="${driver.topologyUri}">${driver.topologyUri}</option>
+                                    </c:forEach>
+                                </select>        
+                            </td>
+                        </tr>
                         <tbody id="opsStage2-network">
-                            
+
                         </tbody>
                     </table>
                     <input type="button" name="previous" class="reset action-button" value="Previous" />
@@ -200,7 +191,7 @@
                 </fieldset>                                                             
                 <fieldset id="3-ops-2">
                     <fieldset class="subfs" id="opsStage3-subnet-fs">
-                        
+
                     </fieldset>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
@@ -220,13 +211,13 @@
                 </fieldset>                                                             
                 <fieldset id="4-ops-2">
                     <fieldset class="subfs" id="opsStage4-vm-fs">
-                        
+
                     </fieldset>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="button" name="next" class="next action-button" value="Next" />                    
                 </fieldset>
-                
+
                 <!-- Stage 5: Gateways -->
                 <fieldset id="5-ops-1">
                     <h2 class="fs-title">Gateways</h2>
@@ -243,7 +234,7 @@
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="button" name="next" class="next action-button" value="Next" />                    
                 </fieldset>
-                
+
                 <!-- Stage 6: SRIOV -->
                 <fieldset id="6-ops-1">
                     <h2 class="fs-title">SRIOV</h2>
@@ -262,7 +253,7 @@
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="button" name="next" class="next action-button" value="Next" />                    
                 </fieldset>                                
-                
+
                 <!-- Stage 7: Summary -->
                 <fieldset id="7-ops-1">
                     <h2 class="fs-title">Summary</h2>
@@ -272,7 +263,12 @@
                     <button type="submit" name="submit" class="action-button" value="ops">Submit</button>                    
                 </fieldset>
             </form>
+            <div id="info-panel">
+                <h3 class="fs-subtitle" id="info-panel-title"></h3>
+                <div id="info-panel-div">
 
+                </div>
+            </div>
         </div>
         <!-- TAG PANEL -->       
         <div id="tag-panel"> 

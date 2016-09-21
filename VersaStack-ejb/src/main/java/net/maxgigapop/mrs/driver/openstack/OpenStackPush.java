@@ -1,7 +1,25 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor. ....
+ * Copyright (c) 2013-2016 University of Maryland
+ * Created by: Zan Wang 2015
+ * Modified by: Xi Yang 2015-2016
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Work.
+
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * IN THE WORK.
  */
 package net.maxgigapop.mrs.driver.openstack;
 
@@ -458,7 +476,13 @@ public class OpenStackPush {
                                                             }
 
                                                             String portid = client.getPort(router_name + "port" + i).getId();
-                                                            rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
+                                                            try {// catch and ignore exception as a hack for reinstate
+                                                                rsi.attachInterface(router_id, AttachInterfaceType.PORT, portid);
+                                                            } catch (org.openstack4j.api.exceptions.ClientResponseException ex) {
+                                                                if (ex.getMessage().contains("Router already has a port on subnet")) {
+                                                                    ;
+                                                                }
+                                                            }
                                                         }
                                                         i++;
                                                         j++;
@@ -896,7 +920,9 @@ public class OpenStackPush {
             } else if (o.get("request").toString().equals("CephStorageRequest")) {
                 String servername = (String) o.get("server name");
                 String volumeName = (String) o.get("volume name");
-                String diskSize = (String) o.get("disk size");
+                String diskSize = (String) o.get("disk size"); 
+                Integer sizeMB = Integer.parseInt(diskSize)*1024; // convert gb into mb
+                diskSize = sizeMB.toString();
                 String mountPoint = (String) o.get("mount point");
                 String deviceId =  (String) o.get("device id");
                 String status =  (String) o.get("status");
@@ -1265,14 +1291,15 @@ public class OpenStackPush {
                 //2.2to get the private ip of the network interface
                 query = "SELECT ?address ?value WHERE {<" + port.asResource() + ">  mrs:hasNetworkAddress  ?address ."
                         + "?address mrs:type \"ipv4:private\" ."
-                        + "?address mrs:value ?value }";
+                        + "?address mrs:value ?value "
+                        + "}";
                 ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
                 String privateAddress = "any";
                 if (r1.hasNext()) {
-
                     QuerySolution querySolution1 = r1.next();
                     RDFNode value = querySolution1.get("value");
-                    privateAddress = value.asLiteral().toString();
+                    //privateAddress = value.asLiteral().toString();
+                    log.warning(String.format("Overiding the specifci private IP %s into 'any' for port: %s.", value.toString(), portName));
                 }
                 //2.3 find the subnet that has the port previously found
                 query = "SELECT ?subnet WHERE {?subnet a mrs:SwitchingSubnet. ?subnet  nml:hasBidirectionalPort <" + port.asResource() + ">"

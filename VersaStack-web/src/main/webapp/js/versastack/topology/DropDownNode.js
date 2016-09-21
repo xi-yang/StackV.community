@@ -1,15 +1,40 @@
+/*
+ * Copyright (c) 2013-2016 University of Maryland
+ * Modified by: Antonio Heard 2016
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Work.
+
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * IN THE WORK.
+ */
+
 "use strict";
 define([
     "local/versastack/utils"
 ], function (utils) {
     var map_ = utils.map_;
-    function DropDownNode(name, renderApi, type, data, contextMenu) {
+    var isURL = utils.isURL;
+    function DropDownNode(name, renderApi, type, data, contextMenu, outputApi) {
         /**@type Array.DropDownNode**/
         this.children = [];
         this.name = name;
         this.renderApi = renderApi;
         this.contextMenu = contextMenu;
         this.type = type;
+        this.outputApi = outputApi;
         // data associated with the node
         // so for example, the element or the key, value pair. 
         // { key: "key", value: "value", type : "type" }
@@ -18,7 +43,7 @@ define([
         var that = this;
 
         this.addChild = function (name, type, data) {
-            var ans = new DropDownNode(name, that.renderApi, type, data, that.contextMenu); // changed this.renderApi to that.renderApi
+            var ans = new DropDownNode(name, that.renderApi, type, data, that.contextMenu, that.outputApi); // changed this.renderApi to that.renderApi
             this.children.push(ans);
             return ans;
         };
@@ -119,7 +144,7 @@ define([
                    link.className = "urnLink clicked";
                    if (that.renderApi !== null && that.renderApi !== undefined){
                         console.log(" what is this: " + that.renderApi);
-                        that.renderApi.clickNode(that.name, that.type);
+                        that.renderApi.clickNode(that.name, that.type, that.outputApi);
                         
                     }
                 };
@@ -139,7 +164,7 @@ define([
                 link.onclick = function () {
                    link.className = "urnLink clicked";
                    console.log(" what is this: " + that.renderApi);
-                   that.renderApi.clickNode(property[0], that.type);          
+                   that.renderApi.clickNode(property[0], that.type, that.outputApi);          
                 };                
                 link.innerHTML = property[0];
                 
@@ -157,7 +182,9 @@ define([
                 var value = document.createElement("span");               
                 key.className = "panelElementProperty";
                 var property =  that.name.split(":");
-                if (property[0] !== 'format ' && property[0] !== 'value ' && property[1].substring(0) !== "{") {
+                
+                if (property[0] !== 'format ' && property[0] !== 'value ' && property[1].substring(0) !== "{"
+                        && !isURL(that.dataObject)) {
                     key.innerHTML = property[0] + ":";
                     value.innerHTML = property[1]; // just using this because it's there 
                 } else {

@@ -1,3 +1,26 @@
+/*
+ * Copyright (c) 2013-2016 University of Maryland
+ * Created by: Antonio Heard 2016
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Work.
+
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * IN THE WORK.
+ */
+
 "use strict";
 define(["local/d3", "local/versastack/utils"],
         function (d3, utils) {
@@ -161,7 +184,7 @@ define(["local/d3", "local/versastack/utils"],
                             volume.svgNode
                                     .on("mousemove", function () {
                                         outputApi.setHoverText(volume.getName());
-                                        outputApi.setHoverLocation(d3.event.x, d3.event.y);
+                                        outputApi.setHoverLocation(d3.event.clientX, d3.event.clientY);
                                         outputApi.setHoverVisible(true);
                                         volume.enlarged = true;
                                         
@@ -173,13 +196,13 @@ define(["local/d3", "local/versastack/utils"],
                                         that.updateSvgChoordsVolume(volume);
                                     })
                                     .on("click", function () {
-                                        renderApi.selectElement(volume);
+                                        renderApi.selectElement(volume, that.outputApi);
                                     })
                                     .on("dblclick", function () {
                                         //volume.setFolded(!volume.getFolded());
-                                        renderApi.redrawPopups();
+                                        renderApi.redrawPopups(that.outputApi);
                                         renderApi.drawHighlight();
-                                        renderApi.layoutEdges();
+                                        renderApi.layoutEdges(that.outputApi);
                                     })
                                     .on("contextmenu", that.outputApi.contextMenu.renderedElemContextListener.bind(undefined, volume))                                    
                                     .call(dragBehaviour);
@@ -281,7 +304,7 @@ define(["local/d3", "local/versastack/utils"],
                             that.updateSvgChoords();
                             renderApi.drawHighlight();
                             renderApi.highlightServiceElements();
-                            renderApi.layoutEdges();
+                            renderApi.layoutEdges(that.outputApi);
                         })
                         .on("dragstart", function () {
                             lastMouse = d3.event.sourceEvent;

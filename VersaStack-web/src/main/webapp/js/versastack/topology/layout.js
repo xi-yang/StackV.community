@@ -1,3 +1,26 @@
+/*
+ * Copyright (c) 2013-2016 University of Maryland
+ * Modified by: Antonio Heard 2016
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Work.
+
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * IN THE WORK.
+ */
+
 "use strict";
 var forceGlobal;
 
@@ -27,9 +50,7 @@ define([
                 edges.push(polEdges[i]);
             }
         } 
-        
-        if (edges[0] === undefined) edges.splice(0,1);
-        
+                
         if (lockNodes) {
             map_(lockNodes, function (node) {
                 if (node.isLeaf()) {
@@ -53,8 +74,16 @@ define([
                 .size([width, height])
                 .linkStrength(10)
                 .friction(0.9)
-                .linkDistance(10)
-                .charge(-1000)
+                .linkDistance(
+                    function(d) { 
+                        if (d.source.getType() === "Policy" || d.target.getType() === "Policy") {
+                            return 120;
+                        } else {
+                            return 10;
+                        }
+                    }     
+                )
+                .charge(-1000) 
                 .gravity(0.5)
                 .theta(0.8)
                 .alpha(0.1);
@@ -63,9 +92,12 @@ define([
             //This is significant for topologies
             map_(nodes, function (node) {
                 var choords = node.getCenterOfMass();
+                // recenters nodes if they are out of bounds. 
+                if (choords.x > width || choords.x < 0) choords.x = width / 2; 
+                if (choords.y > height || choords.y < 0) choords.y = height / 2; 
                 node.x = choords.x;
                 node.y = choords.y;
-                if (isNaN(choords.x) || isNaN(choords.y)) console.log("It's NAN in doLayout\n");
+                if (isNaN(choords.x) || isNaN(choords.y)) console.log("It's NAN in doLayout\n");    
             });
         });
         force.start();
@@ -93,6 +125,19 @@ define([
         var nodes = model.listNodes();
         var edges = model.listEdges();
 
+        // lay out policies as nodes ...
+        var policies = model.listPolicies();
+        for (var i in policies) nodes.push(policies[i]);
+        
+        // same with policy edges
+        var polEdges = model.policyEdges;
+        for (var i in polEdges) {
+            polEdges[i]._isProper();
+            if (polEdges[i]) {
+                edges.push(polEdges[i]);
+            }
+        } 
+        
         if (lockNodes) {
             map_(lockNodes, function (node) {
                 if (node.isLeaf()) {
@@ -116,7 +161,15 @@ define([
                 .size([width, height])
                 .linkStrength(10)
                 .friction(0.5)
-                .linkDistance(10)
+                .linkDistance(
+                    function(d) { 
+                        if (d.source.getType() === "Policy" || d.target.getType() === "Policy") {
+                            return 120;
+                        } else {
+                            return 10;
+                        }
+                    }     
+                )
                 .charge(-700)
                 .gravity(1)
                 .theta(0.8)
@@ -126,9 +179,12 @@ define([
             //This is significant for topologies
             map_(nodes, function (node) {
                 var choords = node.getCenterOfMass();
+                // recenters nodes if they are out of bounds. 
+                if (choords.x > width || choords.x < 0) choords.x = width / 2; 
+                if (choords.y > height || choords.y < 0) choords.y = height / 2; 
                 node.x = choords.x;
                 node.y = choords.y;
-                if (isNaN(choords.x) || isNaN(choords.y)) console.log("It's NAN in doLayout\n");
+                if (isNaN(choords.x) || isNaN(choords.y)) console.log("It's NAN in doLayout\n");    
             });
         });
         force.start();

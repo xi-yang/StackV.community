@@ -1,3 +1,27 @@
+<!--
+ * Copyright (c) 2013-2016 University of Maryland
+ * Modified by: Antonio Heard 2016
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Work.
+
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * IN THE WORK.
+ !-->
+
+
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page errorPage = "/VersaStack-web/errorPage.jsp" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
@@ -49,7 +73,8 @@
                      });
                      $( "#dialog_policyData" ).dialog({
                          autoOpen: false
-                     });                     
+                     });           
+                     
                 });
 
             });
@@ -151,28 +176,9 @@
                                    error: function(jqXHR, textStatus, errorThrown ) {
                                         console.log("Debugging: timeout at start..");
                                         displayError("Visualization Unavailable", d3_);
-                                     //alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
                                    }
                             }); 
                         });
-
-//                var request = new XMLHttpRequest();
-//                request.open("GET", "/VersaStack-web/data/json/umd-anl-all.json");
-//
-//                request.setRequestHeader("Accept", "application/json");
-//                request.onload = function () {
-//                    var modelData = request.responseText;
-//
-//                    if (modelData.charAt(0) === '<') {
-//                        return;
-//                    }
-//
-//                    modelData = JSON.parse(modelData);
-//                    $.post("/VersaStack-web/ViewServlet", {newModel: modelData.ttlModel}, function (response) {
-//                        // handle response from your servlet.
-//                    });
-//                };
-//                request.send();
 
                 $("#loadingPanel").addClass("hide");
                 $("#hoverdiv_viz").removeClass("hide");
@@ -235,7 +241,7 @@
             }
 
             function buttonInit() { //@
-                $("#testButton").click(function (evt) {
+                $("#recenterButton").click(function (evt) {
                     outputApi.resetZoom();
                     var width = document.documentElement.clientWidth / outputApi.getZoom();
                     var height = document.documentElement.clientHeight / outputApi.getZoom();
@@ -255,7 +261,29 @@
                 });               
 
                 $("#modelButton").click(function (evt) {
-                    window.open('/VersaStack-web/modelView.jsp', 'newwindow', config = 'height=1200,width=400, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no');
+                   var string = model.modelString;
+                   
+                   // We detach DOM children and append them back to the model view
+                   // dialog after it's been opened to save time when opening dialogs
+                   // that have large amounts of text 
+                   // Reference: http://johnculviner.com/a-jquery-ui-dialog-open-performance-issue-and-how-to-fix-it/
+                   var detached = $("#dialog_modelView").children().detach();
+
+                    $( "#dialog_modelView").dialog( {
+                       autoOpen: false, 
+                       width: 600,
+                       height: ($(window).height() * (3/4)),
+                       open: function() {
+                           detached.appendTo($("#dialog_modelView"));
+                           $("#dialog_modelView").html("<pre class=\"jSonDialog\">" + string + "</pre>");
+                       }
+                    });
+
+                    $("#dialog_modelView").dialog("open");
+                    
+                    // JQuery UI automatically focuses on the first dialog, we remove all
+                    // focus by using the blur method. 
+                    $('.ui-dialog :button').blur();
                 });
 
                 $("#displayPanel-tab").click(function (evt) {
@@ -328,7 +356,7 @@
                     return d3.select("#" + this.svgContainerName);
                 };
 
-                var displayTree = new DropDownTree(document.getElementById("treeMenu"));
+                var displayTree = new DropDownTree(document.getElementById("treeMenu"), that);
                 displayTree.renderApi = this.renderApi;
                 displayTree.contextMenu = this.contextMenu;
 
@@ -417,14 +445,14 @@
                     this._updateTransform();
                 };
                 var svg = document.getElementById(this.svgContainerName);
-                svg.addEventListener("mousewheel", function (e) {
+                
+                svg.addEventListener("wheel", function (e) {
                     e.preventDefault();
                     //The OSX trackpad seems to produce scrolls two orders of magnitude large when using pinch to zoom,
                     //so we ignore the magnitude entirely
-                    that.zoom(Math.sign(e.wheelDeltaY) * settings.ZOOM_FACTOR, e.offsetX, e.offsetY);
+                    that.zoom(Math.sign(-e.deltaY) * settings.ZOOM_FACTOR, e.offsetX, e.offsetY);
                     return false;
-                }, false);
-
+                }, false);                    
                 //Interface to (de)select elements for interaction with the form
                 //If the provided element is currently being used in the form, remove it from the form,
                 //Otherwise use it to help poupulate the form.
@@ -624,14 +652,14 @@
             <div id="displayPanel-contents">
                 <button id="modelButton">Display Model</button>
                 <button id="fullDiaplayButton">Toggle Full Model</button>
-                <button id="testButton">test</button> <!-- @ -->
+                <button id="recenterButton">Recenter</button> <!-- @ -->
                 <div id="displayName"></div>
                 <div id="treeMenu"></div>                
             </div>
             <div id="displayPanel-actions-container">
                 <div id="displayPanel-actions">
-                    <button id="backButton">Back</button>
-                    <button id="forwardButton">Forward</button>
+                    <button id="viz_backButton">Back</button>
+                    <button id="viz_forwardButton">Forward</button>
                     <div id="URISeachContainer" style="float:right;padding-left:10px;">
                         Search
                         <input type="text" name="Search" id="URISearchInput" placeholder="Enter URI">
@@ -718,11 +746,31 @@
                        0 0 0 1 0" />
         <feComposite operator="out" in="a" in2="SourceGraphic"/>
     </filter>
+    <filter id="outlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%">
+            <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
+        <feMorphology operator="dilate" radius="1"/>
+        <feColorMatrix result="a" type="matrix"
+                                  values="0 0 0 0 .7
+                                  0 0 0 0 1
+                                  0 0 0 0 0
+                                  0 0 0 1 0" />
+         <feComposite operator="out" in="a" in2="SourceGraphic"/>
+    </filter>       
+    <filter id="subnetHighlightFF" width="2000000%" height="2000000%" x="-500%" y="-500%">
+        <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
+        <feMorphology operator="dilate" radius="1"/>
+        <feColorMatrix result="a" type="matrix"
+                       values="0 0 0 0 0
+                       0 0 0 0 .8
+                       0 0 0 0 .3
+                       0 0 0 1 0" />
+        <feComposite operator="out" in="a" in2="SourceGraphic"/>
+    </filter>    
     <filter id="ghost" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
         <feColorMatrix type="saturate" values=".2"/>
     </filter>
     
-     <marker id="marker_arrow" markerWidth="10" markerHeight="10" refx="15" refy="3" orient="auto" markerUnits="strokeWidth">
+     <marker id="marker_arrow_viz" markerWidth="10" markerHeight="10" refx="15" refy="3" orient="auto" markerUnits="strokeWidth">
       <path d="M0,0 L0,6 L9,3 z" fill="black" />
     </marker>
    
@@ -806,6 +854,9 @@
     <div id="dialog_policyAction" title="Policy Action">
     </div>
     <div id="dialog_policyData" title="Policy Data">
+    </div>
+
+    <div id="dialog_modelView" title="Model View">
     </div>
 
     <!-- TAG PANEL -->

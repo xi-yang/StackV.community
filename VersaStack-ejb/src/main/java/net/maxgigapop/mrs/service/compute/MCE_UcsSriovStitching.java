@@ -1,8 +1,26 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright (c) 2013-2016 University of Maryland
+ * Created by: Xi Yang 2015
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Work.
+
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * IN THE WORK.
  */
+
 package net.maxgigapop.mrs.service.compute;
 
 import com.hp.hpl.jena.ontology.OntModel;
@@ -261,8 +279,20 @@ public class MCE_UcsSriovStitching implements IModelComputationElement {
             JSONArray routes = (JSONArray) jsonStitchReq.get("routes");
             for (Object obj : routes) {
                 JSONObject route = (JSONObject) obj;
-                String strRouteTo = ((String) route.get("to"));
-                String strRouteVia = ((String) route.get("next_hop"));
+                String strRouteTo = null;
+                if (route.get("to") instanceof JSONObject) {
+                    strRouteTo = (String) ((JSONObject)route.get("to")).get("value");
+                } else if (route.get("to") instanceof String) {
+                    strRouteTo = ((String) route.get("to"));
+                } else {
+                    continue;
+                }
+                String strRouteVia = null;
+                if (route.get("next_hop") instanceof JSONObject) {
+                    strRouteVia = (String) ((JSONObject)route.get("next_hop")).get("value");
+                } else if (route.get("next_hop") instanceof String) {
+                    strRouteVia = ((String) route.get("next_hop"));
+                }
                 Resource vnicRoute = RdfOwl.createResource(stitchModel, resVnic.getURI() + ":route+to-" + strRouteTo.replaceAll("/", "") + "-via-" + strRouteVia.replaceAll("/", ""), Mrs.Route);
                 stitchModel.add(stitchModel.createStatement(resRoutingSvc, Mrs.providesRoute, vnicRoute));
                 Resource vnicRouteTo = RdfOwl.createResource(stitchModel, resVnic.getURI() + ":routeto+" + strRouteTo.replaceAll("/", ""), Mrs.NetworkAddress);

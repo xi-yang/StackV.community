@@ -1,7 +1,25 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright (c) 2013-2016 University of Maryland
+ * Created by: Zan Wang 2015
+ * Modified by: Xi Yang 2015-2016
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Work.
+
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * IN THE WORK.
  */
 package net.maxgigapop.mrs.driver.openstack;
 
@@ -58,7 +76,6 @@ import org.openstack4j.openstack.networking.domain.NeutronRouterInterface;
  */
 public class OpenStackNeutronModelBuilder {
     private static final Logger log = Logger.getLogger(OpenStackNeutronModelBuilder.class.getName());
-    private static final String uri = "urn:ogf:network:";
 
     public static OntModel createOntology(String url, String NATServer, String topologyURI, String user_name, String password, String tenantName,
             String adminUsername, String adminPassword, String adminTenant, OntModel modelExt) throws IOException, Exception {
@@ -180,6 +197,7 @@ public class OpenStackNeutronModelBuilder {
             String hypervisorname = server.getHypervisorHostname();
             String imageid = server.getImageId();
             String flavorid = server.getFlavorId();
+            String keypair = server.getKeyName();
             String server_name = openstackget.getServereName(server);
 
             Resource HOST = RdfOwl.createResource(model, topologyURI + ":" + "host+" + hostID, node);
@@ -194,6 +212,7 @@ public class OpenStackNeutronModelBuilder {
             model.add(model.createStatement(HOST, hasNode, VM));
             model.add(model.createStatement(VM, type, "image+" + imageid));
             model.add(model.createStatement(VM, type, "flavor+" + flavorid));
+            model.add(model.createStatement(VM, type, "keypair+" + keypair));
 
             for (Port port : openstackget.getServerPorts(server)) {
                 String PortName = openstackget.getResourceName(port);
@@ -333,15 +352,17 @@ public class OpenStackNeutronModelBuilder {
                         // ipaddr
                         if (jsonObj.containsKey("ipaddr") && !((String) jsonObj.get("ipaddr")).isEmpty()) {
                             String ip = ((String) jsonObj.get("ipaddr")).replaceAll("/", "_");
-                            Resource vnicIP = RdfOwl.createResource(model, ResourceTool.getResourceUri((String) jsonObj.get("ipaddr"), OpenstackPrefix.public_address, server_name + ":" + vnicName, (String) jsonObj.get("ipaddr")), Mrs.NetworkAddress);
+                            Resource vnicIP = RdfOwl.createResource(model, ResourceTool.getResourceUri(ip, OpenstackPrefix.public_address, server_name + ":" + vnicName, ip), Mrs.NetworkAddress);
                             model.add(model.createStatement(vnicIP, Mrs.type, "ipv4-address"));
+                            model.add(model.createStatement(vnicIP, Mrs.value, (String) jsonObj.get("ipaddr")));
                             model.add(model.createStatement(sriovPort, Mrs.hasNetworkAddress, vnicIP));
                         }
                         // macaddr
                         if (jsonObj.containsKey("macaddr") && !((String) jsonObj.get("macaddr")).isEmpty()) {
                             String mac = ((String) jsonObj.get("macaddr")).replaceAll(":", "_");
-                            Resource vnicMAC = RdfOwl.createResource(model, ResourceTool.getResourceUri(mac, OpenstackPrefix.mac_address, server_name + ":" + vnicName, (String) jsonObj.get("macaddr")), Mrs.NetworkAddress);
+                            Resource vnicMAC = RdfOwl.createResource(model, ResourceTool.getResourceUri(mac, OpenstackPrefix.mac_address, server_name + ":" + vnicName, mac), Mrs.NetworkAddress);
                             model.add(model.createStatement(vnicMAC, Mrs.type, "mac-address"));
+                            model.add(model.createStatement(vnicMAC, Mrs.value, (String) jsonObj.get("macaddr")));
                             model.add(model.createStatement(sriovPort, Mrs.hasNetworkAddress, vnicMAC));
                         }
 
@@ -395,6 +416,8 @@ public class OpenStackNeutronModelBuilder {
                     // the VM server hasVolume
                     String volumeName = (String) jsonObj.get("volume");
                     String diskSize =  (String) jsonObj.get("size");
+                    Long longDiskSize = Long.parseLong(diskSize)/1024;
+                    diskSize = longDiskSize.toString();
                     String mountPoint =  (String) jsonObj.get("mount");
                     Resource resVolume = RdfOwl.createResource(model, ResourceTool.getResourceUri(volumeName, OpenstackPrefix.volume, volumeName), Mrs.Volume);
                     model.add(model.createStatement(VM, Mrs.hasVolume, resVolume));
@@ -644,22 +667,33 @@ public class OpenStackNeutronModelBuilder {
         //BUILDING THE ROUTING TABLE
         for (Router r : openstackget.getRouters()) {
             String routername = openstackget.getResourceName(r);
+            String routerShortName = routername;
+            if (begain_with_uri(routerShortName, ResourceTool.versaStackPrefix)) {
+                routerShortName = routerShortName.substring(ResourceTool.versaStackPrefix.length());
+            }
             for (Port port : openstackget.getPorts()) {
                 if (port.getDeviceId().equals(r.getId())) {
 
                     for (String DES_SUB : openstackget.getPortSubnetID(port)) {
-                        String DES_SUB_NAME = openstackget.getResourceName(openstackget.getSubnet(DES_SUB));
                         Subnet s = openstackget.getSubnet(DES_SUB);
                         DES_SUB = openstackget.getResourceName(s);
+                        String subnetShortName = DES_SUB; 
+                        if (begain_with_uri(subnetShortName, ResourceTool.versaStackPrefix)){
+                            subnetShortName = subnetShortName.substring(ResourceTool.versaStackPrefix.length());
+                        }
                         String net_ID = s.getNetworkId();
                         String NET_ID = openstackget.getResourceName(openstackget.getNetwork(net_ID));
-                        Resource SUBNET = RdfOwl.createResource(model, ResourceTool.getResourceUri(DES_SUB, OpenstackPrefix.subnet, NET_ID, DES_SUB), switchingSubnet);
+                        String networkShortName = NET_ID; 
+                        if (begain_with_uri(networkShortName, ResourceTool.versaStackPrefix)){
+                            networkShortName = networkShortName.substring(ResourceTool.versaStackPrefix.length());
+                        }
+                        Resource SUBNET = RdfOwl.createResource(model, ResourceTool.getResourceUri(DES_SUB, OpenstackPrefix.subnet, networkShortName, DES_SUB), switchingSubnet);
                         for (IP ip2 : port.getFixedIps()) {
                             String INTERFACE_IP = ip2.getIpAddress();
-                            Resource ROUTER_INTERFACE_ROUTE_NEXTHOP = RdfOwl.createResource(model, ResourceTool.getResourceUri(INTERFACE_IP, OpenstackPrefix.router_interface_next_hop, routername, INTERFACE_IP), networkAddress);
+                            Resource ROUTER_INTERFACE_ROUTE_NEXTHOP = RdfOwl.createResource(model, ResourceTool.getResourceUri(INTERFACE_IP, OpenstackPrefix.router_interface_next_hop, routerShortName, INTERFACE_IP), networkAddress);
                             Resource ROUTER_INTERFACE_ROUTINGTABLE = null;
                             ROUTER_INTERFACE_ROUTINGTABLE = RdfOwl.createResource(model, ResourceTool.getResourceUri(routername, OpenstackPrefix.router_interface_routingtable, routername), Mrs.RoutingTable);
-                            Resource ROUTER_INTERFACE_ROUTE = RdfOwl.createResource(model, ResourceTool.getResourceUri(INTERFACE_IP, OpenstackPrefix.router_interface_route, routername, INTERFACE_IP), route);
+                            Resource ROUTER_INTERFACE_ROUTE = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetShortName, OpenstackPrefix.router_interface_route, routerShortName, subnetShortName), route);
                             model.add(model.createStatement(routingService, providesRoutingTable, ROUTER_INTERFACE_ROUTINGTABLE));
                             model.add(model.createStatement(routingService, providesRoute, ROUTER_INTERFACE_ROUTE));
                             model.add(model.createStatement(ROUTER_INTERFACE_ROUTINGTABLE, hasRoute, ROUTER_INTERFACE_ROUTE));
@@ -670,7 +704,7 @@ public class OpenStackNeutronModelBuilder {
                             model.add(model.createStatement(ROUTER_INTERFACE_ROUTE_NEXTHOP, value, INTERFACE_IP));
                         }
                     }
-
+                    
                 }
             }
             //router host route
@@ -782,4 +816,5 @@ public class OpenStackNeutronModelBuilder {
             return false;
         }
     }
+    
 }

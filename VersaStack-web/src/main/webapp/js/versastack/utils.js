@@ -1,3 +1,26 @@
+/*
+ * Copyright (c) 2013-2016 University of Maryland
+ * Modified by: Antonio Heard 2016
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Work.
+
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * IN THE WORK.
+ */
+
 "use strict";
 define([], function () {
     function map_(arr, f) {
@@ -78,14 +101,61 @@ define([], function () {
           
           //console.log("in positionMenu: menu.style.left: " + menu.style.left + " , menu.style.top: " + menu.style.top);
     }
+         function positionDisplayPanel(elementID, e) {
+            var clickCoords = getElementPosition(e);
+            var clickCoordsX = clickCoords.x;
+            var clickCoordsY = clickCoords.y;
 
+            var element = document.querySelector("#" + elementID);
+
+            var elemWidth = element.offsetWidth + 4;
+            var elemHeight = getHeight("#" + elementID) + 4; //element.offsetHeight + 4;
+
+            var windowWidth = window.innerWidth;
+            var windowHeight = window.innerHeight;
+
+            element.style.left = clickCoordsX + 20 + "px";
+            element.style.top = clickCoordsY - elemHeight + "px";
+            
+        }   
+        
+        function getHeight(elementName) {
+            var previousCss  = $(elementName).attr("style");
+
+            $(elementName)
+                .css({
+                    position:   'absolute', // Optional if #myDiv is already absolute
+                    visibility: 'hidden',
+                    display:    'block'
+                });
+
+            var optionHeight = $(elementName).height();
+
+            $(elementName).attr("style", previousCss ? previousCss : "");
+            return optionHeight;
+        }
+
+    function isURL(str) {
+        var urlPattern = /(http|ftp|https):\/\/[\w-]+(\.[\w-]*)+([\w.,@?^=%&amp;:\/~+#-]*[\w@?^=%&amp;\/~+#-])?/;
+        return urlPattern.test(str);
+    }
+    
+    function getRenderedElementParentDiv(elem) {
+       return  $(elem.svgNode.node()).closest('.details_viz').attr('id'); 
+    }
     /** PUBLIC INTERFACE **/
     return {
         map_: map_,
         deleteAllChildNodes: deleteAllChildNodes,
         bsShowFadingMessage: bsShowFadingMessage,
         positionUsingPointer: positionUsingPointer,
-        getElementPosition: getElementPosition
+        getElementPosition: getElementPosition, 
+        isURL: isURL,
+        getRenderedElementParentDiv: getRenderedElementParentDiv,
+        positionDisplayPanel: positionDisplayPanel,
+        isFirefox: function() {
+            return typeof InstallTrigger !== 'undefined';
+        }
     };
     /** END PUBLIC INTERFACE **/
 

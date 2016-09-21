@@ -69,6 +69,11 @@ $(function () {
 
         body.toggleClass("hide");
     });
+    
+    $("#info-panel").click(function () {
+        $("#black-screen").addClass("off");
+        $(this).removeClass("active");
+    });
 
     $("#progressbar li").click(function () {
         if (animating || $(this).hasClass('disabled'))
@@ -104,9 +109,23 @@ $(function () {
     });
 });
 
+function startEditor(mode) {
+    $("#mode-panel").css("top", "-50%");
+    
+    if (mode === 0) {
+        $("#wizform").removeClass("disabled");
+        $("#0-base-select").addClass("active-fs");
+    } else {
+        $("#msform").removeClass("disabled");
+        $("#0-template-select").addClass("active-fs");
+    }
+}
+
 function configureForm(type) {
     $("#progressbar li").removeClass("disabled");
     
+    var thead = document.getElementById(type + "Stage2-base");
+    thead.innerHTML = "";
     var tbody = document.getElementById(type + "Stage2-network");
     tbody.innerHTML = "";
     
@@ -119,18 +138,28 @@ function configureForm(type) {
     row1.appendChild(cell1_2);
     tbody.appendChild(row1);    
 
+    var row2 = document.createElement("tr");
+    var cell2_1 = document.createElement("td");
+    cell2_1.innerHTML = '<input type="text" name="alias" placeholder="Instance Alias" />';
+    row2.appendChild(cell2_1);
+    thead.appendChild(row2);
+
     if (type === 'aws') {
+        $("#msform").addClass("aws");
+        
         $("#progressbar li").eq(4).addClass("disabled");
         $("#progressbar li").eq(5).addClass("disabled");
 
-        var row2 = document.createElement("tr");
-        var cell2_1 = document.createElement("td");
-        var cell2_2 = document.createElement("td");
-        cell2_1.innerHTML = '<input type="text" name="conn-dest" placeholder="Direct Connect Destination" />';
-        cell2_2.innerHTML = '<input type="text" name="conn-vlan" placeholder="Direct Connect VLAN" />';
-        row2.appendChild(cell2_1);
-        row2.appendChild(cell2_2);
-        tbody.appendChild(row2);
+        var arow2 = document.createElement("tr");
+        var acell2_1 = document.createElement("td");
+        var acell2_2 = document.createElement("td");
+        acell2_1.innerHTML = '<input type="text" name="conn-dest" placeholder="Direct Connect Destination" />';
+        acell2_2.innerHTML = '<input type="text" name="conn-vlan" placeholder="Direct Connect VLAN" />';
+        arow2.appendChild(acell2_1);
+        arow2.appendChild(acell2_2);
+        tbody.appendChild(arow2);
+    } else {
+        $("#msform").addClass("ops");
     }
 }
 
@@ -226,13 +255,13 @@ function applyTemplate(mode) {
 
     if (mode === 0) {
         base_fs = $('#1-base-1');
-        mode_fs = $('#0-mode-select');
+        mode_fs = $('#0-template-select');
         nextStage(mode_fs, base_fs);
     }
     else {
         // Basic AWS Template
         if (mode === 1) {
-            current_fs = $("#0-mode-select");
+            current_fs = $("#0-template-select");
             next_fs = $("#2-aws-1");
             configureForm('aws');
 
@@ -263,12 +292,12 @@ function applyTemplate(mode) {
         }
         // AWS w/ VMs Template
         else if (mode === 2) {
-            current_fs = $("#0-mode-select");
+            current_fs = $("#0-template-select");
             next_fs = $("#2-aws-1");
             configureForm('aws');
 
             form.elements['netType'].value = 'internal';
-            form.elements['netCidr'].value = '10.0.0.0/16';
+            form.elements['netCidr'].value = '10.1.0.0/16';
 
             var subnetCounter = document.getElementById('awsStage3-subnet');
             subnetCounter.value = 2;
@@ -311,7 +340,7 @@ function applyTemplate(mode) {
         }
         // Basic OPS Template
         else if (mode === 3) {
-            current_fs = $("#0-mode-select");
+            current_fs = $("#0-template-select");
             next_fs = $("#2-ops-1");
             configureForm('ops');                        
             
@@ -437,9 +466,19 @@ function setSubnets(input) {
         row2.appendChild(cell2_1);
         row2.appendChild(cell2_2);
         tbody1.appendChild(row2);
+                        
+        var row3 = document.createElement("tr");
+        var cell3_1 = document.createElement("td");
+        if (stage.substring(0, 3) === 'aws') {
+            cell3_1.innerHTML = '<label><input type = "checkbox" name = "subnet' + i + '-route-prop" value = "true"> Enable VPN Routes Propagation</label>';
+        } else if (stage.substring(0, 3) === 'ops') {
+            cell3_1.innerHTML = '<label><input type = "checkbox" name = "subnet' + i + '-route-default" value = "true"> Enable Default Routing</label>';
+        }
+        row3.appendChild(cell3_1);
+        tbody1.appendChild(row3);
+        
         table.appendChild(tbody1);
         table.appendChild(tbody2);
-
         fieldset.appendChild(table);
 
         // Set inputs for subnet routes
@@ -461,14 +500,6 @@ function setSubRoutes(input) {
     table.innerHTML = "";
 
     var subRouteCount = input.value;
-    var row = table.insertRow(0);
-    var cell = row.insertCell(0);
-    if (subnetId.substring(0, 3) === 'aws') {
-        cell.innerHTML = '<label><input type = "checkbox" name = "subnet' + subnetNum + '-route-prop" value = "true"> Enable VPN Routes Propagation</label>';
-    } else if (subnetId.substring(0, 3) === 'ops') {
-        cell.innerHTML = '<label><input type = "checkbox" name = "subnet' + subnetNum + '-route-default" value = "true"> Enable Default Routing</label>';
-    }
-
     for (j = 1; j <= subRouteCount; j++) {
         var row3 = table.insertRow(j - 1);
         var cell3_1 = row3.insertCell(0);
@@ -489,7 +520,6 @@ function setVMs(input) {
     var vmTable = document.getElementById(stage + "-route-table");
     $("#" + stage + "-route-table tr").remove();
     fieldset.innerHTML = "";
-
 
     var start = 1;
     for (i = start; i <= input.value; i++) {
@@ -524,7 +554,6 @@ function setVMs(input) {
             body1.toggleClass("fade-hide");
             body2.toggleClass("fade-hide");
         });
-
 
         var row2 = document.createElement("tr");
         var cell2_1 = document.createElement("td");
@@ -789,4 +818,53 @@ function updateGatewayNames(input) {
     
     $('[id$=gateway-select] option[value=' + gatewayNum + ']').text(
             'Gateway ' + gatewayNum + ' (' + input.value + ')');
+}
+
+function validateVCN() {
+    var invalidArr = new Array();
+    var type = $("#msform").attr('class');
+
+    // Stage 2
+    if ($("input[name='alias']").val() === "") {
+        invalidArr.push("Alias field is empty.");
+        
+        $("#progressbar li").eq(1).addClass("invalid");
+        $("input[name='alias']").addClass("invalid");
+    }
+
+    // Stage 3
+    
+
+    // Stage 4
+    
+
+    // Stage 5
+    
+
+    // Stage 6
+    
+
+    // Results
+    if (invalidArr.length === 0) {
+        return true;
+    } else {
+        infoAlert("Invalid Inputs", invalidArr);
+        
+        return false;
+    }
+}
+
+function infoAlert(title, arr) {
+    $("#black-screen").removeClass("off");
+    $("#info-panel").addClass("active");
+    
+    if (title === "Invalid Inputs") {
+        $("#info-panel-title").html(title);
+        var arrString = "";
+        for (i = 0; i < arr.length; i++) {
+            arrString += arr[i] + "\r\n";
+        }
+        
+        $("#info-panel-div").html(arrString);
+    }
 }

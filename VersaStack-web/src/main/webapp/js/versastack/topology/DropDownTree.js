@@ -1,9 +1,32 @@
+/*
+ * Copyright (c) 2013-2016 University of Maryland
+ * Modified by: Antonio Heard 2016
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Work.
+
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * IN THE WORK.
+ */
+
 "use strict";
 define([
     "local/versastack/utils",
     "local/versastack/topology/DropDownNode"
 ], function (utils, DropDownNode) {
-    function DropDownTree(containerDiv) {
+    function DropDownTree(containerDiv, outputApi) {
         var map_ = utils.map_;
         /**@type Array.DropDownNode**/
         this.rootNodes = [];
@@ -12,35 +35,36 @@ define([
         this.contextMenu = null;
         this.history = [];
         this.topViewShown = false;
+        this.outputApi = outputApi;
         var currentIndex = -1;
         var lastIndex = -1;
-        
 
                 
         var that = this;
         
         // Code for all functionality related to the Model Browser goes here. 
         // going back and forth in stuff that already exists 
-        document.getElementById("backButton").onclick = function() {
-                        console.log("I'm in back : currentIndex: " + currentIndex + " lastIndex: " + lastIndex);
+        $("#" + that.outputApi.svgContainerName + "_backButton").on('click',  function() {
+                console.log("I'm in back : currentIndex: " + currentIndex + " lastIndex: " + lastIndex);
 
-            if (that.history.length > 0  && currentIndex - 1 >= 0 ) {
-               currentIndex--;
-               that.renderApi.clickNode(that.history[currentIndex][0], that.history[currentIndex][1]);
-            }
-        };
+                if (that.history.length > 0  && currentIndex - 1 >= 0 ) {
+                    currentIndex--;
+                    that.renderApi.clickNode(that.history[currentIndex][0], that.history[currentIndex][1], that.outputApi);
+                }
+            
+        });
 
-        document.getElementById("forwardButton").onclick = function() { 
-                        console.log("I'm in forward: currentIndex: " + currentIndex + " lastIndex: " + lastIndex);
+        $("#" + that.outputApi.svgContainerName + "_forwardButton").on('click',  function() { 
+                console.log("I'm in forward: currentIndex: " + currentIndex + " lastIndex: " + lastIndex);
                            
-             if (that.history.length > 0  && currentIndex + 1 <= lastIndex ) {
-               currentIndex++;
-               that.renderApi.clickNode(that.history[currentIndex][0], that.history[currentIndex][1]);
-            }               
-        };        
+                if (that.history.length > 0  && currentIndex + 1 <= lastIndex ) {
+                    currentIndex++;
+                    that.renderApi.clickNode(that.history[currentIndex][0], that.history[currentIndex][1], that.outputApi);
+                }              
+        });        
        
         this.addToHistory = function(name, type) {
-                        console.log("I'm here: currentIndex: " + currentIndex);
+            console.log("I'm here: currentIndex: " + currentIndex);
 
             if (currentIndex === -1 || this.history[currentIndex][0] !== name) {
                 currentIndex ++;
@@ -60,7 +84,7 @@ define([
         if (uriSearchSubmit){
             uriSearchSubmit.onclick = function() {
                 var uri = document.getElementById("URISearchInput").value;
-                that.renderApi.clickNode(uri, "Element");
+                that.renderApi.clickNode(uri, "Element", that.outputApi);
             };
         }
         
@@ -72,7 +96,7 @@ define([
                     that.renderApi.selectElement(null);
                 } else {
                     that.topViewShown = false;
-                    that.renderApi.clickNode(that.history[currentIndex][0], that.history[currentIndex][1]);
+                    that.renderApi.clickNode(that.history[currentIndex][0], that.history[currentIndex][1], that.outputApi);
                 }           
             };
         }
@@ -103,7 +127,7 @@ define([
 
         //We use the same method name as DropDownNode.addChild to enable polymorphism
         this.addChild = function (name, type, data) {
-            var ans = new DropDownNode(name, that.renderApi, type, data, that.contextMenu);
+            var ans = new DropDownNode(name, that.renderApi, type, data, that.contextMenu, that.outputApi);
             this.rootNodes.push(ans);
             return ans;
         };

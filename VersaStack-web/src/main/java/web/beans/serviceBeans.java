@@ -1,3 +1,27 @@
+/* 
+ * Copyright (c) 2013-2016 University of Maryland
+ * Created by: Alberto Jimenez 2015
+ * Modified by: Tao-Hung Yang 2016
+ * Modified by: Xi Yang 2016
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Work.
+ * 
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * IN THE WORK.
+ */
 package web.beans;
 
 import java.io.BufferedReader;
@@ -22,6 +46,7 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.ejb.EJBException;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -426,6 +451,14 @@ public class serviceBeans {
             //example for vm : vm1&0
         }
 
+        try {
+            URL url = new URL(String.format("%s/service/property/%s/host/", host, refUuid));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            executeHttpMethod(url, connection, "POST", driverType);
+        } catch (IOException ex) {
+            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
         JSONObject network = new JSONObject();
         network.put("type", "internal");
         network.put("cidr", netCidr);
@@ -574,6 +607,8 @@ public class serviceBeans {
                 String createPathExportTo = "";
                 String dependOn = "";
                 JSONObject connCriteriaValue = new JSONObject();
+                String providesVolume = "";
+                String svcDeltaCeph = "";
 
                 for (String vm : vmList) {
                     String[] vmPara = vm.split("&");
@@ -590,6 +625,14 @@ public class serviceBeans {
                             + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt;\n"
                             + "    a            nml:BidirectionalPort;\n"
                             + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "-eth0&gt;";
+                    JSONArray vmRouteArr = null;
+                    if (!vmPara[6].equals(" ")) {
+                        try {
+                            vmRouteArr = (JSONArray) jsonParser.parse(vmPara[6]);
+                        } catch (Exception ex) {
+                            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }
                     if (!vmPara[4].equals(" ")) {
                         try {
                             JSONArray interfaceArr = (JSONArray) jsonParser.parse(vmPara[4]);
@@ -623,8 +666,8 @@ public class serviceBeans {
                                     String ip = null;
                                     String mac = null;
                                     for (String str : addArr) {
-                                        ip = str.contains("ip") ? str.substring(5) : ip;
-                                        mac = str.contains("mac") ? str.substring(4) : mac;
+                                        ip = str.contains("ipv4") ? str.substring(str.indexOf("ipv4") + 5) : ip;
+                                        mac = str.contains("mac") ? str.substring(str.indexOf("mac") + 4) : mac;
                                     }
 
                                     //Find sriov parameter from Gateways.
@@ -645,8 +688,16 @@ public class serviceBeans {
                                                     routeArr.add(rt);
                                                 }
                                             }
-
-                                            //sriov port_profile
+                                            // add VM level routes
+                                            if (vmRouteArr != null && !vmRouteArr.isEmpty()) {
+                                                if (routeArr == null) {
+                                                    routeArr = vmRouteArr;
+                                                } else {
+                                                    routeArr.addAll(vmRouteArr);
+                                                }
+                                                vmRouteArr = null;
+                                            }
+                                            // sriov port_profile
                                             if (gwJSON.containsKey("from")) {
                                                 JSONArray fromArr = (JSONArray) gwJSON.get("from");
                                                 JSONObject fromJSON = (JSONObject) fromArr.get(0);
@@ -666,7 +717,7 @@ public class serviceBeans {
                                                             + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "\",\n"
                                                             + "       \"to_port_profile\": \"" + (String) fromJSON.get("value") + "\",\n"
                                                             + "       \"mac_address\": \"" + mac + "\""
-                                                            + (ip == null? "": ",\n       \"ip_address\": \"" + ip + "\"")
+                                                            + (ip == null ? "" : ",\n       \"ip_address\": \"" + ip + "\"")
                                                             + (routeArr.isEmpty() ? "" : ",\n       \"routes\": " + routeArr.toString().replace("\\", ""))
                                                             + "\n    }\"\"\" .\n\n";
                                                 }
@@ -692,7 +743,7 @@ public class serviceBeans {
                                                             + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "\",\n"
                                                             + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn" + (String) gwJSON.get("name") + "%\n"
                                                             + "       \"mac_address\": \"" + mac + "\""
-                                                            + (ip == null? "": ",\n       \"ip_address\": \"" + ip + "\"")
+                                                            + (ip == null ? "" : ",\n       \"ip_address\": \"" + ip + "\"")
                                                             + (routeArr.isEmpty() ? "" : ",\n       \"routes\": " + routeArr.toString().replace("\\", ""))
                                                             + "\n    }\"\"\" .\n\n";
                                                     createPathExportTo += "&lt;x-policy-annotation:data:" + vmPara[0] + "-sriov" + i + "-criteria&gt;, ";
@@ -717,15 +768,38 @@ public class serviceBeans {
                                     }
                                 }
 
-                            }
-                            else
+                            } else {
                                 svcDelta += ".\n\n";
+                            }
                         } catch (Exception ex) {
                             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
                         }
                     } else {
                         svcDelta += ".\n\n";
                     }
+                    if (!vmPara[5].equals(" ")) {
+                        String nodeHasVolume = "";
+                        try {
+                            JSONArray cephRbdArr = (JSONArray) jsonParser.parse(vmPara[5]);
+                            int volNum = 0;
+                            for (Object obj : cephRbdArr) {
+                                JSONObject rbdJSON = (JSONObject) obj;
+                                nodeHasVolume += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":volume+ceph" + volNum + "&gt;, ";
+                                svcDeltaCeph += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":volume+ceph" + volNum + "&gt;\n"
+                                        + "   a  mrs:Volume;\n"
+                                        + "   mrs:disk_gb \"" + (String) rbdJSON.get("disk_gb") + "\";\n"
+                                        + "   mrs:mount_point \"" + (String) rbdJSON.get("mount_point") + "\".\n\n";
+                                volNum++;
+                            }
+                            providesVolume += nodeHasVolume;
+                        } catch (Exception ex) {
+                            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                        if (!nodeHasVolume.isEmpty()) {
+                            svcDeltaCeph += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n" + "    mrs:hasVolume       " + nodeHasVolume.substring(0, nodeHasVolume.length() - 2) + ".\n\n";
+                        }
+                    }
+
                     svcDelta += "&lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;\n"
                             + "    a            spa:PolicyAction ;\n"
                             + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
@@ -763,6 +837,12 @@ public class serviceBeans {
                             + "    spa:value    \"\"\"" + connCriteriaValue.toString() + "\"\"\".\n\n";
                 }
 
+                if (!providesVolume.isEmpty()) {
+                    svcDeltaCeph += "&lt;urn:ogf:network:openstack.com:openstack-cloud:ceph-rbd&gt;\n"
+                            + "   mrs:providesVolume " + providesVolume.substring(0, providesVolume.length() - 2) + " .\n\n";
+                    svcDelta += svcDeltaCeph;
+                }
+
                 if (!dependOn.isEmpty()) {
                     svcDelta += "&lt;" + topoUri + ":vt&gt;\n"
                             + "   a  nml:Topology;\n"
@@ -786,15 +866,7 @@ public class serviceBeans {
                 + "</modelAddition>\n\n"
                 + "</serviceDelta>";
 
-        try {
-            PrintWriter out = new PrintWriter("/Users/rikenavadur/test.ttl");
-            out.println(svcDelta);
-            out.close();
-        } catch (Exception e) {
-
-        }
         //System.out.println(svcDelta);
-
         // Cache serviceDelta.
         int[] results = cacheServiceDelta(refUuid, deltaUUID, svcDelta);
         int instanceID = results[0];
@@ -807,7 +879,7 @@ public class serviceBeans {
             HttpURLConnection compile = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, compile, "POST", svcDelta);
             if (!result.contains("referenceVersion")) {
-                return 2;//Error occurs when interacting with back-end system
+                throw new EJBException("Service Delta Failed!");
             }
 
             // Cache System Delta
@@ -817,42 +889,41 @@ public class serviceBeans {
             HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, propagate, "PUT", null);
             if (!result.equals("PROPAGATED")) {
-                return 2;//Error occurs when interacting with back-end system
+                throw new EJBException("Propagate Failed!");
             }
             url = new URL(String.format("%s/service/%s/commit", host, refUuid));
             HttpURLConnection commit = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, commit, "PUT", null);
             if (!result.equals("COMMITTED")) {
-                return 2;//Error occurs when interacting with back-end system
+                throw new EJBException("Commit Failed!");
             }
             url = new URL(String.format("%s/service/%s/status", host, refUuid));
             while (!result.equals("READY")) {
                 sleep(5000);//wait for 5 seconds and check again later
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
                 result = this.executeHttpMethod(url, status, "GET", null);
-                if (!result.equals("COMMITTED")) {
-                    return 3;//Fail to create network
-                }
+                /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
+                 throw new EJBException("Ready Check Failed!");
+                 }*/
             }
 
             return 0;
 
-        } catch (Exception e) {
-            return 1;//connection error
+        } catch (IOException | InterruptedException e) {
+            throw new EJBException("Fatal Error -- " + e.getLocalizedMessage());
         }
     }
-    
-    public int creatHybridCloud(Map<String, String> paraMap)  {
+
+    public int createHybridCloud(Map<String, String> paraMap) {
         String refUuid = null;
         JSONParser jsonParser = new JSONParser();
         JSONArray vcnArr = null;
-        ArrayList<String> topoUriList = new ArrayList<String>();
         String creatPathExportTo = "";
         //Mapping from paraMap to local variables
         for (Map.Entry<String, String> entry : paraMap.entrySet()) {
-            if (entry.getKey().equalsIgnoreCase("instanceUUID"))
+            if (entry.getKey().equalsIgnoreCase("instanceUUID")) {
                 refUuid = entry.getValue();
-            else if (entry.getKey().equalsIgnoreCase("virtual_clouds")) {
+            } else if (entry.getKey().equalsIgnoreCase("virtual_clouds")) {
                 try {
                     vcnArr = (JSONArray) jsonParser.parse(entry.getValue());
                 } catch (ParseException ex) {
@@ -863,7 +934,7 @@ public class serviceBeans {
 
         String deltaUUID = UUID.randomUUID().toString();
         String awsExportTo = "";
-        String awsDxStitching = "";        
+        String awsDxStitching = "";
         String svcDelta = "<serviceDelta>\n<uuid>" + deltaUUID
                 + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
                 + "\n\n<modelAddition>\n"
@@ -874,11 +945,10 @@ public class serviceBeans {
                 + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
                 + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n"
                 + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n";
-        
+
         for (Object obj : vcnArr) {
             JSONObject vcnJson = (JSONObject) obj;
             String topoUri = (String) vcnJson.get("parent");
-            topoUriList.add(topoUri);
             String driverType = "";
             String vcnName = (String) vcnJson.get("name");
             vcnJson.remove("name");
@@ -929,6 +999,9 @@ public class serviceBeans {
                     route.put("nextHop", value.get("value"));
                 }
             }
+
+            //absence check ?
+            JSONArray gatewayArr = (JSONArray) vcnJson.get("gateways");
 
             //find driver type
             Properties rains_connectionProps = new Properties();
@@ -1023,6 +1096,8 @@ public class serviceBeans {
             } else if (driverType.equals("ops")) {
                 int sriovCounter = 1;
                 String dependOn = "";
+                String createPathExportTo = "";
+                JSONObject connCriteriaValue = new JSONObject();
                 String providesVolume = "";
                 String svcDeltaCeph = "";
                 svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_clouds:tag+" + vcnName + "&gt;\n"
@@ -1049,12 +1124,12 @@ public class serviceBeans {
                         if (vmJson.containsKey("ceph_rbd")) {
                             JSONArray cephArr = (JSONArray) vmJson.get("ceph_rbd");
                             for (int ceph = 0; ceph < cephArr.size(); ceph++) {
-                                JSONObject cephJson = (JSONObject) cephArr.get(i);
+                                JSONObject cephJson = (JSONObject) cephArr.get(ceph);
                                 nodeHasVolume += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":volume+ceph" + ceph + "&gt;, ";
                                 svcDeltaCeph += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":volume+ceph" + ceph + "&gt;\n"
                                         + "   a  mrs:Volume;\n"
-                                        + "   mrs:disk_gb \""+ (String) cephJson.get("disk_gb") +"\";\n"
-                                        + "   mrs:mount_point \""+ (String) cephJson.get("mount_point") +"\".\n\n";
+                                        + "   mrs:disk_gb \"" + (String) cephJson.get("disk_gb") + "\";\n"
+                                        + "   mrs:mount_point \"" + (String) cephJson.get("mount_point") + "\".\n\n";
                             }
                             providesVolume += nodeHasVolume;
                         }
@@ -1062,7 +1137,7 @@ public class serviceBeans {
                         svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "&gt;\n"
                                 + "    a                         nml:Node ;\n"
                                 + (vmType == null ? "" : "    mrs:type       \"" + vmType + "\";\n")
-                                + (nodeHasVolume.isEmpty() ? "" : "    mrs:hasVolume       " + nodeHasVolume.substring(0,nodeHasVolume.length()-2) + ";\n")
+                                + (nodeHasVolume.isEmpty() ? "" : "    mrs:hasVolume       " + nodeHasVolume.substring(0, nodeHasVolume.length() - 2) + ";\n")
                                 + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0&gt; ;\n"
                                 + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;.\n\n"
                                 + "&lt;x-policy-annotation:action:create-" + vmName + "&gt;\n"
@@ -1084,7 +1159,12 @@ public class serviceBeans {
                                 + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0&gt;\n"
                                 + "    a            nml:BidirectionalPort ;\n"
                                 + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "-eth0&gt; ";
-
+                        // VM level routes
+                        JSONArray vmRouteArr = null;
+                        if (vmJson.containsKey("routes")) {
+                            vmRouteArr = (JSONArray) vmJson.get("routes");
+                        }
+                        // interfaces
                         if (!vmJson.containsKey("interfaces")) {
                             svcDelta += ".\n\n";
                         } else {
@@ -1118,92 +1198,197 @@ public class serviceBeans {
                                         String ip = null;
                                         String mac = null;
                                         for (String str : addArr) {
-                                            ip = str.contains("ip") ? str.substring(5) : ip;
-                                            mac = str.contains("mac") ? str.substring(4) : mac;
+                                            ip = str.contains("ipv4") ? str.substring(str.indexOf("ipv4") + 5) : ip;
+                                            mac = str.contains("mac") ? str.substring(str.indexOf("mac") + 4) : mac;
                                         }
                                         JSONArray routeArr = (JSONArray) interJson.get("routes");
+                                        if (vmRouteArr != null && !vmRouteArr.isEmpty()) {
+                                            if (routeArr == null) {
+                                                routeArr = vmRouteArr;
+                                            } else {
+                                                routeArr.addAll(vmRouteArr);
+                                            }
+                                            vmRouteArr = null;
+                                        }
+                                        //Find sriov parameter from Gateways.
+                                        for (Object gwEle : gatewayArr) {
+                                            JSONObject gwJSON = (JSONObject) gwEle;
+                                            if (gwJSON.get("name").equals(gateway)) {
+                                                if (gwJSON.get("type").equals("inter_cloud_network")) {
+                                                    svcDelta += "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;\n"
+                                                            + "    a            spa:PolicyAction ;\n"
+                                                            + "    spa:type     \"MCE_UcsSriovStitching\" ;\n"
+                                                            + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;, "
+                                                            + "&lt;x-policy-annotation:action:create-" + vmName + "-eth0&gt;, "
+                                                            + "&lt;x-policy-annotation:action:create-aws-ops-path&gt;;\n"
+                                                            + "    spa:importFrom &lt;x-policy-annotation:data:sriov-criteria" + sriovCounter + "&gt;, "
+                                                            + "&lt;x-policy-annotation:data:aws-ops-criteriaexport&gt; .\n\n"
+                                                            + "&lt;x-policy-annotation:data:sriov-criteria" + sriovCounter + "&gt;\n"
+                                                            + "    a            spa:PolicyData;\n"
+                                                            + "    spa:type     \"JSON\";\n"
+                                                            + "    spa:format    \"\"\"{\n"
+                                                            + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "\",\n"
+                                                            + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%\n"
+                                                            + "       \"mac_address\": \"" + mac + "\""
+                                                            + (ip == null ? "" : ",\n       \"ip_address\": \"" + ip + "\"");
 
-                                        svcDelta += "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;\n"
-                                                + "    a            spa:PolicyAction ;\n"
-                                                + "    spa:type     \"MCE_UcsSriovStitching\" ;\n"
-                                                + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;, "
-                                                + "&lt;x-policy-annotation:action:create-" + vmName + "-eth0&gt;, "
-                                                + "&lt;x-policy-annotation:action:create-aws-ops-path&gt;;\n"
-                                                + "    spa:importFrom &lt;x-policy-annotation:data:sriov-criteria" + sriovCounter + "&gt;, "
-                                                + "&lt;x-policy-annotation:data:aws-ops-criteriaexport&gt; .\n\n"
-                                                + "&lt;x-policy-annotation:data:sriov-criteria" + sriovCounter + "&gt;\n"
-                                                + "    a            spa:PolicyData;\n"
-                                                + "    spa:type     \"JSON\";\n"
-                                                + "    spa:format    \"\"\"{\n"
-                                                + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "\",\n"
-                                                + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%\n"
-                                                + "       \"mac_address\": \"" + mac + "\""
-                                                + (ip == null ? "" : ",\n       \"ip_address\": \"" + ip + "\"");
-                                        if (routeArr != null) {
-                                            for (Object r : routeArr) {
-                                                JSONObject route = (JSONObject) r;
-                                                if (route.containsKey("to")) {
-                                                    JSONObject value = (JSONObject) route.get("to");
-                                                    route.put("to", value.get("value"));
-                                                }
-                                                if (route.containsKey("from")) {
-                                                    JSONObject value = (JSONObject) route.get("from");
-                                                    route.put("from", value.get("value"));
-                                                }
-                                                if (route.containsKey("next_hop")) {
-                                                    JSONObject value = (JSONObject) route.get("next_hop");
-                                                    route.put("next_hop", value.get("value"));
+                                                    if (routeArr != null) {
+                                                        for (Object r : routeArr) {
+                                                            JSONObject route = (JSONObject) r;
+                                                            if (route.containsKey("to")) {
+                                                                JSONObject value = (JSONObject) route.get("to");
+                                                                route.put("to", value.get("value"));
+                                                            }
+                                                            if (route.containsKey("from")) {
+                                                                JSONObject value = (JSONObject) route.get("from");
+                                                                route.put("from", value.get("value"));
+                                                            }
+                                                            if (route.containsKey("next_hop")) {
+                                                                JSONObject value = (JSONObject) route.get("next_hop");
+                                                                route.put("next_hop", value.get("value"));
+                                                            }
+                                                        }
+                                                        svcDelta += ",\n       \"routes\": " + routeArr.toString().replace("\\", "");
+                                                    }
+                                                    svcDelta += "\n    }\"\"\" .\n\n";
+                                                    if (gwJSON.containsKey("to") && ((JSONArray) gwJSON.get("to")).size() == 1 && ((JSONObject) ((JSONArray) gwJSON.get("to")).get(0)).containsKey("type")
+                                                            && ((JSONObject) ((JSONArray) gwJSON.get("to")).get(0)).get("type").equals("peer_cloud")) {
+                                                        String peerCloudNet = ((JSONObject) ((JSONArray) gwJSON.get("to")).get(0)).get("value").toString();
+                                                        if (peerCloudNet.contains("?vlan=")) {
+                                                            peerCloudNet = peerCloudNet.replace("?vlan=", "\":{\"vlan_tag\":\"");
+                                                            peerCloudNet += "\"}\n";
+                                                        } else {
+                                                            peerCloudNet += "\":{\"vlan_tag\":\"any\"}\n";
+                                                        }
+                                                        svcDelta += "&lt;x-policy-annotation:data:aws-ops-criteria&gt;\n"
+                                                                + "    a            spa:PolicyData;\n"
+                                                                + "    spa:type     \"JSON\";\n"
+                                                                + "    spa:value    \"\"\"{\n"
+                                                                + "        \"urn:ogf:network:vo1_maxgigapop_net:link=conn1\": {\n"
+                                                                + "            \"" + topoUri + "\":{\"vlan_tag\":\"any\"},\n"
+                                                                + "            \"" + peerCloudNet
+                                                                + "        }\n"
+                                                                + "    }\"\"\".\n\n";
+                                                    } else {
+                                                        //@TODO: throw exception for format error!
+                                                    }
+                                                    if (vmJson.containsKey("quagga_bgp")) {
+                                                        JSONObject quaggaJson = (JSONObject) vmJson.get("quagga_bgp");
+                                                        if (!quaggaJson.containsKey("as_number")) {
+                                                            quaggaJson.put("as_number", "%$..customer_asn%");
+                                                        }
+                                                        if (!quaggaJson.containsKey("router_id")) {
+                                                            quaggaJson.put("router_id", "%$..customer_ip%");
+                                                        }
+                                                        JSONArray neighborArr = (JSONArray) quaggaJson.get("neighbors");
+                                                        for (Object neighborObj : neighborArr) {
+                                                            JSONObject neighborJson = (JSONObject) neighborObj;
+                                                            if (!neighborJson.containsKey("remote_ip")) {
+                                                                neighborJson.put("remote_ip", "%$..amazon_ip%");
+                                                            }
+                                                            if (!neighborJson.containsKey("local_ip")) {
+                                                                neighborJson.put("local_ip", "%$..customer_ip%");
+                                                            }
+                                                        }
+                                                        JSONArray quaggaNetworks = (JSONArray) quaggaJson.get("networks");
+                                                        quaggaJson.remove("networks");
+                                                        svcDelta += "&lt;x-policy-annotation:action:nfv-quagga-bgp" + sriovCounter + "&gt;\n"
+                                                                + "    a            spa:PolicyAction ;\n"
+                                                                + "    spa:type     \"MCE_NfvBgpRouting\";\n"
+                                                                + "    spa:dependOn &lt;x-policy-annotation:action:create-dc1&gt;, "
+                                                                + "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;;\n"
+                                                                + "    spa:importFrom &lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-remote&gt;, "
+                                                                + "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-local&gt;.\n\n"
+                                                                + "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-remote&gt;\n"
+                                                                + "    a            spa:PolicyData ;\n"
+                                                                + "    spa:type     \"JSON\" ;\n"
+                                                                + "    spa:format   \"\"\"" + quaggaJson.toString() + "\"\"\" .\n\n"
+                                                                + "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-local&gt;\n"
+                                                                + "    a            spa:PolicyData ;\n"
+                                                                + "    spa:type     \"JSON\" ;\n"
+                                                                + "    spa:value   \"\"\"{\n"
+                                                                + "       \"parent\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "\",\n"
+                                                                + "       \"networks\":" + quaggaNetworks.toString().replace("\\", "") + "\n"
+                                                                + "    }\"\"\" .\n\n";
+                                                        dependOn += "&lt;x-policy-annotation:action:nfv-quagga-bgp" + sriovCounter + "&gt;, ";
+                                                        awsExportTo += "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-remote&gt;, ";
+                                                    } else {
+                                                        dependOn += "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;, ";
+                                                    }
+                                                    dependOn += "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;, ";
+                                                    creatPathExportTo += "&lt;x-policy-annotation:data:sriov-criteria" + sriovCounter + "&gt;, ";
+                                                } else if (gwJSON.get("type").equals("ucs_port_profile")) {
+                                                    //sriov port_profile
+                                                    if (gwJSON.containsKey("from")) {
+                                                        JSONArray fromArr = (JSONArray) gwJSON.get("from");
+                                                        JSONObject fromJSON = (JSONObject) fromArr.get(0);
+                                                        if (fromJSON.get("type").equals("port_profile")) {
+                                                            //construct models;
+                                                            dependOn += "&lt;x-policy-annotation:action:ucs-sriov-stitch-external-" + vmName + "-sriov" + sriovCounter + "&gt;, ";
+                                                            svcDelta += "&lt;x-policy-annotation:action:ucs-sriov-stitch-external-" + vmName + "-sriov" + sriovCounter + "&gt;\n"
+                                                                    + "    a            spa:PolicyAction ;\n"
+                                                                    + "    spa:type     \"MCE_UcsSriovStitching\" ;\n"
+                                                                    + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;, &lt;x-policy-annotation:action:create-" + vmName + "-eth0&gt;;\n"
+                                                                    + "    spa:importFrom &lt;x-policy-annotation:data:sriov-criteria-external-" + vmName + "-sriov" + sriovCounter + "&gt;.\n"
+                                                                    + "\n"
+                                                                    + "&lt;x-policy-annotation:data:sriov-criteria-external-" + vmName + "-sriov" + sriovCounter + "&gt;\n"
+                                                                    + "    a            spa:PolicyData;\n"
+                                                                    + "    spa:type     \"JSON\";\n"
+                                                                    + "    spa:value    \"\"\"{\n"
+                                                                    + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "\",\n"
+                                                                    + "       \"to_port_profile\": \"" + (String) fromJSON.get("value") + "\",\n"
+                                                                    + "       \"mac_address\": \"" + mac + "\""
+                                                                    + (ip == null ? "" : ",\n       \"ip_address\": \"" + ip + "\"")
+                                                                    + ((routeArr == null || routeArr.isEmpty()) ? "" : ",\n       \"routes\": " + routeArr.toString().replace("\\", ""))
+                                                                    + "\n    }\"\"\" .\n\n";
+                                                        }
+                                                    }
+                                                    //sriov stitch_port
+                                                    if (gwJSON.containsKey("to")) {
+                                                        JSONArray toArr = (JSONArray) gwJSON.get("to");
+                                                        JSONObject toJSON = (JSONObject) toArr.get(0);
+                                                        if (toJSON.get("type").equals("stitch_port")) {
+                                                            //construct models;
+                                                            dependOn += "&lt;x-policy-annotation:action:ucs-" + vmName + "-sriov" + sriovCounter + "-stitch&gt;, ";
+                                                            svcDelta += "&lt;x-policy-annotation:action:ucs-" + vmName + "-sriov" + sriovCounter + "-stitch&gt;\n"
+                                                                    + "    a            spa:PolicyAction ;\n"
+                                                                    + "    spa:type     \"MCE_UcsSriovStitching\" ;\n"
+                                                                    + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;, &lt;x-policy-annotation:action:create-path&gt;;\n"
+                                                                    + "    spa:importFrom &lt;x-policy-annotation:data:" + vmName + "-sriov" + sriovCounter + "-criteria&gt; .\n"
+                                                                    + "\n"
+                                                                    + "&lt;x-policy-annotation:data:" + vmName + "-sriov" + sriovCounter + "-criteria&gt;\n"
+                                                                    + "    a            spa:PolicyData;\n"
+                                                                    + "    spa:type     \"JSON\";\n"
+                                                                    + "    spa:format    \"\"\"{\n"
+                                                                    + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "\",\n"
+                                                                    + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn" + (String) gwJSON.get("name") + "%\n"
+                                                                    + "       \"mac_address\": \"" + mac + "\""
+                                                                    + (ip == null ? "" : ",\n       \"ip_address\": \"" + ip + "\"")
+                                                                    + ((routeArr == null || routeArr.isEmpty()) ? "" : ",\n       \"routes\": " + routeArr.toString().replace("\\", ""))
+                                                                    + "\n    }\"\"\" .\n\n";
+                                                            createPathExportTo += "&lt;x-policy-annotation:data:" + vmName + "-sriov" + sriovCounter + "-criteria&gt;, ";
+                                                            if (!connCriteriaValue.containsKey("urn:ogf:network:vo1_maxgigapop_net:link=conn" + (String) gwJSON.get("name"))) {
+                                                                JSONObject vlanTag = new JSONObject();
+                                                                String dest = (String) toJSON.get("value");
+                                                                String vlan = "any";
+                                                                if (dest.contains("?vlan=")) {
+                                                                    dest = dest.substring(0, dest.indexOf("?vlan"));
+                                                                    vlan = dest.substring(dest.indexOf("?vlan=") + 6);
+                                                                }
+                                                                vlanTag.put("vlan_tag", vlan);
+                                                                JSONObject path = new JSONObject();
+                                                                path.put(topoUri, vlanTag);
+                                                                path.put(dest.replace("\\", ""), vlanTag);
+                                                                connCriteriaValue.put("urn:ogf:network:vo1_maxgigapop_net:link=conn" + (String) gwJSON.get("name"), path);
+                                                            }
+                                                        }
+                                                    }
+                                                } else {
+                                                    // @error handling !
                                                 }
                                             }
-                                            svcDelta += ",\n       \"routes\": " + routeArr.toString().replace("\\", "");
                                         }
-                                        svcDelta += "\n    }\"\"\" .\n\n";
-
-                                        if (vmJson.containsKey("quagga_bgp")) {
-                                            JSONObject quaggaJson = (JSONObject) vmJson.get("quagga_bgp");
-                                            if(!quaggaJson.containsKey("as_number"))
-                                                quaggaJson.put("as_number", "%$..customer_asn%");
-                                            if(!quaggaJson.containsKey("router_id"))
-                                                quaggaJson.put("router_id", "%$..customer_ip%");                                            
-                                            JSONArray neighborArr = (JSONArray) quaggaJson.get("neighbors");
-                                            for(Object neighborObj : neighborArr){
-                                                JSONObject neighborJson = (JSONObject) neighborObj;
-                                                if(!neighborJson.containsKey("remote_ip"))
-                                                    neighborJson.put("remote_ip", "%$..amazon_ip%");
-                                                if(!neighborJson.containsKey("local_ip"))
-                                                    neighborJson.put("local_ip", "%$..customer_ip%");
-                                            }
-                                            JSONArray quaggaNetworks = (JSONArray) quaggaJson.get("networks");
-                                            quaggaJson.remove("networks");
-                                            
-                                            svcDelta += "&lt;x-policy-annotation:action:nfv-quagga-bgp" + sriovCounter + "&gt;\n"
-                                                    + "    a            spa:PolicyAction ;\n"
-                                                    + "    spa:type     \"MCE_NfvBgpRouting\";\n"
-                                                    + "    spa:dependOn &lt;x-policy-annotation:action:create-dc1&gt;, "
-                                                    + "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;;\n"
-                                                    + "    spa:importFrom &lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-remote&gt;, "
-                                                    + "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-local&gt;.\n\n"
-                                                    + "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-remote&gt;\n"
-                                                    + "    a            spa:PolicyData ;\n"
-                                                    + "    spa:type     \"JSON\" ;\n"
-                                                    + "    spa:format   \"\"\""+ quaggaJson.toString() +"\"\"\" .\n\n"
-                                                    + "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-local&gt;\n"
-                                                    + "    a            spa:PolicyData ;\n"
-                                                    + "    spa:type     \"JSON\" ;\n"
-                                                    + "    spa:value   \"\"\"{\n"
-                                                    + "       \"parent\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "\",\n"
-                                                    + "       \"networks\":"+ quaggaNetworks.toString().replace("\\", "") +"\n"
-                                                    + "    }\"\"\" .\n\n";
-                                            dependOn += "&lt;x-policy-annotation:action:nfv-quagga-bgp" + sriovCounter + "&gt;, ";
-                                            awsExportTo += "&lt;x-policy-annotation:data:quagga-bgp" + sriovCounter + "-remote&gt;, ";
-                                        }
-                                        else {
-                                            dependOn += "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;, ";
-                                        }
-                                        dependOn += "&lt;x-policy-annotation:action:ucs-sriov-stitch" + sriovCounter + "&gt;, ";
-                                        creatPathExportTo += "&lt;x-policy-annotation:data:sriov-criteria" + sriovCounter + "&gt;, ";
                                         sriovCounter++;
-                                        break;
                                     }
                                 }
                             } else {
@@ -1212,10 +1397,10 @@ public class serviceBeans {
                         }
                     }
                 }
-                
-                if(!providesVolume.isEmpty()){
+
+                if (!providesVolume.isEmpty()) {
                     svcDeltaCeph += "&lt;urn:ogf:network:openstack.com:openstack-cloud:ceph-rbd&gt;\n"
-                            + "   mrs:providesVolume " + providesVolume.substring(0,providesVolume.length()-2) + " .\n\n";
+                            + "   mrs:providesVolume " + providesVolume.substring(0, providesVolume.length() - 2) + " .\n\n";
                 }
 
                 svcDelta += svcDeltaCeph
@@ -1229,6 +1414,19 @@ public class serviceBeans {
                         + "   a  nml:Topology;\n"
                         + "   spa:type spa:Abstraction;\n"
                         + "   spa:dependOn  " + dependOn.substring(0, dependOn.length() - 2) + ".\n\n";
+
+                if (!createPathExportTo.isEmpty()) {
+                    svcDelta += "&lt;x-policy-annotation:action:create-path&gt;\n"
+                            + "    a            spa:PolicyAction ;\n"
+                            + "    spa:type     \"MCE_MPVlanConnection\" ;\n"
+                            + "    spa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;\n"
+                            + "    spa:exportTo " + createPathExportTo.substring(0, (createPathExportTo.length() - 2)) + ".\n"
+                            + "\n"
+                            + "&lt;x-policy-annotation:data:conn-criteria&gt;\n"
+                            + "    a            spa:PolicyData;\n"
+                            + "    spa:type     \"JSON\";\n"
+                            + "    spa:value    \"\"\"" + connCriteriaValue.toString() + "\"\"\".\n\n";
+                }
             }
 
             svcDelta += "&lt;x-policy-annotation:data:" + vcnName + "-criteria&gt;\n"
@@ -1237,9 +1435,9 @@ public class serviceBeans {
                     + "    spa:value    \"\"\"" + vcnJson.toString().replace("\\", "")
                     + "\"\"\".\n\n";
         }
-        
-        awsDxStitching += awsExportTo.isEmpty()? ".\n\n" : 
-                ";\n    spa:exportTo " + awsExportTo.substring(0,awsExportTo.length()-2) + ".\n\n";
+
+        awsDxStitching += awsExportTo.isEmpty() ? ".\n\n"
+                : ";\n    spa:exportTo " + awsExportTo.substring(0, awsExportTo.length() - 2) + ".\n\n";
 
         svcDelta += awsDxStitching
                 + "&lt;x-policy-annotation:action:create-aws-ops-path&gt;\n"
@@ -1254,15 +1452,6 @@ public class serviceBeans {
                 + "    spa:format   \"\"\"{\n"
                 + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%\n"
                 + "    }\"\"\" .\n\n"
-                + "&lt;x-policy-annotation:data:aws-ops-criteria&gt;\n"
-                + "    a            spa:PolicyData;\n"
-                + "    spa:type     \"JSON\";\n"
-                + "    spa:value    \"\"\"{\n"
-                + "        \"urn:ogf:network:vo1_maxgigapop_net:link=conn1\": {\n"
-                + "            \"" + topoUriList.get(0) + "\":{\"vlan_tag\":\"any\"},\n"
-                + "            \"" + topoUriList.get(1) + "\":{\"vlan_tag\":\"any\"}\n"
-                + "        }\n"
-                + "    }\"\"\".\n\n"
                 + "</modelAddition>\n\n"
                 + "</serviceDelta>";
 
@@ -1286,9 +1475,9 @@ public class serviceBeans {
             HttpURLConnection compile = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, compile, "POST", svcDelta);
             if (!result.contains("referenceVersion")) {
-                return 2;//Error occurs when interacting with back-end system
+                throw new EJBException("Service Delta Failed!");
             }
-            
+
             // Cache System Delta
             cacheSystemDelta(instanceID, historyID, result);
 
@@ -1296,28 +1485,28 @@ public class serviceBeans {
             HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, propagate, "PUT", null);
             if (!result.equals("PROPAGATED")) {
-                return 2;//Error occurs when interacting with back-end system
+                throw new EJBException("Propagate Failed!");
             }
             url = new URL(String.format("%s/service/%s/commit", host, refUuid));
             HttpURLConnection commit = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, commit, "PUT", null);
             if (!result.equals("COMMITTED")) {
-                return 2;//Error occurs when interacting with back-end system
+                throw new EJBException("Commit Failed!");
             }
             url = new URL(String.format("%s/service/%s/status", host, refUuid));
             while (!result.equals("READY")) {
                 sleep(5000);//wait for 5 seconds and check again later
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
                 result = this.executeHttpMethod(url, status, "GET", null);
-                if (!result.equals("COMMITTED")) {
-                    return 3;//Fail to create network
-                }                
+                /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
+                 throw new EJBException("Ready Check Failed!");
+                 }*/
             }
 
             return 0;
-            
-        } catch (Exception e) {
-            return 1;//connection error
+
+        } catch (IOException | InterruptedException e) {
+            throw new EJBException("Fatal Error -- " + e.getLocalizedMessage());
         }
     }
 
@@ -1656,282 +1845,50 @@ public class serviceBeans {
         }
     }
 
-// ------------------------- DEPRECATED SERVICES -------------------------------
-    /**
-     *
-     * Create a virtual machine. Compose the ttl model according to the parsing
-     * parameters. Put the ttl model and the VersionGroup UUID in the parsing
-     * parameter into the modelAddition part and referenceVersion respectively
-     * in the delta. Request an UUID for system instance and use the UUID to
-     * propagate and commit the delta via the system API.
-     *
-     * @param paraMap a key-value pair contains all the required information,
-     * either selected by the user or assigned by the system, to build the
-     * request virtual machine.
-     * @return 0 - success.<br />
-     * 1 - Requesting System Instance UUID error.<br />
-     * 2 - plugin error.<br />
-     * 3 - connection error.<br />
-     * 4 - parsing parameter error<br />
-     */
-    public int vmInstall(Map<String, String> paraMap) {
-        String vgUuid = null;
-        String driverType = null;
-        String hypervisor = null;
-        String topoUri = null;
-        String region = null;
-        String vpcUri = null;
-        String osType = null;
-        String instanceType = null;
-        String name = null;
-        String[] subnets = null;
-        String[] volumes = null;
-        int quantity;
-
-        //Map the parsing parameters into each variable
-        for (Map.Entry<String, String> entry : paraMap.entrySet()) {
-            if (entry.getKey().equalsIgnoreCase("driverType")) {
-                driverType = entry.getValue();
-            } else if (entry.getKey().equalsIgnoreCase("hypervisor")) {
-                hypervisor = entry.getValue();
-            } else if (entry.getKey().equalsIgnoreCase("topologyUri")) {
-                topoUri = entry.getValue();
-            } else if (entry.getKey().equalsIgnoreCase("region")) {
-                region = entry.getValue();
-            } else if (entry.getKey().equalsIgnoreCase("vpcID")) {
-                vpcUri = entry.getValue();
-            } else if (entry.getKey().equalsIgnoreCase("osType")) {
-                osType = entry.getValue();
-            } else if (entry.getKey().equalsIgnoreCase("instanceType")) {
-                instanceType = entry.getValue();
-            } else if (entry.getKey().equalsIgnoreCase("vmQuantity")) {
-                quantity = Integer.valueOf(entry.getValue());
-            } else if (entry.getKey().equalsIgnoreCase("vmName")) {
-                name = entry.getValue();
-            } else if (entry.getKey().equalsIgnoreCase("subnets")) {
-                subnets = entry.getValue().split("\r\n");
-            } else if (entry.getKey().equalsIgnoreCase("volumes")) {
-                volumes = entry.getValue().split("\r\n");
-            }
-        }
-
+    public int getServiceID(String filename) {
         try {
-            URL url = new URL(String.format("%s/model/", host));
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            this.executeHttpMethod(url, connection, "GET", null);
-        } catch (Exception e) {
-            return 3;//connection error
-        }
+            Connection front_conn;
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
 
-        Connection rains_conn;
-        // Database Connection
-        try {
-
-            Class.forName("com.mysql.jdbc.Driver").newInstance();
-            Properties rains_connectionProps = new Properties();
-            rains_connectionProps.put("user", rains_db_user);
-            rains_connectionProps.put("password", rains_db_pass);
-
-            rains_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/rainsdb",
-                    rains_connectionProps);
-
-            PreparedStatement prep = rains_conn.prepareStatement("SELECT * FROM version_group ORDER BY id DESC LIMIT 1");
+            PreparedStatement prep = front_conn.prepareStatement("SELECT service_id FROM service WHERE filename = ?");
+            prep.setString(1, filename);
             ResultSet rs1 = prep.executeQuery();
             while (rs1.next()) {
-                vgUuid = rs1.getString("refUuid");
+                return rs1.getInt(1);
             }
-        } catch (SQLException | InstantiationException | IllegalAccessException | ClassNotFoundException ex) {
+
+            return -1;
+        } catch (SQLException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+            return -1;
         }
-
-        //create a system instance and get an UUID for this system instance from the API
-        String siUuid;
-
-        try {
-            URL url = new URL(String.format("%s/model/systeminstance", host));
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            siUuid = this.executeHttpMethod(url, connection, "GET", null);
-            if (siUuid.length() != 36) {
-                return 1;//not returning System Instance UUID. error occurs
-            }
-        } catch (Exception e) {
-            return 3;//connection error
-        }
-        //building ttl model
-        String delta = "<delta>\n<id>1</id>\n"
-                + "<creationTime>2015-03-11T13:07:23.116-04:00</creationTime>\n"
-                + "<referenceVersion>" + vgUuid + "</referenceVersion>\n"
-                + "<modelReduction></modelReduction>\n\n"
-                + "<modelAddition>\n"
-                + "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
-                + "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n"
-                + "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n"
-                + "@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .\n"
-                + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
-                + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n\n";
-
-        //check if driver the client choose is of AWS
-        if (driverType.equalsIgnoreCase("awsdriver")) {
-            String nodeTag = "&lt;" + topoUri + ":i-" + UUID.randomUUID().toString() + "&gt;";
-            String model = "&lt;" + vpcUri + "&gt;\n"
-                    + "        nml:hasNode        " + nodeTag + ".\n\n"
-                    + "&lt;" + topoUri + ":ec2service-" + region + "&gt;\n"
-                    + "        mrs:providesVM  " + nodeTag + ".\n\n";
-
-            //building all the volumes 
-            String allVolUri = "";
-            for (String vol : volumes) {
-                String volUri = "&lt;" + topoUri + ":vol-" + UUID.randomUUID().toString() + "&gt;";
-                String[] parameters = vol.split(",");
-                model += volUri + "\n        a                  mrs:Volume , owl:NamedIndividual ;\n"
-                        + "        mrs:disk_gb        \"" + parameters[0] + "\" ;\n"
-                        + "        mrs:target_device  \"" + parameters[2] + "\" ;\n"
-                        + "        mrs:value          \"" + parameters[1] + "\" .\n\n";
-                allVolUri += volUri + " , ";
-            }
-            model += "&lt;" + topoUri + ":ebsservice-" + region + "&gt;\n"
-                    + "        mrs:providesVolume  " + allVolUri.substring(0, (allVolUri.length() - 2)) + ".\n\n";
-
-            //building all the network interfaces
-            String allSubnets = "";
-            for (String net : subnets) {
-                String portUri = "&lt;" + topoUri + ":eni-" + UUID.randomUUID().toString() + "&gt;";
-                model += "&lt;" + net + "&gt;\n        nml:hasBidirectionalPort " + portUri + " .\n\n"
-                        + portUri + "\n        a                     nml:BidirectionalPort , owl:NamedIndividual ;\n"
-                        + "        mrs:hasTag            &lt;" + topoUri + ":portTag&gt; .\n\n";
-
-                allSubnets += portUri + " , ";
-            }
-
-            //building the node
-            model += nodeTag + "\n        a                         nml:Node , owl:NamedIndividual ;\n"
-                    + "        mrs:providedByService     &lt;" + topoUri + ":ec2service-" + region + "&gt; ;\n"
-                    + "        mrs:hasVolume             "
-                    + allVolUri.substring(0, (allVolUri.length() - 2)) + ";\n"
-                    + "        nml:hasBidirectionalPort  "
-                    + allSubnets.substring(0, (allSubnets.length() - 2)) + ".\n\n";
-
-            delta += model + "</modelAddition>\n</delta>";
-        } //
-        else if (driverType.equalsIgnoreCase("openStackDriver")) {
-            String nodeTag = "&lt;" + topoUri + ":server-name+" + UUID.randomUUID().toString() + "&gt;";
-            String model = "&lt;" + vpcUri + "&gt;\n"
-                    + "        nml:hasNode        " + nodeTag + ".\n\n"
-                    + "&lt;" + hypervisor + "&gt;\n"
-                    + "        mrs:providesVM  " + nodeTag + ".\n\n";
-            //building all the subnets connected
-            String allSubnets = "";
-            for (String net : subnets) {
-                String portUri = "&lt;" + topoUri + ":port+" + UUID.randomUUID().toString() + "&gt;";
-                model += "&lt;" + net + "&gt;\n       a       mrs:SwitchingSubnet , owl:NamedIndividual ;\n"
-                        + "        nml:hasBidirectionalPort " + portUri + " .\n\n"
-                        + portUri + "\n        a       nml:BidirectionalPort , owl:NamedIndividual ;\n"
-                        + "        mrs:hasTag             &lt;" + topoUri + ":portTag&gt; .\n\n";
-                allSubnets += portUri + " , ";
-            }
-            //building the node
-            model += nodeTag + "\n        a       nml:Node , owl:NamedIndividual ;\n"
-                    + "        nml:hasBidirectionalPort                "
-                    + allSubnets.substring(0, (allSubnets.length() - 2)) + ".\n\n";
-
-            delta += model + "</modelAddition>\n</delta>";
-        }
-
-        //push to the system api and get response
-        try {
-            //propagate the delta
-            URL url = new URL(String.format("%s/delta/%s/propagate", host, siUuid));
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            String result = this.executeHttpMethod(url, connection, "POST", delta);
-            if (!result.equalsIgnoreCase("propagate successfully")) //plugin error
-            {
-                return 2;
-            }
-            //commit the delta
-            url = new URL(String.format("%s/delta/%s/commit", host, siUuid));
-            connection = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, connection, "PUT", "");
-            if (!result.equalsIgnoreCase("PROCESSING")) //plugin error
-            {
-                return 2;
-            }
-
-        } catch (Exception e) {
-            return 3;//connection error
-        }
-
-        return 0;
-
     }
 
-    /**
-     * Create a customize model view based on the criteria user specifies.
-     *
-     * @param filters A string array. Each string contains SPARQL description,
-     * inclusive flag, subtreeRecursive flag, and suptreeRecursive flag,
-     * concatenated by "\r\n".<br /><br />
-     * For example: CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o. ?s a
-     * nml:Topology.}\r\ntrue\r\nfalse\r\nfalse
-     * @return A string contains the filtered model in json format if creating
-     * successfully, otherwise, a string contains the error message.
-     */
-    public String createModelView(String[] filters) {
-        String vgUuid = null;
-        //create a new version group.
+    public int getUserID(String username) {
         try {
-            //URL url = new URL(String.format("http://localhost:8080/VersaStack-web/data/json/umd-anl-all.json"));
-            URL url = new URL(String.format("%s/model/", host));
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            this.executeHttpMethod(url, connection, "GET", null);
-        } catch (Exception e) {
-            System.out.println(e.toString());//connection error
-            return null;
-        }
+            Connection front_conn;
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
 
-        //retrieve the version group UUID from the database.
-        Connection rains_conn;
-        try {
-
-            Class.forName("com.mysql.jdbc.Driver").newInstance();
-            Properties rains_connectionProps = new Properties();
-            rains_connectionProps.put("user", rains_db_user);
-            rains_connectionProps.put("password", rains_db_pass);
-
-            rains_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/rainsdb",
-                    rains_connectionProps);
-
-            PreparedStatement prep = rains_conn.prepareStatement("SELECT * FROM version_group ORDER BY id DESC LIMIT 1");
+            PreparedStatement prep = front_conn.prepareStatement("SELECT user_id FROM user_info WHERE username = ?");
+            prep.setString(1, username);
             ResultSet rs1 = prep.executeQuery();
             while (rs1.next()) {
-                vgUuid = rs1.getString("refUuid");
+                return rs1.getInt(1);
             }
-        } catch (SQLException | InstantiationException | IllegalAccessException | ClassNotFoundException ex) {
+
+            return -1;
+        } catch (SQLException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+            return -1;
         }
-
-        //construct the queryModelView object.
-        String view = "<view><filters>";
-        for (String filter : filters) {
-            String[] filterParam = filter.split("\r\n");
-            view += "<filter><sparql>" + filterParam[0] + "</sparql>"
-                    + "<inclusive>" + filterParam[1] + "</inclusive>"
-                    + "<subtreeRecursive>" + filterParam[2] + "</subtreeRecursive>"
-                    + "<suptreeRecursive>" + filterParam[3] + "</suptreeRecursive></filter>";
-        }
-        view += "</filters></view>";
-
-        //Send the request though API to back-end system.
-        String result;
-        try {
-            URL url = new URL(String.format("%s/model/view/%s", host, vgUuid));
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, connection, "POST", view);
-        } catch (Exception e) {
-            System.out.println(e.toString());//query error
-            return null;
-        }
-
-        return result;
     }
 
 }

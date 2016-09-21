@@ -1,8 +1,26 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright (c) 2013-2016 University of Maryland
+ * Created by: Xi Yang 2013
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Work.
+
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * IN THE WORK.
  */
+
 package net.maxgigapop.mrs.bean.persist;
 
 import java.util.ArrayList;
@@ -93,18 +111,31 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
         return vg;
     }
 
-    public static void cleanupAll() {
+    public static void cleanupAll(VersionGroup butVG) {
         try {
-            Query q = createQuery(String.format("FROM %s", VersionGroup.class.getSimpleName()));
+            // remove all VGs that has no dependency (by systemDelta)
+            Query q = createQuery(String.format("FROM %s vg WHERE NOT EXISTS (FROM %s as delta WHERE delta.referenceVersionGroup = vg)", VersionGroup.class.getSimpleName(), SystemDelta.class.getSimpleName()));
             List<VersionGroup> listVG = (List<VersionGroup>) q.getResultList();
-            if (listVG == null) {
-                return;
-            }
-            Iterator<VersionGroup> it = listVG.iterator();
-            while (it.hasNext()) {
-                VersionGroup vg = it.next();
-                if (vg.getVersionItems() == null || vg.getVersionItems().isEmpty()) {
+            if (listVG != null) {
+                Iterator<VersionGroup> it = listVG.iterator();
+                while (it.hasNext()) {
+                    VersionGroup vg = it.next();
+                    if (butVG != null && vg.getRefUuid().equals(butVG.getRefUuid())) {
+                        continue;
+                    }
                     VersionGroupPersistenceManager.delete(vg);
+                }
+            }
+            // remove all empty VGs
+            q = createQuery(String.format("FROM %s", VersionGroup.class.getSimpleName()));
+            listVG = (List<VersionGroup>) q.getResultList();
+            if (listVG != null) {
+                Iterator<VersionGroup> it = listVG.iterator();
+                while (it.hasNext()) {
+                    VersionGroup vg = it.next();
+                    if (vg.getVersionItems() == null || vg.getVersionItems().isEmpty()) {
+                        VersionGroupPersistenceManager.delete(vg);
+                    }
                 }
             }
         } catch (Exception e) {
@@ -112,10 +143,24 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
         }
     }
     
-    public static void cleanupAndUpdateAll() {
+    public static void cleanupAndUpdateAll(VersionGroup butVG) {
         try {
-            Query q = createQuery(String.format("FROM %s", VersionGroup.class.getSimpleName()));
+            // remove all VGs that has no dependency (by systemDelta)
+            Query q = createQuery(String.format("FROM %s vg WHERE NOT EXISTS (FROM %s as delta WHERE delta.referenceVersionGroup = vg)", VersionGroup.class.getSimpleName(), SystemDelta.class.getSimpleName()));
             List<VersionGroup> listVG = (List<VersionGroup>) q.getResultList();
+            if (listVG != null) {
+                Iterator<VersionGroup> it = listVG.iterator();
+                while (it.hasNext()) {
+                    VersionGroup vg = it.next();
+                    if (butVG != null && vg.getRefUuid().equals(butVG.getRefUuid())) {
+                        continue;
+                    }
+                    VersionGroupPersistenceManager.delete(vg);
+                }
+            }
+            // remove all empty VGs and update the non-empty
+            q = createQuery(String.format("FROM %s", VersionGroup.class.getSimpleName()));
+            listVG = (List<VersionGroup>) q.getResultList();
             if (listVG == null) {
                 return;
             }
@@ -123,8 +168,10 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
             while (it.hasNext()) {
                 VersionGroup vg = it.next();
                 if (vg.getVersionItems() == null || vg.getVersionItems().isEmpty()) {
-                    VersionGroupPersistenceManager.delete(vg);
+                    //@TODO: probe -> exception here (deletion may not be needed any way)
+                    //VersionGroupPersistenceManager.delete(vg);
                 } else {
+                    //@TODO: probe further: the update may create empty VGs
                     VersionGroupPersistenceManager.refreshToHead(vg, true);
                 }
                 
