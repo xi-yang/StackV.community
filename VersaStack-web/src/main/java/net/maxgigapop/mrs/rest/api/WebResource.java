@@ -1086,6 +1086,25 @@ public class WebResource {
 
         return result;
     }
+    
+    private boolean clearVerification(String refUuid) throws SQLException {
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+        PreparedStatement prep;
+
+        int instanceID = servBean.getInstanceID(refUuid);
+
+        prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = ? WHERE `service_verification`.`service_instance_id` = ?");
+        prep.setNull(1, java.sql.Types.INTEGER);
+        prep.setInt(2, instanceID);
+        prep.executeUpdate();
+
+        return true;
+    }
 
     private boolean verify(String refUuid) throws MalformedURLException, IOException, InterruptedException, SQLException {
         int instanceID = servBean.getInstanceID(refUuid);
@@ -1156,25 +1175,6 @@ public class WebResource {
         prep.executeUpdate();
 
         return false;
-    }
-
-    private boolean clearVerification(String refUuid) throws SQLException {
-        Connection front_conn;
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                front_connectionProps);
-        PreparedStatement prep;
-
-        int instanceID = servBean.getInstanceID(refUuid);
-
-        prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = ? WHERE `service_verification`.`service_instance_id` = ?");
-        prep.setNull(1, java.sql.Types.INTEGER);
-        prep.setInt(2, instanceID);
-        prep.executeUpdate();
-
-        return true;
     }
 
     private String superStatus(String refUuid) throws SQLException {
