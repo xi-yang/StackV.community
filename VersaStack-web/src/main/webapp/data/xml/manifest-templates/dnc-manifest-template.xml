@@ -5,19 +5,21 @@
 {
 	"Switching Cross-Connects (Subnet VLANs)": [
 		{
-			"Switching Subnets": {
-				"Subnet Name": "?subnet?",
-				"Switching Ports": [
-					{
-						"Port Name": "?terminal?",
-						"Vlan Tag": "?terminal_vlan?",
-						"sparql": "SELECT ?terminal ?terminal_vlan WHERE { ?subnet nml:hasBidirectionalPort ?terminal. ?terminal nml:hasLabel ?vlan. ?vlan nml:value ?terminal_vlan. }",
-						"required": "true"
-					}
-				],
-				"sparql": "SELECT ?subnet WHERE { ?subnet a mrs:SwitchingSubnet. }",
-				"required": "true"
-			}
+			"Switching Subnets": [
+				{
+					"Subnet Name": "?subnet?",
+					"Switching Ports": [
+						{
+							"Port Name": "?terminal?",
+							"Vlan Tag": "?terminal_vlan?",
+							"sparql": "SELECT ?terminal ?terminal_vlan WHERE { ?subnet nml:hasBidirectionalPort ?terminal. ?terminal nml:hasLabel ?vlan. ?vlan nml:value ?terminal_vlan. }",
+							"required": "true"
+						}
+					],
+					"sparql": "SELECT ?subnet WHERE { ?subnet a mrs:SwitchingSubnet. }",
+					"required": "true"
+				}
+			],
 		}
 	]
 }
