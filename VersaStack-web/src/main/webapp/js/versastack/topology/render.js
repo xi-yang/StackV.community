@@ -869,11 +869,17 @@ define([
             if (policyType === "PolicyData") {
                 $("#dialog_policyData").text("");
                 
-                if (n.data !== undefined)
-                    $("#dialog_policyData").append("<pre class=\"jSonDialog\">" + n.data + "</pre>");
-                else 
+                if (n.data !== undefined){
+                    if (n.data.indexOf(" ") !== -1) {
+                        $("#dialog_policyData").append("<pre class=\"jSonDialog\">" + n.data + "</pre>");
+                    } else {
+                        var parsedData = JSON.parse(n.data);
+                        $("#dialog_policyData").append("<pre class=\"jSonDialog\">" + JSON.stringify(parsedData, null, 4) + "</pre>");
+
+                    }
+                }else{ 
                     $("#dialog_policyData").append("<pre class=\"jSonDialog\">N/A</pre>");
-                
+                }
                 $("#dialog_policyData").dialog("open");
                 $('.ui-dialog :button').blur();
             } else if (policyType === "PolicyAction") {
