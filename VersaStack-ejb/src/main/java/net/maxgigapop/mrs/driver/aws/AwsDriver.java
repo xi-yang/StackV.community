@@ -61,7 +61,7 @@ import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 @Stateless
 public class AwsDriver implements IHandleDriverSystemCall {
 
-    Logger logger = Logger.getLogger(AwsDriver.class.getName());
+    Logger log = Logger.getLogger(AwsDriver.class.getName());
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
@@ -105,7 +105,8 @@ public class AwsDriver implements IHandleDriverSystemCall {
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         String requests = driverInstance.getProperty(requestId);
         if (requests == null || requests.isEmpty()) {
-            throw new EJBException(String.format("commitDelta encounters empty requests data for %s", driverInstance));
+            log.warning(String.format("commitDelta encounters empty requests data for %s", driverInstance));
+            return new AsyncResult<String>("SUCCESS");
         }
         AwsPush push = new AwsPush(access_key_id, secret_access_key, region, topologyURI);
         push.pushCommit(requests);

@@ -28,6 +28,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import javax.persistence.Query;
 import net.maxgigapop.mrs.bean.*;
@@ -40,6 +41,7 @@ import static net.maxgigapop.mrs.bean.persist.PersistenceManager.createQuery;
  */
 @SuppressWarnings("unchecked")
 public class VersionGroupPersistenceManager extends PersistenceManager {
+    private static final Logger log = Logger.getLogger(VersionGroupPersistenceManager.class.getName());
 
     public static VersionGroup findById(Long id) {
         return PersistenceManager.find(VersionGroup.class, id);
@@ -139,7 +141,7 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                 }
             }
         } catch (Exception e) {
-            ;
+            log.warning("VersionGroupPersistenceManager::cleanupAll raised exception: " + e);
         }
     }
     
@@ -177,7 +179,7 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                 
             }
         } catch (Exception e) {
-            ;
+            log.warning("VersionGroupPersistenceManager::cleanupAndUpdateAll raised exception: " + e);
         }
     }
 
