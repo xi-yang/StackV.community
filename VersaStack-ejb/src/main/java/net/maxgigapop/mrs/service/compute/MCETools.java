@@ -841,6 +841,8 @@ public class MCETools {
             String vlanSubnetUrn = ingressSwitchingService.toString() + ":vlan+" + suggestedVlan;
             Resource ingressSwitchingSubnet = RdfOwl.createResource(vlanSubnetModel, vlanSubnetUrn, Mrs.SwitchingSubnet);
             vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingService, Mrs.providesSubnet, ingressSwitchingSubnet));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.encoding, RdfOwl.labelTypeVLAN));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.labelSwapping, "false"));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.belongsTo, ingressSwitchingService));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.hasBidirectionalPort, resVlanPort));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.belongsTo, ingressSwitchingSubnet));
@@ -852,6 +854,8 @@ public class MCETools {
             String vlanSubnetUrn = egressSwitchingService.toString() + ":vlan+" + suggestedVlan;
             Resource egressSwitchingSubnet = RdfOwl.createResource(vlanSubnetModel, vlanSubnetUrn, Mrs.SwitchingSubnet);
             vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingService, Mrs.providesSubnet, egressSwitchingSubnet));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.encoding, RdfOwl.labelTypeVLAN));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.labelSwapping, "false"));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.belongsTo, egressSwitchingService));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.hasBidirectionalPort, resVlanPort));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.belongsTo, egressSwitchingSubnet));
