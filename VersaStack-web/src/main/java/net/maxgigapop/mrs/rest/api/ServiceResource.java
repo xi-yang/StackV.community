@@ -219,6 +219,9 @@ public class ServiceResource {
     }
 
     //PUT to push and sync deltas
+    // For propagate_through: useUpdatedRefModel = false means the delta is pushed without  
+    // being checked with updating version_group from persistence.
+    // @TODO: Add proptagate_forward to refresh VG and then forced retry.
     @PUT
     @Path("/{siUUID}/{action}")
     public String push(@PathParam("siUUID") String svcInstanceUUID, @PathParam("action") String action) {

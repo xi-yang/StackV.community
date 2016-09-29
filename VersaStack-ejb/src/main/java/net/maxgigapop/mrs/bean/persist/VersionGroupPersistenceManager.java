@@ -68,8 +68,8 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
         if (ditMap.isEmpty()) {
             throw new EJBException(String.format("VersionGroupPersistenceManager::refreshToHead canont find driverInstance in the system"));
         }
-        VersionGroup newVG = new VersionGroup();
-        newVG.setRefUuid(vg.getRefUuid());
+        vg = findByReferenceId(vg.getRefUuid());
+        vg.getVersionItems().clear();
         boolean needToUpdate = false;
         List<DriverInstance> listDI = new ArrayList<>();
         for (VersionItem vi : vg.getVersionItems()) {
@@ -83,7 +83,7 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                 if (!newVi.equals(vi)) {
                     needToUpdate = true;
                 }
-                newVG.addVersionItem(newVi);
+                vg.addVersionItem(newVi);
                 if (!newVi.getVersionGroups().contains(vg)) {
                     newVi.addVersionGroup(vg);
                 }
@@ -96,17 +96,19 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                     if (newVi == null) {
                         throw new EJBException(String.format("refreshToHead encounters null head versionItem in %s", di));
                     }
-                    newVi.addVersionGroup(vg);
-                    newVG.addVersionItem(newVi);
+                    if (!newVi.getVersionGroups().contains(vg)) {
+                        newVi.addVersionGroup(vg);
+                    }
+                    if (!vg.getVersionItems().contains(newVi)) {
+                        vg.addVersionItem(newVi);
+                    }
                 }
             }
         }
         if (!doUpdatePersist) {
-            return newVG;
+            return vg;
         }
         if (needToUpdate) {
-            vg = findByReferenceId(vg.getRefUuid());
-            vg.setVersionItems(newVG.getVersionItems());
             vg.setUpdateTime(new java.util.Date());
             VersionGroupPersistenceManager.save(vg);
         }
