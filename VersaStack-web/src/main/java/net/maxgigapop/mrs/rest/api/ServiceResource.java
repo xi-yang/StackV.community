@@ -327,6 +327,9 @@ public class ServiceResource {
             return serviceCallHandler.revertDeltas(svcInstanceUUID, false);
         } else if (action.equalsIgnoreCase("revert_forced")) {
             return serviceCallHandler.revertDeltas(svcInstanceUUID, true);
+        } else if (action.equalsIgnoreCase("refresh")) {
+            serviceCallHandler.refreshVersionGroup(svcInstanceUUID);
+            return "REFRESHED";
         } else {
             throw new EJBException("Unrecognized action=" + action);
         }
