@@ -670,7 +670,9 @@ define([
                             rootNodes.push(node);
                         }
                     }
-                    callback();
+                    if (callback !== undefined && callback) {
+                        callback();
+                    }
                 };
                 request.send();
             }

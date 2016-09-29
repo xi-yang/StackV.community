@@ -257,16 +257,6 @@
                                             contextMenu = new ContextMenu(d3, render.API, functionMap);//, tagDialog);
                                             contextMenu.init();
 
-                                            //outputApi = new outputApi_(render.API, null, "viz");
-                                            //outputApi2 = new outputApi_(render.API, contextMenu, "viz2");
-
-                                            ModelConstructor = m;
-                                            model = new ModelConstructor();
-                                            model.init(1, renderModels, null);
-                                            //model.init(1, drawGraph.bind(undefined, outputApi, model), null);
-                                            //model2 = new ModelConstructor();
-                                            //model2.init(1, drawGraph.bind(undefined, outputApi2, model2), null);     
-                                            //renderModels();
                                            console.log("after model.");
 //                                       } else {
 //                                           //displayError("Visualization Unavailable", d3_);
@@ -304,7 +294,7 @@
                      "   <div class=\"treeMenu-container\" id=\"" + prefix + "_treeMenu\"></div>    "    +        
                     "</div>" +
                     "<div class=\"displayPanel-actions-container\">" +
-                        "<div id=\"displayPanel-actions\">" +
+                        "<div class=\"displayPanel-actions\">" +
                           "  <button id=\"" + prefix + "_backButton\">Back</button>" +
                          "   <button id=\"" + prefix + "_forwardButton\">Forward</button>" +
                         "</div>" + 
@@ -502,7 +492,7 @@
                             outputApiMap["sysa_viz"] = outputApi3;                            
                             drawGraph(outputApi3, sysAModel);   
                             $("#sysa_viz_recenter_button").click(function (evt) {
-                                recenterGraph(outputApi2, sysAModel);
+                                recenterGraph(outputApi3, sysAModel);
                                 evt.preventDefault();
                             });                                
                             createTextToggle("sysa", data.systemModelAddition);                            
@@ -520,7 +510,7 @@
                             outputApiMap["sysr_viz"] = outputApi4;                                                        
                             drawGraph(outputApi4, sysrModel);   
                             $("#sysr_viz_recenter_button").click(function (evt) {
-                                recenterGraph(outputApi2, sysrModel);
+                                recenterGraph(outputApi4, sysrModel);
                                 evt.preventDefault();
                             });          
                             createTextToggle("sysr", data.systemModelReduction);                                                        

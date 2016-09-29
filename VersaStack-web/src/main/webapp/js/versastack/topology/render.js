@@ -1357,7 +1357,7 @@ define([
                 switch (type) {
                  case "Topology":
                  case "Node":
-                     onNodeClick(m.nodeMap[name]);
+                     onNodeClick(m.nodeMap[name], o);
                      if (o.getDisplayTree()) {
                         o.getDisplayTree().addToHistory(name, type);
                         o.getDisplayTree().topViewShown = false;
@@ -1379,7 +1379,11 @@ define([
                  case "DataTransferClusterService":
                  case "NetworkObject":
                  case "Service":
-                     onServiceClick(m.serviceMap[name]);
+                     if (o.svgContainerName.indexOf("servr") < 0) {
+                        onServiceClick(m.serviceMap[name], o);
+                     } else {
+                        onNodeClick(m.nodeMap[name], o);
+                     }                 
                      if (o.getDisplayTree()) {
                         o.getDisplayTree().addToHistory(name, type);
                         o.getDisplayTree().topViewShown = false;
@@ -1388,7 +1392,11 @@ define([
                      break;
                  case "Port":
                  case "BidirectionalPort":
-                     selectElement(m.portMap[name], currentOutputApi);
+                     if (o.svgContainerName.indexOf("servr") < 0) {
+                        selectElement(m.portMap[name], o);
+                     } else {
+                        selectElement(m.nodeMap[name], o);
+                     }
                      if (o.getDisplayTree()) {
                         o.getDisplayTree().addToHistory(name, type);  
                         o.getDisplayTree().topViewShown = false;
@@ -1396,7 +1404,11 @@ define([
                      console.log("i'm port");
                      break;
                  case "Volume":
-                     selectElement(m.volumeMap[name], currentOutputApi);    
+                     if (o.svgContainerName.indexOf("servr") < 0) {
+                        selectElement(m.volumeMap[name], o);   
+                     } else {
+                        selectElement(m.nodeMap[name], o);
+                     }
                      if (o.getDisplayTree()) {
                         o.getDisplayTree().addToHistory(name, type);   
                         o.getDisplayTree().topViewShown = false;
@@ -1405,14 +1417,14 @@ define([
                      break;
                  case "PolicyData":
                  case "PolicyAction":
-                     selectElement(m.policyMap[name], currentOutputApi);    
+                     selectElement(m.policyMap[name], o);    
                      if (o.getDisplayTree()) {
                         o.getDisplayTree().addToHistory(name, type);   
                         o.getDisplayTree().topViewShown = false;
                      }                    
                     break;
                  default:
-                     selectElement(m.elementMap[name], currentOutputApi);                    
+                     selectElement(m.elementMap[name], o);                    
                      if (o.getDisplayTree()) {
                         o.getDisplayTree().addToHistory(name, type);
                         o.getDisplayTree().topViewShown = false;
