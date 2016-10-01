@@ -81,13 +81,12 @@ public class ModelResource {
     @Produces("application/xml")
     @Path("/{refUUID}")
     public ApiModelBase pullXml(@PathParam("refUUID") String refUUID) throws Exception {
-        VersionGroup vg = VersionGroupPersistenceManager.findByReferenceId(refUUID);
         ModelBase modelBase = systemCallHandler.retrieveVersionGroupModel(refUUID);
         ApiModelBase apiModelBase = new ApiModelBase();
         apiModelBase.setId(modelBase.getId());
-        apiModelBase.setVersion(refUUID);
+        apiModelBase.setVersion(modelBase.getCxtVersionTag());
         apiModelBase.setCreationTime(ModelUtil.modelDateToString(modelBase.getCreationTime()));
-        apiModelBase.setStatus(vg.getStatus());
+        //apiModelBase.setStatus("");
         apiModelBase.setTtlModel(ModelUtil.marshalOntModel(modelBase.getOntModel()));
         return apiModelBase;
     }
@@ -96,22 +95,12 @@ public class ModelResource {
     @Produces("application/json")
     @Path("/{refUUID}")
     public ApiModelBase pull(@PathParam("refUUID") String refUUID) throws Exception {
-        VersionGroup vg = VersionGroupPersistenceManager.findByReferenceId(refUUID);
-//        if (vg == null) {
-//           throw new EJBException(String.format("retrieveVersionModel cannot find a VG with refUuid=%s", refUUID));
-//        }
         ModelBase modelBase = systemCallHandler.retrieveVersionGroupModel(refUUID);
-//        ModelBase modelBase = new ModelBase();
-//        try{
-//            modelBase= systemCallHandler.retrieveVersionGroupModel(refUUID);
-//        }catch(Exception e){
-//            throw new NotFoundException("Not Found");
-//        }        
         ApiModelBase apiModelBase = new ApiModelBase();
         apiModelBase.setId(modelBase.getId());
-        apiModelBase.setVersion(refUUID);
+        apiModelBase.setVersion(modelBase.getCxtVersionTag());
         apiModelBase.setCreationTime(ModelUtil.modelDateToString(modelBase.getCreationTime()));
-        apiModelBase.setStatus(vg.getStatus());
+        //apiModelBase.setStatus("");
         apiModelBase.setTtlModel(ModelUtil.marshalOntModelJson(modelBase.getOntModel()));
         return apiModelBase;
     }

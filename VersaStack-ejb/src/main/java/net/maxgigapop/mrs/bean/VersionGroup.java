@@ -188,6 +188,7 @@ public class VersionGroup extends PersistentEntity implements Serializable {
             newModel.getOntModel().add(vi.getModelRef().getOntModel().getBaseModel());
         }
         newModel.setCreationTime(this.updateTime);
+        newModel.setCxtVersionTag(this.refUuid);
         this.cachedModelBase = newModel;
         //@TBD: rebind / rerun inference for referenceModel
         return newModel;
