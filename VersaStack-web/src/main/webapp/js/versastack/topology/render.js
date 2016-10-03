@@ -870,13 +870,7 @@ define([
                 $("#dialog_policyData").text("");
                 
                 if (n.data !== undefined){
-                    if (n.data.indexOf(" ") !== -1) {
-                        $("#dialog_policyData").append("<pre class=\"jSonDialog\">" + n.data + "</pre>");
-                    } else {
-                        var parsedData = JSON.parse(n.data);
-                        $("#dialog_policyData").append("<pre class=\"jSonDialog\">" + JSON.stringify(parsedData, null, 4) + "</pre>");
-
-                    }
+                    $("#dialog_policyData").append("<pre class=\"jSonDialog\">" + n.data  + "</pre>");
                 }else{ 
                     $("#dialog_policyData").append("<pre class=\"jSonDialog\">N/A</pre>");
                 }
@@ -989,7 +983,18 @@ define([
             selectedNode = n;
         }
 
-        function onServiceClick(n) {
+        function onServiceClick(n, currentOutputApi) {
+            if (!fullSize && currentOutputApi) {
+              var o = currentOutputApi;  
+              var m = modelMap[o.svgContainerName];
+            } else if (!fullSize) { 
+              var divname = getRenderedElementParentDiv(n);
+              var o = outputApiMap[divname];
+              var m = modelMap[o.svgContainerName];
+            } else{ 
+              var o = outputApi;
+              var m = model;
+            }
             selectedNode = n;
             if (d3.event) {
                 //In the case of artificial clicks, d3.event may be null
@@ -1006,11 +1011,11 @@ define([
             }
             highlightedNode = n;
             drawHighlight();
-            if (outputApi.getDisplayTree()) {
-                outputApi.setDisplayName(n.getName());
-                var displayTree = outputApi.getDisplayTree();
+            if (o.getDisplayTree()) {
+                o.setDisplayName(n.getName());
+                var displayTree = o.getDisplayTree();
                 displayTree.clear();
-                var e = model.elementMap[n.getName()];
+                var e = m.elementMap[n.getName()];
                 e.populateProperties(displayTree);
 
                 if (e.misc_elements.length > 0 )
@@ -1026,10 +1031,10 @@ define([
             }
             if (n.getTypeBrief() === "SwitchingService") {
 
-                if (switchPopup[outputApi.svgContainerName].hostNode === n) {
-                    switchPopup[outputApi.svgContainerName].clear();
+                if (switchPopup[o.svgContainerName].hostNode === n) {
+                    switchPopup[o.svgContainerName].clear();
                 } else {
-                    switchPopup[outputApi.svgContainerName].clear()
+                    switchPopup[o.svgContainerName].clear()
                             .setOffset(settings.DIALOG_OFFSET_X, -settings.DIALOG_OFFSET_Y)
                             .setHostNode(n)
                             .render();
