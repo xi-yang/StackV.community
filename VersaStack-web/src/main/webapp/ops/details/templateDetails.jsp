@@ -53,16 +53,6 @@
 
         </script>
         <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
-        <script>
-            // Model is obtained from the API when the page loads. 
-            var ModelConstructor;
-            var model;
-            require(["local/versastack/topology/model"],function (m) {
-                ModelConstructor = m;
-                model = new ModelConstructor();
-                model.init(1, loadVisualization, null);
-            });            
-        </script>
         
         <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
         <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
@@ -82,9 +72,6 @@
                        user="front_view"  password="frontuser"/>
 
     <body>        
-        <div id="modelText" class="hide">
-        </div>
-        
         <!-- NAV BAR -->
         <div id="nav">
         </div>
@@ -293,7 +280,7 @@
                 deltaModerate();
                 instructionModerate();
                 buttonModerate();
-
+                
                 loadVisualization();
                 setRefresh(60);
             });
@@ -360,7 +347,6 @@
 
             function loadVisualization() {
                 $("#details-viz").load("/VersaStack-web/details_viz.jsp", function () {
-                    renderModels(model);
                     
                     // Loading Verification visualization
                     $("#ver-add").append($("#va_viz_div"));

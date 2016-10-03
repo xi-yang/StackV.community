@@ -57,6 +57,7 @@ define([
 
     function Model(oldModel) {
         var map_ = utils.map_;
+        var formatPolicyData = utils.formatPolicyData;
         var rootNodes = [];
         var versionID;
 //        var others = [];
@@ -68,10 +69,14 @@ define([
          * Initialize the model. This asyncronasly loads and parsed the model from the backend.
          * @returns {undefined}
          */
-        this.init = function (mode, callback, model) {            
+        this.init = function (mode, callback, model, uuid) {            
             var request = new XMLHttpRequest();  
             // If ready, load the live model. Otherwise, load the static model. 
-            request.open("GET", "/VersaStack-web/restapi/model/"); 
+            if (uuid === undefined)
+                request.open("GET", "/VersaStack-web/restapi/model/"); 
+            else 
+                request.open("GET", "/VersaStack-web/restapi/model/default"); 
+
             //request.open("GET", "/VersaStack-web/data/json/spa-rvtk-versastack-qa1-1vm.json");
             //request.open("GET", "/VersaStack-web/data/json/aws-blank.json");
             requestModel();
@@ -318,11 +323,11 @@ define([
                                     break;
                                 case values.spaValue:
                                     if (policy.getTypeDetailed() === "PolicyData")
-                                    policy.data = policy_[key][0].value;
+                                    policy.data = formatPolicyData(policy_[key][0].value);
                                     break;
                                 case values.spaFormat:
                                     if (policy.getTypeDetailed() === "PolicyData")
-                                    policy.data = policy_[key][0].value;                                    
+                                    policy.data = formatPolicyData(policy_[key][0].value);                                    
                                     break;
                                 default:
                                     console.log("Unknown policy attribute: " + key);
@@ -1061,11 +1066,11 @@ define([
                             break;
                         case values.spaValue:
                             if (policy.getTypeDetailed() === "PolicyData")
-                            policy.data = policy_[key][0].value;
+                            policy.data = formatPolicyData(policy_[key][0].value);
                             break;
                         case values.spaFormat:
                             if (policy.getTypeDetailed() === "PolicyData")
-                            policy.data = policy_[key][0].value;                                    
+                            policy.data = formatPolicyData(policy_[key][0].value);                                    
                             break;
                         default:
                             console.log("Unknown policy attribute: " + key);
@@ -1426,11 +1431,11 @@ define([
                                     break;
                                 case values.spaValue:
                                     if (policy.getTypeDetailed() === "PolicyData")
-                                    policy.data = policy_[key][0].value;
+                                    policy.data = formatPolicyData(policy_[key][0].value);
                                     break;
                                 case values.spaFormat:
                                     if (policy.getTypeDetailed() === "PolicyData")
-                                    policy.data = policy_[key][0].value;                                    
+                                    policy.data = formatPolicyData(policy_[key][0].value);                                    
                                     break;
                                 default:
                                     console.log("Unknown policy attribute: " + key);
