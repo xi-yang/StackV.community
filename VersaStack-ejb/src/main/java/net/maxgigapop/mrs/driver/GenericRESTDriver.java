@@ -145,7 +145,11 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
             } catch (InterruptedException ex) {
                 throw new EJBException(String.format("%s poll for commit status is interrupted", driverInstance));
             } catch (IOException ex) {
-                throw new EJBException(String.format("%s failed to communicate with subsystem with exception (%s)", driverInstance, ex));
+                if (ex instanceof java.io.FileNotFoundException) {
+                    logger.warning(String.format("%s failed with exception (%s) - check the subsystem for expected resource change...", driverInstance, ex));
+                } else {
+                    throw new EJBException(String.format("%s failed to communicate with subsystem with exception (%s)", driverInstance, ex));
+                }
             }
         }
         Logger.getLogger(GenericRESTDriver.class.getName()).log(Level.INFO, "GenericRESTDriver delta models succesfully commited: "+subsystemBaseUrl);
