@@ -19,6 +19,7 @@
         <script src="/VersaStack-web/js/bootstrap.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>
         <script src="/VersaStack-web/js/jquery-ui.min.js"></script>
+
         <script>
             //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
             dojoConfig = {
@@ -49,9 +50,10 @@
                     autoOpen: false
                 });
             });
+
         </script>
         <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
-
+        
         <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
         <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
@@ -278,7 +280,7 @@
                 deltaModerate();
                 instructionModerate();
                 buttonModerate();
-
+                
                 loadVisualization();
                 setRefresh(60);
             });
@@ -345,6 +347,7 @@
 
             function loadVisualization() {
                 $("#details-viz").load("/VersaStack-web/details_viz.jsp", function () {
+                    
                     // Loading Verification visualization
                     $("#ver-add").append($("#va_viz_div"));
                     $("#ver-add").find("#va_viz_div").removeClass("hidden");

@@ -22,7 +22,10 @@
  */
 
 "use strict";
-define(["local/versastack/topology/modelConstants"], function (values) {
+define(["local/versastack/topology/modelConstants",
+    "local/versastack/utils"], function (values, utils) {
+    var map_ = utils.map_;
+    
     function Element(backing, map, elementMap) {
         this.svgNode = null;
         this.svgNodeText = null;
