@@ -37,7 +37,7 @@
 <html >    
     <head>   
         <meta charset="UTF-8">
-        <title>Template Service</title>
+        <title>Manifest Portal</title>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>

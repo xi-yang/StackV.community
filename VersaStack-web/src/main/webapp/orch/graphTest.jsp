@@ -72,8 +72,18 @@
                          autoOpen: false
                      });
                      $( "#dialog_policyData" ).dialog({
-                         autoOpen: false
-                     });           
+                         autoOpen: false,
+                         maxHeight: 500,
+                         minHeight: 175,
+                         width: "auto",
+                         //maxWidth: 500,  jquery ui bug, this doens't work 
+                         create: function (event, ui) {
+                             $( "#dialog_policyData" ).css("maxWidth",  "400px" );
+                         }, 
+                         open: function( event, ui ) {
+                             $( "#dialog_policyData" ).dialog( "option", "height", "auto" );
+                         }
+                     });         
                      
                 });
 

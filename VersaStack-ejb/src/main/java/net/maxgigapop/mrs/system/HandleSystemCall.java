@@ -26,6 +26,7 @@ package net.maxgigapop.mrs.system;
 import com.hp.hpl.jena.ontology.OntModel;
 import static java.lang.Thread.sleep;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -138,11 +139,22 @@ public class HandleSystemCall {
     }
 
     public ModelBase retrieveVersionGroupModel(String refUuid) {
-        VersionGroup vg = VersionGroupPersistenceManager.findByReferenceId(refUuid);
-        if (vg == null) {
-            throw new EJBException(String.format("retrieveVersionModel cannot find a VG with refUuid=%s", refUuid));
+        if (refUuid.equals("default")) {
+            try {
+                Context ejbCxt = new InitialContext();
+                SystemModelCoordinator systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
+                VersionGroup vg = systemModelCoordinator.getSystemVersionGroup();
+                return vg.getCachedModelBase();
+            } catch (Exception ex) {
+                throw new EJBException(this.getClass().getName() + ".retrieveVersionGroupModel('default') failed to lookup systemModelCoordinator", ex);
+            }
+        } else {
+            VersionGroup vg = VersionGroupPersistenceManager.findByReferenceId(refUuid);
+            if (vg == null) {
+                throw new EJBException(String.format("retrieveVersionModel cannot find a VG with refUuid=%s", refUuid));
+            }
+            return vg.createUnionModel();
         }
-        return vg.createUnionModel();
     }
 
     public OntModel queryModelView(String refUuid, List<ModelUtil.ModelViewFilter> mvfs) {

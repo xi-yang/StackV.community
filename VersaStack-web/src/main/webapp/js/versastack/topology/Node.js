@@ -22,8 +22,8 @@
  */
 
 "use strict";
-define(["local/versastack/topology/modelConstants"],
-        function (values) {
+define(["local/versastack/topology/modelConstants","local/versastack/utils"],
+        function (values, utils) {
             /**
              * There are two graphs we want to consider. The first is the tree representing the node/subnode relationships
              * The second is the model graph, representing the connections as understood by the model
@@ -39,6 +39,7 @@ define(["local/versastack/topology/modelConstants"],
              * 
              **/
             var i = 0;
+            var map_ = utils.map_;
             function Node(backing, map) {
                 this._backing = backing; //the node/topology from the model
                 this._map = map;

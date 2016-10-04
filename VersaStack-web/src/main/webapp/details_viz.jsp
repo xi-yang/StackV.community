@@ -202,7 +202,19 @@
                          autoOpen: false
                      });
                      $( "#dialog_policyData" ).dialog({
-                         autoOpen: false
+                         autoOpen: false,
+                         maxHeight: 500,
+                         minHeight: 50,
+                         width: "auto",
+//                         height: 400,
+//                         width: "80%",
+//                         maxWidth: 500,  jquery ui bug, this doens't work 
+                         create: function (event, ui) {
+                             //$( "#dialog_policyData" ).css("maxWidth",  "800px" );
+                         }, 
+                         open: function( event, ui ) {
+                             $( "#dialog_policyData" ).dialog( "option", "height", "auto" );
+                         }
                      });           
                      
                 });
@@ -215,14 +227,14 @@
                     "local/versastack/topology/ContextMenu"                ],
                         function (m, l, r, d3_, utils_, tree, c) {
 
-//                          $.ajax({
-//                                   crossDomain: true,
-//                                   type: "GET",
-//                                   url: "/VersaStack-web/restapi/service/ready",
-//                                   dataType: "text", 
-//
-//                                   success: function(data,  textStatus,  jqXHR ) {
-//                                       if (data === "true")  {
+                          $.ajax({
+                                   crossDomain: true,
+                                   type: "GET",
+                                   url: "/VersaStack-web/restapi/service/ready",
+                                   dataType: "text", 
+
+                                   success: function(data,  textStatus,  jqXHR ) {
+                                       if (data === "true")  {
                                           //alert(textStatus);
                                             layout = l;
                                             render = r;
@@ -235,6 +247,11 @@
                                             // possibly pass in map here later for all possible dialogs 
                                             ContextMenu = c; 
                                             DropDownTree = tree;
+                                            
+                                            ModelConstructor = m;
+                                            model = new ModelConstructor();
+                                            model.init(1, renderModels, null, "default");
+
                                             functionMap['ModelBrowser'] = function(o, m, e) {
                                                 positionDisplayPanel( m + "_displayPanel", e);
                                                 var browser = document.querySelector("#" + m + "_displayPanel");
@@ -247,28 +264,51 @@
                                             contextMenu = new ContextMenu(d3, render.API, functionMap);//, tagDialog);
                                             contextMenu.init();
 
-                                            //outputApi = new outputApi_(render.API, null, "viz");
-                                            //outputApi2 = new outputApi_(render.API, contextMenu, "viz2");
-
-                                            ModelConstructor = m;
-                                            model = new ModelConstructor();
-                                            model.init(1, renderModels, null);
-                                            //model.init(1, drawGraph.bind(undefined, outputApi, model), null);
-                                            //model2 = new ModelConstructor();
-                                            //model2.init(1, drawGraph.bind(undefined, outputApi2, model2), null);     
-                                            //renderModels();
                                            console.log("after model.");
-//                                       } else {
-//                                           //displayError("Visualization Unavailable", d3_);
-//                                      }
-//                                   },
-//
-//                                   error: function(jqXHR, textStatus, errorThrown ) {
-//                                        console.log("Debugging: timeout at start..");
-//                                       // displayError("Visualization Unavailable", d3_);
-//                                     //alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
-//                                   }
-//                            }); 
+                                       } else {
+                                            displayError("Backend not Ready", d3,"va_viz", -80);
+                                            disableButtons("va");
+                                            displayError("Backend not Ready", d3,"ur_viz", -80);
+                                            disableButtons("ur");
+                                            displayError("Backend not Ready", d3,"ua_viz", -80);
+                                            disableButtons("ua");
+                                            displayError("Backend not Ready", d3,"vr_viz", -80);
+                                            disableButtons("vr");
+                                           
+                                            displayError("Backend not Ready", d3, "serva_viz", -80);
+                                            disableButtons("serva");
+                                            displayError("Backend not Ready", d3, "servr_viz", -80);
+                                            disableButtons("servr");
+                                            displayError("Backend not Ready", d3, "sysa_viz", -80);
+                                            disableButtons("sysa");
+                                            displayError("Backend not Ready", d3, "sysr_viz", -80);
+                                            disableButtons("sysr");
+                                      }
+                                   },
+
+                                   error: function(jqXHR, textStatus, errorThrown ) {
+                                        console.log("Debugging: timeout at start..");
+                                       // displayError("Visualization Unavailable", d3_);
+                                     //alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
+                                            displayError("Unavailable", d3,"va_viz");
+                                            disableButtons("va");
+                                            displayError("Unavailable", d3,"ur_viz");
+                                            disableButtons("ur");
+                                            displayError("Unavailable", d3,"ua_viz");
+                                            disableButtons("ua");
+                                            displayError("Unavailable", d3,"vr_viz");
+                                            disableButtons("vr");
+                                           
+                                            displayError("Unavailable", d3, "serva_viz");
+                                            disableButtons("serva");
+                                            displayError("Unavailable", d3, "servr_viz");
+                                            disableButtons("servr");
+                                            displayError("Unavailable", d3, "sysa_viz");
+                                            disableButtons("sysa");
+                                            displayError("Unavailable", d3, "sysr_viz");
+                                            disableButtons("sysr");                                     
+                                   }
+                            }); 
                             $(".displayPanelCloser").on("click", function(){
                                   $(".displayPanel").removeClass("displayPanel-active");
 
@@ -279,6 +319,7 @@
 //                                $(".displayPanel").removeClass("displayPanel-active");
 //
 //                            };
+
                         });                
             }
             
@@ -294,7 +335,7 @@
                      "   <div class=\"treeMenu-container\" id=\"" + prefix + "_treeMenu\"></div>    "    +        
                     "</div>" +
                     "<div class=\"displayPanel-actions-container\">" +
-                        "<div id=\"displayPanel-actions\">" +
+                        "<div class=\"displayPanel-actions\">" +
                           "  <button id=\"" + prefix + "_backButton\">Back</button>" +
                          "   <button id=\"" + prefix + "_forwardButton\">Forward</button>" +
                         "</div>" + 
@@ -378,15 +419,17 @@
                 render.doRender(outputApi, model2, false, modelMap, outputApiMap);
 //                animStart(30);
             }
-            function displayError(error, d3_obj, viz_id) {
+            function displayError(error, d3_obj, viz_id, offset) {
                var div_width = $("#" + viz_id).width();
                var div_height = $("#" + viz_id).height();
                var x = (div_width/4) + (div_width/8);
                var y = (div_height/2) + (div_height/8);
-               
+               if (offset === undefined) {
+                   offset = 0;
+               }
                d3_obj.select("#" + viz_id).append("text")
-                       .attr("x", x)
-                       .attr("y",  y)
+                       .attr("x", x + offset)
+                       .attr("y", y)
                        .attr("fill", "black")
                        .attr("font-size", "50px")
                        .attr("opacity", .4)
@@ -439,7 +482,6 @@
             
             function renderModels() {
                 var UUID = location.search.split("?uuid=")[1];
-       
                  $.ajax({
                     crossDomain: true,
                     type: "GET",
@@ -492,7 +534,7 @@
                             outputApiMap["sysa_viz"] = outputApi3;                            
                             drawGraph(outputApi3, sysAModel);   
                             $("#sysa_viz_recenter_button").click(function (evt) {
-                                recenterGraph(outputApi2, sysAModel);
+                                recenterGraph(outputApi3, sysAModel);
                                 evt.preventDefault();
                             });                                
                             createTextToggle("sysa", data.systemModelAddition);                            
@@ -510,7 +552,7 @@
                             outputApiMap["sysr_viz"] = outputApi4;                                                        
                             drawGraph(outputApi4, sysrModel);   
                             $("#sysr_viz_recenter_button").click(function (evt) {
-                                recenterGraph(outputApi2, sysrModel);
+                                recenterGraph(outputApi4, sysrModel);
                                 evt.preventDefault();
                             });          
                             createTextToggle("sysr", data.systemModelReduction);                                                        
@@ -617,7 +659,7 @@
 
                     error: function(jqXHR, textStatus, errorThrown ) {
                         //alert("Error getting status.");
-                       // alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
+                    // alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
                        displayError("Unavailable", d3,"va_viz");
                        disableButtons("va");
                        displayError("Unavailable", d3,"ur_viz");
@@ -850,7 +892,7 @@
          
      <div id="dialog_policyAction" title="Policy Action">
     </div>
-    <div id="dialog_policyData" title="Policy Data">
+    <div id="dialog_policyData" title="Policy Data" >
     </div>
         
 <!--          <div id="displayPanel">

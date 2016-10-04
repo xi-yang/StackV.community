@@ -58,11 +58,13 @@ import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ServiceInstance;
 import net.maxgigapop.mrs.bean.SystemDelta;
 import net.maxgigapop.mrs.bean.SystemInstance;
+import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ServiceDeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ServiceInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
+import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.core.SystemModelCoordinator;
@@ -359,6 +361,24 @@ public class HandleServiceCall {
         }
         ServiceInstancePersistenceManager.merge(serviceInstance);
         return serviceInstance.getStatus();
+    }
+
+    public void refreshVersionGroup(String serviceInstanceUuid) {
+        ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
+        if (serviceInstance == null) {
+            throw new EJBException(HandleServiceCall.class.getName() + ".refreshVersionGroup cannot find serviceInstance with uuid=" + serviceInstanceUuid);
+        }
+        VersionGroup vg = null;
+        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
+        while (itSD.hasNext()) {
+            ServiceDelta svcDelta = itSD.next();
+            if (svcDelta.getSystemDelta() != null && svcDelta.getSystemDelta().getReferenceVersionGroup() != null) {
+                vg = svcDelta.getSystemDelta().getReferenceVersionGroup();
+            }
+        }
+        if (vg != null) {
+            VersionGroupPersistenceManager.refreshToHead(vg, true);
+        }
     }
 
     public String revertDeltas(String serviceInstanceUuid, boolean forced) {

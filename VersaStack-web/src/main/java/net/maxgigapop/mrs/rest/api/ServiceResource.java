@@ -219,6 +219,9 @@ public class ServiceResource {
     }
 
     //PUT to push and sync deltas
+    // For propagate_through: useUpdatedRefModel = false means the delta is pushed without  
+    // being checked with updating version_group from persistence.
+    // @TODO: Add proptagate_forward to refresh VG and then forced retry.
     @PUT
     @Path("/{siUUID}/{action}")
     public String push(@PathParam("siUUID") String svcInstanceUUID, @PathParam("action") String action) {
@@ -324,6 +327,9 @@ public class ServiceResource {
             return serviceCallHandler.revertDeltas(svcInstanceUUID, false);
         } else if (action.equalsIgnoreCase("revert_forced")) {
             return serviceCallHandler.revertDeltas(svcInstanceUUID, true);
+        } else if (action.equalsIgnoreCase("refresh")) {
+            serviceCallHandler.refreshVersionGroup(svcInstanceUUID);
+            return "REFRESHED";
         } else {
             throw new EJBException("Unrecognized action=" + action);
         }

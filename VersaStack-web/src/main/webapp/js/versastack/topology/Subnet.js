@@ -22,7 +22,8 @@
  */
 
 "use strict";
-define(["local/versastack/topology/modelConstants"], function (values) {
+define(["local/versastack/topology/modelConstants", "local/versastack/utils"], function (values, utils) {
+    var map = utils.map_;
     function Subnet(backing, map) {
         this.svgNode = null;
         this.svgNodeText = null;

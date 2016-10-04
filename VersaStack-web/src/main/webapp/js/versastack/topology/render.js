@@ -869,11 +869,11 @@ define([
             if (policyType === "PolicyData") {
                 $("#dialog_policyData").text("");
                 
-                if (n.data !== undefined)
-                    $("#dialog_policyData").append("<pre class=\"jSonDialog\">" + n.data + "</pre>");
-                else 
+                if (n.data !== undefined){
+                    $("#dialog_policyData").append("<pre class=\"jSonDialog\">" + n.data  + "</pre>");
+                }else{ 
                     $("#dialog_policyData").append("<pre class=\"jSonDialog\">N/A</pre>");
-                
+                }
                 $("#dialog_policyData").dialog("open");
                 $('.ui-dialog :button').blur();
             } else if (policyType === "PolicyAction") {
@@ -983,7 +983,18 @@ define([
             selectedNode = n;
         }
 
-        function onServiceClick(n) {
+        function onServiceClick(n, currentOutputApi) {
+            if (!fullSize && currentOutputApi) {
+              var o = currentOutputApi;  
+              var m = modelMap[o.svgContainerName];
+            } else if (!fullSize) { 
+              var divname = getRenderedElementParentDiv(n);
+              var o = outputApiMap[divname];
+              var m = modelMap[o.svgContainerName];
+            } else{ 
+              var o = outputApi;
+              var m = model;
+            }
             selectedNode = n;
             if (d3.event) {
                 //In the case of artificial clicks, d3.event may be null
@@ -1000,11 +1011,11 @@ define([
             }
             highlightedNode = n;
             drawHighlight();
-            if (outputApi.getDisplayTree()) {
-                outputApi.setDisplayName(n.getName());
-                var displayTree = outputApi.getDisplayTree();
+            if (o.getDisplayTree()) {
+                o.setDisplayName(n.getName());
+                var displayTree = o.getDisplayTree();
                 displayTree.clear();
-                var e = model.elementMap[n.getName()];
+                var e = m.elementMap[n.getName()];
                 e.populateProperties(displayTree);
 
                 if (e.misc_elements.length > 0 )
@@ -1020,10 +1031,10 @@ define([
             }
             if (n.getTypeBrief() === "SwitchingService") {
 
-                if (switchPopup[outputApi.svgContainerName].hostNode === n) {
-                    switchPopup[outputApi.svgContainerName].clear();
+                if (switchPopup[o.svgContainerName].hostNode === n) {
+                    switchPopup[o.svgContainerName].clear();
                 } else {
-                    switchPopup[outputApi.svgContainerName].clear()
+                    switchPopup[o.svgContainerName].clear()
                             .setOffset(settings.DIALOG_OFFSET_X, -settings.DIALOG_OFFSET_Y)
                             .setHostNode(n)
                             .render();
@@ -1351,7 +1362,7 @@ define([
                 switch (type) {
                  case "Topology":
                  case "Node":
-                     onNodeClick(m.nodeMap[name]);
+                     onNodeClick(m.nodeMap[name], o);
                      if (o.getDisplayTree()) {
                         o.getDisplayTree().addToHistory(name, type);
                         o.getDisplayTree().topViewShown = false;
@@ -1373,7 +1384,11 @@ define([
                  case "DataTransferClusterService":
                  case "NetworkObject":
                  case "Service":
-                     onServiceClick(m.serviceMap[name]);
+                     if (o.svgContainerName.indexOf("servr") < 0) {
+                        onServiceClick(m.serviceMap[name], o);
+                     } else {
+                        onNodeClick(m.nodeMap[name], o);
+                     }                 
                      if (o.getDisplayTree()) {
                         o.getDisplayTree().addToHistory(name, type);
                         o.getDisplayTree().topViewShown = false;
@@ -1382,7 +1397,11 @@ define([
                      break;
                  case "Port":
                  case "BidirectionalPort":
-                     selectElement(m.portMap[name], currentOutputApi);
+                     if (o.svgContainerName.indexOf("servr") < 0) {
+                        selectElement(m.portMap[name], o);
+                     } else {
+                        selectElement(m.nodeMap[name], o);
+                     }
                      if (o.getDisplayTree()) {
                         o.getDisplayTree().addToHistory(name, type);  
                         o.getDisplayTree().topViewShown = false;
@@ -1390,7 +1409,11 @@ define([
                      console.log("i'm port");
                      break;
                  case "Volume":
-                     selectElement(m.volumeMap[name], currentOutputApi);    
+                     if (o.svgContainerName.indexOf("servr") < 0) {
+                        selectElement(m.volumeMap[name], o);   
+                     } else {
+                        selectElement(m.nodeMap[name], o);
+                     }
                      if (o.getDisplayTree()) {
                         o.getDisplayTree().addToHistory(name, type);   
                         o.getDisplayTree().topViewShown = false;
@@ -1399,14 +1422,14 @@ define([
                      break;
                  case "PolicyData":
                  case "PolicyAction":
-                     selectElement(m.policyMap[name], currentOutputApi);    
+                     selectElement(m.policyMap[name], o);    
                      if (o.getDisplayTree()) {
                         o.getDisplayTree().addToHistory(name, type);   
                         o.getDisplayTree().topViewShown = false;
                      }                    
                     break;
                  default:
-                     selectElement(m.elementMap[name], currentOutputApi);                    
+                     selectElement(m.elementMap[name], o);                    
                      if (o.getDisplayTree()) {
                         o.getDisplayTree().addToHistory(name, type);
                         o.getDisplayTree().topViewShown = false;
