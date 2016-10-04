@@ -7,6 +7,14 @@ var baseUrl = window.location.origin;
 // Page Load Function
 
 $(function () {
+    var keycloak = Keycloak('/VersaStack-web/data/json/keycloak.json');
+    keycloak.init({onLoad: 'login-required'}).success(function (authenticated) {
+        //alert(authenticated ? 'authenticated' : 'not authenticated');
+    }).error(function () {
+        alert('failed to initialize');
+    });
+
+
     $("#nav").load("/VersaStack-web/navbar.html");
     $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
         $("#sidebar-toggle").click(function (evt) {
@@ -110,8 +118,7 @@ $(function () {
     $(".nav-tabs li").click(function () {
         if ($(this).parent().parent().hasClass("closed")) {
             $("#catalog-panel").removeClass("closed");
-        }
-        else if (this.className === 'active') {
+        } else if (this.className === 'active') {
             $("#catalog-panel").toggleClass("closed");
         }
     });
@@ -142,8 +149,7 @@ function installSelect(sel) {
     if (sel.value !== null) {
         $ref = "/VersaStack-web/ops/srvc/driver.jsp?form_install=" + sel.value + " #service-menu";
         $ref2 = "/VersaStack-web/ops/srvc/driver.jsp?form_install=" + sel.value + " #service-fields";
-    }
-    else {
+    } else {
         $ref = "/VersaStack-web/ops/srvc/driver.jsp #service-menu";
 
         $ref2 = "/VersaStack-web/ops/srvc/driver.jsp #service-fields";
@@ -158,8 +164,7 @@ function viewmodeSelect(sel) {
     if (sel.value !== null) {
         $ref = "/VersaStack-web/ops/srvc/viewcreate.jsp?mode=" + sel.value + " #service-menu";
         $ref2 = "/VersaStack-web/ops/srvc/viewcreate.jsp?mode=" + sel.value + " #service-fields";
-    }
-    else {
+    } else {
         $ref = "/VersaStack-web/ops/srvc/viewcreate.jsp #service-menu";
         $ref2 = "/VersaStack-web/ops/srvc/viewcreate.jsp #service-fields";
 
@@ -173,10 +178,7 @@ function viewmodeSelect(sel) {
 function driverSelect(sel) {
     if (sel.value !== null) {
         $ref = "/VersaStack-web/ops/srvc/driver.jsp?form_install=install&driver_id=" + sel.value + " #service-fields";
-    }
-
-
-    else
+    } else
         $ref = "/VersaStack-web/ops/srvc/driver.jsp?form_install=install #service-fields";
     $("#service-bottom").load($ref);
 
@@ -189,18 +191,14 @@ function topoSelect(sel) {
 
         if (sel.value.indexOf("aws") > -1) {
             $ref = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=aws&topo=" + sel.value + " #service-fields";
-        }
-        else if (sel.value.indexOf("openstack") > -1) {
+        } else if (sel.value.indexOf("openstack") > -1) {
             $ref = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=os #service-fields";
-        }
-        else if (sel.value.indexOf("versa") > -1) {
+        } else if (sel.value.indexOf("versa") > -1) {
             $ref = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=vs #service-fields";
-        }
-        else {
+        } else {
             $ref = "/VersaStack-web/ops/srvc/vmadd.jsp #service-fields";
         }
-    }
-    else
+    } else
         $ref = "/VersaStack-web/ops/srvc/vmadd.jsp #service-fields";
 
     $("#service-bottom").load($ref);
@@ -215,12 +213,10 @@ function instanceSelect(sel) {
         if (sel.value === "instance1") {
             document.getElementsByName("root-path")[0].value = "/dev/xvda";
             document.getElementsByName("root-snapshot")[0].value = "snapshot";
-        }
-        else if (sel.value === "instance2") {
+        } else if (sel.value === "instance2") {
             document.getElementsByName("root-path")[0].value = "/dev/sdb";
             document.getElementsByName("root-snapshot")[0].value = "snapshot";
-        }
-        else if (sel.value === "instance3") {
+        } else if (sel.value === "instance3") {
             document.getElementsByName("root-path")[0].value = "/dev/sdc";
             document.getElementsByName("root-snapshot")[0].value = "snapshot";
         }
@@ -230,8 +226,7 @@ function instanceSelect(sel) {
 function networkSelect(sel) {
     if (sel.value !== null) {
         $ref2 = "/VersaStack-web/ops/srvc/netcreate.jsp?networkType=" + sel.value + " #service-fields";
-    }
-    else {
+    } else {
         $ref2 = "/VersaStack-web/ops/srvc/netcreate.jsp #service-fields";
     }
     $("#service-bottom").load($ref2);
@@ -245,8 +240,7 @@ var fieldLimit = 5;
 function addPropField() {
     if (fieldCounter === fieldLimit) {
         alert("You have reached the limit of additional properties");
-    }
-    else {
+    } else {
         var table = document.getElementById("service-form");
         var tableHeight = table.rows.length;
 
@@ -269,8 +263,7 @@ var volumeLimit = 10;
 function addVolume() {
     if (volumeCounter === volumeLimit) {
         alert("You have reached the limit of volumes.");
-    }
-    else {
+    } else {
         var table = document.getElementById("volume-table");
         var tableHeight = table.rows.length;
 
@@ -340,8 +333,7 @@ var queryLimit = 10;
 function addQuery() {
     if (queryCounter === queryLimit) {
         alert("You have reached the limit of querys.");
-    }
-    else {
+    } else {
         var table = document.getElementById("net-custom-form");
         var tableHeight = table.rows.length;
 
@@ -364,8 +356,7 @@ var routeLimit = 10;
 function addRoute() {
     if (routeCounter === routeLimit) {
         alert("You have reached the limit of routes.");
-    }
-    else {
+    } else {
         routeCounter++;
         var block = document.getElementById('route-block');
 
@@ -462,8 +453,7 @@ function addVM(type, subnetID) {
     if (VMCounter === VMLimit) {
         alert("You have reached the limit of VMs.");
         return;
-    }
-    else if (type === 'aws') {
+    } else if (type === 'aws') {
         VMCounter++;
         var block = document.getElementById(subnetID + '-block');
 
@@ -476,8 +466,7 @@ function addVM(type, subnetID) {
                 '<tr><td><input type="text" name="' + subnetID + VMCounter + '-image" placeholder="Image Type"></td>' +
                 '<td><input type="text" name="' + subnetID + VMCounter + '-instance" placeholder="Instance Type"></td></tr>' +
                 '</tbody></table>';
-    }
-    else if (type === 'ops') {
+    } else if (type === 'ops') {
         VMCounter++;
         var block = document.getElementById(subnetID + '-block');
 
@@ -531,8 +520,7 @@ function addSubnet(type) {
     if (subnetCounter === subnetLimit) {
         alert("You have reached the limit of subnets.");
         return;
-    }
-    else if (type === 'aws') {
+    } else if (type === 'aws') {
         var table = document.getElementById("net-custom-form");
         var tableHeight = table.rows.length;
         subnetCounter++;
@@ -561,8 +549,7 @@ function addSubnet(type) {
 
         addSubnetRoute('subnet' + subnetCounter + '-route');
         addVM('aws', 'subnet' + subnetCounter + '-vm');
-    }
-    else if (type === 'ops') {
+    } else if (type === 'ops') {
         var table = document.getElementById("net-custom-form");
         var tableHeight = table.rows.length;
         subnetCounter++;
@@ -598,8 +585,7 @@ var linkLimit = 10;
 function addLink() {
     if (linkCounter === linkLimit) {
         alert("You have reached the limit of connections");
-    }
-    else {
+    } else {
         var table = document.getElementById("net-custom-form");
         var tableHeight = table.rows.length;
         linkCounter++;

@@ -15,9 +15,13 @@
     <head>   
         <meta charset="UTF-8">
         <title>Service Catalog</title>
+        <script src="/VersaStack-web/js/keycloak.js"></script>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>
+        <script>
+            
+        </script>
 
         <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
         <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
@@ -49,19 +53,19 @@
                             <th>Service Type</th>
                             <th>Instance UUID</th>
                             <th><div style="float: left;">Instance Status</div>                           
-                    <button class="button-header" id="refresh-button" onclick="reloadTracker()">Manually Refresh Now</button>
-                    <div id="refresh-panel">
-                        Auto-Refresh Interval
-                        <select id="refresh-timer" onchange="timerChange(this)">
-                            <option value="off">Off</option>
-                            <option value="5">5 sec.</option>
-                            <option value="10">10 sec.</option>
-                            <option value="30">30 sec.</option>
-                            <option value="60" selected>60 sec.</option>
-                        </select>                        
-                    </div>
-                    </th>
-                    </tr>
+                                <button class="button-header" id="refresh-button" onclick="reloadTracker()">Manually Refresh Now</button>
+                                <div id="refresh-panel">
+                                    Auto-Refresh Interval
+                                    <select id="refresh-timer" onchange="timerChange(this)">
+                                        <option value="off">Off</option>
+                                        <option value="5">5 sec.</option>
+                                        <option value="10">10 sec.</option>
+                                        <option value="30">30 sec.</option>
+                                        <option value="60" selected>60 sec.</option>
+                                    </select>                        
+                                </div>
+                            </th>
+                        </tr>
                     </thead>
                     <tbody>
                         <c:forEach var="instance" items="${serv.instanceStatusCheck()}">
