@@ -82,7 +82,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
         try {
             // compose string body (delta) using JSONObject
             JSONObject deltaJSON = new JSONObject();
-            deltaJSON.put("id", Long.toString(aDelta.getId()));
+            deltaJSON.put("id", aDelta.getId());
             deltaJSON.put("referenceVersion", refVI.getReferenceUUID());
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
             deltaJSON.put("creationTime", dateFormat.format(new Date()).toString());
@@ -120,7 +120,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
         }
         // commit through PUT
         try {
-            URL url = new URL(String.format("%s/delta/%s/%d/commit", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
+            URL url = new URL(String.format("%s/delta/%s/%s/commit", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String status = this.executeHttpMethod(url, conn, "PUT", null);
             //$$  if status == FAILED and raise exception
@@ -134,7 +134,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
             try {
                 sleep(30000L); // poll every 30 seconds -> ? make configurable
                 // pull model from REST API
-                URL url = new URL(String.format("%s/delta/%s/%d", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
+                URL url = new URL(String.format("%s/delta/%s/%s", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 String status = this.executeHttpMethod(url, conn, "GET", null);
                 if (status.toUpperCase().equals("ACTIVE") || status.toUpperCase().equals("TERMINATED")) {
