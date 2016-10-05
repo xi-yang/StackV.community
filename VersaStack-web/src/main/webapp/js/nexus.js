@@ -7,12 +7,12 @@ var baseUrl = window.location.origin;
 // Page Load Function
 
 $(function () {
-    var keycloak = Keycloak('/VersaStack-web/data/json/keycloak.json');
+    /*var keycloak = Keycloak('/VersaStack-web/data/json/keycloak.json');
     keycloak.init({onLoad: 'login-required'}).success(function (authenticated) {
         //alert(authenticated ? 'authenticated' : 'not authenticated');
     }).error(function () {
         alert('failed to initialize');
-    });
+    });*/
 
 
     $("#nav").load("/VersaStack-web/navbar.html");
