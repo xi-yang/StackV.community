@@ -143,8 +143,23 @@ define([], function () {
     function getRenderedElementParentDiv(elem) {
        return  $(elem.svgNode.node()).closest('.details_viz').attr('id'); 
     }
+   
+    function GetJsonString(str) {
+        var json;
+        try {
+            json = JSON.parse(str);
+        } catch (e) {
+            return null;
+        }
+        return json;
+    }
     
     function formatPolicyData(data) {
+        var json = GetJsonString(data);
+        if (json !== null) {
+            return JSON.stringify(json, null, 4);
+        }
+        
         var start = data.indexOf("%$");
         var end = data.indexOf("%", start+2);
         var endComma = data.lastIndexOf(",");
