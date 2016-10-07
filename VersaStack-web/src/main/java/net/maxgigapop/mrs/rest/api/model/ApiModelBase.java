@@ -39,7 +39,7 @@ import javax.xml.bind.annotation.XmlSchemaType;
 public class ApiModelBase {
 
     @XmlElement(required = true)
-    protected Long id = 0L;
+    protected String id = "";
     @XmlElement(required = true)
     protected String creationTime;
     @XmlElement(required = true)
@@ -49,11 +49,11 @@ public class ApiModelBase {
     @XmlElement(required = true)
     protected String status = "";
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

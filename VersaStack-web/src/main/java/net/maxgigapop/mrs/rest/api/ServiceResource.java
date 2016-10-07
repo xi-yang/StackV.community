@@ -227,6 +227,9 @@ public class ServiceResource {
     public String push(@PathParam("siUUID") String svcInstanceUUID, @PathParam("action") String action) {
         long retryDelay = 1000L; // 1 sec
         long delayMax = 16000L; // 16 secs 
+        //@Note: The catch db transaction exception and retry feature is obsolete since we changed
+        //     delta/model prim key from auto-integer into UUID and avoided concurrency contention.
+        //     We wlll keep the logic here as it does not hurt and may (?) help in rare cases. 
         if (action.equalsIgnoreCase("propagate")) {
             while (true) {
                 retryDelay *= 2; // retry up to 4 times at 2, 4, 8, 16 secs

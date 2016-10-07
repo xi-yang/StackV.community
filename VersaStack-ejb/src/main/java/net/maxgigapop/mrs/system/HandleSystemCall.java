@@ -238,7 +238,7 @@ public class HandleSystemCall {
                 && !systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
             throw new EJBException(String.format("Trying to propagateDelta for %s that has delta already progagated.", systemInstance));
         }
-        if (sysDelta.getId() != null && sysDelta.getId() != 0) {
+        if (sysDelta.getId() != null && !sysDelta.getId().isEmpty()) {
             sysDelta = (SystemDelta) DeltaPersistenceManager.findById(sysDelta.getId());
         }
         // Note 1: an initial VG (#1) must exist 
@@ -312,10 +312,7 @@ public class HandleSystemCall {
                 // no diff, use existing verionItem
                 continue;
             }
-            // create targetDSM and targetDSD only if there is a change. 
-            ModelBase targetDSM = new ModelBase();
-            targetDSM.setOntModel(tom);
-            // create targetDSD 
+            // create  targetDSD only if there is a change. 
             DriverSystemDelta targetDSD = new DriverSystemDelta();
             // do not save delta as it is transient but delta.modelA and delta.modelR must be saved
             targetDSD.setModelAddition(delta.getModelAddition());
@@ -333,8 +330,8 @@ public class HandleSystemCall {
             // Save targetDSD modelA and modelR.
             targetDSD.getModelAddition().setDelta(null);
             targetDSD.getModelReduction().setDelta(null);
-            ModelPersistenceManager.save(targetDSD.getModelAddition());
-            ModelPersistenceManager.save(targetDSD.getModelReduction());
+            //ModelPersistenceManager.save(targetDSD.getModelAddition());
+            //ModelPersistenceManager.save(targetDSD.getModelReduction());
         }
         // Save systemDelta
         sysDelta.setDriverSystemDeltas(targetDriverSystemDeltas);
@@ -345,11 +342,11 @@ public class HandleSystemCall {
         Context ejbCxt = null;
         for (DriverSystemDelta targetDSD : targetDriverSystemDeltas) {
             // save targetDSD
-            DeltaPersistenceManager.save(targetDSD);
+            DeltaPersistenceManager.merge(targetDSD);
             targetDSD.getModelAddition().setDelta(targetDSD);
             targetDSD.getModelReduction().setDelta(targetDSD);
-            ModelPersistenceManager.save(targetDSD.getModelAddition());
-            ModelPersistenceManager.save(targetDSD.getModelReduction());
+            ModelPersistenceManager.merge(targetDSD.getModelAddition());
+            ModelPersistenceManager.merge(targetDSD.getModelReduction());
             // push driverSystemDeltas to driverInstances
             DriverInstance driverInstance = targetDSD.getDriverInstance();
             // remove other driverInstance.driverSystemDeltas that are not by the current systemDelta

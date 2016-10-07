@@ -25,6 +25,7 @@ package net.maxgigapop.mrs.bean;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.UUID;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -37,6 +38,7 @@ import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import net.maxgigapop.mrs.bean.persist.PersistentEntity;
+import org.hibernate.annotations.GenericGenerator;
 
 /**
  *
@@ -46,11 +48,12 @@ import net.maxgigapop.mrs.bean.persist.PersistentEntity;
 @Table(name = "delta")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 public class DeltaBase extends PersistentEntity implements Serializable {
-
     protected static final long serialVersionUID = 1L;
+
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    protected Long id;
+    @GeneratedValue(generator = "system-uuid")
+    @GenericGenerator(name = "system-uuid", strategy = "uuid2")
+    protected String id;
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "modelAdditionId")
@@ -59,12 +62,12 @@ public class DeltaBase extends PersistentEntity implements Serializable {
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "modelReductionId")
     protected DeltaModel modelReduction = null;
-
-    public Long getId() {
+    
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
