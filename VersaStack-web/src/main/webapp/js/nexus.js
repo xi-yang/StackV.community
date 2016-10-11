@@ -3,19 +3,34 @@
 
 // Service JavaScript Library
 var baseUrl = window.location.origin;
+var keycloak = Keycloak('/VersaStack-web/data/json/keycloak.json');
 
 // Page Load Function
 
 $(function () {
-    var keycloak = Keycloak('/VersaStack-web/data/json/keycloak.json');
     keycloak.init({onLoad: 'login-required'}).success(function (authenticated) {
-        //alert(authenticated ? 'authenticated' : 'not authenticated');
+        loggedIn = authenticated ? true : false;
+        sessionStorage.setItem("loggedin", loggedIn);
+        if (loggedIn) {
+            sessionStorage.setItem("username", keycloak.tokenParsed.given_name);
+            sessionStorage.setItem("id", keycloak.tokenParsed.sub);
+        }
     }).error(function () {
         alert('failed to initialize');
     });
 
+    $("#nav").load("/VersaStack-web/navbar.html", function () {
+        $("#logout-button").click(function (evt) {
+            keycloak.logout();
 
-    $("#nav").load("/VersaStack-web/navbar.html");
+            evt.preventDefault();
+        });
+        $("#account-button").click(function (evt) {
+            keycloak.accountManagement();
+
+            evt.preventDefault();
+        });
+    });
     $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
         $("#sidebar-toggle").click(function (evt) {
             $("#sidebar-toggle-1").toggleClass("img-off");
@@ -124,6 +139,12 @@ $(function () {
     });
 
     clearCounters();
+
+    // Catalog.jsp specifics
+    if (window.location.pathname === "/VersaStack-web/ops/catalog.jsp") {
+        setTimeout(catalogLoad, 1000);
+    }
+
 });
 
 function detailsLoad() {
@@ -1188,4 +1209,67 @@ function enableLoading() {
 
 function disableLoading() {
     $("#main-pane").removeClass("loading");
+}
+
+function catalogLoad() {    
+    wizardLoad();
+    editorLoad();
+    
+    $("#catalog-panel").removeClass("closed");
+}
+
+function wizardLoad() {
+    var userId = keycloak.subject;
+    var tbody = document.getElementById("wizard-body");
+
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/panel/' + userId + '/wizard';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        success: function (result) {
+            for (i = 0; i < result.length; i++) {
+                var profile = result[i];
+
+                var row = document.createElement("tr");
+                var cell1_1 = document.createElement("td");
+                cell1_1.innerHTML = profile[0];
+                var cell1_2 = document.createElement("td");
+                cell1_2.innerHTML = profile[1];
+                var cell1_3 = document.createElement("td");
+                cell1_3.innerHTML = "<button class='button-profile-select' id='" + profile[2] + "'>Select</button";
+                row.appendChild(cell1_1);
+                row.appendChild(cell1_2);
+                row.appendChild(cell1_3);
+                tbody.appendChild(row);
+            }
+        }
+    });
+}
+
+function editorLoad() {
+    var userId = keycloak.subject;
+    var tbody = document.getElementById("editor-body");
+
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/panel/' + userId + '/editor';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        success: function (result) {
+            for (i = 0; i < result.length; i++) {
+                var profile = result[i];
+
+                var row = document.createElement("tr");
+                var cell1_1 = document.createElement("td");
+                cell1_1.innerHTML = profile[0];
+                var cell1_2 = document.createElement("td");
+                cell1_2.innerHTML = profile[1];
+                var cell1_3 = document.createElement("td");
+                cell1_3.innerHTML = "<button class='button-service-select' id='" + profile[2] + "'>Select</button";
+                row.appendChild(cell1_1);
+                row.appendChild(cell1_2);
+                row.appendChild(cell1_3);
+                tbody.appendChild(row);
+            }
+        }
+    });
 }

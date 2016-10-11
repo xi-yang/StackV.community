@@ -52,6 +52,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+
 public class serviceBeans {
 
     private static final Logger logger = Logger.getLogger(serviceBeans.class.getName());
@@ -1660,6 +1661,54 @@ public class serviceBeans {
                 retList.add(instanceUUID);
                 retList.add(instanceState);
             } catch (IOException ex) {
+            }
+        }
+
+        return retList;
+    }
+    
+    public ArrayList<ArrayList<String>> loadWizard() throws SQLException {
+        ArrayList<ArrayList<String>> retList = new ArrayList<>();
+        ArrayList<String> banList = new ArrayList<>();
+
+        
+        
+        banList.add("Driver Management");
+
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID, X.super_state, I.alias_name FROM"
+                + " service S, service_instance I, service_state X WHERE S.service_id = I.service_id AND I.service_state_id = X.service_state_id");
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {
+            ArrayList<String> instanceList = new ArrayList<>();
+
+            String instanceName = rs1.getString("name");
+            String instanceUUID = rs1.getString("referenceUUID");
+            String instanceSuperState = rs1.getString("super_state");
+            String instanceAlias = rs1.getString("alias_name");
+            if (!banList.contains(instanceName)) {
+                try {
+                    URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
+                    HttpURLConnection status = (HttpURLConnection) url.openConnection();
+
+                    String instanceState = instanceSuperState + " - " + this.executeHttpMethod(url, status, "GET", null);
+
+                    instanceList.add(instanceName);
+                    instanceList.add(instanceUUID);
+                    instanceList.add(instanceState);
+                    instanceList.add(instanceAlias);
+
+                    retList.add(instanceList);
+                } catch (IOException ex) {
+                    logger.log(Level.INFO, "Instance Status Check Failed on UUID = {0}", instanceUUID);
+                }
             }
         }
 

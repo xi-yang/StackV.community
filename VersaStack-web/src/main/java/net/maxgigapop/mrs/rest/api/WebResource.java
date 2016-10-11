@@ -90,8 +90,17 @@ public class WebResource {
      * Creates a new instance of WebResource
      */
     public WebResource() {
+    }   
+    
+    @GET
+    @Path("/token")
+    @Produces("application/json")
+    public String getToken() {
+        
+        
+        return "";
     }
-
+    
     @GET
     @Path("/users")
     @Produces("application/json")
@@ -228,6 +237,76 @@ public class WebResource {
             return "<<<Failed - " + ex.getMessage() + " - " + ex.getSQLState();
         }
         return "Labels Cleared";
+    }
+
+    @GET
+    @Path("/panel/{userId}/wizard")
+    @Produces("application/json")
+    public ArrayList<ArrayList<String>> loadWizard(@PathParam("userId") String userId) {
+        try {
+            ArrayList<ArrayList<String>> retList = new ArrayList<>();
+
+            Connection front_conn;
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("SELECT DISTINCT W.name, W.description, W.editable, W.service_wizard_id "
+                    + "FROM service_wizard W WHERE W.user_id = ? OR W.user_id IS NULL");
+            prep.setString(1, userId);
+            ResultSet rs1 = prep.executeQuery();
+            while (rs1.next()) {
+                ArrayList<String> wizardList = new ArrayList<>();
+
+                wizardList.add(rs1.getString("name"));
+                wizardList.add(rs1.getString("description"));
+                wizardList.add(rs1.getString("service_wizard_id"));
+
+                retList.add(wizardList);
+            }
+
+            return retList;
+        } catch (SQLException e) {
+            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+            return null;
+        }
+    }
+
+    @GET
+    @Path("/panel/{userId}/editor")
+    @Produces("application/json")
+    public ArrayList<ArrayList<String>> loadEditor(@PathParam("userId") String userId) {
+        try {
+            ArrayList<ArrayList<String>> retList = new ArrayList<>();
+
+            Connection front_conn;
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("SELECT DISTINCT S.name, S.filename, S.description FROM service S WHERE S.atomic = 0");
+            ResultSet rs1 = prep.executeQuery();
+            while (rs1.next()) {
+
+                ArrayList<String> wizardList = new ArrayList<>();
+
+                wizardList.add(rs1.getString("name"));
+                wizardList.add(rs1.getString("description"));
+                wizardList.add(rs1.getString("filename"));
+
+                retList.add(wizardList);
+            }
+            return retList;
+        } catch (SQLException e) {
+            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+            return null;
+        }
     }
 
     @GET
@@ -1086,7 +1165,7 @@ public class WebResource {
 
         return result;
     }
-    
+
     private boolean clearVerification(String refUuid) throws SQLException {
         Connection front_conn;
         Properties front_connectionProps = new Properties();

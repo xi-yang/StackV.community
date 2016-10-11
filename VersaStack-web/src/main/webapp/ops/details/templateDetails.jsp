@@ -15,6 +15,7 @@
     <head>   
         <meta charset="UTF-8">
         <title>Service Details</title>
+        <script src="/VersaStack-web/js/keycloak.js"></script> 
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>
