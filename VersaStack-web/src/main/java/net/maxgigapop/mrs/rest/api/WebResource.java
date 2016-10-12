@@ -62,7 +62,18 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import web.beans.serviceBeans;
 import com.hp.hpl.jena.ontology.OntModel;
+import java.net.URISyntaxException;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.core.MultivaluedMap;
 import net.maxgigapop.mrs.common.ModelUtil;
+import org.keycloak.KeycloakSecurityContext;
+import org.keycloak.OAuthErrorException;
+import org.keycloak.adapters.ServerRequest;
+import org.keycloak.adapters.installed.KeycloakInstalled;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.common.VerificationException;
 
 /**
  * REST Web Service
@@ -90,17 +101,22 @@ public class WebResource {
      * Creates a new instance of WebResource
      */
     public WebResource() {
-    }   
-    
-    @GET
-    @Path("/token")
-    @Produces("application/json")
-    public String getToken() {
-        
-        
-        return "";
     }
-    
+
+    @POST
+    @Path("/token")
+    public String getToken(@Context HttpServletRequest httpServletRequest, final String inputString) throws MalformedURLException, IOException {
+        String[] parseString = inputString.split("&");
+        String user = (parseString[0].split("="))[1];
+        String pass = (parseString[1].split("="))[1];
+
+        URL url = new URL("http://localhost:8180/auth/realms/master/protocol/openid-connect/token");
+        HttpURLConnection status = (HttpURLConnection) url.openConnection();
+        String result = servBean.executeHttpMethod(url, status, "POST", inputString + "&grant_type=password&client_id=curl");
+
+        return result;
+    }
+
     @GET
     @Path("/users")
     @Produces("application/json")
@@ -1280,6 +1296,16 @@ public class WebResource {
         String result = servBean.executeHttpMethod(url, status, "GET", null);
 
         return result;
+    }
+
+    public class WebRequestFilter implements ContainerRequestFilter {
+
+        @Override
+        public void filter(ContainerRequestContext req) throws IOException {
+            MultivaluedMap<String, String> headerMap = req.getHeaders();
+            System.out.println("MAP >>> " + headerMap);
+            System.out.println("KEYS >>> " + headerMap.keySet());
+        }
     }
 
 }
