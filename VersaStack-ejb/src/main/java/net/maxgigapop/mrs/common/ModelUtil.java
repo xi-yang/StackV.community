@@ -261,9 +261,12 @@ public class ModelUtil {
         }
         for (RDFNode topoNode : listTopo) {
             OntModel modelTopology = getTopology(model, topoNode);
-            model.remove(modelTopology);
             topoModelMap.put(topoNode.asResource().getURI(), modelTopology);
         }
+        for (OntModel modelTopology : topoModelMap.values()) {
+            model.remove(modelTopology.getBaseModel());
+        }
+
         //verify full decomposition (no nml: mrs: namespace objects left, otherwise thrown exception)
         if (!isEmptyModel(model.getBaseModel())) {
             StringWriter writer1 = new StringWriter();
