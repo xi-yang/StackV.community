@@ -55,7 +55,9 @@ import net.maxgigapop.mrs.common.*;
 public class AwsModelBuilder {
 
     public static OntModel createOntology(String access_key_id, String secret_access_key, Regions region, String topologyURI) throws IOException {
-
+        //configure prefix util
+        AwsPrefix awsPrefix = new AwsPrefix(topologyURI);
+                
         //create model object
         OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 
@@ -120,12 +122,12 @@ public class AwsModelBuilder {
         AwsDCGet dcClient = new AwsDCGet(access_key_id, secret_access_key, region);
 
         //create the outer layer of the aws model
-        Resource ec2Service = RdfOwl.createResource(model, ResourceTool.getResourceUri("",AwsPrefix.ec2Service , region.getName()), hypervisorService);
+        Resource ec2Service = RdfOwl.createResource(model, ResourceTool.getResourceUri("",awsPrefix.ec2Service(), region.getName()), hypervisorService);
   
-        Resource vpcService = RdfOwl.createResource(model, ResourceTool.getResourceUri("", AwsPrefix.vpcService , region.getName()), virtualCloudService);
-        Resource s3Service = RdfOwl.createResource(model, ResourceTool.getResourceUri("", AwsPrefix.s3Service , region.getName()), objectStorageService);
-        Resource ebsService = RdfOwl.createResource(model, ResourceTool.getResourceUri("", AwsPrefix.ebsService , region.getName()), blockStorageService);
-        Resource directConnect = RdfOwl.createResource(model, ResourceTool.getResourceUri("", AwsPrefix.directConnectService,region.getName()), biPort);
+        Resource vpcService = RdfOwl.createResource(model, ResourceTool.getResourceUri("", awsPrefix.vpcService(), region.getName()), virtualCloudService);
+        Resource s3Service = RdfOwl.createResource(model, ResourceTool.getResourceUri("", awsPrefix.s3Service(), region.getName()), objectStorageService);
+        Resource ebsService = RdfOwl.createResource(model, ResourceTool.getResourceUri("", awsPrefix.ebsService(), region.getName()), blockStorageService);
+        Resource directConnect = RdfOwl.createResource(model, ResourceTool.getResourceUri("", awsPrefix.directConnectService(), region.getName()), biPort);
 
         model.add(model.createStatement(awsTopology, hasService, ec2Service));
         model.add(model.createStatement(awsTopology, hasService, vpcService));
@@ -142,7 +144,7 @@ public class AwsModelBuilder {
         for (InternetGateway t : ec2Client.getInternetGateways()) {
             if (!t.getAttachments().isEmpty()) {
                 String internetGatewayId = ec2Client.getIdTag(t.getInternetGatewayId());
-                Resource INTERNETGATEWAY = RdfOwl.createResource(model, ResourceTool.getResourceUri(internetGatewayId,AwsPrefix.gateway,internetGatewayId), biPort);
+                Resource INTERNETGATEWAY = RdfOwl.createResource(model, ResourceTool.getResourceUri(internetGatewayId, awsPrefix.gateway(),internetGatewayId), biPort);
                 model.add(model.createStatement(INTERNETGATEWAY, Mrs.type, "internet-gateway"));
             }
         }
@@ -150,7 +152,7 @@ public class AwsModelBuilder {
         //put all the Vpn gateways into the model
         for (VpnGateway g : ec2Client.getVirtualPrivateGateways()) {
             String vpnGatewayId = ec2Client.getIdTag(g.getVpnGatewayId());
-            Resource VPNGATEWAY = RdfOwl.createResource(model, ResourceTool.getResourceUri(vpnGatewayId,AwsPrefix.gateway,vpnGatewayId), biPort);
+            Resource VPNGATEWAY = RdfOwl.createResource(model, ResourceTool.getResourceUri(vpnGatewayId,awsPrefix.gateway(),vpnGatewayId), biPort);
             model.add(model.createStatement(VPNGATEWAY, Mrs.type, "vpn-gateway"));
             model.add(model.createStatement(awsTopology, hasBidirectionalPort, VPNGATEWAY));
         }
@@ -165,11 +167,11 @@ public class AwsModelBuilder {
             if ((Arrays.asList(invalidStates).contains(virtualInterfaceState))) {
                 continue;
             }            
-            Resource VIRTUAL_INTERFACE = RdfOwl.createResource(model, ResourceTool.getResourceUri(vi.getVirtualInterfaceId(), AwsPrefix.vif, directConnect.getURI(), vi.getVlan().toString()), biPort);
+            Resource VIRTUAL_INTERFACE = RdfOwl.createResource(model, ResourceTool.getResourceUri(vi.getVirtualInterfaceId(), awsPrefix.vif(), directConnect.getURI(), vi.getVlan().toString()), biPort);
             model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.name, vi.getVirtualInterfaceId()));
             model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.type, "direct-connect-vif"));
             model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.value, "direct-connect-vif+"+vi.getVirtualInterfaceType()));
-            Resource VLAN_LABEL_GROUP = RdfOwl.createResource(model, ResourceTool.getResourceUri(vlanNum, AwsPrefix.labelGroup, VIRTUAL_INTERFACE.getURI(),vlanNum), Nml.LabelGroup);
+            Resource VLAN_LABEL_GROUP = RdfOwl.createResource(model, ResourceTool.getResourceUri(vlanNum, awsPrefix.labelGroup(), VIRTUAL_INTERFACE.getURI(),vlanNum), Nml.LabelGroup);
             model.add(model.createStatement(VLAN_LABEL_GROUP, Nml.values, vlanNum));
             model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabelGroup, VLAN_LABEL_GROUP));
             model.add(model.createStatement(VLAN_LABEL_GROUP, Nml.labeltype, vlan));
@@ -203,13 +205,13 @@ public class AwsModelBuilder {
                 VirtualInterfaceState.Pending.toString(), VirtualInterfaceState.Verifying.toString(), "down"};
             if(virtualGatewayId != null && (Arrays.asList(acceptedStates).contains(virtualInterfaceState)))
             {
-                Resource VLAN_LABEL = RdfOwl.createResource(model, ResourceTool.getResourceUri(vlanNum, AwsPrefix.label,VIRTUAL_INTERFACE.getURI(),vlanNum), Nml.Label);
+                Resource VLAN_LABEL = RdfOwl.createResource(model, ResourceTool.getResourceUri(vlanNum, awsPrefix.label(),VIRTUAL_INTERFACE.getURI(),vlanNum), Nml.Label);
                 model.add(model.createStatement(VLAN_LABEL, Nml.labeltype, vlan));
                 model.add(model.createStatement(VLAN_LABEL, Nml.value, vlanNum));
                 model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.hasLabel, VLAN_LABEL));
                 if (!virtualGatewayId.isEmpty()) {
                     virtualGatewayId = ec2Client.getIdTag(virtualGatewayId);
-                    Resource VPNGATEWAY = model.getResource(ResourceTool.getResourceUri(virtualGatewayId,AwsPrefix.gateway,virtualGatewayId));
+                    Resource VPNGATEWAY = model.getResource(ResourceTool.getResourceUri(virtualGatewayId,awsPrefix.gateway(),virtualGatewayId));
                     model.add(model.createStatement(VPNGATEWAY, Nml.isAlias, VIRTUAL_INTERFACE));
                     model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.isAlias, VPNGATEWAY));
                 }
@@ -230,8 +232,8 @@ public class AwsModelBuilder {
         for (Subnet p : ec2Client.getSubnets()) {
             String subnetId = ec2Client.getIdTag(p.getSubnetId());
             String vpcId = ec2Client.getIdTag(p.getVpcId());
-            Resource SUBNET = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetId,AwsPrefix.subnet,vpcId,subnetId), switchingSubnet);
-            String subnetNetAddress = ResourceTool.getResourceUri(subnetId, AwsPrefix.subnetNetworkAddress, vpcId, subnetId);
+            Resource SUBNET = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetId,awsPrefix.subnet(),vpcId,subnetId), switchingSubnet);
+            String subnetNetAddress = ResourceTool.getResourceUri(subnetId, awsPrefix.subnetNetworkAddress(), vpcId, subnetId);
             if (subnetNetAddress.equals(subnetId)) {
                 subnetNetAddress += ":networkaddress";
             }
@@ -246,13 +248,13 @@ public class AwsModelBuilder {
             String portId = ec2Client.getIdTag(n.getNetworkInterfaceId());
             String subnetId = ec2Client.getIdTag(n.getSubnetId());
             String vpcId = ec2Client.getIdTag(ec2Client.getSubnet(n.getSubnetId()).getVpcId());
-            Resource PORT = RdfOwl.createResource(model, ResourceTool.getResourceUri(portId,AwsPrefix.nic,vpcId,subnetId,portId), biPort);
+            Resource PORT = RdfOwl.createResource(model, ResourceTool.getResourceUri(portId,awsPrefix.nic(),vpcId,subnetId,portId), biPort);
 
             //specify the addresses of the network interfaces 
             //put the private ip (if any) of the network interface in the model
             for (NetworkInterfacePrivateIpAddress q : n.getPrivateIpAddresses()) {
                 if (q.getPrivateIpAddress() != null) {
-                    Resource PRIVATE_ADDRESS = RdfOwl.createResource(model, ResourceTool.getResourceUri(PORT.toString()+":ip+"+q.getPrivateIpAddress(),AwsPrefix.nicNetworkAddress,vpcId,subnetId,portId,q.getPrivateIpAddress()), networkAddress);
+                    Resource PRIVATE_ADDRESS = RdfOwl.createResource(model, ResourceTool.getResourceUri(PORT.toString()+":ip+"+q.getPrivateIpAddress(),awsPrefix.nicNetworkAddress(),vpcId,subnetId,portId,q.getPrivateIpAddress()), networkAddress);
                     model.add(model.createStatement(PORT, hasNetworkAddress, PRIVATE_ADDRESS));
                     model.add(model.createStatement(PRIVATE_ADDRESS, type, "ipv4:private"));
                     model.add(model.createStatement(PRIVATE_ADDRESS, value, q.getPrivateIpAddress()));  
@@ -274,15 +276,15 @@ public class AwsModelBuilder {
             }*/
 
             //specify the subnet of the network interface 
-            Resource SUBNET = model.getResource(ResourceTool.getResourceUri(subnetId,AwsPrefix.subnet,vpcId,subnetId));
+            Resource SUBNET = model.getResource(ResourceTool.getResourceUri(subnetId,awsPrefix.subnet(),vpcId,subnetId));
             model.add(model.createStatement(SUBNET, hasBidirectionalPort, PORT));
         }
 
         //put all the vpcs and their information into the model
         for (Vpc v : ec2Client.getVpcs()) {
             String vpcId = ec2Client.getIdTag(v.getVpcId());
-            Resource VPC = RdfOwl.createResource(model, ResourceTool.getResourceUri(vpcId,AwsPrefix.vpc,vpcId), topology);
-            String vpcNetAddress = ResourceTool.getResourceUri(vpcId,AwsPrefix.vpcNetworkAddress,vpcId);
+            Resource VPC = RdfOwl.createResource(model, ResourceTool.getResourceUri(vpcId,awsPrefix.vpc(),vpcId), topology);
+            String vpcNetAddress = ResourceTool.getResourceUri(vpcId,awsPrefix.vpcNetworkAddress(),vpcId);
             if (vpcNetAddress.equals(vpcId)) {
                 vpcNetAddress += ":networkaddress";
             }
@@ -299,24 +301,24 @@ public class AwsModelBuilder {
             VpnGateway vpngw = ec2Client.getVirtualPrivateGateway(v);
             if (igw != null) {
                 String gatewayId = ec2Client.getIdTag(igw.getInternetGatewayId());
-                String resourceUri = ResourceTool.getResourceUri(gatewayId,AwsPrefix.gateway,gatewayId);
+                String resourceUri = ResourceTool.getResourceUri(gatewayId,awsPrefix.gateway(),gatewayId);
                 Resource GATEWAY = model.getResource(resourceUri);
                 model.add(model.createStatement(VPC, hasBidirectionalPort, GATEWAY));
             }
             if (vpngw != null) {
                 String gatewayId =ec2Client.getIdTag(vpngw.getVpnGatewayId());
-                String resourceUri = ResourceTool.getResourceUri(gatewayId,AwsPrefix.gateway,gatewayId);
+                String resourceUri = ResourceTool.getResourceUri(gatewayId,awsPrefix.gateway(),gatewayId);
                 Resource GATEWAY = model.getResource(resourceUri);
                 model.add(model.createStatement(VPC, hasBidirectionalPort, GATEWAY));
             }
 
             //Specify the subnets within the vpc
             String switchingServiceURI = vpcId + ":switchingservice";
-            Resource SWITCHINGSERVICE = RdfOwl.createResource(model, ResourceTool.getResourceUri(switchingServiceURI,AwsPrefix.switchingService,vpcId), switchingService);
+            Resource SWITCHINGSERVICE = RdfOwl.createResource(model, ResourceTool.getResourceUri(switchingServiceURI,awsPrefix.switchingService(),vpcId), switchingService);
             model.add(model.createStatement(VPC, hasService, SWITCHINGSERVICE));
             for (Subnet p : ec2Client.getSubnets(v.getVpcId())) {
                 String subnetId = ec2Client.getIdTag(p.getSubnetId());
-                Resource SUBNET = model.getResource(ResourceTool.getResourceUri(subnetId,AwsPrefix.subnet,vpcId,subnetId));
+                Resource SUBNET = model.getResource(ResourceTool.getResourceUri(subnetId,awsPrefix.subnet(),vpcId,subnetId));
                 model.add(model.createStatement(SWITCHINGSERVICE, providesSubnet, SUBNET));
 
                 //put all the intances inside this subnet into the model if there are any
@@ -327,7 +329,7 @@ public class AwsModelBuilder {
                         String instanceType = i.getInstanceType();
                         String imageName = i.getImageId();
                         String keyName = i.getKeyName();
-                        Resource INSTANCE = RdfOwl.createResource(model, ResourceTool.getResourceUri(instanceId,AwsPrefix.instance,vpcId,subnetId,instanceId), node);
+                        Resource INSTANCE = RdfOwl.createResource(model, ResourceTool.getResourceUri(instanceId,awsPrefix.instance(),vpcId,subnetId,instanceId), node);
                         model.add(model.createStatement(VPC, hasNode, INSTANCE));
                         model.add(model.createStatement(ec2Service, providesVM, INSTANCE));
                         model.add(model.createStatement(INSTANCE, providedByService, ec2Service));
@@ -338,7 +340,7 @@ public class AwsModelBuilder {
                         //put all the voumes attached to this instance into the model
                         for (Volume vol : ec2Client.getVolumesWithAttachement(i)) {
                             String volumeId = ec2Client.getIdTag(vol.getVolumeId());
-                            Resource VOLUME = RdfOwl.createResource(model, ResourceTool.getResourceUri(volumeId,AwsPrefix.volume,volumeId), volume);
+                            Resource VOLUME = RdfOwl.createResource(model, ResourceTool.getResourceUri(volumeId,awsPrefix.volume(),volumeId), volume);
                             model.add(model.createStatement(ebsService, providesVolume, VOLUME));
                             model.add(model.createStatement(INSTANCE, hasVolume, VOLUME));
                             model.add(model.createStatement(VOLUME, value, vol.getVolumeType()));
@@ -354,14 +356,14 @@ public class AwsModelBuilder {
                         //put all the network interfaces of each instance into the model
                         for (InstanceNetworkInterface n : AwsEC2Get.getInstanceInterfaces(i)) {
                             String portId = ec2Client.getIdTag(n.getNetworkInterfaceId());
-                            Resource PORT = model.getResource(ResourceTool.getResourceUri(portId,AwsPrefix.nic,vpcId,subnetId,portId));
+                            Resource PORT = model.getResource(ResourceTool.getResourceUri(portId,awsPrefix.nic(),vpcId,subnetId,portId));
                             model.add(model.createStatement(INSTANCE, hasBidirectionalPort, PORT));
                         }
                         
                         //put public ip as NetworkAddress of this instance into the model
                         String publicIp = i.getPublicIpAddress();
                         if (publicIp != null && !publicIp.isEmpty()) {
-                            Resource PUBLIC_ADDRESS = RdfOwl.createResource(model, ResourceTool.getResourceUri(INSTANCE.toString()+":public-ip+"+publicIp,AwsPrefix.publicAddress,publicIp), Mrs.NetworkAddress);
+                            Resource PUBLIC_ADDRESS = RdfOwl.createResource(model, ResourceTool.getResourceUri(INSTANCE.toString()+":public-ip+"+publicIp,awsPrefix.publicAddress(),publicIp), Mrs.NetworkAddress);
                             model.add(model.createStatement(INSTANCE, hasNetworkAddress, PUBLIC_ADDRESS));
                             model.add(model.createStatement(PUBLIC_ADDRESS, type, "ipv4:public"));
                             model.add(model.createStatement(PUBLIC_ADDRESS, value, publicIp));  
@@ -372,14 +374,14 @@ public class AwsModelBuilder {
 
             //Make the L3 routing model for this VPC
             String routingServiceUri = vpcId + ":routingservice";
-            Resource ROUTINGSERVICE = RdfOwl.createResource(model, ResourceTool.getResourceUri(routingServiceUri , AwsPrefix.routingService,vpcId), routingService);
+            Resource ROUTINGSERVICE = RdfOwl.createResource(model, ResourceTool.getResourceUri(routingServiceUri , awsPrefix.routingService(),vpcId), routingService);
             model.add(model.createStatement(VPC, hasService, ROUTINGSERVICE));
 
             //add the internet and vpn gateway off this vpc
             for (RouteTable t : ec2Client.getRoutingTables(v.getVpcId())) {
                 List<RouteTableAssociation> associations = t.getAssociations();
                 String routeTableId = ec2Client.getIdTag(t.getRouteTableId());
-                Resource ROUTINGTABLE = RdfOwl.createResource(model, ResourceTool.getResourceUri(routeTableId,AwsPrefix.routingTable,vpcId,routeTableId), routingTable);
+                Resource ROUTINGTABLE = RdfOwl.createResource(model, ResourceTool.getResourceUri(routeTableId,awsPrefix.routingTable(),vpcId,routeTableId), routingTable);
                 model.add(model.createStatement(ROUTINGSERVICE, providesRoutingTable, ROUTINGTABLE));
                 boolean main = false;
                 if (!associations.isEmpty()) {
@@ -412,11 +414,11 @@ public class AwsModelBuilder {
 
                         if (internetGateway != null) {
                             String gatewayId = ec2Client.getIdTag(internetGateway.getInternetGatewayId());
-                            Resource resource = model.getResource(ResourceTool.getResourceUri(gatewayId,AwsPrefix.gateway,gatewayId));
+                            Resource resource = model.getResource(ResourceTool.getResourceUri(gatewayId,awsPrefix.gateway(),gatewayId));
                             model.add(model.createStatement(ROUTE, nextHop, resource));
                         } else if (vpnGateway != null) {
                             String gatewayId = ec2Client.getIdTag(vpnGateway.getVpnGatewayId());
-                            Resource resource = model.getResource(ResourceTool.getResourceUri(gatewayId,AwsPrefix.gateway,gatewayId));
+                            Resource resource = model.getResource(ResourceTool.getResourceUri(gatewayId,awsPrefix.gateway(),gatewayId));
                             model.add(model.createStatement(ROUTE, nextHop, resource));
                         } else {
                             model.add(model.createStatement(ROUTE, nextHop, "local"));
@@ -427,7 +429,7 @@ public class AwsModelBuilder {
                         target = ec2Client.getPeerVpc(target);
                         target = ec2Client.getIdTag(target);
                         model.add(model.createStatement(ROUTINGTABLE, hasRoute, ROUTE));
-                        Resource resource = model.getResource(ResourceTool.getResourceUri(target,AwsPrefix.vpc,target));
+                        Resource resource = model.getResource(ResourceTool.getResourceUri(target,awsPrefix.vpc(),target));
                         model.add(model.createStatement(ROUTE, nextHop, resource));
                     }
 
@@ -449,13 +451,13 @@ public class AwsModelBuilder {
                             i++;
                             continue;
                         }
-                        ROUTE_FROM = model.getResource(ResourceTool.getResourceUri(complementId,AwsPrefix.subnet,vpcId,complementId));
+                        ROUTE_FROM = model.getResource(ResourceTool.getResourceUri(complementId,awsPrefix.subnet(),vpcId,complementId));
                         model.add(model.createStatement(ROUTE, routeFrom, ROUTE_FROM));
                         // if this ROUTINGTABLE has VPN propagation=yes add 0.0.0.0/0 routeto with nexthop=routefrom=propagatingVgw
                         if (t.getPropagatingVgws() != null && !t.getPropagatingVgws().isEmpty()) {
                             PropagatingVgw vgw = t.getPropagatingVgws().get(0);
                             String vpnGatewayId =ec2Client.getIdTag(vgw.getGatewayId());
-                            String resourceUri = ResourceTool.getResourceUri(vpnGatewayId,AwsPrefix.gateway,vpnGatewayId);
+                            String resourceUri = ResourceTool.getResourceUri(vpnGatewayId,awsPrefix.gateway(),vpnGatewayId);
                             Resource propagatingVGW = model.getResource(resourceUri);
                             Resource propagatingRoute = RdfOwl.createResource(model, ROUTINGTABLE.getURI()+":route-0.0.0.00", Mrs.Route);
                             Resource propagatingRouteTo = RdfOwl.createResource(model, ROUTINGTABLE.getURI()+":route-0.0.0.00:routeto", Mrs.NetworkAddress);
@@ -477,7 +479,7 @@ public class AwsModelBuilder {
         //put the volumes of the ebsService into the model
         for (Volume v : ec2Client.getVolumesWithoutAttachment()) {
             String volumeId = ec2Client.getIdTag(v.getVolumeId());
-            Resource VOLUME = RdfOwl.createResource(model, ResourceTool.getResourceUri(volumeId,AwsPrefix.volume,volumeId), volume);
+            Resource VOLUME = RdfOwl.createResource(model, ResourceTool.getResourceUri(volumeId,awsPrefix.volume(),volumeId), volume);
             model.add(model.createStatement(ebsService, providesVolume, VOLUME));
             model.add(model.createStatement(VOLUME, value, v.getVolumeType()));
             model.add(model.createStatement(VOLUME, Mrs.disk_gb, Integer.toString(v.getSize())));
@@ -485,14 +487,14 @@ public class AwsModelBuilder {
 
         //put all the buckets of the s3Service into the model
         for (Bucket b : s3Client.getBuckets()) {
-            Resource BUCKET = RdfOwl.createResource(model, ResourceTool.getResourceUri(b.getName(),AwsPrefix.bucket,b.getName()), bucket);
+            Resource BUCKET = RdfOwl.createResource(model, ResourceTool.getResourceUri(b.getName(),awsPrefix.bucket(),b.getName()), bucket);
             model.add(model.createStatement(s3Service, providesBucket, BUCKET));
             model.add(model.createStatement(awsTopology, hasBucket, BUCKET));
             model.add(model.createStatement(BUCKET, Nml.name, b.getName()));
         }
 
         //create abstraction for batch resources
-        AwsBatchResourcesTool batchTool = new AwsBatchResourcesTool(access_key_id,secret_access_key, region);
+        AwsBatchResourcesTool batchTool = new AwsBatchResourcesTool(access_key_id,secret_access_key, region, topologyURI);
         model = batchTool.contractVMbatch(model);
         return model;
     }
