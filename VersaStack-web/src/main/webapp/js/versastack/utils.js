@@ -160,40 +160,44 @@ define([], function () {
             return JSON.stringify(json, null, 4);
         }
         
-        var start = data.indexOf("%$");
-        var end = data.indexOf("%", start+2);
-        var endComma = data.lastIndexOf(",");
+        try {
+            var start = data.indexOf("%$");
+            var end = data.indexOf("%", start+2);
+            var endComma = data.lastIndexOf(",");
 
-        var newstr = "";
-        var parsedData = "";
-        var parseString = "";
-        if (start > 0 && end > 0) {
-            if (endComma !== -1) {
-                var commaAfter = data.indexOf(",", end);
-                var dqAfter = data.indexOf("\"", end);
+            var newstr = "";
+            var parsedData = "";
+            var parseString = "";
+            if (start > 0 && end > 0) {
+                if (endComma !== -1) {
+                    var commaAfter = data.indexOf(",", end);
+                    var dqAfter = data.indexOf("\"", end);
 
-                if ((commaAfter === -1 || commaAfter > dqAfter) && dqAfter !== -1) {
-                  newstr = data.slice(0, start-1) + '\"' + data.slice(start,end+1) + '\",' + data.slice(endComma+1); 
-                } else {
-                  newstr = data.slice(0, start-1) + '\"' + data.slice(start,end+1) + '\"' + data.slice(endComma+1); 
+                    if ((commaAfter === -1 || commaAfter > dqAfter) && dqAfter !== -1) {
+                      newstr = data.slice(0, start-1) + '\"' + data.slice(start,end+1) + '\",' + data.slice(endComma+1); 
+                    } else {
+                      newstr = data.slice(0, start-1) + '\"' + data.slice(start,end+1) + '\"' + data.slice(endComma+1); 
+                    }
+                }else {
+                    newstr = data.slice(0, start-1) + '\"' + data.slice(start,end+1) + '\"' + data.slice(end+1); 
                 }
-            }else {
-                newstr = data.slice(0, start-1) + '\"' + data.slice(start,end+1) + '\"' + data.slice(end+1); 
-            }
-            
-            try {
-                parsedData = JSON.parse(newstr);
+                
+                try {
+                    parsedData = JSON.parse(newstr);
+                    parseString = JSON.stringify(parsedData, null, 4);
+                    start = parseString.indexOf("%$")-1;
+                    end = parseString.indexOf("%", start+2)-1;
+                    parseString =  parseString.slice(0, start-1)  + parseString.slice(start+1 ,end+2) + parseString.slice(end+3);
+                } catch (err) {
+                    return data;
+                } 
+            } else {
+                parsedData = JSON.parse(data);
                 parseString = JSON.stringify(parsedData, null, 4);
-                start = parseString.indexOf("%$")-1;
-                end = parseString.indexOf("%", start+2)-1;
-                parseString =  parseString.slice(0, start-1)  + parseString.slice(start+1 ,end+2) + parseString.slice(end+3);
-            } catch(err) {
+            }       
+         } catch(err) {
                 return data;
-            }
-        } else {
-            parsedData = JSON.parse(data);
-            parseString = JSON.stringify(parsedData, null, 4);
-        }        
+         }
         return parseString;
     }
     /** PUBLIC INTERFACE **/
