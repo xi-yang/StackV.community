@@ -1,4 +1,4 @@
-var baseUrl = window.location.origin;
+/* global keycloak */
 
 //jQuery time
 var current_fs, next_fs, previous_fs; //fieldsets
@@ -206,7 +206,7 @@ function applyTemplate(mode) {
         next_div = $('#2-1');
         nextStage(template_div, next_div);
     }
-    else {
+    else {/*
         // Basic Hybrid Cloud Template
         if (mode === 1) {
             current_div = $("#0-1");
@@ -302,7 +302,7 @@ function applyTemplate(mode) {
             form.elements['SRIOV2-mac'].value = '11:22:22:33:33:02';
         }
 
-        nextStage(current_div, next_div);
+        nextStage(current_div, next_div);*/
     }
 }
 
@@ -868,6 +868,11 @@ function validateHybrid() {
 
     // Results
     if (invalidArr.length === 0) {
+        $('<input />').attr('type', 'hidden')
+          .attr('name', "authToken")
+          .attr('value', keycloak.token)
+          .appendTo('#msform');
+        
         return true;
     } else {
         infoAlert("Invalid Inputs", invalidArr);

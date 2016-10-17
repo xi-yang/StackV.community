@@ -1,23 +1,42 @@
 
-/* global XDomainRequest */
+/* global XDomainRequest, baseUrl, keycloak */
 
 // Service JavaScript Library
-var baseUrl = window.location.origin;
-var keycloak = Keycloak('/VersaStack-web/data/json/keycloak.json');
+baseUrl = window.location.origin;
+keycloak = Keycloak('/VersaStack-web/data/json/keycloak.json');
 
 // Page Load Function
 
 $(function () {
+    // Keycloak using standard secure repeat auth
     keycloak.init({onLoad: 'login-required'}).success(function (authenticated) {
         loggedIn = authenticated ? true : false;
         sessionStorage.setItem("loggedin", loggedIn);
         if (loggedIn) {
             sessionStorage.setItem("username", keycloak.tokenParsed.given_name);
-            sessionStorage.setItem("id", keycloak.tokenParsed.sub);
+            sessionStorage.setItem("subject", keycloak.tokenParsed.sub);
         }
     }).error(function () {
         alert('failed to initialize');
     });
+    // Keycloak using literal SSO with webstorage
+    /*
+    if (loggedIn) {
+        keycloak.init(sessionStorage.getItem("token"));
+    } else {
+        keycloak.init({onLoad: 'login-required'}).success(function (authenticated) {
+            loggedIn = authenticated ? true : false;
+            sessionStorage.setItem("loggedin", loggedIn);
+            if (loggedIn) {
+                sessionStorage.setItem("username", keycloak.tokenParsed.given_name);
+                sessionStorage.setItem("subject", keycloak.tokenParsed.sub);
+                sessionStorage.setItem("token", keycloak.token);
+            }
+        }).error(function () {
+            alert('failed to initialize');
+        });
+    }
+    */
 
     $("#nav").load("/VersaStack-web/navbar.html", function () {
         $("#logout-button").click(function (evt) {
@@ -41,58 +60,6 @@ $(function () {
 
             evt.preventDefault();
         });
-    });
-
-    $(".button-service-select").click(function (evt) {
-        $ref = "/VersaStack-web/ops/srvc/" + this.id.toLowerCase() + ".jsp";
-        window.location.href = $ref;
-
-        //$("#service-overview").toggleClass("hide");
-        //$("#button-service-cancel").toggleClass("hide");
-        //$("#service-specific").load($ref);
-        evt.preventDefault();
-    });
-
-    $(".button-profile-select").click(function (evt) {
-        var apiUrl = baseUrl + '/VersaStack-web/restapi/app/profile/' + this.id;
-        $.ajax({
-            url: apiUrl,
-            type: 'GET',
-            success: function (result) {
-                $("#black-screen").removeClass("off");
-                $("#info-panel").addClass("active");
-                $("#info-panel-title").html("Profile Details");
-                $("#info-panel-text-area").val(JSON.stringify(result));
-                prettyPrintInfo();
-            },
-            error: function (textStatus, errorThrown) {
-                console.log(textStatus);
-                console.log(errorThrown);
-            }
-        });
-
-        evt.preventDefault();
-    });
-
-    $(".button-profile-submit").click(function (evt) {
-        var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service';
-        $.ajax({
-            url: apiUrl,
-            type: 'POST',
-            data: $("#info-panel-text-area").val(),
-            contentType: "application/json; charset=utf-8",
-            dataType: "json",
-            success: function (result) {
-
-            },
-            error: function (textStatus, errorThrown) {
-                console.log(textStatus);
-                console.log(errorThrown);
-            }
-        });
-        $("#black-screen").addClass("off");
-        $("#info-panel").removeClass("active");
-        evt.preventDefault();
     });
 
     $("#button-service-cancel").click(function (evt) {
@@ -1211,10 +1178,10 @@ function disableLoading() {
     $("#main-pane").removeClass("loading");
 }
 
-function catalogLoad() {    
+function catalogLoad() {
     wizardLoad();
     editorLoad();
-    
+
     $("#catalog-panel").removeClass("closed");
 }
 
@@ -1242,6 +1209,54 @@ function wizardLoad() {
                 row.appendChild(cell1_3);
                 tbody.appendChild(row);
             }
+
+            $(".button-profile-select").click(function (evt) {
+                var apiUrl = baseUrl + '/VersaStack-web/restapi/app/profile/' + this.id;
+                $.ajax({
+                    url: apiUrl,
+                    type: 'GET',
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                    },
+                    success: function (result) {
+                        $("#black-screen").removeClass("off");
+                        $("#info-panel").addClass("active");
+                        $("#info-panel-title").html("Profile Details");
+                        $("#info-panel-text-area").val(JSON.stringify(result));
+                        prettyPrintInfo();
+                    },
+                    error: function (textStatus, errorThrown) {
+                        console.log(textStatus);
+                        console.log(errorThrown);
+                    }
+                });
+
+                evt.preventDefault();
+            });
+
+            $(".button-profile-submit").click(function (evt) {
+                var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service';
+                $.ajax({
+                    url: apiUrl,
+                    type: 'POST',
+                    data: $("#info-panel-text-area").val(),
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                    },
+                    success: function (result) {
+
+                    },
+                    error: function (textStatus, errorThrown) {
+                        console.log(textStatus);
+                        console.log(errorThrown);
+                    }
+                });
+                $("#black-screen").addClass("off");
+                $("#info-panel").removeClass("active");
+                evt.preventDefault();
+            });
         }
     });
 }
@@ -1270,6 +1285,13 @@ function editorLoad() {
                 row.appendChild(cell1_3);
                 tbody.appendChild(row);
             }
+
+            $(".button-service-select").click(function (evt) {
+                var ref = "/VersaStack-web/ops/srvc/" + this.id.toLowerCase() + ".jsp";
+                window.location.href = ref;
+
+                evt.preventDefault();
+            });
         }
     });
 }

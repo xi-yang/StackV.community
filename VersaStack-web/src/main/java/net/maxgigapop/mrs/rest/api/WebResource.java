@@ -44,7 +44,6 @@ import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.EJBException;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Path;
 import javax.ws.rs.GET;
@@ -62,18 +61,13 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import web.beans.serviceBeans;
 import com.hp.hpl.jena.ontology.OntModel;
-import java.net.URISyntaxException;
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.MultivaluedMap;
 import net.maxgigapop.mrs.common.ModelUtil;
+import org.jboss.resteasy.spi.HttpRequest;
 import org.keycloak.KeycloakSecurityContext;
-import org.keycloak.OAuthErrorException;
-import org.keycloak.adapters.ServerRequest;
-import org.keycloak.adapters.installed.KeycloakInstalled;
-import org.keycloak.admin.client.Keycloak;
-import org.keycloak.common.VerificationException;
+import org.keycloak.representations.AccessToken;
 
 /**
  * REST Web Service
@@ -92,7 +86,7 @@ public class WebResource {
     private final ExecutorService executorService = java.util.concurrent.Executors.newCachedThreadPool();
 
     @Context
-    private UriInfo context;
+    private HttpRequest httpRequest;
 
     @EJB
     HandleSystemCall systemCallHandler;
@@ -105,7 +99,7 @@ public class WebResource {
 
     @POST
     @Path("/token")
-    public String getToken(@Context HttpServletRequest httpServletRequest, final String inputString) throws MalformedURLException, IOException {
+    public String getToken(final String inputString) throws MalformedURLException, IOException {
         String[] parseString = inputString.split("&");
         String user = (parseString[0].split("="))[1];
         String pass = (parseString[1].split("="))[1];
@@ -121,6 +115,9 @@ public class WebResource {
     @Path("/users")
     @Produces("application/json")
     public ArrayList<String> getUsers() throws SQLException {
+        KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
+        AccessToken accessToken = securityContext.getToken();
+        String subject = accessToken.getSubject();
 
         ArrayList<String> retList = new ArrayList<>();
 
@@ -142,6 +139,8 @@ public class WebResource {
         while (rs1.next()) {
             retList.add(rs1.getString(1));
         }
+
+        System.out.println("Logged-in user id: " + subject);
 
         return retList;
     }
@@ -271,7 +270,7 @@ public class WebResource {
                     front_connectionProps);
 
             PreparedStatement prep = front_conn.prepareStatement("SELECT DISTINCT W.name, W.description, W.editable, W.service_wizard_id "
-                    + "FROM service_wizard W WHERE W.user_id = ? OR W.user_id IS NULL");
+                    + "FROM service_wizard W WHERE W.username = ? OR W.username IS NULL");
             prep.setString(1, userId);
             ResultSet rs1 = prep.executeQuery();
             while (rs1.next()) {
@@ -417,8 +416,7 @@ public class WebResource {
 
             String serviceType = (String) inputJSON.get("type");
             String alias = (String) inputJSON.get("alias");
-            String user = (String) inputJSON.get("user");
-            String userID = "";
+            String username = (String) inputJSON.get("username");
 
             JSONObject dataJSON = (JSONObject) inputJSON.get("data");
 
@@ -435,13 +433,6 @@ public class WebResource {
             front_connectionProps.put("password", front_db_pass);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
-            PreparedStatement prep = front_conn.prepareStatement("SELECT user_id FROM user_info WHERE username = ?");
-            prep.setString(1, user);
-            ResultSet rs1 = prep.executeQuery();
-            while (rs1.next()) {
-                userID = rs1.getString("user_id");
-            }
 
             // Instance Creation
             URL url = new URL(String.format("%s/service/instance", host));
@@ -467,10 +458,10 @@ public class WebResource {
             }
 
             // Initialize service parameters.
-            prep = front_conn.prepareStatement("SELECT service_id"
+            PreparedStatement prep = front_conn.prepareStatement("SELECT service_id"
                     + " FROM service WHERE filename = ?");
             prep.setString(1, serviceType);
-            rs1 = prep.executeQuery();
+            ResultSet rs1 = prep.executeQuery();
             int serviceID = -1;
             while (rs1.next()) {
                 serviceID = rs1.getInt(1);
@@ -479,9 +470,9 @@ public class WebResource {
 
             // Install Instance into DB.
             prep = front_conn.prepareStatement("INSERT INTO frontend.service_instance "
-                    + "(`service_id`, `user_id`, `creation_time`, `referenceUUID`, `alias_name`, `service_state_id`) VALUES (?, ?, ?, ?, ?, ?)");
+                    + "(`service_id`, `username`, `creation_time`, `referenceUUID`, `alias_name`, `service_state_id`) VALUES (?, ?, ?, ?, ?, ?)");
             prep.setInt(1, serviceID);
-            prep.setString(2, userID);
+            prep.setString(2, username);
             prep.setTimestamp(3, timeStamp);
             prep.setString(4, refUuid);
             prep.setString(5, alias);

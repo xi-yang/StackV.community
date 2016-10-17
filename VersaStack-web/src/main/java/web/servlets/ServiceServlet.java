@@ -49,6 +49,8 @@ import javax.servlet.AsyncContext;
 import javax.servlet.annotation.WebServlet;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.keycloak.KeycloakSecurityContext;
+import org.keycloak.representations.AccessToken;
 import web.async.AppAsyncListener;
 import web.async.FL2PWorker;
 import web.async.DriverWorker;
@@ -584,10 +586,12 @@ public class ServiceServlet extends HttpServlet {
                 paraMap.remove((String) key);
             }
         }
+        
+        String token = paraMap.get("authToken");
 
         JSONObject inputJSON = new JSONObject();
         JSONObject dataJSON = new JSONObject();
-        inputJSON.put("user", paraMap.get("username"));
+        inputJSON.put("username", paraMap.get("username"));
         inputJSON.put("type", "hybridcloud");
         inputJSON.put("alias", paraMap.get("alias"));
 
@@ -976,7 +980,7 @@ public class ServiceServlet extends HttpServlet {
         asyncCtx.setTimeout(300000);
 
         ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
-        executor.execute(new APIRunner(inputJSON));
+        executor.execute(new APIRunner(inputJSON, token));
 
         return ("/VersaStack-web/ops/catalog.jsp");
     }
@@ -1088,11 +1092,16 @@ public class ServiceServlet extends HttpServlet {
 class APIRunner implements Runnable {
 
     JSONObject inputJSON;
+    String authToken;
     serviceBeans servBean = new serviceBeans();
     String host = "http://localhost:8080/VersaStack-web/restapi";
 
     public APIRunner(JSONObject input) {
         inputJSON = input;
+    }
+    public APIRunner(JSONObject input, String token) {
+        inputJSON = input;
+        authToken = token;
     }
 
     @Override
@@ -1100,7 +1109,12 @@ class APIRunner implements Runnable {
         try {
             System.out.println("API Runner Engaged!");
             URL url = new URL(String.format("%s/app/service/", host));
-            HttpURLConnection create = (HttpURLConnection) url.openConnection();
+            HttpURLConnection create = (HttpURLConnection) url.openConnection();            
+            if (authToken != null && !authToken.isEmpty()) {
+                String authHeader = "bearer " + authToken;
+                create.setRequestProperty("Authorization", authHeader);
+            }            
+            
             String result = servBean.executeHttpMethod(url, create, "POST", inputJSON.toJSONString());
         } catch (IOException ex) {
             Logger.getLogger(ServiceServlet.class.getName()).log(Level.SEVERE, null, ex);
