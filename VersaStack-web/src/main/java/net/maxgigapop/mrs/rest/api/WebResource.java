@@ -104,7 +104,7 @@ public class WebResource {
         String user = (parseString[0].split("="))[1];
         String pass = (parseString[1].split("="))[1];
 
-        URL url = new URL("http://localhost:8180/auth/realms/master/protocol/openid-connect/token");
+        URL url = new URL("http://localhost:8180/auth/realms/versastack/protocol/openid-connect/token");
         HttpURLConnection status = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, status, "POST", inputString + "&grant_type=password&client_id=curl");
 
