@@ -257,17 +257,17 @@ public class HandleSystemCall {
         // referenceVG could have new VIs compared to referenceVG_cached. If referenceVG_cached == false, 
         // the reference model will use the latest VIs. The latest VIs can be from persistence if the VG
         // has been actively updated, or we can force refresh/update by setting useRefreshedVG = true.
-        // When useCachedVG = false && refreshForced = true, the delta will be "forced" down bypassing merge check.
+        // When useCachedVG = false && refreshForced = true, delta will be "forced" and bypass merge check.
         VersionGroup headVG = VersionGroupPersistenceManager.refreshToHead(referenceVG, false);
         ModelBase referenceModel = (useCachedVG ? referenceVG_cached : (refreshForced ? headVG : referenceVG))
                 .createUnionModel();
         OntModel referenceOntModel = referenceModel.getOntModel();
         OntModel targetOntModel = referenceModel.dryrunDelta(sysDelta);
 
-        //## Step 2. verify model change *without* (useCachedVG = false && refreshForced = true)
-        // Under 'forced' / 'refreshed' mode, delta apply to latest headVG. No need to compare to referenceVG as they will be same.
-        // In other conditions, compare to see if the head VG is newer than the current/reference VG
-        if (!(!useCachedVG && refreshForced) && headVG != null && !headVG.equals(referenceVG)) {
+        //## Step 2. verify model change if refreshForced = true.
+        // Under 'forced', delta apply to refreshed headVG. No need to compare to referenceVG as referenceModel is from headVG.
+        // Under other conditions, do compare their models to see if the head VG is newer than the referenceVG.
+        if (!refreshForced && headVG != null && !headVG.equals(referenceVG)) {
             //          create headOntModel. get D12=headModel.diffFromModel(refeneceOntModel)
             ModelBase headSystemModel = headVG.createUnionModel();
             // Note: The head model has committed (driverDeltas) or propagated (driverSystemDeltas if available) to reduce contention.
