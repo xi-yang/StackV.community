@@ -619,10 +619,12 @@ public class HandleServiceCall {
         if (serviceInstance == null) {
             throw new EJBException(HandleServiceCall.class.getName() + ".propagateRetry cannot find serviceInstance with uuid=" + serviceInstanceUuid);
         }
+        /* We allow 'retry' on any status ? For example, Create/READY with verification failure should be still good case for retry.
         if (!serviceInstance.getStatus().equals("FAILED")) {
             throw new EJBException(HandleServiceCall.class.getName() + ".propagateRetry requires FAILED status for serviceInstance with uuid=" + serviceInstanceUuid
             +" -- the acutal status: " + serviceInstance.getStatus());
         } 
+        */
         Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
         if (!itSD.hasNext()) {
             throw new EJBException(HandleServiceCall.class.getName() + ".propagateRetry (by " + serviceInstance + ",  in status=" + serviceInstance.getStatus() + ") has none delta to retry.");
