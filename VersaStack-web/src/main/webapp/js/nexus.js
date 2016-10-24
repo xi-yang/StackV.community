@@ -1188,6 +1188,7 @@ function catalogLoad() {
 function wizardLoad() {
     var userId = keycloak.subject;
     var tbody = document.getElementById("wizard-body");
+    tbody.empty();
 
     var apiUrl = baseUrl + '/VersaStack-web/restapi/app/panel/' + userId + '/wizard';
     $.ajax({
@@ -1203,7 +1204,7 @@ function wizardLoad() {
                 var cell1_2 = document.createElement("td");
                 cell1_2.innerHTML = profile[1];
                 var cell1_3 = document.createElement("td");
-                cell1_3.innerHTML = "<button class='button-profile-select' id='" + profile[2] + "'>Select</button";
+                cell1_3.innerHTML = "<button class='button-profile-select' id='" + profile[2] + "'>Select</button><button class='button-profile-delete' id='" + profile[2] + "'>Delete</button>";
                 row.appendChild(cell1_1);
                 row.appendChild(cell1_2);
                 row.appendChild(cell1_3);
@@ -1224,6 +1225,26 @@ function wizardLoad() {
                         $("#info-panel-title").html("Profile Details");
                         $("#info-panel-text-area").val(JSON.stringify(result));
                         prettyPrintInfo();
+                    },
+                    error: function (textStatus, errorThrown) {
+                        console.log(textStatus);
+                        console.log(errorThrown);
+                    }
+                });
+
+                evt.preventDefault();
+            });
+            
+            $(".button-profile-delete").click(function (evt) {
+                var apiUrl = baseUrl + '/VersaStack-web/restapi/app/profile/' + this.id;
+                $.ajax({
+                    url: apiUrl,
+                    type: 'DELETE',
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                    },
+                    success: function (result) {
+                        wizardLoad();
                     },
                     error: function (textStatus, errorThrown) {
                         console.log(textStatus);

@@ -829,6 +829,10 @@ function updateGatewayNames(input) {
 function validateHybrid() {
     var invalidArr = new Array();
     var type = $("#msform").attr('class');
+    var btn = $(document.activeElement);
+    if (btn.attr("name") === "save" && !($("input[name='profile-save']").is(':checked'))) {
+        invalidArr.push("Profiles require a name in order to be saved. Please check the save box and try again.");
+    }
 
     // Stage 2
     if ($("input[name='alias']").val() === "") {

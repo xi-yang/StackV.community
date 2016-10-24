@@ -31,7 +31,7 @@
     </security-constraint>
     <login-config>
         <auth-method>KEYCLOAK</auth-method>
-        <realm-name>versastack</realm-name>
+        <realm-name>VersaStack</realm-name>
     </login-config>
     <security-role>
         <role-name>admin</role-name>

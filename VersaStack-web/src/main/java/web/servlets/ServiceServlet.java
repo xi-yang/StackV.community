@@ -49,8 +49,6 @@ import javax.servlet.AsyncContext;
 import javax.servlet.annotation.WebServlet;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.keycloak.KeycloakSecurityContext;
-import org.keycloak.representations.AccessToken;
 import web.async.AppAsyncListener;
 import web.async.FL2PWorker;
 import web.async.DriverWorker;
@@ -586,12 +584,13 @@ public class ServiceServlet extends HttpServlet {
                 paraMap.remove((String) key);
             }
         }
-        
+
         String token = paraMap.get("authToken");
+        String username = paraMap.get("username");
 
         JSONObject inputJSON = new JSONObject();
         JSONObject dataJSON = new JSONObject();
-        inputJSON.put("username", paraMap.get("username"));
+        inputJSON.put("username", username);
         inputJSON.put("type", "hybridcloud");
         inputJSON.put("alias", paraMap.get("alias"));
 
@@ -960,27 +959,29 @@ public class ServiceServlet extends HttpServlet {
                     front_connectionProps);
 
             int serviceID = servBean.getServiceID("hybridcloud");
-            int userID = servBean.getUserID(paraMap.get("username"));
 
-            // Install Profileinto DB.
+            // Install Profile into DB.
             PreparedStatement prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` "
-                    + "(`service_id`, `user_id`, `name`, `wizard_json`, `description`, `editable`) VALUES (?, ?, ?, ?, ?, ?)");
+                    + "(`service_id`, `username`, `name`, `wizard_json`, `description`, `editable`) VALUES (?, ?, ?, ?, ?, ?)");
             prep.setInt(1, serviceID);
-            prep.setInt(2, userID);
+            prep.setString(2, username);
             prep.setString(3, paraMap.get("profile-name"));
             prep.setString(4, inputJSON.toString());
             prep.setString(5, paraMap.get("profile-description"));
             prep.setInt(6, 0);
             prep.executeUpdate();
         }
+        if (paraMap.containsKey("submit")) {
+            request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
+            AsyncContext asyncCtx = request.startAsync();
+            asyncCtx.addListener(new AppAsyncListener());
+            asyncCtx.setTimeout(300000);
 
-        request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
-        AsyncContext asyncCtx = request.startAsync();
-        asyncCtx.addListener(new AppAsyncListener());
-        asyncCtx.setTimeout(300000);
-
-        ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
-        executor.execute(new APIRunner(inputJSON, token));
+            ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
+            executor.execute(new APIRunner(inputJSON, token));
+            
+            
+        }
 
         return ("/VersaStack-web/ops/catalog.jsp");
     }
@@ -1099,6 +1100,7 @@ class APIRunner implements Runnable {
     public APIRunner(JSONObject input) {
         inputJSON = input;
     }
+
     public APIRunner(JSONObject input, String token) {
         inputJSON = input;
         authToken = token;
@@ -1109,12 +1111,12 @@ class APIRunner implements Runnable {
         try {
             System.out.println("API Runner Engaged!");
             URL url = new URL(String.format("%s/app/service/", host));
-            HttpURLConnection create = (HttpURLConnection) url.openConnection();            
+            HttpURLConnection create = (HttpURLConnection) url.openConnection();
             if (authToken != null && !authToken.isEmpty()) {
                 String authHeader = "bearer " + authToken;
                 create.setRequestProperty("Authorization", authHeader);
-            }            
-            
+            }
+
             String result = servBean.executeHttpMethod(url, create, "POST", inputJSON.toJSONString());
         } catch (IOException ex) {
             Logger.getLogger(ServiceServlet.class.getName()).log(Level.SEVERE, null, ex);

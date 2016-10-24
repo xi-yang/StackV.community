@@ -104,7 +104,7 @@ public class WebResource {
         String user = (parseString[0].split("="))[1];
         String pass = (parseString[1].split("="))[1];
 
-        URL url = new URL("http://localhost:8180/auth/realms/versastack/protocol/openid-connect/token");
+        URL url = new URL("http://localhost:8180/auth/realms/VersaStack/protocol/openid-connect/token");
         HttpURLConnection status = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, status, "POST", inputString + "&grant_type=password&client_id=curl");
 
@@ -327,7 +327,7 @@ public class WebResource {
     @GET
     @Path("/profile/{wizardId}")
     @Produces("application/json")
-    public String getProfileJSON(@PathParam("wizardId") int wizardId) {
+    public String getProfile(@PathParam("wizardId") int wizardId) {
         try {
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
@@ -346,6 +346,24 @@ public class WebResource {
         } catch (SQLException e) {
             Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
             return null;
+        }
+    }
+
+    @DELETE
+    @Path("/profile/{wizardId}")
+    public void deleteProfile(@PathParam("wizardId") int wizardId) {
+        try {
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("DELETE FROM service_wizard WHERE service_wizard_id = ?");
+            prep.setInt(1, wizardId);
+            prep.executeUpdate();
+        } catch (SQLException e) {
+            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
         }
     }
 

@@ -234,8 +234,8 @@
                     </table>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <input type="button" name="save" class="profile-save-button action-button" value="Save" />
-                    <button type="submit" name="submit" class="action-button" value="ops">Submit</button>  
+                    <input type="submit" name="save" class="profile-save-button action-button" value="Save" />
+                    <button type="submit" name="submit" class="action-button" value="submit">Submit</button>  
                 </fieldset>
             </form>      
             <div id="info-panel">

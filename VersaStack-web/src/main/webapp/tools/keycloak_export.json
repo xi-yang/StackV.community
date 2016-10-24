@@ -1,4 +1,4 @@
-[ {
+{
   "id" : "master",
   "realm" : "VersaStack",
   "displayName" : "Keycloak",
@@ -1556,4 +1556,4 @@
     "waitIncrementSeconds" : "60"
   },
   "keycloakVersion" : "2.2.1.Final"
-} ]
+}
