@@ -257,9 +257,12 @@ public class ServiceServlet extends HttpServlet {
             }
         }
 
+        String token = paraMap.get("authToken");
+        String username = paraMap.get("username");
+
         JSONObject inputJSON = new JSONObject();
         JSONObject dataJSON = new JSONObject();
-        inputJSON.put("user", paraMap.get("username"));
+        inputJSON.put("username", paraMap.get("username"));
         inputJSON.put("type", "netcreate");
         inputJSON.put("alias", paraMap.get("alias"));
 
@@ -567,13 +570,35 @@ public class ServiceServlet extends HttpServlet {
         dataJSON.put("virtual_clouds", cloudArr);
         inputJSON.put("data", dataJSON);
 
-        request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
-        AsyncContext asyncCtx = request.startAsync();
-        asyncCtx.addListener(new AppAsyncListener());
-        asyncCtx.setTimeout(300000);
+        if (paraMap.containsKey("profile-save")) {
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
 
-        ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
-        executor.execute(new APIRunner(inputJSON));
+            int serviceID = servBean.getServiceID("netcreate");
+
+            // Install Profile into DB.
+            PreparedStatement prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` "
+                    + "(`service_id`, `username`, `name`, `wizard_json`, `description`, `editable`) VALUES (?, ?, ?, ?, ?, ?)");
+            prep.setInt(1, serviceID);
+            prep.setString(2, username);
+            prep.setString(3, paraMap.get("profile-name"));
+            prep.setString(4, inputJSON.toString());
+            prep.setString(5, paraMap.get("profile-description"));
+            prep.setInt(6, 0);
+            prep.executeUpdate();
+        }
+        if (paraMap.containsKey("submit")) {
+            request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
+            AsyncContext asyncCtx = request.startAsync();
+            asyncCtx.addListener(new AppAsyncListener());
+            asyncCtx.setTimeout(300000);
+
+            ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
+            executor.execute(new APIRunner(inputJSON, token));
+        }
 
         return ("/VersaStack-web/ops/catalog.jsp");
     }
@@ -979,8 +1004,6 @@ public class ServiceServlet extends HttpServlet {
 
             ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
             executor.execute(new APIRunner(inputJSON, token));
-            
-            
         }
 
         return ("/VersaStack-web/ops/catalog.jsp");

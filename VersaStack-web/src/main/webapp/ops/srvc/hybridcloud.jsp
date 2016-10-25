@@ -15,7 +15,6 @@
         <script src="/VersaStack-web/js/bootstrap.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>
         <script src="/VersaStack-web/js/svc/hybridcloud.js"></script>
-        <script src="../../js/svc/hybridcloud.js" type="text/javascript"></script>
         <!-- jQuery easing plugin -->
         <script src="http://thecodeplayer.com/uploads/js/jquery.easing.min.js" type="text/javascript"></script>
 

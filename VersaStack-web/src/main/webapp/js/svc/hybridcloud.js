@@ -61,10 +61,6 @@ $(function () {
         }
     });
 
-    $("#profile-save-button").click(function () {
-        
-    });
-
     $("#progressbar li").click(function () {
         if (animating || $(this).hasClass('disabled') || $("#progressbar li").index(this) === 0)
             return false;
@@ -836,13 +832,13 @@ function validateHybrid() {
 
     // Stage 2
     if ($("input[name='alias']").val() === "") {
-        invalidArr.push("Alias field is empty.");
+        invalidArr.push("Alias field is empty.\n");
 
         $("#progressbar li").eq(1).addClass("invalid");
         $("input[name='alias']").addClass("invalid");
     }
     if ($("input[name='aws-conn-vlan']").val() === "") {
-        invalidArr.push("Direct Connect VLAN field is empty.");
+        invalidArr.push("Direct Connect VLAN field is empty.\n");
 
         $("#progressbar li").eq(1).addClass("invalid");
         $("input[name='aws-conn-vlan']").addClass("invalid");
@@ -863,7 +859,7 @@ function validateHybrid() {
     // Stage 7
     if ($("input[name='profile-save']").is(':checked')) {
         if ($("input[name='profile-name']").val() === "") {
-            invalidArr.push("Profiles require a name in order to be saved. Please try again.");
+            invalidArr.push("Profiles require a name in order to be saved.\n");
 
             $("#progressbar li").eq(6).addClass("invalid");
             $("input[name='profile-name']").addClass("invalid");

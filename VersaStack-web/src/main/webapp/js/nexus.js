@@ -21,22 +21,22 @@ $(function () {
     });
     // Keycloak using literal SSO with webstorage
     /*
-    if (loggedIn) {
-        keycloak.init(sessionStorage.getItem("token"));
-    } else {
-        keycloak.init({onLoad: 'login-required'}).success(function (authenticated) {
-            loggedIn = authenticated ? true : false;
-            sessionStorage.setItem("loggedin", loggedIn);
-            if (loggedIn) {
-                sessionStorage.setItem("username", keycloak.tokenParsed.given_name);
-                sessionStorage.setItem("subject", keycloak.tokenParsed.sub);
-                sessionStorage.setItem("token", keycloak.token);
-            }
-        }).error(function () {
-            alert('failed to initialize');
-        });
-    }
-    */
+     if (loggedIn) {
+     keycloak.init(sessionStorage.getItem("token"));
+     } else {
+     keycloak.init({onLoad: 'login-required'}).success(function (authenticated) {
+     loggedIn = authenticated ? true : false;
+     sessionStorage.setItem("loggedin", loggedIn);
+     if (loggedIn) {
+     sessionStorage.setItem("username", keycloak.tokenParsed.given_name);
+     sessionStorage.setItem("subject", keycloak.tokenParsed.sub);
+     sessionStorage.setItem("token", keycloak.token);
+     }
+     }).error(function () {
+     alert('failed to initialize');
+     });
+     }
+     */
 
     $("#nav").load("/VersaStack-web/navbar.html", function () {
         $("#logout-button").click(function (evt) {
@@ -1188,7 +1188,7 @@ function catalogLoad() {
 function wizardLoad() {
     var userId = keycloak.subject;
     var tbody = document.getElementById("wizard-body");
-    tbody.empty();
+    $("#wizard-body").empty();
 
     var apiUrl = baseUrl + '/VersaStack-web/restapi/app/panel/' + userId + '/wizard';
     $.ajax({
@@ -1234,7 +1234,7 @@ function wizardLoad() {
 
                 evt.preventDefault();
             });
-            
+
             $(".button-profile-delete").click(function (evt) {
                 var apiUrl = baseUrl + '/VersaStack-web/restapi/app/profile/' + this.id;
                 $.ajax({

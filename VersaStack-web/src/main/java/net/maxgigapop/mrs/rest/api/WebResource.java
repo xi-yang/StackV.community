@@ -128,18 +128,6 @@ public class WebResource {
             Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                front_connectionProps);
-
-        PreparedStatement prep = front_conn.prepareStatement("SELECT username FROM user_info");
-        ResultSet rs1 = prep.executeQuery();
-        while (rs1.next()) {
-            retList.add(rs1.getString(1));
-        }
-
         System.out.println("Logged-in user id: " + subject);
 
         return retList;
