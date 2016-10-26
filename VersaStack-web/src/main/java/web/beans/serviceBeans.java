@@ -741,7 +741,7 @@ public class serviceBeans {
                                                             + "    spa:type     \"JSON\";\n"
                                                             + "    spa:format    \"\"\"{\n"
                                                             + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "\",\n"
-                                                            + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn" + (String) gwJSON.get("name") + "%\n"
+                                                            + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn" + (String) gwJSON.get("name") + "%,\n"
                                                             + "       \"mac_address\": \"" + mac + "\""
                                                             + (ip == null ? "" : ",\n       \"ip_address\": \"" + ip + "\"")
                                                             + (routeArr.isEmpty() ? "" : ",\n       \"routes\": " + routeArr.toString().replace("\\", ""))
@@ -1228,7 +1228,7 @@ public class serviceBeans {
                                                             + "    spa:type     \"JSON\";\n"
                                                             + "    spa:format    \"\"\"{\n"
                                                             + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "\",\n"
-                                                            + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%\n"
+                                                            + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%,\n"
                                                             + "       \"mac_address\": \"" + mac + "\""
                                                             + (ip == null ? "" : ",\n       \"ip_address\": \"" + ip + "\"");
 
@@ -1361,7 +1361,7 @@ public class serviceBeans {
                                                                     + "    spa:type     \"JSON\";\n"
                                                                     + "    spa:format    \"\"\"{\n"
                                                                     + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "\",\n"
-                                                                    + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn" + (String) gwJSON.get("name") + "%\n"
+                                                                    + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn" + (String) gwJSON.get("name") + "%,\n"
                                                                     + "       \"mac_address\": \"" + mac + "\""
                                                                     + (ip == null ? "" : ",\n       \"ip_address\": \"" + ip + "\"")
                                                                     + ((routeArr == null || routeArr.isEmpty()) ? "" : ",\n       \"routes\": " + routeArr.toString().replace("\\", ""))
