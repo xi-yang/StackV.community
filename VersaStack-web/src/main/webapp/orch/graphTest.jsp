@@ -330,7 +330,8 @@
                         
                         var nodes = model.listNodes();
                         var sameNodes = !(nodePositions.length !== nodes.length || !allNodesMatch(nodePositions, nodes));
-                        
+                        width = width / parseFloat(viz_data.zoom);
+                        height = height / parseFloat(viz_data.zoom);
                         if (sameNodes)  {
                             for (var i = 0; i < nodePositions.length; i++) {
                                var name = nodePositions[i].name;
@@ -338,8 +339,10 @@
                             }
                             layout.doPersistLayout(model, null, width, height);
                             layout.doPersistLayout(model, null, width, height);
-                            outputApi.setZoom(parseFloat(viz_data.zoom));
                             outputApi.setOffsets(parseFloat(viz_data.offsetX), parseFloat(viz_data.offsetY)); 
+                            render.doRender(outputApi, model);
+                            outputApi.setZoom(parseFloat(viz_data.zoom));
+
                         } else {
                             var nodeNames = model.listNodeNames();
                             
@@ -352,9 +355,10 @@
                             }
                             layout.doPersistLayout(model, null, width, height);
                             layout.doPersistLayout(model, null, width, height);
-                            outputApi.setZoom(parseFloat(viz_data.zoom));
                             outputApi.setOffsets(parseFloat(viz_data.offsetX), parseFloat(viz_data.offsetY)); 
-                            
+                            render.doRender(outputApi, model);
+                            outputApi.setZoom(parseFloat(viz_data.zoom));
+      
                             //return false;
                         }
                     } else {
@@ -403,8 +407,8 @@
                 if (!loadPersistedVisualization(outputApi, model, width, height)) {       
                     layout.doLayout(model, null, width, height);
                     layout.doLayout(model, null, width, height);
+                    render.doRender(outputApi, model);
                 }
-                render.doRender(outputApi, model);
                 //  animStart(30);
             }
             
