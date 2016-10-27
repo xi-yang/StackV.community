@@ -61,6 +61,9 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import web.beans.serviceBeans;
 import com.hp.hpl.jena.ontology.OntModel;
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.InputStreamReader;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.MultivaluedMap;
@@ -100,37 +103,55 @@ public class WebResource {
     @POST
     @Path("/token")
     public String getToken(final String inputString) throws MalformedURLException, IOException {
-        String[] parseString = inputString.split("&");
-        String user = (parseString[0].split("="))[1];
-        String pass = (parseString[1].split("="))[1];
+        String body = inputString + "&grant_type=password&client_id=curl&client_secret=07d58fc2-1ab4-46c4-a546-77cc7091867c";
 
         URL url = new URL("http://localhost:8180/auth/realms/VersaStack/protocol/openid-connect/token");
-        HttpURLConnection status = (HttpURLConnection) url.openConnection();
-        String result = servBean.executeHttpMethod(url, status, "POST", inputString + "&grant_type=password&client_id=curl");
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
-        return result;
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Content-type", "application/x-www-form-urlencoded");
+        if (body != null && !body.isEmpty()) {
+            conn.setDoOutput(true);
+            try (DataOutputStream wr = new DataOutputStream(conn.getOutputStream())) {
+                wr.writeBytes(body);
+                wr.flush();
+            }
+        }
+        
+        StringBuilder responseStr;
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+            String inputLine;
+            responseStr = new StringBuilder();
+            while ((inputLine = in.readLine()) != null) {
+                responseStr.append(inputLine);
+            }
+        }
+        JSONObject responseJSON = new JSONObject();
+        try {
+            Object obj = parser.parse(responseStr.toString());
+            responseJSON = (JSONObject) obj;
+
+        } catch (ParseException ex) {
+            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+        }             
+        
+        return "Access Token: " + (String) responseJSON.get("access_token") + "\n";
     }
 
     @GET
-    @Path("/users")
+    @Path("/test")
     @Produces("application/json")
-    public ArrayList<String> getUsers() throws SQLException {
-        KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
-        AccessToken accessToken = securityContext.getToken();
-        String subject = accessToken.getSubject();
-
-        ArrayList<String> retList = new ArrayList<>();
-
-        Connection front_conn;
+    public String testAuth() throws SQLException {
+        String subject = "";
         try {
-            Class.forName("com.mysql.jdbc.Driver").newInstance();
-        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException ex) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
+            AccessToken accessToken = securityContext.getToken();
+            subject = accessToken.getSubject();
+        } catch (Exception ex) {
+            return "Exception: " + ex.getMessage();
         }
 
-        System.out.println("Logged-in user id: " + subject);
-
-        return retList;
+        return "Logged-in user id: " + subject;
     }
 
     @GET
