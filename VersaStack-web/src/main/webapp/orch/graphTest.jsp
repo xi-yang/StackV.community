@@ -178,6 +178,13 @@
                                             model.init(1, drawGraph.bind(undefined, outputApi, model), null);    
                                             
                                             $("#tagDialog").draggable();
+                                            
+                                            window.onbeforeunload = function(){ 
+                                                persistVisualization();
+                                            };
+                                            
+                                            persistant_data = localStorage.getItem("viz-data");
+                          
                                        } else {
                                            displayError("Visualization Unavailable", d3_);
                                        }
@@ -210,17 +217,197 @@
                $('#servicePanel-contents').html("Service instances unavailable.").addClass('service-unready-message');                       
             }
             
+            function allNodesMatch(nodePositions, nodes){
+                // may want to include intersect here 
+                for (var node in nodePositions) {
+                    if (nodePositions[node].name !== nodes[node].getName())
+                        return false;
+                }
+                return true;
+            }
+            // if they dont all match, we want to find the one that doesn't. 
+            
+           function removeOldFromPersist(nodePositions, nodeNames){   
+                var pos = nodePositions;
+                for (var i = 0; i < pos.length; i++) {
+                    if (!nodeNames.includes(pos[i].name)) {
+                        pos.splice(i, 1);
+                        i = 0;
+                    }
+                }
+                return pos;
+            }     
+            
+            function getNewNodes(nodePositions, nodeNames) {
+                var totalNodes = [];
+                var newNodes = [];
+                
+                for (var i = 0; i < nodePositions.length; i++) {
+                    totalNodes.push(nodePositions[i].name);
+                }    
+                
+                for (var i = 0; i < nodeNames.length; i++) {
+                    if (!totalNodes.includes(nodeNames[i])) {
+                        newNodes.push(nodeNames[i]);
+                    }
+                }
+                
+                return newNodes;
+            }
+            
+            function AddNewToPersist(nodePositions, nodeNames, width, height, nodeSize) {
+                var newNodes = getNewNodes(nodePositions, nodeNames);
+                var newTopLevelTopologies = [];
+                
+                for (var i = 0; i < newNodes.length; i++) {
+                    var node = model.nodeMap[newNodes[i]];
+                    if (node.isTopology && node._parent === null) {
+                        newTopLevelTopologies.push(newNodes[i]);
+                        newNodes.splice(i, 1);
+                    }
+                }
+                
+                // position new topologies 
+                var top_offset = 0;
+                for (var i = 0; i< newTopLevelTopologies.length; i++) {
+                    var pos = {};
+                    pos.name = newTopLevelTopologies[i];
+                    var totalTopoSize = 0;
+                    pos.x = width/2 + top_offset;
+                    pos.y = height/2 + top_offset;
+                    pos.dx = 0;
+                    pos.dy = 0;
+                    
+                    var node = model.nodeMap[newTopLevelTopologies[i]];
+                    var children = node.children;
+                    var maxSize = children.length * nodeSize;
+                    for (var j = 0; j < children.length; j++) {
+                        var randX = (Math.random() * (maxSize/2)) + pos.x;
+                        var randY = (Math.random() * (maxSize/2)) + pos.y;   
+                        var childPos = {};
+                        childPos.x = randX;
+                        childPos.y = randY;
+                        childPos.dx = 0;
+                        childPos.dy = 0;
+                        childPos.name = children[j].getName();
+                        var index = newNodes.indexOf(childPos.name);
+                        newNodes.splice(index, 1);
+                        model.nodeMap[childPos.name].setPos(childPos);
+                    }
+                    var plusOrMinus = Math.random() < 0.5 ? -1 : 1;
+                    top_offset = pos.x + (plusOrMinus * (maxSize / 2));
+
+                    pos.size = maxSize / 4;
+                    model.nodeMap[pos.name].setPos(pos);
+                }
+                
+                for (var i = 0; i< newNodes.length; i++) {
+                    var node = model.nodeMap[newNodes[i]];
+                    var maxSize = (node._parent.children.length * nodeSize) /3;
+                    var randX = (Math.random() * maxSize) + node._parent.x;
+                    var randY = (Math.random() * maxSize) + node._parent.y; 
+                    
+                    var pos = {};
+                    pos.x = randX;
+                    pos.y = randY;
+                    pos.dx = 0;
+                    pos.dy = 0;
+                    pos.size = nodeSize;
+                    pos.name = newNodes[i];                           
+                    nodePositions.push(pos);
+                    model.nodeMap[pos.name].setPos(pos);
+                }
+                
+                //return nodePositions;                        
+            }
+            
+            
+            function loadPersistedVisualization(outputApi, model, width, height) {
+                if (persistant_data !== undefined && persistant_data !== "undefined") {
+                    var viz_data = JSON.parse(persistant_data);
+                    if (viz_data !== null) {                    
+                        var nodePositions = JSON.parse(viz_data['nodes']);
+                        
+                        var nodes = model.listNodes();
+                        var sameNodes = !(nodePositions.length !== nodes.length || !allNodesMatch(nodePositions, nodes));
+                        
+                        if (sameNodes)  {
+                            for (var i = 0; i < nodePositions.length; i++) {
+                               var name = nodePositions[i].name;
+                               model.nodeMap[name].setPos(nodePositions[i]);
+                            }
+                            layout.doPersistLayout(model, null, width, height);
+                            layout.doPersistLayout(model, null, width, height);
+                            outputApi.setZoom(parseFloat(viz_data.zoom));
+                            outputApi.setOffsets(parseFloat(viz_data.offsetX), parseFloat(viz_data.offsetY)); 
+                        } else {
+                            var nodeNames = model.listNodeNames();
+                            
+                            nodePositions = removeOldFromPersist(nodePositions, nodeNames);
+                            AddNewToPersist(nodePositions, nodeNames, width, height, 21);
+                            
+                            for (var i = 0; i < nodePositions.length; i++) {
+                               var name = nodePositions[i].name;
+                               model.nodeMap[name].setPos(nodePositions[i]);
+                            }
+                            layout.doPersistLayout(model, null, width, height);
+                            layout.doPersistLayout(model, null, width, height);
+                            outputApi.setZoom(parseFloat(viz_data.zoom));
+                            outputApi.setOffsets(parseFloat(viz_data.offsetX), parseFloat(viz_data.offsetY)); 
+                            
+                            //return false;
+                        }
+                    } else {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
+                return true;
+            }
+            
+            function persistVisualization() {
+                var nodePositions = [];
+                var nodes = model.listNodes();
+                
+                // doing this for security purposes, dont want to persist model 
+                // data on client, just positions 
+                for (var i = 0; i < nodes.length; i++) {
+                    var nodePos = nodes[i].getRenderedObj();
+                    nodePos.name = nodes[i].getName();
+                    nodePositions[i] = nodePos;
+                }
+                var toPersist = JSON.stringify(nodePositions);
+                var offsets = outputApi.getOffset();
+
+                var viz_data = {
+                    "nodes" : toPersist,
+                    "zoom"  : outputApi.getZoom(),
+                    "offsetX" : offsets[0],
+                    "offsetY" : offsets[1]
+                };
+
+                try {
+                    localStorage.setItem("viz-data", JSON.stringify(viz_data));
+                } catch (err) {
+                    console.log(err);
+                }                
+            }
+            
             function drawGraph(outputApi, model) {
                 var width = document.documentElement.clientWidth / settings.INIT_ZOOM;
                 var height = document.documentElement.clientHeight / settings.INIT_ZOOM;
                 //TODO, figure out why we need to call this twice
                 //If we do not, the layout does to converge as nicely, even if we double the number of iterations
-                layout.doLayout(model, null, width, height);
-                layout.doLayout(model, null, width, height);
-                
+                 
+                if (!loadPersistedVisualization(outputApi, model, width, height)) {       
+                    layout.doLayout(model, null, width, height);
+                    layout.doLayout(model, null, width, height);
+                }
                 render.doRender(outputApi, model);
-//                animStart(30);
+                //  animStart(30);
             }
+            
             function reload() {
                 $("#loadingPanel").removeClass("hide");
                 $("#hoverdiv").addClass("hide");
@@ -266,7 +453,7 @@
                             
                     outputApi.resetZoom();
                     render.doRender(outputApi, model);
-
+                    
                     evt.preventDefault();
                 });               
 
@@ -295,7 +482,13 @@
                     // focus by using the blur method. 
                     $('.ui-dialog :button').blur();
                 });
-
+                $("#resetButton").click(function(evt) {
+                    localStorage.setItem("viz-data", null);
+                    persistant_data = "undefined";
+                    outputApi.resetZoom();
+                    drawGraph(outputApi, model);
+                });
+                
                 $("#displayPanel-tab").click(function (evt) {
                     $("#displayPanel").toggleClass("closed");
 
@@ -380,6 +573,14 @@
 
                 var zoomFactor = settings.INIT_ZOOM;
                 var offsetX = 0, offsetY = 0;
+                this.getOffset = function(){
+                    return [offsetX, offsetY];
+                };
+                this.setOffsets = function(x, y){
+                    offsetX = x;
+                    offsetY = y;
+                    this._updateTransform();
+                };
                 this.zoom = function (amount, mouseX, mouseY) {
                     /*
                      * There seems to be some error (rounding?) when we zoom far out
@@ -663,6 +864,7 @@
                 <button id="modelButton">Display Model</button>
                 <button id="fullDiaplayButton">Toggle Full Model</button>
                 <button id="recenterButton">Recenter</button> <!-- @ -->
+                <button id="resetButton"> Reset Visualization </button>
                 <div id="displayName"></div>
                 <div id="treeMenu"></div>                
             </div>

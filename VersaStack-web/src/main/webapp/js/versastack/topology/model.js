@@ -154,7 +154,6 @@ define([
                                     toAdd = oldModel.elementMap[key];
                                     toAdd.reload(val, map);
                                 } else {
-                                    console.log("i was used");
                                     toAdd = new Element(val, map, that.elementMap);
                                     toAdd.topLevel = true;
                                 }
@@ -1764,6 +1763,14 @@ define([
 
                 ans = ans.concat(node._getNodes());
             });
+            return ans;
+        };
+        this.listNodeNames = function () {
+            var ans = [];
+            var nodes = that.listNodes();
+            for (var node in nodes) {
+                ans.push(nodes[node].getName());
+            }
             return ans;
         };
         this.listEdges = function () {

@@ -219,117 +219,81 @@ public class ServiceResource {
     }
 
     //PUT to push and sync deltas
-    // For propagate_through: useUpdatedRefModel = false means the delta is pushed without  
-    // being checked with updating version_group from persistence.
-    // @TODO: Add proptagate_forward to refresh VG and then forced retry.
+    //Propagate:
+    // propagate_through (default): use cached VG + no refresh
+    // propagate_forward: use persisted/updated VG + no refresh
+    // propagate_forced: refresh VG and apply delta to refreshed only
+    //      forced only work after FAILED status
+    //Commit:
+    // Async - status update later
+    //      forced: only work after FAILED status
+    //Revert: 
+    // revert forced: after FAILED status
+    //Refresh: refresh VG to latest from drivers
     @PUT
     @Path("/{siUUID}/{action}")
     public String push(@PathParam("siUUID") String svcInstanceUUID, @PathParam("action") String action) {
-        long retryDelay = 1000L; // 1 sec
-        long delayMax = 16000L; // 16 secs 
-        //@Note: The catch db transaction exception and retry feature is obsolete since we changed
-        //     delta/model prim key from auto-integer into UUID and avoided concurrency contention.
-        //     We wlll keep the logic here as it does not hurt and may (?) help in rare cases. 
-        if (action.equalsIgnoreCase("propagate")) {
-            while (true) {
-                retryDelay *= 2; // retry up to 4 times at 2, 4, 8, 16 secs
-                try {
-                    if (retryDelay == 2000L) {
-                        return serviceCallHandler.propagateDeltas(svcInstanceUUID, true);
-                    } else {
-                        return serviceCallHandler.propagateRetry(svcInstanceUUID, true);
-                    }   
-                } catch (EJBException ejbEx) {
-                    String errMsg = ejbEx.getMessage();
-                    log.warning("Caught+Retry: " + errMsg);
-                    if (errMsg.contains("could not execute statement") && retryDelay <= delayMax) {
-                        try {
-                            sleep(retryDelay);
-                        } catch (InterruptedException ex) {
-                            ;
-                        }
-                    } else {
-                        serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
-                        throw ejbEx;
-                    }
-                }
+        if (action.equalsIgnoreCase("propagate")
+                || action.equalsIgnoreCase("propagate_through")) {
+            try {
+                return serviceCallHandler.propagateDeltas(svcInstanceUUID, true, false);
+            } catch (EJBException ejbEx) {
+                serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
+                throw ejbEx;
             }
-        } else if (action.equalsIgnoreCase("propagate_through")) {
-            while (true) {
-                retryDelay *= 2; // retry up to 4 times at 2, 4, 8, 16 secs
-                try {
-                    if (retryDelay == 2000L) {
-                        return serviceCallHandler.propagateDeltas(svcInstanceUUID, false);
-                    } else {
-                        return serviceCallHandler.propagateRetry(svcInstanceUUID, true);
-                    }   
-                } catch (EJBException ejbEx) {
-                    String errMsg = ejbEx.getMessage();
-                    log.warning("Caught+Retry: " + errMsg);
-                    if (errMsg.contains("could not execute statement") && retryDelay <= delayMax) {
-                        try {
-                            sleep(retryDelay);
-                        } catch (InterruptedException ex) {
-                            ;
-                        }
-                    } else {
-                        serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
-                        throw ejbEx;
-                    }
-                }
+        } else if (action.equalsIgnoreCase("propagate_forward")) {
+            try {
+                return serviceCallHandler.propagateDeltas(svcInstanceUUID, false, false);
+            } catch (EJBException ejbEx) {
+                serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
+                throw ejbEx;
+            }
+        } else if (action.equalsIgnoreCase("propagate_forced")) {
+            try {
+                return serviceCallHandler.propagateDeltas(svcInstanceUUID, false, true);
+            } catch (EJBException ejbEx) {
+                serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
+                throw ejbEx;
             }
         } else if (action.equalsIgnoreCase("propagate_retry")) {
-            while (true) {
-                retryDelay *= 2; // retry up to 4 times at 2, 4, 8, 16 secs
-                try {
-                    if (retryDelay == 2000L) {
-                        return serviceCallHandler.propagateRetry(svcInstanceUUID, false);
-                    } else {
-                        return serviceCallHandler.propagateRetry(svcInstanceUUID, true);
-                    }   
-                } catch (EJBException ejbEx) {
-                    String errMsg = ejbEx.getMessage();
-                    log.warning("Caught+Retry: " + errMsg);
-                    if (errMsg.contains("could not execute statement") && retryDelay <= delayMax) {
-                        try {
-                            sleep(retryDelay);
-                        } catch (InterruptedException ex) {
-                            ;
-                        }
-                    } else {
-                        serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
-                        throw ejbEx;
-                    }
-                }
+            try {
+                return serviceCallHandler.propagateRetry(svcInstanceUUID, true, false);
+            } catch (EJBException ejbEx) {
+                serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
+                throw ejbEx;
+            }
+        } else if (action.equalsIgnoreCase("propagate_forwardretry")) {
+            try {
+                return serviceCallHandler.propagateRetry(svcInstanceUUID, false, false);
+            } catch (EJBException ejbEx) {
+                serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
+                throw ejbEx;
             }
         } else if (action.equalsIgnoreCase("propagate_forcedretry")) {
-            while (true) {
-                retryDelay *= 2; // retry up to 4 times at 2, 4, 8, 16 secs
-                try {
-                    return serviceCallHandler.propagateRetry(svcInstanceUUID, true);
-                } catch (EJBException ejbEx) {
-                    String errMsg = ejbEx.getMessage();
-                    log.warning("Caught+Retry: " + errMsg);
-                    if (errMsg.contains("could not execute statement") && retryDelay <= delayMax) {
-                        try {
-                            sleep(retryDelay);
-                        } catch (InterruptedException ex) {
-                            ;
-                        }
-                    } else {
-                        serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
-                        throw ejbEx;
-                    }
-                }
+            try {
+                return serviceCallHandler.propagateRetry(svcInstanceUUID, false, true);
+            } catch (EJBException ejbEx) {
+                serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
+                throw ejbEx;
             }
         } else if (action.equalsIgnoreCase("commit")) {
             return serviceCallHandler.commitDeltas(svcInstanceUUID, false);
         } else if (action.equalsIgnoreCase("commit_forced")) {
             return serviceCallHandler.commitDeltas(svcInstanceUUID, true);
         } else if (action.equalsIgnoreCase("revert")) {
-            return serviceCallHandler.revertDeltas(svcInstanceUUID, false);
+            try {
+                return serviceCallHandler.revertDeltas(svcInstanceUUID, false);
+            } catch (EJBException ejbEx) {
+                serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
+                throw ejbEx;
+            }
         } else if (action.equalsIgnoreCase("revert_forced")) {
-            return serviceCallHandler.revertDeltas(svcInstanceUUID, true);
+            try {
+                return serviceCallHandler.revertDeltas(svcInstanceUUID, true);
+            } catch (EJBException ejbEx) {
+                serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
+                throw ejbEx;
+            }
         } else if (action.equalsIgnoreCase("refresh")) {
             serviceCallHandler.refreshVersionGroup(svcInstanceUUID);
             return "REFRESHED";
