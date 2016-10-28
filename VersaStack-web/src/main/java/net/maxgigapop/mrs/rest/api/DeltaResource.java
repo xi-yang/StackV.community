@@ -119,7 +119,7 @@ public class DeltaResource {
     @Consumes({"application/xml","application/json"})
     @Path("/{refUUID}/{action}")
     public String push(@PathParam("refUUID")String SysInstanceRefUUID, ApiDeltaBase deltabase, @PathParam("action") String action) throws Exception{
-        if (!action.toLowerCase().equals("propagate")) {
+        if (!action.toLowerCase().startsWith("propagate")) {
             throw new BadRequestException("Invalid action: "+action);
         }
         
@@ -143,9 +143,15 @@ public class DeltaResource {
         systemDelta.setModelAddition(dmAddition);
         systemDelta.setModelReduction(dmReduction);
         
-        try{
-            systemCallHandler.propagateDelta(SysInstanceRefUUID, systemDelta, true);
-        }catch(Exception e){
+        try {
+            if (action.toLowerCase().equals("propagate")) {
+                systemCallHandler.propagateDelta(SysInstanceRefUUID, systemDelta, true, false);
+            } else if (action.toLowerCase().equals("propagate_forward")) {
+                systemCallHandler.propagateDelta(SysInstanceRefUUID, systemDelta, false, false);
+            } else if (action.toLowerCase().equals("propagate_forced")) {
+                systemCallHandler.propagateDelta(SysInstanceRefUUID, systemDelta, false, true);
+            }
+        } catch (Exception e) {
             return e.getMessage();
         }
         return "propagate successfully";

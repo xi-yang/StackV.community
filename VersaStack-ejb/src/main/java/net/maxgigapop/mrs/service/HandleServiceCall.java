@@ -222,7 +222,7 @@ public class HandleServiceCall {
 
     // handling multiple deltas:  propagate + commit + query = transactional propagate + parallel commits
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
-    public String propagateDeltas(String serviceInstanceUuid, boolean useUpdatedRefModel) {
+    public String propagateDeltas(String serviceInstanceUuid, boolean useCachedVG, boolean refreshForced) {
         ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
         if (serviceInstance == null) {
             throw new EJBException(HandleServiceCall.class.getName() + ".propogateDeltas cannot find serviceInstance with uuid=" + serviceInstanceUuid);
@@ -248,7 +248,7 @@ public class HandleServiceCall {
             } else if (serviceDelta.getStatus().equals("INIT")) {
                 SystemInstance systemInstance = systemCallHandler.createInstance();
                 try {
-                    systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta(), useUpdatedRefModel);
+                    systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta(), useCachedVG, refreshForced);
                 } catch (EJBException ejbEx) {
                     //serviceInstance.setStatus("FAILED");
                     //ServiceInstancePersistenceManager.merge(serviceInstance);
@@ -613,15 +613,18 @@ public class HandleServiceCall {
         ServiceInstancePersistenceManager.merge(serviceInstance);
     }
     
-    public String propagateRetry(String serviceInstanceUuid, boolean forced) {
+    // retry always companies FAILED status | forced => VG refresh requested
+    public String propagateRetry(String serviceInstanceUuid, boolean useCachedVG, boolean refreshForced) {
         ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
         if (serviceInstance == null) {
             throw new EJBException(HandleServiceCall.class.getName() + ".propagateRetry cannot find serviceInstance with uuid=" + serviceInstanceUuid);
         }
-        if (!forced && !serviceInstance.getStatus().equals("FAILED")) {
-            throw new EJBException(HandleServiceCall.class.getName() + ".propagateRetry (forced==false) cannot requires FAILED status for serviceInstance with uuid=" + serviceInstanceUuid
-            +" instead of the acutal status: " + serviceInstance.getStatus());
+        /* We allow 'retry' on any status ? For example, Create/READY with verification failure should be still good case for retry.
+        if (!serviceInstance.getStatus().equals("FAILED")) {
+            throw new EJBException(HandleServiceCall.class.getName() + ".propagateRetry requires FAILED status for serviceInstance with uuid=" + serviceInstanceUuid
+            +" -- the acutal status: " + serviceInstance.getStatus());
         } 
+        */
         Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
         if (!itSD.hasNext()) {
             throw new EJBException(HandleServiceCall.class.getName() + ".propagateRetry (by " + serviceInstance + ",  in status=" + serviceInstance.getStatus() + ") has none delta to retry.");
@@ -663,7 +666,7 @@ public class HandleServiceCall {
                     DeltaPersistenceManager.save(systemInstance.getSystemDelta());
                 }
                 try {
-                    systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta(), true);
+                    systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta(), useCachedVG, refreshForced);
                 } catch (EJBException ejbEx) {
                     //serviceInstance.setStatus("FAILED");
                     //ServiceInstancePersistenceManager.merge(serviceInstance);
