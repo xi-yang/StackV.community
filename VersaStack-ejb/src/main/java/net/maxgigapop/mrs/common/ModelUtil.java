@@ -182,10 +182,9 @@ public class ModelUtil {
                 + "@prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>.\n"
                 + "@prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>.\n"
                 + "<%s#ontology> a owl:Ontology;\n"
-                + "    rdfs:label \"An MRS topology description.\n"
+                + "    rdfs:label \"An MRS topology description.\".\n"
                 + "<%s>\n"
-                + "    a   nml:Topology,\n"
-                + "        owl:NamedIndividual.\n", topoUri);
+                + "    a   nml:Topology.\n", topoUri, topoUri);
         //$$ TODO: add ontology schema and namespace handling code
         model.read(new ByteArrayInputStream(ttl.getBytes()), null, "TURTLE");
         return model;
