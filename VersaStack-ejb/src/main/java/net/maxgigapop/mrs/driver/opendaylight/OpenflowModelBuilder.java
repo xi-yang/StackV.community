@@ -25,11 +25,7 @@ package net.maxgigapop.mrs.driver.opendaylight;
 
 import net.maxgigapop.mrs.driver.onosystem.*;
 import com.hp.hpl.jena.ontology.OntModel;
-import com.hp.hpl.jena.ontology.OntModelSpec;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
-import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
-import java.io.IOException;
 import net.maxgigapop.mrs.common.*;
 
 import java.util.logging.Level;
@@ -37,7 +33,6 @@ import java.util.logging.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONArray;
 import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.JsonPathException;
 import javax.ejb.EJBException;
 
 //TODO Escape \:
@@ -62,22 +57,41 @@ public class OpenflowModelBuilder {
                     if(!j1.containsKey("node-id")) {
                         continue;
                     }
-                    String nodeId = (String)j1.get("node-id");
+                    String nodeId = DriverUtil.addressUriEscape((String)j1.get("node-id"));
                     Resource resNode = RdfOwl.createResource(model, topologyURI + ":node+" + nodeId, Nml.Node);
                     model.add(model.createStatement(resTopo, Nml.hasNode, resNode));
                     Resource resOpenFlow = RdfOwl.createResource(model, resNode.getURI() + ":openflow-service" , Mrs.OpenflowService);
                     model.add(model.createStatement(resNode, Nml.hasService, resOpenFlow));
-                    if (!j1.containsKey("termination-point")) {
-                        continue;
-                    }
-                    for (Object o2: (JSONArray)j1.get("termination-point")) {
-                        JSONObject j2 = (JSONObject)o2;
-                        if(!j2.containsKey("tp-id")) {
-                            continue;
+                    if (j1.containsKey("termination-point")) {
+                        for (Object o2 : (JSONArray) j1.get("termination-point")) {
+                            JSONObject j2 = (JSONObject) o2;
+                            if (!j2.containsKey("tp-id")) {
+                                continue;
+                            }
+                            String portId = DriverUtil.addressUriEscape((String) j2.get("tp-id"));
+                            Resource resPort = RdfOwl.createResource(model, resNode.getURI() + ":port+" + portId, Nml.BidirectionalPort);
+                            model.add(model.createStatement(resNode, Nml.hasBidirectionalPort, resPort));
+                            model.add(model.createStatement(resOpenFlow, Nml.hasBidirectionalPort, resPort));
                         }
-                        Resource resPort = RdfOwl.createResource(model, resNode.getURI() + ":port+" + j2.get("tp-id"), Nml.BidirectionalPort);
-                        model.add(model.createStatement(resNode, Nml.hasBidirectionalPort, resPort));
-                        model.add(model.createStatement(resOpenFlow, Nml.hasBidirectionalPort, resPort));
+                    }
+                    if (j1.containsKey("host-tracker-service:addresses")) {
+                        JSONObject jAddrs = (JSONObject) ((JSONArray) j1.get("host-tracker-service:addresses")).get(0);
+                        if (jAddrs.containsKey("mac")) {
+                            String macAddr = (String)jAddrs.get("mac");
+                            String macAddrEsc = DriverUtil.addressUriEscape(macAddr);
+                            Resource resNodeMac = RdfOwl.createResource(model, resNode.getURI()+":mac+"+macAddrEsc, Mrs.NetworkAddress);
+                            model.add(model.createStatement(resNode, Mrs.hasNetworkAddress, resNodeMac));
+                            model.add(model.createStatement(resNodeMac, Mrs.type, "mac-address"));
+                            model.add(model.createStatement(resNodeMac, Mrs.value, macAddr));
+                        }
+                        if (jAddrs.containsKey("ip")) {
+                            String ipAddr = (String)jAddrs.get("ip");
+                            String ipAddrEsc = DriverUtil.addressUriEscape(ipAddr);
+                            Resource resNodeIp = RdfOwl.createResource(model, resNode.getURI()+":ip+"+ipAddrEsc, Mrs.NetworkAddress);
+                            model.add(model.createStatement(resNode, Mrs.hasNetworkAddress, resNodeIp));
+                            model.add(model.createStatement(resNodeIp, Mrs.type, "ip-address"));
+                            model.add(model.createStatement(resNodeIp, Mrs.value, ipAddr));
+                        }
                     }
                 }
             } else {
@@ -95,11 +109,11 @@ public class OpenflowModelBuilder {
                     if(!j1.containsKey("source") || !j1.containsKey("destination")) {
                         continue;
                     }
-                    String srcNode = (String)((JSONObject)j1.get("source")).get("source-node");
-                    String srcPort = (String)((JSONObject)j1.get("source")).get("source-tp");
+                    String srcNode = DriverUtil.addressUriEscape((String)((JSONObject)j1.get("source")).get("source-node"));
+                    String srcPort = DriverUtil.addressUriEscape((String)((JSONObject)j1.get("source")).get("source-tp"));
                     Resource resSrc = model.getResource(topologyURI + ":node+" + srcNode+":port+"+srcPort);
-                    String dstNode = (String)((JSONObject)j1.get("destination")).get("dest-node");
-                    String dstPort = (String)((JSONObject)j1.get("destination")).get("dest-tp");
+                    String dstNode = DriverUtil.addressUriEscape((String)((JSONObject)j1.get("destination")).get("dest-node"));
+                    String dstPort = DriverUtil.addressUriEscape((String)((JSONObject)j1.get("destination")).get("dest-tp"));
                     Resource resDst = model.getResource(topologyURI + ":node+" + dstNode+":port+"+dstPort);
                     model.add(model.createStatement(resSrc, Nml.isAlias, resDst));
                 }
