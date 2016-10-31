@@ -40,7 +40,39 @@ import javax.ejb.EJBException;
 
 public class OpenflowModelBuilder {
     private static final Logger logger = Logger.getLogger(OnosRESTDriver.class.getName());
+    
+    public static String URI_node(String prefix, String id) {
+        return prefix+":node+"+id;
+    }
+    
+    public static String URI_port(String prefix, String id) {
+        return prefix+":port+"+id;
+    }
 
+    public static String URI_port(String prefix, String node, String id) {
+        return prefix+":node+"+node+":port+"+id;
+    }
+
+    public static String URI_flow(String prefix, String id) {
+        return prefix+":flow+"+id;
+    }
+
+    public static String URI_match(String prefix, String id) {
+        return prefix+":match+"+id;
+    }
+
+    public static String URI_match(String prefix, String flow, String id) {
+        return prefix+":flow+"+flow+":match+"+id;
+    }
+    
+    public static String URI_action(String prefix, String id) {
+        return prefix+":action+"+id;
+    }
+
+    public static String URI_action(String prefix, String flow, String id) {
+        return prefix+":flow+"+flow+":match+"+id;
+    }
+    
     public static OntModel createOntology(String topologyURI, String subsystemBaseUrl, String username, String password) {
         //create model object
         OntModel model = ModelUtil.newMrsOntModel(topologyURI);
@@ -125,195 +157,185 @@ public class OpenflowModelBuilder {
         }
 
         JSONObject jsonFlows = restconf.getConfigFlows(subsystemBaseUrl, username, password);
-        /*
-         for (int i = 0; i < qtyDevices; i++) {
-            //add device to model
-            Resource resNode = RdfOwl.createResource(model, topologyURI + ":" + device[i][0], node);
-            model.add(model.createStatement(onosTopology, hasNode, resNode));
-            
-            Resource resOpenFlow = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":openflow-service", openflowService);
-            model.add(model.createStatement(resNode, hasService, resOpenFlow));
-
-            //get all devicePorts and add to model
-            if (device[i][1].equals("SWITCH") && device[i][2].equals("true")) {
-                String devicePorts[][] = onos.getOnosDevicePorts(subsystemBaseUrl, device[i][0], access_key_id, secret_access_key);
-                int qtyPorts = devicePorts.length;
-
-                for (int j = 0; j < qtyPorts; j++) {
-                    if (devicePorts[j][1].equals("true")) {
-
-                        Resource resPort = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":port-" + devicePorts[j][4], biPort);
-                        model.add(model.createStatement(resNode, hasBidirectionalPort, resPort));
-                        
-                        model.add(model.createStatement(resOpenFlow, hasBidirectionalPort, resPort));
-
-                        //write src_portName and dst_portName into links[][6] and links[][7]
-                        for (int k = 0; k < qtyLinks; k++) {
-                            if (device[i][0].equals(links[k][0]) && devicePorts[j][0].equals(links[k][1])) {
-                                links[k][6] = devicePorts[j][4];
-                            }
-                            if (device[i][0].equals(links[k][2]) && devicePorts[j][0].equals(links[k][3])) {
-                                links[k][7] = devicePorts[j][4];
-                            }
+        try {
+            Object r = JsonPath.parse(jsonFlows).read("$.nodes.node");
+            for (Object o1: (JSONArray)r) {
+                JSONObject j1 = (JSONObject)o1;
+                String nodeId = (String)j1.get("id");
+                // Through ODL, we assume all ops on table '0' for now. But this could be easily changed when multiple tables are required.
+                net.minidev.json.JSONArray jTable0 = (net.minidev.json.JSONArray)JsonPath.parse(j1).read("$.flow-node-inventory:table[?(@.id=='0')]");
+                if (jTable0.isEmpty()) {
+                    continue;
+                }
+                Resource resOpenflow = model.getResource(URI_node(topologyURI, nodeId)+":openflow");
+                Resource resFlowTable = RdfOwl.createResource(model, resOpenflow.getURI()+":table+0", Mrs.FlowTable);
+                model.add(model.createStatement(resOpenflow, Mrs.providesFlowTable, resFlowTable));
+                JSONArray jFlows = (JSONArray)((JSONObject)jTable0.get(0)).get("flow");
+                for (Object o2: jFlows) {
+                    JSONObject jFlow = (JSONObject)o2;
+                    String flowId = (String)jFlow.get("id");
+                    Resource resFlow = RdfOwl.createResource(model, URI_flow(resFlowTable.getURI(), flowId), Mrs.Flow);
+                    model.add(model.createStatement(resFlowTable, Mrs.hasFlow, resFlow));
+                    model.add(model.createStatement(resOpenflow, Mrs.providesFlow, resFlow));
+                    if (jFlow.containsKey("flow-name")) {
+                        String flowName = (String)jFlow.get("flow-name");
+                        model.add(model.createStatement(resFlow, Nml.name, flowName));
+                    }
+                    if (!jFlow.containsKey("match")) {
+                        continue;
+                    }
+                    JSONObject jFlowMatch = (JSONObject)jFlow.get("match");
+                    if (jFlowMatch.isEmpty()) {
+                        continue;
+                    }
+                    // flow match rules -> in_port, dl_type, dl_src, dl_dst, dl_vlan, nw_prot, nw_src, nw_dst, tcp_src, tcp dst
+                    // restconf mapping: in-port, ethernet-match/ethernet-type/type, ethernet-match/ethernet-destination/address, 
+                    // vlan-match/vlan-id/{vlan-id|vlan-id-present}, ip-match/ip-protocol, ipv4-destination, tcp-destination-port , udp-
+                    // http://www.brocade.com/content/html/en/user-guide/Flow-Manager-2.0.0-User-Guide/GUID-7B6AF236-A11B-4A6A-B5D4-FAD5BDA2FED6.html
+                    if (jFlowMatch.containsKey("in-port")) {
+                        String inPort = jFlowMatch.get("in-port").toString();
+                        Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+in_port", Mrs.FlowRule);
+                        model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
+                        model.add(model.createStatement(resMatchRule, Mrs.type, "in_port"));
+                        model.add(model.createStatement(resMatchRule, Mrs.value, inPort));
+                    }
+                    if (jFlowMatch.containsKey("ethernet-match")) {
+                        JSONObject jEtherMatch = (JSONObject) jFlowMatch.get("ethernet-match");
+                        if (jEtherMatch.containsKey("ethernet-type")) {
+                            String dlType = ((JSONObject) jEtherMatch.get("ethernet-type")).get("type").toString();
+                            Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+dl_type", Mrs.FlowRule);
+                            model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
+                            model.add(model.createStatement(resMatchRule, Mrs.type, "dl_type"));
+                            model.add(model.createStatement(resMatchRule, Mrs.value, dlType));
+                        } 
+                        if (jEtherMatch.containsKey("ethernet-destination")) {
+                            String dlDst = ((JSONObject) jEtherMatch.get("ethernet-destination")).get("address").toString();
+                            Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+dl_dst", Mrs.FlowRule);
+                            model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
+                            model.add(model.createStatement(resMatchRule, Mrs.type, "dl_dst"));
+                            model.add(model.createStatement(resMatchRule, Mrs.value, dlDst));                            
+                        }
+                        if (jEtherMatch.containsKey("ethernet-source")) {
+                            String dlSrc = ((JSONObject) jEtherMatch.get("ethernet-source")).get("address").toString();
+                            Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+dl_src", Mrs.FlowRule);
+                            model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
+                            model.add(model.createStatement(resMatchRule, Mrs.type, "dl_src"));
+                            model.add(model.createStatement(resMatchRule, Mrs.value, dlSrc));                            
                         }
                     }
-                }
-
-                //add flow per device into model
-                String deviceFlows[][] = onos.getOnosDeviceFlows(topologyURI, subsystemBaseUrl, device[i][0], mappingIdMatrix, mappingIdSize, access_key_id, secret_access_key);
-                int qtyFlows = deviceFlows.length;
-                
-                //??
-                Resource resOpenFlow = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":openflow-service", openflowService);
-                if (qtyFlows > 0) {
-                    model.add(model.createStatement(resNode, hasService, resOpenFlow));
-                }
-                
-                for (int j = 0; j < qtyFlows; j++) {
-
-                    //add a flow table for each groupId
-                    Resource resFlowTable = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":openflow-service:flow-table-" + deviceFlows[j][1], flowTable);
-                    model.add(model.createStatement(resOpenFlow, providesFlowTable, resFlowTable));
-
-                    //add each flows in each flowTable
-                    Resource resFlow = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":openflow-service:flow-table-" + deviceFlows[j][1] + ":flow-" + deviceFlows[j][0], flow);
-                    model.add(model.createStatement(resFlowTable, providesFlow, resFlow));
-
-                    Resource resFlowRule0 = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":openflow-service:flow-table-" + deviceFlows[j][1] + ":flow-" + deviceFlows[j][0] + ":rule-match-0", flowRule);
-                    Resource resFlowRule1 = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":openflow-service:flow-table-" + deviceFlows[j][1] + ":flow-" + deviceFlows[j][0] + ":rule-match-1", flowRule);
-                    Resource resFlowRule2 = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":openflow-service:flow-table-" + deviceFlows[j][1] + ":flow-" + deviceFlows[j][0] + ":rule-match-2", flowRule);
-                    Resource resFlowRule3 = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":openflow-service:flow-table-" + deviceFlows[j][1] + ":flow-" + deviceFlows[j][0] + ":rule-match-3", flowRule);
-                    Resource resFlowRule4 = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":openflow-service:flow-table-" + deviceFlows[j][1] + ":flow-" + deviceFlows[j][0] + ":rule-match-4", flowRule);
-                    Resource resFlowAction = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":openflow-service:flow-table-" + deviceFlows[j][1] + ":flow-" + deviceFlows[j][0] + ":rule-action-0", flowRule);
-
-                    //flowRule0: in_port
-                    model.add(model.createStatement(resFlow, flowMatch, resFlowRule0));
-                    model.add(model.createStatement(resFlowRule0, type, "IN_PORT"));
-                    model.add(model.createStatement(resFlowRule0, value, deviceFlows[j][4]));
-
-                    //flowRule1: ETH_SRC_MAC
-                    model.add(model.createStatement(resFlow, flowMatch, resFlowRule1));
-                    model.add(model.createStatement(resFlowRule1, type, "ETH_SRC_MAC"));
-                    model.add(model.createStatement(resFlowRule1, value, deviceFlows[j][6]));
-
-                    //flowRule2: ETH_DST_MAC
-                    model.add(model.createStatement(resFlow, flowMatch, resFlowRule2));
-                    model.add(model.createStatement(resFlowRule2, type, "ETH_DST_MAC"));
-                    model.add(model.createStatement(resFlowRule2, value, deviceFlows[j][5]));
-
-                    //flowRule3: ETH_SRC_VLAN
-                    model.add(model.createStatement(resFlow, flowMatch, resFlowRule3));
-                    model.add(model.createStatement(resFlowRule3, type, "ETH_SRC_VLAN"));
-                    model.add(model.createStatement(resFlowRule3, value, deviceFlows[j][7]));
-
-                    //flowRule4: ETH_DST_VLAN
-                    model.add(model.createStatement(resFlow, flowMatch, resFlowRule4));
-                    model.add(model.createStatement(resFlowRule4, type, "ETH_DST_VLAN"));
-                    model.add(model.createStatement(resFlowRule4, value, deviceFlows[j][8]));
-
-                    //flowAction: OUT_PORT
-                    model.add(model.createStatement(resFlow, flowAction, resFlowAction));
-                    model.add(model.createStatement(resFlowAction, type, "OUT_PORT"));
-                    model.add(model.createStatement(resFlowAction, value, deviceFlows[j][3]));
-
-                }
-
-            }
-        }
-        
-        for (int i = 0; i < qtyHosts; i++) {
-            //add hosts mac to model
-            Resource resNode = RdfOwl.createResource(model, topologyURI + ":" + hosts[i][0], node);
-            model.add(model.createStatement(onosTopology, hasNode, resNode));
-
-            Resource resMac = RdfOwl.createResource(model, topologyURI + ":" + hosts[i][0] + ":macAddress", networkAddress);
-            Resource resIP = RdfOwl.createResource(model, topologyURI + ":" + hosts[i][0] + ":ipAddress", networkAddress);
-         //Resource resLocation = RdfOwl.createResource(model, topologyURI + ":" + hosts[i][0] + ":location", location);
-
-            model.add(model.createStatement(resNode, hasNetworkAddress, resMac));
-            model.add(model.createStatement(resNode, hasNetworkAddress, resIP));
-         //model.add(model.createStatement(resNode, locatedAt, resLocation));
-
-            model.add(model.createStatement(resMac, type, "macAddresses"));
-            model.add(model.createStatement(resMac, value, hosts[i][1]));
-            model.add(model.createStatement(resIP, type, "ipAddresses"));
-            model.add(model.createStatement(resIP, value, hosts[i][3]));
-
-            for (int j = 0; j < qtyDevices; j++) {
-                if (device[j][0].equals(hosts[i][4]) && device[j][2].equals("true")) {
-                    String checkPort[][] = onos.getOnosDevicePorts(subsystemBaseUrl, device[j][0], access_key_id, secret_access_key);
-                    int portNum = checkPort.length;
-                    for (int k = 0; k < portNum; k++) {
-                        if (checkPort[k][0].equals(hosts[i][5]) && checkPort[k][1].equals("true")) {
-                            Resource resPort = RdfOwl.createResource(model, topologyURI + ":" + device[j][0] + ":port-" + checkPort[k][4], biPort);
-                        //model.add(model.createStatement(resLocation, type, "port"));
-                            //model.add(model.createStatement(resLocation, value, resPort));
-                            model.add(model.createStatement(resNode, locatedAt, resPort));
+                    if (jFlowMatch.containsKey("vlan-match")) {
+                        JSONObject jVlanMatch = (JSONObject) jFlowMatch.get("vlan-match");
+                        if (jVlanMatch.containsKey("vlan-id")) {
+                            JSONObject jVlanId = (JSONObject) jVlanMatch.get("vlan-id");
+                            String dlVlan = "any";
+                            if (jVlanId.containsKey("vlan-id")) {
+                                dlVlan = jVlanId.get("vlan-id").toString();
+                            }
+                            Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+dl_vlan", Mrs.FlowRule);
+                            model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
+                            model.add(model.createStatement(resMatchRule, Mrs.type, "dl_vlan"));
+                            model.add(model.createStatement(resMatchRule, Mrs.value, dlVlan));
+                        } 
+                    }
+                    if (jFlowMatch.containsKey("ip-match")) {
+                        JSONObject jIpMatch = (JSONObject) jFlowMatch.get("ip-match");
+                        if (jIpMatch.containsKey("ip-protocol")) {
+                            String ipProt = jIpMatch.get("ip-protocol").toString();
+                            Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+nw_prot", Mrs.FlowRule);
+                            model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
+                            model.add(model.createStatement(resMatchRule, Mrs.type, "nw_prot"));
+                            model.add(model.createStatement(resMatchRule, Mrs.value, ipProt));
                         }
+                    }
+                    if (jFlowMatch.containsKey("ipv4-source")) {
+                        String ipv4 = jFlowMatch.get("ipv4-source").toString();
+                        Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+nw_src", Mrs.FlowRule);
+                        model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
+                        model.add(model.createStatement(resMatchRule, Mrs.type, "nw_src"));
+                        model.add(model.createStatement(resMatchRule, Mrs.value, ipv4));
+                    }
+                    if (jFlowMatch.containsKey("ipv4-destination")) {
+                        String ipv4 = jFlowMatch.get("ipv4-destination").toString();
+                        Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+nw_dst", Mrs.FlowRule);
+                        model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
+                        model.add(model.createStatement(resMatchRule, Mrs.type, "nw_dst"));
+                        model.add(model.createStatement(resMatchRule, Mrs.value, ipv4));
+                    }
+                    if (jFlowMatch.containsKey("ipv6-source")) {
+                        String ipv6 = jFlowMatch.get("ipv6-source").toString();
+                        Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+nw_src", Mrs.FlowRule);
+                        model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
+                        model.add(model.createStatement(resMatchRule, Mrs.type, "nw_src"));
+                        model.add(model.createStatement(resMatchRule, Mrs.value, ipv6));
+                    }
+                    if (jFlowMatch.containsKey("ipv6-destination")) {
+                        String ipv6 = jFlowMatch.get("ipv6-destination").toString();
+                        Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+nw_dst", Mrs.FlowRule);
+                        model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
+                        model.add(model.createStatement(resMatchRule, Mrs.type, "nw_dst"));
+                        model.add(model.createStatement(resMatchRule, Mrs.value, ipv6));
+                    }
+                    if (jFlowMatch.containsKey("tcp-source-port")) {
+                        String l4port = jFlowMatch.get("tcp-source-port").toString();
+                        Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+tp_src", Mrs.FlowRule);
+                        model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
+                        model.add(model.createStatement(resMatchRule, Mrs.type, "tp_src"));
+                        model.add(model.createStatement(resMatchRule, Mrs.value, l4port));
+                    }
+                    if (jFlowMatch.containsKey("tcp-destination-port")) {
+                        String l4port = jFlowMatch.get("tcp-destination-port").toString();
+                        Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+tp_dst", Mrs.FlowRule);
+                        model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
+                        model.add(model.createStatement(resMatchRule, Mrs.type, "tp_dst"));
+                        model.add(model.createStatement(resMatchRule, Mrs.value, l4port));
+                    }
+                    if (jFlowMatch.containsKey("udp-source-port")) {
+                        String l4port = jFlowMatch.get("udp-source-port").toString();
+                        Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+tp_src", Mrs.FlowRule);
+                        model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
+                        model.add(model.createStatement(resMatchRule, Mrs.type, "tp_src"));
+                        model.add(model.createStatement(resMatchRule, Mrs.value, l4port));
+                    }
+                    if (jFlowMatch.containsKey("udp-destination-port")) {
+                        String l4port = jFlowMatch.get("udp-destination-port").toString();
+                        Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+tp_dst", Mrs.FlowRule);
+                        model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
+                        model.add(model.createStatement(resMatchRule, Mrs.type, "tp_dst"));
+                        model.add(model.createStatement(resMatchRule, Mrs.value, l4port));
+                    }
+                    //flow action rules
+                    //--simplified 'instructions' (apply-actions only)
+                    //@TODO: handle 'group'
+                    try {
+                        net.minidev.json.JSONArray jActions = (net.minidev.json.JSONArray)JsonPath.parse(jFlow).read("$.instructions..action");
+                        for (Object o3: jActions) {
+                            JSONObject jAction = (JSONObject) o3;
+                            // flow action rules
+                            String order = "0";
+                            if (jAction.containsKey("order")) {
+                                jAction.get("order").toString();
+                            }
+                            Resource resFlowAction = RdfOwl.createResource(model, URI_action(resFlow.getURI(), order), Mrs.FlowRule);
+                            model.add(model.createStatement(resFlow, Mrs.flowAction, resFlowAction));
+                            if (jAction.containsKey("output-action")) {
+                                JSONObject jActionOutput = (JSONObject)jAction.get("output-action");
+                                if (jActionOutput.containsKey("output-node-connector")) {
+                                    String outPort = jActionOutput.get(("output-node-connector")).toString();
+                                    model.add(model.createStatement(resFlowAction, Mrs.type, "output"));
+                                    model.add(model.createStatement(resFlowAction, Mrs.value, outPort));
+                                }
+                            }
+                        }
+                    } catch (Exception ex) {
+                        Resource resFlowAction = RdfOwl.createResource(model, URI_action(resFlow.getURI(), "0"), Mrs.FlowRule);
+                        model.add(model.createStatement(resFlow, Mrs.flowAction, resFlowAction));
+                        model.add(model.createStatement(resFlowAction, Mrs.type, "drop"));
                     }
                 }
             }
-
+        } catch (Exception ex) {
+            logger.warning(String.format("OpenflowModelBuilder.createOntology failed to parse the jsonFlows for links.", ex));
         }
-         
-
-        for (int i = 0; i < qtyLinks; i++) {
-            if (links[i][5].equals("ACTIVE")) {
-                //add link into model
-                Resource resSrcPort = RdfOwl.createResource(model, topologyURI + ":" + links[i][0] + ":port-" + links[i][6], biPort);
-                Resource resDstPort = RdfOwl.createResource(model, topologyURI + ":" + links[i][2] + ":port-" + links[i][7], biPort);
-                model.add(model.createStatement(resSrcPort, Nml.isAlias, resDstPort));
-            }
-        }
-
-        //manully read from a SRRG json file 
-        JSONParser jsonParser = new JSONParser();
-        JSONObject jsonObject = (JSONObject) jsonParser.parse(srrgFile);
-
-        JSONArray f = (JSONArray) jsonObject.get("SRRG");
-        int srrg_num = f.size();
-
-        for (int i = 0; i < srrg_num; i++) {
-            JSONObject t = (JSONObject) f.get(i);
-            String id = t.get("id").toString();
-            Resource resSRRG = RdfOwl.createResource(model, topologyURI + ":" + id, SRRG);
-            model.add(model.createStatement(onosTopology, hasNode, resSRRG));
-
-            String severity_str = t.get("severity").toString();
-            String occurenceProbability_str = t.get("occurenceProbability").toString();
-
-            String devices_str = t.get("devices").toString();
-            if (devices_str.equals("")) {
-                Resource resNode = RdfOwl.createResource(model, "", node);
-                model.add(model.createStatement(resSRRG, hasNode, resNode));
-            } else {
-                List<String> devices_list = Arrays.asList(devices_str.split(","));
-                int devices_list_size = devices_list.size();
-
-                for (int j = 0; j < devices_list_size; j++) {
-                    Resource resNode = RdfOwl.createResource(model, topologyURI + ":" + devices_list.get(j).toString(), node);
-                    model.add(model.createStatement(resSRRG, hasNode, resNode));
-                }
-            }
-
-            String ports_str = t.get("bidirectionalPorts").toString();
-            if (ports_str.equals("")) {
-                Resource resPort = RdfOwl.createResource(model, "", biPort);
-                model.add(model.createStatement(resSRRG, hasBidirectionalPort, resPort));
-            } else {
-                List<String> ports_list = Arrays.asList(ports_str.split(","));
-                int ports_list_size = ports_list.size();
-
-                for (int j = 0; j < ports_list_size; j++) {
-                    Resource resPort = RdfOwl.createResource(model, topologyURI + ":" + ports_list.get(j).toString(), biPort);
-                    model.add(model.createStatement(resSRRG, hasBidirectionalPort, resPort));
-                }
-            }
-
-            model.add(model.createStatement(resSRRG, severity, severity_str));
-            model.add(model.createStatement(resSRRG, occurenceProbability, occurenceProbability_str));
-        }
-        */
         return model;
     }
 }

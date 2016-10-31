@@ -107,6 +107,7 @@ public class OpenflowRestconfDriver implements IHandleDriverSystemCall{
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         String requests = driverInstance.getProperty(requestId);
         /*
+        nodes->node->["flow-node-inventory:table"]
         OpenflowPush push = new OpenflowPush();        
         try {
             push.pushCommit(loginUser, loginPass, requests, topologyURI,  subsystemBaseUrl, aDelta);
