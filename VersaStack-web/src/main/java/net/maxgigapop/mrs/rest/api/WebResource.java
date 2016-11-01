@@ -64,6 +64,7 @@ import com.hp.hpl.jena.ontology.OntModel;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.InputStreamReader;
+import javax.net.ssl.HttpsURLConnection;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.MultivaluedMap;
@@ -104,9 +105,10 @@ public class WebResource {
     @Path("/token")
     public String getToken(final String inputString) throws MalformedURLException, IOException {
         String body = inputString + "&grant_type=password&client_id=curl&client_secret=07d58fc2-1ab4-46c4-a546-77cc7091867c";
+        String serverRoot = System.getProperty("kc_url");
 
-        URL url = new URL("http://localhost:8180/auth/realms/VersaStack/protocol/openid-connect/token");
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        URL url = new URL("https://" + serverRoot + ":8543/auth/realms/VersaStack/protocol/openid-connect/token");
+        HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
 
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-type", "application/x-www-form-urlencoded");
@@ -117,7 +119,7 @@ public class WebResource {
                 wr.flush();
             }
         }
-        
+
         StringBuilder responseStr;
         try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
             String inputLine;
@@ -133,16 +135,16 @@ public class WebResource {
 
         } catch (ParseException ex) {
             Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
-        }             
-        
-        return "Access Token: " + (String) responseJSON.get("access_token") + "\n";
+        }
+
+        return (String) responseJSON.get("access_token");
     }
 
     @GET
     @Path("/test")
     @Produces("application/json")
     public String testAuth() throws SQLException {
-        String subject = "";
+        String subject;
         try {
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
             AccessToken accessToken = securityContext.getToken();

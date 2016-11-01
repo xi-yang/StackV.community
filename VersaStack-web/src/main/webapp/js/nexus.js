@@ -1194,6 +1194,9 @@ function wizardLoad() {
     $.ajax({
         url: apiUrl,
         type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result) {
             for (i = 0; i < result.length; i++) {
                 var profile = result[i];
@@ -1290,6 +1293,9 @@ function editorLoad() {
     $.ajax({
         url: apiUrl,
         type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result) {
             for (i = 0; i < result.length; i++) {
                 var profile = result[i];
