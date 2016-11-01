@@ -64,34 +64,18 @@ public class OpenflowRestconfDriver implements IHandleDriverSystemCall{
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
         driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
         aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId());
-        String loginUser = driverInstance.getProperty("loginUser");
-        String loginPass = driverInstance.getProperty("loginPass");
-        String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
-        String topologyURI = driverInstance.getProperty("topologyUri");
-        String model = driverInstance.getHeadVersionItem().getModelRef().getTtlModel();        
+        String modelBase = driverInstance.getHeadVersionItem().getModelRef().getTtlModel();        
         String modelAdd = aDelta.getModelAddition().getTtlModel();
         String modelReduc = aDelta.getModelReduction().getTtlModel();
         
-        //1. parse modelReduction to create remove list
-        //2. parse modelAddition to create add list
-        //3. compare remove and add list to take out overlaps out of remove list
-        //4. save the lists as requests
-        /*
         OpenflowPush push = new OpenflowPush();
         String requests = null;
-        try {
-            requests = push.pushPropagate(loginUser, loginPass, model, modelAdd, modelReduc, topologyURI, subsystemBaseUrl);
-            
-        } catch (Exception ex) {
-            Logger.getLogger(OpenflowRestconfDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
-            throw (new EJBException(ex));
-        }
+        requests = push.propagate(modelBase, modelAdd, modelReduc);
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         driverInstance.putProperty(requestId, requests);
-        */
         DriverInstancePersistenceManager.merge(driverInstance);
         Logger.getLogger(OpenflowRestconfDriver.class.getName()).log(Level.INFO, "ODL OpenflowRestconfDriver delta models succesfully propagated");
-       }
+    }
 
     @Override
     @Asynchronous
@@ -111,27 +95,17 @@ public class OpenflowRestconfDriver implements IHandleDriverSystemCall{
         }
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         String requests = driverInstance.getProperty(requestId);
-        
-        //1. apply remove list using pushDeleteFlow
-        //2. apply add list using pushModFlow (instead of pushAddFlow, for both add and mod)
-        
-        /*
-        nodes->node->["flow-node-inventory:table"]
-        OpenflowPush push = new OpenflowPush();        
+
+        OpenflowPush push = new OpenflowPush();
         try {
-            push.pushCommit(loginUser, loginPass, requests, topologyURI,  subsystemBaseUrl, aDelta);
+            push.commit(loginUser, loginPass, requests, subsystemBaseUrl);
         } catch (Exception ex) {
             Logger.getLogger(OpenflowRestconfDriver.class.getName()).log(Level.SEVERE, null, ex);
             throw(new EJBException(ex));
         }
         driverInstance.getProperties().remove(requestId);
-        //DriverInstancePersistenceManager.merge(driverInstance);
-        Logger.getLogger(OpenflowRestconfDriver.class.getName()).log(Level.INFO, "ODL OpenflowRestconfDriver delta models succesfully commited");
-        fakeMap=push.getFakeFlowId();
-        driverInstance.putProperty("mappingId", fakeMap);
         DriverInstancePersistenceManager.merge(driverInstance);
-        */
-        
+        Logger.getLogger(OpenflowRestconfDriver.class.getName()).log(Level.INFO, "ODL OpenflowRestconfDriver delta models succesfully commited");
         return new AsyncResult<String>("SUCCESS");
     }
     

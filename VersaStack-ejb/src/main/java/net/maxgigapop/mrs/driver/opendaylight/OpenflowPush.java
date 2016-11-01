@@ -39,7 +39,7 @@ import org.json.simple.parser.ParseException;
 public class OpenflowPush {
     private static final Logger logger = Logger.getLogger(ModelUtil.class.getName());
 
-    public String propagate(String model, String modelAddTtl, String modelReductTtl) {
+    public String propagate(String baseModel, String modelAddTtl, String modelReductTtl) {
         JSONObject jRequests = new JSONObject();
         try {
             OntModel modelAdd = ModelUtil.unmarshalOntModel(modelAddTtl);
