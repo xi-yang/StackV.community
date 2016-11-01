@@ -71,6 +71,11 @@ public class OpenflowRestconfDriver implements IHandleDriverSystemCall{
         String model = driverInstance.getHeadVersionItem().getModelRef().getTtlModel();        
         String modelAdd = aDelta.getModelAddition().getTtlModel();
         String modelReduc = aDelta.getModelReduction().getTtlModel();
+        
+        //1. parse modelReduction to create remove list
+        //2. parse modelAddition to create add list
+        //3. compare remove and add list to take out overlaps out of remove list
+        //4. save the lists as requests
         /*
         OpenflowPush push = new OpenflowPush();
         String requests = null;
@@ -106,6 +111,10 @@ public class OpenflowRestconfDriver implements IHandleDriverSystemCall{
         }
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         String requests = driverInstance.getProperty(requestId);
+        
+        //1. apply remove list using pushDeleteFlow
+        //2. apply add list using pushModFlow (instead of pushAddFlow, for both add and mod)
+        
         /*
         nodes->node->["flow-node-inventory:table"]
         OpenflowPush push = new OpenflowPush();        

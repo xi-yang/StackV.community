@@ -54,6 +54,9 @@ public class OpenflowModelBuilder {
     }
 
     public static String URI_flow(String prefix, String id) {
+        if (id.startsWith("urn:")) {
+            return id;
+        }
         return prefix+":flow+"+id;
     }
 
@@ -62,6 +65,9 @@ public class OpenflowModelBuilder {
     }
 
     public static String URI_match(String prefix, String flow, String id) {
+        if (flow.startsWith("urn:")) {
+            return flow+":match+"+id;
+        }
         return prefix+":flow+"+flow+":match+"+id;
     }
     
@@ -70,7 +76,10 @@ public class OpenflowModelBuilder {
     }
 
     public static String URI_action(String prefix, String flow, String id) {
-        return prefix+":flow+"+flow+":match+"+id;
+        if (flow.startsWith("urn:")) {
+            return flow+":action+"+id;
+        }
+        return prefix+":flow+"+flow+":action+"+id;
     }
     
     public static OntModel createOntology(String topologyURI, String subsystemBaseUrl, String username, String password) {
@@ -194,7 +203,7 @@ public class OpenflowModelBuilder {
                     // http://www.brocade.com/content/html/en/user-guide/Flow-Manager-2.0.0-User-Guide/GUID-7B6AF236-A11B-4A6A-B5D4-FAD5BDA2FED6.html
                     if (jFlowMatch.containsKey("in-port")) {
                         String inPort = jFlowMatch.get("in-port").toString();
-                        Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+in_port", Mrs.FlowRule);
+                        Resource resMatchRule = RdfOwl.createResource(model, URI_match(resFlow.getURI(), "in_port"), Mrs.FlowRule);
                         model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
                         model.add(model.createStatement(resMatchRule, Mrs.type, "in_port"));
                         model.add(model.createStatement(resMatchRule, Mrs.value, inPort));
@@ -203,21 +212,21 @@ public class OpenflowModelBuilder {
                         JSONObject jEtherMatch = (JSONObject) jFlowMatch.get("ethernet-match");
                         if (jEtherMatch.containsKey("ethernet-type")) {
                             String dlType = ((JSONObject) jEtherMatch.get("ethernet-type")).get("type").toString();
-                            Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+dl_type", Mrs.FlowRule);
+                            Resource resMatchRule = RdfOwl.createResource(model, URI_match(resFlow.getURI(), "dl_type"), Mrs.FlowRule);
                             model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
                             model.add(model.createStatement(resMatchRule, Mrs.type, "dl_type"));
                             model.add(model.createStatement(resMatchRule, Mrs.value, dlType));
                         } 
                         if (jEtherMatch.containsKey("ethernet-destination")) {
                             String dlDst = ((JSONObject) jEtherMatch.get("ethernet-destination")).get("address").toString();
-                            Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+dl_dst", Mrs.FlowRule);
+                            Resource resMatchRule = RdfOwl.createResource(model, URI_match(resFlow.getURI(), "dl_dst"), Mrs.FlowRule);
                             model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
                             model.add(model.createStatement(resMatchRule, Mrs.type, "dl_dst"));
                             model.add(model.createStatement(resMatchRule, Mrs.value, dlDst));                            
                         }
                         if (jEtherMatch.containsKey("ethernet-source")) {
                             String dlSrc = ((JSONObject) jEtherMatch.get("ethernet-source")).get("address").toString();
-                            Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+dl_src", Mrs.FlowRule);
+                            Resource resMatchRule = RdfOwl.createResource(model, URI_match(resFlow.getURI(), "dl_src"), Mrs.FlowRule);
                             model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
                             model.add(model.createStatement(resMatchRule, Mrs.type, "dl_src"));
                             model.add(model.createStatement(resMatchRule, Mrs.value, dlSrc));                            
@@ -231,7 +240,7 @@ public class OpenflowModelBuilder {
                             if (jVlanId.containsKey("vlan-id")) {
                                 dlVlan = jVlanId.get("vlan-id").toString();
                             }
-                            Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+dl_vlan", Mrs.FlowRule);
+                            Resource resMatchRule = RdfOwl.createResource(model, URI_match(resFlow.getURI(), "dl_vlan"), Mrs.FlowRule);
                             model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
                             model.add(model.createStatement(resMatchRule, Mrs.type, "dl_vlan"));
                             model.add(model.createStatement(resMatchRule, Mrs.value, dlVlan));
@@ -241,7 +250,7 @@ public class OpenflowModelBuilder {
                         JSONObject jIpMatch = (JSONObject) jFlowMatch.get("ip-match");
                         if (jIpMatch.containsKey("ip-protocol")) {
                             String ipProt = jIpMatch.get("ip-protocol").toString();
-                            Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+nw_prot", Mrs.FlowRule);
+                            Resource resMatchRule = RdfOwl.createResource(model, URI_match(resFlow.getURI(), "nw_prot"), Mrs.FlowRule);
                             model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
                             model.add(model.createStatement(resMatchRule, Mrs.type, "nw_prot"));
                             model.add(model.createStatement(resMatchRule, Mrs.value, ipProt));
@@ -249,56 +258,56 @@ public class OpenflowModelBuilder {
                     }
                     if (jFlowMatch.containsKey("ipv4-source")) {
                         String ipv4 = jFlowMatch.get("ipv4-source").toString();
-                        Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+nw_src", Mrs.FlowRule);
+                        Resource resMatchRule = RdfOwl.createResource(model, URI_match(resFlow.getURI(), "nw_src"), Mrs.FlowRule);
                         model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
                         model.add(model.createStatement(resMatchRule, Mrs.type, "nw_src"));
                         model.add(model.createStatement(resMatchRule, Mrs.value, ipv4));
                     }
                     if (jFlowMatch.containsKey("ipv4-destination")) {
                         String ipv4 = jFlowMatch.get("ipv4-destination").toString();
-                        Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+nw_dst", Mrs.FlowRule);
+                        Resource resMatchRule = RdfOwl.createResource(model, URI_match(resFlow.getURI(), "nw_dst"), Mrs.FlowRule);
                         model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
                         model.add(model.createStatement(resMatchRule, Mrs.type, "nw_dst"));
                         model.add(model.createStatement(resMatchRule, Mrs.value, ipv4));
                     }
                     if (jFlowMatch.containsKey("ipv6-source")) {
                         String ipv6 = jFlowMatch.get("ipv6-source").toString();
-                        Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+nw_src", Mrs.FlowRule);
+                        Resource resMatchRule = RdfOwl.createResource(model, URI_match(resFlow.getURI(), "nw_src"), Mrs.FlowRule);
                         model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
                         model.add(model.createStatement(resMatchRule, Mrs.type, "nw_src"));
                         model.add(model.createStatement(resMatchRule, Mrs.value, ipv6));
                     }
                     if (jFlowMatch.containsKey("ipv6-destination")) {
                         String ipv6 = jFlowMatch.get("ipv6-destination").toString();
-                        Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+nw_dst", Mrs.FlowRule);
+                        Resource resMatchRule = RdfOwl.createResource(model, URI_match(resFlow.getURI(), "nw_dst"), Mrs.FlowRule);
                         model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
                         model.add(model.createStatement(resMatchRule, Mrs.type, "nw_dst"));
                         model.add(model.createStatement(resMatchRule, Mrs.value, ipv6));
                     }
                     if (jFlowMatch.containsKey("tcp-source-port")) {
                         String l4port = jFlowMatch.get("tcp-source-port").toString();
-                        Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+tp_src", Mrs.FlowRule);
+                        Resource resMatchRule = RdfOwl.createResource(model, URI_match(resFlow.getURI(), "tp_src"), Mrs.FlowRule);
                         model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
                         model.add(model.createStatement(resMatchRule, Mrs.type, "tp_src"));
                         model.add(model.createStatement(resMatchRule, Mrs.value, l4port));
                     }
                     if (jFlowMatch.containsKey("tcp-destination-port")) {
                         String l4port = jFlowMatch.get("tcp-destination-port").toString();
-                        Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+tp_dst", Mrs.FlowRule);
+                        Resource resMatchRule = RdfOwl.createResource(model, URI_match(resFlow.getURI(), "tp_dst"), Mrs.FlowRule);
                         model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
                         model.add(model.createStatement(resMatchRule, Mrs.type, "tp_dst"));
                         model.add(model.createStatement(resMatchRule, Mrs.value, l4port));
                     }
                     if (jFlowMatch.containsKey("udp-source-port")) {
                         String l4port = jFlowMatch.get("udp-source-port").toString();
-                        Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+tp_src", Mrs.FlowRule);
+                        Resource resMatchRule = RdfOwl.createResource(model, URI_match(resFlow.getURI(), "tp_src"), Mrs.FlowRule);
                         model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
                         model.add(model.createStatement(resMatchRule, Mrs.type, "tp_src"));
                         model.add(model.createStatement(resMatchRule, Mrs.value, l4port));
                     }
                     if (jFlowMatch.containsKey("udp-destination-port")) {
                         String l4port = jFlowMatch.get("udp-destination-port").toString();
-                        Resource resMatchRule = RdfOwl.createResource(model, resFlow.getURI() + ":match+tp_dst", Mrs.FlowRule);
+                        Resource resMatchRule = RdfOwl.createResource(model, URI_match(resFlow.getURI(), "tp_dst"), Mrs.FlowRule);
                         model.add(model.createStatement(resFlow, Mrs.flowMatch, resMatchRule));
                         model.add(model.createStatement(resMatchRule, Mrs.type, "tp_dst"));
                         model.add(model.createStatement(resMatchRule, Mrs.value, l4port));
@@ -330,6 +339,7 @@ public class OpenflowModelBuilder {
                         Resource resFlowAction = RdfOwl.createResource(model, URI_action(resFlow.getURI(), "0"), Mrs.FlowRule);
                         model.add(model.createStatement(resFlow, Mrs.flowAction, resFlowAction));
                         model.add(model.createStatement(resFlowAction, Mrs.type, "drop"));
+                        model.add(model.createStatement(resFlowAction, Mrs.value, "drop"));
                     }
                 }
             }
