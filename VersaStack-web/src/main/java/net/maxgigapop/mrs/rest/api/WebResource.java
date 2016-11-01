@@ -63,8 +63,16 @@ import web.beans.serviceBeans;
 import com.hp.hpl.jena.ontology.OntModel;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.security.KeyStore;
+import java.security.SecureRandom;
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.MultivaluedMap;
@@ -106,6 +114,8 @@ public class WebResource {
     public String getToken(final String inputString) throws MalformedURLException, IOException {
         String body = inputString + "&grant_type=password&client_id=curl&client_secret=07d58fc2-1ab4-46c4-a546-77cc7091867c";
         String serverRoot = System.getProperty("kc_url");
+        System.setProperty("javax.net.ssl.trustStore", "keystore.jks");
+        System.setProperty("javax.net.ssl.trustStoreType", "jks");
 
         URL url = new URL("https://" + serverRoot + ":8543/auth/realms/VersaStack/protocol/openid-connect/token");
         HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
@@ -1318,13 +1328,24 @@ public class WebResource {
         return result;
     }
 
-    public class WebRequestFilter implements ContainerRequestFilter {
+    private SSLSocketFactory getFactory(File pKeyFile, String pKeyPassword) {
+        try {
+            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(
+                    "SunX509");
+            KeyStore keyStore = KeyStore.getInstance("PKCS12");
 
-        @Override
-        public void filter(ContainerRequestContext req) throws IOException {
-            MultivaluedMap<String, String> headerMap = req.getHeaders();
-            System.out.println("MAP >>> " + headerMap);
-            System.out.println("KEYS >>> " + headerMap.keySet());
+            InputStream keyInput = new FileInputStream(pKeyFile);
+            keyStore.load(keyInput, pKeyPassword.toCharArray());
+            keyInput.close();
+
+            keyManagerFactory.init(keyStore, pKeyPassword.toCharArray());
+
+            SSLContext context = SSLContext.getInstance("TLS");
+            context.init(keyManagerFactory.getKeyManagers(), null, new SecureRandom());
+
+            return context.getSocketFactory();
+        } catch (Exception ex) {
+            return null;
         }
     }
 
