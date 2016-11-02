@@ -73,9 +73,6 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.core.MultivaluedMap;
 import net.maxgigapop.mrs.common.ModelUtil;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.keycloak.KeycloakSecurityContext;
@@ -163,7 +160,7 @@ public class WebResource {
             return "Exception: " + ex.getMessage();
         }
 
-        return "Logged-in user id: " + subject;
+        return "Authenticated. Logged-in user id: " + subject + "\n";
     }
 
     @GET
