@@ -329,7 +329,8 @@ public class OpenflowModelBuilder {
                     //--simplified 'instructions' (apply-actions only)
                     //@TODO: handle 'group'
                     try {
-                        net.minidev.json.JSONArray jActions = (net.minidev.json.JSONArray)JsonPath.parse(jFlow).read("$.instructions..action");
+                        net.minidev.json.JSONArray j3 = (net.minidev.json.JSONArray)JsonPath.parse(jFlow).read("$.instructions..action");
+                        JSONArray jActions = (JSONArray)j3.get(0);
                         for (Object o3: jActions) {
                             JSONObject jAction = (JSONObject) o3;
                             // flow action rules
@@ -339,14 +340,16 @@ public class OpenflowModelBuilder {
                             }
                             Resource resFlowAction = RdfOwl.createResource(model, URI_action(resFlow.getURI(), order), Mrs.FlowRule);
                             model.add(model.createStatement(resFlow, Mrs.flowAction, resFlowAction));
-                            if (jAction.containsKey("output")) {
-                                JSONObject jActionOutput = (JSONObject)jAction.get("output");
+                            if (jAction.containsKey("output-action")) {
+                                JSONObject jActionOutput = (JSONObject)jAction.get("output-action");
                                 if (jActionOutput.containsKey("output-node-connector")) {
                                     String outPort = jActionOutput.get(("output-node-connector")).toString();
                                     model.add(model.createStatement(resFlowAction, Mrs.type, "output"));
                                     model.add(model.createStatement(resFlowAction, Mrs.value, outPort));
                                 }
                             }
+                            //@ TODO: more action types such as push / pop / swap VLAN etc.
+                            //  https://wiki.opendaylight.org/view/Editing_OpenDaylight_OpenFlow_Plugin:End_to_End_Flows:Example_Flows
                         }
                     } catch (Exception ex) {
                         Resource resFlowAction = RdfOwl.createResource(model, URI_action(resFlow.getURI(), "0"), Mrs.FlowRule);

@@ -200,7 +200,9 @@ public class RestconfConnector {
                     jAction.put("output-action", jOutputActoin);
                     jOutputActoin.put("output-node-connector", tv[1]);
                     jOutputActoin.put("max-length", 65535); // hardcoded
-                } // more action types ?
+                } 
+                //@ TODO: more action types such as push / pop / swap VLAN etc.
+                //  https://wiki.opendaylight.org/view/Editing_OpenDaylight_OpenFlow_Plugin:End_to_End_Flows:Example_Flows
                 jActions.add(jAction);
             }
         }
