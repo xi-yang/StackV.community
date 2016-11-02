@@ -25,7 +25,6 @@
 package net.maxgigapop.mrs.driver.opendaylight;
 
 import com.hp.hpl.jena.ontology.OntModel;
-import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
@@ -45,13 +44,7 @@ import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
-import net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder;
-//import net.maxgigapop.mrs.driver.opendaylight.OpenflowPush;
 
-/**
- *
- * @author xyang
- */
 
 @Stateless
 public class OpenflowRestconfDriver implements IHandleDriverSystemCall{       

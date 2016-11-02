@@ -93,10 +93,10 @@ public class RestconfConnector {
     //push to modify flow
     public void pushModFlow(String subsystemBaseUrl, String username, String password, String nodeId, String tableId, String flowId, List<String> matches, List<String> actions) {
         try  {
-            URL url = new URL(subsystemBaseUrl + "/config/opendaylight-inventory:nodes"+nodeId+"/flow-node-inventory:table/"+tableId+"/flow/"+flowId); 
+            URL url = new URL(subsystemBaseUrl + "/config/opendaylight-inventory:nodes/node/"+nodeId+"/flow-node-inventory:table/"+tableId+"/flow/"+flowId); 
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String data = this.makeFlowData(flowId, tableId, matches, actions);
-            String[] response = DriverUtil.executeHttpMethod(username, password, conn, "GET", data);
+            String[] response = DriverUtil.executeHttpMethod(username, password, conn, "PUT", data);
             if (!response[1].equals("200")) {
                 throw new EJBException("RestconfConnector:pushModFlow failed with HTTP return code:"+response[1]);
             }
@@ -108,7 +108,7 @@ public class RestconfConnector {
     //push to delete flow
     public void pushDeleteFlow(String subsystemBaseUrl, String username, String password, String nodeId, String tableId, String flowId) {
         try  {
-            URL url = new URL(subsystemBaseUrl + "/config/opendaylight-inventory:nodes"+nodeId+"/flow-node-inventory:table/"+tableId+"/flow/"+flowId); 
+            URL url = new URL(subsystemBaseUrl + "/config/opendaylight-inventory:nodes/node/"+nodeId+"/flow-node-inventory:table/"+tableId+"/flow/"+flowId); 
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String[] response = DriverUtil.executeHttpMethod(username, password, conn, "DELETE", null);
             if (response[1].equals("404")) {
@@ -130,7 +130,7 @@ public class RestconfConnector {
             JSONObject jMatch = new JSONObject();
             jData.put("match", jMatch);
             for (String match: matches) {
-                String[] tv = match.split(":");
+                String[] tv = match.split("=");
                 if (tv[0].equals("in_port") && tv.length == 2) {
                     jMatch.put("in-port", tv[1]);
                 } else if (tv[0].startsWith("dl_") && !tv[0].equals("dl_vlan") && tv.length == 2) {
@@ -190,7 +190,7 @@ public class RestconfConnector {
             jInstruction.put("apply-actions", jApplyActions);
             jApplyActions.put("action", jActions);
             for (int order = 0; order < actions.size(); order++) {
-                String[] tv = actions.get(order).split(":");
+                String[] tv = actions.get(order).split("=");
                 JSONObject jAction = new JSONObject();
                 jAction.put("order", Integer.toString(order));
                 if (tv[0].equalsIgnoreCase("drop")) {
@@ -204,6 +204,6 @@ public class RestconfConnector {
                 jActions.add(jAction);
             }
         }
-        return jData.toJSONString();
+        return "{\"flow\":["+jData.toJSONString()+"]}";
     }
 }

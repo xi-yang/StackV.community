@@ -42,44 +42,44 @@ public class OpenflowModelBuilder {
     private static final Logger logger = Logger.getLogger(OnosRESTDriver.class.getName());
     
     public static String URI_node(String prefix, String id) {
-        return prefix+":node+"+id;
+        return prefix+":node="+id;
     }
     
     public static String URI_port(String prefix, String id) {
-        return prefix+":port+"+id;
+        return prefix+":port="+id;
     }
 
     public static String URI_port(String prefix, String node, String id) {
-        return prefix+":node+"+node+":port+"+id;
+        return prefix+":node="+node+":port="+id;
     }
 
     public static String URI_flow(String prefix, String id) {
         if (id.startsWith("urn:")) {
             return id;
         }
-        return prefix+":flow+"+id;
+        return prefix+":flow="+id;
     }
 
     public static String URI_match(String prefix, String id) {
-        return prefix+":match+"+id;
+        return prefix+":match="+id;
     }
 
     public static String URI_match(String prefix, String flow, String id) {
         if (flow.startsWith("urn:")) {
-            return flow+":match+"+id;
+            return flow+":match="+id;
         }
-        return prefix+":flow+"+flow+":match+"+id;
+        return prefix+":flow="+flow+":match="+id;
     }
     
     public static String URI_action(String prefix, String id) {
-        return prefix+":action+"+id;
+        return prefix+":action="+id;
     }
 
     public static String URI_action(String prefix, String flow, String id) {
         if (flow.startsWith("urn:")) {
-            return flow+":action+"+id;
+            return flow+":action="+id;
         }
-        return prefix+":flow+"+flow+":action+"+id;
+        return prefix+":flow="+flow+":action="+id;
     }
     
     public static OntModel createOntology(String topologyURI, String subsystemBaseUrl, String username, String password) {
@@ -98,19 +98,26 @@ public class OpenflowModelBuilder {
                     if(!j1.containsKey("node-id")) {
                         continue;
                     }
-                    String nodeId = DriverUtil.addressUriEscape((String)j1.get("node-id"));
-                    Resource resNode = RdfOwl.createResource(model, topologyURI + ":node+" + nodeId, Nml.Node);
+                    String nodeId = (String)j1.get("node-id");
+                    String nodeIdEsc = DriverUtil.addressUriEscape(nodeId);
+                    Resource resNode = RdfOwl.createResource(model, URI_node(topologyURI, nodeIdEsc), Nml.Node);
                     model.add(model.createStatement(resTopo, Nml.hasNode, resNode));
-                    Resource resOpenFlow = RdfOwl.createResource(model, resNode.getURI() + ":openflow-service" , Mrs.OpenflowService);
+                    model.add(model.createStatement(resNode, Nml.name, nodeId));
+                    Resource resOpenFlow = RdfOwl.createResource(model, resNode.getURI() + ":openflow" , Mrs.OpenflowService);
                     model.add(model.createStatement(resNode, Nml.hasService, resOpenFlow));
+                    Resource resFlowTable = RdfOwl.createResource(model, resOpenFlow.getURI()+":table=0", Mrs.FlowTable);
+                    model.add(model.createStatement(resFlowTable, Nml.name, "0"));
+                    model.add(model.createStatement(resOpenFlow, Mrs.providesFlowTable, resFlowTable));
                     if (j1.containsKey("termination-point")) {
                         for (Object o2 : (JSONArray) j1.get("termination-point")) {
                             JSONObject j2 = (JSONObject) o2;
                             if (!j2.containsKey("tp-id")) {
                                 continue;
                             }
-                            String portId = DriverUtil.addressUriEscape((String) j2.get("tp-id"));
-                            Resource resPort = RdfOwl.createResource(model, resNode.getURI() + ":port+" + portId, Nml.BidirectionalPort);
+                            String portId = (String) j2.get("tp-id");
+                            String portIdEsc = DriverUtil.addressUriEscape(portId);
+                            Resource resPort = RdfOwl.createResource(model, URI_port(resNode.getURI(), portIdEsc), Nml.BidirectionalPort);
+                            model.add(model.createStatement(resPort, Nml.name, portId));
                             model.add(model.createStatement(resNode, Nml.hasBidirectionalPort, resPort));
                             model.add(model.createStatement(resOpenFlow, Nml.hasBidirectionalPort, resPort));
                         }
@@ -120,7 +127,7 @@ public class OpenflowModelBuilder {
                         if (jAddrs.containsKey("mac")) {
                             String macAddr = (String)jAddrs.get("mac");
                             String macAddrEsc = DriverUtil.addressUriEscape(macAddr);
-                            Resource resNodeMac = RdfOwl.createResource(model, resNode.getURI()+":mac+"+macAddrEsc, Mrs.NetworkAddress);
+                            Resource resNodeMac = RdfOwl.createResource(model, resNode.getURI()+":mac="+macAddrEsc, Mrs.NetworkAddress);
                             model.add(model.createStatement(resNode, Mrs.hasNetworkAddress, resNodeMac));
                             model.add(model.createStatement(resNodeMac, Mrs.type, "mac-address"));
                             model.add(model.createStatement(resNodeMac, Mrs.value, macAddr));
@@ -128,7 +135,7 @@ public class OpenflowModelBuilder {
                         if (jAddrs.containsKey("ip")) {
                             String ipAddr = (String)jAddrs.get("ip");
                             String ipAddrEsc = DriverUtil.addressUriEscape(ipAddr);
-                            Resource resNodeIp = RdfOwl.createResource(model, resNode.getURI()+":ip+"+ipAddrEsc, Mrs.NetworkAddress);
+                            Resource resNodeIp = RdfOwl.createResource(model, resNode.getURI()+":ip="+ipAddrEsc, Mrs.NetworkAddress);
                             model.add(model.createStatement(resNode, Mrs.hasNetworkAddress, resNodeIp));
                             model.add(model.createStatement(resNodeIp, Mrs.type, "ip-address"));
                             model.add(model.createStatement(resNodeIp, Mrs.value, ipAddr));
@@ -152,10 +159,10 @@ public class OpenflowModelBuilder {
                     }
                     String srcNode = DriverUtil.addressUriEscape((String)((JSONObject)j1.get("source")).get("source-node"));
                     String srcPort = DriverUtil.addressUriEscape((String)((JSONObject)j1.get("source")).get("source-tp"));
-                    Resource resSrc = model.getResource(topologyURI + ":node+" + srcNode+":port+"+srcPort);
+                    Resource resSrc = model.getResource(topologyURI + ":node=" + srcNode+":port="+srcPort);
                     String dstNode = DriverUtil.addressUriEscape((String)((JSONObject)j1.get("destination")).get("dest-node"));
                     String dstPort = DriverUtil.addressUriEscape((String)((JSONObject)j1.get("destination")).get("dest-tp"));
-                    Resource resDst = model.getResource(topologyURI + ":node+" + dstNode+":port+"+dstPort);
+                    Resource resDst = model.getResource(topologyURI + ":node=" + dstNode+":port="+dstPort);
                     model.add(model.createStatement(resSrc, Nml.isAlias, resDst));
                 }
             } else {
@@ -171,23 +178,29 @@ public class OpenflowModelBuilder {
             for (Object o1: (JSONArray)r) {
                 JSONObject j1 = (JSONObject)o1;
                 String nodeId = (String)j1.get("id");
+                String nodeIdEsc = DriverUtil.addressUriEscape(nodeId);
                 // Through ODL, we assume all ops on table '0' for now. But this could be easily changed when multiple tables are required.
                 net.minidev.json.JSONArray jTable0 = (net.minidev.json.JSONArray)JsonPath.parse(j1).read("$.flow-node-inventory:table[?(@.id=='0')]");
                 if (jTable0.isEmpty()) {
                     continue;
                 }
-                Resource resOpenflow = model.getResource(URI_node(topologyURI, nodeId)+":openflow");
-                Resource resFlowTable = RdfOwl.createResource(model, resOpenflow.getURI()+":table+0", Mrs.FlowTable);
-                model.add(model.createStatement(resOpenflow, Mrs.providesFlowTable, resFlowTable));
+                Resource resOpenflow = model.getResource(URI_node(topologyURI, nodeIdEsc)+":openflow");
+                Resource resFlowTable = model.getResource(resOpenflow.getURI()+":table=0");
                 JSONArray jFlows = (JSONArray)((JSONObject)jTable0.get(0)).get("flow");
                 for (Object o2: jFlows) {
                     JSONObject jFlow = (JSONObject)o2;
                     String flowId = (String)jFlow.get("id");
+                    String flowName = null;
+                    if (jFlow.containsKey("flow-name")) {
+                        flowName = (String)jFlow.get("flow-name");
+                        if (flowName.startsWith("urn:")) {
+                            flowId = flowName;
+                        }
+                    }
                     Resource resFlow = RdfOwl.createResource(model, URI_flow(resFlowTable.getURI(), flowId), Mrs.Flow);
                     model.add(model.createStatement(resFlowTable, Mrs.hasFlow, resFlow));
                     model.add(model.createStatement(resOpenflow, Mrs.providesFlow, resFlow));
-                    if (jFlow.containsKey("flow-name")) {
-                        String flowName = (String)jFlow.get("flow-name");
+                    if (flowName != null) {
                         model.add(model.createStatement(resFlow, Nml.name, flowName));
                     }
                     if (!jFlow.containsKey("match")) {
@@ -326,8 +339,8 @@ public class OpenflowModelBuilder {
                             }
                             Resource resFlowAction = RdfOwl.createResource(model, URI_action(resFlow.getURI(), order), Mrs.FlowRule);
                             model.add(model.createStatement(resFlow, Mrs.flowAction, resFlowAction));
-                            if (jAction.containsKey("output-action")) {
-                                JSONObject jActionOutput = (JSONObject)jAction.get("output-action");
+                            if (jAction.containsKey("output")) {
+                                JSONObject jActionOutput = (JSONObject)jAction.get("output");
                                 if (jActionOutput.containsKey("output-node-connector")) {
                                     String outPort = jActionOutput.get(("output-node-connector")).toString();
                                     model.add(model.createStatement(resFlowAction, Mrs.type, "output"));

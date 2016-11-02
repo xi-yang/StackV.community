@@ -39,14 +39,14 @@ import org.json.simple.parser.ParseException;
 public class OpenflowPush {
     private static final Logger logger = Logger.getLogger(ModelUtil.class.getName());
 
-    public String propagate(String baseModel, String modelAddTtl, String modelReductTtl) {
+    public String propagate(String modelRefTtl, String modelAddTtl, String modelReductTtl) {
         JSONObject jRequests = new JSONObject();
         try {
+            OntModel modelRef = ModelUtil.unmarshalOntModel(modelRefTtl);
             OntModel modelAdd = ModelUtil.unmarshalOntModel(modelAddTtl);
             OntModel modelReduct = ModelUtil.unmarshalOntModel(modelReductTtl);
-            JSONArray jDelete = this.extractFlows(modelReduct);
-            JSONArray jCreate = this.extractFlows(modelAdd);
-            //@TODO: consolidate delete and create lists
+            JSONArray jDelete = this.extractFlows(modelRef, modelReduct);
+            JSONArray jCreate = this.extractFlows(modelRef, modelAdd);
             jRequests.put("delete", jDelete);
             jRequests.put("create", jCreate);
         } catch (Exception ex) {
@@ -56,7 +56,7 @@ public class OpenflowPush {
 
     }
 
-    private JSONArray extractFlows(OntModel model) {
+    private JSONArray extractFlows(OntModel modelRef, OntModel model) {
         JSONArray jFlows = new JSONArray();
 
         String query = "SELECT ?flow  WHERE {"
@@ -66,10 +66,11 @@ public class OpenflowPush {
         while (r1.hasNext()) {
             QuerySolution qs1 = r1.next();
             Resource flow = qs1.get("flow").asResource();
-            String query2 = "SELECT ?matchtype ?matchvalue ?actiontype ?actionvalue WHERE {"
+            String query2 = "SELECT ?table ?matchtype ?matchvalue ?actiontype ?actionvalue WHERE {"
+                    + String.format("?table mrs:hasFlow <%s>. ", flow.getURI())
                     + String.format("<%s> mrs:flowMatch ?match. ?match mrs:type ?matchtype. ?match mrs:value ?matchvalue. ", flow.getURI())
                     + String.format("OPTIONAL { <%s> mrs:flowAction ?action. ?action mrs:type ?actiontype. "
-                            + "OPTIONAL {?match mrs:value ?actionvalue.} }", flow.getURI())
+                            + "OPTIONAL {?action mrs:value ?actionvalue.} }", flow.getURI())
                     + "}";
             ResultSet r2 = ModelUtil.executeQuery(query2, null, model);
             if (!r2.hasNext()) {
@@ -90,7 +91,7 @@ public class OpenflowPush {
                 if (!strMatch.isEmpty()) {
                     strMatch += ",";
                 }
-                strMatch += (matchType+":"+matchValue);
+                strMatch += (matchType+"="+matchValue);
                 jFlowMatches.add(strMatch);
                 if (qs2.contains("actiontype")) {
                     String actionType = qs2.get("actiontype").toString();
@@ -100,11 +101,25 @@ public class OpenflowPush {
                     strAction += actionType;
                     if (qs2.contains("actionvalue")) {
                         String actionValue = qs2.get("actionvalue").toString();
-                        strAction += (":"+actionValue);
+                        strAction += ("="+actionValue);
                     }
                     jFlowActions.add(strAction);
                 }
+                Resource resTable = qs2.getResource("table");
+                String query3 = "SELECT ?node_name ?table_name  WHERE {"
+                    + String.format("?node nml:hasService ?openflow_svc. ?openflow_svc mrs:providesFlowTable <%s>. ", resTable.getURI())
+                    + String.format("?node nml:name ?node_name. <%s> nml:name ?table_name. ", resTable.getURI())
+                    + "}";
+                ResultSet r3 = ModelUtil.executeQuery(query3, null, modelRef);
+                if (r3.hasNext()) {
+                    QuerySolution qs3 = r3.next();
+                    String nodeName = qs3.get("node_name").toString();
+                    jFlow.put("node", nodeName);
+                    String tableName = qs3.get("table_name").toString();
+                    jFlow.put("table", tableName);
+                }
             }
+            jFlows.add(jFlow);
         }
         return jFlows;
     }
