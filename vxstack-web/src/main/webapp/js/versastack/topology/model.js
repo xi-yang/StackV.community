@@ -73,12 +73,12 @@ define([
             var request = new XMLHttpRequest();  
             // If ready, load the live model. Otherwise, load the static model. 
             if (uuid === undefined)
-                request.open("GET", "/VersaStack-web/restapi/model/"); 
+                request.open("GET", "/vxstack-web/restapi/model/"); 
             else 
-                request.open("GET", "/VersaStack-web/restapi/model/default"); 
+                request.open("GET", "/vxstack-web/restapi/model/default"); 
 
-            //request.open("GET", "/VersaStack-web/data/json/spa-rvtk-versastack-qa1-1vm.json");
-            //request.open("GET", "/VersaStack-web/data/json/aws-blank.json");
+            //request.open("GET", "/vxstack-web/data/json/spa-rvtk-versastack-qa1-1vm.json");
+            //request.open("GET", "/vxstack-web/data/json/aws-blank.json");
             requestModel();
             
             function requestModel() {

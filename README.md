@@ -1,4 +1,4 @@
-### A Video Introduction to VersaStack
+### A Video Introduction to vxstack
 http://tinyurl.com/umdmax-versastack
 
 ### A Step-by-Step Guide to Installation and Deployment

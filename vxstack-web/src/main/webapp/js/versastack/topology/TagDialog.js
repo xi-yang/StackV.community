@@ -76,7 +76,7 @@ define(["local/versastack/utils"], function (utils) {
                 $.ajax({
                     crossDomain: true,
                     type: "PUT",
-                    url: "/VersaStack-web/restapi/app/label",
+                    url: "/vxstack-web/restapi/app/label",
                     data: serializedData,
                     contentType: "application/json", 
                     
@@ -155,7 +155,7 @@ define(["local/versastack/utils"], function (utils) {
                 $.ajax({
                     crossDomain: true,
                     type: "DELETE",
-                    url: "/VersaStack-web/restapi/app/label/" + userName + "/delete/" + identifier,
+                    url: "/vxstack-web/restapi/app/label/" + userName + "/delete/" + identifier,
 
                     success: function(data,  textStatus,  jqXHR ) {
                        bsShowFadingMessage("#tagPanel", "Tag deleted.", "top", 1000);

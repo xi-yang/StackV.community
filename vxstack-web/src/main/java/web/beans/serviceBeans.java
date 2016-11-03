@@ -61,7 +61,7 @@ public class serviceBeans {
     String front_db_pass = "frontuser";
     String rains_db_user = "root";
     String rains_db_pass = "root";
-    String host = "http://localhost:8080/VersaStack-web/restapi";
+    String host = "http://localhost:8080/vxstack-web/restapi";
 
     public serviceBeans() {
 

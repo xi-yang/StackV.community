@@ -23,12 +23,12 @@
 
 
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page errorPage = "/VersaStack-web/errorPage.jsp" %>
+<%@page errorPage = "/vxstack-web/errorPage.jsp" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
 <jsp:setProperty name="user" property="*" />  
 
-        <link rel="stylesheet" href="/VersaStack-web/css/tagPanel.css">       
+        <link rel="stylesheet" href="/vxstack-web/css/tagPanel.css">       
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
 
         <div class="closed" id="tagPanel" data-toggle="popover">
@@ -81,7 +81,7 @@
                     $.ajax({
                         crossDomain: true,
                         type: "GET",
-                        url: "/VersaStack-web/restapi/app/label/" + userName,
+                        url: "/vxstack-web/restapi/app/label/" + userName,
                         dataType: "json",
 
                         success: function(data,  textStatus,  jqXHR ) {
@@ -171,7 +171,7 @@
                     $.ajax({
                         crossDomain: true,
                         type: "DELETE",
-                        url: "/VersaStack-web/restapi/app/label/" + userName + "/delete/" + identifier,
+                        url: "/vxstack-web/restapi/app/label/" + userName + "/delete/" + identifier,
 
                         success: function(data,  textStatus,  jqXHR ) {
                             $("#tagPanel").popover({content: "Tag Deleted", placement: "top", trigger: "manual"});
@@ -200,7 +200,7 @@
                 $.ajax({
                     crossDomain: true,
                     type: "DELETE",
-                    url: "/VersaStack-web/restapi/app/label/" + userName + "/clearall",
+                    url: "/vxstack-web/restapi/app/label/" + userName + "/clearall",
 
                     success: function(data,  textStatus,  jqXHR ) {
                         $("#tagPanel").popover({content: "Tags Cleared", placement: "top", trigger: "manual"});

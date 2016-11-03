@@ -23,7 +23,7 @@
 
 
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page errorPage = "/VersaStack-web/errorPage.jsp" %>
+<%@page errorPage = "/vxstack-web/errorPage.jsp" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
@@ -35,28 +35,28 @@
     <head>
         <meta charset="utf-8">
         <title>Graphical View</title>
-        <script src="/VersaStack-web/js/jquery/jquery.js"></script>
-        <script src="/VersaStack-web/js/bootstrap.js"></script>
-        <script src="/VersaStack-web/js/nexus.js"></script>
-        <script src="/VersaStack-web/js/jquery-ui.min.js"></script>
+        <script src="/vxstack-web/js/jquery/jquery.js"></script>
+        <script src="/vxstack-web/js/bootstrap.js"></script>
+        <script src="/vxstack-web/js/nexus.js"></script>
+        <script src="/vxstack-web/js/jquery-ui.min.js"></script>
 
-        <link rel="stylesheet" type="text/css" href="/VersaStack-web/css/graphTest.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
+        <link rel="stylesheet" type="text/css" href="/vxstack-web/css/graphTest.css">
+        <link rel="stylesheet" href="/vxstack-web/css/animate.min.css">
+        <link rel="stylesheet" href="/vxstack-web/css/font-awesome.min.css">
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
-        <link rel="stylesheet" href="/VersaStack-web/css/bootstrap.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.min.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.structure.min.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.theme.css">                
-        <link rel="stylesheet" href="/VersaStack-web/css/style.css">       
-        <link rel="stylesheet" href="/VersaStack-web/css/contextMenu.css">   
+        <link rel="stylesheet" href="/vxstack-web/css/bootstrap.css">
+        <link rel="stylesheet" href="/vxstack-web/css/jquery-ui.min.css">
+        <link rel="stylesheet" href="/vxstack-web/css/jquery-ui.structure.min.css">
+        <link rel="stylesheet" href="/vxstack-web/css/jquery-ui.theme.css">                
+        <link rel="stylesheet" href="/vxstack-web/css/style.css">       
+        <link rel="stylesheet" href="/vxstack-web/css/contextMenu.css">   
         <!-- font awesome icons won't show up otherwise --->
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.min.css">
+        <link rel="stylesheet" href="/vxstack-web/css/jquery-ui.min.css">
 
         <script>
             $(document).ready(function () {
-                $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", function () {
+                $("#tag-panel").load("/vxstack-web/tagPanel.jsp", function () {
 
                 });
 
@@ -107,7 +107,7 @@
                     },
                     {
                         name: "local",
-                        location: "/VersaStack-web/js/"
+                        location: "/vxstack-web/js/"
                     }
                 ]
             };
@@ -147,7 +147,7 @@
                           $.ajax({
                                    crossDomain: true,
                                    type: "GET",
-                                   url: "/VersaStack-web/restapi/service/ready",
+                                   url: "/vxstack-web/restapi/service/ready",
                                    dataType: "text", 
 
                                    success: function(data,  textStatus,  jqXHR ) {
@@ -829,7 +829,7 @@
                 $.ajax({
                     crossDomain: true,
                     type: "GET",
-                    url: "/VersaStack-web/restapi/app/service/availibleitems/" + UUID,
+                    url: "/vxstack-web/restapi/app/service/availibleitems/" + UUID,
                     dataType: "json", 
 
                     success: function(data,  textStatus,  jqXHR ) {

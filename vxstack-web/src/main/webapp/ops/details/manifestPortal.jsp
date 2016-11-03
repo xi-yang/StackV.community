@@ -22,7 +22,7 @@
  !-->
 
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page errorPage = "/VersaStack-web/errorPage.jsp" %>
+<%@page errorPage = "/vxstack-web/errorPage.jsp" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
@@ -38,16 +38,16 @@
     <head>   
         <meta charset="UTF-8">
         <title>Manifest Portal</title>
-        <script src="/VersaStack-web/js/jquery/jquery.js"></script>
-        <script src="/VersaStack-web/js/bootstrap.js"></script>
-        <script src="/VersaStack-web/js/nexus.js"></script>
+        <script src="/vxstack-web/js/jquery/jquery.js"></script>
+        <script src="/vxstack-web/js/bootstrap.js"></script>
+        <script src="/vxstack-web/js/nexus.js"></script>
 
-        <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
+        <link rel="stylesheet" href="/vxstack-web/css/animate.min.css">
+        <link rel="stylesheet" href="/vxstack-web/css/font-awesome.min.css">
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
-        <link rel="stylesheet" href="/VersaStack-web/css/bootstrap.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/style.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/driver.css">
+        <link rel="stylesheet" href="/vxstack-web/css/bootstrap.css">
+        <link rel="stylesheet" href="/vxstack-web/css/style.css">
+        <link rel="stylesheet" href="/vxstack-web/css/driver.css">
         <style>
             .manifest-list{
                 /*list-style:none;*/
@@ -199,7 +199,7 @@
                                 break;
                             case "Virtual Cloud Network":
                                 $.get( {
-                                    url: "/VersaStack-web/restapi/service/property/" + UUID + "/host/", 
+                                    url: "/vxstack-web/restapi/service/property/" + UUID + "/host/", 
                                     success: function( data ) {
                                         if (data === "ops") {
                                             loadManifest("vcn-ops-manifest-template.xml");
@@ -217,8 +217,8 @@
                         loadManifest();
                         function loadManifest(templateURL) {
                             $.get( {
-                                url: "/VersaStack-web/data/xml/manifest-templates/" + templateURL, 
-                               // url: "/VersaStack-web/data/xml/manifest-templates/"    + "manifest-ahc1.json",
+                                url: "/vxstack-web/data/xml/manifest-templates/" + templateURL, 
+                               // url: "/vxstack-web/data/xml/manifest-templates/"    + "manifest-ahc1.json",
                                 success: function( data ) {
 //                                     var manifest = JSON.parse(data.jsonTemplate);
 //                                     var name = Object.keys(manifest)[0];
@@ -232,7 +232,7 @@
                                     $.ajax({
                                         type: "POST",
                                         crossDomain: true,
-                                        url: "/VersaStack-web/restapi/service/manifest/" + UUID,
+                                        url: "/vxstack-web/restapi/service/manifest/" + UUID,
                                         data: template,
                                         headers: { 
                                             'Accept': 'application/json',

@@ -206,9 +206,9 @@ define([
 
         this.getIconPath = function () {
             if (this.folded) {
-                return "/VersaStack-web/resources/bidirectional_port_expandable.png"
+                return "/vxstack-web/resources/bidirectional_port_expandable.png"
             }
-            return "/VersaStack-web/resources/bidirectional_port.png";
+            return "/vxstack-web/resources/bidirectional_port.png";
         };
         this.getType = function () {
             return "Port"

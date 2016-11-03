@@ -1,6 +1,6 @@
 <%@page import="java.security.MessageDigest"%>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page errorPage = "/VersaStack-web/index.jsp" %>
+<%@page errorPage = "/vxstack-web/index.jsp" %>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
 <jsp:setProperty name="user" property="*" />  
 <!DOCTYPE html>

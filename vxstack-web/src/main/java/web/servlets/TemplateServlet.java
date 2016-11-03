@@ -49,7 +49,7 @@ public class TemplateServlet extends HttpServlet {
 
         int retCode = -1;
         //retCode = servBean.template();
-        response.sendRedirect("/VersaStack-web/ops/srvc/template.jsp?ret=" + retCode);
+        response.sendRedirect("/vxstack-web/ops/srvc/template.jsp?ret=" + retCode);
     }
 
     /**

@@ -33,7 +33,7 @@ public class WorkerTemplate implements Runnable {
     private AsyncContext asyncContext;
     private serviceBeans servBean = new serviceBeans();
     private HashMap<String, String> paraMap;
-    private final String host = "http://localhost:8080/VersaStack-web/restapi";
+    private final String host = "http://localhost:8080/vxstack-web/restapi";
 
     public WorkerTemplate() {
     }

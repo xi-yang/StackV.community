@@ -183,7 +183,7 @@ define(["local/versastack/topology/modelConstants","local/versastack/utils",
                     return this._backing.name;
                 };
                 this.getIconPath = function () {
-                    var prefix = "/VersaStack-web/resources/";
+                    var prefix = "/vxstack-web/resources/";
                     var types = this._backing[values.type];
                     var ans = iconMap.default;
                     map_(types, function (type) {

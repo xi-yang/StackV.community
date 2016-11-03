@@ -38,7 +38,7 @@ public class DriverWorker implements Runnable {
 
     private AsyncContext asyncContext;
     private HashMap<String, String> paramMap;
-    private final String host = "http://localhost:8080/VersaStack-web/restapi";
+    private final String host = "http://localhost:8080/vxstack-web/restapi";
 
     public DriverWorker() {
     }

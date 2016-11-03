@@ -63,7 +63,7 @@ public class DriverServlet extends HttpServlet {
             HashMap<String, String> paramMap = new HashMap<>();
             Enumeration paramNames = request.getParameterNames();
             serviceBeans servBean = new serviceBeans();
-            String host = "http://localhost:8080/VersaStack-web/restapi";
+            String host = "http://localhost:8080/vxstack-web/restapi";
 
             URL url = new URL(String.format("%s/service/instance", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -134,7 +134,7 @@ public class DriverServlet extends HttpServlet {
                 retCode = servBean.driverUninstall(request.getParameter("topologyUri"));
             }
 
-            response.sendRedirect("/VersaStack-web/ops/srvc/driver.jsp?ret=" + retCode);
+            response.sendRedirect("/vxstack-web/ops/srvc/driver.jsp?ret=" + retCode);
         } catch (SQLException ex) {
             Logger.getLogger(DriverServlet.class.getName()).log(Level.SEVERE, null, ex);
         }

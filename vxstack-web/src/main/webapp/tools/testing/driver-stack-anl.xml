@@ -10,7 +10,7 @@
         </entry>
         <entry>
             <key>subsystemBaseUrl</key>
-            <value>http://140.221.96.35:50100/VersaStack-web/restapi</value>
+            <value>http://140.221.96.35:50100/vxstack-web/restapi</value>
         </entry>
     </properties>
 </driverInstance>

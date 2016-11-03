@@ -1,5 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page errorPage = "/VersaStack-web/errorPage.jsp" %>
+<%@page errorPage = "/vxstack-web/errorPage.jsp" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
@@ -15,10 +15,10 @@
     <head>   
         <meta charset="UTF-8">
         <title>Service Details</title>
-        <script src="/VersaStack-web/js/jquery/jquery.js"></script>
-        <script src="/VersaStack-web/js/bootstrap.js"></script>
-        <script src="/VersaStack-web/js/nexus.js"></script>
-        <script src="/VersaStack-web/js/jquery-ui.min.js"></script>
+        <script src="/vxstack-web/js/jquery/jquery.js"></script>
+        <script src="/vxstack-web/js/bootstrap.js"></script>
+        <script src="/vxstack-web/js/nexus.js"></script>
+        <script src="/vxstack-web/js/jquery-ui.min.js"></script>
 
         <script>
             //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
@@ -37,7 +37,7 @@
                     },
                     {
                         name: "local",
-                        location: "/VersaStack-web/js/"
+                        location: "/vxstack-web/js/"
                     }
                 ]
             };
@@ -54,16 +54,16 @@
         </script>
         <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
         
-        <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
+        <link rel="stylesheet" href="/vxstack-web/css/animate.min.css">
+        <link rel="stylesheet" href="/vxstack-web/css/font-awesome.min.css">
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
-        <link rel="stylesheet" href="/VersaStack-web/css/bootstrap.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/style.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/driver.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.min.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.structure.min.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.theme.css">                
+        <link rel="stylesheet" href="/vxstack-web/css/bootstrap.css">
+        <link rel="stylesheet" href="/vxstack-web/css/style.css">
+        <link rel="stylesheet" href="/vxstack-web/css/driver.css">
+        <link rel="stylesheet" href="/vxstack-web/css/font-awesome.min.css">
+        <link rel="stylesheet" href="/vxstack-web/css/jquery-ui.min.css">
+        <link rel="stylesheet" href="/vxstack-web/css/jquery-ui.structure.min.css">
+        <link rel="stylesheet" href="/vxstack-web/css/jquery-ui.theme.css">                
 
     </head>
 
@@ -346,7 +346,7 @@
             }
 
             function loadVisualization() {
-                $("#details-viz").load("/VersaStack-web/details_viz.jsp", function () {
+                $("#details-viz").load("/vxstack-web/details_viz.jsp", function () {
                     
                     // Loading Verification visualization
                     $("#ver-add").append($("#va_viz_div"));

@@ -163,7 +163,7 @@ define([
         };
 
         this.getIconPath = function () {
-            return "/VersaStack-web/resources/filesystem.png";
+            return "/vxstack-web/resources/filesystem.png";
         };
         this.getType = function () {
             return "Volume";

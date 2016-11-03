@@ -81,7 +81,7 @@ a.hover {
 }
 
 body {
-    background: linear-gradient(rgba(75,75,75,0.3), rgba(0,0,0,0.4)), url('/VersaStack-web/img/background.png');
+    background: linear-gradient(rgba(75,75,75,0.3), rgba(0,0,0,0.4)), url('/vxstack-web/img/background.png');
     background-attachment: fixed;
     font-family: 'Roboto', sans-serif;
     text-align: center;
@@ -352,7 +352,7 @@ body {
     width: 50%;
 }
 .catalog-tabs li a {
-    background: linear-gradient(rgba(75,75,75,0.3), rgba(0,0,0,0.4)), url('/VersaStack-web/img/background.png')
+    background: linear-gradient(rgba(75,75,75,0.3), rgba(0,0,0,0.4)), url('/vxstack-web/img/background.png')
 }
 .catalog-tabs li.active a {
     background: white;
@@ -512,7 +512,7 @@ body {
     font-size: 14px;
 }
 .form-result {
-    background: url(/VersaStack-web/img/noise-diagonal.png), linear-gradient(#ddd, #aaa);
+    background: url(/vxstack-web/img/noise-diagonal.png), linear-gradient(#ddd, #aaa);
     border-left: 1px solid #555;
     border-right: 1px solid #777;
     border-top: 1px solid #555;
@@ -522,7 +522,7 @@ body {
 }
 
 .management-table th {
-    background: url(/VersaStack-web/img/noise-diagonal.png), linear-gradient(#46586d, #364454);
+    background: url(/vxstack-web/img/noise-diagonal.png), linear-gradient(#46586d, #364454);
 
     box-shadow: inset 0 1px 0 #a2b1c3;
     color: #fff;
@@ -571,10 +571,10 @@ body {
     box-shadow: inset -1px 0 0 #fff;
 }	
 .management-table tr {
-    background: url(/VersaStack-web/img/noise-diagonal.png);	
+    background: url(/vxstack-web/img/noise-diagonal.png);	
 }
 .management-table tr:nth-child(odd) td {
-    background: #fafafa url(/VersaStack-web/img/noise-diagonal.png);	
+    background: #fafafa url(/vxstack-web/img/noise-diagonal.png);	
 }
 .management-table tr:last-of-type td {
     box-shadow: inset 0 -1px 0 #fff; 
@@ -719,7 +719,7 @@ body {
     max-height: 100%;
 }
 #catalog-tab-content {
-    background: linear-gradient(rgba(0, 0, 0, 0.3),#333), url('/VersaStack-web/img/background.png');
+    background: linear-gradient(rgba(0, 0, 0, 0.3),#333), url('/vxstack-web/img/background.png');
     width: 100%;
     height: calc(100% - 32px);
     border-right: 1px solid white;
@@ -770,7 +770,7 @@ body {
 #loading-panel {
     /* Replace #333 with the background-color of your choice */
     /* Replace loading.gif with the loading image of your choice */
-    background: transparent url('/VersaStack-web/resources/small-loading.gif') 
+    background: transparent url('/vxstack-web/resources/small-loading.gif') 
         no-repeat 50% 16px;
 
     /* Ensures that the transition only runs in one direction */
@@ -842,7 +842,7 @@ body {
 }
 
 #sidebar-contents {
-    background: linear-gradient(rgba(38, 38, 38, 0.4), rgba(0,0,0,.5)), url('/VersaStack-web/img/background.png');
+    background: linear-gradient(rgba(38, 38, 38, 0.4), rgba(0,0,0,.5)), url('/vxstack-web/img/background.png');
     top: 40px;
     margin-left: 0px;
     position: fixed;

@@ -1,5 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page errorPage = "/VersaStack-web/errorPage.jsp" %>
+<%@page errorPage = "/vxstack-web/errorPage.jsp" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
@@ -15,16 +15,16 @@
     <head>   
         <meta charset="UTF-8">
         <title>View Creation Service</title>
-        <script src="/VersaStack-web/js/jquery/jquery.js"></script>
-        <script src="/VersaStack-web/js/bootstrap.js"></script>
-        <script src="/VersaStack-web/js/nexus.js"></script>
+        <script src="/vxstack-web/js/jquery/jquery.js"></script>
+        <script src="/vxstack-web/js/bootstrap.js"></script>
+        <script src="/vxstack-web/js/nexus.js"></script>
 
-        <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
+        <link rel="stylesheet" href="/vxstack-web/css/animate.min.css">
+        <link rel="stylesheet" href="/vxstack-web/css/font-awesome.min.css">
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
-        <link rel="stylesheet" href="/VersaStack-web/css/bootstrap.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/style.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/driver.css">
+        <link rel="stylesheet" href="/vxstack-web/css/bootstrap.css">
+        <link rel="stylesheet" href="/vxstack-web/css/style.css">
+        <link rel="stylesheet" href="/vxstack-web/css/driver.css">
     </head>
 
     <sql:setDataSource var="rains_conn" driver="com.mysql.jdbc.Driver"
@@ -72,7 +72,7 @@
                         </div>
                         <div id="service-bottom">
                             <div id="service-fields">
-                                <form id="view-form" action="/VersaStack-web/ViewServlet" method="post">
+                                <form id="view-form" action="/vxstack-web/ViewServlet" method="post">
                                     <!-- Management Form -->
                                     <c:if test="${param.mode != 'create'}">
                                         <table class="management-table" id="manage-table">
@@ -218,9 +218,9 @@
                                 </c:when>
                             </c:choose>                        
 
-                            <br><a href="/VersaStack-web/ops/srvc/viewcreate.jsp?self=true">Return to Views.</a>                                
-                            <br><a href="/VersaStack-web/ops/catalog.jsp">Return to Services.</a>
-                            <br><a href="/VersaStack-web/orch/graphTest.jsp">Return to Graphic Orchestration.</a>
+                            <br><a href="/vxstack-web/ops/srvc/viewcreate.jsp?self=true">Return to Views.</a>                                
+                            <br><a href="/vxstack-web/ops/catalog.jsp">Return to Services.</a>
+                            <br><a href="/vxstack-web/orch/graphTest.jsp">Return to Graphic Orchestration.</a>
                         </div>
                     </c:otherwise>
                 </c:choose>
@@ -232,7 +232,7 @@
         <!-- JS -->
         <script>
             $(function () {
-                $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
+                $("#sidebar").load("/vxstack-web/sidebar.html", function () {
                     if (${user.isAllowed(1)}) {
                         var element = document.getElementById("service1");
                         element.classList.remove("hide");
@@ -250,7 +250,7 @@
                         element.classList.remove("hide");
                     }
                 });
-                $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", null);                                        
+                $("#tag-panel").load("/vxstack-web/tagPanel.jsp", null);                                        
             });
         </script>        
     </body>

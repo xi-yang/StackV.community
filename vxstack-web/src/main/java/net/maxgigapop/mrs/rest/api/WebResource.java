@@ -75,7 +75,7 @@ public class WebResource {
     private static final Logger logger = Logger.getLogger(WebResource.class.getName());
     private final String front_db_user = "front_view";
     private final String front_db_pass = "frontuser";
-    String host = "http://127.0.0.1:8080/VersaStack-web/restapi";
+    String host = "http://127.0.0.1:8080/vxstack-web/restapi";
     private final serviceBeans servBean = new serviceBeans();
     JSONParser parser = new JSONParser();
     private final ExecutorService executorService = java.util.concurrent.Executors.newCachedThreadPool();

@@ -1,5 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page errorPage = "/VersaStack-web/errorPage.jsp" %>
+<%@page errorPage = "/vxstack-web/errorPage.jsp" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
@@ -15,16 +15,16 @@
     <head>   
         <meta charset="UTF-8">
         <title>Service Catalog</title>
-        <script src="/VersaStack-web/js/jquery/jquery.js"></script>
-        <script src="/VersaStack-web/js/bootstrap.js"></script>
-        <script src="/VersaStack-web/js/nexus.js"></script>
+        <script src="/vxstack-web/js/jquery/jquery.js"></script>
+        <script src="/vxstack-web/js/bootstrap.js"></script>
+        <script src="/vxstack-web/js/nexus.js"></script>
 
-        <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">
+        <link rel="stylesheet" href="/vxstack-web/css/animate.min.css">
+        <link rel="stylesheet" href="/vxstack-web/css/font-awesome.min.css">
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
-        <link rel="stylesheet" href="/VersaStack-web/css/bootstrap.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/style.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/driver.css">
+        <link rel="stylesheet" href="/vxstack-web/css/bootstrap.css">
+        <link rel="stylesheet" href="/vxstack-web/css/style.css">
+        <link rel="stylesheet" href="/vxstack-web/css/driver.css">
     </head>
 
     <sql:setDataSource var="front_conn" driver="com.mysql.jdbc.Driver"
@@ -68,17 +68,17 @@
                             <!--Details page redirection-->
                             <c:choose>                                    
                                 <c:when test="${instance[0]} == 'Dynamic Network Connection'"><!--DNC-->
-                                    <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}&type=dnc'>
+                                    <tr class="clickable-row" data-href='/vxstack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}&type=dnc'>
                                     </c:when>                                        
                                     <c:when test="${instance[0]} == 'Network Creation'"><!--VCN-->
-                                    <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}&type=netcreate'>
+                                    <tr class="clickable-row" data-href='/vxstack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}&type=netcreate'>
                                     </c:when>
                                     <c:when test="${instance[0]} == 'Hybrid Cloud'"><!--VCN-->
-                                    <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}&type=hybridcloud'>
+                                    <tr class="clickable-row" data-href='/vxstack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}&type=hybridcloud'>
                                     </c:when>
 
                                     <c:otherwise>
-                                    <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}'>
+                                    <tr class="clickable-row" data-href='/vxstack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}'>
                                     </c:otherwise>
                                 </c:choose>                                                
                                 <td>${instance[3]}</td>        
@@ -186,7 +186,7 @@
             $(function () {
                 setRefresh(60);
 
-                $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", null);
+                $("#tag-panel").load("/vxstack-web/tagPanel.jsp", null);
             });
 
             function timerChange(sel) {

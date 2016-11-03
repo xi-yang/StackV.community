@@ -1,6 +1,6 @@
 <%@page import="java.security.MessageDigest"%>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page errorPage = "/VersaStack-web/errorPage.jsp" %>
+<%@page errorPage = "/vxstack-web/errorPage.jsp" %>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
 <jsp:setProperty name="user" property="*" />  
 <!DOCTYPE html>
@@ -29,7 +29,7 @@
                        
             if (request.getParameter("return").equals("groups")) {                
                 response.sendRedirect("user_groups.jsp?id=" + request.getParameter("group_id"));
-            } else response.sendRedirect("/VersaStack-web/home.jsp");
+            } else response.sendRedirect("/vxstack-web/home.jsp");
         %>          
     </body>
 </html>

@@ -23,7 +23,7 @@
 
 
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page errorPage = "/VersaStack-web/errorPage.jsp" %>
+<%@page errorPage = "/vxstack-web/errorPage.jsp" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
@@ -34,10 +34,10 @@
 <c:if test="${user.loggedIn == false}">
     <c:redirect url="/index.jsp" />
 </c:if>
-        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.min.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/contextMenu.css">           
-        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.structure.min.css">
-        <link rel="stylesheet" href="/VersaStack-web/css/jquery-ui.theme.css">                
+        <link rel="stylesheet" href="/vxstack-web/css/jquery-ui.min.css">
+        <link rel="stylesheet" href="/vxstack-web/css/contextMenu.css">           
+        <link rel="stylesheet" href="/vxstack-web/css/jquery-ui.structure.min.css">
+        <link rel="stylesheet" href="/vxstack-web/css/jquery-ui.theme.css">                
         
         <style>
             .hover_div {
@@ -230,7 +230,7 @@
                           $.ajax({
                                    crossDomain: true,
                                    type: "GET",
-                                   url: "/VersaStack-web/restapi/service/ready",
+                                   url: "/vxstack-web/restapi/service/ready",
                                    dataType: "text", 
 
                                    success: function(data,  textStatus,  jqXHR ) {
@@ -447,7 +447,7 @@
                //viz_table.find("th:nth-child(" + index + ")").css( "color", "#ccc");
             }
             function showManifest() {
-                  window.open('/VersaStack-web/ops/details/manifestPortal.jsp?uuid=' + location.search.split("?uuid=")[1], 'newwindow', config = 'height=1200,width=700, top=0,left=800, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no');
+                  window.open('/vxstack-web/ops/details/manifestPortal.jsp?uuid=' + location.search.split("?uuid=")[1], 'newwindow', config = 'height=1200,width=700, top=0,left=800, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no');
             }
             function createTextToggle(prefix, textModel) {
                 var button =  $("#" + prefix + "_viz_toggle_model");
@@ -485,7 +485,7 @@
                  $.ajax({
                     crossDomain: true,
                     type: "GET",
-                    url: "/VersaStack-web/restapi/service/delta/" + UUID,
+                    url: "/vxstack-web/restapi/service/delta/" + UUID,
                     dataType: "json", 
 
                     success: function(data,  textStatus,  jqXHR ) {
@@ -580,7 +580,7 @@
                 $.ajax({
                     crossDomain: true,
                     type: "GET",
-                    url: "/VersaStack-web/restapi/app/service/lastverify/" + UUID,
+                    url: "/vxstack-web/restapi/app/service/lastverify/" + UUID,
                     dataType: "json", 
 
                     success: function(data,  textStatus,  jqXHR ) {

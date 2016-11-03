@@ -59,7 +59,7 @@ public class ServiceServlet extends HttpServlet {
     serviceBeans servBean = new serviceBeans();
     private final String front_db_user = "front_view";
     private final String front_db_pass = "frontuser";
-    String host = "http://localhost:8080/VersaStack-web/restapi";
+    String host = "http://localhost:8080/vxstack-web/restapi";
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -102,7 +102,7 @@ public class ServiceServlet extends HttpServlet {
             } else if (request.getParameter("hybridCloud") != null) {
                 serviceString = "hybridcloud";
             } else {
-                response.sendRedirect("/VersaStack-web/errorPage.jsp");
+                response.sendRedirect("/vxstack-web/errorPage.jsp");
             }
 
             // Create paraMap.
@@ -144,7 +144,7 @@ public class ServiceServlet extends HttpServlet {
                     response.sendRedirect(createFlow(request, paraMap));
                     break;
                 default:
-                    response.sendRedirect("/VersaStack-web/errorPage.jsp");
+                    response.sendRedirect("/vxstack-web/errorPage.jsp");
                     break;
             }
 
@@ -190,7 +190,7 @@ public class ServiceServlet extends HttpServlet {
 
             // Reads large stubModelTtl property from file.
             String stubModelTTL = "", nextLine;
-            String testingPath = "/Users/max/NetBeansProjects/FrontVis/VersaStack/VersaStack-web/"
+            String testingPath = "/Users/max/NetBeansProjects/FrontVis/vxstack/vxstack-web/"
                     + "src/main/webapp/tools/testing/";
             String ttlFilename = "stub_driver_stubModelTtl";
             try {
@@ -247,7 +247,7 @@ public class ServiceServlet extends HttpServlet {
 
         executor.execute(new DriverWorker(asyncCtx, paraMap));
 
-        return ("/VersaStack-web/ops/srvc/driver.jsp?ret=0");
+        return ("/vxstack-web/ops/srvc/driver.jsp?ret=0");
     }
 
     public String parseFullNetwork(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {
@@ -575,7 +575,7 @@ public class ServiceServlet extends HttpServlet {
         ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
         executor.execute(new APIRunner(inputJSON));
 
-        return ("/VersaStack-web/ops/catalog.jsp");
+        return ("/vxstack-web/ops/catalog.jsp");
     }
 
     public String parseHybridCloud(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {
@@ -978,7 +978,7 @@ public class ServiceServlet extends HttpServlet {
         ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
         executor.execute(new APIRunner(inputJSON));
 
-        return ("/VersaStack-web/ops/catalog.jsp");
+        return ("/vxstack-web/ops/catalog.jsp");
     }
 
     public String createFlow(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {
@@ -1026,7 +1026,7 @@ public class ServiceServlet extends HttpServlet {
 
             executor.execute(new FL2PWorker(asyncCtx, paraMap));
         }
-        return ("/VersaStack-web/ops/srvc/fl2p.jsp?ret=0");
+        return ("/vxstack-web/ops/srvc/fl2p.jsp?ret=0");
 
     }
 
@@ -1079,7 +1079,7 @@ public class ServiceServlet extends HttpServlet {
         ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
         executor.execute(new APIRunner(inputJSON));
 
-        return ("/VersaStack-web/ops/srvc/dnc.jsp?ret=0");
+        return ("/vxstack-web/ops/srvc/dnc.jsp?ret=0");
 
     }
 
@@ -1089,7 +1089,7 @@ class APIRunner implements Runnable {
 
     JSONObject inputJSON;
     serviceBeans servBean = new serviceBeans();
-    String host = "http://localhost:8080/VersaStack-web/restapi";
+    String host = "http://localhost:8080/vxstack-web/restapi";
 
     public APIRunner(JSONObject input) {
         inputJSON = input;
@@ -1132,7 +1132,7 @@ class APIRunner implements Runnable {
 
  executor.execute(new [___serviceworker](asyncCtx, paraMap));
 
- return ("/VersaStack-web/ops/srvc/[___servicejsp]?ret=0");
+ return ("/vxstack-web/ops/srvc/[___servicejsp]?ret=0");
  }
 
  */

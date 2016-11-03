@@ -7,8 +7,8 @@ var baseUrl = window.location.origin;
 // Page Load Function
 
 $(function () {
-    $("#nav").load("/VersaStack-web/navbar.html");
-    $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
+    $("#nav").load("/vxstack-web/navbar.html");
+    $("#sidebar").load("/vxstack-web/sidebar.html", function () {
         $("#sidebar-toggle").click(function (evt) {
             $("#sidebar-toggle-1").toggleClass("img-off");
             $("#sidebar-toggle-2").toggleClass("img-off");
@@ -21,7 +21,7 @@ $(function () {
     });
 
     $(".button-service-select").click(function (evt) {
-        $ref = "/VersaStack-web/ops/srvc/" + this.id.toLowerCase() + ".jsp";
+        $ref = "/vxstack-web/ops/srvc/" + this.id.toLowerCase() + ".jsp";
         window.location.href = $ref;
 
         //$("#service-overview").toggleClass("hide");
@@ -31,7 +31,7 @@ $(function () {
     });
 
     $(".button-profile-select").click(function (evt) {
-        var apiUrl = baseUrl + '/VersaStack-web/restapi/app/profile/' + this.id;
+        var apiUrl = baseUrl + '/vxstack-web/restapi/app/profile/' + this.id;
         $.ajax({
             url: apiUrl,
             type: 'GET',
@@ -52,7 +52,7 @@ $(function () {
     });
 
     $(".button-profile-submit").click(function (evt) {
-        var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service';
+        var apiUrl = baseUrl + '/vxstack-web/restapi/app/service';
         $.ajax({
             url: apiUrl,
             type: 'POST',
@@ -81,7 +81,7 @@ $(function () {
     });
 
     $("#button-service-return").click(function (evt) {
-        window.location.href = "/VersaStack-web/ops/catalog.jsp";
+        window.location.href = "/vxstack-web/ops/catalog.jsp";
 
         evt.preventDefault();
     });
@@ -121,7 +121,7 @@ $(function () {
 
 function detailsLoad() {
     var uuid = getUrlParameter('uuid');
-    $ref = "/VersaStack-web/ops/details/dncDetails.jsp?uuid=" + uuid + " #instance-pane";
+    $ref = "/vxstack-web/ops/details/dncDetails.jsp?uuid=" + uuid + " #instance-pane";
 
     $("service-specific").load($ref);
 }
@@ -140,13 +140,13 @@ function aclSelect(sel) {
 
 function installSelect(sel) {
     if (sel.value !== null) {
-        $ref = "/VersaStack-web/ops/srvc/driver.jsp?form_install=" + sel.value + " #service-menu";
-        $ref2 = "/VersaStack-web/ops/srvc/driver.jsp?form_install=" + sel.value + " #service-fields";
+        $ref = "/vxstack-web/ops/srvc/driver.jsp?form_install=" + sel.value + " #service-menu";
+        $ref2 = "/vxstack-web/ops/srvc/driver.jsp?form_install=" + sel.value + " #service-fields";
     }
     else {
-        $ref = "/VersaStack-web/ops/srvc/driver.jsp #service-menu";
+        $ref = "/vxstack-web/ops/srvc/driver.jsp #service-menu";
 
-        $ref2 = "/VersaStack-web/ops/srvc/driver.jsp #service-fields";
+        $ref2 = "/vxstack-web/ops/srvc/driver.jsp #service-fields";
 
 
     }
@@ -156,12 +156,12 @@ function installSelect(sel) {
 
 function viewmodeSelect(sel) {
     if (sel.value !== null) {
-        $ref = "/VersaStack-web/ops/srvc/viewcreate.jsp?mode=" + sel.value + " #service-menu";
-        $ref2 = "/VersaStack-web/ops/srvc/viewcreate.jsp?mode=" + sel.value + " #service-fields";
+        $ref = "/vxstack-web/ops/srvc/viewcreate.jsp?mode=" + sel.value + " #service-menu";
+        $ref2 = "/vxstack-web/ops/srvc/viewcreate.jsp?mode=" + sel.value + " #service-fields";
     }
     else {
-        $ref = "/VersaStack-web/ops/srvc/viewcreate.jsp #service-menu";
-        $ref2 = "/VersaStack-web/ops/srvc/viewcreate.jsp #service-fields";
+        $ref = "/vxstack-web/ops/srvc/viewcreate.jsp #service-menu";
+        $ref2 = "/vxstack-web/ops/srvc/viewcreate.jsp #service-fields";
 
     }
     $("#service-top").load($ref);
@@ -172,12 +172,12 @@ function viewmodeSelect(sel) {
 
 function driverSelect(sel) {
     if (sel.value !== null) {
-        $ref = "/VersaStack-web/ops/srvc/driver.jsp?form_install=install&driver_id=" + sel.value + " #service-fields";
+        $ref = "/vxstack-web/ops/srvc/driver.jsp?form_install=install&driver_id=" + sel.value + " #service-fields";
     }
 
 
     else
-        $ref = "/VersaStack-web/ops/srvc/driver.jsp?form_install=install #service-fields";
+        $ref = "/vxstack-web/ops/srvc/driver.jsp?form_install=install #service-fields";
     $("#service-bottom").load($ref);
 
 
@@ -188,20 +188,20 @@ function topoSelect(sel) {
     if (sel.value !== null) {
 
         if (sel.value.indexOf("aws") > -1) {
-            $ref = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=aws&topo=" + sel.value + " #service-fields";
+            $ref = "/vxstack-web/ops/srvc/vmadd.jsp?vm_type=aws&topo=" + sel.value + " #service-fields";
         }
         else if (sel.value.indexOf("openstack") > -1) {
-            $ref = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=os #service-fields";
+            $ref = "/vxstack-web/ops/srvc/vmadd.jsp?vm_type=os #service-fields";
         }
         else if (sel.value.indexOf("versa") > -1) {
-            $ref = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=vs #service-fields";
+            $ref = "/vxstack-web/ops/srvc/vmadd.jsp?vm_type=vs #service-fields";
         }
         else {
-            $ref = "/VersaStack-web/ops/srvc/vmadd.jsp #service-fields";
+            $ref = "/vxstack-web/ops/srvc/vmadd.jsp #service-fields";
         }
     }
     else
-        $ref = "/VersaStack-web/ops/srvc/vmadd.jsp #service-fields";
+        $ref = "/vxstack-web/ops/srvc/vmadd.jsp #service-fields";
 
     $("#service-bottom").load($ref);
 
@@ -229,10 +229,10 @@ function instanceSelect(sel) {
 
 function networkSelect(sel) {
     if (sel.value !== null) {
-        $ref2 = "/VersaStack-web/ops/srvc/netcreate.jsp?networkType=" + sel.value + " #service-fields";
+        $ref2 = "/vxstack-web/ops/srvc/netcreate.jsp?networkType=" + sel.value + " #service-fields";
     }
     else {
-        $ref2 = "/VersaStack-web/ops/srvc/netcreate.jsp #service-fields";
+        $ref2 = "/vxstack-web/ops/srvc/netcreate.jsp #service-fields";
     }
     $("#service-bottom").load($ref2);
 
@@ -626,7 +626,7 @@ function addLink() {
 
 // API CALLS
 function checkInstance(uuid) {
-    var apiUrl = baseUrl + '/VersaStack-web/restapi/service/' + uuid + '/status';
+    var apiUrl = baseUrl + '/vxstack-web/restapi/service/' + uuid + '/status';
     $.ajax({
         url: apiUrl,
         type: 'GET',
@@ -638,7 +638,7 @@ function checkInstance(uuid) {
 }
 
 function propagateInstance(uuid) {
-    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/propagate';
+    var apiUrl = baseUrl + '/vxstack-web/restapi/app/service/' + uuid + '/propagate';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -649,7 +649,7 @@ function propagateInstance(uuid) {
 }
 
 function commitInstance(uuid) {
-    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/commit';
+    var apiUrl = baseUrl + '/vxstack-web/restapi/app/service/' + uuid + '/commit';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -660,7 +660,7 @@ function commitInstance(uuid) {
 }
 
 function revertInstance(uuid) {
-    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/revert';
+    var apiUrl = baseUrl + '/vxstack-web/restapi/app/service/' + uuid + '/revert';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -668,11 +668,11 @@ function revertInstance(uuid) {
             window.location.reload(true);
         }
     });
-    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
+    //window.location.replace('/vxstack-web/ops/catalog.jsp');
 }
 
 function cancelInstance(uuid) {
-    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/cancel';
+    var apiUrl = baseUrl + '/vxstack-web/restapi/app/service/' + uuid + '/cancel';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -680,10 +680,10 @@ function cancelInstance(uuid) {
             window.location.reload(true);
         }
     });
-    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
+    //window.location.replace('/vxstack-web/ops/catalog.jsp');
 }
 function forceCancelInstance(uuid) {
-    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/force_cancel';
+    var apiUrl = baseUrl + '/vxstack-web/restapi/app/service/' + uuid + '/force_cancel';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -691,11 +691,11 @@ function forceCancelInstance(uuid) {
             window.location.reload(true);
         }
     });
-    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
+    //window.location.replace('/vxstack-web/ops/catalog.jsp');
 }
 
 function reinstateInstance(uuid) {
-    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/reinstate';
+    var apiUrl = baseUrl + '/vxstack-web/restapi/app/service/' + uuid + '/reinstate';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -703,10 +703,10 @@ function reinstateInstance(uuid) {
             window.location.reload(true);
         }
     });
-    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
+    //window.location.replace('/vxstack-web/ops/catalog.jsp');
 }
 function forceReinstateInstance(uuid) {
-    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/force_reinstate';
+    var apiUrl = baseUrl + '/vxstack-web/restapi/app/service/' + uuid + '/force_reinstate';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -714,11 +714,11 @@ function forceReinstateInstance(uuid) {
             window.location.reload(true);
         }
     });
-    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
+    //window.location.replace('/vxstack-web/ops/catalog.jsp');
 }
 
 function forceRetryInstance(uuid) {
-    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/force_retry';
+    var apiUrl = baseUrl + '/vxstack-web/restapi/app/service/' + uuid + '/force_retry';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -726,11 +726,11 @@ function forceRetryInstance(uuid) {
             window.location.reload(true);
         }
     });
-    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
+    //window.location.replace('/vxstack-web/ops/catalog.jsp');
 }
 
 function modifyInstance(uuid) {
-    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/modify';
+    var apiUrl = baseUrl + '/vxstack-web/restapi/app/service/' + uuid + '/modify';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -738,10 +738,10 @@ function modifyInstance(uuid) {
             window.location.reload(true);
         }
     });
-    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
+    //window.location.replace('/vxstack-web/ops/catalog.jsp');
 }
 function forceModifyInstance(uuid) {
-    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/force_modify';
+    var apiUrl = baseUrl + '/vxstack-web/restapi/app/service/' + uuid + '/force_modify';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -749,11 +749,11 @@ function forceModifyInstance(uuid) {
             window.location.reload(true);
         }
     });
-    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
+    //window.location.replace('/vxstack-web/ops/catalog.jsp');
 }
 
 function verifyInstance(uuid) {
-    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/verify';
+    var apiUrl = baseUrl + '/vxstack-web/restapi/app/service/' + uuid + '/verify';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -761,17 +761,17 @@ function verifyInstance(uuid) {
             window.location.reload(true);
         }
     });
-    //window.location.replace('/VersaStack-web/ops/catalog.jsp');
+    //window.location.replace('/vxstack-web/ops/catalog.jsp');
 }
 
 function deleteInstance(uuid) {
-    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + uuid + '/delete';
+    var apiUrl = baseUrl + '/vxstack-web/restapi/app/service/' + uuid + '/delete';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
         success: function (result) {
             console.log("DELETION SUCCESSFUL");
-            window.location.replace('/VersaStack-web/ops/catalog.jsp');
+            window.location.replace('/vxstack-web/ops/catalog.jsp');
         }
     });
 }
@@ -1125,7 +1125,7 @@ function fl2pModerate(uuid) {
  var newJSON = JSON.stringify(arr);
  localStorage.setItem('queryJSON', newJSON);
  
- $("#service-bottom").load("/VersaStack-web/ops/srvc/viewcreate.jsp?mode=create #service-fields");
+ $("#service-bottom").load("/vxstack-web/ops/srvc/viewcreate.jsp?mode=create #service-fields");
  }*/
 
 
