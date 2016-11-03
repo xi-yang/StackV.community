@@ -1,0 +1,137 @@
+/*
+ * Copyright (c) 2013-2016 University of Maryland
+ * Created by: Antonio Heard 2016
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Work.
+
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * IN THE WORK.
+ */
+
+#tagPanelColorSelectionTab{
+    margin-left: 15px;
+    float:left;
+}
+.filteredColorBox{
+    margin-right: 1px;
+    float: left;
+    width: 15px;
+    height: 15px;
+}
+#tagPanel-colorPanel{
+    padding-bottom: 20px;
+    border: 1px rgba(0, 0, 0, .075) solid;
+}
+
+#labelList-container {
+    word-wrap: break-word;
+    overflow-y: scroll;
+    height: 75%;
+}
+#tagPanel {
+    background: linear-gradient(rgba(0, 0, 0, 0.3),#333), url('/VersaStack-web/img/background.png');
+    position: fixed;
+    color: white;
+    bottom: 0px;
+    right: 0px;
+    z-index: 2;
+    min-width: 10%;
+    border: 1px solid white;
+    border-bottom: none;
+    -webkit-transition: bottom 0.5s ease;
+    transition: bottom 0.5s ease;
+    height: calc(50% - 10px );
+    width: 15%;
+    /* padding-top: 10px; */
+    border-radius: 4px 4px 0 0;
+}
+
+#tagPanel.closed {
+    bottom: calc(-50% + 30px);
+    -webkit-transition: bottom 0.5s ease;
+    transition: bottom 0.5s ease;
+}
+
+#tagPanel-tab {
+    background-color: white;
+    height: 20px;
+    color: #555;
+}
+
+#ClearAllTagsButton {
+    color:black;
+}
+
+#tagPanel-contents {height: 100%; padding: 2px;}
+
+
+.label-color-red {background-color:#DC143C;}
+.label-color-orange {background-color:#FFA500;}
+.label-color-yellow {background-color:#FFD700}
+.label-color-blue {background-color:#4169E1;}
+.label-color-green {background-color:#009900;}
+.label-color-purple {background-color:#663399;}
+
+#tagPanel-colorPanel{
+    text-align:left;
+}
+
+#tagPanel-colorPanelTitle {
+    margin-left:5px;
+}
+#tagPanel-labelPanel{
+    border: 1px rgba(0, 0, 0, .075) solid;    
+
+    height: 100%;
+    width: 100%;
+}
+
+#tagPanel-labelPanelTitle {
+    margin-left: 5px;
+    text-align: left;
+}
+.tagPanel-labelList{
+    text-align:left;
+    padding-left: 0;
+    margin-bottom: 20px;
+}
+.tagPanel-labelItem {
+    position: relative;
+    color: white;
+    display: block;
+    /* padding: 10px 15px; */
+    padding-left: 20px;
+    margin-bottom: -1px;
+    border: 1px solid #ddd;
+    font-weight: bold;
+    font-family:Trebuchet MS;
+
+}
+
+#boxRed {background-color:red;}
+#boxOrange {background-color:orange;}
+#boxYellow {background-color:yellow;}
+#boxGreen {background-color:green;}
+#boxBlue {background-color:blue;}
+#boxPurple {background-color:purple;}
+.colorBox-highlighted {    border: 2px solid black;}
+
+.tagDeletionIcon{
+    float: right;
+    margin-top: 1%;
+    margin-right: 1%;
+    cursor: pointer;    
+}
