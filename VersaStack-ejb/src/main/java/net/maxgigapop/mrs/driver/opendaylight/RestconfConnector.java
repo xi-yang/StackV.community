@@ -202,7 +202,25 @@ public class RestconfConnector {
                     jOutputActoin.put("max-length", 65535); // hardcoded
                 } 
                 //@ TODO: more action types such as push / pop / swap VLAN etc.
-                //  https://wiki.opendaylight.org/view/Editing_OpenDaylight_OpenFlow_Plugin:End_to_End_Flows:Example_Flows
+                // https://wiki.opendaylight.org/view/Editing_OpenDaylight_OpenFlow_Plugin:End_to_End_Flows:Example_Flows
+                // http://www.brocade.com/content/html/en/sdn-controller-applications/bfm/3.1.0/GUID-3D7035AF-94DA-47BD-A595-A555B46FE037.html
+                else if (tv[0].equalsIgnoreCase("strip_vlan")) {
+                    // 
+                } else if (tv[0].equalsIgnoreCase("push_vlan")) {
+                    //tv[1] = ethernet type (alwasy 0x88a8)
+                } else if (tv[0].equalsIgnoreCase("mod_vlan_vid")) {
+                    //tv[1] = vlan_vid
+                } else if (tv[0].equalsIgnoreCase("mod_vlan_pcp")) {
+                    //tv[1] = vlan_pcp
+                } else if (tv[0].equalsIgnoreCase("mod_dl_src")) {
+                    //tv[1] = mac
+                } else if (tv[0].equalsIgnoreCase("mod_nw_src")) {
+                    //tv[1] = ip
+                } else if (tv[0].equalsIgnoreCase("mod_tp_src")) {
+                    //tv[1] = port
+                } else if (tv[0].equalsIgnoreCase("mod_nw_ttl")) {
+                    //tv[1] = ttl
+                } // and more
                 jActions.add(jAction);
             }
         }

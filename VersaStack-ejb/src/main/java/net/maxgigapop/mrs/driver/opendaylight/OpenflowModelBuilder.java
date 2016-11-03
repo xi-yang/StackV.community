@@ -348,7 +348,7 @@ public class OpenflowModelBuilder {
                                     model.add(model.createStatement(resFlowAction, Mrs.value, outPort));
                                 }
                             }
-                            //@ TODO: more action types such as push / pop / swap VLAN etc.
+                            //@ TODO: more action types such as push / strip / mod VLAN etc.
                             //  https://wiki.opendaylight.org/view/Editing_OpenDaylight_OpenFlow_Plugin:End_to_End_Flows:Example_Flows
                         }
                     } catch (Exception ex) {
