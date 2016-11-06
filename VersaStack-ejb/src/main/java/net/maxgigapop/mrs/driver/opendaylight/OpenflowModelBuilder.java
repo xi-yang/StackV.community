@@ -347,9 +347,60 @@ public class OpenflowModelBuilder {
                                     model.add(model.createStatement(resFlowAction, Mrs.type, "output"));
                                     model.add(model.createStatement(resFlowAction, Mrs.value, outPort));
                                 }
-                            }
-                            //@ TODO: more action types such as push / strip / mod VLAN etc.
-                            //  https://wiki.opendaylight.org/view/Editing_OpenDaylight_OpenFlow_Plugin:End_to_End_Flows:Example_Flows
+                            } else if (jAction.containsKey("pop-vlan-action")) {
+                                model.add(model.createStatement(resFlowAction, Mrs.type, "strip_vlan"));
+                                model.add(model.createStatement(resFlowAction, Mrs.value, "strip_vlan"));
+                            } else if (jAction.containsKey("push-vlan-action")) {
+                                model.add(model.createStatement(resFlowAction, Mrs.type, "push_vlan"));
+                                model.add(model.createStatement(resFlowAction, Mrs.value, "33024"));
+                            } else if (jAction.containsKey("set-field")) {
+                                JSONObject jActionOutput = (JSONObject)jAction.get("set-field");
+                                if (jActionOutput.containsKey("ethernet-match")) {
+                                    JSONObject jMatchEther = (JSONObject)jActionOutput.get("ethernet-match");
+                                    if (jMatchEther.containsKey("ethernet-type")) {
+                                        JSONObject jMatchEtherData = (JSONObject)jMatchEther.get("ethernet-type");
+                                        model.add(model.createStatement(resFlowAction, Mrs.type, "mod_dl_type"));
+                                        model.add(model.createStatement(resFlowAction, Mrs.value, jMatchEtherData.get("type").toString()));
+                                    }
+                                    if (jMatchEther.containsKey("ethernet-source")) {
+                                        JSONObject jMatchEtherData = (JSONObject)jMatchEther.get("ethernet-source");
+                                        model.add(model.createStatement(resFlowAction, Mrs.type, "mod_dl_src"));
+                                        model.add(model.createStatement(resFlowAction, Mrs.value, jMatchEtherData.get("address").toString()));
+                                    } 
+                                    if (jMatchEther.containsKey("ethernet-destination")) {
+                                        JSONObject jMatchEtherData = (JSONObject)jMatchEther.get("ethernet-destination");
+                                        model.add(model.createStatement(resFlowAction, Mrs.type, "mod_dl_dst"));
+                                        model.add(model.createStatement(resFlowAction, Mrs.value, jMatchEtherData.get("address").toString()));
+                                    }
+                                } else if (jActionOutput.containsKey("vlan-match")) {
+                                    JSONObject jMatchVlan = (JSONObject)jActionOutput.get("vlan-match");
+                                    if (jMatchVlan.containsKey("vlan-id")) {
+                                        JSONObject jVlanId = (JSONObject)jMatchVlan.get("vlan-id");
+                                        model.add(model.createStatement(resFlowAction, Mrs.type, "mod_vlan_id"));
+                                        String vlanId = "any";
+                                        if (jVlanId.containsKey("vlan-id")) {
+                                            vlanId = jVlanId.get("vlan-id").toString();
+                                        }
+                                        model.add(model.createStatement(resFlowAction, Mrs.value, vlanId));
+                                    }
+                                    if (jMatchVlan.containsKey("vlan-pcp")) {
+                                        model.add(model.createStatement(resFlowAction, Mrs.type, "mod_vlan_pcp"));
+                                        model.add(model.createStatement(resFlowAction, Mrs.value, jMatchVlan.get("vlan-pcp").toString()));
+                                    }
+                                } else if (jActionOutput.containsKey("ipv4-source")) {
+                                    model.add(model.createStatement(resFlowAction, Mrs.type, "mod_nw_src"));
+                                    model.add(model.createStatement(resFlowAction, Mrs.value, jActionOutput.get("ipv4-source").toString()));
+                                } else if (jActionOutput.containsKey("ipv4-destination")) {
+                                    model.add(model.createStatement(resFlowAction, Mrs.type, "mod_nw_dst"));
+                                    model.add(model.createStatement(resFlowAction, Mrs.value, jActionOutput.get("ipv4-destination").toString()));
+                                } else if (jActionOutput.containsKey("tcp-source-port")) {
+                                    model.add(model.createStatement(resFlowAction, Mrs.type, "mod_tp_src"));
+                                    model.add(model.createStatement(resFlowAction, Mrs.value, jActionOutput.get("tcp-source-port").toString()));
+                                } else if (jActionOutput.containsKey("tcp-destination-port")) {
+                                    model.add(model.createStatement(resFlowAction, Mrs.type, "mod_tp_dst"));
+                                    model.add(model.createStatement(resFlowAction, Mrs.value, jActionOutput.get("tcp-destination-port").toString()));
+                                }
+                            } // and more, e.g. MPLS label swap, dscp, ttl etc.
                         }
                     } catch (Exception ex) {
                         Resource resFlowAction = RdfOwl.createResource(model, URI_action(resFlow.getURI(), "0"), Mrs.FlowRule);

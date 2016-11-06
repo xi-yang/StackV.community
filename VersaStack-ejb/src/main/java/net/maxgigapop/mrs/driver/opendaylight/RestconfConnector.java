@@ -201,26 +201,65 @@ public class RestconfConnector {
                     jOutputActoin.put("output-node-connector", tv[1]);
                     jOutputActoin.put("max-length", 65535); // hardcoded
                 } 
-                //@ TODO: more action types such as push / pop / swap VLAN etc.
+                else if (tv[0].equalsIgnoreCase("strip_vlan")) {
+                    JSONObject jOutputActoin = new JSONObject();
+                    jAction.put("pop-vlan-action", jOutputActoin);
+                } else if (tv[0].equalsIgnoreCase("push_vlan")) {
+                    JSONObject jOutputActoin = new JSONObject();
+                    jAction.put("push-vlan-action", jOutputActoin);
+                    jOutputActoin.put("ethernet-type", "33024"); //ethernet type (alwasy 0x88a8)
+                } else if (tv[0].equalsIgnoreCase("mod_vlan_vid")) {
+                    JSONObject jOutputActoin = new JSONObject();
+                    jAction.put("set-field", jOutputActoin);
+                    JSONObject jVlanMatch = new JSONObject();
+                    jOutputActoin.put("vlan-match", jVlanMatch); 
+                    JSONObject jVlanId = new JSONObject();
+                    jVlanMatch.put("vlan-id", jVlanId);
+                    if (!tv[1].equalsIgnoreCase("any")) {
+                        jVlanId.put("vlan-id", tv[1]);
+                    }
+                    jVlanId.put("vlan-id-present", "true");
+                } else if (tv[0].equalsIgnoreCase("mod_vlan_pcp")) {
+                    JSONObject jOutputActoin = new JSONObject();
+                    jAction.put("set-field", jOutputActoin);
+                    JSONObject jVlanMatch = new JSONObject();
+                    jOutputActoin.put("vlan-match", jVlanMatch); 
+                    jVlanMatch.put("vlan-pcp", tv[1]);
+                } else if (tv[0].startsWith("mod_dl")) {
+                    JSONObject jOutputActoin = new JSONObject();
+                    jAction.put("set-field", jOutputActoin);
+                    JSONObject jMatchEther = new JSONObject();
+                    jOutputActoin.put("ethernet-match", jMatchEther); 
+                    JSONObject jMatchEtherData = new JSONObject();
+                    if (tv[0].equals("mod_dl_type")) {
+                        jMatchEther.put("ethernet-type", jMatchEtherData);
+                        jMatchEtherData.put("type", tv[1]);
+                    } else if (tv[0].equals("mod_dl_src")) {
+                        jMatchEther.put("ethernet-source", jMatchEtherData);
+                        jMatchEtherData.put("address", tv[1]);                        
+                    } else if (tv[0].equals("mod_dl_dst")) {
+                        jMatchEther.put("ethernet-destination", jMatchEtherData);
+                        jMatchEtherData.put("address", tv[1]);                        
+                    }
+                } else if (tv[0].equalsIgnoreCase("mod_nw_src")) {
+                    JSONObject jOutputActoin = new JSONObject();
+                    jAction.put("set-field", jOutputActoin);
+                    jOutputActoin.put("ipv4-source", tv[1]); 
+                } else if (tv[0].equalsIgnoreCase("mod_nw_dst")) {
+                    JSONObject jOutputActoin = new JSONObject();
+                    jAction.put("set-field", jOutputActoin);
+                    jOutputActoin.put("ipv4-destination", tv[1]); 
+                } else if (tv[0].equalsIgnoreCase("mod_tp_src")) {
+                    JSONObject jOutputActoin = new JSONObject();
+                    jAction.put("set-field", jOutputActoin);
+                    jOutputActoin.put("tcp-source-port", tv[1]);  // only tcp for now
+                } else if (tv[0].equalsIgnoreCase("mod_tp_dst")) {
+                    JSONObject jOutputActoin = new JSONObject();
+                    jAction.put("set-field", jOutputActoin);
+                    jOutputActoin.put("tcp-destination-port", tv[1]);  //only tcp for now
+                } // and more, e.g. MPLS label swap, dscp, ttl etc.
                 // https://wiki.opendaylight.org/view/Editing_OpenDaylight_OpenFlow_Plugin:End_to_End_Flows:Example_Flows
                 // http://www.brocade.com/content/html/en/sdn-controller-applications/bfm/3.1.0/GUID-3D7035AF-94DA-47BD-A595-A555B46FE037.html
-                else if (tv[0].equalsIgnoreCase("strip_vlan")) {
-                    // 
-                } else if (tv[0].equalsIgnoreCase("push_vlan")) {
-                    //tv[1] = ethernet type (alwasy 0x88a8)
-                } else if (tv[0].equalsIgnoreCase("mod_vlan_vid")) {
-                    //tv[1] = vlan_vid
-                } else if (tv[0].equalsIgnoreCase("mod_vlan_pcp")) {
-                    //tv[1] = vlan_pcp
-                } else if (tv[0].equalsIgnoreCase("mod_dl_src")) {
-                    //tv[1] = mac
-                } else if (tv[0].equalsIgnoreCase("mod_nw_src")) {
-                    //tv[1] = ip
-                } else if (tv[0].equalsIgnoreCase("mod_tp_src")) {
-                    //tv[1] = port
-                } else if (tv[0].equalsIgnoreCase("mod_nw_ttl")) {
-                    //tv[1] = ttl
-                } // and more
                 jActions.add(jAction);
             }
         }
