@@ -1307,12 +1307,12 @@ public class WebResource {
         front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
-        PreparedStatement prep = front_conn.prepareStatement("SELECT X.superState FROM"
+        PreparedStatement prep = front_conn.prepareStatement("SELECT X.super_state FROM"
                 + " service_instance I, service_state X WHERE I.referenceUUID = ? AND I.service_state_id = X.service_state_id");
         prep.setString(1, refUuid);
         ResultSet rs1 = prep.executeQuery();
         while (rs1.next()) {
-            return rs1.getString("superState");
+             return rs1.getString("X.super_state");
         }
         return "ERROR";
     }

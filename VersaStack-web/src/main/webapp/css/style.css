@@ -688,6 +688,9 @@ body {
     margin-right: 10px;
     margin-left: 10px;
 }
+#refresh-timer {
+    color: #333;
+}
 
 #details-panel {
     padding: 10px 10px;

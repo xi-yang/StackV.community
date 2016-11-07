@@ -8,7 +8,9 @@ var stage = 1;
 var last_stage = 6;
 
 // Page Load Function
-$(function () {
+$(function () {    
+    loadKeycloakACL();
+    
     $(".next").click(function () {
         if (animating)
             return false;
@@ -894,4 +896,8 @@ function infoAlert(title, arr) {
 
         $("#info-panel-fs").html(arrString);
     }
+}
+
+function loadKeycloakACL() {
+    
 }

@@ -66,10 +66,16 @@
 
                 <!-- Stage 2: Network -->
                 <fieldset id='2-1'>
-                    <h2 class="fs-title">Hybrid Cloud Information</h2>                    
+                    <h2 class="fs-title">Instance Information</h2>                    
                     <table class="fs-table">
                         <tr>
                             <td><input type="text" name="alias" placeholder="Instance Alias" /></td>
+                        </tr>
+                        <tr>
+                            <td><input type="text" name="user-acl" placeholder="Comma-separated list of users to share access with (if any)" /></td>
+                        </tr>
+                        <tr>
+                            <td><input type="text" name="group-acl" placeholder="Comma-separated list of groups to share access with (if any)" /></td>
                         </tr>
                     </table>
                     <br>
