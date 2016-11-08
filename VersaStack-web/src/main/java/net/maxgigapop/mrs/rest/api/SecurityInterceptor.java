@@ -22,45 +22,37 @@
  */
 package net.maxgigapop.mrs.rest.api;
 
-import java.lang.reflect.Method;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.ext.Provider;
-import org.jboss.resteasy.annotations.interception.Precedence;
 import org.jboss.resteasy.annotations.interception.ServerInterceptor;
 import org.jboss.resteasy.core.Headers;
 import org.jboss.resteasy.core.ResourceMethodInvoker;
 import org.jboss.resteasy.core.ServerResponse;
 import org.jboss.resteasy.spi.Failure;
 import org.jboss.resteasy.spi.HttpRequest;
-import org.jboss.resteasy.spi.interception.AcceptedByMethod;
 import org.jboss.resteasy.spi.interception.PreProcessInterceptor;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.representations.AccessToken;
 
 @Provider
 @ServerInterceptor
-@Precedence("SECURITY")
-public class SecurityInterceptor implements PreProcessInterceptor, AcceptedByMethod {
+public class SecurityInterceptor implements PreProcessInterceptor {
 
-    @SuppressWarnings("rawtypes")
-    @Override
-    public boolean accept(Class c, Method m) {
-        return m.getName().equals("clearAll");
-    }
+    private static final ServerResponse ACCESS_DENIED = new ServerResponse("Access denied for this resource.\n", 401, new Headers<Object>());
+    private static final ServerResponse SERVER_ERROR = new ServerResponse("INTERNAL SERVER ERROR\n", 500, new Headers<Object>());
 
     @Override
     public ServerResponse preProcess(HttpRequest request, ResourceMethodInvoker method)
             throws Failure, WebApplicationException {
-        ServerResponse response = null;
+        ServerResponse response;
 
         KeycloakSecurityContext securityContext = (KeycloakSecurityContext) request.getAttribute(KeycloakSecurityContext.class.getName());
         AccessToken accessToken = securityContext.getToken();
-        System.out.println("Intecepted Subject: " + accessToken.getSubject());
+        
 
-        // very simple security validation
-        response = new ServerResponse(
-                "Test Response",
-                401, new Headers<>());
-        return response;
+        if (false) {
+            return ACCESS_DENIED;
+        }
+        return null;
     }
 }
