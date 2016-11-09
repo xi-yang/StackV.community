@@ -48,11 +48,23 @@ public class SecurityInterceptor implements PreProcessInterceptor {
 
         KeycloakSecurityContext securityContext = (KeycloakSecurityContext) request.getAttribute(KeycloakSecurityContext.class.getName());
         AccessToken accessToken = securityContext.getToken();
+        String subject = accessToken.getSubject();
         
-
-        if (false) {
-            return ACCESS_DENIED;
-        }
-        return null;
+        // Method ACL whitelisting - Currently inactive.
+        if (isAuthorized(subject, method.getMethod.getName()) {
+            return null;
+        }        
+        // Authorization Check - Currently inactive.
+        /* if (true) {
+            return null;
+        } */
+            
+        // Whitelist only          
+        return ACCESS_DENIED;
+    }
+            
+    private boolean isAuthorized(String subject, String object) {
+        // Check against MySQL-backed ACL list.
+        return true;
     }
 }
