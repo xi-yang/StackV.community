@@ -1231,52 +1231,14 @@ public class WebResource {
         throw new EJBException("getServiceType failed to find service type for service uuid="+refUuid);
     }
     
-    private String manTemplateDNC = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
-"<serviceManifest>\n" +
-"<serviceUUID></serviceUUID>\n" +
-"<jsonTemplate>\n" +
-"{\n" +
-"	\"Switching Cross-Connects (Subnet VLANs)\": [\n" +
-"		{\n" +
-"			\"Switching Subnets\": [\n" +
-"				{\n" +
-"					\"Subnet Name\": \"?subnet?\",\n" +
-"					\"Switching Ports\": [\n" +
-"						{\n" +
-"							\"Port Name\": \"?terminal?\",\n" +
-"							\"Vlan Tag\": \"?terminal_vlan?\",\n" +
-"							\"sparql\": \"SELECT ?terminal ?terminal_vlan WHERE { ?subnet nml:hasBidirectionalPort ?terminal. ?terminal nml:hasLabel ?vlan. ?vlan nml:value ?terminal_vlan. }\",\n" +
-"							\"required\": \"true\"\n" +
-"						}\n" +
-"					],\n" +
-"					\"sparql\": \"SELECT ?subnet WHERE { ?subnet a mrs:SwitchingSubnet. }\",\n" +
-"					\"required\": \"true\"\n" +
-"				}\n" +
-"			],\n" +
-"		}\n" +
-"	]\n" +
-"}\n" +
-"</jsonTemplate>\n" +
-"</serviceManifest>";
-    
-    private String resolveManifest(String refUuid, String filePath) {
+    private String resolveManifest(String refUuid, String jsonTemplate) {
         try {
             URL url = new URL(String.format("%s/service/manifest/%s", host, refUuid));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            /*
-            InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(filePath);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-            if (reader == null) {
-                throw new EJBException("resolveManifest cannot open template: " + filePath);
-            }
-            StringBuffer buffer = new StringBuffer();
-            String line = reader.readLine();
-            while (line != null) {
-                buffer.append(line);
-                line = reader.readLine();
-            }
-            */
-            String result = servBean.executeHttpMethod(url, conn, "POST", this.manTemplateDNC);
+            String data = String.format( "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+                + "<serviceManifest>\n<serviceUUID/>\n<jsonTemplate>\n%s</jsonTemplate>\n</serviceManifest>",
+                jsonTemplate);
+            String result = servBean.executeHttpMethod(url, conn, "POST", data);
             return result;
         } catch (Exception ex) {
             throw new EJBException("resolveManifest cannot fetch manifest for service uuid="+refUuid, ex);
@@ -1307,16 +1269,16 @@ public class WebResource {
         String manifest = "";
         switch (serviceType) {
             case "Dynamic Network Connection":
-                manifest = this.resolveManifest(svcUUID, "/VersaStack-web-1.0-SNAPSHOT/data/xml/manifest-templates/dnc-manifest-template.xml");
+                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateDNC);
                 break;
             case "Advanced Hybrid Cloud":
-                manifest = this.resolveManifest(svcUUID, "/data/xml/manifest-templates/ahc-manifest-template.xml");
+                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAHC);
                 break;
             case "Virtual Cloud Network - OPS":
-                manifest = this.resolveManifest(svcUUID, "/data/xml/manifest-templates/vcn-ops-manifest-template.xml");
+                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateOPS);
                 break;
             case "Virtual Cloud Network - AWS":
-                manifest = this.resolveManifest(svcUUID, "/data/xml/manifest-templates/vcn-aws-manifest-template.xml");
+                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAWS);
                 break;
             default:
                 throw new EJBException("cannot get manifest for service type="+serviceType);
