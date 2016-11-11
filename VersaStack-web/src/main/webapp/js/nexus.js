@@ -1,3 +1,25 @@
+/* 
+ * Copyright (c) 2013-2016 University of Maryland
+ * Created by: Alberto Jimenez
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Work.
+ * 
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * IN THE WORK.
+ */
 
 /* global XDomainRequest, baseUrl, keycloak */
 
@@ -106,12 +128,6 @@ $(function () {
     });
 
     clearCounters();
-
-    // Catalog.jsp specifics
-    if (window.location.pathname === "/VersaStack-web/ops/catalog.jsp") {
-        setTimeout(catalogLoad, 1000);
-    }
-
 });
 
 function detailsLoad() {
@@ -1176,149 +1192,4 @@ function enableLoading() {
 
 function disableLoading() {
     $("#main-pane").removeClass("loading");
-}
-
-function catalogLoad() {
-    wizardLoad();
-    editorLoad();
-
-    $("#catalog-panel").removeClass("closed");
-}
-
-function wizardLoad() {
-    var userId = keycloak.subject;
-    var tbody = document.getElementById("wizard-body");
-    $("#wizard-body").empty();
-
-    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/panel/' + userId + '/wizard';
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (result) {
-            for (i = 0; i < result.length; i++) {
-                var profile = result[i];
-
-                var row = document.createElement("tr");
-                var cell1_1 = document.createElement("td");
-                cell1_1.innerHTML = profile[0];
-                var cell1_2 = document.createElement("td");
-                cell1_2.innerHTML = profile[1];
-                var cell1_3 = document.createElement("td");
-                cell1_3.innerHTML = "<button class='button-profile-select' id='" + profile[2] + "'>Select</button><button class='button-profile-delete' id='" + profile[2] + "'>Delete</button>";
-                row.appendChild(cell1_1);
-                row.appendChild(cell1_2);
-                row.appendChild(cell1_3);
-                tbody.appendChild(row);
-            }
-
-            $(".button-profile-select").click(function (evt) {
-                var apiUrl = baseUrl + '/VersaStack-web/restapi/app/profile/' + this.id;
-                $.ajax({
-                    url: apiUrl,
-                    type: 'GET',
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                    },
-                    success: function (result) {
-                        $("#black-screen").removeClass("off");
-                        $("#info-panel").addClass("active");
-                        $("#info-panel-title").html("Profile Details");
-                        $("#info-panel-text-area").val(JSON.stringify(result));
-                        prettyPrintInfo();
-                    },
-                    error: function (textStatus, errorThrown) {
-                        console.log(textStatus);
-                        console.log(errorThrown);
-                    }
-                });
-
-                evt.preventDefault();
-            });
-
-            $(".button-profile-delete").click(function (evt) {
-                var apiUrl = baseUrl + '/VersaStack-web/restapi/app/profile/' + this.id;
-                $.ajax({
-                    url: apiUrl,
-                    type: 'DELETE',
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                    },
-                    success: function (result) {
-                        wizardLoad();
-                    },
-                    error: function (textStatus, errorThrown) {
-                        console.log(textStatus);
-                        console.log(errorThrown);
-                    }
-                });
-
-                evt.preventDefault();
-            });
-
-            $(".button-profile-submit").click(function (evt) {
-                var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service';
-                $.ajax({
-                    url: apiUrl,
-                    type: 'POST',
-                    data: $("#info-panel-text-area").val(),
-                    contentType: "application/json; charset=utf-8",
-                    dataType: "json",
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                    },
-                    success: function (result) {
-
-                    },
-                    error: function (textStatus, errorThrown) {
-                        console.log(textStatus);
-                        console.log(errorThrown);
-                    }
-                });
-                $("#black-screen").addClass("off");
-                $("#info-panel").removeClass("active");
-                evt.preventDefault();
-            });
-        }
-    });
-}
-
-function editorLoad() {
-    var userId = keycloak.subject;
-    var tbody = document.getElementById("editor-body");
-
-    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/panel/' + userId + '/editor';
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (result) {
-            for (i = 0; i < result.length; i++) {
-                var profile = result[i];
-
-                var row = document.createElement("tr");
-                var cell1_1 = document.createElement("td");
-                cell1_1.innerHTML = profile[0];
-                var cell1_2 = document.createElement("td");
-                cell1_2.innerHTML = profile[1];
-                var cell1_3 = document.createElement("td");
-                cell1_3.innerHTML = "<button class='button-service-select' id='" + profile[2] + "'>Select</button";
-                row.appendChild(cell1_1);
-                row.appendChild(cell1_2);
-                row.appendChild(cell1_3);
-                tbody.appendChild(row);
-            }
-
-            $(".button-service-select").click(function (evt) {
-                var ref = "/VersaStack-web/ops/srvc/" + this.id.toLowerCase() + ".jsp";
-                window.location.href = ref;
-
-                evt.preventDefault();
-            });
-        }
-    });
 }

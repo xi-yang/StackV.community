@@ -61,30 +61,7 @@
                             </th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <c:forEach var="instance" items="${serv.instanceStatusCheck()}">
-                            <!--Details page redirection-->
-                            <c:choose>                                    
-                                <c:when test="${instance[0]} == 'Dynamic Network Connection'"><!--DNC-->
-                                    <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}&type=dnc'>
-                                    </c:when>                                        
-                                    <c:when test="${instance[0]} == 'Network Creation'"><!--VCN-->
-                                    <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}&type=netcreate'>
-                                    </c:when>
-                                    <c:when test="${instance[0]} == 'Hybrid Cloud'"><!--VCN-->
-                                    <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}&type=hybridcloud'>
-                                    </c:when>
-
-                                    <c:otherwise>
-                                    <tr class="clickable-row" data-href='/VersaStack-web/ops/details/templateDetails.jsp?uuid=${instance[1]}'>
-                                    </c:otherwise>
-                                </c:choose>                                                
-                                <td>${instance[3]}</td>        
-                                <td>${instance[0]}</td>
-                                <td>${instance[1]}</td>
-                                <td>${instance[2]}</td>
-                            </tr>
-                        </c:forEach>
+                    <tbody id="status-body">                        
                     </tbody>
                 </table>
             </div>

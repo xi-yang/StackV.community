@@ -69,6 +69,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.security.KeyStore;
 import java.security.SecureRandom;
+import java.util.Set;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -273,6 +274,56 @@ public class WebResource {
     }
 
     @GET
+    @Path("/panel/{userId}/instances")
+    @Produces("application/json")
+    public ArrayList<ArrayList<String>> loadInstances(@PathParam("userId") String userId) throws SQLException {
+        ArrayList<ArrayList<String>> retList = new ArrayList<>();
+        ArrayList<String> banList = new ArrayList<>();
+        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+
+        banList.add("Driver Management");
+
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID, X.super_state, I.alias_name FROM"
+                + " service S, service_instance I, service_state X WHERE S.service_id = I.service_id AND I.service_state_id = X.service_state_id");
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {
+            ArrayList<String> instanceList = new ArrayList<>();
+
+            String instanceName = rs1.getString("name");
+            String instanceUUID = rs1.getString("referenceUUID");
+            String instanceSuperState = rs1.getString("super_state");
+            String instanceAlias = rs1.getString("alias_name");
+            if (!banList.contains(instanceName)) {
+                try {
+                    URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
+                    HttpURLConnection status = (HttpURLConnection) url.openConnection();
+
+                    String instanceState = instanceSuperState + " - " + servBean.executeHttpMethod(url, status, "GET", null, auth);
+
+                    instanceList.add(instanceName);
+                    instanceList.add(instanceUUID);
+                    instanceList.add(instanceState);
+                    instanceList.add(instanceAlias);
+
+                    retList.add(instanceList);
+                } catch (IOException ex) {
+                    logger.log(Level.INFO, "Instance Status Check Failed on UUID = {0}", instanceUUID);
+                }
+            }
+        }
+
+        return retList;
+    }
+
+    @GET
     @Path("/panel/{userId}/wizard")
     @Produces("application/json")
     public ArrayList<ArrayList<String>> loadWizard(@PathParam("userId") String userId) {
@@ -385,24 +436,13 @@ public class WebResource {
         }
     }
 
-    @POST
-    @Path(value = "/profile/")
-    @Consumes(value = {"application/json", "application/xml"})
-    public void executeProfile(@Suspended final AsyncResponse asyncResponse, final String inputString) {
-        executorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                asyncResponse.resume(doCreateService(inputString));
-            }
-        });
-    }
-
     @GET
     @Path("/service/{siUUID}/status")
     public String checkStatus(@PathParam("siUUID") String svcInstanceUUID) {
+        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         String retString = "";
         try {
-            return superStatus(svcInstanceUUID) + " - " + status(svcInstanceUUID) + "\n";
+            return superStatus(svcInstanceUUID) + " - " + status(svcInstanceUUID, auth) + "\n";
         } catch (SQLException | IOException e) {
             return "<<<CHECK STATUS ERROR: " + e.getMessage();
         }
@@ -412,43 +452,53 @@ public class WebResource {
     @Path(value = "/service")
     @Consumes(value = {"application/json", "application/xml"})
     public void createService(@Suspended final AsyncResponse asyncResponse, final String inputString) {
-        executorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                asyncResponse.resume(doCreateService(inputString));
+        try {
+            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            Object obj = parser.parse(inputString);
+            final JSONObject inputJSON = (JSONObject) obj;
+            String serviceType = (String) inputJSON.get("type");
+
+            // Authorize service.
+            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
+            final AccessToken accessToken = securityContext.getToken();
+            Set<String> roleSet = accessToken.getResourceAccess("VersaStack").getRoles();
+            if (!roleSet.contains(serviceType)) {
+                throw new IOException("Unauthorized to use " + serviceType + "!\n");
             }
-        });
+
+            //System.out.println("Service API:: inputJSON: " + inputJSON.toJSONString());
+            executorService.execute(new Runnable() {
+                @Override
+                public void run() {
+                    asyncResponse.resume(doCreateService(inputJSON, auth));
+                }
+            });
+        } catch (ParseException | IOException ex) {
+            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
     }
 
     @PUT
     @Path(value = "/service/{siUUID}/{action}")
     public void operate(@Suspended final AsyncResponse asyncResponse, @PathParam(value = "siUUID") final String refUuid, @PathParam(value = "action") final String action) {
+        final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+
         executorService.execute(new Runnable() {
             @Override
             public void run() {
-                asyncResponse.resume(doOperate(refUuid, action));
+                asyncResponse.resume(doOperate(refUuid, action, auth));
             }
         });
     }
 
     // Async Methods -----------------------------------------------------------
-    private String doCreateService(String inputString) {
+    private String doCreateService(JSONObject inputJSON, String auth) {
         try {
             long startTime = System.currentTimeMillis();
             System.out.println("Service API Start::Name="
                     + Thread.currentThread().getName() + "::ID="
                     + Thread.currentThread().getId());
-
-            // Pull data from JSON.
-            JSONObject inputJSON = new JSONObject();
-            try {
-                Object obj = parser.parse(inputString);
-                inputJSON = (JSONObject) obj;
-
-                System.out.println("Service API:: inputJSON: " + inputJSON.toJSONString());
-            } catch (ParseException ex) {
-                Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
-            }
 
             String serviceType = (String) inputJSON.get("type");
             String alias = (String) inputJSON.get("alias");
@@ -469,11 +519,12 @@ public class WebResource {
             front_connectionProps.put("password", front_db_pass);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             // Instance Creation
             URL url = new URL(String.format("%s/service/instance", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            String refUuid = servBean.executeHttpMethod(url, connection, "GET", null);
+            connection.setRequestProperty("Authorization", auth);
+            String refUuid = servBean.executeHttpMethod(url, connection, "GET", null, auth);
 
             // Create Parameter Map
             HashMap<String, String> paraMap = new HashMap<>();
@@ -529,23 +580,17 @@ public class WebResource {
 
             // Execute service creation.
             switch (serviceType) {
-                case "dnc":
-                    servBean.createConnection(paraMap);
-                    break;
                 case "netcreate":
-                    servBean.createNetwork(paraMap);
-                    break;
-                case "fl2p":
-                    servBean.createflow(paraMap);
+                    servBean.createNetwork(paraMap, auth);
                     break;
                 case "hybridcloud":
-                    servBean.createHybridCloud(paraMap);
+                    servBean.createHybridCloud(paraMap, auth);
                     break;
                 default:
             }
 
             // Verify creation.
-            verify(refUuid);
+            verify(refUuid, auth);
 
             long endTime = System.currentTimeMillis();
             System.out.println("Service API End::Name="
@@ -562,7 +607,7 @@ public class WebResource {
         }
     }
 
-    private String doOperate(@PathParam("siUUID") String refUuid, @PathParam("action") String action) {
+    private String doOperate(@PathParam("siUUID") String refUuid, @PathParam("action") String action, String auth) {
         long startTime = System.currentTimeMillis();
         System.out.println("Async API Operate Start::Name="
                 + Thread.currentThread().getName() + "::ID="
@@ -574,29 +619,29 @@ public class WebResource {
             switch (action) {
                 case "cancel":
                     setSuperState(refUuid, 2);
-                    cancelInstance(refUuid);
+                    cancelInstance(refUuid, auth);
                     break;
                 case "force_cancel":
                     setSuperState(refUuid, 2);
-                    forceCancelInstance(refUuid);
+                    forceCancelInstance(refUuid, auth);
                     break;
 
                 case "reinstate":
                     setSuperState(refUuid, 4);
-                    cancelInstance(refUuid);
+                    cancelInstance(refUuid, auth);
                     break;
                 case "force_reinstate":
                     setSuperState(refUuid, 4);
-                    forceCancelInstance(refUuid);
+                    forceCancelInstance(refUuid, auth);
                     break;
 
                 case "force_retry":
-                    forceRetryInstance(refUuid);
+                    forceRetryInstance(refUuid, auth);
                     break;
 
                 case "delete":
                 case "force_delete":
-                    deleteInstance(refUuid);
+                    deleteInstance(refUuid, auth);
 
                     endTime = System.currentTimeMillis();
                     System.out.println("Async API Operate End::Name="
@@ -606,7 +651,7 @@ public class WebResource {
                     return "Deletion Complete.\r\n";
 
                 case "verify":
-                    verify(refUuid);
+                    verify(refUuid, auth);
 
                     endTime = System.currentTimeMillis();
                     System.out.println("Async API Operate End::Name="
@@ -625,7 +670,7 @@ public class WebResource {
                     + Thread.currentThread().getId() + "::Time Taken="
                     + (endTime - startTime) + " ms.");
 
-            return superStatus(refUuid) + " - " + status(refUuid) + "\r\n";
+            return superStatus(refUuid) + " - " + status(refUuid, auth) + "\r\n";
         } catch (IOException | SQLException | InterruptedException ex) {
             return "<<<OPERATION ERROR: " + ex.getMessage() + "\r\n";
         }
@@ -783,10 +828,10 @@ public class WebResource {
      * @param refUuid instance UUID
      * @return error code |
      */
-    private int deleteInstance(String refUuid) throws SQLException {
+    private int deleteInstance(String refUuid, String auth) throws SQLException {
         System.out.println("Deletion Beginning.");
         try {
-            String result = delete(refUuid);
+            String result = delete(refUuid, auth);
             System.out.println("Result from Backend: " + result);
             if (result.equalsIgnoreCase("Successfully terminated")) {
                 Connection front_conn;
@@ -818,31 +863,31 @@ public class WebResource {
      * error (Failed propagate). 4: stage 4 error (Failed commit). 5: stage 5
      * error (Failed result check).
      */
-    private int cancelInstance(String refUuid) throws SQLException {
+    private int cancelInstance(String refUuid, String auth) throws SQLException {
         boolean result;
         try {
-            String instanceState = status(refUuid);
+            String instanceState = status(refUuid, auth);
             if (!instanceState.equalsIgnoreCase("READY")) {
                 return 1;
             }
 
-            result = revert(refUuid);
+            result = revert(refUuid, auth);
             if (!result) {
                 return 2;
             }
-            result = propagate(refUuid);
+            result = propagate(refUuid, auth);
             if (!result) {
                 return 3;
             }
-            result = commit(refUuid);
+            result = commit(refUuid, auth);
             if (!result) {
                 return 4;
             }
 
             while (true) {
-                instanceState = status(refUuid);
+                instanceState = status(refUuid, auth);
                 if (instanceState.equals("READY")) {
-                    verify(refUuid);
+                    verify(refUuid, auth);
 
                     return 0;
                 } else if (!(instanceState.equals("COMMITTED") || instanceState.equals("FAILED"))) {
@@ -857,17 +902,17 @@ public class WebResource {
         }
     }
 
-    private int forceCancelInstance(String refUuid) throws SQLException {
+    private int forceCancelInstance(String refUuid, String auth) throws SQLException {
         boolean result;
         try {
-            forceRevert(refUuid);
-            forcePropagate(refUuid);
-            forceCommit(refUuid);
+            forceRevert(refUuid, auth);
+            forcePropagate(refUuid, auth);
+            forceCommit(refUuid, auth);
 
             for (int i = 0; i < 20; i++) {
-                String instanceState = status(refUuid);
+                String instanceState = status(refUuid, auth);
                 if (instanceState.equals("READY")) {
-                    verify(refUuid);
+                    verify(refUuid, auth);
 
                     return 0;
                 } else if (!(instanceState.equals("COMMITTED") || instanceState.equals("FAILED"))) {
@@ -883,16 +928,16 @@ public class WebResource {
         }
     }
 
-    private int forceRetryInstance(String refUuid) throws SQLException {
+    private int forceRetryInstance(String refUuid, String auth) throws SQLException {
         boolean result;
         try {
-            forcePropagate(refUuid);
-            forceCommit(refUuid);
+            forcePropagate(refUuid, auth);
+            forceCommit(refUuid, auth);
 
             for (int i = 0; i < 20; i++) {
-                String instanceState = status(refUuid);
+                String instanceState = status(refUuid, auth);
                 if (instanceState.equals("READY")) {
-                    verify(refUuid);
+                    verify(refUuid, auth);
 
                     return 0;
                 } else if (!(instanceState.equals("COMMITTED") || instanceState.equals("FAILED"))) {
@@ -1137,50 +1182,50 @@ public class WebResource {
         prep.executeUpdate();
     }
 
-    private boolean propagate(String refUuid) throws MalformedURLException, IOException {
+    private boolean propagate(String refUuid, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-        String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
+        String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
         logger.log(Level.INFO, "Sending Propagate Command");
         logger.log(Level.INFO, "Response Code : {0}", result);
 
         return result.equalsIgnoreCase("PROPAGATED");
     }
 
-    private boolean forcePropagate(String refUuid) throws MalformedURLException, IOException {
+    private boolean forcePropagate(String refUuid, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/propagate_forcedretry", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-        String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
+        String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
         logger.log(Level.INFO, "Sending Forced Propagate Command");
         logger.log(Level.INFO, "Response Code : {0}", result);
 
         return result.equalsIgnoreCase("PROPAGATED");
     }
 
-    private boolean commit(String refUuid) throws MalformedURLException, IOException {
+    private boolean commit(String refUuid, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-        String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
+        String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
         logger.log(Level.INFO, "Sending Commit Command");
         logger.log(Level.INFO, "Response Code : {0}", result);
 
         return result.equalsIgnoreCase("COMMITTED");
     }
 
-    private boolean forceCommit(String refUuid) throws MalformedURLException, IOException {
+    private boolean forceCommit(String refUuid, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/commit_forced", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-        String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
+        String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
         logger.log(Level.INFO, "Sending Forced Commit Command");
         logger.log(Level.INFO, "Response Code : {0}", result);
 
         return result.equalsIgnoreCase("COMMITTED");
     }
 
-    private boolean revert(String refUuid) throws MalformedURLException, IOException {
+    private boolean revert(String refUuid, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/revert", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-        String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
+        String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
         logger.log(Level.INFO, "Sending Revert Command");
         logger.log(Level.INFO, "Response Code : {0}", result);
 
@@ -1188,10 +1233,10 @@ public class WebResource {
         return true;
     }
 
-    private boolean forceRevert(String refUuid) throws MalformedURLException, IOException {
+    private boolean forceRevert(String refUuid, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/revert_forced", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-        String result = servBean.executeHttpMethod(url, propagate, "PUT", null);
+        String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
         logger.log(Level.INFO, "Sending Forced Revert Command");
         logger.log(Level.INFO, "Response Code : {0}", result);
 
@@ -1199,10 +1244,10 @@ public class WebResource {
         return true;
     }
 
-    private String delete(String refUuid) throws MalformedURLException, IOException {
+    private String delete(String refUuid, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-        String result = servBean.executeHttpMethod(url, propagate, "DELETE", null);
+        String result = servBean.executeHttpMethod(url, propagate, "DELETE", null, auth);
         logger.log(Level.INFO, "Sending Delete Command");
         logger.log(Level.INFO, "Response Code : {0}", result);
 
@@ -1228,7 +1273,7 @@ public class WebResource {
         return true;
     }
 
-    private boolean verify(String refUuid) throws MalformedURLException, IOException, InterruptedException, SQLException {
+    private boolean verify(String refUuid, String auth) throws MalformedURLException, IOException, InterruptedException, SQLException {
         int instanceID = servBean.getInstanceID(refUuid);
 
         Connection front_conn;
@@ -1243,7 +1288,7 @@ public class WebResource {
             boolean redVerified = true, addVerified = true;
             URL url = new URL(String.format("%s/service/verify/%s", host, refUuid));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            String result = servBean.executeHttpMethod(url, conn, "GET", null);
+            String result = servBean.executeHttpMethod(url, conn, "GET", null, auth);
 
             // Pull data from JSON.
             JSONObject verifyJSON = new JSONObject();
@@ -1312,15 +1357,15 @@ public class WebResource {
         prep.setString(1, refUuid);
         ResultSet rs1 = prep.executeQuery();
         while (rs1.next()) {
-             return rs1.getString("X.super_state");
+            return rs1.getString("X.super_state");
         }
         return "ERROR";
     }
 
-    private String status(String refUuid) throws MalformedURLException, IOException {
+    private String status(String refUuid, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/status", host, refUuid));
         HttpURLConnection status = (HttpURLConnection) url.openConnection();
-        String result = servBean.executeHttpMethod(url, status, "GET", null);
+        String result = servBean.executeHttpMethod(url, status, "GET", null, auth);
 
         return result;
     }

@@ -21,12 +21,198 @@
  * IN THE WORK.
  */
 
-$(function () {
-    setRefresh(60);
+/* global XDomainRequest, baseUrl, keycloak */
 
+$(function () {
+    setTimeout(catalogLoad, 1000);
+    setRefresh(60);
 
     //$("#tag-panel").load("/VersaStack-web/tagPanel.jsp", null);
 });
+
+function catalogLoad() {
+    instanceLoad();
+    wizardLoad();
+    editorLoad();
+
+    $("#catalog-panel").removeClass("closed");
+}
+
+function instanceLoad() {
+    var userId = keycloak.subject;
+    var tbody = document.getElementById("status-body");
+    $("#status-body").empty();
+
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/panel/' + userId + '/instances';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            for (i = 0; i < result.length; i++) {
+                var instance = result[i];
+
+                var row = document.createElement("tr");
+                row.className = "clickable-row";
+                row.setAttribute("data-href", '/VersaStack-web/ops/details/templateDetails.jsp?uuid=' + instance[1]);
+                
+                var cell1_1 = document.createElement("td");
+                cell1_1.innerHTML = instance[3];
+                var cell1_2 = document.createElement("td");
+                cell1_2.innerHTML = instance[0];
+                var cell1_3 = document.createElement("td");
+                cell1_2.innerHTML = instance[1];
+                var cell1_4 = document.createElement("td");
+                cell1_2.innerHTML = instance[2];
+                row.appendChild(cell1_1);
+                row.appendChild(cell1_2);
+                row.appendChild(cell1_3);
+                row.appendChild(cell1_4);
+                tbody.appendChild(row);
+            }
+        }
+    });
+}
+
+function wizardLoad() {
+    var userId = keycloak.subject;
+    var tbody = document.getElementById("wizard-body");
+    $("#wizard-body").empty();
+
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/panel/' + userId + '/wizard';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            for (i = 0; i < result.length; i++) {
+                var profile = result[i];
+
+                var row = document.createElement("tr");
+                var cell1_1 = document.createElement("td");
+                cell1_1.innerHTML = profile[0];
+                var cell1_2 = document.createElement("td");
+                cell1_2.innerHTML = profile[1];
+                var cell1_3 = document.createElement("td");
+                cell1_3.innerHTML = "<button class='button-profile-select' id='" + profile[2] + "'>Select</button><button class='button-profile-delete' id='" + profile[2] + "'>Delete</button>";
+                row.appendChild(cell1_1);
+                row.appendChild(cell1_2);
+                row.appendChild(cell1_3);
+                tbody.appendChild(row);
+            }
+
+            $(".button-profile-select").click(function (evt) {
+                var apiUrl = baseUrl + '/VersaStack-web/restapi/app/profile/' + this.id;
+                $.ajax({
+                    url: apiUrl,
+                    type: 'GET',
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                    },
+                    success: function (result) {
+                        $("#black-screen").removeClass("off");
+                        $("#info-panel").addClass("active");
+                        $("#info-panel-title").html("Profile Details");
+                        $("#info-panel-text-area").val(JSON.stringify(result));
+                        prettyPrintInfo();
+                    },
+                    error: function (textStatus, errorThrown) {
+                        console.log(textStatus);
+                        console.log(errorThrown);
+                    }
+                });
+
+                evt.preventDefault();
+            });
+
+            $(".button-profile-delete").click(function (evt) {
+                var apiUrl = baseUrl + '/VersaStack-web/restapi/app/profile/' + this.id;
+                $.ajax({
+                    url: apiUrl,
+                    type: 'DELETE',
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                    },
+                    success: function (result) {
+                        wizardLoad();
+                    },
+                    error: function (textStatus, errorThrown) {
+                        console.log(textStatus);
+                        console.log(errorThrown);
+                    }
+                });
+
+                evt.preventDefault();
+            });
+
+            $(".button-profile-submit").click(function (evt) {
+                var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service';
+                $.ajax({
+                    url: apiUrl,
+                    type: 'POST',
+                    data: $("#info-panel-text-area").val(),
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                    },
+                    success: function (result) {
+
+                    },
+                    error: function (textStatus, errorThrown) {
+                        console.log(textStatus);
+                        console.log(errorThrown);
+                    }
+                });
+                $("#black-screen").addClass("off");
+                $("#info-panel").removeClass("active");
+                evt.preventDefault();
+            });
+        }
+    });
+}
+
+function editorLoad() {
+    var userId = keycloak.subject;
+    var tbody = document.getElementById("editor-body");
+
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/panel/' + userId + '/editor';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            for (i = 0; i < result.length; i++) {
+                var profile = result[i];
+
+                var row = document.createElement("tr");
+                var cell1_1 = document.createElement("td");
+                cell1_1.innerHTML = profile[0];
+                var cell1_2 = document.createElement("td");
+                cell1_2.innerHTML = profile[1];
+                var cell1_3 = document.createElement("td");
+                cell1_3.innerHTML = "<button class='button-service-select' id='" + profile[2] + "'>Select</button";
+                row.appendChild(cell1_1);
+                row.appendChild(cell1_2);
+                row.appendChild(cell1_3);
+                tbody.appendChild(row);
+            }
+
+            $(".button-service-select").click(function (evt) {
+                var ref = "/VersaStack-web/ops/srvc/" + this.id.toLowerCase() + ".jsp";
+                window.location.href = ref;
+
+                evt.preventDefault();
+            });
+        }
+    });
+}
 
 function timerChange(sel) {
     clearInterval(refreshTimer);

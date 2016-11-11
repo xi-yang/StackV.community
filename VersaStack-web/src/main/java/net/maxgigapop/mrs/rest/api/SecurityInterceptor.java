@@ -22,16 +22,9 @@
  */
 package net.maxgigapop.mrs.rest.api;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Properties;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.Set;
 import javax.ws.rs.ext.Provider;
 import org.jboss.resteasy.annotations.interception.ServerInterceptor;
 import org.jboss.resteasy.core.Headers;
@@ -53,48 +46,27 @@ public class SecurityInterceptor implements PreProcessInterceptor {
 
     @Override
     public ServerResponse preProcess(HttpRequest request, ResourceMethodInvoker method) {
-        List<String> supplierNames = Arrays.asList("loadEditor", "loadWizard");
-        String methodName = method.getMethod().getName();
-        if (supplierNames.contains(methodName)) {
-            return null;
-        }
+        if ((request.getUri().getPath()).startsWith("/app/"))  {            
+            // Ban list
+            List<String> supplierNames = Arrays.asList("loadWizard", "loadEditor", "loadInstances", "getProfile", "executeProfile", "deleteProfile");
+            String methodName = method.getMethod().getName();
+            if (supplierNames.contains(methodName)) {
+                return null;
+            }
 
-        KeycloakSecurityContext securityContext = (KeycloakSecurityContext) request.getAttribute(KeycloakSecurityContext.class.getName());
-        AccessToken accessToken = securityContext.getToken();
-        String subject = accessToken.getSubject();
+            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) request.getAttribute(KeycloakSecurityContext.class.getName());
+            AccessToken accessToken = securityContext.getToken();
+            Set<String> roleSet = accessToken.getResourceAccess("VersaStack").getRoles();
 
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
-        Connection front_conn;
-        try {
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
-
-            PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM acl WHERE subject=? AND object=?");
-            prep.setString(1, subject);
-            prep.setString(2, methodName);
-            ResultSet rs1 = prep.executeQuery();
-            if (rs1.next()) {
+            System.out.println("Method: " + methodName);
+            if (roleSet.contains(methodName)) {
                 return null;
             } else {
+                System.out.println("Not Authorized!");
                 return ACCESS_DENIED;
             }
-        } catch (SQLException ex) {
-            Logger.getLogger(SecurityInterceptor.class.getName()).log(Level.SEVERE, null, ex);
+        } else {
+            return null;
         }
-
-        /*
-        switch (methodName) {
-            case "loadWizard":
-                break;
-            
-            default:
-                break;
-        }*/
-        if (false) {
-            return ACCESS_DENIED;
-        }
-        return null;
     }
 }

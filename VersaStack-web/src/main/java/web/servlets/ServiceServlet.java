@@ -50,7 +50,6 @@ import javax.servlet.annotation.WebServlet;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import web.async.AppAsyncListener;
-import web.async.FL2PWorker;
 import web.async.DriverWorker;
 
 @WebServlet(asyncSupported = true, value = "/ServiceServlet")
@@ -60,19 +59,6 @@ public class ServiceServlet extends HttpServlet {
     private final String front_db_user = "front_view";
     private final String front_db_pass = "frontuser";
     String host = "http://localhost:8080/VersaStack-web/restapi";
-
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        try {
-            HashMap<String, String> jobs = servBean.getJobStatuses();
-            request.setAttribute("jobs", jobs);
-
-            response.sendError(200);
-        } catch (SQLException ex) {
-            Logger.getLogger(ServiceServlet.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -132,16 +118,9 @@ public class ServiceServlet extends HttpServlet {
                     // Virtual Cloud Network
                     response.sendRedirect(parseFullNetwork(request, paraMap));
                     break;
-                case "dnc":
-                    // Dynamic Network Connection
-                    response.sendRedirect(parseConnection(request, paraMap));
-                    break;
                 case "hybridcloud":
                     // Hybrid Cloud
                     response.sendRedirect(parseHybridCloud(request, paraMap));
-                    break;
-                case "fl2p":
-                    response.sendRedirect(createFlow(request, paraMap));
                     break;
                 default:
                     response.sendRedirect("/VersaStack-web/errorPage.jsp");
@@ -1008,7 +987,8 @@ public class ServiceServlet extends HttpServlet {
 
         return ("/VersaStack-web/ops/catalog.jsp");
     }
-
+    
+    /*
     public String createFlow(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {
         for (Object Key : paraMap.keySet().toArray()) {
             if (paraMap.get((String) Key).isEmpty()) {
@@ -1110,7 +1090,7 @@ public class ServiceServlet extends HttpServlet {
         return ("/VersaStack-web/ops/srvc/dnc.jsp?ret=0");
 
     }
-
+    */
 }
 
 class APIRunner implements Runnable {
@@ -1140,7 +1120,7 @@ class APIRunner implements Runnable {
                 create.setRequestProperty("Authorization", authHeader);
             }
 
-            String result = servBean.executeHttpMethod(url, create, "POST", inputJSON.toJSONString());
+            String result = servBean.executeHttpMethod(url, create, "POST", inputJSON.toJSONString(), null);
         } catch (IOException ex) {
             Logger.getLogger(ServiceServlet.class.getName()).log(Level.SEVERE, null, ex);
         }
