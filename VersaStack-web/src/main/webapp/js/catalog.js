@@ -24,7 +24,7 @@
 /* global XDomainRequest, baseUrl, keycloak */
 
 $(function () {
-    setTimeout(catalogLoad, 1000);
+    setTimeout(catalogLoad, 750);
     setRefresh(60);
 
     //$("#tag-panel").load("/VersaStack-web/tagPanel.jsp", null);
@@ -35,7 +35,10 @@ function catalogLoad() {
     wizardLoad();
     editorLoad();
 
-    $("#catalog-panel").removeClass("closed");
+    setTimeout(function (){ 
+        $("#instance-panel").removeClass("closed");
+        $("#catalog-panel").removeClass("closed");
+    }, 250);    
 }
 
 function instanceLoad() {
@@ -57,21 +60,25 @@ function instanceLoad() {
                 var row = document.createElement("tr");
                 row.className = "clickable-row";
                 row.setAttribute("data-href", '/VersaStack-web/ops/details/templateDetails.jsp?uuid=' + instance[1]);
-                
+
                 var cell1_1 = document.createElement("td");
                 cell1_1.innerHTML = instance[3];
                 var cell1_2 = document.createElement("td");
                 cell1_2.innerHTML = instance[0];
                 var cell1_3 = document.createElement("td");
-                cell1_2.innerHTML = instance[1];
+                cell1_3.innerHTML = instance[1];
                 var cell1_4 = document.createElement("td");
-                cell1_2.innerHTML = instance[2];
+                cell1_4.innerHTML = instance[2];
                 row.appendChild(cell1_1);
                 row.appendChild(cell1_2);
                 row.appendChild(cell1_3);
                 row.appendChild(cell1_4);
                 tbody.appendChild(row);
             }
+
+            $(".clickable-row").click(function () {
+                window.document.location = $(this).data("href");
+            });
         }
     });
 }
@@ -246,6 +253,8 @@ function reloadTracker(time) {
     }
 
     $('#instance-panel').load(document.URL + ' #status-table', function () {
+        instanceLoad();
+        
         $(".clickable-row").click(function () {
             window.document.location = $(this).data("href");
         });

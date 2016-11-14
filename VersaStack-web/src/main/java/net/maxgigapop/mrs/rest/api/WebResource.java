@@ -281,6 +281,13 @@ public class WebResource {
         ArrayList<String> banList = new ArrayList<>();
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
 
+        // Verify user
+        String username = authUsername(userId);
+        if (username == null) {
+            logger.log(Level.WARNING, "Logged-in user does not match requested user information!");
+            return retList;
+        }
+
         banList.add("Driver Management");
 
         Connection front_conn;
@@ -291,8 +298,11 @@ public class WebResource {
         front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
-        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID, X.super_state, I.alias_name FROM"
-                + " service S, service_instance I, service_state X WHERE S.service_id = I.service_id AND I.service_state_id = X.service_state_id");
+        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID, X.super_state, I.alias_name "
+                + "FROM service S, service_instance I, service_state X, acl A "
+                + "WHERE S.service_id = I.service_id AND I.service_state_id = X.service_state_id AND I.referenceUUID = A.object AND (A.subject = ? OR I.username = ?)");
+        prep.setString(1, username);
+        prep.setString(2, username);
         ResultSet rs1 = prep.executeQuery();
         while (rs1.next()) {
             ArrayList<String> instanceList = new ArrayList<>();
@@ -330,6 +340,13 @@ public class WebResource {
         try {
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
 
+            // Verify user
+            String username = authUsername(userId);
+            if (username == null) {
+                logger.log(Level.WARNING, "Logged-in user does not match requested user information!");
+                return retList;
+            }
+
             Connection front_conn;
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
@@ -340,7 +357,7 @@ public class WebResource {
 
             PreparedStatement prep = front_conn.prepareStatement("SELECT DISTINCT W.name, W.description, W.editable, W.service_wizard_id "
                     + "FROM service_wizard W WHERE W.username = ? OR W.username IS NULL");
-            prep.setString(1, userId);
+            prep.setString(1, username);
             ResultSet rs1 = prep.executeQuery();
             while (rs1.next()) {
                 ArrayList<String> wizardList = new ArrayList<>();
@@ -366,29 +383,38 @@ public class WebResource {
         try {
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
 
+            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
+            AccessToken accessToken = securityContext.getToken();
+            Set<String> roleSet = accessToken.getResourceAccess("VersaStack").getRoles();
+
             Connection front_conn;
             Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
+
+            front_connectionProps.put(
+                    "user", front_db_user);
+            front_connectionProps.put(
+                    "password", front_db_pass);
 
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
             PreparedStatement prep = front_conn.prepareStatement("SELECT DISTINCT S.name, S.filename, S.description FROM service S WHERE S.atomic = 0");
             ResultSet rs1 = prep.executeQuery();
+
             while (rs1.next()) {
+                if (roleSet.contains(rs1.getString("filename"))) {
+                    ArrayList<String> wizardList = new ArrayList<>();
+                    wizardList.add(rs1.getString("name"));
+                    wizardList.add(rs1.getString("description"));
+                    wizardList.add(rs1.getString("filename"));
 
-                ArrayList<String> wizardList = new ArrayList<>();
-
-                wizardList.add(rs1.getString("name"));
-                wizardList.add(rs1.getString("description"));
-                wizardList.add(rs1.getString("filename"));
-
-                retList.add(wizardList);
+                    retList.add(wizardList);
+                }
             }
             return retList;
         } catch (SQLException e) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, e);
             return null;
         }
     }
@@ -412,8 +438,10 @@ public class WebResource {
             }
 
             return "";
+
         } catch (SQLException e) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, e);
             return null;
         }
     }
@@ -431,8 +459,10 @@ public class WebResource {
             PreparedStatement prep = front_conn.prepareStatement("DELETE FROM service_wizard WHERE service_wizard_id = ?");
             prep.setInt(1, wizardId);
             prep.executeUpdate();
+
         } catch (SQLException e) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, e);
         }
     }
 
@@ -451,7 +481,8 @@ public class WebResource {
     @POST
     @Path(value = "/service")
     @Consumes(value = {"application/json", "application/xml"})
-    public void createService(@Suspended final AsyncResponse asyncResponse, final String inputString) {
+    public void createService(@Suspended
+            final AsyncResponse asyncResponse, final String inputString) {
         try {
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             Object obj = parser.parse(inputString);
@@ -459,7 +490,8 @@ public class WebResource {
             String serviceType = (String) inputJSON.get("type");
 
             // Authorize service.
-            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
+            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
+                    .getName());
             final AccessToken accessToken = securityContext.getToken();
             Set<String> roleSet = accessToken.getResourceAccess("VersaStack").getRoles();
             if (!roleSet.contains(serviceType)) {
@@ -473,15 +505,20 @@ public class WebResource {
                     asyncResponse.resume(doCreateService(inputJSON, auth));
                 }
             });
+
         } catch (ParseException | IOException ex) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, ex);
         }
 
     }
 
     @PUT
     @Path(value = "/service/{siUUID}/{action}")
-    public void operate(@Suspended final AsyncResponse asyncResponse, @PathParam(value = "siUUID") final String refUuid, @PathParam(value = "action") final String action) {
+    public void operate(@Suspended
+            final AsyncResponse asyncResponse, @PathParam(value = "siUUID")
+            final String refUuid, @PathParam(value = "action")
+            final String action) {
         final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
 
         executorService.execute(new Runnable() {
@@ -510,8 +547,10 @@ public class WebResource {
             Connection front_conn;
             try {
                 Class.forName("com.mysql.jdbc.Driver").newInstance();
+
             } catch (InstantiationException | IllegalAccessException | ClassNotFoundException ex) {
-                Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(WebResource.class
+                        .getName()).log(Level.SEVERE, null, ex);
             }
 
             Properties front_connectionProps = new Properties();
@@ -519,7 +558,7 @@ public class WebResource {
             front_connectionProps.put("password", front_db_pass);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-            
+
             // Instance Creation
             URL url = new URL(String.format("%s/service/instance", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -696,8 +735,10 @@ public class WebResource {
             }
 
             return retList;
+
         } catch (SQLException e) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, e);
             return null;
         }
     }
@@ -729,8 +770,10 @@ public class WebResource {
             }
 
             return retMap;
+
         } catch (SQLException e) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, e);
             return null;
         }
     }
@@ -777,10 +820,12 @@ public class WebResource {
                 return unverified_reduction;
             } else {
                 return null;
+
             }
 
         } catch (SQLException e) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, e);
             return null;
         }
     }
@@ -815,8 +860,10 @@ public class WebResource {
             JSONObject jsonManifestData = ServiceManifest.generateManifest(verifiedModel, serviceType);
             jsonManifest.put("manifest", jsonManifestData);
             return jsonManifest.toJSONString();
+
         } catch (SQLException e) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, e);
             return null;
         }
     }
@@ -894,10 +941,12 @@ public class WebResource {
                     return 5;
                 }
                 Thread.sleep(5000);
+
             }
 
         } catch (IOException | InterruptedException ex) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, ex);
             return -1;
         }
     }
@@ -923,7 +972,8 @@ public class WebResource {
             return -1;
 
         } catch (IOException | InterruptedException ex) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, ex);
             return -1;
         }
     }
@@ -948,7 +998,8 @@ public class WebResource {
             return -1;
 
         } catch (IOException | InterruptedException ex) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, ex);
             return -1;
         }
     }
@@ -1295,8 +1346,10 @@ public class WebResource {
             try {
                 Object obj = parser.parse(result);
                 verifyJSON = (JSONObject) obj;
+
             } catch (ParseException ex) {
-                Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(WebResource.class
+                        .getName()).log(Level.SEVERE, null, ex);
                 throw new IOException("Parse Error within Verification: " + ex.getMessage());
             }
 
@@ -1368,25 +1421,16 @@ public class WebResource {
         String result = servBean.executeHttpMethod(url, status, "GET", null, auth);
 
         return result;
+
     }
 
-    private SSLSocketFactory getFactory(File pKeyFile, String pKeyPassword) {
-        try {
-            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(
-                    "SunX509");
-            KeyStore keyStore = KeyStore.getInstance("PKCS12");
-
-            InputStream keyInput = new FileInputStream(pKeyFile);
-            keyStore.load(keyInput, pKeyPassword.toCharArray());
-            keyInput.close();
-
-            keyManagerFactory.init(keyStore, pKeyPassword.toCharArray());
-
-            SSLContext context = SSLContext.getInstance("TLS");
-            context.init(keyManagerFactory.getKeyManagers(), null, new SecureRandom());
-
-            return context.getSocketFactory();
-        } catch (Exception ex) {
+    private String authUsername(String subject) {
+        KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
+                .getName());
+        AccessToken accessToken = securityContext.getToken();
+        if (accessToken.getSubject().equals(subject)) {
+            return accessToken.getPreferredUsername();
+        } else {
             return null;
         }
     }

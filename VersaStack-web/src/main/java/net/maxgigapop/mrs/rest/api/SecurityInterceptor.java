@@ -22,10 +22,16 @@
  */
 package net.maxgigapop.mrs.rest.api;
 
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import javax.ws.rs.ext.Provider;
+import org.apache.commons.codec.binary.Base64;
 import org.jboss.resteasy.annotations.interception.ServerInterceptor;
 import org.jboss.resteasy.core.Headers;
 import org.jboss.resteasy.core.ResourceMethodInvoker;
@@ -33,7 +39,11 @@ import org.jboss.resteasy.core.ServerResponse;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.interception.PreProcessInterceptor;
 import org.keycloak.KeycloakSecurityContext;
+import org.keycloak.RSATokenVerifier;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.common.VerificationException;
 import org.keycloak.representations.AccessToken;
+import org.keycloak.representations.idm.RealmRepresentation;
 
 @Provider
 @ServerInterceptor
@@ -46,7 +56,7 @@ public class SecurityInterceptor implements PreProcessInterceptor {
 
     @Override
     public ServerResponse preProcess(HttpRequest request, ResourceMethodInvoker method) {
-        if ((request.getUri().getPath()).startsWith("/app/"))  {            
+        if ((request.getUri().getPath()).startsWith("/app/")) {
             // Ban list
             List<String> supplierNames = Arrays.asList("loadWizard", "loadEditor", "loadInstances", "getProfile", "executeProfile", "deleteProfile");
             String methodName = method.getMethod().getName();
@@ -55,8 +65,39 @@ public class SecurityInterceptor implements PreProcessInterceptor {
             }
 
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) request.getAttribute(KeycloakSecurityContext.class.getName());
-            AccessToken accessToken = securityContext.getToken();
-            Set<String> roleSet = accessToken.getResourceAccess("VersaStack").getRoles();
+            Set<String> roleSet;
+            if (securityContext != null) {
+                AccessToken accessToken = securityContext.getToken();
+                roleSet = accessToken.getResourceAccess("VersaStack").getRoles();
+                if (!accessToken.isActive()) {
+                    
+                }
+            } else {
+                System.out.println("ERROR>>> Keycloak Context Not Available!");
+                String authHeader = request.getHttpHeaders().getHeaderString("Authorization");
+                String tokenString = authHeader.substring(authHeader.indexOf(" ") + 1);
+                String keycloakRoot = System.getProperty("kc_url");
+                Keycloak keycloak = Keycloak.getInstance(
+                        "https://" + keycloakRoot + ":8543/auth",
+                        "VersaStack",
+                        "admin",
+                        "max123",
+                        "admin-cli");
+                RealmRepresentation realm = keycloak.realm("VersaStack").toRepresentation();
+                try {
+                    byte[] publicBytes = Base64.decodeBase64(realm.getPublicKey());
+                    X509EncodedKeySpec keySpec = new X509EncodedKeySpec(publicBytes);
+                    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+                    PublicKey pubKey = keyFactory.generatePublic(keySpec);
+                    AccessToken token = RSATokenVerifier.verifyToken(tokenString, pubKey, keycloakRoot);
+                    token.getPreferredUsername();
+                }
+                catch (NoSuchAlgorithmException | InvalidKeySpecException | VerificationException ex) {
+                    return SERVER_ERROR;
+                }
+                
+                return SERVER_ERROR;
+            }
 
             System.out.println("Method: " + methodName);
             if (roleSet.contains(methodName)) {
