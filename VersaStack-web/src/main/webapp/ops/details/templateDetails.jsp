@@ -2,22 +2,19 @@
 <%@page errorPage = "/VersaStack-web/errorPage.jsp" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
-<jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
-<jsp:setProperty name="user" property="*" />  
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>  
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
 <jsp:setProperty name="serv" property="*" />
-<c:if test="${user.loggedIn == false}">
-    <c:redirect url="/index.jsp" />
-</c:if>
 <!DOCTYPE html>
 <html >    
     <head>   
         <meta charset="UTF-8">
         <title>Service Details</title>
+        <script src="/VersaStack-web/js/keycloak.js"></script> 
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>
+
         <script src="/VersaStack-web/js/jquery-ui.min.js"></script>
 
         <script>
@@ -96,19 +93,19 @@
                             <tr>
                                 <th>${instance.name} Service Details</th>
                                 <th>
-                        <div id="refresh-panel">
-                            Auto-Refresh Interval
-                            <select id="refresh-timer" onchange="timerChange(this)">
-                                <option value="off">Off</option>
-                                <option value="5">5 sec.</option>
-                                <option value="10">10 sec.</option>
-                                <option value="30">30 sec.</option>
-                                <option value="60" selected>60 sec.</option>
-                            </select>
-                        </div>       
-                        <button class="button-header" id="refresh-button" onclick="reloadInstance()">Refresh in    seconds</button>
-                        </th>
-                        </tr>
+                                    <div id="refresh-panel">
+                                        Auto-Refresh Interval
+                                        <select id="refresh-timer" onchange="timerChange(this)">
+                                            <option value="off">Off</option>
+                                            <option value="5">5 sec.</option>
+                                            <option value="10">10 sec.</option>
+                                            <option value="30">30 sec.</option>
+                                            <option value="60" selected>60 sec.</option>
+                                        </select>
+                                    </div>       
+                                    <button class="button-header" id="refresh-button" onclick="reloadInstance()">Refresh in    seconds</button>
+                                </th>
+                            </tr>
                         </thead>
                         <tbody>
                             <tr>
@@ -129,7 +126,7 @@
                             </tr>
                             <tr>
                                 <td>Operation Status</td>
-                                <td id="instance-substate">${serv.detailsStatus(param.uuid)}</td>
+                                <td id="instance-substate"></td>
                             </tr>
                             <tr>
                                 <td colspan="2"><div id="instruction-block"></div></td>
@@ -188,6 +185,23 @@
                             </tbody>
                         </table>
                     </c:forEach>
+
+                    <table class="management-table">
+                        <thead class="delta-table-header">
+                            <tr>
+                                <th>Access Control</th>                                
+                            </tr>
+                        </thead>
+                        <tbody class="delta-table-body" id="acl-body">
+                            <tr>
+                                <td><select id="acl-select" size="5" name="acl-select" multiple></select></td>
+                            </tr>
+                            <tr>
+                                <td><label>Give user access: <input type="text" name="acl-input" /></label></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
 
                     <table class="management-table hide service-delta-table">
                         <thead class="delta-table-header">
@@ -274,337 +288,6 @@
             </div>  
             <div id="loading-panel"></div>
         </div>
-        <!-- JS -->
-        <script>
-            $(function () {
-                deltaModerate();
-                instructionModerate();
-                buttonModerate();
-                
-                loadVisualization();
-                setRefresh(60);
-            });
-
-            function timerChange(sel) {
-                clearInterval(refreshTimer);
-                clearInterval(countdownTimer);
-                if (sel.value !== 'off') {
-                    setRefresh(sel.value);
-                } else {
-                    document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
-                }
-            }
-
-            function setRefresh(time) {
-                countdown = time;
-                refreshTimer = setInterval(function () {
-                    reloadInstance(time);
-                }, (time * 1000));
-                countdownTimer = setInterval(function () {
-                    refreshCountdown(time);
-                }, 1000);
-            }
-
-            function reloadInstance(time) {
-                enableLoading();
-
-                var manual = false;
-                if (typeof time === "undefined") {
-                    time = countdown;
-                }
-                if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
-                    manual = true;
-                }
-
-                $('#details-panel').load(document.URL + ' #details-panel', function () {
-                    deltaModerate();
-                    instructionModerate();
-                    buttonModerate();
-
-                    loadVisualization();
-
-                    $(".delta-table-header").click(function () {
-                        $("#body-" + this.id).toggleClass("hide");
-                    });
-
-                    if (manual === false) {
-                        countdown = time;
-                        document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-                    } else {
-                        document.getElementById('refresh-button').innerHTML = 'Manually RefreshNow ';
-                    }
-
-                    setTimeout(function () {
-                        disableLoading();
-                    }, 750);
-                });
-            }
-
-            function refreshCountdown() {
-                document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-                countdown--;
-            }
-
-            function loadVisualization() {
-                $("#details-viz").load("/VersaStack-web/details_viz.jsp", function () {
-                    
-                    // Loading Verification visualization
-                    $("#ver-add").append($("#va_viz_div"));
-                    $("#ver-add").find("#va_viz_div").removeClass("hidden");
-
-                    $("#unver-add").append($("#ua_viz_div"));
-                    $("#unver-add").find("#ua_viz_div").removeClass("hidden");
-
-                    $("#ver-red").append($("#vr_viz_div"));
-                    $("#ver-red").find("#vr_viz_div").removeClass("hidden");
-
-                    $("#unver-red").append($("#ur_viz_div"));
-                    $("#unver-red").find("#ur_viz_div").removeClass("hidden");
-
-                    // Loading Service Delta visualization
-                    $("#delta-Service").addClass("hide");
-                    $(".service-delta-table").removeClass("hide");
-
-                    $("#serv-add").append($("#serva_viz_div"));
-                    $("#serv-add").find("#serva_viz_div").removeClass("hidden");
-
-                    $("#serv-red").append($("#servr_viz_div"));
-                    $("#serv-red").find("#servr_viz_div").removeClass("hidden");
-
-                    // Loading System Delta visualization 
-                    var subState = document.getElementById("instance-substate").innerHTML;
-                    var verificationTime = document.getElementById("verification-time").innerHTML;
-                    if ((subState !== 'READY' && subState === 'FAILED') || verificationTime === '') {
-                        $("#delta-System").addClass("hide");
-                        $("#delta-System").insertAfter(".system-delta-table");
-
-                        $(".system-delta-table").removeClass("hide");
-
-                        // Toggle button should toggle  between system delta visualization and delta-System table
-                        // if the verification failed
-                        document.querySelector(".system-delta-table .details-model-toggle").onclick = function () {
-                            toggleTextModel('.system-delta-table', '#delta-System');
-                        };
-
-                        $("#sys-red").append($("#sysr_viz_div"));
-                        $("#sys-add").append($("#sysa_viz_div"));
-
-                        $("#sys-red").find("#sysr_viz_div").removeClass("hidden");
-                        $("#sys-add").find("#sysa_viz_div").removeClass("hidden");
-                    } else {
-                        // Toggle button should toggle between  verification visualization and delta-System table
-                        // if the verification succeeded
-                        $("#delta-System").insertAfter(".verification-table");
-                        document.querySelector("#delta-System .details-model-toggle").onclick = function () {
-                            toggleTextModel('.verification-table', '#delta-System');
-                        };
-                    }
-                });
-            }
-
-            function toggleTextModel(viz_table, text_table) {
-                if (!$(viz_table.toLowerCase()).length) {
-                    alert("Visualization not found");
-                } else if (!$(text_table).length) {
-                    alert("Text model not found");
-                } else {
-                    $(viz_table.toLowerCase()).toggleClass("hide");
-                    $(text_table).toggleClass("hide");
-                }
-            }
-
-            // Moderation Functions
-
-            function deltaModerate() {
-                var subState = document.getElementById("instance-substate").innerHTML;
-                var verificationTime = document.getElementById("verification-time").innerHTML;
-                var verificationAddition = document.getElementById("verification-addition").innerHTML;
-                var verificationReduction = document.getElementById("verification-reduction").innerHTML;
-
-                var verAdd = document.getElementById("ver-add").innerHTML;
-                var unverAdd = document.getElementById("unver-add").innerHTML;
-                var verRed = document.getElementById("ver-red").innerHTML;
-                var unverRed = document.getElementById("unver-red").innerHTML;
-
-                if ((subState === 'READY' || subState !== 'FAILED') && verificationTime !== '') {
-                    $("#delta-System").addClass("hide");
-                    $(".verification-table").removeClass("hide");
-
-                    if (verificationAddition === '' || (verAdd === '{ }' && unverAdd === '{ }')) {
-                        $("#verification-addition-row").addClass("hide");
-                    }
-                    if (verificationReduction === '' || (verRed === '{ }' && unverRed === '{ }')) {
-                        $("#verification-reduction-row").addClass("hide");
-                    }
-                }
-            }
-
-            function instructionModerate() {
-                var subState = document.getElementById("instance-substate").innerHTML;
-                var verificationState = document.getElementById("instance-verification").innerHTML;
-                var verificationRun = document.getElementById("verification-run").innerHTML;
-                var blockString = "";
-
-                // State -1 - Error during validation/reconstruction
-                if ((subState === 'READY' || subState === 'FAILED') && verificationState === "") {
-                    blockString = "Service encountered an error during verification. Please contact your technical supervisor for further instructions.";
-                }
-                // State 0 - Before Verify
-                else if (subState !== 'READY' && subState !== 'FAILED') {
-                    blockString = "Service is still processing. Please hold for further instructions.";
-                }
-                // State 1 - Ready & Verifying
-                else if (subState === 'READY' && verificationState === '0') {
-                    blockString = "Service is verifying.";
-                }
-                // State 2 - Ready & Verified
-                else if (subState === 'READY' && verificationState === '1') {
-                    blockString = "Service has been successfully verified.";
-                }
-                // State 3 - Ready & Unverified
-                else if (subState === 'READY' && verificationState === '-1') {
-                    blockString = "Service was not able to be verified.";
-                }
-                // State 4 - Failed & Verifying
-                else if (subState === 'FAILED' && verificationState === '0') {
-                    blockString = "Service is verifying. (Run " + verificationRun + "/5)";
-                }
-                // State 5 - Failed & Verified
-                else if (subState === 'FAILED' && verificationState === '1') {
-                    blockString = "Service has been successfully verified.";
-                }
-                // State 6 - Failed & Unverified
-                else if (subState === 'FAILED' && verificationState === '-1') {
-                    blockString = "Service was not able to be verified.";
-                }
-
-                document.getElementById("instruction-block").innerHTML = blockString;
-            }
-
-            function buttonModerate() {
-                var superState = document.getElementById("instance-superstate").innerHTML;
-                var subState = document.getElementById("instance-substate").innerHTML;
-                var verificationState = document.getElementById("instance-verification").innerHTML;
-
-                if (superState === 'Create') {
-                    // State 0 - Stuck 
-                    if (verificationState === "") {
-                        $("#instance-fdelete").toggleClass("hide");
-                        $("#instance-fcancel").toggleClass("hide");
-                        $("#instance-fretry").toggleClass("hide");
-                        $("#instance-reverify").toggleClass("hide");
-                    }
-                    // State 1 - Ready & Verifying
-                    if (subState === 'READY' && verificationState === '0') {
-
-                    }
-                    // State 2 - Ready & Verified
-                    else if (subState === 'READY' && verificationState === '1') {
-                        $("#instance-cancel").toggleClass("hide");
-                        $("#instance-modify").toggleClass("hide");
-                    }
-                    // State 3 - Ready & Unverified
-                    else if (subState === 'READY' && verificationState === '-1') {
-                        $("#instance-fcancel").toggleClass("hide");
-                        $("#instance-reverify").toggleClass("hide");
-                    }
-                    // State 4 - Failed & Verifying
-                    else if (subState === 'FAILED' && verificationState === '0') {
-
-                    }
-                    // State 5 - Failed & Verified
-                    else if (subState === 'FAILED' && verificationState === '1') {
-                        $("#instance-fcancel").toggleClass("hide");
-                        $("#instance-fmodify").toggleClass("hide");
-                    }
-                    // State 6 - Failed & Unverified
-                    else if (subState === 'FAILED' && verificationState === '-1') {
-                        $("#instance-fcancel").toggleClass("hide");
-                        $("#instance-fretry").toggleClass("hide");
-                        $("#instance-reverify").toggleClass("hide");
-                    }
-                }
-                else if (superState === 'Cancel') {
-                    // State 0 - Stuck 
-                    if (verificationState === "") {
-                        $("#instance-fdelete").toggleClass("hide");
-                        $("#instance-fretry").toggleClass("hide");
-                        $("#instance-reverify").toggleClass("hide");
-                    }
-                    // State 1 - Ready & Verifying
-                    if (subState === 'READY' && verificationState === '0') {
-
-                    }
-                    // State 2 - Ready & Verified
-                    else if (subState === 'READY' && verificationState === '1') {
-                        $("#instance-reinstate").toggleClass("hide");
-                        $("#instance-modify").toggleClass("hide");
-                        $("#instance-delete").toggleClass("hide");
-                    }
-                    // State 3 - Ready & Unverified
-                    else if (subState === 'READY' && verificationState === '-1') {
-                        $("#instance-fdelete").toggleClass("hide");
-                        $("#instance-freinstate").toggleClass("hide");
-                        $("#instance-reverify").toggleClass("hide");
-                    }
-                    // State 4 - Failed & Verifying
-                    else if (subState === 'FAILED' && verificationState === '0') {
-
-                    }
-                    // State 5 - Failed & Verified
-                    else if (subState === 'FAILED' && verificationState === '1') {
-                        $("#instance-freinstate").toggleClass("hide");
-                        $("#instance-fmodify").toggleClass("hide");
-                        $("#instance-delete").toggleClass("hide");
-                    }
-                    // State 6 - Failed & Unverified
-                    else if (subState === 'FAILED' && verificationState === '-1') {
-                        $("#instance-fdelete").toggleClass("hide");
-                        $("#instance-freinstate").toggleClass("hide");
-                        $("#instance-fretry").toggleClass("hide");
-                        $("#instance-reverify").toggleClass("hide");
-                    }
-                }
-                else if (superState === 'Reinstate') {
-                    // State 0 - Stuck 
-                    if (verificationState === "") {
-                        $("#instance-fdelete").toggleClass("hide");
-                        $("#instance-fretry").toggleClass("hide");
-                        $("#instance-reverify").toggleClass("hide");
-                    }
-                    // State 1 - Ready & Verifying
-                    if (subState === 'READY' && verificationState === '0') {
-
-                    }
-                    // State 2 - Ready & Verified
-                    else if (subState === 'READY' && verificationState === '1') {
-                        $("#instance-cancel").toggleClass("hide");
-                        $("#instance-modify").toggleClass("hide");
-                    }
-                    // State 3 - Ready & Unverified
-                    else if (subState === 'READY' && verificationState === '-1') {
-                        $("#instance-fcancel").toggleClass("hide");
-                        $("#instance-reverify").toggleClass("hide");
-                    }
-                    // State 4 - Failed & Verifying
-                    else if (subState === 'FAILED' && verificationState === '0') {
-
-                    }
-                    // State 5 - Failed & Verified
-                    else if (subState === 'FAILED' && verificationState === '1') {
-                        $("#instance-fcancel").toggleClass("hide");
-                        $("#instance-fmodify").toggleClass("hide");
-                    }
-                    // State 6 - Failed & Unverified
-                    else if (subState === 'FAILED' && verificationState === '-1') {
-                        $("#instance-fcancel").toggleClass("hide");
-                        $("#instance-fretry").toggleClass("hide");
-                        $("#instance-reverify").toggleClass("hide");
-                    }
-                }
-            }
-
-        </script>    
         <div id="details-viz" ></div>
     </body>
 </html>

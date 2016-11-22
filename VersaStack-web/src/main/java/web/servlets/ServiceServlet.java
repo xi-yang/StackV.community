@@ -50,7 +50,6 @@ import javax.servlet.annotation.WebServlet;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import web.async.AppAsyncListener;
-import web.async.FL2PWorker;
 import web.async.DriverWorker;
 
 @WebServlet(asyncSupported = true, value = "/ServiceServlet")
@@ -60,19 +59,6 @@ public class ServiceServlet extends HttpServlet {
     private final String front_db_user = "front_view";
     private final String front_db_pass = "frontuser";
     String host = "http://localhost:8080/VersaStack-web/restapi";
-
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        try {
-            HashMap<String, String> jobs = servBean.getJobStatuses();
-            request.setAttribute("jobs", jobs);
-
-            response.sendError(200);
-        } catch (SQLException ex) {
-            Logger.getLogger(ServiceServlet.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -132,16 +118,9 @@ public class ServiceServlet extends HttpServlet {
                     // Virtual Cloud Network
                     response.sendRedirect(parseFullNetwork(request, paraMap));
                     break;
-                case "dnc":
-                    // Dynamic Network Connection
-                    response.sendRedirect(parseConnection(request, paraMap));
-                    break;
                 case "hybridcloud":
                     // Hybrid Cloud
                     response.sendRedirect(parseHybridCloud(request, paraMap));
-                    break;
-                case "fl2p":
-                    response.sendRedirect(createFlow(request, paraMap));
                     break;
                 default:
                     response.sendRedirect("/VersaStack-web/errorPage.jsp");
@@ -257,9 +236,12 @@ public class ServiceServlet extends HttpServlet {
             }
         }
 
+        String token = paraMap.get("authToken");
+        String username = paraMap.get("username");
+
         JSONObject inputJSON = new JSONObject();
         JSONObject dataJSON = new JSONObject();
-        inputJSON.put("user", paraMap.get("username"));
+        inputJSON.put("username", paraMap.get("username"));
         inputJSON.put("type", "netcreate");
         inputJSON.put("alias", paraMap.get("alias"));
 
@@ -567,13 +549,35 @@ public class ServiceServlet extends HttpServlet {
         dataJSON.put("virtual_clouds", cloudArr);
         inputJSON.put("data", dataJSON);
 
-        request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
-        AsyncContext asyncCtx = request.startAsync();
-        asyncCtx.addListener(new AppAsyncListener());
-        asyncCtx.setTimeout(300000);
+        if (paraMap.containsKey("profile-save")) {
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
 
-        ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
-        executor.execute(new APIRunner(inputJSON));
+            int serviceID = servBean.getServiceID("netcreate");
+
+            // Install Profile into DB.
+            PreparedStatement prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` "
+                    + "(`service_id`, `username`, `name`, `wizard_json`, `description`, `editable`) VALUES (?, ?, ?, ?, ?, ?)");
+            prep.setInt(1, serviceID);
+            prep.setString(2, username);
+            prep.setString(3, paraMap.get("profile-name"));
+            prep.setString(4, inputJSON.toString());
+            prep.setString(5, paraMap.get("profile-description"));
+            prep.setInt(6, 0);
+            prep.executeUpdate();
+        }
+        if (paraMap.containsKey("submit")) {
+            request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
+            AsyncContext asyncCtx = request.startAsync();
+            asyncCtx.addListener(new AppAsyncListener());
+            asyncCtx.setTimeout(300000);
+
+            ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
+            executor.execute(new APIRunner(inputJSON, token));
+        }
 
         return ("/VersaStack-web/ops/catalog.jsp");
     }
@@ -585,9 +589,12 @@ public class ServiceServlet extends HttpServlet {
             }
         }
 
+        String token = paraMap.get("authToken");
+        String username = paraMap.get("username");
+
         JSONObject inputJSON = new JSONObject();
         JSONObject dataJSON = new JSONObject();
-        inputJSON.put("user", paraMap.get("username"));
+        inputJSON.put("username", username);
         inputJSON.put("type", "hybridcloud");
         inputJSON.put("alias", paraMap.get("alias"));
 
@@ -956,31 +963,32 @@ public class ServiceServlet extends HttpServlet {
                     front_connectionProps);
 
             int serviceID = servBean.getServiceID("hybridcloud");
-            int userID = servBean.getUserID(paraMap.get("username"));
 
-            // Install Profileinto DB.
+            // Install Profile into DB.
             PreparedStatement prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` "
-                    + "(`service_id`, `user_id`, `name`, `wizard_json`, `description`, `editable`) VALUES (?, ?, ?, ?, ?, ?)");
+                    + "(`service_id`, `username`, `name`, `wizard_json`, `description`, `editable`) VALUES (?, ?, ?, ?, ?, ?)");
             prep.setInt(1, serviceID);
-            prep.setInt(2, userID);
+            prep.setString(2, username);
             prep.setString(3, paraMap.get("profile-name"));
             prep.setString(4, inputJSON.toString());
             prep.setString(5, paraMap.get("profile-description"));
             prep.setInt(6, 0);
             prep.executeUpdate();
         }
+        if (paraMap.containsKey("submit")) {
+            request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
+            AsyncContext asyncCtx = request.startAsync();
+            asyncCtx.addListener(new AppAsyncListener());
+            asyncCtx.setTimeout(300000);
 
-        request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
-        AsyncContext asyncCtx = request.startAsync();
-        asyncCtx.addListener(new AppAsyncListener());
-        asyncCtx.setTimeout(300000);
-
-        ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
-        executor.execute(new APIRunner(inputJSON));
+            ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
+            executor.execute(new APIRunner(inputJSON, token));
+        }
 
         return ("/VersaStack-web/ops/catalog.jsp");
     }
-
+    
+    /*
     public String createFlow(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {
         for (Object Key : paraMap.keySet().toArray()) {
             if (paraMap.get((String) Key).isEmpty()) {
@@ -1082,17 +1090,23 @@ public class ServiceServlet extends HttpServlet {
         return ("/VersaStack-web/ops/srvc/dnc.jsp?ret=0");
 
     }
-
+    */
 }
 
 class APIRunner implements Runnable {
 
     JSONObject inputJSON;
+    String authToken;
     serviceBeans servBean = new serviceBeans();
     String host = "http://localhost:8080/VersaStack-web/restapi";
 
     public APIRunner(JSONObject input) {
         inputJSON = input;
+    }
+
+    public APIRunner(JSONObject input, String token) {
+        inputJSON = input;
+        authToken = token;
     }
 
     @Override
@@ -1101,7 +1115,12 @@ class APIRunner implements Runnable {
             System.out.println("API Runner Engaged!");
             URL url = new URL(String.format("%s/app/service/", host));
             HttpURLConnection create = (HttpURLConnection) url.openConnection();
-            String result = servBean.executeHttpMethod(url, create, "POST", inputJSON.toJSONString());
+            if (authToken != null && !authToken.isEmpty()) {
+                String authHeader = "bearer " + authToken;
+                create.setRequestProperty("Authorization", authHeader);
+            }
+
+            String result = servBean.executeHttpMethod(url, create, "POST", inputJSON.toJSONString(), null);
         } catch (IOException ex) {
             Logger.getLogger(ServiceServlet.class.getName()).log(Level.SEVERE, null, ex);
         }
