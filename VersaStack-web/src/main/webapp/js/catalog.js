@@ -31,9 +31,9 @@ $(function () {
 });
 
 function catalogLoad() {
-    instanceLoad();
-    wizardLoad();
-    editorLoad();
+    loadInstances();
+    loadWizard();
+    loadEditor();
 
     setTimeout(function (){ 
         $("#instance-panel").removeClass("closed");
@@ -41,7 +41,7 @@ function catalogLoad() {
     }, 250);    
 }
 
-function instanceLoad() {
+function loadInstances() {
     var userId = keycloak.subject;
     var tbody = document.getElementById("status-body");
     $("#status-body").empty();
@@ -83,7 +83,7 @@ function instanceLoad() {
     });
 }
 
-function wizardLoad() {
+function loadWizard() {
     var userId = keycloak.subject;
     var tbody = document.getElementById("wizard-body");
     $("#wizard-body").empty();
@@ -183,7 +183,7 @@ function wizardLoad() {
     });
 }
 
-function editorLoad() {
+function loadEditor() {
     var userId = keycloak.subject;
     var tbody = document.getElementById("editor-body");
 
@@ -253,7 +253,7 @@ function reloadTracker(time) {
     }
 
     $('#instance-panel').load(document.URL + ' #status-table', function () {
-        instanceLoad();
+        loadInstances();
         
         $(".clickable-row").click(function () {
             window.document.location = $(this).data("href");
@@ -275,4 +275,8 @@ function reloadTracker(time) {
 function refreshCountdown() {
     document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
     countdown--;
+}
+
+function getURLParameter(name) {
+  return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search) || [null, ''])[1].replace(/\+/g, '%20')) || null;
 }

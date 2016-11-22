@@ -420,6 +420,68 @@ public class WebResource {
     }
 
     @GET
+    @Path("/panel/{refUuid}/acl")
+    @Produces("application/json")
+    public ArrayList<String> loadObjectACL(@PathParam("refUuid") String refUuid) {
+        try {
+            System.out.println("REF: " + refUuid);
+
+            ArrayList<String> retList = new ArrayList<>();
+            Connection front_conn;
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("SELECT A.subject FROM acl A WHERE A.object = ?");
+            prep.setString(1, "");
+            ResultSet rs1 = prep.executeQuery();
+
+            while (rs1.next()) {
+                retList.add(rs1.getString("subject"));
+            }
+            return retList;
+        } catch (SQLException e) {
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, e);
+            return null;
+        }
+    }
+
+    @GET
+    @Path("/panel/acl")
+    @Produces("application/json")
+    public ArrayList<String> loadSubjectACL() {
+        try {
+            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
+            AccessToken accessToken = securityContext.getToken();
+            String username = accessToken.getPreferredUsername();
+
+            ArrayList<String> retList = new ArrayList<>();
+            Connection front_conn;
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("SELECT A.object FROM acl A WHERE A.subject = ?");
+            prep.setString(1, username);
+            ResultSet rs1 = prep.executeQuery();
+
+            while (rs1.next()) {
+                retList.add(rs1.getString("subject"));
+            }
+            return retList;
+        } catch (SQLException e) {
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, e);
+            return null;
+        }
+    }
+
+    @GET
     @Path("/profile/{wizardId}")
     @Produces("application/json")
     public String getProfile(@PathParam("wizardId") int wizardId) {
@@ -476,6 +538,18 @@ public class WebResource {
         } catch (SQLException | IOException e) {
             return "<<<CHECK STATUS ERROR: " + e.getMessage();
         }
+    }
+
+    @GET
+    @Path("/service/{siUUID}/substatus")
+    public String subStatus(@PathParam("siUUID") String svcInstanceUUID) {
+        try {
+            String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            return status(svcInstanceUUID, auth);
+        } catch (IOException ex) {
+            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
     }
 
     @POST
@@ -1421,7 +1495,6 @@ public class WebResource {
         String result = servBean.executeHttpMethod(url, status, "GET", null, auth);
 
         return result;
-
     }
 
     private String authUsername(String subject) {

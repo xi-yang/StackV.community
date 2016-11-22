@@ -7,5 +7,5 @@
     "credentials": {
         "secret": "4897e8c3-b837-4211-a8f2-af3d6e363df2"
     },
-    "always-refresh-token": true
+    "use-resource-role-mappings": true
 }

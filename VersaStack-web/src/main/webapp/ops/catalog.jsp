@@ -13,9 +13,7 @@
         <script src="/VersaStack-web/js/keycloak.js"></script>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
-        <script src="/VersaStack-web/js/catalog.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>
-
 
         <link rel="stylesheet" href="/VersaStack-web/css/animate.min.css">
         <link rel="stylesheet" href="/VersaStack-web/css/font-awesome.min.css">

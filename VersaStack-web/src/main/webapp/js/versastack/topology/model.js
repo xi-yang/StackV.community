@@ -39,6 +39,7 @@
  */
 "use strict";
 
+/* global XDomainRequest, baseUrl, keycloak */
 //debug code to modify the model before parsing=
 var INJECT = false;
 define([
@@ -79,6 +80,7 @@ define([
             function requestModel() {
                 request.setRequestHeader("Accept", "application/json");
                 request.setRequestHeader("Content-type", "application/json");
+                request.setRequestHeader("Authorization", "bearer " + keycloak.token);
                 request.onload = function () {
                     if (model === null) {
                         var data = request.responseText;

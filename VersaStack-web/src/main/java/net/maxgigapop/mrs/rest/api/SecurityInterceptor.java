@@ -58,7 +58,8 @@ public class SecurityInterceptor implements PreProcessInterceptor {
     public ServerResponse preProcess(HttpRequest request, ResourceMethodInvoker method) {
         if ((request.getUri().getPath()).startsWith("/app/")) {
             // Ban list
-            List<String> supplierNames = Arrays.asList("loadWizard", "loadEditor", "loadInstances", "getProfile", "executeProfile", "deleteProfile");
+            List<String> supplierNames = Arrays.asList("loadWizard", "loadEditor", "loadInstances", 
+                    "loadObjectACL", "loadSubjectACL", "subStatus", "getProfile", "executeProfile", "deleteProfile");
             String methodName = method.getMethod().getName();
             if (supplierNames.contains(methodName)) {
                 return null;
@@ -68,6 +69,7 @@ public class SecurityInterceptor implements PreProcessInterceptor {
             Set<String> roleSet;
             if (securityContext != null) {
                 AccessToken accessToken = securityContext.getToken();
+                System.out.println("TOKEN ACTIVE: " + accessToken.isActive());
                 roleSet = accessToken.getResourceAccess("VersaStack").getRoles();
                 if (!accessToken.isActive()) {
                     
