@@ -31,7 +31,6 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import static java.lang.Thread.sleep;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -39,7 +38,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -123,7 +121,7 @@ public class serviceBeans {
         try {
             URL url = new URL(String.format("%s/driver", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            String result = this.executeHttpMethod(url, connection, "POST", driver);
+            String result = this.executeHttpMethod(url, connection, "POST", driver, null);
             if (!result.equalsIgnoreCase("plug successfully")) //plugin error
             {
                 return 2;
@@ -148,7 +146,7 @@ public class serviceBeans {
         try {
             URL url = new URL(String.format("%s/driver/%s", host, topoUri));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            String result = this.executeHttpMethod(url, connection, "DELETE", null);
+            String result = this.executeHttpMethod(url, connection, "DELETE", null, null);
             if (!result.equalsIgnoreCase("unplug successfully")) //unplug error
             {
                 return 2;
@@ -160,6 +158,7 @@ public class serviceBeans {
     }
 
 // -------------------------- SERVICE FUNCTIONS --------------------------------
+/*
     public int createflow(Map<String, String> paraMap) {
         String topUri = null;
         String refUuid = null;
@@ -382,8 +381,9 @@ public class serviceBeans {
         }
 
     }
+    */
 
-    public int createNetwork(Map<String, String> paraMap) {
+    public int createNetwork(Map<String, String> paraMap, String auth) {
         String topoUri = null;
         String driverType = null;
         String netCidr = null;
@@ -454,7 +454,7 @@ public class serviceBeans {
         try {
             URL url = new URL(String.format("%s/service/property/%s/host/", host, refUuid));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            executeHttpMethod(url, connection, "POST", driverType);
+            executeHttpMethod(url, connection, "POST", driverType, auth);
         } catch (IOException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -877,7 +877,7 @@ public class serviceBeans {
         try {
             URL url = new URL(String.format("%s/service/%s", host, refUuid));
             HttpURLConnection compile = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, compile, "POST", svcDelta);
+            result = this.executeHttpMethod(url, compile, "POST", svcDelta, auth);
             if (!result.contains("referenceVersion")) {
                 throw new EJBException("Service Delta Failed!");
             }
@@ -887,13 +887,13 @@ public class serviceBeans {
 
             url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
             HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, propagate, "PUT", null);
+            result = this.executeHttpMethod(url, propagate, "PUT", null, auth);
             if (!result.equals("PROPAGATED")) {
                 throw new EJBException("Propagate Failed!");
             }
             url = new URL(String.format("%s/service/%s/commit", host, refUuid));
             HttpURLConnection commit = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, commit, "PUT", null);
+            result = this.executeHttpMethod(url, commit, "PUT", null, auth);
             if (!result.equals("COMMITTED")) {
                 throw new EJBException("Commit Failed!");
             }
@@ -901,7 +901,7 @@ public class serviceBeans {
             while (!result.equals("READY")) {
                 sleep(5000);//wait for 5 seconds and check again later
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
-                result = this.executeHttpMethod(url, status, "GET", null);
+                result = this.executeHttpMethod(url, status, "GET", null, auth);
                 /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
                  throw new EJBException("Ready Check Failed!");
                  }*/
@@ -914,7 +914,7 @@ public class serviceBeans {
         }
     }
 
-    public int createHybridCloud(Map<String, String> paraMap) {
+    public int createHybridCloud(Map<String, String> paraMap, String auth) {
         String refUuid = null;
         JSONParser jsonParser = new JSONParser();
         JSONArray vcnArr = null;
@@ -1473,7 +1473,7 @@ public class serviceBeans {
         try {
             URL url = new URL(String.format("%s/service/%s", host, refUuid));
             HttpURLConnection compile = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, compile, "POST", svcDelta);
+            result = this.executeHttpMethod(url, compile, "POST", svcDelta, auth);
             if (!result.contains("referenceVersion")) {
                 throw new EJBException("Service Delta Failed!");
             }
@@ -1483,13 +1483,13 @@ public class serviceBeans {
 
             url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
             HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, propagate, "PUT", null);
+            result = this.executeHttpMethod(url, propagate, "PUT", null, auth);
             if (!result.equals("PROPAGATED")) {
                 throw new EJBException("Propagate Failed!");
             }
             url = new URL(String.format("%s/service/%s/commit", host, refUuid));
             HttpURLConnection commit = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, commit, "PUT", null);
+            result = this.executeHttpMethod(url, commit, "PUT", null, auth);
             if (!result.equals("COMMITTED")) {
                 throw new EJBException("Commit Failed!");
             }
@@ -1497,7 +1497,7 @@ public class serviceBeans {
             while (!result.equals("READY")) {
                 sleep(5000);//wait for 5 seconds and check again later
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
-                result = this.executeHttpMethod(url, status, "GET", null);
+                result = this.executeHttpMethod(url, status, "GET", null, auth);
                 /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
                  throw new EJBException("Ready Check Failed!");
                  }*/
@@ -1511,44 +1511,6 @@ public class serviceBeans {
     }
 
 // --------------------------- UTILITY FUNCTIONS -------------------------------    
-    public HashMap<String, String> getJobStatuses() throws SQLException {
-        HashMap<String, String> retMap = new HashMap<>();
-
-        Connection front_conn;
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                front_connectionProps);
-
-        ArrayList<String> service_list = new ArrayList<>();
-        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID FROM service S, service_instance I WHERE I.service_id = S.service_id");
-        ResultSet rs1 = prep.executeQuery();
-        while (rs1.next()) {
-            String name = rs1.getString("name");
-            String refId = rs1.getString("referenceUUID");
-
-            String status;
-            try {
-                URL url = new URL(String.format("%s/service/%s/status", host, refId));
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                status = this.executeHttpMethod(url, connection, "GET", null);
-
-                retMap.put(name, status);
-            } catch (Exception e) {
-                System.out.println(e.toString());//query error
-            }
-        }
-
-        return retMap;
-    }
-
-    private HashMap<String, ArrayList<String>> getJobProperties() throws SQLException {
-        HashMap<String, ArrayList<String>> retMap = new HashMap<>();
-
-        return retMap;
-    }
-
     /**
      * Executes HTTP Request.
      *
@@ -1556,13 +1518,20 @@ public class serviceBeans {
      * @param conn connection object
      * @param method request method
      * @param body request body
+     * @param authHeader authorization header
      * @return response string.
      * @throws IOException
      */
-    public String executeHttpMethod(URL url, HttpURLConnection conn, String method, String body) throws IOException {
+    public String executeHttpMethod(URL url, HttpURLConnection conn, String method, String body, String authHeader) throws IOException {
         conn.setRequestMethod(method);
         conn.setRequestProperty("Content-type", "application/xml");
         conn.setRequestProperty("Accept", "application/json");
+
+        if (authHeader != null) {
+            conn.setRequestProperty("Authorization", authHeader);
+            //logger.log(Level.INFO, "{0} header added", authHeader);
+        }
+
         if (body != null && !body.isEmpty()) {
             conn.setDoOutput(true);
             try (DataOutputStream wr = new DataOutputStream(conn.getOutputStream())) {
@@ -1570,9 +1539,9 @@ public class serviceBeans {
                 wr.flush();
             }
         }
-        //logger.log(Level.INFO, "Sending {0} request to URL : {1}", new Object[]{method, url});
+        logger.log(Level.INFO, "Sending {0} request to URL : {1}", new Object[]{method, url});
         int responseCode = conn.getResponseCode();
-        //logger.log(Level.INFO, "Response Code : {0}", responseCode);
+        logger.log(Level.INFO, "Response Code : {0}", responseCode);
 
         StringBuilder responseStr;
         try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
@@ -1585,92 +1554,11 @@ public class serviceBeans {
         return responseStr.toString();
     }
 
-    public ArrayList<ArrayList<String>> instanceStatusCheck() throws SQLException {
-        ArrayList<ArrayList<String>> retList = new ArrayList<>();
-        ArrayList<String> banList = new ArrayList<>();
-
-        banList.add("Driver Management");
-
-        Connection front_conn;
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
-
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                front_connectionProps);
-
-        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID, X.super_state, I.alias_name FROM"
-                + " service S, service_instance I, service_state X WHERE S.service_id = I.service_id AND I.service_state_id = X.service_state_id");
-        ResultSet rs1 = prep.executeQuery();
-        while (rs1.next()) {
-            ArrayList<String> instanceList = new ArrayList<>();
-
-            String instanceName = rs1.getString("name");
-            String instanceUUID = rs1.getString("referenceUUID");
-            String instanceSuperState = rs1.getString("super_state");
-            String instanceAlias = rs1.getString("alias_name");
-            if (!banList.contains(instanceName)) {
-                try {
-                    URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
-                    HttpURLConnection status = (HttpURLConnection) url.openConnection();
-
-                    String instanceState = instanceSuperState + " - " + this.executeHttpMethod(url, status, "GET", null);
-
-                    instanceList.add(instanceName);
-                    instanceList.add(instanceUUID);
-                    instanceList.add(instanceState);
-                    instanceList.add(instanceAlias);
-
-                    retList.add(instanceList);
-                } catch (IOException ex) {
-                    logger.log(Level.INFO, "Instance Status Check Failed on UUID = {0}", instanceUUID);
-                }
-            }
-        }
-
-        return retList;
-    }
-
-    public ArrayList<String> instanceStatusCheck(String instanceUUID) throws SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException {
-        ArrayList<String> retList = new ArrayList<>();
-
-        Connection front_conn;
-        Class.forName("com.mysql.jdbc.Driver").newInstance();
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
-
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                front_connectionProps);
-
-        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, X.super_state FROM"
-                + " service S, service_instance I, service_state X WHERE I.referenceUUID = ? AND S.service_id = I.service_id AND I.service_state_id = X.service_state_id");
-        prep.setString(1, instanceUUID);
-        ResultSet rs1 = prep.executeQuery();
-        while (rs1.next()) {
-            String instanceName = rs1.getString("name");
-            String instanceSuperState = rs1.getString("super_state");
-            try {
-                URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
-                HttpURLConnection status = (HttpURLConnection) url.openConnection();
-
-                String instanceState = instanceSuperState + " - " + this.executeHttpMethod(url, status, "GET", null);
-
-                retList.add(instanceName);
-                retList.add(instanceUUID);
-                retList.add(instanceState);
-            } catch (IOException ex) {
-            }
-        }
-
-        return retList;
-    }
-
     public String detailsStatus(String instanceUUID) throws SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException {
         try {
             URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
             HttpURLConnection status = (HttpURLConnection) url.openConnection();
-            return this.executeHttpMethod(url, status, "GET", null);
+            return this.executeHttpMethod(url, status, "GET", null, null);
         } catch (IOException ex) {
             return "Error retrieving backend status!";
         }

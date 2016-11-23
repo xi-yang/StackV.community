@@ -411,7 +411,8 @@ body {
     height: 100%;
     width: 100%;
     padding: 40px;
-    padding-top: 77px;    
+    padding-top: 77px;
+    overflow-x: hidden;    
 
     -webkit-transition: all 400ms ease-in-out;
     transition: all 400ms ease-in-out;
@@ -688,6 +689,9 @@ body {
     margin-right: 10px;
     margin-left: 10px;
 }
+#refresh-timer {
+    color: #333;
+}
 
 #details-panel {
     padding: 10px 10px;
@@ -696,12 +700,18 @@ body {
     position: absolute;
 }
 #instance-panel {
+    left: 40px;
     padding: 5px 5px;
     top: 10%;
     height: calc(90% - 42px);
     width: calc(100% - 80px);
     position: absolute;
     overflow-y: scroll;    
+}
+#instance-panel.closed {
+    overflow: hidden;
+    left: 100%;
+    padding: 0px;
 }
 #instance-panel::-webkit-scrollbar {
     width: 0px;  /* remove scrollbar space */

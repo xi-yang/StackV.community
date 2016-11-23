@@ -2,15 +2,7 @@
 <%@page errorPage = "errorPage.jsp" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
-<jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
-<jsp:setProperty name="user" property="*" />  
-<c:if test="${param.logout == 'true'}">
-    ${session.invalidate()}
-    ${user.logOut()}
-</c:if>
-<c:if test="${user.loggedIn == true}">
-    <c:redirect url="home.jsp" />
-</c:if>
+<c:redirect url="/ops/catalog.jsp" />
 <!DOCTYPE html>
 <html >
     <head>

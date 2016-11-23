@@ -25,7 +25,7 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page errorPage = "/VersaStack-web/errorPage.jsp" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%> 
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
 <jsp:setProperty name="user" property="*" />  
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
@@ -35,6 +35,7 @@
     <head>
         <meta charset="utf-8">
         <title>Graphical View</title>
+        <script src="/VersaStack-web/js/keycloak.js"></script>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>
@@ -130,7 +131,7 @@
             var utils;
             var DropDownTree;
             var functionMap = {}; // stores objects for funcitonality such as ContextMenu, tag Dialog, etc 
-            
+
             var outputApi;
 
             function onload() {
@@ -144,34 +145,32 @@
                     "local/versastack/topology/TagDialog"
                 ],
                         function (m, l, r, d3_, utils_, tree, c, td) {
-                          $.ajax({
-                                   crossDomain: true,
-                                   type: "GET",
-                                   url: "/VersaStack-web/restapi/service/ready",
-                                   dataType: "text", 
+                            $.ajax({
+                                crossDomain: true,
+                                type: "GET",
+                                url: "/VersaStack-web/restapi/service/ready",
+                                dataType: "text",
 
-                                   success: function(data,  textStatus,  jqXHR ) {
-                                       if (data === "true")  {
-                                          //alert(textStatus);
-                                            $('#servicePanel-contents').removeClass("hide");                                     
-                                            layout = l;
-                                            render = r;
-                                            d3 = d3_;
-                                            utils = utils_;
-                                            map_ = utils.map_;
-                                            bsShowFadingMessage = utils.bsShowFadingMessage;
-                                            DropDownTree = tree;
-                                            ContextMenu = c; 
-                                            TagDialog = td;
-                                            tagDialog = new TagDialog("${user.getUsername()}");
+                                success: function (data, textStatus, jqXHR) {
+                                    if (data === "true") {
+                                        //alert(textStatus);
+                                        $('#servicePanel-contents').removeClass("hide");
+                                        layout = l;
+                                        render = r;
+                                        d3 = d3_;
+                                        utils = utils_;
+                                        map_ = utils.map_;
+                                        bsShowFadingMessage = utils.bsShowFadingMessage;
+                                        DropDownTree = tree;
+                                        ContextMenu = c;
+                                        TagDialog = td;
+                                        tagDialog = new TagDialog("${sessionStorage.username}");
 
-                                            tagDialog.init();
-                                            functionMap['Tag'] = tagDialog;
-                                            // possibly pass in map here later for all possible dialogs 
-                                            contextMenu = new ContextMenu(d3, render.API, functionMap);//, tagDialog);
-                                            contextMenu.init();
-                                            
-                                            outputApi = new outputApi_(render.API, contextMenu, "viz");
+                                        tagDialog.init();
+                                        functionMap['Tag'] = tagDialog;
+                                        // possibly pass in map here later for all possible dialogs 
+                                        contextMenu = new ContextMenu(d3, render.API, functionMap);//, tagDialog);
+                                        contextMenu.init();
 
                                             ModelConstructor = m;
                                             model = new ModelConstructor();
@@ -190,11 +189,21 @@
                                        }
                                    },
 
-                                   error: function(jqXHR, textStatus, errorThrown ) {
-                                        console.log("Debugging: timeout at start..");
+                                        ModelConstructor = m;
+                                        model = new ModelConstructor();
+                                        model.init(1, drawGraph.bind(undefined, outputApi, model), null);
+
+                                        $("#tagDialog").draggable();
+                                    } else {
                                         displayError("Visualization Unavailable", d3_);
-                                   }
-                            }); 
+                                    }
+                                },
+
+                                error: function (jqXHR, textStatus, errorThrown) {
+                                    console.log("Debugging: timeout at start..");
+                                    displayError("Visualization Unavailable", d3_);
+                                }
+                            });
                         });
 
                 $("#loadingPanel").addClass("hide");
@@ -204,17 +213,17 @@
 
                 buttonInit();
             }
-            
-            function displayError(error, d3_obj) {
-               d3_obj.select("#viz").append("text")
-                       .attr("x", $(window).width() / 4)
-                       .attr("y", $(window).height() / 2 )
-                       .attr("fill", "black")
-                       .attr("font-size", "80px")
-                       .text(error);
 
-               $('#servicePanel-contents').removeClass("hide");
-               $('#servicePanel-contents').html("Service instances unavailable.").addClass('service-unready-message');                       
+            function displayError(error, d3_obj) {
+                d3_obj.select("#viz").append("text")
+                        .attr("x", $(window).width() / 4)
+                        .attr("y", $(window).height() / 2)
+                        .attr("fill", "black")
+                        .attr("font-size", "80px")
+                        .text(error);
+
+                $('#servicePanel-contents').removeClass("hide");
+                $('#servicePanel-contents').html("Service instances unavailable.").addClass('service-unready-message');
             }
             
             function allNodesMatch(nodePositions, nodes){
@@ -449,35 +458,35 @@
                     layout.stop();
                     //layout.force().gravity(1).charge(-900).start();
                     layout.testLayout(model, null, width, height);
-                    layout.testLayout(model, null, width, height); 
-                            
+                    layout.testLayout(model, null, width, height);
+
                     outputApi.resetZoom();
                     render.doRender(outputApi, model);
                     
                     evt.preventDefault();
-                });               
+                });
 
                 $("#modelButton").click(function (evt) {
-                   var string = model.modelString;
-                   
-                   // We detach DOM children and append them back to the model view
-                   // dialog after it's been opened to save time when opening dialogs
-                   // that have large amounts of text 
-                   // Reference: http://johnculviner.com/a-jquery-ui-dialog-open-performance-issue-and-how-to-fix-it/
-                   var detached = $("#dialog_modelView").children().detach();
+                    var string = model.modelString;
 
-                    $( "#dialog_modelView").dialog( {
-                       autoOpen: false, 
-                       width: 600,
-                       height: ($(window).height() * (3/4)),
-                       open: function() {
-                           detached.appendTo($("#dialog_modelView"));
-                           $("#dialog_modelView").html("<pre class=\"jSonDialog\">" + string + "</pre>");
-                       }
+                    // We detach DOM children and append them back to the model view
+                    // dialog after it's been opened to save time when opening dialogs
+                    // that have large amounts of text 
+                    // Reference: http://johnculviner.com/a-jquery-ui-dialog-open-performance-issue-and-how-to-fix-it/
+                    var detached = $("#dialog_modelView").children().detach();
+
+                    $("#dialog_modelView").dialog({
+                        autoOpen: false,
+                        width: 600,
+                        height: ($(window).height() * (3 / 4)),
+                        open: function () {
+                            detached.appendTo($("#dialog_modelView"));
+                            $("#dialog_modelView").html("<pre class=\"jSonDialog\">" + string + "</pre>");
+                        }
                     });
 
                     $("#dialog_modelView").dialog("open");
-                    
+
                     // JQuery UI automatically focuses on the first dialog, we remove all
                     // focus by using the blur method. 
                     $('.ui-dialog :button').blur();
@@ -554,7 +563,7 @@
                 this.renderApi = renderAPI;
                 this.contextMenu = contextMenu;
                 this.svgContainerName = svg;
-                
+
                 this.getSvgContainer = function () {
                     return d3.select("#" + this.svgContainerName);
                 };
@@ -651,19 +660,19 @@
                     offsetY = 0;
                     this._updateTransform();
                 };
-                this.setZoom = function(zoom) {
+                this.setZoom = function (zoom) {
                     zoomFactor = zoom;
                     this._updateTransform();
                 };
                 var svg = document.getElementById(this.svgContainerName);
-                
+
                 svg.addEventListener("wheel", function (e) {
                     e.preventDefault();
                     //The OSX trackpad seems to produce scrolls two orders of magnitude large when using pinch to zoom,
                     //so we ignore the magnitude entirely
                     that.zoom(Math.sign(-e.deltaY) * settings.ZOOM_FACTOR, e.offsetX, e.offsetY);
                     return false;
-                }, false);                    
+                }, false);
                 //Interface to (de)select elements for interaction with the form
                 //If the provided element is currently being used in the form, remove it from the form,
                 //Otherwise use it to help poupulate the form.
@@ -776,7 +785,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        
+
                         <c:forEach var="instance" items="${serv.instanceStatusCheck()}">
                             <tr class="service-instance-item" id="${instance[1]}">
                                 <td>${instance[3]}</td>        
@@ -784,77 +793,77 @@
                                 <td>${instance[2]}</td>
                             </tr>
                         </c:forEach>
-                            
+
                     </tbody>
                 </table>
             </div>
-            
+
         </div>
-        <script>                 
-            $(".service-instance-item").each(function() {
+        <script>
+            $(".service-instance-item").each(function () {
                 var that = this;
                 var DELAY = 700, clicks = 0, timer = null;
 
-                $( that ).click( function() {
+                $(that).click(function () {
                     clicks++;  //count clicks
 
-                    if(clicks === 1) {                          
-                        timer = setTimeout(function() {
-                             clickServiceInstanceItem(that);
-                            clicks = 0;   
+                    if (clicks === 1) {
+                        timer = setTimeout(function () {
+                            clickServiceInstanceItem(that);
+                            clicks = 0;
                         }, DELAY);
                     } else {
                         clearTimeout(timer);    //prevent single-click action
                         if ($(that).hasClass("service-instance-highlighted")) {
                             $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
                             render.API.setServiceHighlights([]);
-                            render.API.highlightServiceElements();                        
+                            render.API.highlightServiceElements();
                             clicks = 0;             //after action performed, reset counter
                         } else {
-                            timer = setTimeout(function() {
+                            timer = setTimeout(function () {
                                 clickServiceInstanceItem(that);
-                                clicks = 0;   
-                            }, DELAY);                            
+                                clicks = 0;
+                            }, DELAY);
                         }
                     }
-                }).dblclick(function(e) {
+                }).dblclick(function (e) {
                     e.preventDefault();
                 });
             });
-              
-              
+
+
             function clickServiceInstanceItem(item) {
-                var UUID = $( item ).attr('id');
+                var UUID = $(item).attr('id');
 
                 $.ajax({
                     crossDomain: true,
                     type: "GET",
                     url: "/VersaStack-web/restapi/app/service/availibleitems/" + UUID,
-                    dataType: "json", 
+                    dataType: "json",
 
-                    success: function(data,  textStatus,  jqXHR ) {
-                         if (data === null) {
-                             bsShowFadingMessage("#servicePanel", "Data not found", "top", 1000);
-                         } else {
+                    success: function (data, textStatus, jqXHR) {
+                        if (data === null) {
+                            bsShowFadingMessage("#servicePanel", "Data not found", "top", 1000);
+                        } else {
                             $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
                             $(item).addClass('service-instance-highlighted');
                             //alert(data);
                             // Union of verified addition and unverified reduction
-                            var unionObj = data; 
-                            var result = model.makeSubModel([ unionObj  ]);
+                            var unionObj = data;
+                            var result = model.makeSubModel([unionObj]);
                             var modelArr = model.getModelMapValues(result);
 
                             render.API.setServiceHighlights(modelArr);
                             render.API.highlightServiceElements();
 
-                         }
+                        }
                     },
 
-                    error: function(jqXHR, textStatus, errorThrown ) {
+                    error: function (jqXHR, textStatus, errorThrown) {
                         //alert("Error getting status.");
                         alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
                     }
-               });                     
+                });
             }
         </script>
         <div id="loadingPanel"></div>
@@ -902,52 +911,52 @@
                        0 0 0 1 0" />
         <feComposite operator="out" in="a" in2="SourceGraphic"/>
     </filter>
-    
-    
-<filter id="serviceHighlightOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
-   <feFlood flood-color="#66ff66" result="base" />
-   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
-   <feColorMatrix result="mask" in="bigger" type="matrix"
-      values="0 0 0 0 0
-              0 0 0 0 0
-              0 0 0 0 0
-              0 0 0 1 0" />
-   <feComposite result="drop" in="base" in2="mask" operator="in" />
-   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
-</filter>
-<filter id="spaDependOnOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
-   <feFlood flood-color="#B3F131" result="base" />
-   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
-   <feColorMatrix result="mask" in="bigger" type="matrix"
-      values="0 0 0 0 0
-              0 0 0 0 0
-              0 0 0 0 0
-              0 0 0 1 0" />
-   <feComposite result="drop" in="base" in2="mask" operator="in" />
-   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
-</filter>
-<filter id="spaExportToOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
-   <feFlood flood-color="#23ABA6" result="base" />
-   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
-   <feColorMatrix result="mask" in="bigger" type="matrix"
-      values="0 0 0 0 0
-              0 0 0 0 0
-              0 0 0 0 0
-              0 0 0 1 0" />
-   <feComposite result="drop" in="base" in2="mask" operator="in" />
-   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
-</filter>
-<filter id="spaImportFromOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
-   <feFlood flood-color="#FD3338" result="base" />
-   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
-   <feColorMatrix result="mask" in="bigger" type="matrix"
-      values="0 0 0 0 0
-              0 0 0 0 0
-              0 0 0 0 0
-              0 0 0 1 0" />
-   <feComposite result="drop" in="base" in2="mask" operator="in" />
-   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
-</filter>    
+
+
+    <filter id="serviceHighlightOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+        <feFlood flood-color="#66ff66" result="base" />
+        <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+        <feColorMatrix result="mask" in="bigger" type="matrix"
+                       values="0 0 0 0 0
+                       0 0 0 0 0
+                       0 0 0 0 0
+                       0 0 0 1 0" />
+        <feComposite result="drop" in="base" in2="mask" operator="in" />
+        <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+    </filter>
+    <filter id="spaDependOnOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+        <feFlood flood-color="#B3F131" result="base" />
+        <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+        <feColorMatrix result="mask" in="bigger" type="matrix"
+                       values="0 0 0 0 0
+                       0 0 0 0 0
+                       0 0 0 0 0
+                       0 0 0 1 0" />
+        <feComposite result="drop" in="base" in2="mask" operator="in" />
+        <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+    </filter>
+    <filter id="spaExportToOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+        <feFlood flood-color="#23ABA6" result="base" />
+        <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+        <feColorMatrix result="mask" in="bigger" type="matrix"
+                       values="0 0 0 0 0
+                       0 0 0 0 0
+                       0 0 0 0 0
+                       0 0 0 1 0" />
+        <feComposite result="drop" in="base" in2="mask" operator="in" />
+        <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+    </filter>
+    <filter id="spaImportFromOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+        <feFlood flood-color="#FD3338" result="base" />
+        <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+        <feColorMatrix result="mask" in="bigger" type="matrix"
+                       values="0 0 0 0 0
+                       0 0 0 0 0
+                       0 0 0 0 0
+                       0 0 0 1 0" />
+        <feComposite result="drop" in="base" in2="mask" operator="in" />
+        <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+    </filter>    
     <filter id="subnetHighlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
         <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
         <feMorphology operator="dilate" radius="1"/>
@@ -959,14 +968,14 @@
         <feComposite operator="out" in="a" in2="SourceGraphic"/>
     </filter>
     <filter id="outlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%">
-            <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
+        <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
         <feMorphology operator="dilate" radius="1"/>
         <feColorMatrix result="a" type="matrix"
-                                  values="0 0 0 0 .7
-                                  0 0 0 0 1
-                                  0 0 0 0 0
-                                  0 0 0 1 0" />
-         <feComposite operator="out" in="a" in2="SourceGraphic"/>
+                       values="0 0 0 0 .7
+                       0 0 0 0 1
+                       0 0 0 0 0
+                       0 0 0 1 0" />
+        <feComposite operator="out" in="a" in2="SourceGraphic"/>
     </filter>       
     <filter id="subnetHighlightFF" width="2000000%" height="2000000%" x="-500%" y="-500%">
         <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
@@ -981,11 +990,11 @@
     <filter id="ghost" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
         <feColorMatrix type="saturate" values=".2"/>
     </filter>
-    
-     <marker id="marker_arrow_viz" markerWidth="10" markerHeight="10" refx="15" refy="3" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L0,6 L9,3 z" fill="black" />
+
+    <marker id="marker_arrow_viz" markerWidth="10" markerHeight="10" refx="15" refy="3" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="black" />
     </marker>
-   
+
     </defs>
     <!--We nest a g in here because the svg tag itself cannot do transforms
         we separate topologies, edges, and nodes to create an explicit z-order
@@ -1005,15 +1014,15 @@
 
     </g>
     </svg>
-   <div class="hide" id="hoverdiv_viz"></div>        
+    <div class="hide" id="hoverdiv_viz"></div>        
 
- <!-- CONTEXT MENU -->
-  <nav id="context-menu" class="context-menu">
-      <ul class="context-menu__items">
-        <li class="context-menu__item">
-          <a href="#" class="context-menu__link" data-action="Tag"><i class="fa  fa-tag"></i> Add Tag</a>
-        </li>
-      </ul>
+    <!-- CONTEXT MENU -->
+    <nav id="context-menu" class="context-menu">
+        <ul class="context-menu__items">
+            <li class="context-menu__item">
+                <a href="#" class="context-menu__link" data-action="Tag"><i class="fa  fa-tag"></i> Add Tag</a>
+            </li>
+        </ul>
     </nav>
 
     <!-- TAG DIALOG -->
@@ -1062,7 +1071,7 @@
             </div>
         </div>
     </div>
-    
+
     <div id="dialog_policyAction" title="Policy Action">
     </div>
     <div id="dialog_policyData" title="Policy Data">

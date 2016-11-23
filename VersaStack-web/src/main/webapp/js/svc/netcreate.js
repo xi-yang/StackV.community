@@ -1,3 +1,5 @@
+/* global keycloak */
+
 var baseUrl = window.location.origin;
 
 //jQuery time
@@ -15,12 +17,12 @@ $(function () {
         animating = true;
 
         fieldset_id = '#2-' + this.value + '-1';
-        
+
         var form = document.getElementById('msform');
         if (this.value === 'aws') {
-            
+
         } else {
-            
+
         }
 
         current_fs = $(this).parent();
@@ -57,7 +59,7 @@ $(function () {
         animating = true;
 
         resetStages();
-        
+
         current_fs = $(this).parent();
         base_fs = $('#1-base-1');
         previousStage(current_fs, base_fs);
@@ -69,10 +71,18 @@ $(function () {
 
         body.toggleClass("hide");
     });
-    
+
     $("#info-panel").click(function () {
         $("#black-screen").addClass("off");
         $(this).removeClass("active");
+    });
+    
+    $("#profile-save-label").click(function () {
+        if ($("#profile-save-check").is(':checked')) {
+            $("#profile-save-body").removeClass("fade-hide");
+        } else {
+            $("#profile-save-body").addClass("fade-hide");
+        }
     });
 
     $("#progressbar li").click(function () {
@@ -92,18 +102,16 @@ $(function () {
             next_fs = next_fs_list.first();
         } else {
             next_fs = next_fs_list.last();
-        }    
+        }
 
         if (next_index === 1) {
             resetStages();
-            
+
             base_fs = $('#1-base-1');
             previousStage(current_fs, base_fs);
-        }
-        else if (next_index > curr_index) {
+        } else if (next_index > curr_index) {
             nextStage(current_fs, next_fs);
-        }
-        else if (next_index < curr_index) {
+        } else if (next_index < curr_index) {
             previousStage(current_fs, next_fs);
         }
     });
@@ -111,7 +119,7 @@ $(function () {
 
 function startEditor(mode) {
     $("#mode-panel").css("top", "-50%");
-    
+
     if (mode === 0) {
         $("#wizform").removeClass("disabled");
         $("#0-base-select").addClass("active-fs");
@@ -123,12 +131,12 @@ function startEditor(mode) {
 
 function configureForm(type) {
     $("#progressbar li").removeClass("disabled");
-    
+
     var thead = document.getElementById(type + "Stage2-base");
     thead.innerHTML = "";
     var tbody = document.getElementById(type + "Stage2-network");
     tbody.innerHTML = "";
-    
+
     var row1 = document.createElement("tr");
     var cell1_1 = document.createElement("td");
     var cell1_2 = document.createElement("td");
@@ -136,7 +144,7 @@ function configureForm(type) {
     cell1_2.innerHTML = '<input type="text" name="netCidr" placeholder="Network CIDR" />';
     row1.appendChild(cell1_1);
     row1.appendChild(cell1_2);
-    tbody.appendChild(row1);    
+    tbody.appendChild(row1);
 
     var row2 = document.createElement("tr");
     var cell2_1 = document.createElement("td");
@@ -146,7 +154,7 @@ function configureForm(type) {
 
     if (type === 'aws') {
         $("#msform").addClass("aws");
-        
+
         $("#progressbar li").eq(4).addClass("disabled");
         $("#progressbar li").eq(5).addClass("disabled");
 
@@ -174,8 +182,7 @@ function setProgress(stage_num) {
         for (i = stage; i < stage_num; i++) {
             $("#progressbar li").eq(i).addClass("active");
         }
-    }
-    else if (stage > stage_num) {
+    } else if (stage > stage_num) {
         for (i = stage - 1; i >= stage_num; i--) {
             $("#progressbar li").eq(i).removeClass("active");
         }
@@ -257,8 +264,7 @@ function applyTemplate(mode) {
         base_fs = $('#1-base-1');
         mode_fs = $('#0-template-select');
         nextStage(mode_fs, base_fs);
-    }
-    else {
+    } else {
         // Basic AWS Template
         if (mode === 1) {
             current_fs = $("#0-template-select");
@@ -334,7 +340,7 @@ function applyTemplate(mode) {
             form.elements['vm2-instance'].value = 't2.small';
             form.elements['vm2-keypair'].value = 'xi-aws-max-dev-key';
             form.elements['vm2-security'].value = 'geni';
-            
+
             form.elements['conn-dest'].value = 'urn:publicid:IDN+dragon.maxgigapop.net+interface+CLPK:1-1-2:*';
             form.elements['conn-vlan'].value = '3023';
         }
@@ -342,8 +348,8 @@ function applyTemplate(mode) {
         else if (mode === 3) {
             current_fs = $("#0-template-select");
             next_fs = $("#2-ops-1");
-            configureForm('ops');                        
-            
+            configureForm('ops');
+
             // Network
             form.elements['netType'].value = 'internal';
             form.elements['netCidr'].value = '10.0.0.0/16';
@@ -359,7 +365,7 @@ function applyTemplate(mode) {
 
             form.elements['subnet1-name'].value = 'subnet1';
             form.elements['subnet1-cidr'].value = '10.0.0.0/24';
-            form.elements['subnet1-route-default'].checked = true;                                    
+            form.elements['subnet1-route-default'].checked = true;
 
             // VMs
             var vmCounter = document.getElementById('opsStage4-vm');
@@ -369,29 +375,29 @@ function applyTemplate(mode) {
             var vm1RouteCounter = document.getElementById('opsStage4-vm1-routes');
             vm1RouteCounter.value = 1;
             setVMRoutes(vm1RouteCounter);
-            
+
             form.elements['vm1-name'].value = 'ops-vtn1-vm1';
             $("#opsStage4-vm1-table select").val("1");
             form.elements['vm1-instance'].value = '2';
             form.elements['vm1-keypair'].value = 'icecube_key';
-            form.elements['vm1-security'].value = 'rains';            
+            form.elements['vm1-security'].value = 'rains';
             form.elements['vm1-floating'].value = '206.196.180.148';
-            form.elements['vm1-host'].value = 'msx3';            
+            form.elements['vm1-host'].value = 'msx3';
             form.elements['vm1-route1-to'].value = '192.168.1.0/24';
             form.elements['vm1-route1-next'].value = '192.168.1.1';
-                
+
             // Gateways    
             var gatewayCounter = document.getElementById('opsStage5-gateway');
             gatewayCounter.value = 2;
             setGateways(gatewayCounter);
-            
+
             form.elements['gateway1-name'].value = 'cluster-gw1';
             $("#gateway1-type-select").val("port_profile");
             form.elements['gateway1-from'].value = 'MSX-Date-Local';
             form.elements['gateway2-name'].value = 'l2path-aws-dc1';
             $("#gateway2-type-select").val("stitch_port");
             form.elements['gateway2-to'].value = 'urn:ogf:network:domain=wix.internet2.edu:node=sw.net.wix.internet2.edu:port=13/1:link=al2s?vlan=any';
-            
+
             // SRIOVs
             var SRIOVCounter = document.getElementById('opsStage6-sriov');
             SRIOVCounter.value = 2;
@@ -406,7 +412,7 @@ function applyTemplate(mode) {
             form.elements['SRIOV2-name'].value = 'ops-vtn1:vm1:eth2';
             form.elements['SRIOV2-ip'].value = '10.10.0.1';
             form.elements['SRIOV2-mac'].value = '11:22:22:33:33:02';
-            
+
         }
 
         nextStage(current_fs, next_fs);
@@ -426,7 +432,7 @@ function setSubnets(input) {
 
     var start = 1;
     for (i = start; i <= input.value; i++) {
-        
+
         var table = document.createElement("table");
         table.className = 'subfs-table';
         table.id = stage + i + '-table';
@@ -466,7 +472,7 @@ function setSubnets(input) {
         row2.appendChild(cell2_1);
         row2.appendChild(cell2_2);
         tbody1.appendChild(row2);
-                        
+
         var row3 = document.createElement("tr");
         var cell3_1 = document.createElement("td");
         if (stage.substring(0, 3) === 'aws') {
@@ -476,7 +482,7 @@ function setSubnets(input) {
         }
         row3.appendChild(cell3_1);
         tbody1.appendChild(row3);
-        
+
         table.appendChild(tbody1);
         table.appendChild(tbody2);
         fieldset.appendChild(table);
@@ -533,7 +539,7 @@ function setVMs(input) {
         tbody1.className = 'fade-hide';
         var tbody2 = document.createElement("tbody");
         tbody2.className = 'fade-hide';
-        
+
         var row1 = document.createElement("tr");
         row1.className = 'subfs-headrow closed';
         var cell1_1 = document.createElement("th");
@@ -624,7 +630,7 @@ function setVMRoutes(input) {
     var vmNum = vmId.substring(vmId.length - 1);
     table.innerHTML = "";
 
-    var vmRouteCount = input.value;  
+    var vmRouteCount = input.value;
     for (j = 1; j <= vmRouteCount; j++) {
         var row3 = table.insertRow(j - 1);
         var cell3_1 = row3.insertCell(0);
@@ -638,7 +644,7 @@ function setVMRoutes(input) {
 var gatewayCount;
 function setGateways(input) {
     gatewayCount = input.value;
-    
+
     var stage = input.id;
     var old = input.oldvalue;
     var fieldset = document.getElementById(stage + "-fs");
@@ -691,7 +697,7 @@ function setGateways(input) {
         var cell4_2 = document.createElement("td");
         cell4_1.innerHTML = '<input type="text" name="gateway' + i + '-from" placeholder="From"/>' +
                 '<input type="text" name="gateway' + i + '-to" placeholder="To"/>' +
-                '<input type="text" name="gateway' + i + '-next" placeholder="Next Hop"/>';        
+                '<input type="text" name="gateway' + i + '-next" placeholder="Next Hop"/>';
         row4.appendChild(cell4_1);
         row4.appendChild(cell4_2);
         tbody.appendChild(row4);
@@ -746,7 +752,7 @@ function setSRIOV(input) {
             body1.toggleClass("fade-hide");
             body2.toggleClass("fade-hide");
         });
-        
+
         var selectString1 = '<select name="SRIOV' + i + '-gateway" id="SRIOV' + i + '-gateway-select"><option selected disabled>Select the hosting Gateway</option>';
         for (j = 1; j <= gatewayCount; j++) {
             var gatewayTag = document.getElementById("gateway" + j + "-tag");
@@ -754,7 +760,7 @@ function setSRIOV(input) {
             selectString1 += '<option value="' + j + '">Gateway ' + j + ' (' + gatewayTag.value + ')</option>';
         }
         selectString1 += '</select>';
-        
+
         var selectString2 = '<select name="SRIOV' + i + '-vm" id="SRIOV' + i + '-vm-select"><option selected disabled>Select the hosting VM</option>';
         for (j = 1; j <= vmCount; j++) {
             var vmTag = document.getElementById("vm" + j + "-tag");
@@ -771,7 +777,7 @@ function setSRIOV(input) {
         row2.appendChild(cell2_1);
         row2.appendChild(cell2_2);
         tbody1.appendChild(row2);
-        
+
         var row3 = document.createElement("tr");
         var cell3_1 = document.createElement("td");
         var cell3_2 = document.createElement("td");
@@ -779,7 +785,7 @@ function setSRIOV(input) {
         row3.appendChild(cell3_1);
         row3.appendChild(cell3_2);
         tbody1.appendChild(row3);
-        
+
         var row4 = document.createElement("tr");
         var cell4_1 = document.createElement("td");
         var cell4_2 = document.createElement("td");
@@ -788,7 +794,7 @@ function setSRIOV(input) {
         row4.appendChild(cell4_1);
         row4.appendChild(cell4_2);
         tbody1.appendChild(row4);
-                
+
         table.appendChild(tbody1);
         table.appendChild(tbody2);
 
@@ -815,7 +821,7 @@ function updateVMNames(input) {
 function updateGatewayNames(input) {
     var gatewayId = input.id;
     var gatewayNum = gatewayId.substring(7, 8);
-    
+
     $('[id$=gateway-select] option[value=' + gatewayNum + ']').text(
             'Gateway ' + gatewayNum + ' (' + input.value + ')');
 }
@@ -826,30 +832,44 @@ function validateVCN() {
 
     // Stage 2
     if ($("input[name='alias']").val() === "") {
-        invalidArr.push("Alias field is empty.");
-        
+        invalidArr.push("Alias field is empty.\n");
+
         $("#progressbar li").eq(1).addClass("invalid");
         $("input[name='alias']").addClass("invalid");
     }
 
     // Stage 3
-    
+
 
     // Stage 4
-    
+
 
     // Stage 5
-    
+
 
     // Stage 6
-    
+
+    // Stage 7
+    if ($("input[name='profile-save']").is(':checked')) {
+        if ($("input[name='profile-name']").val() === "") {
+            invalidArr.push("Profiles require a name in order to be saved.\n");
+
+            $("#progressbar li").eq(6).addClass("invalid");
+            $("input[name='profile-name']").addClass("invalid");
+        }
+    }
 
     // Results
     if (invalidArr.length === 0) {
+        $('<input />').attr('type', 'hidden')
+                .attr('name', "authToken")
+                .attr('value', keycloak.token)
+                .appendTo('#msform');
+
         return true;
     } else {
         infoAlert("Invalid Inputs", invalidArr);
-        
+
         return false;
     }
 }
@@ -857,14 +877,14 @@ function validateVCN() {
 function infoAlert(title, arr) {
     $("#black-screen").removeClass("off");
     $("#info-panel").addClass("active");
-    
+
     if (title === "Invalid Inputs") {
         $("#info-panel-title").html(title);
         var arrString = "";
         for (i = 0; i < arr.length; i++) {
             arrString += arr[i] + "\r\n";
         }
-        
+
         $("#info-panel-div").html(arrString);
     }
 }

@@ -1,4 +1,27 @@
-var baseUrl = window.location.origin;
+/* 
+ * Copyright (c) 2013-2016 University of Maryland
+ * Created by: Alberto Jimenez
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Work.
+ * 
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * IN THE WORK.
+ */
+
+/* global XDomainRequest, baseUrl, keycloak */
 
 //jQuery time
 var current_fs, next_fs, previous_fs; //fieldsets
@@ -8,7 +31,9 @@ var stage = 1;
 var last_stage = 6;
 
 // Page Load Function
-$(function () {
+$(function () {    
+    loadKeycloakACL();
+    
     $(".next").click(function () {
         if (animating)
             return false;
@@ -59,10 +84,6 @@ $(function () {
         } else {
             $("#profile-save-body").addClass("fade-hide");
         }
-    });
-
-    $("#profile-save-button").click(function () {
-        
     });
 
     $("#progressbar li").click(function () {
@@ -206,7 +227,7 @@ function applyTemplate(mode) {
         next_div = $('#2-1');
         nextStage(template_div, next_div);
     }
-    else {
+    else {/*
         // Basic Hybrid Cloud Template
         if (mode === 1) {
             current_div = $("#0-1");
@@ -302,7 +323,7 @@ function applyTemplate(mode) {
             form.elements['SRIOV2-mac'].value = '11:22:22:33:33:02';
         }
 
-        nextStage(current_div, next_div);
+        nextStage(current_div, next_div);*/
     }
 }
 
@@ -829,16 +850,20 @@ function updateGatewayNames(input) {
 function validateHybrid() {
     var invalidArr = new Array();
     var type = $("#msform").attr('class');
+    var btn = $(document.activeElement);
+    if (btn.attr("name") === "save" && !($("input[name='profile-save']").is(':checked'))) {
+        invalidArr.push("Profiles require a name in order to be saved. Please check the save box and try again.");
+    }
 
     // Stage 2
     if ($("input[name='alias']").val() === "") {
-        invalidArr.push("Alias field is empty.");
+        invalidArr.push("Alias field is empty.\n");
 
         $("#progressbar li").eq(1).addClass("invalid");
         $("input[name='alias']").addClass("invalid");
     }
     if ($("input[name='aws-conn-vlan']").val() === "") {
-        invalidArr.push("Direct Connect VLAN field is empty.");
+        invalidArr.push("Direct Connect VLAN field is empty.\n");
 
         $("#progressbar li").eq(1).addClass("invalid");
         $("input[name='aws-conn-vlan']").addClass("invalid");
@@ -859,7 +884,7 @@ function validateHybrid() {
     // Stage 7
     if ($("input[name='profile-save']").is(':checked')) {
         if ($("input[name='profile-name']").val() === "") {
-            invalidArr.push("Profiles require a name in order to be saved. Please try again.");
+            invalidArr.push("Profiles require a name in order to be saved.\n");
 
             $("#progressbar li").eq(6).addClass("invalid");
             $("input[name='profile-name']").addClass("invalid");
@@ -868,6 +893,11 @@ function validateHybrid() {
 
     // Results
     if (invalidArr.length === 0) {
+        $('<input />').attr('type', 'hidden')
+          .attr('name', "authToken")
+          .attr('value', keycloak.token)
+          .appendTo('#msform');
+        
         return true;
     } else {
         infoAlert("Invalid Inputs", invalidArr);
@@ -889,4 +919,8 @@ function infoAlert(title, arr) {
 
         $("#info-panel-fs").html(arrString);
     }
+}
+
+function loadKeycloakACL() {
+    
 }
