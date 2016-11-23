@@ -23,63 +23,95 @@
  */
 package net.maxgigapop.mrs.driver.aws;
 
+import java.util.logging.Logger;
+import javax.ejb.EJBException;
+
 /**
  *
  * @author muzcategui
  */
 public class AwsPrefix {
-    public static String prefix = "aws.amazon.cloud:aws-cloud";
-    //@TODO: dynamic pattern prefix
-    public static String bucket = prefix+":bucket+%s";
+    private String prefix = "";
+    private String defaultPrefix = "aws.amazon.com:aws-cloud";
+
+    Logger log = Logger.getLogger(AwsDriver.class.getName());
+
+    AwsPrefix () {
+        prefix = defaultPrefix;
+    }
     
-    public static String ebsService = prefix+":ebsservice+%s";
-
-    public static String ec2Service = prefix+":ec2service+%s";
-
-    public static String directConnectService = prefix+":directconnect+%s";
-
-    public static String gateway = prefix+":gateway+%s";
-
-    public static String instance = prefix+":vpc+%s:subnet+%s:instance+%s";
-
-    public static String label = "%s:label+%s";
-
-    public static String labelGroup = "%s:labelgroup+%s";
+    AwsPrefix (String uri) {
+        setTopologyPrefix(uri);
+    }
     
-    public static String nic = prefix+":vpc+%s:subnet+%s:nic+%s";
+    public void setTopologyPrefix(String uri) {
+        if (uri.startsWith("urn:ogf:network:")) {
+            prefix = uri.substring("urn:ogf:network:".length());
+        } else {
+            String[] fields = uri.split(":");
+            for (String field: fields) {
+                if (field.matches("^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\\\.)+[A-Za-z]{2,6}$")) {
+                    prefix = uri.substring(uri.indexOf(field));
+                    return;
+                }
+            }
+            log.warning("AwsPrefix failed with invalid uri="+uri);
+        }
+    }
     
-    public static String nicNetworkAddress = prefix+":vpc+%s:subnet+%s:nic+%s:ip+%s";
+    public String defaultPrefix() { return defaultPrefix;  }
     
-    public static String publicAddress = prefix+":public-ip+%s";
+    public String bucket() { return prefix+":bucket+%s";  }
+    
+    public String ebsService() {
+        return prefix+":ebsservice+%s"; 
+    }
 
-    public static String route = prefix+":vpc+%s:routingtable+%s:route+%s";
+    public String ec2Service() {  return prefix+":ec2service+%s";  }
 
-    public static String routeFrom = prefix+":vpc+%s:routingtable+%s:route+%s:routefrom";
+    public String directConnectService() {  return defaultPrefix+":directconnect+%s";  }
 
-    public static String routeTo = prefix+":vpc+%s:routingtable+%s:route+%s:routeto";
+    public String gateway() {  return prefix+":gateway+%s";  }
 
-    public static String routingService = prefix+":vpc+%s:routingservice";
+    public String instance() {  return prefix+":vpc+%s:subnet+%s:instance+%s";  }
 
-    public static String routingTable = prefix+":vpc+%s:routingtable+%s";
+    public String label() { return "%s:label+%s";  }
 
-    public static String s3Service = prefix+":s3service+%s";
+    public String labelGroup() { return "%s:labelgroup+%s";  }
+    
+    public String nic() {  return prefix+":vpc+%s:subnet+%s:nic+%s";  }
+    
+    public String nicNetworkAddress() {  return prefix+":vpc+%s:subnet+%s:nic+%s:ip+%s";  }
+    
+    public String publicAddress() {  return prefix+":public-ip+%s";  }
 
-    public static String subnet = prefix+":vpc+%s:subnet+%s";
+    public String route() {  return prefix+":vpc+%s:routingtable+%s:route+%s";  }
 
-    public static String subnetNetworkAddress = prefix+":vpc+%s:subnet+%s:cidr";
+    public String routeFrom() {  return prefix+":vpc+%s:routingtable+%s:route+%s:routefrom";  }
 
-    public static String switchingService = prefix+":vpc+%s:switchingservice";
+    public String routeTo() {  return prefix+":vpc+%s:routingtable+%s:route+%s:routeto";  }
 
-    public static String vif = "%s:dxvif+vlan%s";
+    public String routingService() {  return prefix+":vpc+%s:routingservice";  }
 
-    public static String vlan = prefix+":vif+%s:vlan+%s";
+    public String routingTable() {  return prefix+":vpc+%s:routingtable+%s";  }
 
-    public static String volume = prefix+":volume+%s";
+    public String s3Service() {  return prefix+":s3service+%s";  }
 
-    public static String vpc = prefix+":vpc+%s";
+    public String subnet() {  return prefix+":vpc+%s:subnet+%s";  }
 
-    public static String vpcNetworkAddress = prefix+":vpc+%s:cidr";
+    public String subnetNetworkAddress() {  return prefix+":vpc+%s:subnet+%s:cidr";  }
 
-    public static String vpcService = prefix+":vpcservice+%s";
+    public String switchingService() {  return prefix+":vpc+%s:switchingservice";  }
 
+    public String vif() { return "%s:dxvif+vlan%s";  }
+
+    public String vlan() {  return defaultPrefix+":vif+%s:vlan+%s";  }
+
+    public String volume() {  return prefix+":volume+%s";  }
+
+    public String vpc() {  return prefix+":vpc+%s";  }
+
+    public String vpcNetworkAddress() {  return prefix+":vpc+%s:cidr";  }
+
+    public String vpcService() {  return prefix+":vpcservice+%s";  }
 }

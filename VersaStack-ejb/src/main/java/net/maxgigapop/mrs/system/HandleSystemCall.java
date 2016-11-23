@@ -26,6 +26,7 @@ package net.maxgigapop.mrs.system;
 import com.hp.hpl.jena.ontology.OntModel;
 import static java.lang.Thread.sleep;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -138,11 +139,22 @@ public class HandleSystemCall {
     }
 
     public ModelBase retrieveVersionGroupModel(String refUuid) {
-        VersionGroup vg = VersionGroupPersistenceManager.findByReferenceId(refUuid);
-        if (vg == null) {
-            throw new EJBException(String.format("retrieveVersionModel cannot find a VG with refUuid=%s", refUuid));
+        if (refUuid.equals("default")) {
+            try {
+                Context ejbCxt = new InitialContext();
+                SystemModelCoordinator systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
+                VersionGroup vg = systemModelCoordinator.getSystemVersionGroup();
+                return vg.getCachedModelBase();
+            } catch (Exception ex) {
+                throw new EJBException(this.getClass().getName() + ".retrieveVersionGroupModel('default') failed to lookup systemModelCoordinator", ex);
+            }
+        } else {
+            VersionGroup vg = VersionGroupPersistenceManager.findByReferenceId(refUuid);
+            if (vg == null) {
+                throw new EJBException(String.format("retrieveVersionModel cannot find a VG with refUuid=%s", refUuid));
+            }
+            return vg.createUnionModel();
         }
-        return vg.createUnionModel();
     }
 
     public OntModel queryModelView(String refUuid, List<ModelUtil.ModelViewFilter> mvfs) {
@@ -215,8 +227,10 @@ public class HandleSystemCall {
         SystemInstancePersistenceManager.delete(systemInstance);
     }
 
+    // useCachedVG = true && useRefreshedVG = false : 'normal' or 'through' mode 
+    // useCachedVG = false: 'forward' mode  |  useRefreshedVG = true: 'forced' mode
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
-    public void propagateDelta(SystemInstance systemInstance, SystemDelta sysDelta, boolean useUpdatedVG) {
+    public void propagateDelta(SystemInstance systemInstance, SystemDelta sysDelta, boolean useCachedVG, boolean refreshForced) {
         // refresh systemInstance into current persistence context
         if (systemInstance.getId() != 0) {
             systemInstance = SystemInstancePersistenceManager.findById(systemInstance.getId());
@@ -226,7 +240,7 @@ public class HandleSystemCall {
                 && !systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
             throw new EJBException(String.format("Trying to propagateDelta for %s that has delta already progagated.", systemInstance));
         }
-        if (sysDelta.getId() != null && sysDelta.getId() != 0) {
+        if (sysDelta.getId() != null && !sysDelta.getId().isEmpty()) {
             sysDelta = (SystemDelta) DeltaPersistenceManager.findById(sysDelta.getId());
         }
         // Note 1: an initial VG (#1) must exist 
@@ -240,18 +254,20 @@ public class HandleSystemCall {
 
         //EJBExeption may be thrown upon fault from subroutine of each step below
         //## Step 1. create reference model and target model 
-        // referenceVG could have new VIs compared to referenceVG_cached. If useUpdatedVG == true, 
-        // the reference model will use the latest VIs. Otherwise stick to the original VIs.
-        ModelBase referenceModel = (useUpdatedVG ? referenceVG : referenceVG_cached)
+        // referenceVG could have new VIs compared to referenceVG_cached. If referenceVG_cached == false, 
+        // the reference model will use the latest VIs. The latest VIs can be from persistence if the VG
+        // has been actively updated, or we can force refresh/update by setting useRefreshedVG = true.
+        // When useCachedVG = false && refreshForced = true, delta will be "forced" and bypass merge check.
+        VersionGroup headVG = VersionGroupPersistenceManager.refreshToHead(referenceVG, false);
+        ModelBase referenceModel = (useCachedVG ? referenceVG_cached : (refreshForced ? headVG : referenceVG))
                 .createUnionModel();
         OntModel referenceOntModel = referenceModel.getOntModel();
         OntModel targetOntModel = referenceModel.dryrunDelta(sysDelta);
 
-        //## Step 2. verify model change
-        // 2.1. get head/lastest VG based on the current versionGroup (no update / persist)
-        VersionGroup headVG = VersionGroupPersistenceManager.refreshToHead(referenceVG, false);
-        // 2.2. if the head VG is newer than the current/reference VG
-        if (headVG != null && !headVG.equals(referenceVG)) {
+        //## Step 2. verify model change if refreshForced = true.
+        // Under 'forced', delta apply to refreshed headVG. No need to compare to referenceVG as referenceModel is from headVG.
+        // Under other conditions, do compare their models to see if the head VG is newer than the referenceVG.
+        if (!refreshForced && headVG != null && !headVG.equals(referenceVG)) {
             //          create headOntModel. get D12=headModel.diffFromModel(refeneceOntModel)
             ModelBase headSystemModel = headVG.createUnionModel();
             // Note: The head model has committed (driverDeltas) or propagated (driverSystemDeltas if available) to reduce contention.
@@ -300,10 +316,7 @@ public class HandleSystemCall {
                 // no diff, use existing verionItem
                 continue;
             }
-            // create targetDSM and targetDSD only if there is a change. 
-            ModelBase targetDSM = new ModelBase();
-            targetDSM.setOntModel(tom);
-            // create targetDSD 
+            // create  targetDSD only if there is a change. 
             DriverSystemDelta targetDSD = new DriverSystemDelta();
             // do not save delta as it is transient but delta.modelA and delta.modelR must be saved
             targetDSD.setModelAddition(delta.getModelAddition());
@@ -321,8 +334,8 @@ public class HandleSystemCall {
             // Save targetDSD modelA and modelR.
             targetDSD.getModelAddition().setDelta(null);
             targetDSD.getModelReduction().setDelta(null);
-            ModelPersistenceManager.save(targetDSD.getModelAddition());
-            ModelPersistenceManager.save(targetDSD.getModelReduction());
+            //ModelPersistenceManager.save(targetDSD.getModelAddition());
+            //ModelPersistenceManager.save(targetDSD.getModelReduction());
         }
         // Save systemDelta
         sysDelta.setDriverSystemDeltas(targetDriverSystemDeltas);
@@ -333,11 +346,11 @@ public class HandleSystemCall {
         Context ejbCxt = null;
         for (DriverSystemDelta targetDSD : targetDriverSystemDeltas) {
             // save targetDSD
-            DeltaPersistenceManager.save(targetDSD);
+            DeltaPersistenceManager.merge(targetDSD);
             targetDSD.getModelAddition().setDelta(targetDSD);
             targetDSD.getModelReduction().setDelta(targetDSD);
-            ModelPersistenceManager.save(targetDSD.getModelAddition());
-            ModelPersistenceManager.save(targetDSD.getModelReduction());
+            ModelPersistenceManager.merge(targetDSD.getModelAddition());
+            ModelPersistenceManager.merge(targetDSD.getModelReduction());
             // push driverSystemDeltas to driverInstances
             DriverInstance driverInstance = targetDSD.getDriverInstance();
             // remove other driverInstance.driverSystemDeltas that are not by the current systemDelta
@@ -435,13 +448,13 @@ public class HandleSystemCall {
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
-    public void propagateDelta(String sysInstanceUUID, SystemDelta sysDelta, boolean useUpdatedVG) {
+    public void propagateDelta(String sysInstanceUUID, SystemDelta sysDelta, boolean useCachedVG, boolean refreshForced) {
         SystemInstance systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(sysInstanceUUID);
         if (systemInstance == null) {
             throw new EJBException("propagateDelta encounters unknown systemInstance with referenceUUID=" + sysInstanceUUID);
         }
 
-        this.propagateDelta(systemInstance, sysDelta, useUpdatedVG);
+        this.propagateDelta(systemInstance, sysDelta, useCachedVG, refreshForced);
     }
     
     public void plugDriverInstance(Map<String, String> properties) {

@@ -22,12 +22,13 @@
  */
 
 "use strict";
-define([], function () {
+define(["local/versastack/utils"], function (utils) {
     /**
      * 
      * @param {Port} leftPort
      * @param {Port} rightPort
      */
+    var map_ = utils.map_;
     function Edge(leftPort, rightPort) {
         /**@type Port**/
         this.leftPort = leftPort;

@@ -63,13 +63,15 @@ public class AwsBatchResourcesTool {
 
     private static final Logger log = Logger.getLogger(AwsBatchResourcesTool.class.getName());
     private AwsEC2Get ec2Client = null;
+    private AwsPrefix awsPrefix = null;
 
-    public AwsBatchResourcesTool(String access_key_id, String secret_access_key, Regions region) {
+    public AwsBatchResourcesTool(String access_key_id, String secret_access_key, Regions region, String topologyUri) {
         ec2Client = new AwsEC2Get(access_key_id, secret_access_key, region);
+        awsPrefix = new AwsPrefix(topologyUri);
     }
 
     public AwsBatchResourcesTool() {
-
+        awsPrefix = new AwsPrefix();
     }
 
     public Resource isbatched(OntModel model, Resource r) {
@@ -224,9 +226,12 @@ public class AwsBatchResourcesTool {
         ResultSet r = executeQuery(query, model);
         while (r.hasNext()) {
             QuerySolution q = r.next();
-            String nodeTag = ResourceTool.getResourceName(q.get("node").asResource().toString(), AwsPrefix.instance);
+            String nodeTag = ResourceTool.getResourceName(q.get("node").asResource().toString(), awsPrefix.instance());
             String nodeId = ec2Client.getInstanceId(nodeTag);
             Instance node = ec2Client.getInstance(nodeId);
+            if (node == null) {
+                continue;
+            }
             String tagValue = ec2Client.getTagValue("batch", node.getTags());
             if (tagValue != null) {
                 if (batches.get(nodeTag) == null) {
@@ -249,9 +254,12 @@ public class AwsBatchResourcesTool {
         r = executeQuery(query, model);
         while (r.hasNext()) {
             QuerySolution q = r.next();
-            String portTag = ResourceTool.getResourceName(q.get("port").asResource().toString(), AwsPrefix.nic);
+            String portTag = ResourceTool.getResourceName(q.get("port").asResource().toString(), awsPrefix.nic());
             String portId = ec2Client.getResourceId(portTag);
             NetworkInterface port = ec2Client.getNetworkInterface(portId);
+            if (port == null) {
+                continue;
+            }
             String tagValue = ec2Client.getTagValue("batch", port.getTagSet());
             if (tagValue != null) {
                 if (batches.get(portTag) == null) {
@@ -271,9 +279,12 @@ public class AwsBatchResourcesTool {
         r = executeQuery(query, model);
         while (r.hasNext()) {
             QuerySolution q = r.next();
-            String volumeTag = ResourceTool.getResourceName(q.get("volume").asResource().toString(), AwsPrefix.volume);
+            String volumeTag = ResourceTool.getResourceName(q.get("volume").asResource().toString(), awsPrefix.volume());
             String volumeId = ec2Client.getVolumeId(volumeTag);
             Volume vol = ec2Client.getVolume(volumeId);
+            if (vol == null) {
+                continue;
+            }
             String tagValue = ec2Client.getTagValue("batch", vol.getTags());
             if (tagValue != null) {
                 if (batches.get(volumeTag) == null) {

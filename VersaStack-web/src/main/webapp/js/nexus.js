@@ -1,13 +1,92 @@
+/* 
+ * Copyright (c) 2013-2016 University of Maryland
+ * Created by: Alberto Jimenez
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Work.
+ * 
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * IN THE WORK.
+ */
 
-/* global XDomainRequest */
+/* global XDomainRequest, baseUrl, loggedIn */
 
 // Service JavaScript Library
-var baseUrl = window.location.origin;
+baseUrl = window.location.origin;
+var keycloak = Keycloak('/VersaStack-web/data/json/keycloak.json');
 
 // Page Load Function
 
 $(function () {
-    $("#nav").load("/VersaStack-web/navbar.html");
+    keycloak.init().success(function (authenticated) {
+        if (authenticated) {
+            var test = keycloak.isTokenExpired();
+            loggedIn = authenticated ? true : false;
+            sessionStorage.setItem("loggedIn", loggedIn);
+            if (loggedIn) {
+                sessionStorage.setItem("username", keycloak.tokenParsed.given_name);
+                sessionStorage.setItem("subject", keycloak.tokenParsed.sub);
+                sessionStorage.setItem("token", keycloak.token);
+            }
+        } else {
+            keycloak.login();
+        }
+    }).error(function () {
+        alert('failed to initialize');
+    });
+    keycloak.onAuthSuccess = function () {
+        // catalog
+        if (window.location.pathname === "/VersaStack-web/ops/catalog.jsp") {
+            setTimeout(catalogLoad, 750);
+            setRefreshTracker(60);
+        }
+        // templateDetails
+        else if (window.location.pathname === "/VersaStack-web/ops/details/templateDetails.jsp") {
+            var uuid = getURLParameter("uuid");
+
+            deltaModerate();
+            instructionModerate();
+            buttonModerate();
+            loadACL(uuid);
+            loadStatus(uuid);
+            loadVisualization();
+            setRefreshInstance(60);
+        }
+    };
+    keycloak.onTokenExpire = function () {
+        keycloak.updateToken(20).success(function () {
+            console.log("Token automatically updated!");
+        }).error(function () {
+            console.log("Automatic token update failed!");
+        });
+    };
+    
+    
+
+    $("#nav").load("/VersaStack-web/navbar.html", function () {
+        $("#logout-button").click(function (evt) {
+            keycloak.logout();
+
+            evt.preventDefault();
+        });
+        $("#account-button").click(function (evt) {
+            keycloak.accountManagement();
+
+            evt.preventDefault();
+        });
+    });
     $("#sidebar").load("/VersaStack-web/sidebar.html", function () {
         $("#sidebar-toggle").click(function (evt) {
             $("#sidebar-toggle-1").toggleClass("img-off");
@@ -18,58 +97,6 @@ $(function () {
 
             evt.preventDefault();
         });
-    });
-
-    $(".button-service-select").click(function (evt) {
-        $ref = "/VersaStack-web/ops/srvc/" + this.id.toLowerCase() + ".jsp";
-        window.location.href = $ref;
-
-        //$("#service-overview").toggleClass("hide");
-        //$("#button-service-cancel").toggleClass("hide");
-        //$("#service-specific").load($ref);
-        evt.preventDefault();
-    });
-
-    $(".button-profile-select").click(function (evt) {
-        var apiUrl = baseUrl + '/VersaStack-web/restapi/app/profile/' + this.id;
-        $.ajax({
-            url: apiUrl,
-            type: 'GET',
-            success: function (result) {
-                $("#black-screen").removeClass("off");
-                $("#info-panel").addClass("active");
-                $("#info-panel-title").html("Profile Details");
-                $("#info-panel-text-area").val(JSON.stringify(result));
-                prettyPrintInfo();
-            },
-            error: function (textStatus, errorThrown) {
-                console.log(textStatus);
-                console.log(errorThrown);
-            }
-        });
-
-        evt.preventDefault();
-    });
-
-    $(".button-profile-submit").click(function (evt) {
-        var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service';
-        $.ajax({
-            url: apiUrl,
-            type: 'POST',
-            data: $("#info-panel-text-area").val(),
-            contentType: "application/json; charset=utf-8",
-            dataType: "json",
-            success: function (result) {
-
-            },
-            error: function (textStatus, errorThrown) {
-                console.log(textStatus);
-                console.log(errorThrown);
-            }
-        });
-        $("#black-screen").addClass("off");
-        $("#info-panel").removeClass("active");
-        evt.preventDefault();
     });
 
     $("#button-service-cancel").click(function (evt) {
@@ -110,8 +137,7 @@ $(function () {
     $(".nav-tabs li").click(function () {
         if ($(this).parent().parent().hasClass("closed")) {
             $("#catalog-panel").removeClass("closed");
-        }
-        else if (this.className === 'active') {
+        } else if (this.className === 'active') {
             $("#catalog-panel").toggleClass("closed");
         }
     });
@@ -142,8 +168,7 @@ function installSelect(sel) {
     if (sel.value !== null) {
         $ref = "/VersaStack-web/ops/srvc/driver.jsp?form_install=" + sel.value + " #service-menu";
         $ref2 = "/VersaStack-web/ops/srvc/driver.jsp?form_install=" + sel.value + " #service-fields";
-    }
-    else {
+    } else {
         $ref = "/VersaStack-web/ops/srvc/driver.jsp #service-menu";
 
         $ref2 = "/VersaStack-web/ops/srvc/driver.jsp #service-fields";
@@ -158,8 +183,7 @@ function viewmodeSelect(sel) {
     if (sel.value !== null) {
         $ref = "/VersaStack-web/ops/srvc/viewcreate.jsp?mode=" + sel.value + " #service-menu";
         $ref2 = "/VersaStack-web/ops/srvc/viewcreate.jsp?mode=" + sel.value + " #service-fields";
-    }
-    else {
+    } else {
         $ref = "/VersaStack-web/ops/srvc/viewcreate.jsp #service-menu";
         $ref2 = "/VersaStack-web/ops/srvc/viewcreate.jsp #service-fields";
 
@@ -173,10 +197,7 @@ function viewmodeSelect(sel) {
 function driverSelect(sel) {
     if (sel.value !== null) {
         $ref = "/VersaStack-web/ops/srvc/driver.jsp?form_install=install&driver_id=" + sel.value + " #service-fields";
-    }
-
-
-    else
+    } else
         $ref = "/VersaStack-web/ops/srvc/driver.jsp?form_install=install #service-fields";
     $("#service-bottom").load($ref);
 
@@ -189,18 +210,14 @@ function topoSelect(sel) {
 
         if (sel.value.indexOf("aws") > -1) {
             $ref = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=aws&topo=" + sel.value + " #service-fields";
-        }
-        else if (sel.value.indexOf("openstack") > -1) {
+        } else if (sel.value.indexOf("openstack") > -1) {
             $ref = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=os #service-fields";
-        }
-        else if (sel.value.indexOf("versa") > -1) {
+        } else if (sel.value.indexOf("versa") > -1) {
             $ref = "/VersaStack-web/ops/srvc/vmadd.jsp?vm_type=vs #service-fields";
-        }
-        else {
+        } else {
             $ref = "/VersaStack-web/ops/srvc/vmadd.jsp #service-fields";
         }
-    }
-    else
+    } else
         $ref = "/VersaStack-web/ops/srvc/vmadd.jsp #service-fields";
 
     $("#service-bottom").load($ref);
@@ -215,12 +232,10 @@ function instanceSelect(sel) {
         if (sel.value === "instance1") {
             document.getElementsByName("root-path")[0].value = "/dev/xvda";
             document.getElementsByName("root-snapshot")[0].value = "snapshot";
-        }
-        else if (sel.value === "instance2") {
+        } else if (sel.value === "instance2") {
             document.getElementsByName("root-path")[0].value = "/dev/sdb";
             document.getElementsByName("root-snapshot")[0].value = "snapshot";
-        }
-        else if (sel.value === "instance3") {
+        } else if (sel.value === "instance3") {
             document.getElementsByName("root-path")[0].value = "/dev/sdc";
             document.getElementsByName("root-snapshot")[0].value = "snapshot";
         }
@@ -230,8 +245,7 @@ function instanceSelect(sel) {
 function networkSelect(sel) {
     if (sel.value !== null) {
         $ref2 = "/VersaStack-web/ops/srvc/netcreate.jsp?networkType=" + sel.value + " #service-fields";
-    }
-    else {
+    } else {
         $ref2 = "/VersaStack-web/ops/srvc/netcreate.jsp #service-fields";
     }
     $("#service-bottom").load($ref2);
@@ -245,8 +259,7 @@ var fieldLimit = 5;
 function addPropField() {
     if (fieldCounter === fieldLimit) {
         alert("You have reached the limit of additional properties");
-    }
-    else {
+    } else {
         var table = document.getElementById("service-form");
         var tableHeight = table.rows.length;
 
@@ -269,8 +282,7 @@ var volumeLimit = 10;
 function addVolume() {
     if (volumeCounter === volumeLimit) {
         alert("You have reached the limit of volumes.");
-    }
-    else {
+    } else {
         var table = document.getElementById("volume-table");
         var tableHeight = table.rows.length;
 
@@ -340,8 +352,7 @@ var queryLimit = 10;
 function addQuery() {
     if (queryCounter === queryLimit) {
         alert("You have reached the limit of querys.");
-    }
-    else {
+    } else {
         var table = document.getElementById("net-custom-form");
         var tableHeight = table.rows.length;
 
@@ -364,8 +375,7 @@ var routeLimit = 10;
 function addRoute() {
     if (routeCounter === routeLimit) {
         alert("You have reached the limit of routes.");
-    }
-    else {
+    } else {
         routeCounter++;
         var block = document.getElementById('route-block');
 
@@ -462,8 +472,7 @@ function addVM(type, subnetID) {
     if (VMCounter === VMLimit) {
         alert("You have reached the limit of VMs.");
         return;
-    }
-    else if (type === 'aws') {
+    } else if (type === 'aws') {
         VMCounter++;
         var block = document.getElementById(subnetID + '-block');
 
@@ -476,8 +485,7 @@ function addVM(type, subnetID) {
                 '<tr><td><input type="text" name="' + subnetID + VMCounter + '-image" placeholder="Image Type"></td>' +
                 '<td><input type="text" name="' + subnetID + VMCounter + '-instance" placeholder="Instance Type"></td></tr>' +
                 '</tbody></table>';
-    }
-    else if (type === 'ops') {
+    } else if (type === 'ops') {
         VMCounter++;
         var block = document.getElementById(subnetID + '-block');
 
@@ -531,8 +539,7 @@ function addSubnet(type) {
     if (subnetCounter === subnetLimit) {
         alert("You have reached the limit of subnets.");
         return;
-    }
-    else if (type === 'aws') {
+    } else if (type === 'aws') {
         var table = document.getElementById("net-custom-form");
         var tableHeight = table.rows.length;
         subnetCounter++;
@@ -561,8 +568,7 @@ function addSubnet(type) {
 
         addSubnetRoute('subnet' + subnetCounter + '-route');
         addVM('aws', 'subnet' + subnetCounter + '-vm');
-    }
-    else if (type === 'ops') {
+    } else if (type === 'ops') {
         var table = document.getElementById("net-custom-form");
         var tableHeight = table.rows.length;
         subnetCounter++;
@@ -598,8 +604,7 @@ var linkLimit = 10;
 function addLink() {
     if (linkCounter === linkLimit) {
         alert("You have reached the limit of connections");
-    }
-    else {
+    } else {
         var table = document.getElementById("net-custom-form");
         var tableHeight = table.rows.length;
         linkCounter++;
@@ -624,7 +629,9 @@ function addLink() {
     }
 }
 
-// API CALLS
+
+/* API CALLS */
+
 function checkInstance(uuid) {
     var apiUrl = baseUrl + '/VersaStack-web/restapi/service/' + uuid + '/status';
     $.ajax({
@@ -1078,60 +1085,615 @@ function fl2pModerate(uuid) {
 }
 
 
-//**
+/* REFRESH */
+
+function timerChange(sel) {
+    clearInterval(refreshTimer);
+    clearInterval(countdownTimer);
+    if (sel.value !== 'off') {
+        setRefresh(sel.value);
+    } else {
+        document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
+    }
+}
 
 
+function setRefreshTracker(time) {
+    countdown = time;
+    refreshTimer = setInterval(function () {
+        reloadTracker(time);
+    }, (time * 1000));
+    countdownTimer = setInterval(function () {
+        refreshCountdown(time);
+    }, 1000);
+}
 
-/*
- 
- function applyTemplate(code) {
- switch(code) {
- case 1: 
- var form = document.getElementById('');
- 
- form.elements[''] = '';
- 
- break;
- case 2:
- 
- break;
- default:
- 
- }
- } 
- 
- 
- function clearView() {
- localStorage.removeItem('queryJSON');
- 
- evt.preventDefault();
- }
- 
- function newQuery() {
- $("#query-table").toggleClass("hide");
- 
- evt.preventDefault();
- }
- 
- function addQuery() {
- var json = localStorage.getItem('queryJSON');
- if (json === null) {
- var arr = [document.getElementById("sparquery").value];
- } 
- else {        
- var arr = JSON.parse(json);
- arr.push(document.getElementById("sparquery").value);
- }
- var newJSON = JSON.stringify(arr);
- localStorage.setItem('queryJSON', newJSON);
- 
- $("#service-bottom").load("/VersaStack-web/ops/srvc/viewcreate.jsp?mode=create #service-fields");
- }*/
+function reloadTracker(time) {
+    enableLoading();
+    keycloak.updateToken(30).error(function () {
+        console.log("Error updating token!");
+    });
+
+    var manual = false;
+    if (typeof time === "undefined") {
+        time = countdown;
+    }
+    if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
+        manual = true;
+    }
+
+    $('#instance-panel').load(document.URL + ' #status-table', function () {
+        loadInstances();
+
+        $(".clickable-row").click(function () {
+            window.document.location = $(this).data("href");
+        });
+
+        if (manual === false) {
+            countdown = time;
+            document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
+        } else {
+            document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
+        }
+
+        setTimeout(function () {
+            disableLoading();
+        }, 750);
+    });
+}
+
+function setRefreshInstance(time) {
+    countdown = time;
+    refreshTimer = setInterval(function () {
+        reloadInstance(time);
+    }, (time * 1000));
+    countdownTimer = setInterval(function () {
+        refreshCountdown(time);
+    }, 1000);
+}
+
+function reloadInstance(time) {
+    keycloak.updateToken(30).error(function () {
+        console.log("Error updating token!");
+    });
+    enableLoading();
+    var uuid = getURLParameter("uuid");
+    var manual = false;
+    if (typeof time === "undefined") {
+        time = countdown;
+    }
+    if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
+        manual = true;
+    }
+
+    $('#details-panel').load(document.URL + ' #details-panel', function () {
+        deltaModerate();
+        instructionModerate();
+        buttonModerate();
+        loadACL(uuid);
+        loadStatus(uuid);
+        loadVisualization();
+
+        $(".delta-table-header").click(function () {
+            $("#body-" + this.id).toggleClass("hide");
+        });
+
+        if (manual === false) {
+            countdown = time;
+            document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
+        } else {
+            document.getElementById('refresh-button').innerHTML = 'Manually RefreshNow ';
+        }
+
+        setTimeout(function () {
+            disableLoading();
+        }, 750);
+    });
+}
+
+function refreshCountdown() {
+    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
+    countdown--;
+}
 
 
+/* CATALOG */
 
-// Utility Functions
+function catalogLoad() {
+    loadInstances();
+    loadWizard();
+    loadEditor();
 
+    setTimeout(function () {
+        $("#instance-panel").removeClass("closed");
+        $("#catalog-panel").removeClass("closed");
+    }, 250);
+}
+
+function loadInstances() {
+    var userId = keycloak.subject;
+    var tbody = document.getElementById("status-body");
+    $("#status-body").empty();
+
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/panel/' + userId + '/instances';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            for (i = 0; i < result.length; i++) {
+                var instance = result[i];
+
+                var row = document.createElement("tr");
+                row.className = "clickable-row";
+                row.setAttribute("data-href", '/VersaStack-web/ops/details/templateDetails.jsp?uuid=' + instance[1]);
+
+                var cell1_1 = document.createElement("td");
+                cell1_1.innerHTML = instance[3];
+                var cell1_2 = document.createElement("td");
+                cell1_2.innerHTML = instance[0];
+                var cell1_3 = document.createElement("td");
+                cell1_3.innerHTML = instance[1];
+                var cell1_4 = document.createElement("td");
+                cell1_4.innerHTML = instance[2];
+                row.appendChild(cell1_1);
+                row.appendChild(cell1_2);
+                row.appendChild(cell1_3);
+                row.appendChild(cell1_4);
+                tbody.appendChild(row);
+            }
+
+            $(".clickable-row").click(function () {
+                window.document.location = $(this).data("href");
+            });
+        }
+    });
+}
+
+function loadWizard() {
+    var userId = keycloak.subject;
+    var tbody = document.getElementById("wizard-body");
+    $("#wizard-body").empty();
+
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/panel/' + userId + '/wizard';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            for (i = 0; i < result.length; i++) {
+                var profile = result[i];
+
+                var row = document.createElement("tr");
+                var cell1_1 = document.createElement("td");
+                cell1_1.innerHTML = profile[0];
+                var cell1_2 = document.createElement("td");
+                cell1_2.innerHTML = profile[1];
+                var cell1_3 = document.createElement("td");
+                cell1_3.innerHTML = "<button class='button-profile-select' id='" + profile[2] + "'>Select</button><button class='button-profile-delete' id='" + profile[2] + "'>Delete</button>";
+                row.appendChild(cell1_1);
+                row.appendChild(cell1_2);
+                row.appendChild(cell1_3);
+                tbody.appendChild(row);
+            }
+
+            $(".button-profile-select").click(function (evt) {
+                var apiUrl = baseUrl + '/VersaStack-web/restapi/app/profile/' + this.id;
+                $.ajax({
+                    url: apiUrl,
+                    type: 'GET',
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                    },
+                    success: function (result) {
+                        $("#black-screen").removeClass("off");
+                        $("#info-panel").addClass("active");
+                        $("#info-panel-title").html("Profile Details");
+                        $("#info-panel-text-area").val(JSON.stringify(result));
+                        prettyPrintInfo();
+                    },
+                    error: function (textStatus, errorThrown) {
+                        console.log(textStatus);
+                        console.log(errorThrown);
+                    }
+                });
+
+                evt.preventDefault();
+            });
+
+            $(".button-profile-delete").click(function (evt) {
+                var apiUrl = baseUrl + '/VersaStack-web/restapi/app/profile/' + this.id;
+                $.ajax({
+                    url: apiUrl,
+                    type: 'DELETE',
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                    },
+                    success: function (result) {
+                        wizardLoad();
+                    },
+                    error: function (textStatus, errorThrown) {
+                        console.log(textStatus);
+                        console.log(errorThrown);
+                    }
+                });
+
+                evt.preventDefault();
+            });
+
+            $(".button-profile-submit").click(function (evt) {
+                var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service';
+                $.ajax({
+                    url: apiUrl,
+                    type: 'POST',
+                    data: $("#info-panel-text-area").val(),
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                    },
+                    success: function (result) {
+
+                    },
+                    error: function (textStatus, errorThrown) {
+                        console.log(textStatus);
+                        console.log(errorThrown);
+                    }
+                });
+                $("#black-screen").addClass("off");
+                $("#info-panel").removeClass("active");
+                evt.preventDefault();
+            });
+        }
+    });
+}
+
+function loadEditor() {
+    var userId = keycloak.subject;
+    var tbody = document.getElementById("editor-body");
+
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/panel/' + userId + '/editor';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            for (i = 0; i < result.length; i++) {
+                var profile = result[i];
+
+                var row = document.createElement("tr");
+                var cell1_1 = document.createElement("td");
+                cell1_1.innerHTML = profile[0];
+                var cell1_2 = document.createElement("td");
+                cell1_2.innerHTML = profile[1];
+                var cell1_3 = document.createElement("td");
+                cell1_3.innerHTML = "<button class='button-service-select' id='" + profile[2] + "'>Select</button";
+                row.appendChild(cell1_1);
+                row.appendChild(cell1_2);
+                row.appendChild(cell1_3);
+                tbody.appendChild(row);
+            }
+
+            $(".button-service-select").click(function (evt) {
+                var ref = "/VersaStack-web/ops/srvc/" + this.id.toLowerCase() + ".jsp";
+                window.location.href = ref;
+
+                evt.preventDefault();
+            });
+        }
+    });
+}
+
+
+/* DETAILS */
+
+function loadVisualization() {
+    $("#details-viz").load("/VersaStack-web/details_viz.jsp", function () {
+        // Loading Verification visualization
+        $("#ver-add").append($("#va_viz_div"));
+        $("#ver-add").find("#va_viz_div").removeClass("hidden");
+
+        $("#unver-add").append($("#ua_viz_div"));
+        $("#unver-add").find("#ua_viz_div").removeClass("hidden");
+
+        $("#ver-red").append($("#vr_viz_div"));
+        $("#ver-red").find("#vr_viz_div").removeClass("hidden");
+
+        $("#unver-red").append($("#ur_viz_div"));
+        $("#unver-red").find("#ur_viz_div").removeClass("hidden");
+
+        // Loading Service Delta visualization
+        $("#delta-Service").addClass("hide");
+        $(".service-delta-table").removeClass("hide");
+
+        $("#serv-add").append($("#serva_viz_div"));
+        $("#serv-add").find("#serva_viz_div").removeClass("hidden");
+
+        $("#serv-red").append($("#servr_viz_div"));
+        $("#serv-red").find("#servr_viz_div").removeClass("hidden");
+
+        // Loading System Delta visualization 
+        var subState = document.getElementById("instance-substate").innerHTML;
+        var verificationTime = document.getElementById("verification-time").innerHTML;
+        if ((subState !== 'READY' && subState === 'FAILED') || verificationTime === '') {
+            $("#delta-System").addClass("hide");
+            $("#delta-System").insertAfter(".system-delta-table");
+
+            $(".system-delta-table").removeClass("hide");
+
+            // Toggle button should toggle  between system delta visualization and delta-System table
+            // if the verification failed
+            document.querySelector(".system-delta-table .details-model-toggle").onclick = function () {
+                toggleTextModel('.system-delta-table', '#delta-System');
+            };
+
+            $("#sys-red").append($("#sysr_viz_div"));
+            $("#sys-add").append($("#sysa_viz_div"));
+
+            $("#sys-red").find("#sysr_viz_div").removeClass("hidden");
+            $("#sys-add").find("#sysa_viz_div").removeClass("hidden");
+        } else {
+            // Toggle button should toggle between  verification visualization and delta-System table
+            // if the verification succeeded
+            $("#delta-System").insertAfter(".verification-table");
+            document.querySelector("#delta-System .details-model-toggle").onclick = function () {
+                toggleTextModel('.verification-table', '#delta-System');
+            };
+        }
+    });
+}
+
+function toggleTextModel(viz_table, text_table) {
+    if (!$(viz_table.toLowerCase()).length) {
+        alert("Visualization not found");
+    } else if (!$(text_table).length) {
+        alert("Text model not found");
+    } else {
+        $(viz_table.toLowerCase()).toggleClass("hide");
+        $(text_table).toggleClass("hide");
+    }
+}
+
+// Moderation Functions
+
+function deltaModerate() {
+    var subState = document.getElementById("instance-substate").innerHTML;
+    var verificationTime = document.getElementById("verification-time").innerHTML;
+    var verificationAddition = document.getElementById("verification-addition").innerHTML;
+    var verificationReduction = document.getElementById("verification-reduction").innerHTML;
+
+    var verAdd = document.getElementById("ver-add").innerHTML;
+    var unverAdd = document.getElementById("unver-add").innerHTML;
+    var verRed = document.getElementById("ver-red").innerHTML;
+    var unverRed = document.getElementById("unver-red").innerHTML;
+
+    if ((subState === 'READY' || subState !== 'FAILED') && verificationTime !== '') {
+        $("#delta-System").addClass("hide");
+        $(".verification-table").removeClass("hide");
+
+        if (verificationAddition === '' || (verAdd === '{ }' && unverAdd === '{ }')) {
+            $("#verification-addition-row").addClass("hide");
+        }
+        if (verificationReduction === '' || (verRed === '{ }' && unverRed === '{ }')) {
+            $("#verification-reduction-row").addClass("hide");
+        }
+    }
+}
+
+function instructionModerate() {
+    var subState = document.getElementById("instance-substate").innerHTML;
+    var verificationState = document.getElementById("instance-verification").innerHTML;
+    var verificationRun = document.getElementById("verification-run").innerHTML;
+    var blockString = "";
+
+    // State -1 - Error during validation/reconstruction
+    if ((subState === 'READY' || subState === 'FAILED') && verificationState === "") {
+        blockString = "Service encountered an error during verification. Please contact your technical supervisor for further instructions.";
+    }
+    // State 0 - Before Verify
+    else if (subState !== 'READY' && subState !== 'FAILED') {
+        blockString = "Service is still processing. Please hold for further instructions.";
+    }
+    // State 1 - Ready & Verifying
+    else if (subState === 'READY' && verificationState === '0') {
+        blockString = "Service is verifying.";
+    }
+    // State 2 - Ready & Verified
+    else if (subState === 'READY' && verificationState === '1') {
+        blockString = "Service has been successfully verified.";
+    }
+    // State 3 - Ready & Unverified
+    else if (subState === 'READY' && verificationState === '-1') {
+        blockString = "Service was not able to be verified.";
+    }
+    // State 4 - Failed & Verifying
+    else if (subState === 'FAILED' && verificationState === '0') {
+        blockString = "Service is verifying. (Run " + verificationRun + "/5)";
+    }
+    // State 5 - Failed & Verified
+    else if (subState === 'FAILED' && verificationState === '1') {
+        blockString = "Service has been successfully verified.";
+    }
+    // State 6 - Failed & Unverified
+    else if (subState === 'FAILED' && verificationState === '-1') {
+        blockString = "Service was not able to be verified.";
+    }
+
+    document.getElementById("instruction-block").innerHTML = blockString;
+}
+
+function buttonModerate() {
+    var superState = document.getElementById("instance-superstate").innerHTML;
+    var subState = document.getElementById("instance-substate").innerHTML;
+    var verificationState = document.getElementById("instance-verification").innerHTML;
+
+    if (superState === 'Create') {
+        // State 0 - Stuck 
+        if (verificationState === "") {
+            $("#instance-fdelete").toggleClass("hide");
+            $("#instance-fcancel").toggleClass("hide");
+            $("#instance-fretry").toggleClass("hide");
+            $("#instance-reverify").toggleClass("hide");
+        }
+        // State 1 - Ready & Verifying
+        if (subState === 'READY' && verificationState === '0') {
+
+        }
+        // State 2 - Ready & Verified
+        else if (subState === 'READY' && verificationState === '1') {
+            $("#instance-cancel").toggleClass("hide");
+            $("#instance-modify").toggleClass("hide");
+        }
+        // State 3 - Ready & Unverified
+        else if (subState === 'READY' && verificationState === '-1') {
+            $("#instance-fcancel").toggleClass("hide");
+            $("#instance-reverify").toggleClass("hide");
+        }
+        // State 4 - Failed & Verifying
+        else if (subState === 'FAILED' && verificationState === '0') {
+
+        }
+        // State 5 - Failed & Verified
+        else if (subState === 'FAILED' && verificationState === '1') {
+            $("#instance-fcancel").toggleClass("hide");
+            $("#instance-fmodify").toggleClass("hide");
+        }
+        // State 6 - Failed & Unverified
+        else if (subState === 'FAILED' && verificationState === '-1') {
+            $("#instance-fcancel").toggleClass("hide");
+            $("#instance-fretry").toggleClass("hide");
+            $("#instance-reverify").toggleClass("hide");
+        }
+    } else if (superState === 'Cancel') {
+        // State 0 - Stuck 
+        if (verificationState === "") {
+            $("#instance-fdelete").toggleClass("hide");
+            $("#instance-fretry").toggleClass("hide");
+            $("#instance-reverify").toggleClass("hide");
+        }
+        // State 1 - Ready & Verifying
+        if (subState === 'READY' && verificationState === '0') {
+
+        }
+        // State 2 - Ready & Verified
+        else if (subState === 'READY' && verificationState === '1') {
+            $("#instance-reinstate").toggleClass("hide");
+            $("#instance-modify").toggleClass("hide");
+            $("#instance-delete").toggleClass("hide");
+        }
+        // State 3 - Ready & Unverified
+        else if (subState === 'READY' && verificationState === '-1') {
+            $("#instance-fdelete").toggleClass("hide");
+            $("#instance-freinstate").toggleClass("hide");
+            $("#instance-reverify").toggleClass("hide");
+        }
+        // State 4 - Failed & Verifying
+        else if (subState === 'FAILED' && verificationState === '0') {
+
+        }
+        // State 5 - Failed & Verified
+        else if (subState === 'FAILED' && verificationState === '1') {
+            $("#instance-freinstate").toggleClass("hide");
+            $("#instance-fmodify").toggleClass("hide");
+            $("#instance-delete").toggleClass("hide");
+        }
+        // State 6 - Failed & Unverified
+        else if (subState === 'FAILED' && verificationState === '-1') {
+            $("#instance-fdelete").toggleClass("hide");
+            $("#instance-freinstate").toggleClass("hide");
+            $("#instance-fretry").toggleClass("hide");
+            $("#instance-reverify").toggleClass("hide");
+        }
+    } else if (superState === 'Reinstate') {
+        // State 0 - Stuck 
+        if (verificationState === "") {
+            $("#instance-fdelete").toggleClass("hide");
+            $("#instance-fretry").toggleClass("hide");
+            $("#instance-reverify").toggleClass("hide");
+        }
+        // State 1 - Ready & Verifying
+        if (subState === 'READY' && verificationState === '0') {
+
+        }
+        // State 2 - Ready & Verified
+        else if (subState === 'READY' && verificationState === '1') {
+            $("#instance-cancel").toggleClass("hide");
+            $("#instance-modify").toggleClass("hide");
+        }
+        // State 3 - Ready & Unverified
+        else if (subState === 'READY' && verificationState === '-1') {
+            $("#instance-fcancel").toggleClass("hide");
+            $("#instance-reverify").toggleClass("hide");
+        }
+        // State 4 - Failed & Verifying
+        else if (subState === 'FAILED' && verificationState === '0') {
+
+        }
+        // State 5 - Failed & Verified
+        else if (subState === 'FAILED' && verificationState === '1') {
+            $("#instance-fcancel").toggleClass("hide");
+            $("#instance-fmodify").toggleClass("hide");
+        }
+        // State 6 - Failed & Unverified
+        else if (subState === 'FAILED' && verificationState === '-1') {
+            $("#instance-fcancel").toggleClass("hide");
+            $("#instance-fretry").toggleClass("hide");
+            $("#instance-reverify").toggleClass("hide");
+        }
+    }
+}
+
+function loadACL() {
+    var select = document.getElementById("acl-select");
+    $("#acl-select").empty();
+
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/panel/' + keycloak.subject + '/acl';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            for (i = 0; i < result.length; i++) {
+                select.append("<option>" + result[i] + "</option>");
+            }
+        }
+    });
+}
+
+function loadStatus(refUuid) {
+    var ele = document.getElementById("instance-substate");
+    var apiUrl = baseUrl + '/VersaStack-web/restapi/app/service/' + refUuid + '/substatus';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            ele.innerHTML = result;
+        }
+    });
+}
+
+
+/* UTILITY */
+
+function getURLParameter(name) {
+    return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search) || [null, ''])[1].replace(/\+/g, '%20')) || null;
+}
+
+// Helper method to parse the title tag from the response.
+function getTitle(text) {
+    return text.match('<title>(.*)?</title>')[1];
+}
 
 function clearCounters() {
     volumeCounter = 0;
@@ -1159,21 +1721,6 @@ function emptyElement(id) {
     $("#" + id).empty();
 }
 
-var getUrlParameter = function getUrlParameter(sParam) {
-    var sPageURL = decodeURIComponent(window.location.search.substring(1)),
-            sURLVariables = sPageURL.split('&'),
-            sParameterName,
-            i;
-
-    for (i = 0; i < sURLVariables.length; i++) {
-        sParameterName = sURLVariables[i].split('=');
-
-        if (sParameterName[0] === sParam) {
-            return sParameterName[1] === undefined ? true : sParameterName[1];
-        }
-    }
-};
-
 // Create the XHR object.
 function createCORSRequest(method, url) {
     var xhr = new XMLHttpRequest();
@@ -1189,11 +1736,6 @@ function createCORSRequest(method, url) {
         xhr = null;
     }
     return xhr;
-}
-
-// Helper method to parse the title tag from the response.
-function getTitle(text) {
-    return text.match('<title>(.*)?</title>')[1];
 }
 
 function enableLoading() {

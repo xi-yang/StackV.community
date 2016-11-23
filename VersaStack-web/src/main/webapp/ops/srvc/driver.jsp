@@ -3,18 +3,14 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
-<jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
-<jsp:setProperty name="user" property="*" />  
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
 <jsp:setProperty name="serv" property="*" />  
-<c:if test="${user.loggedIn == false}">
-    <c:redirect url="/index.jsp" />
-</c:if>
 <!DOCTYPE html>
 <html >    
     <head>   
         <meta charset="UTF-8">
         <title>Driver Service</title>
+        <script src="/VersaStack-web/js/keycloak.js"></script>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>
@@ -83,7 +79,7 @@
                         <div id="service-bottom">
                             <div id="service-fields">
                                <form id="service-template-form" action="/VersaStack-web/ServiceServlet" method="post">
-                                    <input type="hidden" name="userID" value="${user.getId()}"/>
+                                    <input type="hidden" name="username" value="${sessionStorage.username}"/>
                                     <input type="hidden" name="driverID" value="${param.driver_id}"/>                                    
                                     <table class="management-table" id="net-template-form" style="margin-bottom: 0px;"> 
                                         <thead>
@@ -115,7 +111,7 @@
                                 </form>  
 
                                 <form id="driver-form" action="/VersaStack-web/ServiceServlet" method="post">
-                                    <input type="hidden" name="userID" value="${user.getId()}"/>
+                                    <input type="hidden" name="username" value="${sessionStorage.username}"/>
                                     <input type="hidden" name="driverID" value="${param.driver_id}"/>
                                     <table class="management-table" id="service-form">                                        
                                         <thead>

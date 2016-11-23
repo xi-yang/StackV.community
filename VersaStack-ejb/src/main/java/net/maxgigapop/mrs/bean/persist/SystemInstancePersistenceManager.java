@@ -65,7 +65,7 @@ public class SystemInstancePersistenceManager extends PersistenceManager {
 
     public static SystemInstance findBySystemDelta(SystemDelta delta) {
         try {
-            Query q = createQuery(String.format("FROM %s WHERE systemDelta=%d", SystemInstance.class.getSimpleName(), delta.getId()));
+            Query q = createQuery(String.format("FROM %s WHERE systemDelta='%s'", SystemInstance.class.getSimpleName(), delta.getId()));
             List<SystemInstance> listSI = (List<SystemInstance>) q.getResultList();
             if (listSI == null || listSI.isEmpty()) {
                 return null;

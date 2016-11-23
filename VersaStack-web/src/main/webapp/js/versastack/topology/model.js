@@ -39,6 +39,7 @@
  */
 "use strict";
 
+/* global XDomainRequest, baseUrl, keycloak */
 //debug code to modify the model before parsing=
 var INJECT = false;
 define([
@@ -57,6 +58,7 @@ define([
 
     function Model(oldModel) {
         var map_ = utils.map_;
+        var formatPolicyData = utils.formatPolicyData;
         var rootNodes = [];
         var versionID;
 //        var others = [];
@@ -68,10 +70,14 @@ define([
          * Initialize the model. This asyncronasly loads and parsed the model from the backend.
          * @returns {undefined}
          */
-        this.init = function (mode, callback, model) {            
+        this.init = function (mode, callback, model, uuid) {            
             var request = new XMLHttpRequest();  
             // If ready, load the live model. Otherwise, load the static model. 
-            request.open("GET", "/VersaStack-web/restapi/model/"); 
+            if (uuid === undefined)
+                request.open("GET", "/VersaStack-web/restapi/model/"); 
+            else 
+                request.open("GET", "/VersaStack-web/restapi/model/default"); 
+
             //request.open("GET", "/VersaStack-web/data/json/spa-rvtk-versastack-qa1-1vm.json");
             //request.open("GET", "/VersaStack-web/data/json/aws-blank.json");
             requestModel();
@@ -79,6 +85,7 @@ define([
             function requestModel() {
                 request.setRequestHeader("Accept", "application/json");
                 request.setRequestHeader("Content-type", "application/json");
+                request.setRequestHeader("Authorization", "bearer " + keycloak.token);
                 request.onload = function () {
                     if (model === null) {
                         var data = request.responseText;
@@ -149,7 +156,6 @@ define([
                                     toAdd = oldModel.elementMap[key];
                                     toAdd.reload(val, map);
                                 } else {
-                                    console.log("i was used");
                                     toAdd = new Element(val, map, that.elementMap);
                                     toAdd.topLevel = true;
                                 }
@@ -318,11 +324,11 @@ define([
                                     break;
                                 case values.spaValue:
                                     if (policy.getTypeDetailed() === "PolicyData")
-                                    policy.data = policy_[key][0].value;
+                                    policy.data = formatPolicyData(policy_[key][0].value);
                                     break;
                                 case values.spaFormat:
                                     if (policy.getTypeDetailed() === "PolicyData")
-                                    policy.data = policy_[key][0].value;                                    
+                                    policy.data = formatPolicyData(policy_[key][0].value);                                    
                                     break;
                                 default:
                                     console.log("Unknown policy attribute: " + key);
@@ -670,7 +676,9 @@ define([
                             rootNodes.push(node);
                         }
                     }
-                    callback();
+                    if (callback !== undefined && callback) {
+                        callback();
+                    }
                 };
                 request.send();
             }
@@ -1059,11 +1067,11 @@ define([
                             break;
                         case values.spaValue:
                             if (policy.getTypeDetailed() === "PolicyData")
-                            policy.data = policy_[key][0].value;
+                            policy.data = formatPolicyData(policy_[key][0].value);
                             break;
                         case values.spaFormat:
                             if (policy.getTypeDetailed() === "PolicyData")
-                            policy.data = policy_[key][0].value;                                    
+                            policy.data = formatPolicyData(policy_[key][0].value);                                    
                             break;
                         default:
                             console.log("Unknown policy attribute: " + key);
@@ -1424,11 +1432,11 @@ define([
                                     break;
                                 case values.spaValue:
                                     if (policy.getTypeDetailed() === "PolicyData")
-                                    policy.data = policy_[key][0].value;
+                                    policy.data = formatPolicyData(policy_[key][0].value);
                                     break;
                                 case values.spaFormat:
                                     if (policy.getTypeDetailed() === "PolicyData")
-                                    policy.data = policy_[key][0].value;                                    
+                                    policy.data = formatPolicyData(policy_[key][0].value);                                    
                                     break;
                                 default:
                                     console.log("Unknown policy attribute: " + key);
@@ -1757,6 +1765,14 @@ define([
 
                 ans = ans.concat(node._getNodes());
             });
+            return ans;
+        };
+        this.listNodeNames = function () {
+            var ans = [];
+            var nodes = that.listNodes();
+            for (var node in nodes) {
+                ans.push(nodes[node].getName());
+            }
             return ans;
         };
         this.listEdges = function () {

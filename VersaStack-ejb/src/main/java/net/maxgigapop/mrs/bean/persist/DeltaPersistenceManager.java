@@ -34,7 +34,7 @@ import static net.maxgigapop.mrs.bean.persist.PersistenceManager.createQuery;
 @SuppressWarnings("unchecked")
 public class DeltaPersistenceManager extends PersistenceManager {
 
-    public static DeltaBase findById(Long id) {
+    public static DeltaBase findById(String id) {
         return PersistenceManager.find(DeltaBase.class, id);
     }
 

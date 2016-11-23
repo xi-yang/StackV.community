@@ -93,7 +93,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall {
             // Step 2. propagate delta to systemInstance
             // compose string body (delta) using JSONObject
             JSONObject deltaJSON = new JSONObject();
-            deltaJSON.put("id", Long.toString(aDelta.getId()));
+            deltaJSON.put("id", aDelta.getId());
             deltaJSON.put("referenceVersion", refVI.getReferenceUUID());
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
             deltaJSON.put("creationTime", dateFormat.format(new Date()).toString());

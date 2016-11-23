@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2016 University of Maryland
- * Created by: Xi Yang 2014
+ * Created  by: Antonio Heard 2016
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy 
  * of this software and/or hardware specification (the “Work”) to deal in the 
@@ -21,35 +21,16 @@
  * IN THE WORK.
  */
 
-package net.maxgigapop.mrs.service.orchestrate;
-
-import static java.lang.Thread.sleep;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.annotation.PostConstruct;
-import javax.ejb.LocalBean;
-import javax.ejb.Singleton;
-import javax.ejb.Startup;
-
-/**
- *
- * @author xyang
- */
-@Singleton
-@LocalBean
-@Startup
-public class WorkflowTestStarter {
-
-    //@PostConstruct
-    void runTests() {
-        /*
-         try {
-         sleep(60000L);
-         } catch (InterruptedException ex) {
-         Logger.getLogger(WorkflowTestStarter.class.getName()).log(Level.SEVERE, null, ex);
-         }
-         */
-        WorkerBase testWorker = WorkerFactory.createWorker("net.maxgigapop.mrs.service.orchestrate.SimpleWorker");
-        testWorker.run();
+"use strict";
+define(["local/versastack/utils"], function (utils) {
+    var map_ = utils.map_;
+    function RenderedObject(x, y, dx, dy, size) {        
+        this.x = x;
+        this.y = y;
+        this.dy = dy;
+        this.dx = dx;
+        this.size = size;
     }
-}
+    return RenderedObject;
+});
+        

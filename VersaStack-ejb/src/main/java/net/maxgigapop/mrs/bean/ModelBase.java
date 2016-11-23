@@ -29,6 +29,7 @@ import com.hp.hpl.jena.rdf.model.ModelFactory;
 import java.io.Serializable;
 import java.io.StringWriter;
 import java.util.Date;
+import java.util.UUID;
 import javax.ejb.EJBException;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -44,6 +45,7 @@ import javax.persistence.Table;
 import javax.persistence.Transient;
 import net.maxgigapop.mrs.bean.persist.PersistentEntity;
 import net.maxgigapop.mrs.common.ModelUtil;
+import org.hibernate.annotations.GenericGenerator;
 
 /**
  *
@@ -53,18 +55,22 @@ import net.maxgigapop.mrs.common.ModelUtil;
 @Table(name = "model")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 public class ModelBase extends PersistentEntity implements Serializable {
-
     protected static final long serialVersionUID = 1L;
+    
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    protected Long id = 0L;
+    @GeneratedValue(generator = "system-uuid")
+    @GenericGenerator(name = "system-uuid", strategy = "uuid2")
+    protected String id;
 
+    
     protected Date creationTime;
     protected Long cxtVersion = 0L;
     protected String cxtVersionTag = "";
     protected boolean committed = false;
+    
     @Lob
     protected String ttlModel = "";
+    
     @Transient
     protected OntModel ontModel = null;
 
@@ -72,11 +78,11 @@ public class ModelBase extends PersistentEntity implements Serializable {
         this.creationTime = new java.util.Date();
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

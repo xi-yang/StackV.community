@@ -82,7 +82,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
         try {
             // compose string body (delta) using JSONObject
             JSONObject deltaJSON = new JSONObject();
-            deltaJSON.put("id", Long.toString(aDelta.getId()));
+            deltaJSON.put("id", aDelta.getId());
             deltaJSON.put("referenceVersion", refVI.getReferenceUUID());
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
             deltaJSON.put("creationTime", dateFormat.format(new Date()).toString());
@@ -120,7 +120,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
         }
         // commit through PUT
         try {
-            URL url = new URL(String.format("%s/delta/%s/%d/commit", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
+            URL url = new URL(String.format("%s/delta/%s/%s/commit", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String status = this.executeHttpMethod(url, conn, "PUT", null);
             //$$  if status == FAILED and raise exception
@@ -134,7 +134,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
             try {
                 sleep(30000L); // poll every 30 seconds -> ? make configurable
                 // pull model from REST API
-                URL url = new URL(String.format("%s/delta/%s/%d", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
+                URL url = new URL(String.format("%s/delta/%s/%s", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 String status = this.executeHttpMethod(url, conn, "GET", null);
                 if (status.toUpperCase().equals("ACTIVE") || status.toUpperCase().equals("TERMINATED")) {
@@ -145,7 +145,11 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
             } catch (InterruptedException ex) {
                 throw new EJBException(String.format("%s poll for commit status is interrupted", driverInstance));
             } catch (IOException ex) {
-                throw new EJBException(String.format("%s failed to communicate with subsystem with exception (%s)", driverInstance, ex));
+                if (ex instanceof java.io.FileNotFoundException) {
+                    logger.warning(String.format("%s failed with exception (%s) - check the subsystem for expected resource change...", driverInstance, ex));
+                } else {
+                    throw new EJBException(String.format("%s failed to communicate with subsystem with exception (%s)", driverInstance, ex));
+                }
             }
         }
         Logger.getLogger(GenericRESTDriver.class.getName()).log(Level.INFO, "GenericRESTDriver delta models succesfully commited: "+subsystemBaseUrl);

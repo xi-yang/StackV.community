@@ -22,8 +22,9 @@
  */
 
 "use strict";
-define(["local/versastack/topology/modelConstants"],
-        function (values) {
+define(["local/versastack/topology/modelConstants","local/versastack/utils", 
+        "local/versastack/topology/RenderedObject"],
+        function (values, utils, r) {
             /**
              * There are two graphs we want to consider. The first is the tree representing the node/subnode relationships
              * The second is the model graph, representing the connections as understood by the model
@@ -39,6 +40,8 @@ define(["local/versastack/topology/modelConstants"],
              * 
              **/
             var i = 0;
+            var map_ = utils.map_;
+            var RenderedObject = r;
             function Node(backing, map) {
                 this._backing = backing; //the node/topology from the model
                 this._map = map;
@@ -274,6 +277,16 @@ define(["local/versastack/topology/modelConstants"],
                 this.getType = function () {
                     return this.isLeaf() ? "Node" : "Topology";
                 };
+                this.getRenderedObj = function() {
+                   return new RenderedObject(that.x, that.y, that.dx, that.dx, that.size);
+                };
+                this.setPos = function(rendered) {
+                    that.x = rendered.x;
+                    that.y = rendered.y;
+                    that.dx = rendered.dx;
+                    that.dy = rendered.dy;
+                    that.size = rendered.size;
+                }
             }
 
             var iconMap = {};
