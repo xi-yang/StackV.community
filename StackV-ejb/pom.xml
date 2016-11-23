@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) 2013-2016 University of Maryland
+  ~ Author(s): Xi Yang
+
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy 
+  ~ of this software and/or hardware specification (the “Work”) to deal in the 
+  ~ Work without restriction, including without limitation the rights to use, 
+  ~ copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+  ~ the Work, and to permit persons to whom the Work is furnished to do so, 
+  ~ subject to the following conditions:
+
+  ~ The above copyright notice and this permission notice shall be included in 
+  ~ all copies or substantial portions of the Work.
+
+  ~ THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL  
+  ~ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+  ~ FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS IN 
+  ~ THE WORK.
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <artifactId>StackV</artifactId>
+        <groupId>net.maxgigapop</groupId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <groupId>net.maxgigapop</groupId>
+    <artifactId>StackV-ejb</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>ejb</packaging>
+
+    <name>StackV-ejb</name>
+
+    <properties>
+        <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencyManagement>  
+        <dependencies>  
+            <dependency>  
+                <groupId>org.jboss.arquillian</groupId>  
+                <artifactId>arquillian-bom</artifactId>  
+                <version>1.1.5.Final</version>  
+                <scope>import</scope>  
+                <type>pom</type>  
+            </dependency>  
+        </dependencies>  
+    </dependencyManagement> 
+    
+ 
+    
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.jena</groupId>
+            <artifactId>jena-core</artifactId>
+            <version>2.11.1</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-net</groupId>
+            <artifactId>commons-net</artifactId>
+            <version>2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk</artifactId>
+            <version>1.9.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jena</groupId>
+            <artifactId>jena-arq</artifactId>
+            <version>2.11.1</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>com.googlecode.json-simple</groupId>
+            <artifactId>json-simple</artifactId>
+            <version>1.1.1</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.pacesys</groupId>
+            <artifactId>openstack4j-core</artifactId>
+            <version>2.0.9</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.pacesys.openstack4j.connectors</groupId>
+            <artifactId>openstack4j-okhttp</artifactId>
+            <version>2.0.9</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-annotations</artifactId>
+            <version>3.5.6-Final</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax</groupId>
+            <artifactId>javaee-api</artifactId>
+            <version>7.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.30</version>
+        </dependency>
+        <dependency>
+            <groupId>org.wildfly</groupId>
+            <artifactId>wildfly-arquillian-container-managed</artifactId>
+            <version>8.1.0.CR1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>  
+            <groupId>org.jboss.arquillian</groupId>  
+            <artifactId>arquillian-bom</artifactId>  
+            <version>1.1.5.Final</version>  
+            <scope>test</scope>  
+            <type>pom</type>  
+        </dependency>  
+        <dependency>
+            <groupId>org.jboss.arquillian.junit</groupId>
+            <artifactId>arquillian-junit-container</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.arquillian.protocol</groupId>
+            <artifactId>arquillian-protocol-servlet</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>  
+            <groupId>org.jboss.shrinkwrap.resolver</groupId>  
+            <artifactId>shrinkwrap-resolver-impl-maven</artifactId>  
+            <scope>test</scope>
+        </dependency>  
+        <dependency>
+            <groupId>com.jayway.jsonpath</groupId>
+            <artifactId>json-path</artifactId>
+            <version>2.0.0</version>
+        </dependency>
+    </dependencies>
+
+    <profiles>
+        <profile>
+            <id>deploy-nuke</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <version>3.1</version>
+                        <configuration>
+                            <source>1.7</source>
+                            <target>1.7</target>
+                            <compilerArguments>
+                                <endorseddirs>${endorsed.dir}</endorseddirs>
+                            </compilerArguments>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-ejb-plugin</artifactId>
+                        <version>2.3</version>
+                        <configuration>
+                            <ejbVersion>3.1</ejbVersion>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <version>2.6</version>
+                        <executions>
+                            <execution>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>copy</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${endorsed.dir}</outputDirectory>
+                                    <silent>true</silent>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>javax</groupId>
+                                            <artifactId>javaee-endorsed-api</artifactId>
+                                            <version>7.0</version>
+                                            <type>jar</type>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>com.google.code.maven-replacer-plugin</groupId>
+                        <artifactId>replacer</artifactId>
+                        <version>1.5.3</version>
+                        <executions>
+                            <execution>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>replace</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <file>${project.build.directory}/classes/META-INF/persistence.xml</file>
+                            <replacements>
+                                <replacement>
+                                    <token>none</token>
+                                    <value>drop-and-create</value>
+                                </replacement>
+                            </replacements>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>2.16</version>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <arquillian.launch>wildfly-as-managed</arquillian.launch>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <version>3.1</version>
+                        <configuration>
+                            <source>1.7</source>
+                            <target>1.7</target>
+                            <compilerArguments>
+                                <endorseddirs>${endorsed.dir}</endorseddirs>
+                            </compilerArguments>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-ejb-plugin</artifactId>
+                        <version>2.3</version>
+                        <configuration>
+                            <ejbVersion>3.1</ejbVersion>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <version>2.6</version>
+                        <executions>
+                            <execution>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>copy</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${endorsed.dir}</outputDirectory>
+                                    <silent>true</silent>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>javax</groupId>
+                                            <artifactId>javaee-endorsed-api</artifactId>
+                                            <version>7.0</version>
+                                            <type>jar</type>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>com.google.code.maven-replacer-plugin</groupId>
+                        <artifactId>replacer</artifactId>
+                        <version>1.5.3</version>
+                        <executions>
+                            <execution>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>replace</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <file>${project.build.directory}/classes/META-INF/persistence.xml</file>
+                            <replacements>
+                                <replacement>
+                                    <token>drop-and-create</token>
+                                    <value>none</value>
+                                </replacement>
+                            </replacements>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>2.16</version>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <arquillian.launch>wildfly-as-managed</arquillian.launch>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+</project>
