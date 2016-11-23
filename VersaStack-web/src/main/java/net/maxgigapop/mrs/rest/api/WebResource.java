@@ -62,6 +62,7 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import web.beans.serviceBeans;
 import com.hp.hpl.jena.ontology.OntModel;
+import java.util.Iterator;
 import net.maxgigapop.mrs.common.ModelUtil;
 
 /**
@@ -368,6 +369,9 @@ public class WebResource {
                 case "hybridcloud":
                     paraMap = parseHybridCloud(dataJSON, refUuid);
                     break;
+                case "omm":
+                    paraMap = parseOperatationalModifications(dataJSON, refUuid);
+                    break;
                 default:
             }
 
@@ -419,11 +423,16 @@ public class WebResource {
                 case "hybridcloud":
                     servBean.createHybridCloud(paraMap);
                     break;
+                case "omm":
+                    servBean.createOperationModelModification(paraMap);
+                    break;
                 default:
             }
 
             // Verify creation.
             verify(refUuid);
+            if (serviceType.equals("omm"))
+                setSuperState(refUuid, 3);
 
             long endTime = System.currentTimeMillis();
             System.out.println("Service API End::Name="
@@ -990,7 +999,23 @@ public class WebResource {
 
         return paraMap;
     }
-
+    
+    private HashMap<String, String>  parseOperatationalModifications(JSONObject dataJSON, String refUuid) {
+        HashMap<String, String> paraMap = new HashMap<>();
+        paraMap.put("instanceUUID", refUuid);
+        
+        // { "modification" : "params", .. }
+        Iterator<?> keys = dataJSON.keySet().iterator();
+        while( keys.hasNext() ) {
+            String key = (String)keys.next();
+            //if ( dataJSON.get(key) instanceof JSONObject ) {
+                paraMap.put(key, dataJSON.get(key).toString());
+            //}
+        }
+        
+        return paraMap;
+    }
+     
     // Utility Methods ---------------------------------------------------------
     private void setSuperState(String refUuid, int superStateId) throws SQLException {
         Connection front_conn;

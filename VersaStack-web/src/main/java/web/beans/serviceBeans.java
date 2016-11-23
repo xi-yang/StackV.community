@@ -1509,7 +1509,81 @@ public class serviceBeans {
             throw new EJBException("Fatal Error -- " + e.getLocalizedMessage());
         }
     }
+    
+    public int createOperationModelModification(Map<String, String> paraMap) {
+        String refUuid = paraMap.get("instanceUUID");
 
+
+        String deltaUUID = UUID.randomUUID().toString();
+
+        String delta = "<serviceDelta>\n<uuid>" + deltaUUID
+                + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
+                + "\n\n<modelAddition>\n"
+                + "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
+                + "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n"
+                + "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n"
+                + "@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .\n"
+                + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
+                + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n"
+                + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n";
+        
+        delta += "&lt;x-policy-annotation:action:apply-modifications&gt;\n"
+                + "    a            spa:PolicyAction ;\n"
+                + "    spa:type     \"MCE_OperationalModelModification\" ;\n"
+                + "    spa:importFrom &lt;x-policy-annotation:data:modification-map&gt; ;\n .\n\n"
+                + "&lt;x-policy-annotation:data:modification-map&gt;\n"
+                + "    a            spa:PolicyData;\n"
+                + "    spa:type     \"JSON\";\n"
+                + "    spa:value    \"\"\"" + paraMap.get("removeResource").replace("\\", "") + "\"\"\".\n\n"
+                + "</modelAddition>\n\n"
+                + "</serviceDelta>";
+
+        String result;
+        System.out.println(delta);
+        
+        // Cache serviceDelta.
+        int[] results = cacheServiceDelta(refUuid, deltaUUID, delta);
+        int instanceID = results[0];
+        int historyID = results[1];
+
+        try {
+            URL url = new URL(String.format("%s/service/%s", host, refUuid));
+            HttpURLConnection compile = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, compile, "POST", delta);
+            if (!result.contains("referenceVersion")) {
+                return 2;//Error occurs when interacting with back-end system
+            }
+
+            // Cache System Delta
+            cacheSystemDelta(instanceID, historyID, result);
+
+            url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
+            HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, propagate, "PUT", null);
+            if (!result.equals("PROPAGATED")) {
+                return 2;//Error occurs when interacting with back-end system
+            }
+            url = new URL(String.format("%s/service/%s/commit", host, refUuid));
+            HttpURLConnection commit = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, commit, "PUT", null);
+            if (!result.equals("COMMITTED")) {
+                return 2;//Error occurs when interacting with back-end system
+            }
+            url = new URL(String.format("%s/service/%s/status", host, refUuid));
+            while (!result.equals("READY")) {
+                sleep(5000);//wait for 5 seconds and check again later
+                HttpURLConnection status = (HttpURLConnection) url.openConnection();
+                result = this.executeHttpMethod(url, status, "GET", null);
+                if (!result.equals("COMMITTED")) {
+                    return 3;//Fail to create network
+                }
+            }
+
+            return 0;
+        } catch (Exception e) {
+            return 1;//connection error
+        }        
+    }
 // --------------------------- UTILITY FUNCTIONS -------------------------------    
     public HashMap<String, String> getJobStatuses() throws SQLException {
         HashMap<String, String> retMap = new HashMap<>();
