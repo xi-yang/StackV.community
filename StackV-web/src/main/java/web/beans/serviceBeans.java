@@ -1510,7 +1510,7 @@ public class serviceBeans {
         }
     }
     
-    public int createOperationModelModification(Map<String, String> paraMap) {
+    public int createOperationModelModification(Map<String, String> paraMap, String auth) {
         String refUuid = paraMap.get("instanceUUID");
 
 
@@ -1549,7 +1549,7 @@ public class serviceBeans {
         try {
             URL url = new URL(String.format("%s/service/%s", host, refUuid));
             HttpURLConnection compile = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, compile, "POST", delta);
+            result = this.executeHttpMethod(url, compile, "POST", delta, auth);
             if (!result.contains("referenceVersion")) {
                 return 2;//Error occurs when interacting with back-end system
             }
@@ -1559,13 +1559,13 @@ public class serviceBeans {
 
             url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
             HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, propagate, "PUT", null);
+            result = this.executeHttpMethod(url, propagate, "PUT", null, auth);
             if (!result.equals("PROPAGATED")) {
                 return 2;//Error occurs when interacting with back-end system
             }
             url = new URL(String.format("%s/service/%s/commit", host, refUuid));
             HttpURLConnection commit = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, commit, "PUT", null);
+            result = this.executeHttpMethod(url, commit, "PUT", null, auth);
             if (!result.equals("COMMITTED")) {
                 return 2;//Error occurs when interacting with back-end system
             }
@@ -1573,7 +1573,7 @@ public class serviceBeans {
             while (!result.equals("READY")) {
                 sleep(5000);//wait for 5 seconds and check again later
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
-                result = this.executeHttpMethod(url, status, "GET", null);
+                result = this.executeHttpMethod(url, status, "GET", null, auth);
                 if (!result.equals("COMMITTED")) {
                     return 3;//Fail to create network
                 }
