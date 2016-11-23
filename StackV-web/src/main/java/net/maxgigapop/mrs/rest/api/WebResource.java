@@ -706,7 +706,7 @@ public class WebResource {
                     servBean.createHybridCloud(paraMap, auth);
                     break;
                 case "omm":
-                    servBean.createOperationModelModification(paraMap);
+                    servBean.createOperationModelModification(paraMap, auth);
                     break;
                 default:
             }
@@ -1549,14 +1549,14 @@ public class WebResource {
         throw new EJBException("getServiceType failed to find service type for service uuid="+refUuid);
     }
     
-    private String resolveManifest(String refUuid, String jsonTemplate) {
+    private String resolveManifest(String refUuid, String jsonTemplate, String auth) {
         try {
             URL url = new URL(String.format("%s/service/manifest/%s", host, refUuid));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String data = String.format( "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
                 + "<serviceManifest>\n<serviceUUID/>\n<jsonTemplate>\n%s</jsonTemplate>\n</serviceManifest>",
                 jsonTemplate);
-            String result = servBean.executeHttpMethod(url, conn, "POST", data);
+            String result = servBean.executeHttpMethod(url, conn, "POST", data, auth);
             return result;
         } catch (Exception ex) {
             throw new EJBException("resolveManifest cannot fetch manifest for service uuid="+refUuid, ex);
@@ -1567,12 +1567,13 @@ public class WebResource {
     @Path("/manifest/{svcUUID}")
     @Produces("application/json")
     public String getManifest(@PathParam("svcUUID") String svcUUID) {
+        final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         String serviceType = getServiceType(svcUUID);
         if (serviceType.equals("Virtual Cloud Network")) {
             try {
                 URL url = new URL(String.format("%s/service/property/%s/host", host, svcUUID));
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                String result = servBean.executeHttpMethod(url, conn, "GET", null);
+                String result = servBean.executeHttpMethod(url, conn, "GET", null, auth);
                 if (result.equals("ops")) {
                     serviceType = "Virtual Cloud Network - OPS";
                 } else if (result.equals("aws")) {
@@ -1587,16 +1588,16 @@ public class WebResource {
         String manifest = "";
         switch (serviceType) {
             case "Dynamic Network Connection":
-                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateDNC);
+                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateDNC, auth);
                 break;
             case "Advanced Hybrid Cloud":
-                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAHC);
+                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAHC, auth);
                 break;
             case "Virtual Cloud Network - OPS":
-                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateOPS);
+                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateOPS, auth);
                 break;
             case "Virtual Cloud Network - AWS":
-                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAWS);
+                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAWS, auth);
                 break;
             default:
                 throw new EJBException("cannot get manifest for service type="+serviceType);
