@@ -3,23 +3,18 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
-<jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
-<jsp:setProperty name="user" property="*" />  
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
 <jsp:setProperty name="serv" property="*" />  
-<c:if test="${user.loggedIn == false}">
-    <c:redirect url="/index.jsp" />
-</c:if>
 <!DOCTYPE html>
 <html >    
     <head>   
         <meta charset="UTF-8">
         <title>Hybrid Cloud Service</title>
+        <script src="/VersaStack-web/js/keycloak.js"></script>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>
         <script src="/VersaStack-web/js/svc/hybridcloud.js"></script>
-        <script src="../../js/svc/hybridcloud.js" type="text/javascript"></script>
         <!-- jQuery easing plugin -->
         <script src="http://thecodeplayer.com/uploads/js/jquery.easing.min.js" type="text/javascript"></script>
 
@@ -44,8 +39,8 @@
         <div id="black-screen"></div>
         <div id="main-pane">           
             <!-- Multistep form -->
-            <form action="/VersaStack-web/ServiceServlet" method="post" class="stageform" id="msform" onsubmit="return validateHybrid()">
-                <input type="hidden" name="username" value="${user.getUsername()}"/>
+            <form action="/VersaStack-web/ServiceServlet" method="post" class="stageform" id="msform" onsubmit="return validateHybrid()">                
+                <input type="hidden" name="username" value="${sessionStorage.username}"/>
                 <input type="hidden" name="hybridCloud" value="true"/>
                 <!-- Progress Bar -->
                 <ul class="hc-progress" id="progressbar">
@@ -71,10 +66,16 @@
 
                 <!-- Stage 2: Network -->
                 <fieldset id='2-1'>
-                    <h2 class="fs-title">Hybrid Cloud Information</h2>                    
+                    <h2 class="fs-title">Instance Information</h2>                    
                     <table class="fs-table">
                         <tr>
                             <td><input type="text" name="alias" placeholder="Instance Alias" /></td>
+                        </tr>
+                        <tr>
+                            <td><input type="text" name="user-acl" placeholder="Comma-separated list of users to share access with (if any)" /></td>
+                        </tr>
+                        <tr>
+                            <td><input type="text" name="group-acl" placeholder="Comma-separated list of groups to share access with (if any)" /></td>
                         </tr>
                     </table>
                     <br>
@@ -238,8 +239,8 @@
                     </table>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <input type="button" name="save" class="profile-save-button action-button" value="Save" />
-                    <button type="submit" name="submit" class="action-button" value="ops">Submit</button>  
+                    <input type="submit" name="save" class="profile-save-button action-button" value="Save" />
+                    <button type="submit" name="submit" class="action-button" value="submit">Submit</button>  
                 </fieldset>
             </form>      
             <div id="info-panel">

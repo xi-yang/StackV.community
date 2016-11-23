@@ -3,23 +3,18 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
-<jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
-<jsp:setProperty name="user" property="*" />  
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
 <jsp:setProperty name="serv" property="*" />  
-<c:if test="${user.loggedIn == false}">
-    <c:redirect url="/index.jsp" />
-</c:if>
 <!DOCTYPE html>
 <html >    
     <head>   
         <meta charset="UTF-8">
         <title>Virtual Cloud Network Service</title>
+        <script src="/VersaStack-web/js/keycloak.js"></script>
         <script src="/VersaStack-web/js/jquery/jquery.js"></script>
         <script src="/VersaStack-web/js/bootstrap.js"></script>
         <script src="/VersaStack-web/js/nexus.js"></script>
         <script src="/VersaStack-web/js/svc/netcreate.js"></script>
-
         <!-- jQuery easing plugin -->
         <script src="http://thecodeplayer.com/uploads/js/jquery.easing.min.js" type="text/javascript"></script>
 
@@ -45,7 +40,7 @@
         <div id="main-pane">           
             <!-- Multistep form -->
             <form action="/VersaStack-web/ServiceServlet" method="post" class="stageform" id="msform" onsubmit="return validateVCN()">
-                <input type="hidden" name="username" value="${user.getUsername()}"/>
+                <input type="hidden" name="username" value="${sessionStorage.username}"/>
                 <input type="hidden" name="netCreate" value="true"/>
                 <!-- Progress Bar -->
                 <ul class="vcn-progress" id="progressbar">
@@ -143,11 +138,26 @@
 
                 <!-- Stage 7: Summary -->
                 <fieldset id="7-aws-1">
-                    <h2 class="fs-title">Summary</h2>
-                    <h3 class="fs-subtitle">(Summary Module still in development)</h3>
+                    <h2 class="fs-title">Final Submission</h2>
+
+                    <br>
+                    <table class="subfs-table" id="profile-table">
+                        <thead>
+                            <tr>
+                                <td><label id="profile-save-label">Save as Profile <input type="checkbox" id="profile-save-check" name="profile-save" /></label></td>
+                            </tr>
+                        </thead>
+                        <tbody class="fade-hide" id="profile-save-body">
+                            <tr>
+                                <td><input type="text" name="profile-name" placeholder="Profile Name" /></td>
+                                <td><input type="text" name="profile-description" placeholder="Profile Description" /></td>
+                            </tr>
+                        </tbody>
+                    </table>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <button type="submit" name="submit" class="action-button" value="aws">Submit</button>                    
+                    <input type="submit" name="save" class="profile-save-button action-button" value="Save" />
+                    <button type="submit" name="submit" class="action-button" value="submit">Submit</button>  
                 </fieldset>
 
 
@@ -256,11 +266,26 @@
 
                 <!-- Stage 7: Summary -->
                 <fieldset id="7-ops-1">
-                    <h2 class="fs-title">Summary</h2>
-                    <h3 class="fs-subtitle">(Summary Module still in development)</h3>
+                    <h2 class="fs-title">Final Submission</h2>
+
+                    <br>
+                    <table class="subfs-table" id="profile-table">
+                        <thead>
+                            <tr>
+                                <td><label id="profile-save-label">Save as Profile <input type="checkbox" id="profile-save-check" name="profile-save" /></label></td>
+                            </tr>
+                        </thead>
+                        <tbody class="fade-hide" id="profile-save-body">
+                            <tr>
+                                <td><input type="text" name="profile-name" placeholder="Profile Name" /></td>
+                                <td><input type="text" name="profile-description" placeholder="Profile Description" /></td>
+                            </tr>
+                        </tbody>
+                    </table>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <button type="submit" name="submit" class="action-button" value="ops">Submit</button>                    
+                    <input type="submit" name="save" class="profile-save-button action-button" value="Save" />
+                    <button type="submit" name="submit" class="action-button" value="submit">Submit</button>  
                 </fieldset>
             </form>
             <div id="info-panel">

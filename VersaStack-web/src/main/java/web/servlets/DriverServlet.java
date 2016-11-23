@@ -60,6 +60,7 @@ public class DriverServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
+            String auth = request.getHeader("Authorization");
             HashMap<String, String> paramMap = new HashMap<>();
             Enumeration paramNames = request.getParameterNames();
             serviceBeans servBean = new serviceBeans();
@@ -67,7 +68,7 @@ public class DriverServlet extends HttpServlet {
 
             URL url = new URL(String.format("%s/service/instance", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            String refUuid = servBean.executeHttpMethod(url, connection, "GET", null);
+            String refUuid = servBean.executeHttpMethod(url, connection, "GET", null, auth);
 
             Connection front_conn;
             Properties front_connectionProps = new Properties();
@@ -121,7 +122,7 @@ public class DriverServlet extends HttpServlet {
                 if (!paramMap.get(key).isEmpty()) {
                     url = new URL(String.format("%s/service/property/%s/%s/", host, refUuid, key));
                     connection = (HttpURLConnection) url.openConnection();
-                    servBean.executeHttpMethod(url, connection, "POST", paramMap.get(key));
+                    servBean.executeHttpMethod(url, connection, "POST", paramMap.get(key), auth);
                 }
             }
 

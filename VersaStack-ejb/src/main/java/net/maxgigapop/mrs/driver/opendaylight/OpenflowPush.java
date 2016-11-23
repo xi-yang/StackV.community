@@ -1,0 +1,156 @@
+/*
+ * Copyright (c) 2013-2016 University of Maryland
+ * Created by: Xi Yang 2016
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Work.
+
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * IN THE WORK.
+ */
+package net.maxgigapop.mrs.driver.opendaylight;
+
+import com.hp.hpl.jena.ontology.OntModel;
+import com.hp.hpl.jena.query.QuerySolution;
+import com.hp.hpl.jena.query.ResultSet;
+import javax.ejb.EJBException;
+import net.maxgigapop.mrs.common.ModelUtil;
+import com.hp.hpl.jena.rdf.model.Resource;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
+public class OpenflowPush {
+    private static final Logger logger = Logger.getLogger(ModelUtil.class.getName());
+
+    public String propagate(String modelRefTtl, String modelAddTtl, String modelReductTtl) {
+        JSONObject jRequests = new JSONObject();
+        try {
+            OntModel modelRef = ModelUtil.unmarshalOntModel(modelRefTtl);
+            OntModel modelAdd = ModelUtil.unmarshalOntModel(modelAddTtl);
+            OntModel modelReduct = ModelUtil.unmarshalOntModel(modelReductTtl);
+            JSONArray jDelete = this.extractFlows(modelRef, modelReduct);
+            JSONArray jCreate = this.extractFlows(modelRef, modelAdd);
+            jRequests.put("delete", jDelete);
+            jRequests.put("create", jCreate);
+        } catch (Exception ex) {
+            throw new EJBException("OpenflowPush.propagate failed to parse delta into requests", ex);
+        }
+        return jRequests.toJSONString();
+
+    }
+
+    private JSONArray extractFlows(OntModel modelRef, OntModel model) {
+        JSONArray jFlows = new JSONArray();
+
+        String query = "SELECT ?flow  WHERE {"
+                + "?flow a mrs:Flow. "
+                + "}";
+        ResultSet r1 = ModelUtil.executeQuery(query, null, model);
+        while (r1.hasNext()) {
+            QuerySolution qs1 = r1.next();
+            Resource flow = qs1.get("flow").asResource();
+            String query2 = "SELECT ?table ?matchtype ?matchvalue ?actiontype ?actionvalue WHERE {"
+                    + String.format("?table mrs:hasFlow <%s>. ", flow.getURI())
+                    + String.format("<%s> mrs:flowMatch ?match. ?match mrs:type ?matchtype. ?match mrs:value ?matchvalue. ", flow.getURI())
+                    + String.format("OPTIONAL { <%s> mrs:flowAction ?action. ?action mrs:type ?actiontype. "
+                            + "OPTIONAL {?action mrs:value ?actionvalue.} }", flow.getURI())
+                    + "}";
+            ResultSet r2 = ModelUtil.executeQuery(query2, null, model);
+            if (!r2.hasNext()) {
+                continue;
+            }
+            JSONObject jFlow = new JSONObject();
+            jFlow.put("id", flow.getURI());
+            JSONArray jFlowMatches = new JSONArray();
+            jFlow.put("match", jFlowMatches);
+            JSONArray jFlowActions = new JSONArray();
+            jFlow.put("action", jFlowActions);
+            String strMatch = "";
+            String strAction = "";
+            while (r2.hasNext()) {
+                QuerySolution qs2 = r2.next();
+                String matchType = qs2.get("matchtype").toString();
+                String matchValue = qs2.get("matchvalue").toString();
+                if (!strMatch.isEmpty()) {
+                    strMatch += ",";
+                }
+                strMatch += (matchType+"="+matchValue);
+                jFlowMatches.add(strMatch);
+                if (qs2.contains("actiontype")) {
+                    String actionType = qs2.get("actiontype").toString();
+                    if (!strAction.isEmpty()) {
+                        strAction += ",";
+                    }
+                    strAction += actionType;
+                    if (qs2.contains("actionvalue")) {
+                        String actionValue = qs2.get("actionvalue").toString();
+                        strAction += ("="+actionValue);
+                    }
+                    jFlowActions.add(strAction);
+                }
+                Resource resTable = qs2.getResource("table");
+                String query3 = "SELECT ?node_name ?table_name  WHERE {"
+                    + String.format("?node nml:hasService ?openflow_svc. ?openflow_svc mrs:providesFlowTable <%s>. ", resTable.getURI())
+                    + String.format("?node nml:name ?node_name. <%s> nml:name ?table_name. ", resTable.getURI())
+                    + "}";
+                ResultSet r3 = ModelUtil.executeQuery(query3, null, modelRef);
+                if (r3.hasNext()) {
+                    QuerySolution qs3 = r3.next();
+                    String nodeName = qs3.get("node_name").toString();
+                    jFlow.put("node", nodeName);
+                    String tableName = qs3.get("table_name").toString();
+                    jFlow.put("table", tableName);
+                }
+            }
+            jFlows.add(jFlow);
+        }
+        return jFlows;
+    }
+    
+    public void commit(String user, String password, String requests, String baseUrl) {
+        JSONParser jsonParser = new JSONParser();
+        JSONObject jRequests = null;
+        try {
+            jRequests = (JSONObject) jsonParser.parse(requests);
+        } catch (ParseException ex) {
+            throw new EJBException("OpenflowPush.commit failed to parse requests"+requests, ex);
+        }
+        RestconfConnector restconf = new RestconfConnector();
+        JSONArray jDelete = (JSONArray)jRequests.get("delete");
+        for (Object o1: jDelete) {
+            JSONObject jFlow = (JSONObject)o1;
+            if (!jFlow.containsKey("node") || !jFlow.containsKey("table") || !jFlow.containsKey("id")) {
+                logger.warning("OpenflowPush.commit cannot delete invalid flow ="+jFlow.toJSONString());
+                continue;
+            }
+            restconf.pushDeleteFlow(baseUrl, user, password, jFlow.get("node").toString(), jFlow.get("table").toString(), jFlow.get("id").toString());
+        }
+        JSONArray jCreate = (JSONArray)jRequests.get("create");
+        for (Object o1: jCreate) {
+            JSONObject jFlow = (JSONObject)o1;
+            if (!jFlow.containsKey("node") || !jFlow.containsKey("table") || !jFlow.containsKey("id")) {
+                logger.warning("OpenflowPush.commit cannot create invalid flow="+jFlow.toJSONString());
+                continue;
+            }
+            restconf.pushModFlow(baseUrl, user, password, jFlow.get("node").toString(), jFlow.get("table").toString(), jFlow.get("id").toString(), (List)jFlow.get("match"), (List)jFlow.get("action"));
+        }
+    }
+
+}

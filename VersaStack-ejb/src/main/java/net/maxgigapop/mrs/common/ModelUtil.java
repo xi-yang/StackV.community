@@ -182,10 +182,9 @@ public class ModelUtil {
                 + "@prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>.\n"
                 + "@prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>.\n"
                 + "<%s#ontology> a owl:Ontology;\n"
-                + "    rdfs:label \"An MRS topology description.\n"
+                + "    rdfs:label \"An MRS topology description.\".\n"
                 + "<%s>\n"
-                + "    a   nml:Topology,\n"
-                + "        owl:NamedIndividual.\n", topoUri);
+                + "    a   nml:Topology.\n", topoUri, topoUri);
         //$$ TODO: add ontology schema and namespace handling code
         model.read(new ByteArrayInputStream(ttl.getBytes()), null, "TURTLE");
         return model;
@@ -225,6 +224,38 @@ public class ModelUtil {
         UpdateAction.execute(update, model);
     }
 
+    static public ResultSet executeQuery(String queryString, OntModel refModel, OntModel model) {
+        queryString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+                + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
+                + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
+                + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
+                + queryString;
+        
+        Query query = QueryFactory.create(queryString);
+        QueryExecution qexec = QueryExecutionFactory.create(query, model);
+        ResultSet r = qexec.execSelect();
+        //check on reference model if the statement is not in the model
+        if (!r.hasNext() && refModel != null && !refModel.isEmpty()) {
+            qexec = QueryExecutionFactory.create(query, refModel);
+            r = qexec.execSelect();
+        }
+        return r;
+    }
+
+    static public ResultSet executeQueryUnion(String queryString, OntModel refModel, OntModel model) {
+        queryString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
+                + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
+                + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
+                + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
+                + queryString;
+        
+        Model unionModel = ModelFactory.createUnion(refModel, model);
+        Query query = QueryFactory.create(queryString);
+        QueryExecution qexec = QueryExecutionFactory.create(query, unionModel);
+        ResultSet r = qexec.execSelect();
+        return r;
+    }    
+    
     public static boolean evaluateStatement(Model model, Statement stmt, String sparql) {
         // static bindings stmt->subject => $$s; stmt->predicate => $$p; $stmt->object => $$o
         // sparql example "SELECT $s $p $o WHERE $s a nml:Topology; $o a nml:Node FILTER ($p = <http://schemas.ogf.org/nml/2013/03/base#hasNode>)"

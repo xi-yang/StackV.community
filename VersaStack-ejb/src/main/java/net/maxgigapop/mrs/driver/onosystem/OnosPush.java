@@ -40,11 +40,7 @@ import org.apache.commons.codec.binary.Base64;
 //elastic IPs are not linked in any way to the root topology, find a way to do this
 //in the model to make the two methods work.
 public class OnosPush {
-    //private AmazonEC2Client ec2 = null;
-    //private AmazonDirectConnectClient dc = null;
     String localFakeMap;
-    private OnosServer ec2Client = null;
-    private String topologyUri = null;
     //private Regions region = null;
     static final Logger logger = Logger.getLogger(OnosPush.class.getName());
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
