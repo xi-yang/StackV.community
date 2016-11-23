@@ -62,6 +62,10 @@ import org.json.simple.parser.ParseException;
 import web.beans.serviceBeans;
 import com.hp.hpl.jena.ontology.OntModel;
 import java.io.BufferedReader;
+<<<<<<< HEAD
+import java.io.InputStream;
+import java.io.InputStreamReader;
+=======
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -74,6 +78,7 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
+>>>>>>> origin/Milestone-M8-production_preparation
 import net.maxgigapop.mrs.common.ModelUtil;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.keycloak.KeycloakSecurityContext;
@@ -904,6 +909,7 @@ public class WebResource {
         }
     }
 
+    /*
     @GET
     @Path("/manifest/{svcUUID}")
     @Produces("application/json")
@@ -941,7 +947,9 @@ public class WebResource {
             return null;
         }
     }
-
+    */
+    
+    
     // Operation Methods -------------------------------------------------------
     /**
      * Deletes a service instance.
@@ -1495,6 +1503,97 @@ public class WebResource {
         String result = servBean.executeHttpMethod(url, status, "GET", null, auth);
 
         return result;
+    }
+
+    private String getServiceType(String refUuid) {
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+        try {
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("select S.name from service_instance I, service S "
+                    + "where I.referenceUUID=? AND I.service_id=S.service_id");
+            prep.setString(1, refUuid);
+            ResultSet rs1 = prep.executeQuery();
+            while (rs1.next()) {
+                return rs1.getString("name");
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        throw new EJBException("getServiceType failed to find service type for service uuid="+refUuid);
+    }
+    
+    private String resolveManifest(String refUuid, String jsonTemplate) {
+        try {
+            URL url = new URL(String.format("%s/service/manifest/%s", host, refUuid));
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            String data = String.format( "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+                + "<serviceManifest>\n<serviceUUID/>\n<jsonTemplate>\n%s</jsonTemplate>\n</serviceManifest>",
+                jsonTemplate);
+            String result = servBean.executeHttpMethod(url, conn, "POST", data);
+            return result;
+        } catch (Exception ex) {
+            throw new EJBException("resolveManifest cannot fetch manifest for service uuid="+refUuid, ex);
+        }
+    }
+
+    @GET
+    @Path("/manifest/{svcUUID}")
+    @Produces("application/json")
+    public String getManifest(@PathParam("svcUUID") String svcUUID) {
+        String serviceType = getServiceType(svcUUID);
+        if (serviceType.equals("Virtual Cloud Network")) {
+            try {
+                URL url = new URL(String.format("%s/service/property/%s/host", host, svcUUID));
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                String result = servBean.executeHttpMethod(url, conn, "GET", null);
+                if (result.equals("ops")) {
+                    serviceType = "Virtual Cloud Network - OPS";
+                } else if (result.equals("aws")) {
+                    serviceType = "Virtual Cloud Network - AWS";
+                } else {
+                    throw new EJBException("cannot tell type of VCN service without 'host' property");
+                }
+            } catch (Exception ex) {
+                throw new EJBException("cannot tell type of VCN service without 'host' property", ex);
+            }
+        }
+        String manifest = "";
+        switch (serviceType) {
+            case "Dynamic Network Connection":
+                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateDNC);
+                break;
+            case "Advanced Hybrid Cloud":
+                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAHC);
+                break;
+            case "Virtual Cloud Network - OPS":
+                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateOPS);
+                break;
+            case "Virtual Cloud Network - AWS":
+                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAWS);
+                break;
+            default:
+                throw new EJBException("cannot get manifest for service type="+serviceType);
+        }
+        org.json.JSONObject obj = new org.json.JSONObject(manifest);
+        if (obj == null || !obj.has("jsonTemplate")) {
+            throw new EJBException("getManifest cannot get manifest for service uuid="+svcUUID);
+        }
+        return obj.getString("jsonTemplate");
+    }
+    
+    @GET
+    @Path("/manifest/{svcUUID}")
+    @Produces("application/xml")
+    public String getManifestXml(@PathParam("svcUUID") String svcUUID) {
+        String manifestJStr = getManifest(svcUUID);
+        org.json.JSONObject obj = new org.json.JSONObject(manifestJStr);
+        String manifest = org.json.XML.toString(obj);
+        return manifest;
     }
 
     private String authUsername(String subject) {

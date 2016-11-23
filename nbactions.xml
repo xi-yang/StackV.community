@@ -20,8 +20,7 @@
   ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
   ~ FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS IN 
   ~ THE WORK.
-  -->
-<actions>
+  --><actions>
     <action>
         <actionName>rebuild</actionName>
         <packagings>
@@ -33,6 +32,8 @@
         </goals>
         <properties>
             <skipTests>true</skipTests>
+            <Env.MAVEN_OPTS>-Xmx1024M</Env.MAVEN_OPTS>
+            
         </properties>
     </action>
     <action>
@@ -45,6 +46,7 @@
             </goals>
             <properties>
                 <skipTests>true</skipTests>
+                <Env.MAVEN_OPTS>-Xmx1024M</Env.MAVEN_OPTS>
             </properties>
         </action>
 </actions>

@@ -64,7 +64,7 @@ import net.maxgigapop.mrs.rest.api.model.ApiDeltaBase;
 import net.maxgigapop.mrs.rest.api.model.ApiDeltaRetrieval;
 import net.maxgigapop.mrs.rest.api.model.ApiDeltaVerification;
 import net.maxgigapop.mrs.rest.api.model.ServiceApiManifest;
-import static net.maxgigapop.mrs.service.ServiceManifest.resolveManifestJsonTemplate;
+import net.maxgigapop.mrs.service.ServiceManifest;
 import org.json.simple.JSONObject;
 
 /**
@@ -413,20 +413,9 @@ public class ServiceResource {
         // if manifest.getJsonModel() == null, get serviceDelta.modelAddition into manifest.jsonTemplate
         String jsonModel = manifest.getJsonModel();
         if (jsonModel == null) {
-            /*
-            if (manifest.getServiceUUID() == null) {
-                throw new EJBException("resolveManifest must have either input model or serviceUUID");
-            }
-            ModelUtil.DeltaRetrieval deltaRetrieval = new ModelUtil.DeltaRetrieval();
-            serviceCallHandler.retrieveDelta(manifest.getServiceUUID(), deltaRetrieval, true);
-            jsonModel = deltaRetrieval.getModelAdditionSys();
-            if (jsonModel == null) {
-                throw new EJBException("resolveManifest cannot get verified modelAddition for service UUID="+manifest.getServiceUUID());
-            }
-            */
             return resolveServiceManifest(manifest.getServiceUUID(), manifest);
         }
-        JSONObject joManifest = resolveManifestJsonTemplate(manifest.getJsonTemplate(), jsonModel);
+        JSONObject joManifest = ServiceManifest.resolveManifestJsonTemplate(manifest.getJsonTemplate(), jsonModel);
         manifest.setJsonTemplate(joManifest.toJSONString());
         manifest.setJsonModel(null);
         return manifest;
@@ -445,9 +434,10 @@ public class ServiceResource {
         if (jsonModel == null) {
             throw new EJBException("resolveServiceManifest cannot get verified modelAddition for service UUID="+manifest.getServiceUUID());
         }
-        JSONObject joManifest = resolveManifestJsonTemplate(manifest.getJsonTemplate(), jsonModel);
+        JSONObject joManifest = ServiceManifest.resolveManifestJsonTemplate(manifest.getJsonTemplate(), jsonModel);
         manifest.setJsonTemplate(joManifest.toJSONString());
         manifest.setJsonModel(null);
         return manifest;
     }
+
 }
