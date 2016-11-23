@@ -141,8 +141,10 @@ define([
     var highlightedNode = null;
     var previousHighlight = null;
     
-    var serviceHighlightedNodes = [];
-    var previousHighlightedNodes = [];
+    var highlightedNodesMap = [];
+    var prevHighlightedNodesMap = [];
+    
+    var trashcan = [];
     
     var lastMouse;
     var switchPopup = {};
@@ -722,7 +724,8 @@ define([
                         //However, we also want it to continue tracking us.
                         outputApi.setHoverLocation(e.clientX, e.clientY);
                         drawHighlight();
-                        highlightServiceElements();
+                        highlightElements("serviceHighlighting");
+                        highlightElements("trashcan");
                         switchPopup[outputApi.svgContainerName].render();
                         //fix all edges
                         map_(edgeList, updateSvgChoordsEdge);
@@ -854,7 +857,7 @@ define([
                     displayTree.open();
                 }
             }
-            highlightServiceElements(); // show stuff that was highlighting when it has an svg node 
+            highlightElements("serviceHighlighting"); // show stuff that was highlighting when it has an svg node 
 
             map_(edgeList, updateSvgChoordsEdge);
             selectElement(n);
@@ -949,6 +952,13 @@ define([
                 n.svgNode.style("filter", n.isGhost ? "url(#ghost)" : "none");
                 return;
             }
+            if (d3.event.shiftKey) {
+                if (highlightedNodesMap["trashcan"] === undefined) {
+                    highlightedNodesMap["trashcan"] = [];
+                }
+                
+                highlightedNodesMap["trashcan"].push(n);
+            }
             highlightedNode = n;
             drawHighlight();
             if (o.getDisplayTree()) {
@@ -976,8 +986,8 @@ define([
             if (n.volumes.length !== 0)
                  n.volumePopup.toggleVisible();
             drawPopups();
-            highlightServiceElements(); // show stuff that was highlighting when it has an svg node 
-
+            highlightElements("serviceHighlighting"); // show stuff that was highlighting when it has an svg node 
+            highlightElements("trashcan");
             map_(edgeList, updateSvgChoordsEdge);
             selectElement(n);
             selectedNode = n;
@@ -1008,6 +1018,13 @@ define([
                 n.isGhost = !n.isGhost;
                 n.svgNode.style("filter", n.isGhost ? "url(#ghost)" : "none");
                 return;
+            }
+            if (d3.event.shiftKey) {
+                if (highlightedNodesMap["trashcan"] === undefined) {
+                    highlightedNodesMap["trashcan"] = [];
+                }
+                
+                highlightedNodesMap["trashcan"].push(n);
             }
             highlightedNode = n;
             drawHighlight();
@@ -1043,43 +1060,47 @@ define([
             }
         }
         
-        function setServiceHighlights(x){          
-            serviceHighlightedNodes = x;
+        // generalize these 
+        function setHighlights(x, feature){          
+            highlightedNodesMap[feature] = x;
         }
         
-        function removeServiceHighlights() {
-            serviceHighlightedNodes = [];
-            previousHighlightedNodes = [];
+        function removeHighlights(feature) {
+            highlightedNodesMap[feature] = [];
+            prevHighlightedNodesMap[feature] = [];
         }
         
-        function highlightServiceElements(){
+        function highlightElements(feature){
             if (fullSize) {
-                if (previousHighlightedNodes !== []) {
+                if (prevHighlightedNodesMap[feature] !== []) {
 
-                    for (var i in previousHighlightedNodes) {
-                        previousHighlightedNodes[i].remove();
+                    for (var i in prevHighlightedNodesMap[feature] ) {
+                        prevHighlightedNodesMap[feature] [i].remove();
                     }
-                    previousHighlightedNodes = [];
+                    prevHighlightedNodesMap[feature]  = [];
                 }
 
-                for (var i in serviceHighlightedNodes) {
-                    var type = serviceHighlightedNodes[i].getType();
+                for (var i in highlightedNodesMap[feature] ) {
+                    var type = highlightedNodesMap[feature][i].getType();
 
-                    if (serviceHighlightedNodes[i] && serviceHighlightedNodes[i].svgNode) {
+                    if (highlightedNodesMap[feature][i] && highlightedNodesMap[feature][i].svgNode) {
 
-                        var toAppend = serviceHighlightedNodes[i].svgNode.node().cloneNode();
-                        previousHighlightedNodes.push(d3.select(toAppend)
+                        var toAppend = highlightedNodesMap[feature][i].svgNode.node().cloneNode();
+                        prevHighlightedNodesMap[feature].push(d3.select(toAppend)
                                     .style("opacity", "1")
                                     .attr("pointer-events", "none"));
                             
-                        var last = previousHighlightedNodes.length - 1;
-                        if (!isFirefox()) {
-                            previousHighlightedNodes[last].style("filter", "url(#subnetHighlight)"); 
+                        var last = prevHighlightedNodesMap[feature].length - 1;
+                        if (feature === "trashcan") {
+                             prevHighlightedNodesMap[feature][last].style("filter", "url(#trashcanHighlight)"); 
                         } else {
-                            previousHighlightedNodes[last].style("filter", "url(#subnetHighlightFF)");
+                            if (!isFirefox()) {
+                                prevHighlightedNodesMap[feature][last].style("filter", "url(#subnetHighlight)"); 
+                            } else {
+                                prevHighlightedNodesMap[feature][last].style("filter", "url(#subnetHighlightFF)");
+                            }
                         }
-                                    
-                        var parentNode = serviceHighlightedNodes[i].svgNode.node().parentNode;
+                        var parentNode = highlightedNodesMap[feature][i].svgNode.node().parentNode;
                         if (parentNode) {
                             //If we are coming out of a fold, the parentNode might no longer exist
                             parentNode.appendChild(toAppend);
@@ -1455,9 +1476,15 @@ define([
             map_(e, updateSvgChoordsEdge);
         };
         API["clickNode"] = clickNode;
-        API["highlightServiceElements"] = highlightServiceElements;
-        API["setServiceHighlights"] = setServiceHighlights;
-        API["removeServiceHighlights"] = removeServiceHighlights;
+        API["highlightElements"] = highlightElements;
+        API["setHighlights"] = setHighlights;
+        API["removeHighlights"] = removeHighlights;
+        API["multipleHighlighted"] = function () {
+            return highlightedNodesMap["trashcan"].length > 0;
+        };
+        API["getTrashcan"] = function () {
+            return highlightedNodesMap["trashcan"];
+        };
     }
 
 
