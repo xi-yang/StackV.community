@@ -1,0 +1,159 @@
+/* 
+    Created on : Nov 11, 2016, 8:52:52 AM
+    Author     : aheard
+*/
+
+#ommPanelColorSelectionTab{
+    margin-left: 15px;
+    float:left;
+}
+.filteredColorBox{
+    margin-right: 1px;
+    float: left;
+    width: 15px;
+    height: 15px;
+}
+#ommPanel-colorPanel{
+    padding-bottom: 20px;
+    border: 1px rgba(0, 0, 0, .075) solid;
+}
+
+#labelList-container {
+    word-wrap: break-word;
+    overflow-y: scroll;
+    height: 75%;
+}
+#ommPanel {
+    background: linear-gradient(rgba(0, 0, 0, 0.3),#333), url('/VersaStack-web/img/background.png');
+    position: fixed;
+    color: white;
+    bottom: 0px;
+    right: 250px;
+    z-index: 2;
+    min-width: 10%;
+    border: 1px solid white;
+    border-bottom: none;
+    -webkit-transition: bottom 0.5s ease;
+    transition: bottom 0.5s ease;
+    height: calc(50% - 10px );
+    width: 15%;
+    /* padding-top: 10px; */
+    border-radius: 4px 4px 0 0;
+}
+
+#ommPanel.closed {
+    bottom: calc(-50% + 30px);
+    -webkit-transition: bottom 0.5s ease;
+    transition: bottom 0.5s ease;
+}
+
+#ommPanel-tab {
+    background-color: white;
+    height: 20px;
+    color: #555;
+}
+
+#ClearAllTagsButton {
+    color:black;
+}
+
+#ommPanel-contents {height: 100%; padding: 2px;}
+
+
+.label-color-red {background-color:#DC143C;}
+.label-color-orange {background-color:#FFA500;}
+.label-color-yellow {background-color:#FFD700}
+.label-color-blue {background-color:#4169E1;}
+.label-color-green {background-color:#009900;}
+.label-color-purple {background-color:#663399;}
+
+#ommPanel-colorPanel{
+    text-align:left;
+}
+
+#ommPanel-colorPanelTitle {
+    margin-left:5px;
+}
+#ommPanel-labelPanel{
+    border: 1px rgba(0, 0, 0, .075) solid;    
+
+    height: 100%;
+    width: 100%;
+}
+
+#ommPanel-labelPanelTitle {
+    margin-left: 5px;
+    text-align: left;
+}
+.ommPanel-labelList{
+    text-align:left;
+    padding-left: 0;
+    margin-bottom: 20px;
+}
+.ommPanel-labelItem {
+    position: relative;
+    color: white;
+    display: block;
+    /* padding: 10px 15px; */
+    padding-left: 20px;
+    margin-bottom: -1px;
+    border: 1px solid #ddd;
+    font-weight: bold;
+    font-family:Trebuchet MS;
+
+}
+
+#boxRed {background-color:red;}
+#boxOrange {background-color:orange;}
+#boxYellow {background-color:yellow;}
+#boxGreen {background-color:green;}
+#boxBlue {background-color:blue;}
+#boxPurple {background-color:purple;}
+.colorBox-highlighted {    border: 2px solid black;}
+
+.ommDeletionIcon{
+    float: right;
+    margin-top: 1%;
+    margin-right: 1%;
+    cursor: pointer;    
+}
+    .shape {
+      margin-left: 4em;
+      margin-top: 2.5em;
+      height: 8em;
+      width: 8em;
+      box-shadow: 4px 4px 8px;
+      color: #ccc;
+      background-repeat: no-repeat;
+      background-size: 90%;
+      background-position: 50%;
+    }
+    .circle, .pill {
+      border-radius: 8em;
+    }
+    .pill, .rectangle {
+      width: 16em;
+    }
+    .square, .circle {
+      margin-left: 9em;
+    }
+    .border {
+      border: 2px solid #333333;
+    }
+    .toggles {
+      width: 200px;
+    }
+    .toggle-wrap, .shape {
+      display: inline-block;
+      vertical-align: top;
+    }
+    .resBox {
+  text-align:left;    background-color: #aaa;  color: black;  padding-right: 50px; border: 1px solid black;      
+        
+    }
+    .truncate {
+  width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

@@ -328,12 +328,18 @@ define(["local/versastack/utils"], function (utils) {
             if (funcName) {
                 var func = functionMap[funcName];
                 if (func) {
-                    switch(funcName) {
-                        case "Tag": func.openDialog(that.selectedObject); break;
-                        case "ModelBrowser":
-                            //positionDisplayPanel("displayPanel", event);
-                            func(that.selectedObject, getRenderedElementParentDiv(that.selectedObject), event); 
-                            break;
+                    if (!renderApi.multipleHighlighted()) {
+                        switch(funcName) {
+                            case "Tag": func.openDialog(that.selectedObject); break;
+                            case "ModelBrowser":
+                                //positionDisplayPanel("displayPanel", event);
+                                func(that.selectedObject, getRenderedElementParentDiv(that.selectedObject), event); 
+                                break;
+                        }
+                    } else {
+                        switch (funcName) {
+                            case "omm":  func.add(); break;
+                        }
                     }
                 } else {
                     console.log("Debugging: in ContextMenu.js::: Menu Item Not Found");

@@ -60,7 +60,8 @@
                 $("#tag-panel").load("/VersaStack-web/tagPanel.jsp", function () {
 
                 });
-
+                $("#omm-panel").load("/VersaStack-web/ommPanel.html");
+                
                 $("#displayPanel-tab").click(function (evt) {
                     $("#displayPanel").toggleClass("display-open");
                     $("#displayPanel-tab").toggleClass("display-open");
@@ -339,7 +340,8 @@
                         
                         var nodes = model.listNodes();
                         var sameNodes = !(nodePositions.length !== nodes.length || !allNodesMatch(nodePositions, nodes));
-                        
+                        width = width / parseFloat(viz_data.zoom);
+                        height = height / parseFloat(viz_data.zoom);
                         if (sameNodes)  {
                             for (var i = 0; i < nodePositions.length; i++) {
                                var name = nodePositions[i].name;
@@ -347,8 +349,10 @@
                             }
                             layout.doPersistLayout(model, null, width, height);
                             layout.doPersistLayout(model, null, width, height);
-                            outputApi.setZoom(parseFloat(viz_data.zoom));
                             outputApi.setOffsets(parseFloat(viz_data.offsetX), parseFloat(viz_data.offsetY)); 
+                            render.doRender(outputApi, model);
+                            outputApi.setZoom(parseFloat(viz_data.zoom));
+
                         } else {
                             var nodeNames = model.listNodeNames();
                             
@@ -361,9 +365,10 @@
                             }
                             layout.doPersistLayout(model, null, width, height);
                             layout.doPersistLayout(model, null, width, height);
-                            outputApi.setZoom(parseFloat(viz_data.zoom));
                             outputApi.setOffsets(parseFloat(viz_data.offsetX), parseFloat(viz_data.offsetY)); 
-                            
+                            render.doRender(outputApi, model);
+                            outputApi.setZoom(parseFloat(viz_data.zoom));
+      
                             //return false;
                         }
                     } else {
@@ -412,8 +417,8 @@
                 if (!loadPersistedVisualization(outputApi, model, width, height)) {       
                     layout.doLayout(model, null, width, height);
                     layout.doLayout(model, null, width, height);
+                    render.doRender(outputApi, model);
                 }
-                render.doRender(outputApi, model);
                 //  animStart(30);
             }
             
@@ -816,8 +821,8 @@
                         clearTimeout(timer);    //prevent single-click action
                         if ($(that).hasClass("service-instance-highlighted")) {
                             $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
-                            render.API.setServiceHighlights([]);
-                            render.API.highlightServiceElements();
+                            render.API.setHighlights([], "serviceHighlighting");
+                            render.API.highlightElements("serviceHighlighting");                        
                             clicks = 0;             //after action performed, reset counter
                         } else {
                             timer = setTimeout(function () {
@@ -853,8 +858,8 @@
                             var result = model.makeSubModel([unionObj]);
                             var modelArr = model.getModelMapValues(result);
 
-                            render.API.setServiceHighlights(modelArr);
-                            render.API.highlightServiceElements();
+                            render.API.setHighlights(modelArr, "serviceHighlighting");
+                            render.API.highlightElements("serviceHighlighting");
 
                         }
                     },
@@ -990,9 +995,21 @@
     <filter id="ghost" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
         <feColorMatrix type="saturate" values=".2"/>
     </filter>
-
-    <marker id="marker_arrow_viz" markerWidth="10" markerHeight="10" refx="15" refy="3" orient="auto" markerUnits="strokeWidth">
-        <path d="M0,0 L0,6 L9,3 z" fill="black" />
+    
+    <filter id="trashcanHighlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+   <feFlood flood-color="#d11b1e" result="base" />
+   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+   <feColorMatrix result="mask" in="bigger" type="matrix"
+      values="0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 1 0" />
+   <feComposite result="drop" in="base" in2="mask" operator="in" />
+   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+</filter>
+    
+     <marker id="marker_arrow_viz" markerWidth="10" markerHeight="10" refx="15" refy="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="black" />
     </marker>
 
     </defs>
@@ -1079,7 +1096,11 @@
 
     <div id="dialog_modelView" title="Model View">
     </div>
-
+    
+    <!-- OMM PANEL -->
+    <div id="omm-panel"> 
+    </div>
+    
     <!-- TAG PANEL -->
     <div id="tag-panel"> 
     </div>
