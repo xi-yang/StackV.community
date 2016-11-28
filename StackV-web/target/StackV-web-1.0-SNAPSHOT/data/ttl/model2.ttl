@@ -1,0 +1,849 @@
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-e4fec28110.24.0.016>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "ipv4-prefix-list" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "10.24.0.0/16" .
+
+<urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON:l2switching>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/nml/2013/03/base#SwitchingService> ;
+        <http://schemas.ogf.org/nml/2013/03/base#encoding>
+                <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort>
+                <urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*> , <urn:ogf:network:domain=dragon.maxgigapop.net:node=MCLN:port=1-3-1:link=*> , <urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*> , <urn:ogf:network:domain=dragon.maxgigapop.net:node=MAX:port=1-0-8:link=*> , <urn:ogf:network:domain=dragon.maxgigapop.net:node=MAX:port=1-0-9:link=*> ;
+        <http://schemas.ogf.org/nml/2013/03/base#labelSwapping>
+                "false" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:vlan-2003>
+        a       <http://schemas.ogf.org/nml/2013/03/base#Label> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "2003" ;
+        <http://schemas.ogf.org/nml/2013/03/base#labeltype>
+                <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:elasticbeanstalk-us-east-1-873260731510>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Bucket> , owl:NamedIndividual .
+
+<urn:ogf:network:domain=dragon.maxgigapop.net:node=MAX:port=1-0-9:link=*>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> ;
+        <http://schemas.ogf.org/nml/2013/03/base#belongsTo>
+                <urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON> , <urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON:l2switching> ;
+        <http://schemas.ogf.org/nml/2013/03/base#name>
+                "interface3-2" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-e4fec2810.0.0.00>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "ipv4-prefix-list" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "0.0.0.0/0" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:dxvif-fg79ovc8>
+        a       <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasTag>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:virtualinterfaceTag> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasLabel>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vlan-1927> ;
+        <http://schemas.ogf.org/nml/2013/03/base#isAlias>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vgw-3b688a52> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-e4fec281>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#RoutingTable> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasRoute>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-e4fec28110.24.0.016> , <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-e4fec2810.0.0.00> , <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-e4fec28110.0.0.016> ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "main" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:vpc-45143020>
+        a       <http://schemas.ogf.org/nml/2013/03/base#Topology> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasNetworkAddress>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vpcnetworkaddress-vpc-45143020> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vgw-4235d62b> , <urn:ogf:network:aws.amazon.com:aws-cloud:igw-15891370> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasNode>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:i-96aae36a> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasService>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:routingservice-vpc-45143020> , <urn:ogf:network:aws.amazon.com:aws-cloud:switchingservice-vpc-45143020> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-5bc49e3e10.254.0.024>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "ipv4-prefix" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "10.254.0.0/24" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:igwTag>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Tag> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "gateway" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "internet" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:subnet-cfff9ab8>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#SwitchingSubnet> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasNetworkAddress>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:subnetnetworkaddress-subnet-cfff9ab8> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:eni-e55a52ac> .
+
+<urn:ogf:network:domain=sdnx.maxgigapop.net:node=SDN>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/nml/2013/03/base#Node> ;
+        <http://schemas.ogf.org/nml/2013/03/base#belongsTo>
+                <urn:ogf:network:sdn.maxgigapop.net:network> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort>
+                <urn:ogf:network:domain=sdn.maxgigapop.net:node=MAX:port=4> , <urn:ogf:network:domain=sdn.maxgigapop.net:node=DEV2:port=2> , <urn:ogf:network:domain=sdn.maxgigapop.net:node=MAX:port=3> , <urn:ogf:network:domain=sdn.maxgigapop.net:node=DEV2:port=1> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasService>
+                <urn:ogf:network:domain=sdnx.maxgigapop.net:node=SDN:l2switching> ;
+        <http://schemas.ogf.org/nml/2013/03/base#name>
+                "OpenFlow SDN by FloodLight Controller" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-e4fec28110.0.0.016>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Route> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#nextHop>
+                "local" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#routeFrom>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-e4fec28110.0.0.016-subnet-a8a632f1> ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#routeTo>
+                <urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-e4fec28110.0.0.016> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:i-96aae36a>
+        a       <http://schemas.ogf.org/nml/2013/03/base#Node> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasVolume>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vol-b1ff81f6> ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#providedByService>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:ec2service-us-east-1> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:eni-78334923> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:vol-7b4aed3e>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Volume> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#disk_gb>
+                "30" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "gp2" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-10f9a27510.255.0.016-subnet-cfff9ab8>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "subnet" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "subnet-cfff9ab8" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-10f9a2750.0.0.00-subnet-cfff9ab8>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "subnet" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "subnet-cfff9ab8" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:eni-78334923>
+        a       <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasNetworkAddress>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:10.0.1.137> ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasTag>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:portTag> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:eni-e55a52ac>
+        a       <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasNetworkAddress>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:10.255.2.245> ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasTag>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:portTag> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:vlan-2002>
+        a       <http://schemas.ogf.org/nml/2013/03/base#Label> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "2002" ;
+        <http://schemas.ogf.org/nml/2013/03/base#labeltype>
+                <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:vlan-1927>
+        a       <http://schemas.ogf.org/nml/2013/03/base#Label> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "1927" ;
+        <http://schemas.ogf.org/nml/2013/03/base#labeltype>
+                <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:subnet-a8a632f1>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#SwitchingSubnet> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasNetworkAddress>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:subnetnetworkaddress-subnet-a8a632f1> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:eni-78334923> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:vol-b1ff81f6>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Volume> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#disk_gb>
+                "8" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#target_device>
+                "/dev/sda1" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "gp2" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:subnet-bec144e7>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#SwitchingSubnet> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasNetworkAddress>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:subnetnetworkaddress-subnet-bec144e7> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:eni-ada501f6> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:virtualinterfaceTag>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Tag> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "interface" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "virtual" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:dxvif-fgl0dgd1>
+        a       <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasTag>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:virtualinterfaceTag> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasLabel>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vlan-2003> ;
+        <http://schemas.ogf.org/nml/2013/03/base#isAlias>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vgw-4235d62b> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:max-sdnx-etc-backup>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Bucket> , owl:NamedIndividual .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-e4fec28110.24.0.016>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Route> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#nextHop>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vgw-4235d62b> ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#routeFrom>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-e4fec28110.24.0.016-subnet-a8a632f1> ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#routeTo>
+                <urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-e4fec28110.24.0.016> .
+
+<urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON>
+        a       <http://schemas.ogf.org/nml/2013/03/base#Node> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/nml/2013/03/base#belongsTo>
+                <urn:ogf:network:sdn.maxgigapop.net:network> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort>
+                <urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*> , <urn:ogf:network:domain=dragon.maxgigapop.net:node=MCLN:port=1-3-1:link=*> , <urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*> , <urn:ogf:network:domain=dragon.maxgigapop.net:node=MAX:port=1-0-9:link=*> , <urn:ogf:network:domain=dragon.maxgigapop.net:node=MAX:port=1-0-8:link=*> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasService>
+                <urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON:l2switching> ;
+        <http://schemas.ogf.org/nml/2013/03/base#name>
+                "DRAGON OSCARS DCN" .
+
+<urn:ogf:network:sdn.maxgigapop.net:network>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/nml/2013/03/base#Topology> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasNode>
+                <urn:ogf:network:domain=sdnx.maxgigapop.net:node=MAX> , <urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON> , <urn:ogf:network:domain=sdnx.maxgigapop.net:node=MCLN> , <urn:ogf:network:domain=sdnx.maxgigapop.net:node=SDN> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:max-sdnx-images-backup>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Bucket> , owl:NamedIndividual .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:i-3f3bd6c3>
+        a       <http://schemas.ogf.org/nml/2013/03/base#Node> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#providedByService>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:ec2service-us-east-1> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:eni-ada501f6> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-10f9a2750.0.0.00>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Route> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#nextHop>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vgw-21658748> ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#routeFrom>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-10f9a2750.0.0.00-subnet-cfff9ab8> , <urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-10f9a2750.0.0.00-subnet-dcff9aab> ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#routeTo>
+                <urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-10f9a2750.0.0.00> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:10.0.1.137>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "ipv4:private" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "10.0.1.137" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:routingservice-vpc-17511872>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#RoutingService> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#providesRoute>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-10f9a2750.0.0.00> , <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-10f9a27510.255.0.016> ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#providesRoutingTable>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-10f9a275> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:10.254.0.23>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "ipv4:private" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "10.254.0.23" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-e4fec2810.0.0.00-subnet-a8a632f1>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "subnet" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "subnet-a8a632f1" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:vgw-4235d62b>
+        a       <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasTag>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vpngwTag> ;
+        <http://schemas.ogf.org/nml/2013/03/base#isAlias>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:dxvif-fgl0dgd1> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:portTag>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Tag> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "interface" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "network" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-5bc49e3e0.0.0.00>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Route> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#nextHop>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vgw-3b688a52> ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#routeFrom>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-5bc49e3e0.0.0.00-subnet-bec144e7> ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#routeTo>
+                <urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-5bc49e3e0.0.0.00> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:subnet-dcff9aab>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#SwitchingSubnet> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasNetworkAddress>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:subnetnetworkaddress-subnet-dcff9aab> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:eni-8c5850c5> .
+
+<urn:ogf:network:domain=sdnx.maxgigapop.net:node=MAX:port=ge-6/0/3>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> ;
+        <http://schemas.ogf.org/nml/2013/03/base#belongsTo>
+                <urn:ogf:network:domain=sdnx.maxgigapop.net:node=MAX> , <urn:ogf:network:domain=sdnx.maxgigapop.net:node=MAX:l2switching> ;
+        <http://schemas.ogf.org/nml/2013/03/base#name>
+                "interface1-2" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:vlan-1926>
+        a       <http://schemas.ogf.org/nml/2013/03/base#Label> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "1926" ;
+        <http://schemas.ogf.org/nml/2013/03/base#labeltype>
+                <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-5bc49e3e0.0.0.00-subnet-bec144e7>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "subnet" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "subnet-bec144e7" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-10f9a27510.255.0.016-subnet-dcff9aab>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "subnet" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "subnet-dcff9aab" .
+
+<urn:ogf:network:domain=sdn.maxgigapop.net:node=DEV2:port=2>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> ;
+        <http://schemas.ogf.org/nml/2013/03/base#belongsTo>
+                <urn:ogf:network:domain=sdnx.maxgigapop.net:node=SDN> , <urn:ogf:network:domain=sdnx.maxgigapop.net:node=SDN:l2switching> ;
+        <http://schemas.ogf.org/nml/2013/03/base#name>
+                "interface4-2" .
+
+<urn:ogf:network:domain=sdnx.maxgigapop.net:node=MCLN:l3routing>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/mrs/2013/12/topology#RoutingService> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-10f9a2750.0.0.00-subnet-dcff9aab>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "subnet" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "subnet-dcff9aab" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:switchingservice-vpc-17511872>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#SwitchingService> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#providesSubnet>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:subnet-cfff9ab8> , <urn:ogf:network:aws.amazon.com:aws-cloud:subnet-dcff9aab> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:routingservice-vpc-5f29613a>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#RoutingService> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#providesRoute>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-5bc49e3e0.0.0.00> , <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-5bc49e3e10.254.0.024> ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#providesRoutingTable>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-5bc49e3e> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:subnetnetworkaddress-subnet-bec144e7>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "ipv4-prefix" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "10.254.0.0/24" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:vpcnetworkaddress-vpc-17511872>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "ipv4-prefix" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "10.255.0.0/16" .
+
+<urn:ogf:network:domain=dragon.maxgigapop.net:node=MCLN:port=1-3-1:link=*>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> ;
+        <http://schemas.ogf.org/nml/2013/03/base#belongsTo>
+                <urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON> , <urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON:l2switching> ;
+        <http://schemas.ogf.org/nml/2013/03/base#name>
+                "interface3-4" .
+
+<urn:ogf:network:domain=sdnx.maxgigapop.net:node=MCLN:l2switching>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/nml/2013/03/base#SwitchingService> ;
+        <http://schemas.ogf.org/nml/2013/03/base#encoding>
+                <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort>
+                <urn:ogf:network:domain=sdnx.maxgigapop.net:node=MAX:port=xe-2/1/2> , <urn:ogf:network:domain=sdnx.maxgigapop.net:node=MAX:port=xe-2/1/1> ;
+        <http://schemas.ogf.org/nml/2013/03/base#labelSwapping>
+                "false" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:vgw-21658748>
+        a       <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasTag>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vpngwTag> ;
+        <http://schemas.ogf.org/nml/2013/03/base#isAlias>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:dxvif-fh2xuxfg> .
+
+<urn:ogf:network:domain=sdnx.maxgigapop.net:node=MAX:l2switching>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/nml/2013/03/base#SwitchingService> ;
+        <http://schemas.ogf.org/nml/2013/03/base#encoding>
+                <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort>
+                <urn:ogf:network:domain=sdnx.maxgigapop.net:node=MAX:port=ge-6/0/2> , <urn:ogf:network:domain=sdnx.maxgigapop.net:node=MAX:port=ge-6/0/3> ;
+        <http://schemas.ogf.org/nml/2013/03/base#labelSwapping>
+                "false" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:10.255.1.21>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "ipv4:private" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "10.255.1.21" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:10.255.2.245>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "ipv4:private" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "10.255.2.245" .
+
+<urn:ogf:network:domain=sdnx.maxgigapop.net:node=MAX:port=ge-6/0/2>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> ;
+        <http://schemas.ogf.org/nml/2013/03/base#belongsTo>
+                <urn:ogf:network:domain=sdnx.maxgigapop.net:node=MAX> , <urn:ogf:network:domain=sdnx.maxgigapop.net:node=MAX:l2switching> ;
+        <http://schemas.ogf.org/nml/2013/03/base#name>
+                "interface1-1" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-10f9a275>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#RoutingTable> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasRoute>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-10f9a2750.0.0.00> , <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-10f9a27510.255.0.016> ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "local" .
+
+<urn:ogf:network:domain=sdnx.maxgigapop.net:node=MAX:l3routing>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/mrs/2013/12/topology#RoutingService> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:max-svn-backup>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Bucket> , owl:NamedIndividual .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-10f9a27510.255.0.016>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Route> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#nextHop>
+                "local" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#routeFrom>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-10f9a27510.255.0.016-subnet-cfff9ab8> , <urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-10f9a27510.255.0.016-subnet-dcff9aab> ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#routeTo>
+                <urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-10f9a27510.255.0.016> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:switchingservice-vpc-5f29613a>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#SwitchingService> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#providesSubnet>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:subnet-bec144e7> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:eni-ada501f6>
+        a       <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasNetworkAddress>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:10.254.0.23> ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasTag>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:portTag> .
+
+<urn:ogf:network:domain=sdn.maxgigapop.net:node=DEV2:port=1>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> ;
+        <http://schemas.ogf.org/nml/2013/03/base#belongsTo>
+                <urn:ogf:network:domain=sdnx.maxgigapop.net:node=SDN> , <urn:ogf:network:domain=sdnx.maxgigapop.net:node=SDN:l2switching> ;
+        <http://schemas.ogf.org/nml/2013/03/base#name>
+                "interface4-1" .
+
+<urn:ogf:network:domain=sdnx.maxgigapop.net:node=MCLN>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/nml/2013/03/base#Node> ;
+        <http://schemas.ogf.org/nml/2013/03/base#belongsTo>
+                <urn:ogf:network:sdn.maxgigapop.net:network> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort>
+                <urn:ogf:network:domain=sdnx.maxgigapop.net:node=MAX:port=xe-2/1/2> , <urn:ogf:network:domain=sdnx.maxgigapop.net:node=MAX:port=xe-2/1/1> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasService>
+                <urn:ogf:network:domain=sdnx.maxgigapop.net:node=MCLN:l2switching> , <urn:ogf:network:domain=sdnx.maxgigapop.net:node=MCLN:l3routing> ;
+        <http://schemas.ogf.org/nml/2013/03/base#name>
+                "device2" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:ebsservice-us-east-1>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#BlockStorageService> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#providesVolume>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vol-838451d8> , <urn:ogf:network:aws.amazon.com:aws-cloud:vol-7b4aed3e> , <urn:ogf:network:aws.amazon.com:aws-cloud:vol-c075d285> , <urn:ogf:network:aws.amazon.com:aws-cloud:vol-57ae4512> , <urn:ogf:network:aws.amazon.com:aws-cloud:vol-f4fec3b6> , <urn:ogf:network:aws.amazon.com:aws-cloud:vol-b1ff81f6> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:max-twiki-backup>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Bucket> , owl:NamedIndividual .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:vpngwTag>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Tag> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "gateway" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "vpn" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:vpcnetworkaddress-vpc-5f29613a>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "ipv4-prefix" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "10.254.0.0/24" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:subnetnetworkaddress-subnet-cfff9ab8>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "ipv4-prefix" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "10.255.2.0/24" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:routingservice-vpc-45143020>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#RoutingService> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#providesRoute>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-e4fec28110.24.0.016> , <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-e4fec2810.0.0.00> , <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-e4fec28110.0.0.016> ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#providesRoutingTable>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-e4fec281> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-e4fec2810.0.0.00>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Route> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#nextHop>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:igw-15891370> ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#routeFrom>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-e4fec2810.0.0.00-subnet-a8a632f1> ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#routeTo>
+                <urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-e4fec2810.0.0.00> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:directconnect>
+        a       <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:dxvif-fg79ovc8> , <urn:ogf:network:aws.amazon.com:aws-cloud:dxvif-fh2xuxfg> , <urn:ogf:network:aws.amazon.com:aws-cloud:dxvif-fgl0dgd1> , <urn:ogf:network:aws.amazon.com:aws-cloud:dxvif-fh0jle37> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:vpcservice-us-east-1>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#VirtualCloudService> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#providesVPC>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vpc-45143020> , <urn:ogf:network:aws.amazon.com:aws-cloud:vpc-5f29613a> , <urn:ogf:network:aws.amazon.com:aws-cloud:vpc-17511872> .
+
+<urn:ogf:network:domain=sdnx.maxgigapop.net:node=MAX:port=xe-2/1/2>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> ;
+        <http://schemas.ogf.org/nml/2013/03/base#belongsTo>
+                <urn:ogf:network:domain=sdnx.maxgigapop.net:node=MCLN> , <urn:ogf:network:domain=sdnx.maxgigapop.net:node=MCLN:l2switching> ;
+        <http://schemas.ogf.org/nml/2013/03/base#name>
+                "interface2-2" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:max-sdnx-ca-backup>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Bucket> , owl:NamedIndividual .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-e4fec28110.24.0.016-subnet-a8a632f1>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "subnet" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "subnet-a8a632f1" .
+
+<urn:ogf:network:domain=sdn.maxgigapop.net:node=MAX:port=4>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> ;
+        <http://schemas.ogf.org/nml/2013/03/base#belongsTo>
+                <urn:ogf:network:domain=sdnx.maxgigapop.net:node=SDN> , <urn:ogf:network:domain=sdnx.maxgigapop.net:node=SDN:l2switching> ;
+        <http://schemas.ogf.org/nml/2013/03/base#name>
+                "interface4-4" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:i-e25c7a18>
+        a       <http://schemas.ogf.org/nml/2013/03/base#Node> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#providedByService>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:ec2service-us-east-1> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:eni-8c5850c5> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:ec2service-us-east-1>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#HypervisorService> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#providesVM>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:i-96aae36a> , <urn:ogf:network:aws.amazon.com:aws-cloud:i-3f3bd6c3> , <urn:ogf:network:aws.amazon.com:aws-cloud:i-4a5a7cb0> , <urn:ogf:network:aws.amazon.com:aws-cloud:i-e25c7a18> .
+
+<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> ;
+        <http://schemas.ogf.org/nml/2013/03/base#belongsTo>
+                <urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON> , <urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON:l2switching> ;
+        <http://schemas.ogf.org/nml/2013/03/base#name>
+                "interface3-4" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:i-4a5a7cb0>
+        a       <http://schemas.ogf.org/nml/2013/03/base#Node> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#providedByService>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:ec2service-us-east-1> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:eni-e55a52ac> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud>
+        a       <http://schemas.ogf.org/nml/2013/03/base#Topology> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasBucket>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:elasticbeanstalk-us-east-1-873260731510> , <urn:ogf:network:aws.amazon.com:aws-cloud:max-controller-full-backup> , <urn:ogf:network:aws.amazon.com:aws-cloud:max-svn-backup> , <urn:ogf:network:aws.amazon.com:aws-cloud:max-sdnx-backup> , <urn:ogf:network:aws.amazon.com:aws-cloud:max-twiki-backup> , <urn:ogf:network:aws.amazon.com:aws-cloud:max-sdnx-ca-backup> , <urn:ogf:network:aws.amazon.com:aws-cloud:max-sdnx-images-backup> , <urn:ogf:network:aws.amazon.com:aws-cloud:max-controller-full-backup-3> , <urn:ogf:network:aws.amazon.com:aws-cloud:max-sdnx-etc-backup> , <urn:ogf:network:aws.amazon.com:aws-cloud:max-controller-full-backup-2> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vgw-3b688a52> , <urn:ogf:network:aws.amazon.com:aws-cloud:vgw-21658748> , <urn:ogf:network:aws.amazon.com:aws-cloud:vgw-4235d62b> , <urn:ogf:network:aws.amazon.com:aws-cloud:directconnect> , <urn:ogf:network:aws.amazon.com:aws-cloud:vgw-ba28cbd3> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasService>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:ebsservice-us-east-1> , <urn:ogf:network:aws.amazon.com:aws-cloud:ec2service-us-east-1> , <urn:ogf:network:aws.amazon.com:aws-cloud:s3service-us-east-1> , <urn:ogf:network:aws.amazon.com:aws-cloud:vpcservice-us-east-1> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasTopology>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vpc-17511872> , <urn:ogf:network:aws.amazon.com:aws-cloud:vpc-5f29613a> , <urn:ogf:network:aws.amazon.com:aws-cloud:vpc-45143020> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-e4fec28110.0.0.016>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "ipv4-prefix" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "10.0.0.0/16" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:vol-838451d8>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Volume> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#disk_gb>
+                "8" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "standard" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:subnetnetworkaddress-subnet-a8a632f1>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "ipv4-prefix" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "10.0.1.0/24" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-5bc49e3e10.254.0.024>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Route> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#nextHop>
+                "local" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#routeFrom>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-5bc49e3e10.254.0.024-subnet-bec144e7> ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#routeTo>
+                <urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-5bc49e3e10.254.0.024> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:max-controller-full-backup-3>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Bucket> , owl:NamedIndividual .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:dxvif-fh0jle37>
+        a       <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasTag>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:virtualinterfaceTag> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasLabel>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vlan-2002> ;
+        <http://schemas.ogf.org/nml/2013/03/base#isAlias>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vgw-ba28cbd3> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:igw-15891370>
+        a       <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasTag>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:igwTag> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-10f9a2750.0.0.00>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "ipv4-prefix-list" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "0.0.0.0/0" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:vgw-3b688a52>
+        a       <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasTag>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vpngwTag> ;
+        <http://schemas.ogf.org/nml/2013/03/base#isAlias>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:dxvif-fg79ovc8> .
+
+<urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> ;
+        <http://schemas.ogf.org/nml/2013/03/base#belongsTo>
+                <urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON> , <urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON:l2switching> ;
+        <http://schemas.ogf.org/nml/2013/03/base#name>
+                "interface3-4" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-e4fec28110.0.0.016-subnet-a8a632f1>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "subnet" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "subnet-a8a632f1" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:vpcnetworkaddress-vpc-45143020>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "ipv4-prefix" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "10.0.0.0/16" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:vpc-17511872>
+        a       <http://schemas.ogf.org/nml/2013/03/base#Topology> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasNetworkAddress>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vpcnetworkaddress-vpc-17511872> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vgw-21658748> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasNode>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:i-4a5a7cb0> , <urn:ogf:network:aws.amazon.com:aws-cloud:i-e25c7a18> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasService>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:routingservice-vpc-17511872> , <urn:ogf:network:aws.amazon.com:aws-cloud:switchingservice-vpc-17511872> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:dxvif-fh2xuxfg>
+        a       <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasTag>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:virtualinterfaceTag> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasLabel>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vlan-1926> ;
+        <http://schemas.ogf.org/nml/2013/03/base#isAlias>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vgw-21658748> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-5bc49e3e0.0.0.00>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "ipv4-prefix-list" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "0.0.0.0/0" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:vol-f4fec3b6>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Volume> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#disk_gb>
+                "8" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "standard" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:s3service-us-east-1>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/mrs/2013/12/topology#ObjectStorageService> ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#providesBucket>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:max-sdnx-backup> , <urn:ogf:network:aws.amazon.com:aws-cloud:max-svn-backup> , <urn:ogf:network:aws.amazon.com:aws-cloud:elasticbeanstalk-us-east-1-873260731510> , <urn:ogf:network:aws.amazon.com:aws-cloud:max-controller-full-backup-2> , <urn:ogf:network:aws.amazon.com:aws-cloud:max-controller-full-backup-3> , <urn:ogf:network:aws.amazon.com:aws-cloud:max-sdnx-etc-backup> , <urn:ogf:network:aws.amazon.com:aws-cloud:max-sdnx-images-backup> , <urn:ogf:network:aws.amazon.com:aws-cloud:max-controller-full-backup> , <urn:ogf:network:aws.amazon.com:aws-cloud:max-twiki-backup> , <urn:ogf:network:aws.amazon.com:aws-cloud:max-sdnx-ca-backup> .
+
+<urn:ogf:network:domain=sdnx.maxgigapop.net:node=MAX:port=xe-2/1/1>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> ;
+        <http://schemas.ogf.org/nml/2013/03/base#belongsTo>
+                <urn:ogf:network:domain=sdnx.maxgigapop.net:node=MCLN> , <urn:ogf:network:domain=sdnx.maxgigapop.net:node=MCLN:l2switching> ;
+        <http://schemas.ogf.org/nml/2013/03/base#name>
+                "interface2-1" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:vol-57ae4512>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Volume> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#disk_gb>
+                "2" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "standard" .
+
+<urn:ogf:network:domain=sdn.maxgigapop.net:node=MAX:port=3>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> ;
+        <http://schemas.ogf.org/nml/2013/03/base#belongsTo>
+                <urn:ogf:network:domain=sdnx.maxgigapop.net:node=SDN> , <urn:ogf:network:domain=sdnx.maxgigapop.net:node=SDN:l2switching> ;
+        <http://schemas.ogf.org/nml/2013/03/base#name>
+                "interface4-3" .
+
+<urn:ogf:network:domain=dragon.maxgigapop.net:node=MAX:port=1-0-8:link=*>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> ;
+        <http://schemas.ogf.org/nml/2013/03/base#belongsTo>
+                <urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON> , <urn:ogf:network:domain=sdnx.maxgigapop.net:node=DRAGON:l2switching> ;
+        <http://schemas.ogf.org/nml/2013/03/base#name>
+                "interface3-1" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:subnetnetworkaddress-subnet-dcff9aab>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "ipv4-prefix" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "10.255.1.0/24" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:max-sdnx-backup>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Bucket> , owl:NamedIndividual .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:max-controller-full-backup>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Bucket> , owl:NamedIndividual .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:vgw-ba28cbd3>
+        a       <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasTag>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vpngwTag> ;
+        <http://schemas.ogf.org/nml/2013/03/base#isAlias>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:dxvif-fh0jle37> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:max-controller-full-backup-2>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Bucket> , owl:NamedIndividual .
+
+<urn:ogf:network:domain=sdnx.maxgigapop.net:node=SDN:l2switching>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/nml/2013/03/base#SwitchingService> ;
+        <http://schemas.ogf.org/nml/2013/03/base#encoding>
+                <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort>
+                <urn:ogf:network:domain=sdn.maxgigapop.net:node=MAX:port=4> , <urn:ogf:network:domain=sdn.maxgigapop.net:node=DEV2:port=2> , <urn:ogf:network:domain=sdn.maxgigapop.net:node=MAX:port=3> , <urn:ogf:network:domain=sdn.maxgigapop.net:node=DEV2:port=1> ;
+        <http://schemas.ogf.org/nml/2013/03/base#labelSwapping>
+                "false" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:rtb-5bc49e3e>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#RoutingTable> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasRoute>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-5bc49e3e0.0.0.00> , <urn:ogf:network:aws.amazon.com:aws-cloud:rtb-5bc49e3e10.254.0.024> ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "main" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:vpc-5f29613a>
+        a       <http://schemas.ogf.org/nml/2013/03/base#Topology> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasNetworkAddress>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vpcnetworkaddress-vpc-5f29613a> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:vgw-3b688a52> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasNode>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:i-3f3bd6c3> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasService>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:routingservice-vpc-5f29613a> , <urn:ogf:network:aws.amazon.com:aws-cloud:switchingservice-vpc-5f29613a> .
+
+<urn:ogf:network:domain=sdnx.maxgigapop.net:node=MAX>
+        a       owl:NamedIndividual , <http://schemas.ogf.org/nml/2013/03/base#Node> ;
+        <http://schemas.ogf.org/nml/2013/03/base#belongsTo>
+                <urn:ogf:network:sdn.maxgigapop.net:network> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasBidirectionalPort>
+                <urn:ogf:network:domain=sdnx.maxgigapop.net:node=MAX:port=ge-6/0/2> , <urn:ogf:network:domain=sdnx.maxgigapop.net:node=MAX:port=ge-6/0/3> ;
+        <http://schemas.ogf.org/nml/2013/03/base#hasService>
+                <urn:ogf:network:domain=sdnx.maxgigapop.net:node=MAX:l2switching> , <urn:ogf:network:domain=sdnx.maxgigapop.net:node=MAX:l3routing> ;
+        <http://schemas.ogf.org/nml/2013/03/base#name>
+                "device1" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:vol-c075d285>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#Volume> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#disk_gb>
+                "30" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "gp2" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloudrouteto-rtb-10f9a27510.255.0.016>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "ipv4-prefix" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "10.255.0.0/16" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:routefrom-rtb-5bc49e3e10.254.0.024-subnet-bec144e7>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#type>
+                "subnet" ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#value>
+                "subnet-bec144e7" .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:switchingservice-vpc-45143020>
+        a       <http://schemas.ogf.org/mrs/2013/12/topology#SwitchingService> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#providesSubnet>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:subnet-a8a632f1> .
+
+<urn:ogf:network:aws.amazon.com:aws-cloud:eni-8c5850c5>
+        a       <http://schemas.ogf.org/nml/2013/03/base#BidirectionalPort> , owl:NamedIndividual ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasNetworkAddress>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:10.255.1.21> ;
+        <http://schemas.ogf.org/mrs/2013/12/topology#hasTag>
+                <urn:ogf:network:aws.amazon.com:aws-cloud:portTag> .
