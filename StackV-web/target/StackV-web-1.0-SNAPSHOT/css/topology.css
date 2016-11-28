@@ -1,0 +1,30 @@
+.node {
+    cursor: move;
+}
+
+.node text {
+    pointer-events: none;
+    font-family: sans-serif;
+    font-size: 12px;
+}
+
+.node rect {
+    pointer-events: none;
+    stroke: black;
+    stroke-width: 4px;
+}
+
+circle.leaf {
+    stroke: #fff;
+    stroke-width: 1.5px;
+}
+
+path.hull {
+    fill-opacity: 0.2;
+}
+
+line.link {
+    stroke: #333;
+    stroke-opacity: 0.8;
+    pointer-events: none;
+}

@@ -1,0 +1,11 @@
+{
+    "realm": "StackV",
+    "realm-public-key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAukpMOpeNbu+lfAdcKJRk00Fxln6lvA3RGoEv+BE/cjbbjvg6Rsr1p94XFKuHifx3Kmngtd00XEnyDxg5ODHFrtXi+z1DYbx4m3ajkZSVaWXwkOqnPPC327PHvTgd2Tf475lW0yR01iZMDLyjjERbkps3guiqB6gnMSiuqtEBFSekCXCtkxYrFl8RFFAVfzAW5lRXvySO50gQHGUvV/FevtpgNU6HS3sIa9uitSd+WgqCotZW6u9C3FygnuKt8VNqvNv7MP7hVt0rlMo/yP1OgYB0jBpHf1tvwYMFvz6kEauk1HfbYZCvTT1Yr7AHM5i8NZzwGeK444QAyLrBhT2oNQIDAQAB",
+    "auth-server-url": "https://keycloakauthserver:8543/auth",
+    "ssl-required": "external",
+    "resource": "StackV",
+    "credentials": {
+        "secret": "4897e8c3-b837-4211-a8f2-af3d6e363df2"
+    },
+    "use-resource-role-mappings": true
+}
