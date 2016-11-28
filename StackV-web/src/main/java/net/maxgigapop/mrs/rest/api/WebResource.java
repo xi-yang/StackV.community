@@ -24,7 +24,6 @@
  */
 package net.maxgigapop.mrs.rest.api;
 
-import net.maxgigapop.mrs.service.ServiceManifest;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -63,20 +62,10 @@ import web.beans.serviceBeans;
 import com.hp.hpl.jena.ontology.OntModel;
 import java.util.Iterator;
 import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.security.KeyStore;
-import java.security.SecureRandom;
 import java.util.Set;
 import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
 import net.maxgigapop.mrs.common.ModelUtil;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.keycloak.KeycloakSecurityContext;
