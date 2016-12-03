@@ -484,7 +484,7 @@ define([
                         var node = that.nodeMap[key];
                         var node_ = node._backing;
                         for (var key in node_) {
-                            console.log("key: " + key);
+                            //console.log("key: " + key);
                             switch (key) {
                                 case values.hasBidirectionalPort:
                                     var ports = node_[key];
@@ -1085,7 +1085,7 @@ define([
                var node = that.nodeMap[key];
                var node_ = node._backing;
                for (var key in node_) {
-                   console.log("key: " + key);
+                   //console.log("key: " + key);
                    switch (key) {
                        case values.providesVolume:
                        case values.providesRoutingTable:
@@ -1538,7 +1538,7 @@ define([
                         var node = that.nodeMap[key];
                         var node_ = node._backing;
                         for (var key in node_) {
-                            console.log("key: " + key);
+                            //console.log("key: " + key);
                             switch (key) {
                                 case values.hasBidirectionalPort:
                                     var ports = node_[key];
