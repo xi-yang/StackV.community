@@ -183,7 +183,7 @@
                                         model = new ModelConstructor();
                                         outputApi = new outputApi_(render.API, contextMenu, "viz");
                                         model.init(1, drawGraph.bind(undefined, outputApi, model), null);    
-                                        console.log("I'm outputApu" + outputApi);
+                                        //console.log("I'm outputApu" + outputApi);
                                         $("#tagDialog").draggable();
 
                                         window.onbeforeunload = function(){ 

@@ -118,8 +118,8 @@ define([
                     }
     //            map=data;
                     that.modelString = JSON.stringify(map, null, '\t');
-                    console.log("\n\nmap from request \n\n");
-                    console.log(that.modelString);
+//                    console.log("\n\nmap from request \n\n");
+//                    console.log(that.modelString);
 
                     /*
                      * We begin by extracting all nodes/topologies
@@ -164,7 +164,7 @@ define([
                                     // Fallthrough group 
                                     case values.topology:
                                     case values.node:
-                                        console.log("type: " + type);
+                                        //console.log("type: " + type);
                                         var toAdd;
                                         if (oldModel && oldModel.nodeMap[key]) {
                                             toAdd = oldModel.nodeMap[key];
