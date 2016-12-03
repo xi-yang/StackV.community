@@ -229,11 +229,17 @@
 
                                     var template = data; //JSON.parse($(data).find("jsonTemplate").text());
                                     //alert(JSON.stringify(dnc_template));
+                                    var token = sessionStorage.getItem("token");
                                     $.ajax({
                                         type: "POST",
                                         crossDomain: true,
                                         url: "/StackV-web/restapi/service/manifest/" + UUID,
+
                                         data: template,
+                                        beforeSend: function (xhr) {
+                                            xhr.setRequestHeader("Authorization", "bearer " + token);
+                                        },
+
                                         headers: { 
                                             'Accept': 'application/json',
                                             'Content-Type': 'application/xml'

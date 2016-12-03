@@ -23,7 +23,6 @@
 
 
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page errorPage = "/StackV-web/errorPage.jsp" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%> 
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
@@ -134,7 +133,6 @@
             var functionMap = {}; // stores objects for funcitonality such as ContextMenu, tag Dialog, etc 
 
             var outputApi;
-
             function onload() {
                 require(["local/stackv/topology/model",
                     "local/stackv/topology/layout",
@@ -146,13 +144,21 @@
                     "local/stackv/topology/TagDialog"
                 ],
                         function (m, l, r, d3_, utils_, tree, c, td) {
+                            var userId = sessionStorage.getItem("subject");
+                            var username = sessionStorage.getItem("username");
+                            var token = sessionStorage.getItem("token");
+
                             $.ajax({
                                 crossDomain: true,
                                 type: "GET",
                                 url: "/StackV-web/restapi/service/ready",
+                                beforeSend: function (xhr) {
+                                    xhr.setRequestHeader("Authorization", "bearer " + token);
+                                },
                                 dataType: "text",
 
                                 success: function (data, textStatus, jqXHR) {
+                                    console.log(data);
                                     if (data === "true") {
                                         //alert(textStatus);
                                         $('#servicePanel-contents').removeClass("hide");
@@ -165,7 +171,7 @@
                                         DropDownTree = tree;
                                         ContextMenu = c;
                                         TagDialog = td;
-                                        tagDialog = new TagDialog("${sessionStorage.username}");
+                                        tagDialog = new TagDialog(userId);
 
                                         tagDialog.init();
                                         functionMap['Tag'] = tagDialog;
@@ -173,38 +179,32 @@
                                         contextMenu = new ContextMenu(d3, render.API, functionMap);//, tagDialog);
                                         contextMenu.init();
 
-                                            ModelConstructor = m;
-                                            model = new ModelConstructor();
-                                            model.init(1, drawGraph.bind(undefined, outputApi, model), null);    
-                                            
-                                            $("#tagDialog").draggable();
-                                            
-                                            window.onbeforeunload = function(){ 
-                                                persistVisualization();
-                                            };
-                                            
-                                            persistant_data = localStorage.getItem("viz-data");
-                          
+                                        ModelConstructor = m;
+                                        model = new ModelConstructor();
+                                        outputApi = new outputApi_(render.API, contextMenu, "viz");
+                                        model.init(1, drawGraph.bind(undefined, outputApi, model), null);    
+                                        console.log("I'm outputApu" + outputApi);
+                                        $("#tagDialog").draggable();
+
+                                        window.onbeforeunload = function(){ 
+                                            persistVisualization();
+                                        };
+
+                                        persistant_data = localStorage.getItem("viz-data");
+
                                        } else {
                                            displayError("Visualization Unavailable", d3_);
                                        }
                                    },
-
-                                        ModelConstructor = m;
-                                        model = new ModelConstructor();
-                                        model.init(1, drawGraph.bind(undefined, outputApi, model), null);
-
-                                        $("#tagDialog").draggable();
-                                    } else {
-                                        displayError("Visualization Unavailable", d3_);
-                                    }
-                                },
 
                                 error: function (jqXHR, textStatus, errorThrown) {
                                     console.log("Debugging: timeout at start..");
                                     displayError("Visualization Unavailable", d3_);
                                 }
                             });
+                            
+                            buildServicePanel(userId, token);
+
                         });
 
                 $("#loadingPanel").addClass("hide");
@@ -789,16 +789,47 @@
                             <th>Instance Status</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="servicePanel-body">
+                    <script>
+                        function buildServicePanel(userId, token) {
+                            var tbody = document.getElementById("servicePanel-body");
+                            var baseUrl = window.location.origin;
 
-                        <c:forEach var="instance" items="${serv.instanceStatusCheck()}">
-                            <tr class="service-instance-item" id="${instance[1]}">
-                                <td>${instance[3]}</td>        
-                                <td>${instance[0]}</td>
-                                <td>${instance[2]}</td>
-                            </tr>
-                        </c:forEach>
+                            var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + userId + '/instances';
+                            $.ajax({
+                                url: apiUrl,
+                                type: 'GET',
+                                beforeSend: function (xhr) {
+                                    xhr.setRequestHeader("Authorization", "bearer " + token);
+                                },
+                                success: function (result) {
+                                    for (i = 0; i < result.length; i++) {
+                                        var instance = result[i];
 
+                                        var row = document.createElement("tr");
+                                        row.setAttribute("id", instance[1]);
+                                        row.setAttribute("class", "service-instance-item");
+
+                                        var cell1_1 = document.createElement("td");
+                                        cell1_1.innerHTML = instance[3];
+                                        var cell1_2 = document.createElement("td");
+                                        cell1_2.innerHTML = instance[0];
+                                        var cell1_4 = document.createElement("td");
+                                        cell1_4.innerHTML = instance[2];
+                                        row.appendChild(cell1_1);
+                                        row.appendChild(cell1_2);
+                                        row.appendChild(cell1_4);
+                                        tbody.appendChild(row);
+                                    }
+                                },
+                                
+                                error: function (jqXHR, textStatus, errorThrown) {
+                                    console.log("No service instances.");
+                                    
+                                }
+                            });
+                        }
+                    </script>
                     </tbody>
                 </table>
             </div>
@@ -844,6 +875,9 @@
                     crossDomain: true,
                     type: "GET",
                     url: "/StackV-web/restapi/app/service/availibleitems/" + UUID,
+                    beforeSend: function (xhr) {
+                       xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                    },
                     dataType: "json",
 
                     success: function (data, textStatus, jqXHR) {

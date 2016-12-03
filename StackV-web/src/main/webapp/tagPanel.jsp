@@ -75,14 +75,21 @@
             var userName;
             
             this.init = function() {
-                userName = "${user.getUsername()}";
-                // only do this if the user is logged in 
-                if(userName !== "") {
+                var userName = sessionStorage.getItem("username");
+                var token = sessionStorage.getItem("token");
+                var loggedIn = sessionStorage.getItem("loggedIn");
+                var baseUrl = window.location.origin;
+
+                if(loggedIn) {
+
                     $.ajax({
-                        crossDomain: true,
+                       // crossDomain: true,
                         type: "GET",
-                        url: "/StackV-web/restapi/app/label/" + userName,
+                        url: baseUrl+"/StackV-web/restapi/app/label/" + userName,
                         dataType: "json",
+                        beforeSend: function (xhr) {
+                           xhr.setRequestHeader("Authorization", "bearer " + token);
+                        },
 
                         success: function(data,  textStatus,  jqXHR ) {
                             for (var i = 0, len = data.length; i < len; i++) {
@@ -92,8 +99,8 @@
                         },
 
                         error: function(jqXHR, textStatus, errorThrown ) {
-                           alert(errorThrown + "\n"+textStatus);
-                           alert("Error retrieving tags.");
+                           console.log(errorThrown + "\n"+textStatus);
+                           console.log("Error retrieving tags.");
                         }                  
                     });
                 }
@@ -168,10 +175,15 @@
             };
             
             this.deleteTag = function (identifier, htmlElement, list) {
+                    var token = sessionStorage.getItem("token");
+
                     $.ajax({
                         crossDomain: true,
                         type: "DELETE",
                         url: "/StackV-web/restapi/app/label/" + userName + "/delete/" + identifier,
+                        beforeSend: function (xhr) {
+                           xhr.setRequestHeader("Authorization", "bearer " + token);
+                        },
 
                         success: function(data,  textStatus,  jqXHR ) {
                             $("#tagPanel").popover({content: "Tag Deleted", placement: "top", trigger: "manual"});
@@ -196,11 +208,15 @@
             };
             $("#ClearAllTagsButton").click(function() {
                 //var tagList = document.querySelector("#labelList1");
+                var token = sessionStorage.getItem("token");
 
                 $.ajax({
                     crossDomain: true,
                     type: "DELETE",
                     url: "/StackV-web/restapi/app/label/" + userName + "/clearall",
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + token);
+                    },
 
                     success: function(data,  textStatus,  jqXHR ) {
                         $("#tagPanel").popover({content: "Tags Cleared", placement: "top", trigger: "manual"});
