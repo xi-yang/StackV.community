@@ -12,4 +12,6 @@
 *.DS_Store
 *.swp
 *.out
+/StackV-ejb/target/
+/StackV-web/target/
 /StackV-ear/target/

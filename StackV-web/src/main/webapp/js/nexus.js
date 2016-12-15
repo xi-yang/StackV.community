@@ -36,7 +36,7 @@ $(function () {
             loggedIn = authenticated ? true : false;
             sessionStorage.setItem("loggedIn", loggedIn);
             if (loggedIn) {
-                sessionStorage.setItem("username", keycloak.tokenParsed.given_name);
+                sessionStorage.setItem("username", keycloak.tokenParsed.preferred_username);
                 sessionStorage.setItem("subject", keycloak.tokenParsed.sub);
                 sessionStorage.setItem("token", keycloak.token);
             }
