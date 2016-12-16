@@ -75,7 +75,7 @@ public class serviceBeans {
      * 2 - plugin error.<br />
      * 3 - connection error.<br />
      */
-    public int driverInstall(Map<String, String> paraMap) {
+    public int driverInstall(Map<String, String> paraMap, String auth) {
         String driver = "<driverInstance><properties>";
         for (Map.Entry<String, String> entry : paraMap.entrySet()) {
             //if the key indicates what kind of driver it is, put the corresponding ejb path
@@ -121,13 +121,13 @@ public class serviceBeans {
         try {
             URL url = new URL(String.format("%s/driver", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            String result = this.executeHttpMethod(url, connection, "POST", driver, null);
+            String result = this.executeHttpMethod(url, connection, "POST", driver, auth);
             if (!result.equalsIgnoreCase("plug successfully")) //plugin error
             {
                 return 2;
             }
         } catch (Exception e) {
-            return 3;//connection error
+            System.out.println(">>DRIVER INSTALL ERROR");
         }
 
         return 0;
@@ -142,17 +142,17 @@ public class serviceBeans {
      * 2 - unplug error.<br />
      * 3 - connection error.<br />
      */
-    public int driverUninstall(String topoUri) {
+    public int driverUninstall(String topoUri, String auth) {
         try {
             URL url = new URL(String.format("%s/driver/%s", host, topoUri));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            String result = this.executeHttpMethod(url, connection, "DELETE", null, null);
+            String result = this.executeHttpMethod(url, connection, "DELETE", null, auth);
             if (!result.equalsIgnoreCase("unplug successfully")) //unplug error
             {
                 return 2;
             }
         } catch (Exception e) {
-            return 3;//connection error
+            System.out.println(">>DRIVER UNINSTALL ERROR");
         }
         return 0;
     }
@@ -1228,7 +1228,7 @@ public class serviceBeans {
                                                             + "    spa:type     \"JSON\";\n"
                                                             + "    spa:format    \"\"\"{\n"
                                                             + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "\",\n"
-                                                            + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%,\n"
+                                                            + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%\n"
                                                             + "       \"mac_address\": \"" + mac + "\""
                                                             + (ip == null ? "" : ",\n       \"ip_address\": \"" + ip + "\"");
 
@@ -1361,7 +1361,7 @@ public class serviceBeans {
                                                                     + "    spa:type     \"JSON\";\n"
                                                                     + "    spa:format    \"\"\"{\n"
                                                                     + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "\",\n"
-                                                                    + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn" + (String) gwJSON.get("name") + "%,\n"
+                                                                    + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn" + (String) gwJSON.get("name") + "%\n"
                                                                     + "       \"mac_address\": \"" + mac + "\""
                                                                     + (ip == null ? "" : ",\n       \"ip_address\": \"" + ip + "\"")
                                                                     + ((routeArr == null || routeArr.isEmpty()) ? "" : ",\n       \"routes\": " + routeArr.toString().replace("\\", ""))

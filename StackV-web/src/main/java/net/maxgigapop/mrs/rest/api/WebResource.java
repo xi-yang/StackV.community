@@ -290,11 +290,18 @@ public class WebResource {
         front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
-        PreparedStatement prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID, X.super_state, I.alias_name "
-                + "FROM service S, service_instance I, service_state X, acl A "
-                + "WHERE S.service_id = I.service_id AND I.service_state_id = X.service_state_id AND I.referenceUUID = A.object AND (A.subject = ? OR I.username = ?)");
-        prep.setString(1, username);
-        prep.setString(2, username);
+        PreparedStatement prep;
+        if (username.equals("admin")) {
+            prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID, X.super_state, I.alias_name "
+                    + "FROM service S, service_instance I, service_state X, acl A "
+                    + "WHERE S.service_id = I.service_id AND I.service_state_id = X.service_state_id");
+        } else {
+            prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID, X.super_state, I.alias_name "
+                    + "FROM service S, service_instance I, service_state X, acl A "
+                    + "WHERE S.service_id = I.service_id AND I.service_state_id = X.service_state_id AND I.referenceUUID = A.object AND (A.subject = ? OR I.username = ?)");
+            prep.setString(1, username);
+            prep.setString(2, username);
+        }
         ResultSet rs1 = prep.executeQuery();
         while (rs1.next()) {
             ArrayList<String> instanceList = new ArrayList<>();
@@ -347,9 +354,15 @@ public class WebResource {
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
-            PreparedStatement prep = front_conn.prepareStatement("SELECT DISTINCT W.name, W.description, W.editable, W.service_wizard_id "
-                    + "FROM service_wizard W WHERE W.username = ? OR W.username IS NULL");
-            prep.setString(1, username);
+            PreparedStatement prep;
+            if (username.equals("admin")) {
+                prep = front_conn.prepareStatement("SELECT DISTINCT W.name, W.description, W.editable, W.service_wizard_id "
+                        + "FROM service_wizard W");
+            } else {
+                prep = front_conn.prepareStatement("SELECT DISTINCT W.name, W.description, W.editable, W.service_wizard_id "
+                        + "FROM service_wizard W WHERE W.username = ? OR W.username IS NULL");
+                prep.setString(1, username);
+            }
             ResultSet rs1 = prep.executeQuery();
             while (rs1.next()) {
                 ArrayList<String> wizardList = new ArrayList<>();
@@ -518,6 +531,100 @@ public class WebResource {
             Logger.getLogger(WebResource.class
                     .getName()).log(Level.SEVERE, null, e);
         }
+    }
+
+    @GET
+    @Path("/details/{uuid}/instance")
+    @Produces("application/json")
+    public ArrayList<String> loadInstanceDetails(@PathParam("uuid") String uuid) throws SQLException {
+        ArrayList<String> retList = new ArrayList<>();
+
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        PreparedStatement prep;
+        prep = front_conn.prepareStatement("SELECT S.name, I.creation_time, I.alias_name, X.super_state, V.verification_state FROM service S, service_instance I, service_state X, service_verification V "
+                + "WHERE I.referenceUUID = ? AND I.service_instance_id = V.service_instance_id AND S.service_id = I.service_id AND X.service_state_id = I.service_state_id");
+        prep.setString(1, uuid);
+
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {
+            retList.add(rs1.getString("verification_state"));
+            retList.add(rs1.getString("name"));
+            retList.add(rs1.getString("alias_name"));
+            retList.add(rs1.getString("creation_time"));
+            retList.add(rs1.getString("super_state"));
+        }
+
+        return retList;
+    }
+
+    @GET
+    @Path("/details/{uuid}/delta")
+    @Produces("application/json")
+    public ArrayList<ArrayList<String>> loadInstanceDelta(@PathParam("uuid") String uuid) throws SQLException {
+        ArrayList<ArrayList<String>> retList = new ArrayList<>();
+
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        PreparedStatement prep;
+        prep = front_conn.prepareStatement("SELECT D.service_delta_id, D.delta, D.type, S.super_state FROM service_delta D, service_instance I, service_state S, service_history H "
+                + "WHERE I.referenceUUID = ? AND I.service_instance_id = D.service_instance_id AND D.service_history_id = H.service_history_id AND D.service_instance_id = H.service_instance_id AND H.service_state_id = S.service_state_id");
+        prep.setString(1, uuid);
+
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {
+            ArrayList<String> deltaList = new ArrayList<>();
+            deltaList.add(rs1.getString("type"));
+            deltaList.add(rs1.getString("service_delta_id"));
+            deltaList.add(rs1.getString("super_state"));
+            deltaList.add(rs1.getString("delta"));
+            retList.add(deltaList);
+        }
+
+        return retList;
+    }
+
+    @GET
+    @Path("/details/{uuid}/verification")
+    @Produces("application/json")
+    public ArrayList<String> loadInstanceVerification(@PathParam("uuid") String uuid) throws SQLException {
+        ArrayList<String> retList = new ArrayList<>();
+
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        PreparedStatement prep;
+        prep = front_conn.prepareStatement("SELECT V.service_instance_id, V.verification_run, V.creation_time, V.addition, V.reduction, V.verified_reduction, V.verified_addition, V.unverified_reduction, V.unverified_addition "
+                + "FROM service_verification V, service_instance I WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
+        prep.setString(1, uuid);
+
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {
+            retList.add(rs1.getString("verification_run"));
+            retList.add(rs1.getString("creation_time"));
+            retList.add(rs1.getString("addition"));
+            retList.add(rs1.getString("reduction"));
+            retList.add(rs1.getString("service_instance_id"));
+        }
+
+        return retList;
     }
 
     @GET
@@ -702,8 +809,9 @@ public class WebResource {
 
             // Verify creation.
             verify(refUuid, auth);
-            if (serviceType.equals("omm"))
+            if (serviceType.equals("omm")) {
                 setSuperState(refUuid, 3);
+            }
 
             long endTime = System.currentTimeMillis();
             System.out.println("Service API End::Name="
@@ -942,9 +1050,7 @@ public class WebResource {
             return null;
         }
     }
-    */
-    
-    
+     */
     // Operation Methods -------------------------------------------------------
     /**
      * Deletes a service instance.
@@ -1285,23 +1391,23 @@ public class WebResource {
 
         return paraMap;
     }
-    
-    private HashMap<String, String>  parseOperatationalModifications(JSONObject dataJSON, String refUuid) {
+
+    private HashMap<String, String> parseOperatationalModifications(JSONObject dataJSON, String refUuid) {
         HashMap<String, String> paraMap = new HashMap<>();
         paraMap.put("instanceUUID", refUuid);
-        
+
         // { "modification" : "params", .. }
         Iterator<?> keys = dataJSON.keySet().iterator();
-        while( keys.hasNext() ) {
-            String key = (String)keys.next();
+        while (keys.hasNext()) {
+            String key = (String) keys.next();
             //if ( dataJSON.get(key) instanceof JSONObject ) {
-                paraMap.put(key, dataJSON.get(key).toString());
+            paraMap.put(key, dataJSON.get(key).toString());
             //}
         }
-        
+
         return paraMap;
     }
-     
+
     // Utility Methods ---------------------------------------------------------
     private void setSuperState(String refUuid, int superStateId) throws SQLException {
         Connection front_conn;
@@ -1535,20 +1641,20 @@ public class WebResource {
         } catch (SQLException ex) {
             Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
         }
-        throw new EJBException("getServiceType failed to find service type for service uuid="+refUuid);
+        throw new EJBException("getServiceType failed to find service type for service uuid=" + refUuid);
     }
-    
+
     private String resolveManifest(String refUuid, String jsonTemplate, String auth) {
         try {
             URL url = new URL(String.format("%s/service/manifest/%s", host, refUuid));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            String data = String.format( "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
-                + "<serviceManifest>\n<serviceUUID/>\n<jsonTemplate>\n%s</jsonTemplate>\n</serviceManifest>",
-                jsonTemplate);
+            String data = String.format("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+                    + "<serviceManifest>\n<serviceUUID/>\n<jsonTemplate>\n%s</jsonTemplate>\n</serviceManifest>",
+                    jsonTemplate);
             String result = servBean.executeHttpMethod(url, conn, "POST", data, auth);
             return result;
         } catch (Exception ex) {
-            throw new EJBException("resolveManifest cannot fetch manifest for service uuid="+refUuid, ex);
+            throw new EJBException("resolveManifest cannot fetch manifest for service uuid=" + refUuid, ex);
         }
     }
 
@@ -1589,15 +1695,15 @@ public class WebResource {
                 manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAWS, auth);
                 break;
             default:
-                throw new EJBException("cannot get manifest for service type="+serviceType);
+                throw new EJBException("cannot get manifest for service type=" + serviceType);
         }
         org.json.JSONObject obj = new org.json.JSONObject(manifest);
         if (obj == null || !obj.has("jsonTemplate")) {
-            throw new EJBException("getManifest cannot get manifest for service uuid="+svcUUID);
+            throw new EJBException("getManifest cannot get manifest for service uuid=" + svcUUID);
         }
         return obj.getString("jsonTemplate");
     }
-    
+
     @GET
     @Path("/manifest/{svcUUID}")
     @Produces("application/xml")

@@ -19,8 +19,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
  * IN THE WORK.
- !-->
-
+!-->
 
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page errorPage = "/StackV-web/errorPage.jsp" %>
@@ -37,8 +36,8 @@
         <title>Graphical View</title>
         <script src="/StackV-web/js/keycloak.js"></script>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
-        <script src="/StackV-web/js/bootstrap.js"></script>
-        <script src="/StackV-web/js/nexus.js"></script>
+        <script src="/StackV-web/js/bootstrap.js"></script> 
+       <script src="/StackV-web/js/nexus.js"></script>
         <script src="/StackV-web/js/jquery-ui.min.js"></script>
 
         <link rel="stylesheet" type="text/css" href="/StackV-web/css/graphTest.css">
