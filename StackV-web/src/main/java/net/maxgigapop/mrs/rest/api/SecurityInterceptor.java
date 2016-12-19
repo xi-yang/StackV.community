@@ -49,7 +49,9 @@ public class SecurityInterceptor implements PreProcessInterceptor {
         if ((request.getUri().getPath()).startsWith("/app/")) {
             // Ban list
             List<String> supplierNames = Arrays.asList("loadWizard", "loadEditor", "loadInstances",
-                    "loadObjectACL", "loadSubjectACL", "subStatus", "getProfile", "executeProfile", "deleteProfile");
+                    "loadInstanceDetails", "loadInstanceDelta", "loadInstanceVerification", 
+                    "loadObjectACL", "loadSubjectACL", "subStatus", "getProfile", "getLabels", 
+                    "executeProfile", "deleteProfile");
             String methodName = method.getMethod().getName();
             if (supplierNames.contains(methodName)) {
                 return null;
