@@ -1,7 +1,0 @@
-Resource icons from Cisco Network Topology Icons
-"Cisco icons are globally recognized and generally accepted as standard for network icon topologies. You may use them freely, but you may not alter them"
-http://www.cisco.com/web/about/ac50/ac47/2.html
-
-Loading indicators from ajaxload.info
-"Generated gifs are totally free for use"
-http://ajaxload.info/
