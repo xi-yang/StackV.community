@@ -235,6 +235,15 @@ define(["local/stackv/utils"], function (utils) {
         function toggleMenuOn() {
           if ( menuState !== 1 ) {
             menuState = 1;
+            var deleteItem = $("#context-menu").find("[data-action=\"Delete\"]").closest("li");
+            
+            if (renderApi.multipleHighlighted() ) {
+                deleteItem.addClass("hide");
+            } else {
+                if (deleteItem.hasClass("hide")) {
+                    deleteItem.removeClass("hide");
+                }
+            }
             menu.classList.add( contextMenuActive );
           }
         }
@@ -335,10 +344,11 @@ define(["local/stackv/utils"], function (utils) {
                                 //positionDisplayPanel("displayPanel", event);
                                 func(that.selectedObject, getRenderedElementParentDiv(that.selectedObject), event); 
                                 break;
+                            case "Delete": break;
                         }
                     } else {
                         switch (funcName) {
-                            case "omm":  func.add(); break;
+                            case "AddToTrashcan": func.addItems(renderApi.getTrashcan()); break;
                         }
                     }
                 } else {

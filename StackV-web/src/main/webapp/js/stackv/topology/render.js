@@ -1480,7 +1480,7 @@ define([
         API["setHighlights"] = setHighlights;
         API["removeHighlights"] = removeHighlights;
         API["multipleHighlighted"] = function () {
-            return highlightedNodesMap["trashcan"].length > 0;
+            return highlightedNodesMap["trashcan"] !== undefined && highlightedNodesMap["trashcan"].length > 0;
         };
         API["getTrashcan"] = function () {
             return highlightedNodesMap["trashcan"];
