@@ -34,6 +34,7 @@ import com.amazonaws.services.directconnect.model.ConfirmPrivateVirtualInterface
 import com.amazonaws.services.directconnect.model.DeleteVirtualInterfaceRequest;
 import com.amazonaws.services.directconnect.model.DeleteVirtualInterfaceResult;
 import com.amazonaws.services.ec2.AmazonEC2Client;
+import com.amazonaws.services.ec2.AmazonEC2AsyncClient;
 import com.amazonaws.services.ec2.model.*;
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
@@ -420,7 +421,7 @@ public class AwsPush {
                         break;
                     } catch (AmazonServiceException | NullPointerException e) {
                         try {
-                            Thread.sleep(30000L); // sleep 30 secs
+                            Thread.sleep(60000L); // sleep 60 secs
                         } catch (InterruptedException ex) {
                             ;
                         }

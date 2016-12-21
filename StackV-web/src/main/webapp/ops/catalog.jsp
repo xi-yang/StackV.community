@@ -22,16 +22,12 @@
         <link rel="stylesheet" href="/StackV-web/css/style.css">
         <link rel="stylesheet" href="/StackV-web/css/driver.css">
     </head>
-
-    <sql:setDataSource var="front_conn" driver="com.mysql.jdbc.Driver"
-                       url="jdbc:mysql://localhost:3306/frontend"
-                       user="front_view"  password="frontuser"/>
-
+    
     <body>        
         <!-- NAV BAR -->
         <div id="nav">
         </div>
-        <!-- SIDE BAR -->
+        <!-- SIDE BAR -->   
         <div id="sidebar">            
         </div>
         <!-- MAIN PANEL -->
@@ -45,7 +41,7 @@
                             <th>Service Type</th>
                             <th>Instance UUID</th>
                             <th><div style="float: left;">Instance Status</div>                           
-                                <button class="button-header" id="refresh-button" onclick="reloadTracker()">Manually Refresh Now</button>
+                                <button class="button-header" id="refresh-button" onclick="reloadCatalog()">Manually Refresh Now</button>
                                 <div id="refresh-panel">
                                     Auto-Refresh Interval
                                     <select id="refresh-timer" onchange="timerChange(this)">
