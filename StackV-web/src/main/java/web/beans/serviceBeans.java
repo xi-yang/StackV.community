@@ -582,6 +582,32 @@ public class serviceBeans {
                     //0:vm name.
                     //1:subnet #
                     //2:types: image, instance, key pair, security group
+                    //4:eth0
+                    String addressString = null;
+                    if (!vmPara[4].equals(" ")) {
+                        try {
+                            JSONArray interfaceArr = (JSONArray) jsonParser.parse(vmPara[4]);
+                            for (Object obj : interfaceArr) {
+                                JSONObject interfaceJSON = (JSONObject) obj;
+                                String typeString = (String) interfaceJSON.get("type");
+                                if (typeString.equalsIgnoreCase("Ethernet")) {
+                                    addressString = (String) interfaceJSON.get("address");
+                                    addressString = addressString.contains("ipv") ? addressString.substring(addressString.indexOf("ipv") + 5) : addressString;
+                                    addressString = addressString.contains("/") ? addressString.substring(0, addressString.indexOf("/")) : addressString;
+                                }
+                            }
+                            if (addressString != null) {
+                                addressString = ";\n    mrs:hasNetworkAddress   "
+                                        + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0:floating&gt;.\n\n"
+                                        + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0:floating&gt;\n"
+                                        + "    a            mrs:NetworkAddress;\n    mrs:type     \"floating-ip\";\n"
+                                        + "    mrs:value     \"" + addressString + "\" .\n\n";
+
+                            }
+                        } catch (Exception ex) {
+                            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }
                     svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n"
                             + "    a                         nml:Node ;\n"
                             + (vmPara[2].equals(" ") ? "" : "    mrs:type       \"" + vmPara[2] + "\";\n")
@@ -589,7 +615,8 @@ public class serviceBeans {
                             + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;.\n\n"
                             + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt;\n"
                             + "    a            nml:BidirectionalPort;\n"
-                            + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;.\n\n"
+                            + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;"
+                            + ((addressString == null) ? " .\n\n" : addressString)
                             + "&lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;\n"
                             + "    a            spa:PolicyAction ;\n"
                             + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
@@ -1078,8 +1105,34 @@ public class serviceBeans {
                                 + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;.\n\n"
                                 + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0&gt;\n"
                                 + "    a            nml:BidirectionalPort;\n"
-                                + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;.\n\n"
-                                + "&lt;x-policy-annotation:action:create-" + vmName + "&gt;\n"
+                                + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;";
+                        if (!vmJson.containsKey("interfaces")) {
+                            svcDelta += ".\n\n";
+                        } else {
+                            String addressString = null;
+                            JSONArray interArr = (JSONArray) vmJson.get("interfaces");
+                            for (Object interObj : interArr) {
+                                JSONObject interJson = (JSONObject) interObj;
+                                String typeString = (String) interJson.get("type");
+                                if (typeString.equalsIgnoreCase("Ethernet")) {
+                                    addressString = (String) interJson.get("address");
+                                    addressString = addressString.contains("ipv") ? addressString.substring(addressString.indexOf("ipv") + 5) : addressString;
+                                    addressString = addressString.contains("/") ? addressString.substring(0, addressString.indexOf("/")) : addressString;
+                                    break;
+                                }
+                            }
+                            if (addressString != null) {
+                                svcDelta += ";\n    mrs:hasNetworkAddress          "
+                                        + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0:floatingip&gt; .\n\n"
+                                        + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0:floatingip&gt;\n"
+                                        + "    a            mrs:NetworkAddress;\n"
+                                        + "    mrs:type     \"floating-ip\";\n"
+                                        + "    mrs:value     \"" + addressString + "\".\n\n";
+                            } else {
+                                svcDelta += ".\n\n";
+                            }
+                        }
+                        svcDelta += "&lt;x-policy-annotation:action:create-" + vmName + "&gt;\n"
                                 + "    a            spa:PolicyAction ;\n"
                                 + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
                                 + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vcnName + "&gt; ;\n"

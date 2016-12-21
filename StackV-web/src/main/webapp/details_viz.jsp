@@ -226,11 +226,16 @@
             "local/stackv/topology/DropDownTree",
             "local/stackv/topology/ContextMenu"],
                 function (m, l, r, d3_, utils_, tree, c) {
+                    var token = sessionStorage.getItem("token");
 
                     $.ajax({
                         crossDomain: true,
                         type: "GET",
                         url: "/StackV-web/restapi/service/ready",
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader("Authorization", "bearer " + token);
+                        },
+
                         dataType: "text",
 
                         success: function (data, textStatus, jqXHR) {
@@ -482,10 +487,15 @@
 
     function renderModels() {
         var UUID = location.search.split("?uuid=")[1];
+        var token = sessionStorage.getItem("token");
         $.ajax({
             crossDomain: true,
             type: "GET",
             url: "/StackV-web/restapi/service/delta/" + UUID,
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + token);
+            },
+
             dataType: "json",
 
             success: function (data, textStatus, jqXHR) {
@@ -581,6 +591,10 @@
             crossDomain: true,
             type: "GET",
             url: "/StackV-web/restapi/app/service/lastverify/" + UUID,
+            beforeSend: function (xhr) {
+               xhr.setRequestHeader("Authorization", "bearer " + token);
+            },
+
             dataType: "json",
 
             success: function (data, textStatus, jqXHR) {
