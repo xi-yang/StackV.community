@@ -620,6 +620,9 @@ function checkInstance(uuid) {
     $.ajax({
         url: apiUrl,
         type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result) {
             var statusElement = document.getElementById("instance-status");
             statusElement.innerHTML = result;
@@ -632,6 +635,9 @@ function propagateInstance(uuid) {
     $.ajax({
         url: apiUrl,
         type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result) {
             window.location.reload(true);
         }
@@ -643,6 +649,9 @@ function commitInstance(uuid) {
     $.ajax({
         url: apiUrl,
         type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result) {
             window.location.reload(true);
         }
@@ -654,6 +663,9 @@ function revertInstance(uuid) {
     $.ajax({
         url: apiUrl,
         type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result) {
             window.location.reload(true);
         }
@@ -666,6 +678,9 @@ function cancelInstance(uuid) {
     $.ajax({
         url: apiUrl,
         type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result) {
             window.location.reload(true);
         }
@@ -677,6 +692,9 @@ function forceCancelInstance(uuid) {
     $.ajax({
         url: apiUrl,
         type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result) {
             window.location.reload(true);
         }
@@ -689,6 +707,9 @@ function reinstateInstance(uuid) {
     $.ajax({
         url: apiUrl,
         type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result) {
             window.location.reload(true);
         }
@@ -700,6 +721,9 @@ function forceReinstateInstance(uuid) {
     $.ajax({
         url: apiUrl,
         type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result) {
             window.location.reload(true);
         }
@@ -712,6 +736,9 @@ function forceRetryInstance(uuid) {
     $.ajax({
         url: apiUrl,
         type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result) {
             window.location.reload(true);
         }
@@ -724,6 +751,9 @@ function modifyInstance(uuid) {
     $.ajax({
         url: apiUrl,
         type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result) {
             window.location.reload(true);
         }
@@ -735,6 +765,9 @@ function forceModifyInstance(uuid) {
     $.ajax({
         url: apiUrl,
         type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result) {
             window.location.reload(true);
         }
@@ -747,6 +780,9 @@ function verifyInstance(uuid) {
     $.ajax({
         url: apiUrl,
         type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result) {
             window.location.reload(true);
         }
@@ -759,6 +795,9 @@ function deleteInstance(uuid) {
     $.ajax({
         url: apiUrl,
         type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result) {
             console.log("DELETION SUCCESSFUL");
             window.location.replace('/StackV-web/ops/catalog.jsp');
@@ -1492,16 +1531,16 @@ function subloadInstance() {
             row.className = "button-row";
             cell = document.createElement("td");
             cell.innerHTML = '<div class="service-instance-panel">'
-                    + '<button class="hide" id="instance-reinstate" onClick="reinstateInstance(' + uuid + ')">Reinstate</button>'
-                    + '<button class="hide" id="instance-freinstate" onClick="forceReinstateInstance(' + uuid + ')">Force Reinstate</button>'
-                    + '<button class="hide" id="instance-cancel" onClick="cancelInstance(' + uuid + ')">Cancel</button>'
-                    + '<button class="hide" id="instance-fcancel" onClick="forceCancelInstance(' + uuid + ')">Force Cancel</button>'
-                    + '<button class="hide" id="instance-fretry" onClick="forceRetryInstance(' + uuid + ')">Force Retry</button>'
-                    + '<button class="hide" id="instance-modify" onClick="modifyInstance(' + uuid + ')">Modify</button>'
-                    + '<button class="hide" id="instance-fmodify" onClick="forceModifyInstance(' + uuid + ')">Force Modify</button>'
-                    + '<button class="hide" id="instance-reverify" onClick="verifyInstance(' + uuid + ')">Re-Verify</button>'
-                    + '<button class="hide" id="instance-delete" onClick="deleteInstance(' + uuid + ')">Delete</button>'
-                    + '<button class="hide" id="instance-fdelete" onClick="deleteInstance(' + uuid + ')">Force Delete</button>'
+                    + '<button class="hide instance-command" id="reinstate">Reinstate</button>'
+                    + '<button class="hide instance-command" id="force_reinstate">Force Reinstate</button>'
+                    + '<button class="hide instance-command" id="cancel">Cancel</button>'
+                    + '<button class="hide instance-command" id="force_cancel">Force Cancel</button>'
+                    + '<button class="hide instance-command" id="force_retry">Force Retry</button>'
+                    + '<button class="hide instance-command" id="modify">Modify</button>'
+                    + '<button class="hide instance-command" id="force_modify">Force Modify</button>'
+                    + '<button class="hide instance-command" id="reverify">Re-Verify</button>'
+                    + '<button class="hide instance-command" id="delete">Delete</button>'
+                    + '<button class="hide instance-command" id="force_delete">Force Delete</button>'
                     + '</div>';
             cell.colSpan = "2";
             row.appendChild(cell);
@@ -1512,6 +1551,26 @@ function subloadInstance() {
 
             $(".delta-table-header").click(function () {
                 $("#body-" + this.id).toggleClass("hide");
+            });
+
+            $(".instance-command").click(function () {
+                var command = this.id;
+                var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/' + command;
+                $.ajax({
+                    url: apiUrl,
+                    type: 'PUT',
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                    },
+                    success: function () {
+                        if (command === "delete" || command === "force_delete") {
+                            enableLoading();
+                            window.document.location = "/StackV-web/ops/catalog.jsp";
+                        } else {
+                            reloadDetails();
+                        }
+                    }
+                });
             });
         }
     });
@@ -1717,20 +1776,20 @@ function subloadACL() {
         },
         success: function (verification) {
             /*  acl mapping:
-            */
+             */
             var panel = document.getElementById("details-panel");
 
             var table = document.createElement("table");
             table.className = "management-table hide acl-table";
 
             var thead = document.createElement("thead");
-            thead.className = "delta-table-header";            
+            thead.className = "delta-table-header";
             var row = document.createElement("tr");
             var head = document.createElement("th");
             row.appendChild(head);
             head = document.createElement("th");
             head.innerHTML = "Access Control";
-            row.appendChild(head);            
+            row.appendChild(head);
 
             thead.appendChild(row);
             table.appendChild(thead);
@@ -1742,13 +1801,13 @@ function subloadACL() {
             row = document.createElement("tr");
             var cell = document.createElement("td");
             cell.innerHTML = '<select id="acl-select" size="5" name="acl-select" multiple></select>';
-            row.appendChild(cell);           
+            row.appendChild(cell);
             tbody.appendChild(row);
 
-            row = document.createElement("tr");           
+            row = document.createElement("tr");
             cell = document.createElement("td");
             cell.innerHTML = '<label>Give user access: <input type="text" name="acl-input" /></label>';
-            row.appendChild(cell);            
+            row.appendChild(cell);
             tbody.appendChild(row);
 
             table.appendChild(tbody);
@@ -1908,10 +1967,10 @@ function buttonModerate() {
     if (superState === 'Create') {
         // State 0 - Stuck 
         if (verificationState === "" || verificationState === "null") {
-            $("#instance-fdelete").toggleClass("hide");
-            $("#instance-fcancel").toggleClass("hide");
-            $("#instance-fretry").toggleClass("hide");
-            $("#instance-reverify").toggleClass("hide");
+            $("#force_delete").toggleClass("hide");
+            $("#force_cancel").toggleClass("hide");
+            $("#force_retry").toggleClass("hide");
+            $("#reverify").toggleClass("hide");
         }
         // State 1 - Ready & Verifying
         if (subState === 'READY' && verificationState === '0') {
@@ -1919,13 +1978,13 @@ function buttonModerate() {
         }
         // State 2 - Ready & Verified
         else if (subState === 'READY' && verificationState === '1') {
-            $("#instance-cancel").toggleClass("hide");
-            $("#instance-modify").toggleClass("hide");
+            $("#cancel").toggleClass("hide");
+            $("#modify").toggleClass("hide");
         }
         // State 3 - Ready & Unverified
         else if (subState === 'READY' && verificationState === '-1') {
-            $("#instance-fcancel").toggleClass("hide");
-            $("#instance-reverify").toggleClass("hide");
+            $("#force_cancel").toggleClass("hide");
+            $("#reverify").toggleClass("hide");
         }
         // State 4 - Failed & Verifying
         else if (subState === 'FAILED' && verificationState === '0') {
@@ -1933,21 +1992,21 @@ function buttonModerate() {
         }
         // State 5 - Failed & Verified
         else if (subState === 'FAILED' && verificationState === '1') {
-            $("#instance-fcancel").toggleClass("hide");
-            $("#instance-fmodify").toggleClass("hide");
+            $("#force_cancel").toggleClass("hide");
+            $("#force_modify").toggleClass("hide");
         }
         // State 6 - Failed & Unverified
         else if (subState === 'FAILED' && verificationState === '-1') {
-            $("#instance-fcancel").toggleClass("hide");
-            $("#instance-fretry").toggleClass("hide");
-            $("#instance-reverify").toggleClass("hide");
+            $("#force_cancel").toggleClass("hide");
+            $("#force_retry").toggleClass("hide");
+            $("#reverify").toggleClass("hide");
         }
     } else if (superState === 'Cancel') {
         // State 0 - Stuck 
         if (verificationState === "" || verificationState === "null") {
-            $("#instance-fdelete").toggleClass("hide");
-            $("#instance-fretry").toggleClass("hide");
-            $("#instance-reverify").toggleClass("hide");
+            $("#force_delete").toggleClass("hide");
+            $("#force_retry").toggleClass("hide");
+            $("#reverify").toggleClass("hide");
         }
         // State 1 - Ready & Verifying
         if (subState === 'READY' && verificationState === '0') {
@@ -1955,15 +2014,15 @@ function buttonModerate() {
         }
         // State 2 - Ready & Verified
         else if (subState === 'READY' && verificationState === '1') {
-            $("#instance-reinstate").toggleClass("hide");
-            $("#instance-modify").toggleClass("hide");
-            $("#instance-delete").toggleClass("hide");
+            $("#reinstate").toggleClass("hide");
+            $("#modify").toggleClass("hide");
+            $("#delete").toggleClass("hide");
         }
         // State 3 - Ready & Unverified
         else if (subState === 'READY' && verificationState === '-1') {
-            $("#instance-fdelete").toggleClass("hide");
-            $("#instance-freinstate").toggleClass("hide");
-            $("#instance-reverify").toggleClass("hide");
+            $("#force_delete").toggleClass("hide");
+            $("#force_reinstate").toggleClass("hide");
+            $("#reverify").toggleClass("hide");
         }
         // State 4 - Failed & Verifying
         else if (subState === 'FAILED' && verificationState === '0') {
@@ -1971,23 +2030,23 @@ function buttonModerate() {
         }
         // State 5 - Failed & Verified
         else if (subState === 'FAILED' && verificationState === '1') {
-            $("#instance-freinstate").toggleClass("hide");
-            $("#instance-fmodify").toggleClass("hide");
-            $("#instance-delete").toggleClass("hide");
+            $("#force_reinstate").toggleClass("hide");
+            $("#force_modify").toggleClass("hide");
+            $("#delete").toggleClass("hide");
         }
         // State 6 - Failed & Unverified
         else if (subState === 'FAILED' && verificationState === '-1') {
-            $("#instance-fdelete").toggleClass("hide");
-            $("#instance-freinstate").toggleClass("hide");
-            $("#instance-fretry").toggleClass("hide");
-            $("#instance-reverify").toggleClass("hide");
+            $("#force_delete").toggleClass("hide");
+            $("#force_reinstate").toggleClass("hide");
+            $("#force_retry").toggleClass("hide");
+            $("#reverify").toggleClass("hide");
         }
     } else if (superState === 'Reinstate') {
         // State 0 - Stuck 
         if (verificationState === "" || verificationState === "null") {
-            $("#instance-fdelete").toggleClass("hide");
-            $("#instance-fretry").toggleClass("hide");
-            $("#instance-reverify").toggleClass("hide");
+            $("#force_delete").toggleClass("hide");
+            $("#force_retry").toggleClass("hide");
+            $("#reverify").toggleClass("hide");
         }
         // State 1 - Ready & Verifying
         if (subState === 'READY' && verificationState === '0') {
@@ -1995,13 +2054,13 @@ function buttonModerate() {
         }
         // State 2 - Ready & Verified
         else if (subState === 'READY' && verificationState === '1') {
-            $("#instance-cancel").toggleClass("hide");
-            $("#instance-modify").toggleClass("hide");
+            $("#cancel").toggleClass("hide");
+            $("#modify").toggleClass("hide");
         }
         // State 3 - Ready & Unverified
         else if (subState === 'READY' && verificationState === '-1') {
-            $("#instance-fcancel").toggleClass("hide");
-            $("#instance-reverify").toggleClass("hide");
+            $("#force_cancel").toggleClass("hide");
+            $("#reverify").toggleClass("hide");
         }
         // State 4 - Failed & Verifying
         else if (subState === 'FAILED' && verificationState === '0') {
@@ -2009,14 +2068,14 @@ function buttonModerate() {
         }
         // State 5 - Failed & Verified
         else if (subState === 'FAILED' && verificationState === '1') {
-            $("#instance-fcancel").toggleClass("hide");
-            $("#instance-fmodify").toggleClass("hide");
+            $("#force_cancel").toggleClass("hide");
+            $("#force_modify").toggleClass("hide");
         }
         // State 6 - Failed & Unverified
         else if (subState === 'FAILED' && verificationState === '-1') {
-            $("#instance-fcancel").toggleClass("hide");
-            $("#instance-fretry").toggleClass("hide");
-            $("#instance-reverify").toggleClass("hide");
+            $("#force_cancel").toggleClass("hide");
+            $("#force_retry").toggleClass("hide");
+            $("#reverify").toggleClass("hide");
         }
     }
 }

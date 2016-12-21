@@ -628,6 +628,30 @@ public class WebResource {
     }
 
     @GET
+    @Path("/details/{uuid}/acl")
+    @Produces("application/json")
+    public ArrayList<String> loadInstanceACL(@PathParam("uuid") String uuid) throws SQLException {
+        ArrayList<String> retList = new ArrayList<>();
+
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        PreparedStatement prep;
+        prep = front_conn.prepareStatement("SELECT * FROM `acl`");
+
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {
+        }
+
+        return retList;
+    }
+
+    @GET
     @Path("/service/{siUUID}/status")
     public String checkStatus(@PathParam("siUUID") String svcInstanceUUID) {
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
@@ -791,6 +815,12 @@ public class WebResource {
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_verification` "
                     + "(`service_instance_id`) VALUES (?)");
             prep.setInt(1, instanceID);
+            prep.executeUpdate();
+
+            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`acl` (`subject`, `is_group`, `object`) "
+                    + "VALUES (?, '0', ?)");
+            prep.setString(1, username);
+            prep.setString(1, refUuid);
             prep.executeUpdate();
 
             // Execute service creation.
