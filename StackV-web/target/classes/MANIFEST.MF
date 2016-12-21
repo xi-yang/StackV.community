@@ -1,1 +1,0 @@
-Dependencies: net.maxgigapop.mrs.bean, net.maxgigapop.mrs.system
