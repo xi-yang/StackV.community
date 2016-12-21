@@ -1,0 +1,5 @@
+{
+  "user": "admin",
+  "serviceType": "netcreate",
+  "serviceData": "drivertype#aws,topoUri#urn:ogf:network:aws.amazon.com:aws-cloud,netType#internal,netCidr#10.1.0.0/16,subnet1#name+ &cidr+10.1.0.0/24&routesto+206.196.0.0/16!nextHop+internet\r\nfrom+vpn!to+0.0.0.0/0!nextHop+vpn\r\nto+72.24.24.0/24!nextHop+vpn,subnet2#name+ &cidr+10.1.1.0/24!netRoutes#to+0.0.0.0/0!nextHop+internet"
+}

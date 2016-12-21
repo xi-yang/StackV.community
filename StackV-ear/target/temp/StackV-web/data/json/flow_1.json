@@ -1,0 +1,12 @@
+{
+    "user": "admin",
+    "type": "flow",
+    "data": {
+        "flow":
+                {
+                    "name": "flow1",
+                    "src": "urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000005:port-s5-eth1",
+                    "des": "urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000002:port-s2-eth1"
+                }
+    }
+}

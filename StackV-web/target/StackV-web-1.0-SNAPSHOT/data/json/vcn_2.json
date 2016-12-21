@@ -1,0 +1,89 @@
+{
+    "alias": "VCN Test",
+    "user": "admin",
+    "type": "netcreate",
+    "data": {
+        "virtual_clouds": [
+            {
+                "type": "internal",
+                "parent": "urn:ogf:network:aws.amazon.com:aws-cloud",
+                "name": "vpc1",
+                "cidr": "10.0.0.0/16",
+                "subnets": [
+                    {
+                        "name": "subnet1",
+                        "cidr": "10.1.0.0/24",
+                        "virtual_machines": [
+                            {
+                                "name": "test_with_vm_types_1",                                
+                                "type": "t2.micro"
+                            }
+                        ],
+                        "routes": [
+                            {
+                                "to": {
+                                    "value": "0.0.0.0/0"
+                                },
+                                "from": {
+                                    "value": "vpn"
+                                },
+                                "next_hop": {
+                                    "value": "vpn"
+                                }
+                            },
+                            {
+                                "to": {
+                                    "value": "72.24.24.0/24"
+                                },
+                                "next_hop": {
+                                    "value": "vpn"
+                                }
+                            },
+                            {
+                                "to": {
+                                    "value": "206.196.0.0/16"
+                                },
+                                "next_hop": {
+                                    "value": "internet"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "name": "subnet2",
+                        "cidr": "10.1.1.0/24",
+                        "virtual_machines": [
+                            {
+                                "name": "test_with_vm_types_2",
+                                "type": "t2.small"
+                            }
+                        ]                    
+                    }
+                ],
+                "gateways": [
+                    {
+                        "to": [
+                            {
+                                "value": "urn:publicid:IDN+dragon.maxgigapop.net+interface+CLPK:1-1-2:*?vlan=3023",
+                                "type": "stitch_port"
+                            }
+                        ],
+                        "name": "aws_dx1",
+                        "type": "aws_direct_connect"
+                    }
+                ],
+                "routes": [
+                    {
+                        "to": {
+                            "value": "0.0.0.0/0",
+                            "type": "ipv4-prefix"
+                        },
+                        "next_hop": {
+                            "value": "internet"
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}

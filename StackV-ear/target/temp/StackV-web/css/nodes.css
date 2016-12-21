@@ -1,0 +1,22 @@
+/* Create the animation blocks */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.node {
+    border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    background-image: -moz-radial-gradient(45px 45px 45deg, circle cover, yellow 0%, orange 100%, red 95%);
+    background-image: -webkit-radial-gradient(45px 45px, circle cover, yellow, orange);
+    background-image: radial-gradient(45px 45px 45deg, circle cover, yellow 0%, orange 100%, red 95%);
+    display: inline-block;
+}
+
+.node:hover {
+    animation-name: spin; 
+    animation-duration: 1.5s;
+    animation-iteration-count: infinite; 
+    animation-timing-function: linear;
+}
