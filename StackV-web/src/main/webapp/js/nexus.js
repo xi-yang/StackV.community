@@ -55,7 +55,7 @@ $(function () {
         else if (window.location.pathname === "/StackV-web/ops/details/templateDetails.jsp") {
             loadDetails();
         }
-        setRefresh(60);
+        //setRefresh(60);
     };
     keycloak.onTokenExpire = function () {
         keycloak.updateToken(20).success(function () {
