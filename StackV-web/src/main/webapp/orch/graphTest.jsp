@@ -208,7 +208,7 @@
                                 }
                             });
                             
-                            buildServicePanel(username, token);
+                            buildServicePanel(userId, token);
 
                         });
 
