@@ -71,6 +71,9 @@ import com.jayway.jsonpath.JsonPathException;
 import java.util.LinkedHashMap;
 import net.maxgigapop.mrs.common.ResourceTool;
 import net.maxgigapop.mrs.driver.aws.AwsPrefix;
+import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_action;
+import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_flow;
+import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_match;
 
 /**
  *
@@ -617,7 +620,12 @@ public class MCETools {
             prevHop = stmt.getSubject();
             currentHop = stmt.getObject().asResource();
             if (portParamMap.containsKey(currentHop)) {
-                OntModel subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap);
+                OntModel subnetModel = null;
+                if (portParamMap.get(currentHop).containsKey("openflowService")) {
+                    subnetModel = createVlanFlowsOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap);
+                } else {
+                    subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap);
+                }
                 if (subnetModel != null) {
                     l2PathModel.add(subnetModel.getBaseModel());
                 }
@@ -629,7 +637,12 @@ public class MCETools {
                 currentHop = prevHop;
                 prevHop = null;
                 if (portParamMap.containsKey(currentHop)) {
-                    OntModel subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap);
+                    OntModel subnetModel = null;
+                    if (portParamMap.get(currentHop).containsKey("openflowService")) {
+                        subnetModel = createVlanFlowsOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap);
+                    } else {
+                        subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap);
+                    }
                     if (subnetModel != null) {
                         l2PathModel.add(subnetModel.getBaseModel());
                     }
@@ -669,7 +682,7 @@ public class MCETools {
                     paramMap.put("allowedVlanRange", allowedVlanRange);
                 }
             }
-        }
+        }       
         HashMap<String, Object> lastParamMap = null;
         if (lastPort != null && portParamMap.containsKey(lastPort)) {
             lastParamMap = (HashMap<String, Object>) portParamMap.get(lastPort);
@@ -678,6 +691,23 @@ public class MCETools {
         TagSet vlanRange = getVlanRangeForPort(model, currentHop);
         // do nothing for port without a Vlan labelGroup
         if (vlanRange == null) {
+            //special handling OpenFlow port (also port in hybrid mode ?)
+            Resource ofSvc = getOpenflowServiceForPort(model, currentHop);
+            if (ofSvc != null) {
+                paramMap.put("openflowService", ofSvc);
+                paramMap.put("vlanTranslation", true);
+                vlanRange = getVlanRangeForOpenFlowPort(model, currentHop);
+                paramMap.put("allowedVlanRange", allowedVlanRange);
+                if (lastParamMap != null && lastParamMap.containsKey("vlanRange")) {
+                    vlanRange.intersect((TagSet) lastParamMap.get("vlanRange"));
+                }
+                if (allowedVlanRange != null && !allowedVlanRange.isEmpty()) {
+                    vlanRange.intersect(allowedVlanRange);
+                }
+                paramMap.put("vlanRange", vlanRange);
+                portParamMap.put(currentHop, paramMap);
+            }
+            // either way throw harmless exception here
             throw new TagSet.NoneVlanExeption();
         }
         // interception with input availableVlanRange 
@@ -707,7 +737,7 @@ public class MCETools {
             }
         }
         // vlan translation
-        TagSet lastVlanRange = TagSet.VlanRangeANY;
+        TagSet lastVlanRange = TagSet.VlanRangeANY.clone();
         // no vlan translation
         if (!vlanTranslation && lastParamMap != null && lastParamMap.containsKey("vlanRange")) {
             lastVlanRange = (TagSet) lastParamMap.get("vlanRange");
@@ -864,6 +894,129 @@ public class MCETools {
         return vlanSubnetModel;
     }
 
+    private static OntModel createVlanFlowsOnHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, Resource lastPort, HashMap portParamMap) {
+        HashMap paramMap = (HashMap) portParamMap.get(currentHop);
+        if (!paramMap.containsKey("vlanRange")) {
+            return null;
+        }
+        TagSet vlanRange = (TagSet) paramMap.get("vlanRange");
+        if (vlanRange.isEmpty()) {
+            return null;
+        }
+        // try use same suggested VLAN from next hop OpenFlow port or from last (reverse order) 'VLAN' port
+        HashMap lastParamMap = null;
+        if (nextHop != null && portParamMap.containsKey(nextHop)) {
+            lastParamMap = (HashMap) portParamMap.get(prevHop);
+        }
+        if (lastParamMap == null || !lastParamMap.containsKey("suggestedVlan")) {
+            lastParamMap = (HashMap) portParamMap.get(lastPort);
+        }
+        Integer suggestedVlan = null;
+        if (lastParamMap != null && lastParamMap.containsKey("suggestedVlan")) {
+            suggestedVlan = (Integer) lastParamMap.get("suggestedVlan");
+        }
+        // init vlan or do tanslation to any tag
+        if (suggestedVlan == null) {
+            suggestedVlan = vlanRange.getRandom();
+        }
+        paramMap.put("suggestedVlan", suggestedVlan);
+        
+        // create port and subnet statements into vlanSubnetModel
+        OntModel vlanFlowsModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+
+        Resource resFlowSvc = (Resource) paramMap.get("openflowService");
+        Resource resFlowTable = model.getResource(resFlowSvc.getURI()+":table=0"); // use assumed URI -> or search in model
+        String portName = getNameForPort(model, currentHop);
+        if (portName == null) {
+            portName = currentHop.getURI();
+        }
+        // add 'VLAN' flows for this port 
+        if (prevHop != null && prevHop.equals(resFlowSvc)) {
+            //$$ add new flow with match currentHop as in_port & match suggestedVlan + action = strip VLAN
+            String inFlowId = currentHop.getURI() + ":flow+input_vlan"+suggestedVlan;
+            Resource resInFlow = RdfOwl.createResource(vlanFlowsModel, URI_flow(resFlowTable.getURI(), inFlowId), Mrs.Flow);
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowTable, Mrs.hasFlow, resInFlow));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowSvc, Mrs.providesFlow, resInFlow));
+            
+            Resource resMatchRule1 = RdfOwl.createResource(vlanFlowsModel, URI_match(resInFlow.getURI(), "in_port"), Mrs.FlowRule);
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowMatch, resMatchRule1));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule1, Mrs.type, "in_port"));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule1, Mrs.value, portName));
+            
+            Resource resMatchRule2 = RdfOwl.createResource(vlanFlowsModel, URI_match(resInFlow.getURI(), "dl_vlan"), Mrs.FlowRule);
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowMatch, resMatchRule2));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule2, Mrs.type, "dl_vlan"));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule2, Mrs.value, suggestedVlan.toString()));
+
+            Resource resFlowAction1 = RdfOwl.createResource(vlanFlowsModel, URI_action(resInFlow.getURI(), "0"), Mrs.FlowRule);
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowAction, resFlowAction1));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.type, "strip_vlan"));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.value, "strip_vlan"));
+            
+            //$$ add new flow with action output to currentHop + swap suggestedVlan VLAN 
+            String outFlowId = currentHop.getURI() + ":flow+output_vlan"+suggestedVlan;
+            Resource resOutFlow = RdfOwl.createResource(vlanFlowsModel, URI_flow(resFlowTable.getURI(), outFlowId), Mrs.Flow);
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowTable, Mrs.hasFlow, resOutFlow));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowSvc, Mrs.providesFlow, resOutFlow));
+
+            Resource resFlowAction2 = RdfOwl.createResource(vlanFlowsModel, URI_action(resOutFlow.getURI(), "1"), Mrs.FlowRule);
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resOutFlow, Mrs.flowAction, resFlowAction2));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction2, Mrs.type, "output"));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction2, Mrs.value, portName));
+            
+            Resource resFlowAction3 = RdfOwl.createResource(vlanFlowsModel, URI_action(resOutFlow.getURI(), "2"), Mrs.FlowRule);
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resOutFlow, Mrs.flowAction, resFlowAction3));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.type, "mod_vlan_id"));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.value, suggestedVlan.toString()));            
+        }
+        if (nextHop != null && nextHop.equals(resFlowSvc)) {
+            //$$ look for to match-free flow 
+            String sparql = String.format("SELECT ?flow WHERE {<%s> mrs:hasFlow ?flow "
+                    + "FILTER NOT EXISTS {?flow mrs:flowMatch ?match}"
+                    + "}", resFlowSvc);
+            ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
+            if (rs.hasNext()) {
+                Resource resInFlow = rs.next().getResource("flow");
+                //$$ add match: currentHop as in_port & suggestedVlan
+                //$$ add action: strip VLAN
+                Resource resMatchRule1 = RdfOwl.createResource(vlanFlowsModel, URI_match(resInFlow.getURI(), "in_port"), Mrs.FlowRule);
+                vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowMatch, resMatchRule1));
+                vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule1, Mrs.type, "in_port"));
+                vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule1, Mrs.value, portName));
+
+                Resource resMatchRule2 = RdfOwl.createResource(vlanFlowsModel, URI_match(resInFlow.getURI(), "dl_vlan"), Mrs.FlowRule);
+                vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowMatch, resMatchRule2));
+                vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule2, Mrs.type, "dl_vlan"));
+                vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule2, Mrs.value, suggestedVlan.toString()));
+
+                Resource resFlowAction1 = RdfOwl.createResource(vlanFlowsModel, URI_action(resInFlow.getURI(), "0"), Mrs.FlowRule);
+                vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowAction, resFlowAction1));
+                vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.type, "strip_vlan"));
+                vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.value, "strip_vlan"));
+            }
+            //$$ look for to output-free flow 
+            sparql = String.format("SELECT ?flow WHERE {<%s> mrs:hasFlow ?flow "
+                    + "FILTER NOT EXISTS {?flow mrs:flowAction ?action}"
+                    + "}", resFlowSvc);
+            rs = ModelUtil.sparqlQuery(model, sparql);
+            if (rs.hasNext()) {
+                Resource resOutFlow = rs.next().getResource("flow");
+                //$$ add actions: output to currentHop + swap suggestedVlan 
+                Resource resFlowAction2 = RdfOwl.createResource(vlanFlowsModel, URI_action(resOutFlow.getURI(), "1"), Mrs.FlowRule);
+                vlanFlowsModel.add(vlanFlowsModel.createStatement(resOutFlow, Mrs.flowAction, resFlowAction2));
+                vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction2, Mrs.type, "output"));
+                vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction2, Mrs.value, portName));
+
+                Resource resFlowAction3 = RdfOwl.createResource(vlanFlowsModel, URI_action(resOutFlow.getURI(), "2"), Mrs.FlowRule);
+                vlanFlowsModel.add(vlanFlowsModel.createStatement(resOutFlow, Mrs.flowAction, resFlowAction3));
+                vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.type, "mod_vlan_id"));
+                vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.value, suggestedVlan.toString()));
+            }
+        } 
+        
+        return vlanFlowsModel;
+    }
+    
     private static Resource getSwitchingServiceForHop(Model model, Resource nodeOrTopo, Resource port) {
         String sparql = String.format("SELECT ?sw WHERE {<%s> nml:hasService ?sw. ?sw a nml:SwitchingService. ?sw nml:hasBidirectionalPort <%s>.}", nodeOrTopo, port);
         ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
@@ -873,6 +1026,40 @@ public class MCETools {
         return rs.next().getResource("sw");
     }
 
+    private static Resource getOpenflowServiceForPort(Model model, Resource port) {
+        String sparql = String.format("SELECT ?svc WHERE {"
+                + "?node nml:hasService ?svc. ?svc nml:hasBidirectionalPort <%s>. ?svc a mrs:OpenflowService."
+                + "}", port);
+        ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
+        if (rs.hasNext()) {
+            return rs.next().getResource("svc");
+        }
+        return null;
+    }
+
+    private static String getNameForPort(Model model, Resource port) {
+        String sparql = String.format("SELECT ?name WHERE {"
+                + "<%s> nml:name ?name."
+                + "}", port);
+        ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
+        if (rs.hasNext()) {
+            return rs.next().get("name").toString();
+        }
+        return null;
+    }
+
+    private static boolean isSameNodePorts(Model model, Resource port1, Resource port2) {
+        String sparql = String.format("SELECT ?node WHERE {"
+                + "?node nml:hasBidirectionalPort <%s>. "
+                + "?node nml:hasBidirectionalPort <%s>. "
+                + "} UNION {"
+                + "?node nml:hasService ?svc. ?svc nml:hasBidirectionalPort <%s>. "
+                + "?node nml:hasService ?svc. ?svc nml:hasBidirectionalPort <%s>. "
+                + "}", port1, port2, port1, port2);
+        ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
+        return rs.hasNext();
+    }
+    
     // get VLAN range for the port plus all the available ranges in sub-ports (LabelGroup) and remove allocated vlans (Label)
     private static TagSet getVlanRangeForPort(Model model, Resource port) {
         TagSet vlanRange = null;
@@ -928,6 +1115,14 @@ public class MCETools {
         return vlanRange;
     }
 
+    // get VLAN range for the port plus all the available ranges in sub-ports (LabelGroup) and remove allocated vlans (Label)
+    private static TagSet getVlanRangeForOpenFlowPort(Model model, Resource port) {
+        TagSet vlanRange = TagSet.VlanRangeANY.clone();
+        //@@ TODO look for flows on the switch that refer to this port as in_port (in match) or out_port (in action)
+        // Then look for dl_vlan in either match of action and remove that vlan from vlanRange. 
+        return vlanRange;
+    }
+    
     public static void removeResolvedAnnotation(OntModel spaModel, Resource res) {
         List<Statement> listStmtsToRemove = new ArrayList<>();
         Resource resLink = spaModel.getResource(res.getURI());

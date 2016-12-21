@@ -82,7 +82,7 @@ public class OpenflowModelBuilder {
         return prefix+":flow="+flow+":action="+id;
     }
     
-    public static OntModel createOntology(String topologyURI, String subsystemBaseUrl, String username, String password) {
+    public static OntModel createOntology(String topologyURI, String subsystemBaseUrl, String username, String password, OntModel modelExt) {
         //create model object
         OntModel model = ModelUtil.newMrsOntModel(topologyURI);
         Resource resTopo = RdfOwl.createResource(model, topologyURI, Nml.Topology);
@@ -412,6 +412,11 @@ public class OpenflowModelBuilder {
             }
         } catch (Exception ex) {
             logger.warning(String.format("OpenflowModelBuilder.createOntology failed to parse the jsonFlows for links.", ex));
+        }
+        
+        // combine extra model (static injection)
+        if (modelExt != null) {
+            model.add(modelExt.getBaseModel());
         }
         return model;
     }
