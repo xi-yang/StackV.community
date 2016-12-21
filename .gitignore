@@ -1,0 +1,17 @@
+## Netbeans generated files
+/VersaStack-ear/target/
+/VersaStack-ejb/target/
+/VersaStack-web/target/
+
+## Java specific files
+*.class
+
+## Generic files to ignore
+*~
+*.lock
+*.DS_Store
+*.swp
+*.out
+/StackV-ejb/target/
+/StackV-web/target/
+/StackV-ear/target/
