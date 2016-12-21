@@ -130,9 +130,9 @@ public class DriverServlet extends HttpServlet {
             // Call appropriate driver control method
             if (paramMap.containsKey("install")) {
                 paramMap.remove("install");
-                retCode = servBean.driverInstall(paramMap);
+                retCode = servBean.driverInstall(paramMap, auth);
             } else if (paramMap.containsKey("uninstall")) {
-                retCode = servBean.driverUninstall(request.getParameter("topologyUri"));
+                retCode = servBean.driverUninstall(request.getParameter("topologyUri"), auth);
             }
 
             response.sendRedirect("/StackV-web/ops/srvc/driver.jsp?ret=" + retCode);

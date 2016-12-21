@@ -693,6 +693,13 @@ body {
     color: #333;
 }
 
+#main-pane.loading {
+    opacity: .4;
+}
+#main-pane.loading #loading-panel {
+    opacity: 1;
+}
+
 #details-panel {
     padding: 10px 10px;
     height: 40%;
@@ -783,6 +790,17 @@ body {
     padding: 12px 15px;
 }
 
+.instruction-row {
+    vertical-align: top;
+    height: 80px;
+    font-size: 1.25em;
+}
+.button-row {
+    height: 51px;
+}
+
+
+
 .details-model-toggle {
     float:right;
 }
@@ -816,14 +834,6 @@ body {
     -o-transition: all .75s ease-in;
     -ms-transition: all .75s ease-in;
     transition: all .5s ease;
-}
-
-#main-pane.loading #loading-panel {
-    opacity: 1;
-}
-
-#main-pane.loading #instance-panel {
-    opacity: .2;
 }
 
 /* SIDEBAR */
