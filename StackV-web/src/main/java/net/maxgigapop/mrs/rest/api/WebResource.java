@@ -820,7 +820,7 @@ public class WebResource {
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`acl` (`subject`, `is_group`, `object`) "
                     + "VALUES (?, '0', ?)");
             prep.setString(1, username);
-            prep.setString(1, refUuid);
+            prep.setString(2, refUuid);
             prep.executeUpdate();
 
             // Execute service creation.
@@ -1089,10 +1089,8 @@ public class WebResource {
      * @return error code |
      */
     private int deleteInstance(String refUuid, String auth) throws SQLException {
-        System.out.println("Deletion Beginning.");
         try {
             String result = delete(refUuid, auth);
-            System.out.println("Result from Backend: " + result);
             if (result.equalsIgnoreCase("Successfully terminated")) {
                 Connection front_conn;
                 Properties front_connectionProps = new Properties();
@@ -1555,7 +1553,6 @@ public class WebResource {
 
     private boolean verify(String refUuid, String auth) throws MalformedURLException, IOException, InterruptedException, SQLException {
         int instanceID = servBean.getInstanceID(refUuid);
-
         Connection front_conn;
         Properties front_connectionProps = new Properties();
         front_connectionProps.put("user", front_db_user);
