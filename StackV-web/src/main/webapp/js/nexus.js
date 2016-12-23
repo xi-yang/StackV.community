@@ -22,7 +22,7 @@
  */
 
 /* global XDomainRequest, baseUrl, loggedIn */
-
+ 
 // Service JavaScript Library
 baseUrl = window.location.origin;
 var keycloak = Keycloak('/StackV-web/data/json/keycloak.json');
@@ -1242,7 +1242,7 @@ function loadInstances() {
                 var row = document.createElement("tr");
                 row.className = "clickable-row";
                 row.setAttribute("data-href", instance[1]);
-
+                
                 var cell1_1 = document.createElement("td");
                 cell1_1.innerHTML = instance[3];
                 var cell1_2 = document.createElement("td");
@@ -1423,7 +1423,7 @@ function loadDetails() {
         buttonModerate();
         loadACL(uuid);
         loadStatus(uuid);
-        //loadVisualization();
+        loadVisualization();
     }, 750);
 }
 
@@ -1821,7 +1821,7 @@ function subloadACL() {
 }
 
 function loadVisualization() {
-    $("#details-viz").load("/StackV-web/details_viz.jsp", function () {
+    $("#details-viz").load("/StackV-web/details_viz.html", function () {
         // Loading Verification visualization
         $("#ver-add").append($("#va_viz_div"));
         $("#ver-add").find("#va_viz_div").removeClass("hidden");
@@ -1856,9 +1856,9 @@ function loadVisualization() {
 
             // Toggle button should toggle  between system delta visualization and delta-System table
             // if the verification failed
-            document.querySelector(".system-delta-table .details-model-toggle").onclick = function () {
-                toggleTextModel('.system-delta-table', '#delta-System');
-            };
+//            document.querySelector(".system-delta-table .details-model-toggle").onclick = function () {
+//                toggleTextModel('.system-delta-table', '#delta-System');
+//            };
 
             $("#sys-red").append($("#sysr_viz_div"));
             $("#sys-add").append($("#sysa_viz_div"));
