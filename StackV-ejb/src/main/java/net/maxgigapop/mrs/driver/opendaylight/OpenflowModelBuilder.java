@@ -172,8 +172,8 @@ public class OpenflowModelBuilder {
             logger.warning(String.format("OpenflowModelBuilder.createOntology failed to parse the jsonTopology for links.", ex));
         }
 
-        JSONObject jsonFlows = restconf.getConfigFlows(subsystemBaseUrl, username, password);
         try {
+            JSONObject jsonFlows = restconf.getConfigFlows(subsystemBaseUrl, username, password);
             Object r = JsonPath.parse(jsonFlows).read("$.nodes.node");
             for (Object o1: (JSONArray)r) {
                 JSONObject j1 = (JSONObject)o1;
@@ -411,7 +411,7 @@ public class OpenflowModelBuilder {
                 }
             }
         } catch (Exception ex) {
-            logger.warning(String.format("OpenflowModelBuilder.createOntology failed to parse the jsonFlows for links.", ex));
+            logger.warning(String.format("OpenflowModelBuilder.createOntology failed to retrieve or parse configured Flows.", ex));
         }
         return model;
     }
