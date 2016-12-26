@@ -1,0 +1,25 @@
+#driver-panel-top {
+    padding: 10px 10px 0 10px;
+    top: 50px;
+    left: 65px;
+    height: 50%;
+    width: 85%;
+    position: absolute;
+}
+#driver-panel-bot {
+    padding: 10px 10px 0 10px;
+    bottom: 0;
+    left: 65px;
+    height: 50%;
+    width: 85%;
+    position: absolute;
+}
+.driver-tab-table {
+    float: left;
+    width: calc(100% - 40px);
+    margin: 20px;
+    max-height: 100%;
+}
+#bot-tab {
+    width: 85%;
+}
