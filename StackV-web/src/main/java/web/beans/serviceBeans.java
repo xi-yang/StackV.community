@@ -1571,7 +1571,7 @@ public class serviceBeans {
 
         String delta = "<serviceDelta>\n<uuid>" + deltaUUID
                 + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
-                + "\n\n<modelAddition>\n"
+                + "\n\n<modelReduction>\n"
                 + "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
                 + "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n"
                 + "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n"
@@ -1587,8 +1587,15 @@ public class serviceBeans {
                 + "&lt;x-policy-annotation:data:modification-map&gt;\n"
                 + "    a            spa:PolicyData;\n"
                 + "    spa:type     \"JSON\";\n"
-                + "    spa:value    \"\"\"" + paraMap.get("removeResource").replace("\\", "") + "\"\"\".\n\n"
-                + "</modelAddition>\n\n"
+                + "    spa:value    \"\"\"" + paraMap.get("removeResource").replace("\\", "") + "\"\"\".\n\n";
+        
+        // need this for compilation 
+        delta += "&lt;urn:off:network:omm-abs&gt;\n" +
+                "   a  nml:Topology;\n" +
+                "   spa:type spa:Abstraction;\n" +
+                "   spa:dependOn  &lt;x-policy-annotation:action:apply-modifications&gt;.\n\n";
+       
+        delta += "</modelReduction>\n\n"
                 + "</serviceDelta>";
 
         String result;

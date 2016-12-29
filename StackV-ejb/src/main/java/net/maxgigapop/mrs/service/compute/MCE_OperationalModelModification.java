@@ -79,28 +79,36 @@ public class MCE_OperationalModelModification implements IModelComputationElemen
         Map<Resource, List> policyMap = new HashMap<>();
         ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);
         RDFNode jsonInput = null;
+        RDFNode policy1 = null;
+        RDFNode policy2 = null;
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             jsonInput  = querySolution.get("dataValue");
+            policy1 = querySolution.get("policy");
         }
         
         String inputString = jsonInput.toString();
         
-        JSONObject inputJSON = new JSONObject();
+//        JSONObject inputJSON = new JSONObject();
+//        try {
+//            Object obj = parser.parse(inputString);
+//            inputJSON = (JSONObject) obj;
+//
+//            System.out.println("Service API:: inputJSON: " + inputJSON.toJSONString());
+//        } catch (ParseException ex) {
+//            Logger.getLogger(MCE_OperationalModelModification.class.getName()).log(Level.SEVERE, null, ex);
+//        }
+        
+        ServiceDelta outputDelta = annotatedDelta.clone();
+        JSONArray toRemove = null;
         try {
-            Object obj = parser.parse(inputString);
-            inputJSON = (JSONObject) obj;
-
-            System.out.println("Service API:: inputJSON: " + inputJSON.toJSONString());
+            toRemove = (JSONArray)parser.parse(inputString);
         } catch (ParseException ex) {
             Logger.getLogger(MCE_OperationalModelModification.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
-        ServiceDelta outputDelta = annotatedDelta.clone();
-        JSONObject toRemove = (JSONObject)inputJSON.get("removeResource");
         Model subModel = ModelFactory.createDefaultModel();
         OntModel model = systemModel.getOntModel();
-
+   //"#rdfDFS(Model refModel, RDFNode node, Set<RDFNode> visited, Model subModel, List<String> propMatchIncludes, List<String> propMatchExcludes, List<String> propExcludeEssentials) #
         for (int i = 0; i < toRemove.size(); i++) {
             String resourceURI = (String) toRemove.get(i);
             Resource node =  systemModel.getOntModel().getOntResource(resourceURI);
@@ -108,51 +116,19 @@ public class MCE_OperationalModelModification implements IModelComputationElemen
             List<String> excludeMatches = new ArrayList<String>();
             List<String> excludeEssentials = new ArrayList<String>();
             Set<RDFNode> visited = new HashSet<RDFNode>();
-            rdfDFSReverse(systemModel.getOntModel(), node, visited, subModel, includeMatches, excludeMatches);  
+          // need better way to do this 
+            //ModelUtil.rdfDFS(systemModel.getOntModel(), node, visited, subModel, includeMatches, excludeMatches, excludeMatches);  
             // perhaps go down as wel
-            MCETools.removeResolvedAnnotation(outputDelta.getModelReduction().getOntModel(), node);
+            //MCETools.removeResolvedAnnotation(outputDelta.getModelReduction().getOntModel(), node);
         }
-       // MCETools.removeResolvedAnnotation(outputDelta.getModelReduction().getOntModel(), policyAction);
-        outputDelta.getModelReduction().getOntModel().add(subModel);
         
+      //  MCETools.removeResolvedAnnotation(outputDelta.getModelReduction().getOntModel(), policy1.asResource());
+//        Model newMA = outputDelta.getModelAddition().getOntModel().difference(subModel);
+//        Model newMR = subModel;
+//        outputDelta.getModelAddition().getOntModel().add(newMA);
+        //outputDelta.getModelReduction().getOntModel().add(subModel);
         return new AsyncResult(outputDelta);
     }
-    
-    public static void rdfDFSReverse(Model refModel, RDFNode node, Set<RDFNode> visited, Model subModel, List<String> propMatchIncludes, List<String> propMatchExcludes) {
-      if (visited.contains(node)) {
-          return;
-      } else {
-          visited.add(node);
-          if (node.isResource()) {
-              StmtIterator stmts = refModel.listStatements(null, null, node);
-              while (stmts.hasNext()) {
-                  Statement stmt = stmts.next();
-                  subModel.add(stmt);
-                  // optional: add type statements
-                  StmtIterator stmts2 = refModel.listStatements(stmt.getSubject(), RdfOwl.type, (RDFNode) null);
-                  while (stmts2.hasNext()) {
-                      subModel.add(stmts2.next());
-                  }
-                  boolean included = propMatchIncludes.isEmpty();
-                  for (String matchStr : propMatchIncludes) {
-                      if (stmt.getPredicate().toString().contains(matchStr)) {
-                          included = true;
-                          break;
-                      }
-                  }
-                  boolean excluded = false;
-                  for (String matchStr : propMatchExcludes) {
-                      if (stmt.getPredicate().toString().contains(matchStr)) {
-                          excluded = true;
-                          break;
-                      }
-                  }
-                  if (included && !excluded) {
-                      rdfDFSReverse(refModel, stmt.getSubject(), visited, subModel, propMatchIncludes, propMatchExcludes);
-                  }
-              }
-          }
-      }
-  }
+   
 
 }
