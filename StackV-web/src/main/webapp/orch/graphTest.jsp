@@ -826,6 +826,7 @@
                                         row.appendChild(cell1_4);
                                         tbody.appendChild(row);
                                     }
+                                    initServiceInstanceItems();
                                 },
                                 
                                 error: function (jqXHR, textStatus, errorThrown) {
@@ -841,36 +842,39 @@
 
         </div>
         <script>
-            $(".service-instance-item").each(function () {
-                var that = this;
-                var DELAY = 700, clicks = 0, timer = null;
+            function initServiceInstanceItems() {
+                $(".service-instance-item").each(function () {
+                    var that = this;
+                    var DELAY = 700, clicks = 0, timer = null;
 
-                $(that).click(function () {
-                    clicks++;  //count clicks
+                    $(that).click(function () {
+                        clicks++;  //count clicks
 
-                    if (clicks === 1) {
-                        timer = setTimeout(function () {
-                            clickServiceInstanceItem(that);
-                            clicks = 0;
-                        }, DELAY);
-                    } else {
-                        clearTimeout(timer);    //prevent single-click action
-                        if ($(that).hasClass("service-instance-highlighted")) {
-                            $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
-                            render.API.setHighlights([], "serviceHighlighting");
-                            render.API.highlightElements("serviceHighlighting");                        
-                            clicks = 0;             //after action performed, reset counter
-                        } else {
+                        if (clicks === 1) {
                             timer = setTimeout(function () {
                                 clickServiceInstanceItem(that);
                                 clicks = 0;
                             }, DELAY);
+                        } else {
+                            clearTimeout(timer);    //prevent single-click action
+                            if ($(that).hasClass("service-instance-highlighted")) {
+                                $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
+                                render.API.setHighlights([], "serviceHighlighting");
+                                render.API.highlightElements("serviceHighlighting");                        
+                                clicks = 0;             //after action performed, reset counter
+                            } else {
+                                timer = setTimeout(function () {
+                                    clickServiceInstanceItem(that);
+                                    clicks = 0;
+                                }, DELAY);
+                            }
                         }
-                    }
-                }).dblclick(function (e) {
-                    e.preventDefault();
+                    }).dblclick(function (e) {
+                        e.preventDefault();
+                    });
                 });
-            });
+            }
+
 
 
             function clickServiceInstanceItem(item) {
