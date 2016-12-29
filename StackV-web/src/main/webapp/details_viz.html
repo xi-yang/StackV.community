@@ -3,7 +3,7 @@
  * Created by: Antonio Heard 2016
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy 
- * of this software and/or hardware specification (the “Work”) to deal in the 
+ * of this software and/or hardware specification (the ?Work?) to deal in the 
  * Work without restriction, including without limitation the rights to use, 
  * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
  * the Work, and to permit persons to whom the Work is furnished to do so, 
@@ -22,18 +22,6 @@
  !-->
 
 
-<%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page errorPage = "/StackV-web/errorPage.jsp" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
-<jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
-<jsp:setProperty name="user" property="*" />  
-<jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
-<jsp:setProperty name="serv" property="*" />  
-<c:if test="${user.loggedIn == false}">
-    <c:redirect url="/index.jsp" />
-</c:if>
 <link rel="stylesheet" href="/StackV-web/css/jquery-ui.min.css">
 <link rel="stylesheet" href="/StackV-web/css/contextMenu.css">           
 <link rel="stylesheet" href="/StackV-web/css/jquery-ui.structure.min.css">
@@ -240,7 +228,7 @@
 
                         success: function (data, textStatus, jqXHR) {
                             if (data === "true") {
-                                //alert(textStatus);
+//                                //alert(textStatus);
                                 layout = l;
                                 render = r;
                                 d3 = d3_;
@@ -268,7 +256,7 @@
 
                                 contextMenu = new ContextMenu(d3, render.API, functionMap);//, tagDialog);
                                 contextMenu.init();
-
+//
                                 console.log("after model.");
                             } else {
                                 displayError("Backend not Ready", d3, "va_viz", -80);
@@ -486,7 +474,7 @@
     }
 
     function renderModels() {
-        var UUID = location.search.split("?uuid=")[1];
+        var UUID = sessionStorage.getItem("uuid");
         var token = sessionStorage.getItem("token");
         $.ajax({
             crossDomain: true,
