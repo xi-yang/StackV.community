@@ -66,7 +66,7 @@
                                     <td style="width: 170px;">
                                         <button style='width: 50px;' onclick='activateDetails();' class='details' id='details-button'>Details</button>
                                         <div class='divider'></div>
-                                        <button style ='width: 50px;' onclick='activateInstall();' class='install' id='install-button'>Install</button>
+                                        <button style ='width: 50px;' onclick='activateInstall(); installStub();' class='install' id='install-button'>Install</button>
                                     </td>
                                 <tr>
                                     <td>AWS</td>
@@ -74,7 +74,7 @@
                                     <td style="width: 170px;">
                                         <button style='width: 50px;' onclick='activateDetails();' class='details' id='details-button'>Details</button>
                                         <div class='divider'></div>
-                                        <button style ='width: 50px;' onclick='activateInstall();' class='install' id='install-button'>Install</button>
+                                        <button style ='width: 50px;' onclick='activateInstall(); installAWS();' class='install' id='install-button'>Install</button>
                                     </td>
                                 <tr>
                                     <td>Generic</td>
@@ -82,7 +82,7 @@
                                     <td style="width: 170px;">
                                         <button style='width: 50px;' onclick='activateDetails();' class='details' id='details-button'>Details</button>
                                         <div class='divider'></div>
-                                        <button style ='width: 50px;' onclick='activateInstall();' class='install' id='install-button'>Install</button>
+                                        <button style ='width: 50px;' onclick='activateInstall(); installStack();' class='install' id='install-button'>Install</button>
                                     </td>
                                 <tr>
                                     <td>Openstack</td>
@@ -90,7 +90,7 @@
                                     <td  style="width: 170px;">
                                         <button style='width: 50px;' onclick='activateDetails();' class='details' id='details-button'>Details</button>
                                         <div class='divider'></div>
-                                        <button style ='width: 50px;' onclick='activateInstall();' class='install' id='install-button'>Install</button>
+                                        <button style ='width: 50px;' onclick='activateInstall(); installOpenstack();' class='install' id='install-button'>Install</button>
                                     </td>
                                 <tr>
                                     <td>Stack</td>
@@ -98,7 +98,7 @@
                                     <td  style="width: 170px;">
                                         <button style='width: 50px;' onclick='activateDetails();' class='details' id='details-button'>Details</button>
                                         <div class='divider'></div>
-                                        <button style ='width: 50px;' onclick='activateInstall();' class='install' id='install-button'>Install</button>
+                                        <button style ='width: 50px;' onclick='activateInstall(); installStack();' class='install' id='install-button'>Install</button>
                                     </td>
                                 </tr>
                             </tbody>
@@ -179,11 +179,12 @@
                     
                 <div class="tab-content" id="catalog-tab-content">                    
                     <div id="detail-content" class="tab-pane fadeIn">
-                        <button style="width: 50px;" onclick="closeSide();" class="install" id="close-button">Install</button>
+                        
                     </div>
                         
                         
                     <div id="install-content" class="tab-pane fadeIn">
+                        <div id='install-type'></div>
                         <button style="width: 50px;" onclick="closeSide();" class="install" id="close-button">Close</button>
                     </div>
                     
