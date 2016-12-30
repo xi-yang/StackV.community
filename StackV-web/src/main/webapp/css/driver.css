@@ -1,25 +1,56 @@
-#driver-panel-top {
+.driver-panel {
     padding: 10px 10px 0 10px;
-    top: 50px;
     left: 65px;
     height: 50%;
-    width: 85%;
     position: absolute;
+}
+.no-side-tab {
+    width: 88%;
+}
+.side-tab{
+    width: 55%;
+}
+#driver-panel-top {
+    top: 50px;
 }
 #driver-panel-bot {
-    padding: 10px 10px 0 10px;
     bottom: 0;
-    left: 65px;
-    height: 50%;
-    width: 85%;
+}
+#driver-panel-right {
+    padding: 10px 10px 0 10px;
+    top: 50px;
+    right: 0;
+    height: 94.8%;
     position: absolute;
 }
+.inactive{
+    width: 0%;
+}
+.active-detail{
+    width: 40%;
+}
+
 .driver-tab-table {
     float: left;
     width: calc(100% - 40px);
     margin: 20px;
     max-height: 100%;
 }
-#bot-tab {
-    width: 85%;
+.divider{
+    width:25px;
+    height:auto;
+    display:inline-block;
+}
+.management-table {
+    background: #ffffff;
+    border-collapse: separate;
+    box-shadow: 0 5px 12px 2px rgba(0, 0, 0, 0.4);
+    font-size: 12px;
+    line-height: 24px;
+    margin: 20px auto;
+    text-align: left;
+    width: 90%;
+}
+.button-head {
+    width: 160px
 }
