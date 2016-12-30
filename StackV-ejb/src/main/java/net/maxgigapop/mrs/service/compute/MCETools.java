@@ -81,6 +81,8 @@ import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_ma
  */
 public class MCETools {
 
+    private static final Logger log = Logger.getLogger(MCETools.class.getName());
+
     public static class Path extends com.hp.hpl.jena.ontology.OntTools.Path {
 
         private HashSet<Statement> maskedLinks = null;
@@ -493,14 +495,20 @@ public class MCETools {
         "SELECT $s $p $o WHERE {$s a nml:Node. $o a nml:BidirectionalPort FILTER($s = <$$s> && $o = <$$o>)}",
         "SELECT $s $p $o WHERE {$s a nml:Topology. $o a nml:BidirectionalPort FILTER($s = <$$s> && $o = <$$o>)}",
         "SELECT $s $p $o WHERE {$s a nml:Node. $o a nml:SwitchingService FILTER($s = <$$s> && $o = <$$o>)}",
-        "SELECT $s $p $o WHERE {$s a nml:Topology. $o a nml:SwitchingService FILTER($s = <$$s> && $o = <$$o>)}",};
+        "SELECT $s $p $o WHERE {$s a nml:Topology. $o a nml:SwitchingService FILTER($s = <$$s> && $o = <$$o>)}",
+        "SELECT $s $p $o WHERE {$s a nml:Node. $o a mrs:OpenflowService FILTER($s = <$$s> && $o = <$$o>)}",
+        "SELECT $s $p $o WHERE {$s a nml:Topology. $o a mrs:OpenflowService FILTER($s = <$$s> && $o = <$$o>)}",};
     private static String[] l2PathTransitConstraints = {
         "SELECT $s $p $o WHERE {$s a nml:BidirectionalPort. $o a nml:SwitchingService FILTER($s = <$$s> && $o = <$$o>)}",
         "SELECT $s $p $o WHERE {$s a nml:SwitchingService. $o a nml:BidirectionalPort FILTER($s = <$$s> && $o = <$$o>)}",
+        "SELECT $s $p $o WHERE {$s a nml:BidirectionalPort. $o a mrs:OpenflowService FILTER($s = <$$s> && $o = <$$o>)}",
+        "SELECT $s $p $o WHERE {$s a mrs:OpenflowService. $o a nml:BidirectionalPort FILTER($s = <$$s> && $o = <$$o>)}",
         "SELECT $s $p $o WHERE {$s a nml:BidirectionalPort. $o a nml:BidirectionalPort FILTER($s = <$$s> && $o = <$$o>)}",};
     private static String[] l2PathLandingConstraints = {
         "SELECT $s $p $o WHERE {$s a nml:SwitchingService. $o a nml:Node FILTER($s = <$$s> && $o = <$$o>)}",
         "SELECT $s $p $o WHERE {$s a nml:SwitchingService. $o a nml:Topology FILTER($s = <$$s> && $o = <$$o>)}",
+        "SELECT $s $p $o WHERE {$s a mrs:OpenflowService. $o a nml:Node FILTER($s = <$$s> && $o = <$$o>)}",
+        "SELECT $s $p $o WHERE {$s a mrs:OpenflowService. $o a nml:Topology FILTER($s = <$$s> && $o = <$$o>)}",
         "SELECT $s $p $o WHERE {$s a nml:BidirectionalPort. $o a nml:Node FILTER($s = <$$s> && $o = <$$o>)}",
         "SELECT $s $p $o WHERE {$s a nml:BidirectionalPort. $o a nml:Topology FILTER($s = <$$s> && $o = <$$o>)}",
         "SELECT $s $p $o WHERE {$s a nml:Node. $o a nml:Topology FILTER($s = <$$s> && $o = <$$o>)}",
@@ -969,51 +977,41 @@ public class MCETools {
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.type, "mod_vlan_id"));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.value, suggestedVlan.toString()));            
         }
-        if (nextHop != null && nextHop.equals(resFlowSvc)) {
-            //$$ look for to match-free flow 
-            String sparql = String.format("SELECT ?flow WHERE {<%s> mrs:hasFlow ?flow "
-                    + "FILTER NOT EXISTS {?flow mrs:flowMatch ?match}"
-                    + "}", resFlowSvc);
-            ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
-            if (rs.hasNext()) {
-                Resource resInFlow = rs.next().getResource("flow");
-                //$$ add match: currentHop as in_port & suggestedVlan
-                //$$ add action: strip VLAN
-                Resource resMatchRule1 = RdfOwl.createResource(vlanFlowsModel, URI_match(resInFlow.getURI(), "in_port"), Mrs.FlowRule);
-                vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowMatch, resMatchRule1));
-                vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule1, Mrs.type, "in_port"));
-                vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule1, Mrs.value, portName));
+        if (nextHop != null && nextHop.equals(resFlowSvc) && lastPort != null) {
+            // swap input and output flow IDs from lastPort
+            String inFlowId = lastPort.getURI() + ":flow+output_vlan" + suggestedVlan;
+            Resource resInFlow = RdfOwl.createResource(vlanFlowsModel, URI_flow(resFlowTable.getURI(), inFlowId), Mrs.Flow);
+            //$$ add match: currentHop as in_port & suggestedVlan
+            //$$ add action: strip VLAN
+            Resource resMatchRule1 = RdfOwl.createResource(vlanFlowsModel, URI_match(resInFlow.getURI(), "in_port"), Mrs.FlowRule);
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowMatch, resMatchRule1));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule1, Mrs.type, "in_port"));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule1, Mrs.value, portName));
 
-                Resource resMatchRule2 = RdfOwl.createResource(vlanFlowsModel, URI_match(resInFlow.getURI(), "dl_vlan"), Mrs.FlowRule);
-                vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowMatch, resMatchRule2));
-                vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule2, Mrs.type, "dl_vlan"));
-                vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule2, Mrs.value, suggestedVlan.toString()));
+            Resource resMatchRule2 = RdfOwl.createResource(vlanFlowsModel, URI_match(resInFlow.getURI(), "dl_vlan"), Mrs.FlowRule);
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowMatch, resMatchRule2));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule2, Mrs.type, "dl_vlan"));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule2, Mrs.value, suggestedVlan.toString()));
 
-                Resource resFlowAction1 = RdfOwl.createResource(vlanFlowsModel, URI_action(resInFlow.getURI(), "0"), Mrs.FlowRule);
-                vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowAction, resFlowAction1));
-                vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.type, "strip_vlan"));
-                vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.value, "strip_vlan"));
-            }
-            //$$ look for to output-free flow 
-            sparql = String.format("SELECT ?flow WHERE {<%s> mrs:hasFlow ?flow "
-                    + "FILTER NOT EXISTS {?flow mrs:flowAction ?action}"
-                    + "}", resFlowSvc);
-            rs = ModelUtil.sparqlQuery(model, sparql);
-            if (rs.hasNext()) {
-                Resource resOutFlow = rs.next().getResource("flow");
-                //$$ add actions: output to currentHop + swap suggestedVlan 
-                Resource resFlowAction2 = RdfOwl.createResource(vlanFlowsModel, URI_action(resOutFlow.getURI(), "1"), Mrs.FlowRule);
-                vlanFlowsModel.add(vlanFlowsModel.createStatement(resOutFlow, Mrs.flowAction, resFlowAction2));
-                vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction2, Mrs.type, "output"));
-                vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction2, Mrs.value, portName));
+            Resource resFlowAction1 = RdfOwl.createResource(vlanFlowsModel, URI_action(resInFlow.getURI(), "0"), Mrs.FlowRule);
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowAction, resFlowAction1));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.type, "strip_vlan"));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.value, "strip_vlan"));
 
-                Resource resFlowAction3 = RdfOwl.createResource(vlanFlowsModel, URI_action(resOutFlow.getURI(), "2"), Mrs.FlowRule);
-                vlanFlowsModel.add(vlanFlowsModel.createStatement(resOutFlow, Mrs.flowAction, resFlowAction3));
-                vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.type, "mod_vlan_id"));
-                vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.value, suggestedVlan.toString()));
-            }
-        } 
-        
+            String outFlowId = lastPort.getURI() + ":flow+input_vlan" + suggestedVlan;
+            Resource resOutFlow = RdfOwl.createResource(vlanFlowsModel, URI_flow(resFlowTable.getURI(), outFlowId), Mrs.Flow);
+            //$$ add actions: output to currentHop + swap suggestedVlan 
+            Resource resFlowAction2 = RdfOwl.createResource(vlanFlowsModel, URI_action(resOutFlow.getURI(), "1"), Mrs.FlowRule);
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resOutFlow, Mrs.flowAction, resFlowAction2));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction2, Mrs.type, "output"));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction2, Mrs.value, portName));
+
+            Resource resFlowAction3 = RdfOwl.createResource(vlanFlowsModel, URI_action(resOutFlow.getURI(), "2"), Mrs.FlowRule);
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resOutFlow, Mrs.flowAction, resFlowAction3));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.type, "mod_vlan_id"));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.value, suggestedVlan.toString()));
+        }
+
         return vlanFlowsModel;
     }
     
