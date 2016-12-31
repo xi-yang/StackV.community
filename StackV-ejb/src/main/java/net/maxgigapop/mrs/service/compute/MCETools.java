@@ -228,8 +228,8 @@ public class MCETools {
                     candidatePaths.add(nextPath);
                 }
                 //?? add back current link?
-                //model.add(stmtLink);
-                //maskedLinks.remove(stmtLink);
+                model.add(stmtLink);
+                maskedLinks.remove(stmtLink);
             }
             kspCounter++;
         }
