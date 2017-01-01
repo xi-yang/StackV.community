@@ -941,7 +941,7 @@ public class MCETools {
         // add 'VLAN' flows for this port 
         if (prevHop != null && prevHop.equals(resFlowSvc)) {
             //$$ add new flow with match currentHop as in_port & match suggestedVlan + action = strip VLAN
-            String inFlowId = currentHop.getURI() + ":flow+input_vlan"+suggestedVlan;
+            String inFlowId = currentHop.getURI() + ":flow=input_vlan"+suggestedVlan;
             Resource resInFlow = RdfOwl.createResource(vlanFlowsModel, URI_flow(resFlowTable.getURI(), inFlowId), Mrs.Flow);
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowTable, Mrs.hasFlow, resInFlow));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowSvc, Mrs.providesFlow, resInFlow));
@@ -962,7 +962,7 @@ public class MCETools {
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.value, "strip_vlan"));
             
             //$$ add new flow with action output to currentHop + swap suggestedVlan VLAN 
-            String outFlowId = currentHop.getURI() + ":flow+output_vlan"+suggestedVlan;
+            String outFlowId = currentHop.getURI() + ":flow=output_vlan"+suggestedVlan;
             Resource resOutFlow = RdfOwl.createResource(vlanFlowsModel, URI_flow(resFlowTable.getURI(), outFlowId), Mrs.Flow);
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowTable, Mrs.hasFlow, resOutFlow));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowSvc, Mrs.providesFlow, resOutFlow));
@@ -974,12 +974,12 @@ public class MCETools {
             
             Resource resFlowAction3 = RdfOwl.createResource(vlanFlowsModel, URI_action(resOutFlow.getURI(), "2"), Mrs.FlowRule);
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resOutFlow, Mrs.flowAction, resFlowAction3));
-            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.type, "mod_vlan_id"));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.type, "mod_vlan_vid"));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.value, suggestedVlan.toString()));            
         }
         if (nextHop != null && nextHop.equals(resFlowSvc) && lastPort != null) {
             // swap input and output flow IDs from lastPort
-            String inFlowId = lastPort.getURI() + ":flow+output_vlan" + suggestedVlan;
+            String inFlowId = lastPort.getURI() + ":flow=output_vlan" + suggestedVlan;
             Resource resInFlow = RdfOwl.createResource(vlanFlowsModel, URI_flow(resFlowTable.getURI(), inFlowId), Mrs.Flow);
             //$$ add match: currentHop as in_port & suggestedVlan
             //$$ add action: strip VLAN
@@ -998,7 +998,7 @@ public class MCETools {
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.type, "strip_vlan"));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.value, "strip_vlan"));
 
-            String outFlowId = lastPort.getURI() + ":flow+input_vlan" + suggestedVlan;
+            String outFlowId = lastPort.getURI() + ":flow=input_vlan" + suggestedVlan;
             Resource resOutFlow = RdfOwl.createResource(vlanFlowsModel, URI_flow(resFlowTable.getURI(), outFlowId), Mrs.Flow);
             //$$ add actions: output to currentHop + swap suggestedVlan 
             Resource resFlowAction2 = RdfOwl.createResource(vlanFlowsModel, URI_action(resOutFlow.getURI(), "1"), Mrs.FlowRule);
@@ -1008,7 +1008,7 @@ public class MCETools {
 
             Resource resFlowAction3 = RdfOwl.createResource(vlanFlowsModel, URI_action(resOutFlow.getURI(), "2"), Mrs.FlowRule);
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resOutFlow, Mrs.flowAction, resFlowAction3));
-            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.type, "mod_vlan_id"));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.type, "mod_vlan_vid"));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.value, suggestedVlan.toString()));
         }
 

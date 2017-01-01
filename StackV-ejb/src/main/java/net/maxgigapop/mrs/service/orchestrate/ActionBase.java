@@ -417,7 +417,7 @@ public class ActionBase {
             QuerySolution solution = rs.next();
             String s = solution.getResource("s").toString();
             String p = solution.getResource("p").toString();
-            String o = solution.getResource("p").toString();
+            String o = solution.getResource("o").toString();
             throw new EJBException(this + String.format(".sanitizeSpaModel() failed to clean up policy annotation: (%s, %s, %s)", s, p, o));
         }
     }
