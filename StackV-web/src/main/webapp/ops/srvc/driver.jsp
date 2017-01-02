@@ -64,41 +64,41 @@
                                     <td>Stub</td>
                                     <td>This is a placement description</td>
                                     <td style="width: 170px;">
-                                        <button style='width: 50px;' onclick='activateDetails();' class='details' id='details-button'>Details</button>
+                                        <button style='width: 50px;' onclick='clearPanel(); activateDetails();' class='details' id='details-button'>Details</button>
                                         <div class='divider'></div>
-                                        <button style ='width: 50px;' onclick='activateInstall(); installStub();' class='install' id='install-button'>Install</button>
+                                        <button style ='width: 50px;' onclick='clearPanel(); activateInstall(); installStub();' class='install' id='install-button'>Install</button>
                                     </td>
                                 <tr>
                                     <td>AWS</td>
                                     <td>This is a placement description</td>
                                     <td style="width: 170px;">
-                                        <button style='width: 50px;' onclick='activateDetails();' class='details' id='details-button'>Details</button>
+                                        <button style='width: 50px;' onclick='clearPanel(); activateDetails();' class='details' id='details-button'>Details</button>
                                         <div class='divider'></div>
-                                        <button style ='width: 50px;' onclick='activateInstall(); installAWS();' class='install' id='install-button'>Install</button>
+                                        <button style ='width: 50px;' onclick='clearPanel(); activateInstall(); installAWS();' class='install' id='install-button'>Install</button>
                                     </td>
                                 <tr>
                                     <td>Generic</td>
                                     <td>This is a placement description</td>
                                     <td style="width: 170px;">
-                                        <button style='width: 50px;' onclick='activateDetails();' class='details' id='details-button'>Details</button>
+                                        <button style='width: 50px;' onclick='clearPanel(); activateDetails();' class='details' id='details-button'>Details</button>
                                         <div class='divider'></div>
-                                        <button style ='width: 50px;' onclick='activateInstall(); installStack();' class='install' id='install-button'>Install</button>
+                                        <button style ='width: 50px;' onclick='clearPanel(); activateInstall(); installStack();' class='install' id='install-button'>Install</button>
                                     </td>
                                 <tr>
                                     <td>Openstack</td>
                                     <td>This is a placement description</td>
                                     <td  style="width: 170px;">
-                                        <button style='width: 50px;' onclick='activateDetails();' class='details' id='details-button'>Details</button>
+                                        <button style='width: 50px;' onclick='clearPanel(); activateDetails();' class='details' id='details-button'>Details</button>
                                         <div class='divider'></div>
-                                        <button style ='width: 50px;' onclick='activateInstall(); installOpenstack();' class='install' id='install-button'>Install</button>
+                                        <button style ='width: 50px;' onclick='clearPanel(); activateInstall(); installOpenstack();' class='install' id='install-button'>Install</button>
                                     </td>
                                 <tr>
                                     <td>Stack</td>
                                     <td>This is a placement description</td>
                                     <td  style="width: 170px;">
-                                        <button style='width: 50px;' onclick='activateDetails();' class='details' id='details-button'>Details</button>
+                                        <button style='width: 50px;' onclick='clearPanel(); activateDetails();' class='details' id='details-button'>Details</button>
                                         <div class='divider'></div>
-                                        <button style ='width: 50px;' onclick='activateInstall(); installStack();' class='install' id='install-button'>Install</button>
+                                        <button style ='width: 50px;' onclick='clearPanel(); activateInstall(); installStack();' class='install' id='install-button'>Install</button>
                                     </td>
                                 </tr>
                             </tbody>
@@ -173,19 +173,14 @@
             
             <div class="inactive" id="driver-panel-right">
                 <ul class="nav nav-tabs catalog-tabs">
-                    <li style="width: 100%;" id="details-tab"><a data-toggle="tab" href="#detail-content">Details</a></li>
-                    <li style="width: 100%;" id="install-tab"><a data-toggle="tab" href="#install-content">Install</a></li>
+                    <li style="width: 100%;" id="side-tab"><a id="side-name">Details</a></li>
                 </ul>
                     
-                <div class="tab-content" id="catalog-tab-content">                    
-                    <div id="detail-content" class="tab-pane fadeIn">
-                        
-                    </div>
-                        
-                        
+                <div class="tab-content" id="catalog-tab-content">                                    
                     <div id="install-content" class="tab-pane fadeIn">
                         <div id='install-type'></div>
-                        <button style="width: 50px;" onclick="closeSide();" class="install" id="close-button">Close</button>
+                        <button style="width: 50px;" onclick="clearPanel(); closeSide();" class="install" id="close-button">Close</button>
+                        <button onclick="changeName();">Change</button>
                     </div>
                     
                 </div>
