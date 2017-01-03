@@ -15,7 +15,6 @@
         <script src="/StackV-web/js/bootstrap.js"></script>
         <script src="/StackV-web/js/nexus.js"></script>
         <script src="/StackV-web/js/driver.js"></script>
-        <script src="/StackV-web/js/jquery.floatThead.js"></script>
 
         <link rel="stylesheet" href="/StackV-web/css/animate.min.css">
         <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css">
@@ -64,60 +63,44 @@
                                     <td>Stub</td>
                                     <td>This is a placement description</td>
                                     <td style="width: 170px;">
-                                        <button style='width: 50px;' onclick='clearPanel(); activateDetails();' class='details' id='details-button'>Details</button>
+                                        <button style='width: 50px;' onclick='clearPanel(); activateSide();  changeNameDet();' class='details' id='details-button'>Details</button>
                                         <div class='divider'></div>
-                                        <button style ='width: 50px;' onclick='clearPanel(); activateInstall(); installStub();' class='install' id='install-button'>Install</button>
+                                        <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStub(); changeNameInst();' class='install' id='install-button'>Install</button>
                                     </td>
                                 <tr>
                                     <td>AWS</td>
                                     <td>This is a placement description</td>
                                     <td style="width: 170px;">
-                                        <button style='width: 50px;' onclick='clearPanel(); activateDetails();' class='details' id='details-button'>Details</button>
+                                        <button style='width: 50px;' onclick='clearPanel(); activateSide(); changeNameDet();' class='details' id='details-button'>Details</button>
                                         <div class='divider'></div>
-                                        <button style ='width: 50px;' onclick='clearPanel(); activateInstall(); installAWS();' class='install' id='install-button'>Install</button>
+                                        <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installAWS();  changeNameInst();' class='install' id='install-button'>Install</button>
                                     </td>
                                 <tr>
                                     <td>Generic</td>
                                     <td>This is a placement description</td>
                                     <td style="width: 170px;">
-                                        <button style='width: 50px;' onclick='clearPanel(); activateDetails();' class='details' id='details-button'>Details</button>
+                                        <button style='width: 50px;' onclick='clearPanel(); activateSide(); changeNameDet();' class='details' id='details-button'>Details</button>
                                         <div class='divider'></div>
-                                        <button style ='width: 50px;' onclick='clearPanel(); activateInstall(); installStack();' class='install' id='install-button'>Install</button>
+                                        <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStack(); changeNameInst();' class='install' id='install-button'>Install</button>
                                     </td>
                                 <tr>
                                     <td>Openstack</td>
                                     <td>This is a placement description</td>
                                     <td  style="width: 170px;">
-                                        <button style='width: 50px;' onclick='clearPanel(); activateDetails();' class='details' id='details-button'>Details</button>
+                                        <button style='width: 50px;' onclick='clearPanel(); activateSide(); changeNameDet();' class='details' id='details-button'>Details</button>
                                         <div class='divider'></div>
-                                        <button style ='width: 50px;' onclick='clearPanel(); activateInstall(); installOpenstack();' class='install' id='install-button'>Install</button>
+                                        <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installOpenstack();  changeNameInst();' class='install' id='install-button'>Install</button>
                                     </td>
                                 <tr>
                                     <td>Stack</td>
                                     <td>This is a placement description</td>
                                     <td  style="width: 170px;">
-                                        <button style='width: 50px;' onclick='clearPanel(); activateDetails();' class='details' id='details-button'>Details</button>
+                                        <button style='width: 50px;' onclick='clearPanel(); activateSide();' class='details' id='details-button'>Details</button>
                                         <div class='divider'></div>
-                                        <button style ='width: 50px;' onclick='clearPanel(); activateInstall(); installStack();' class='install' id='install-button'>Install</button>
+                                        <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStack();  changeNameInst();' class='install' id='install-button'>Install</button>
                                     </td>
                                 </tr>
                             </tbody>
-                        </table>
-                    </div>
-                         
-                    <div style="display: inline-block; width: 100%; height: 85%; overflow: auto;" id="driver-tab" class="tab-pane fadeIn">
-                        <table class="management-table tab-table">
-                            <thead>
-                                <tr>
-                                    <th>Driver Name</th>
-                                    <th>Description</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody id="template-body">
-                            <script>driverTopTable();</script>
-                            </tbody>
-                        </table>
                         </table>
                     </div>
                 </div>
@@ -137,8 +120,8 @@
             
             
             <div class="active driver-panel no-side-tab" id="driver-panel-bot">
-                <ul class="nav nav-tabs">
-                    <li style="width:100%;" class="active"><a data-toggle="tab" href="#installed-tag">Installed Drivers</a></li>
+                <ul class="nav nav-tabs catalog-tabs">
+                    <li style="width:100%;" ><a data-toggle="tab" href="#installed-tag">Installed Drivers</a></li>
                 </ul>
 
                 <div class="tab-content" id="catalog-tab-content">                    
@@ -180,7 +163,6 @@
                     <div id="install-content" class="tab-pane fadeIn">
                         <div id='install-type'></div>
                         <button style="width: 50px;" onclick="clearPanel(); closeSide();" class="install" id="close-button">Close</button>
-                        <button onclick="changeName();">Change</button>
                     </div>
                     
                 </div>

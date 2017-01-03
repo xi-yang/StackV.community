@@ -106,7 +106,6 @@ function driverTopTable() {
 }
 function activateDetails(){
     $('#driver-panel-right').addClass('active-detail');
-    $('#side-tab').addClass('active');
     $('#detail-content').addClass('active');
     $('#driver-panel-top').removeClass('no-side-tab');
     $('#driver-panel-bot').removeClass('no-side-tab');
@@ -114,9 +113,8 @@ function activateDetails(){
     $('#driver-panel-bot').addClass('side-tab');
 }
 
-function activateInstall(){
+function activateSide(){
     $('#driver-panel-right').addClass('active-detail');
-    $('#install-tab').addClass('active');
     $('#install-content').addClass('active');
     $('#driver-panel-top').removeClass('no-side-tab');
     $('#driver-panel-bot').removeClass('no-side-tab');
@@ -223,6 +221,9 @@ function installStack(){
 function clearPanel(){
     $('#install-type').empty();
 }
-function changeName() {
+function changeNameInst() {
     document.getElementById('side-name').innerHTML="Install";
+}
+function changeNameDet() {
+    document.getElementById('side-name').innerHTML="Details";
 }
