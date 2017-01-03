@@ -1418,9 +1418,9 @@ function loadDetails() {
 
     // Moderation
     setTimeout(function () {
-        deltaModerate();
-        instructionModerate();
-        buttonModerate();
+        setTimeout(deltaModerate(), 100);
+        setTimeout(instructionModerate(), 200);
+        setTimeout(buttonModerate(), 300);
         loadACL(uuid);
         loadStatus(uuid);
         //loadVisualization();
@@ -1565,7 +1565,9 @@ function subloadInstance() {
                     success: function () {
                         if (command === "delete" || command === "force_delete") {
                             enableLoading();
-                            window.document.location = "/StackV-web/ops/catalog.jsp";
+                            setTimeout(function () { 
+                                window.document.location = "/StackV-web/ops/catalog.jsp"; 
+                            }, 250);
                         } else {
                             reloadDetails();
                         }
@@ -1966,7 +1968,7 @@ function buttonModerate() {
 
     if (superState === 'Create') {
         // State 0 - Stuck 
-        if (verificationState === "" || verificationState === "null") {
+        if (verificationState === "" || verificationState === "null" || subState === "INIT") {
             $("#force_delete").toggleClass("hide");
             $("#force_cancel").toggleClass("hide");
             $("#force_retry").toggleClass("hide");
@@ -2003,7 +2005,7 @@ function buttonModerate() {
         }
     } else if (superState === 'Cancel') {
         // State 0 - Stuck 
-        if (verificationState === "" || verificationState === "null") {
+        if (verificationState === "" || verificationState === "null" || subState === "INIT") {
             $("#force_delete").toggleClass("hide");
             $("#force_retry").toggleClass("hide");
             $("#reverify").toggleClass("hide");
@@ -2043,7 +2045,7 @@ function buttonModerate() {
         }
     } else if (superState === 'Reinstate') {
         // State 0 - Stuck 
-        if (verificationState === "" || verificationState === "null") {
+        if (verificationState === "" || verificationState === "null" || subState === "INIT") {
             $("#force_delete").toggleClass("hide");
             $("#force_retry").toggleClass("hide");
             $("#reverify").toggleClass("hide");
