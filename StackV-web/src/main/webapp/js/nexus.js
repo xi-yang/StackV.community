@@ -49,12 +49,13 @@ $(function () {
         // catalog
         if (window.location.pathname === "/StackV-web/ops/catalog.jsp") {
             setTimeout(loadCatalog, 750);
+            setRefresh(60);
         }
         // templateDetails
         else if (window.location.pathname === "/StackV-web/ops/details/templateDetails.jsp") {
             loadDetails();
+            setRefresh(60);
         }
-        //setRefresh(60);
     };
     keycloak.onTokenExpire = function () {
         keycloak.updateToken(20).success(function () {
@@ -1357,6 +1358,8 @@ function loadWizard() {
                         console.log(errorThrown);
                     }
                 });
+
+                reloadCatalog();
                 $("#black-screen").addClass("off");
                 $("#info-panel").removeClass("active");
                 evt.preventDefault();
@@ -1417,9 +1420,9 @@ function loadDetails() {
 
     // Moderation
     setTimeout(function () {
-        deltaModerate();
-        instructionModerate();
-        buttonModerate();
+        setTimeout(deltaModerate(), 100);
+        setTimeout(instructionModerate(), 200);
+        setTimeout(buttonModerate(), 300);
         loadACL(uuid);
         loadStatus(uuid);
         loadVisualization();
@@ -1444,8 +1447,10 @@ function subloadInstance() {
              *      4 - super_state     */
 
             $("#details-panel").append("<div id='instance-verification' class='hide'>" + instance[0] + "</div>");
+            var panel = document.getElementById("details-panel");
 
             var table = document.createElement("table");
+
             table.id = "details-table";
             table.className = "management-table";
 
@@ -1546,7 +1551,7 @@ function subloadInstance() {
             tbody.appendChild(row);
 
             table.appendChild(tbody);
-            document.getElementById("details-panel").appendChild(table);
+            panel.insertBefore(table, panel.firstChild);
 
             $(".delta-table-header").click(function () {
                 $("#body-" + this.id).toggleClass("hide");
@@ -1564,7 +1569,9 @@ function subloadInstance() {
                     success: function () {
                         if (command === "delete" || command === "force_delete") {
                             enableLoading();
-                            window.document.location = "/StackV-web/ops/catalog.jsp";
+                            setTimeout(function () {
+                                window.document.location = "/StackV-web/ops/catalog.jsp";
+                            }, 250);
                         } else {
                             reloadDetails();
                         }
@@ -1965,7 +1972,7 @@ function buttonModerate() {
 
     if (superState === 'Create') {
         // State 0 - Stuck 
-        if (verificationState === "" || verificationState === "null") {
+        if (verificationState === "" || verificationState === "null" || subState === "INIT") {
             $("#force_delete").toggleClass("hide");
             $("#force_cancel").toggleClass("hide");
             $("#force_retry").toggleClass("hide");
@@ -2002,7 +2009,7 @@ function buttonModerate() {
         }
     } else if (superState === 'Cancel') {
         // State 0 - Stuck 
-        if (verificationState === "" || verificationState === "null") {
+        if (verificationState === "" || verificationState === "null" || subState === "INIT") {
             $("#force_delete").toggleClass("hide");
             $("#force_retry").toggleClass("hide");
             $("#reverify").toggleClass("hide");
@@ -2042,7 +2049,7 @@ function buttonModerate() {
         }
     } else if (superState === 'Reinstate') {
         // State 0 - Stuck 
-        if (verificationState === "" || verificationState === "null") {
+        if (verificationState === "" || verificationState === "null" || subState === "INIT") {
             $("#force_delete").toggleClass("hide");
             $("#force_retry").toggleClass("hide");
             $("#reverify").toggleClass("hide");

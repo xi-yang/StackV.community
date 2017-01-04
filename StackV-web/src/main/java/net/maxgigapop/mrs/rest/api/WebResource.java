@@ -292,11 +292,11 @@ public class WebResource {
 
         PreparedStatement prep;
         if (username.equals("admin")) {
-            prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID, X.super_state, I.alias_name "
+            prep = front_conn.prepareStatement("SELECT DISTINCT S.name, I.referenceUUID, X.super_state, I.alias_name "
                     + "FROM service S, service_instance I, service_state X, acl A "
                     + "WHERE S.service_id = I.service_id AND I.service_state_id = X.service_state_id");
         } else {
-            prep = front_conn.prepareStatement("SELECT S.name, I.referenceUUID, X.super_state, I.alias_name "
+            prep = front_conn.prepareStatement("SELECT DISTINCT S.name, I.referenceUUID, X.super_state, I.alias_name "
                     + "FROM service S, service_instance I, service_state X, acl A "
                     + "WHERE S.service_id = I.service_id AND I.service_state_id = X.service_state_id AND I.referenceUUID = A.object AND (A.subject = ? OR I.username = ?)");
             prep.setString(1, username);
@@ -694,6 +694,11 @@ public class WebResource {
             if (!roleSet.contains(serviceType)) {
                 throw new IOException("Unauthorized to use " + serviceType + "!\n");
             }
+            
+            String username = accessToken.getPreferredUsername();
+            System.out.println("User:" + username);
+            inputJSON.remove("username");
+            inputJSON.put("username", username);
 
             //System.out.println("Service API:: inputJSON: " + inputJSON.toJSONString());
             executorService.execute(new Runnable() {
@@ -716,7 +721,7 @@ public class WebResource {
             final AsyncResponse asyncResponse, @PathParam(value = "siUUID")
             final String refUuid, @PathParam(value = "action")
             final String action) {
-        final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+        final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");                
 
         executorService.execute(new Runnable() {
             @Override
@@ -800,10 +805,12 @@ public class WebResource {
             prep.setInt(1, serviceID);
             prep.setString(2, username);
             prep.setTimestamp(3, timeStamp);
-            prep.setString(4, refUuid);
+            prep.setString(4, refUuid); 
             prep.setString(5, alias);
             prep.setInt(6, 1);
             prep.executeUpdate();
+            
+            System.out.println("Past 1");
 
             int instanceID = servBean.getInstanceID(refUuid);
 
@@ -822,6 +829,8 @@ public class WebResource {
             prep.setString(1, username);
             prep.setString(2, refUuid);
             prep.executeUpdate();
+            
+            System.out.println("Past 2");
 
             // Execute service creation.
             switch (serviceType) {

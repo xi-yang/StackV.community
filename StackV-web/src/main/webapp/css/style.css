@@ -597,15 +597,6 @@ body {
 .management-table tr:last-of-type td:last-child {
     box-shadow: inset -1px -1px 0 #fff;
 }	
-/* Set to higher opacity to reduce blur effect */
-.management-table tbody:hover td {
-    color: rgba(0, 0, 0, 0.6);
-    text-shadow: 0 0 3px #aaa;
-}
-.management-table tbody:hover tr:hover td {
-    color: #444;
-    text-shadow: 0 1px 0 #fff;
-}
 
 
 
@@ -793,7 +784,7 @@ body {
 .instruction-row {
     vertical-align: top;
     height: 80px;
-    font-size: 1.25em;
+    font-size: 1.2em;
 }
 .button-row {
     height: 51px;
