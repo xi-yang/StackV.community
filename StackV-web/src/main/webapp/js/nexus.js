@@ -1827,17 +1827,17 @@ function subloadACL() {
     });
 }
 
-function buildServiceDeltaTable() {
+function buildDeltaTable(type) {
         var panel = document.getElementById("details-panel");
 
         var table = document.createElement("table");
-        table.className = "management-table hide service-delta-table";
+        table.className = "management-table hide " + type.toLowerCase() +  "-delta-table";
 
         var thead = document.createElement("thead");
         thead.className = "delta-table-header";
         var row = document.createElement("tr");
         var head = document.createElement("th");
-        head.innerHTML = "Service Delta";
+        head.innerHTML = type + " Delta";
         row.appendChild(head);
         
         head = document.createElement("th");
@@ -1858,22 +1858,23 @@ function buildServiceDeltaTable() {
         //tbody.id = "acl-body";
 
         row = document.createElement("tr");
-        var serv_add = document.createElement("td");
-        row.appendChild(serv_add);
+        var prefix = type.substring(0, 4).toLowerCase();
+        var add = document.createElement("td");
+        row.appendChild(add);
 
-        serv_add = document.createElement("td");
-        serv_add.id = "serv-add";   
-        row.appendChild(serv_add);
+        add = document.createElement("td");
+        add.id = prefix + "-add";   
+        row.appendChild(add);
         
-        var serv_red = document.createElement("td");
-        serv_red.id = "serv-red";
-        row.appendChild(serv_red); 
+        var red = document.createElement("td");
+        red.id = prefix + "-red";
+        row.appendChild(red); 
 
         tbody.appendChild(row);
         row = document.createElement("tr");
         var cell = document.createElement("td");
         cell.colSpan = "3";
-        cell.innerHTML = '<button  class="details-model-toggle" onclick="toggleTextModel(\'.service-delta-table\', \'#delta-Service\');">Toggle Text Model</button>';
+        cell.innerHTML = '<button  class="details-model-toggle" onclick="toggleTextModel(\'.'+ type.toLowerCase() +'-delta-table\', \'#delta-' + type + '\');">Toggle Text Model</button>';
         row.appendChild(cell);
         tbody.appendChild(row);
 
@@ -1904,7 +1905,9 @@ function loadVisualization() {
 
         // Loading Service Delta visualization
         $("#delta-Service").addClass("hide");
-        buildServiceDeltaTable();
+        buildDeltaTable("Service");
+        buildDeltaTable("System");
+        
         $(".service-delta-table").removeClass("hide");
         
         $("#serv-add").append($("#serva_viz_div"));
@@ -1924,15 +1927,15 @@ function loadVisualization() {
 
             // Toggle button should toggle  between system delta visualization and delta-System table
             // if the verification failed
-//            document.querySelector(".system-delta-table .details-model-toggle").onclick = function () {
-//                toggleTextModel('.system-delta-table', '#delta-System');
-//            };
+            document.querySelector(".system-delta-table .details-model-toggle").onclick = function () {
+                toggleTextModel('.system-delta-table', '#delta-System');
+            };
 
-            $("#sys-red").append($("#sysr_viz_div"));
-            $("#sys-add").append($("#sysa_viz_div"));
+            $("#syst-red").append($("#sysr_viz_div"));
+            $("#syst-add").append($("#sysa_viz_div"));
 
-            $("#sys-red").find("#sysr_viz_div").removeClass("hidden");
-            $("#sys-add").find("#sysa_viz_div").removeClass("hidden");
+            $("#syst-red").find("#sysr_viz_div").removeClass("hidden");
+            $("#syst-add").find("#sysa_viz_div").removeClass("hidden");
         } else {
             // Toggle button should toggle between  verification visualization and delta-System table
             // if the verification succeeded
@@ -1953,7 +1956,7 @@ function toggleTextModel(viz_table, text_table) {
         $(viz_table.toLowerCase()).toggleClass("hide");
         // delta-Service, service verification etc must always display before 
         // everything else. 
-        if (text_table.toLowerCase().indexOf("service")) {
+        if (text_table.toLowerCase().indexOf("service") > 0) {
             $(text_table).insertAfter("#details-table")
         }
         $(text_table).toggleClass("hide");
