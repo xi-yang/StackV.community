@@ -22,7 +22,6 @@
  */
 
 /* global XDomainRequest, baseUrl, loggedIn */
- 
 // Service JavaScript Library
 baseUrl = window.location.origin;
 var keycloak = Keycloak('/StackV-web/data/json/keycloak.json');
@@ -57,7 +56,6 @@ $(function () {
             loadDetails();
             setRefresh(60);
         }
-
     };
     keycloak.onTokenExpire = function () {
         keycloak.updateToken(20).success(function () {
@@ -1131,7 +1129,7 @@ function setRefresh(time) {
         }
     }, (time * 1000));
     countdownTimer = setInterval(function () {
-        refreshCountdown(time);
+       refreshCountdown(time);
     }, 1000);
 }
 
