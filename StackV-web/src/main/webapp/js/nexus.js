@@ -1642,6 +1642,7 @@ function subloadDelta() {
                 cell = document.createElement("td");
                 row.appendChild(cell);
                 cell = document.createElement("td");
+                cell.id = ''
                 cell.innerHTML = delta[3];
                 row.appendChild(cell);
                 tbody.appendChild(row);
@@ -1826,6 +1827,60 @@ function subloadACL() {
     });
 }
 
+function buildServiceDeltaTable() {
+        var panel = document.getElementById("details-panel");
+
+        var table = document.createElement("table");
+        table.className = "management-table hide service-delta-table";
+
+        var thead = document.createElement("thead");
+        thead.className = "delta-table-header";
+        var row = document.createElement("tr");
+        var head = document.createElement("th");
+        head.innerHTML = "Service Delta";
+        row.appendChild(head);
+        
+        head = document.createElement("th");
+        head.innerHTML = "Verified";
+        row.appendChild(head);
+        
+        head = document.createElement("th");
+        head.innerHTML = "Unverified";
+        row.appendChild(head);
+  
+        row.appendChild(head);
+
+        thead.appendChild(row);
+        table.appendChild(thead);
+
+        var tbody = document.createElement("tbody");
+        tbody.className = "delta-table-body";
+        //tbody.id = "acl-body";
+
+        row = document.createElement("tr");
+        var serv_add = document.createElement("td");
+        row.appendChild(serv_add);
+
+        serv_add = document.createElement("td");
+        serv_add.id = "serv-add";   
+        row.appendChild(serv_add);
+        
+        var serv_red = document.createElement("td");
+        serv_red.id = "serv-red";
+        row.appendChild(serv_red); 
+
+        tbody.appendChild(row);
+
+        table.appendChild(tbody);
+        var verification = document.getElementsByClassName("verification-table");
+        if (verification) {
+            panel.insertBefore(table, verification[0]);
+        } else {
+            panel.appendChild(table);      
+        }
+        
+}
+
 function loadVisualization() {
     $("#details-viz").load("/StackV-web/details_viz.html", function () {
         // Loading Verification visualization
@@ -1843,8 +1898,9 @@ function loadVisualization() {
 
         // Loading Service Delta visualization
         $("#delta-Service").addClass("hide");
+        buildServiceDeltaTable();
         $(".service-delta-table").removeClass("hide");
-
+        
         $("#serv-add").append($("#serva_viz_div"));
         $("#serv-add").find("#serva_viz_div").removeClass("hidden");
 
