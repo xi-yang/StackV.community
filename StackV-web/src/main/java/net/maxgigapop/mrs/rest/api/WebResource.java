@@ -1098,10 +1098,8 @@ public class WebResource {
      * @return error code |
      */
     private int deleteInstance(String refUuid, String auth) throws SQLException {
-        System.out.println("Deletion Beginning.");
         try {
             String result = delete(refUuid, auth);
-            System.out.println("Result from Backend: " + result);
             if (result.equalsIgnoreCase("Successfully terminated")) {
                 Connection front_conn;
                 Properties front_connectionProps = new Properties();
@@ -1564,7 +1562,6 @@ public class WebResource {
 
     private boolean verify(String refUuid, String auth) throws MalformedURLException, IOException, InterruptedException, SQLException {
         int instanceID = servBean.getInstanceID(refUuid);
-
         Connection front_conn;
         Properties front_connectionProps = new Properties();
         front_connectionProps.put("user", front_db_user);

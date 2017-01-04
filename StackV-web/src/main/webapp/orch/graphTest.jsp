@@ -140,9 +140,10 @@
                     "local/stackv/utils",
                     "local/stackv/topology/DropDownTree",
                     "local/stackv/topology/ContextMenu",
-                    "local/stackv/topology/TagDialog"
+                    "local/stackv/topology/TagDialog",
+                    "local/stackv/topology/OMMPanel"
                 ],
-                        function (m, l, r, d3_, utils_, tree, c, td) {
+                        function (m, l, r, d3_, utils_, tree, c, td, op) {
                             var userId = sessionStorage.getItem("subject");
                             var username = sessionStorage.getItem("username");
                             var token = sessionStorage.getItem("token");
@@ -171,7 +172,12 @@
                                         ContextMenu = c;
                                         TagDialog = td;
                                         tagDialog = new TagDialog(userId);
-
+                                        
+                                        OMMPanel = op;
+                                        ommPanel = new OMMPanel(render.API);
+                                        ommPanel.init();
+                                        functionMap["AddToTrashcan"] = ommPanel;
+                                        
                                         tagDialog.init();
                                         functionMap['Tag'] = tagDialog;
                                         // possibly pass in map here later for all possible dialogs 
@@ -182,7 +188,7 @@
                                         model = new ModelConstructor();
                                         outputApi = new outputApi_(render.API, contextMenu, "viz");
                                         model.init(1, drawGraph.bind(undefined, outputApi, model), null);    
-                                        console.log("I'm outputApu" + outputApi);
+                                        //console.log("I'm outputApu" + outputApi);
                                         $("#tagDialog").draggable();
 
                                         window.onbeforeunload = function(){ 
@@ -820,6 +826,7 @@
                                         row.appendChild(cell1_4);
                                         tbody.appendChild(row);
                                     }
+                                    initServiceInstanceItems();
                                 },
                                 
                                 error: function (jqXHR, textStatus, errorThrown) {
@@ -835,36 +842,39 @@
 
         </div>
         <script>
-            $(".service-instance-item").each(function () {
-                var that = this;
-                var DELAY = 700, clicks = 0, timer = null;
+            function initServiceInstanceItems() {
+                $(".service-instance-item").each(function () {
+                    var that = this;
+                    var DELAY = 700, clicks = 0, timer = null;
 
-                $(that).click(function () {
-                    clicks++;  //count clicks
+                    $(that).click(function () {
+                        clicks++;  //count clicks
 
-                    if (clicks === 1) {
-                        timer = setTimeout(function () {
-                            clickServiceInstanceItem(that);
-                            clicks = 0;
-                        }, DELAY);
-                    } else {
-                        clearTimeout(timer);    //prevent single-click action
-                        if ($(that).hasClass("service-instance-highlighted")) {
-                            $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
-                            render.API.setHighlights([], "serviceHighlighting");
-                            render.API.highlightElements("serviceHighlighting");                        
-                            clicks = 0;             //after action performed, reset counter
-                        } else {
+                        if (clicks === 1) {
                             timer = setTimeout(function () {
                                 clickServiceInstanceItem(that);
                                 clicks = 0;
                             }, DELAY);
+                        } else {
+                            clearTimeout(timer);    //prevent single-click action
+                            if ($(that).hasClass("service-instance-highlighted")) {
+                                $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
+                                render.API.setHighlights([], "serviceHighlighting");
+                                render.API.highlightElements("serviceHighlighting");                        
+                                clicks = 0;             //after action performed, reset counter
+                            } else {
+                                timer = setTimeout(function () {
+                                    clickServiceInstanceItem(that);
+                                    clicks = 0;
+                                }, DELAY);
+                            }
                         }
-                    }
-                }).dblclick(function (e) {
-                    e.preventDefault();
+                    }).dblclick(function (e) {
+                        e.preventDefault();
+                    });
                 });
-            });
+            }
+
 
 
             function clickServiceInstanceItem(item) {
@@ -1072,9 +1082,15 @@
             <li class="context-menu__item">
                 <a href="#" class="context-menu__link" data-action="Tag"><i class="fa  fa-tag"></i> Add Tag</a>
             </li>
+            <li class="context-menu__item">
+                <a href="#" class="context-menu__link" data-action="AddToTrashcan"><i class="fa  fa-trash"></i> Add To Trashcan</a>
+            </li>    
+            <li class="context-menu__item">
+                <a href="#" class="context-menu__link" data-action="Delete"><i class="fa  fa-times"></i> Delete</a>
+            </li>                        
         </ul>
     </nav>
-
+    
     <!-- TAG DIALOG -->
     <div id="tagDialog">
         <div id="tagDialogBar">
