@@ -1870,6 +1870,12 @@ function buildServiceDeltaTable() {
         row.appendChild(serv_red); 
 
         tbody.appendChild(row);
+        row = document.createElement("tr");
+        var cell = document.createElement("td");
+        cell.colSpan = "3";
+        cell.innerHTML = '<button  class="details-model-toggle" onclick="toggleTextModel(\'.service-delta-table\', \'#delta-Service\');">Toggle Text Model</button>';
+        row.appendChild(cell);
+        tbody.appendChild(row);
 
         table.appendChild(tbody);
         var verification = document.getElementsByClassName("verification-table");
@@ -1945,7 +1951,13 @@ function toggleTextModel(viz_table, text_table) {
         alert("Text model not found");
     } else {
         $(viz_table.toLowerCase()).toggleClass("hide");
+        // delta-Service, service verification etc must always display before 
+        // everything else. 
+        if (text_table.toLowerCase().indexOf("service")) {
+            $(text_table).insertAfter("#details-table")
+        }
         $(text_table).toggleClass("hide");
+
     }
 }
 
