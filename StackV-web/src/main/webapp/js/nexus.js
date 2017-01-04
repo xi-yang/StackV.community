@@ -50,12 +50,14 @@ $(function () {
         // catalog
         if (window.location.pathname === "/StackV-web/ops/catalog.jsp") {
             setTimeout(loadCatalog, 750);
+            setRefresh(60);
         }
         // templateDetails
         else if (window.location.pathname === "/StackV-web/ops/details/templateDetails.jsp") {
             loadDetails();
+            setRefresh(60);
         }
-        setRefresh(60);
+
     };
     keycloak.onTokenExpire = function () {
         keycloak.updateToken(20).success(function () {
@@ -1546,7 +1548,7 @@ function subloadInstance() {
             row.appendChild(cell);
             tbody.appendChild(row);
 
-            table.appendChild(tbody);
+            table.prependChild(tbody);
             document.getElementById("details-panel").appendChild(table);
 
             $(".delta-table-header").click(function () {
@@ -1565,8 +1567,8 @@ function subloadInstance() {
                     success: function () {
                         if (command === "delete" || command === "force_delete") {
                             enableLoading();
-                            setTimeout(function () { 
-                                window.document.location = "/StackV-web/ops/catalog.jsp"; 
+                            setTimeout(function () {
+                                window.document.location = "/StackV-web/ops/catalog.jsp";
                             }, 250);
                         } else {
                             reloadDetails();
