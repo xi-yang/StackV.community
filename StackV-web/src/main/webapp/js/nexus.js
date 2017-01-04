@@ -1360,6 +1360,8 @@ function loadWizard() {
                         console.log(errorThrown);
                     }
                 });
+
+                reloadCatalog();
                 $("#black-screen").addClass("off");
                 $("#info-panel").removeClass("active");
                 evt.preventDefault();
@@ -1447,8 +1449,10 @@ function subloadInstance() {
              *      4 - super_state     */
 
             $("#details-panel").append("<div id='instance-verification' class='hide'>" + instance[0] + "</div>");
+            var panel = document.getElementById("details-panel");
 
             var table = document.createElement("table");
+
             table.id = "details-table";
             table.className = "management-table";
 
@@ -1548,8 +1552,8 @@ function subloadInstance() {
             row.appendChild(cell);
             tbody.appendChild(row);
 
-            table.prependChild(tbody);
-            document.getElementById("details-panel").appendChild(table);
+            table.appendChild(tbody);
+            panel.insertBefore(table, panel.firstChild);
 
             $(".delta-table-header").click(function () {
                 $("#body-" + this.id).toggleClass("hide");
