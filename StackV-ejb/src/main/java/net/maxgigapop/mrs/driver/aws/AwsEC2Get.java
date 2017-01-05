@@ -28,11 +28,14 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.policy.Resource;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.services.ec2.AmazonEC2AsyncClient;
 import com.amazonaws.services.ec2.model.*;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import static java.lang.Thread.sleep;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -42,7 +45,8 @@ import java.util.logging.Logger;
  */
 public class AwsEC2Get {
 
-    private AmazonEC2Client client = null;
+    private AmazonEC2AsyncClient client = null;
+
     private List<Vpc> vpcs = null;
     private List<Instance> instances = null;
     private List<Subnet> subnets = null;
@@ -60,7 +64,8 @@ public class AwsEC2Get {
 
     public AwsEC2Get(String access_key_id, String secret_access_key, Regions region) {
         AwsAuthenticateService authenticate = new AwsAuthenticateService(access_key_id, secret_access_key);
-        this.client = authenticate.AwsAuthenticateEC2Service(Region.getRegion(region));
+        this.client = authenticate.AwsAuthenticateEC2ServiceAsync(Region.getRegion(region));
+        
 
         //get all the vpcs of the account
         DescribeVpcsResult VpcsResult = this.client.describeVpcs();
@@ -122,9 +127,10 @@ public class AwsEC2Get {
     }
 
     //get the client of this EC2 Account account
-    public AmazonEC2Client getClient() {
+    public AmazonEC2AsyncClient getClient() {
         return client;
     }
+
 
     //get the list of all the VPCs of the client
     public List<Vpc> getVpcs() {
@@ -820,34 +826,20 @@ public class AwsEC2Get {
      * function to wait for Vpn gateway dettachment
      * ****************************************************************
      */
-    public void vpnGatewayDetachmentCheck(String id, String vpcId) {
-        DescribeVpnGatewaysRequest request = new DescribeVpnGatewaysRequest();
-        request.withVpnGatewayIds(id);
+    public void vpnGatewayDetachmentCheck(Future<Void> asyncResult) throws ExecutionException {
         long delay = 1000L;
         while (true) {
-            delay *= 2;
+            if (asyncResult.isDone()) {
+                try {
+                    asyncResult.get();
+                    break;
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(AwsEC2Get.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
             try {
-                VpnGateway resource = client.describeVpnGateways(request).getVpnGateways().get(0);
-                VpcAttachment att = new VpcAttachment();
-                att.withState(AttachmentStatus.Detaching)
-                        .withVpcId(vpcId);
-                VpcAttachment att2 = new VpcAttachment();
-                att2.withState(AttachmentStatus.Attached)
-                        .withVpcId(vpcId);
-                if (resource.getVpcAttachments().isEmpty()) {
-                    break;
-                } else if (!resource.getVpcAttachments().contains(att) && !resource.getVpcAttachments().contains(att2)) {
-                    break;
-                }
-            } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
-                    try {
-                        sleep(delay);
-                    } catch (InterruptedException ex1) {
-                        ;
-                    }
-                }
-            } catch (NullPointerException ex2) {
+                sleep(delay);
+            } catch (InterruptedException ex1) {
                 ;
             }
         }
