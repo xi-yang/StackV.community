@@ -24,44 +24,6 @@
 baseUrl = window.location.origin;
 var keycloak = Keycloak('/StackV-web/data/json/keycloak.json');
 
-function loadEditor() {
-    var userId = keycloak.subject;
-    var tbody = document.getElementById("editor-body");
-    
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + userId + '/editor';
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (result) {
-            for (i = 0; i < result.length; i++) {
-                var profile = result[i];
-                
-                var row = document.createElement("tr");
-                var cell1_1 = document.createElement("td");
-                cell1_1.innerHTML = profile[0];
-                var cell1_2 = document.createElement("td");
-                cell1_2.innerHTML = profile[1];
-                var cell1_3 = document.createElement("td");
-                cell1_3.innerHTML = "<button class='button-service-select' id='" + profile[2] + "'>Select</button";
-                row.appendChild(cell1_1);
-                row.appendChild(cell1_2);
-                row.appendChild(cell1_3);
-                tbody.appendChild(row);
-            }
-            
-            $(".button-service-select").click(function (evt) {
-                var ref = "/StackV-web/ops/srvc/" + this.id.toLowerCase() + ".jsp";
-                window.location.href = ref;
-                
-                evt.preventDefault();
-            });
-        }
-    });
-}
-
 function driverBotTable() {
     var tbody = document.getElementById("installed-body");
     
@@ -144,7 +106,7 @@ function installStub(){
     third.innerHTML="TTL:";
     third.style.color = "white";
     fourth.rows=6;
-    fourth.cols=50;
+    fourth.cols=40;
     divContent.appendChild(first);
     divContent.appendChild(second);
     divContent.appendChild(third);
@@ -226,4 +188,12 @@ function changeNameInst() {
 }
 function changeNameDet() {
     document.getElementById('side-name').innerHTML="Details";
+}
+function myTest() {
+    var userId = keycloak.subject;
+     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/test';
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT'
+    });
 }
