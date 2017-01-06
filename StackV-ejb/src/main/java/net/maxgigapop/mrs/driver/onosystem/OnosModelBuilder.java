@@ -35,7 +35,7 @@ import java.util.List;
 public class OnosModelBuilder {
 
     //public static OntModel createOntology(String access_key_id, String secret_access_key, Regions region, String topologyURI) throws IOException {
-    public static OntModel createOntology(String topologyURI, String subsystemBaseUrl, String srrgFile, String mappingId, String access_key_id, String secret_access_key)
+    public static OntModel createOntology(String topologyURI, String subsystemBaseUrl, String srrgFile, String mappingId, String access_key_id, String secret_access_key, String edge)
             throws IOException, ParseException {
 
         //create model object
@@ -116,14 +116,24 @@ public class OnosModelBuilder {
 
         String mappingIdMatrix[]=mappingId.split("\n");
         int mappingIdSize=mappingIdMatrix.length;
-        
-        OnosServer onos = new OnosServer();
-        String device[][] = onos.getOnosDevices(subsystemBaseUrl, access_key_id, secret_access_key);
-        String hosts[][] = onos.getOnosHosts(subsystemBaseUrl, access_key_id, secret_access_key);
-        String links[][] = onos.getOnosLinks(subsystemBaseUrl, access_key_id, secret_access_key);
-        int qtyLinks = onos.qtyLinks;
-        int qtyHosts = onos.qtyHosts;
-        int qtyDevices = onos.qtyDevices;
+
+	int edgeGw = edge.length();
+
+	String device[][]=null;
+	String hosts[][]=null;
+	String links[][]=null;
+	int qtyLinks=0;
+	int qtyHosts=0;
+	int qtyDevices=0;
+        	OnosServer onos = new OnosServer();
+	if(edgeGw==0)
+	{
+        	device = onos.getOnosDevices(subsystemBaseUrl, access_key_id, secret_access_key);
+        	hosts = onos.getOnosHosts(subsystemBaseUrl, access_key_id, secret_access_key);
+        	links = onos.getOnosLinks(subsystemBaseUrl, access_key_id, secret_access_key);
+        	qtyLinks = onos.qtyLinks;
+        	qtyHosts = onos.qtyHosts;
+        	qtyDevices = onos.qtyDevices;
 
         for (int i = 0; i < qtyDevices; i++) {
             //add device to model
@@ -141,7 +151,8 @@ public class OnosModelBuilder {
                 for (int j = 0; j < qtyPorts; j++) {
                     if (devicePorts[j][1].equals("true")) {
 
-                        Resource resPort = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":port-" + devicePorts[j][4], biPort);
+                        //Resource resPort = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":port-" + devicePorts[j][4], biPort);
+                        Resource resPort = RdfOwl.createResource(model, topologyURI + ":" + device[i][0] + ":port-" + devicePorts[j][0], biPort);
                         model.add(model.createStatement(resNode, hasBidirectionalPort, resPort));
                         
                         model.add(model.createStatement(resOpenFlow, hasBidirectionalPort, resPort));
@@ -149,10 +160,12 @@ public class OnosModelBuilder {
                         //write src_portName and dst_portName into links[][6] and links[][7]
                         for (int k = 0; k < qtyLinks; k++) {
                             if (device[i][0].equals(links[k][0]) && devicePorts[j][0].equals(links[k][1])) {
-                                links[k][6] = devicePorts[j][4];
+                                //links[k][6] = devicePorts[j][4];
+                                links[k][6] = devicePorts[j][0];
                             }
                             if (device[i][0].equals(links[k][2]) && devicePorts[j][0].equals(links[k][3])) {
-                                links[k][7] = devicePorts[j][4];
+                                //links[k][7] = devicePorts[j][4];
+                                links[k][7] = devicePorts[j][0];
                             }
                         }
                     }
@@ -168,7 +181,6 @@ public class OnosModelBuilder {
                     model.add(model.createStatement(resNode, hasService, resOpenFlow));
                 }
                 */
-                
                 for (int j = 0; j < qtyFlows; j++) {
 
                     //add a flow table for each groupId
@@ -245,7 +257,8 @@ public class OnosModelBuilder {
                     int portNum = checkPort.length;
                     for (int k = 0; k < portNum; k++) {
                         if (checkPort[k][0].equals(hosts[i][5]) && checkPort[k][1].equals("true")) {
-                            Resource resPort = RdfOwl.createResource(model, topologyURI + ":" + device[j][0] + ":port-" + checkPort[k][4], biPort);
+                            //Resource resPort = RdfOwl.createResource(model, topologyURI + ":" + device[j][0] + ":port-" + checkPort[k][4], biPort);
+                            Resource resPort = RdfOwl.createResource(model, topologyURI + ":" + device[j][0] + ":port-" + checkPort[k][0], biPort);
                         //model.add(model.createStatement(resLocation, type, "port"));
                             //model.add(model.createStatement(resLocation, value, resPort));
                             model.add(model.createStatement(resNode, locatedAt, resPort));
@@ -258,7 +271,7 @@ public class OnosModelBuilder {
          
 
         for (int i = 0; i < qtyLinks; i++) {
-            if (links[i][5].equals("ACTIVE")) {
+            if ((links[i][5].equals("ACTIVE")) && (links[i][6]!= null)) {
                 //add link into model
                 Resource resSrcPort = RdfOwl.createResource(model, topologyURI + ":" + links[i][0] + ":port-" + links[i][6], biPort);
                 Resource resDstPort = RdfOwl.createResource(model, topologyURI + ":" + links[i][2] + ":port-" + links[i][7], biPort);
@@ -313,6 +326,37 @@ public class OnosModelBuilder {
             model.add(model.createStatement(resSRRG, severity, severity_str));
             model.add(model.createStatement(resSRRG, occurenceProbability, occurenceProbability_str));
         }
+
+
+
+
+	}
+
+
+
+
+	else
+	{
+			
+        //manully read from a SRRG json file 
+        JSONParser jsonParserEdge = new JSONParser();
+        JSONObject jsonObjectEdge = (JSONObject) jsonParserEdge.parse(edge);
+
+        JSONArray f_edge = (JSONArray) jsonObjectEdge.get("EdgeGW");
+        int edge_num = f_edge.size();
+
+        for (int i = 0; i < edge_num; i++) {
+            JSONObject t_edge = (JSONObject) f_edge.get(i);
+            String edge1 = t_edge.get("leftEnd").toString();
+            String edge2 = t_edge.get("rightEnd").toString();
+
+                Resource resLeftEdgePort = RdfOwl.createResource(model, edge1, biPort);
+                Resource resRightEdgePort = RdfOwl.createResource(model, edge2, biPort);
+                model.add(model.createStatement(resLeftEdgePort, Nml.isAlias, resRightEdgePort));
+                model.add(model.createStatement(resRightEdgePort, Nml.isAlias, resLeftEdgePort));
+
+        }
+	}
 
         return model;
     }

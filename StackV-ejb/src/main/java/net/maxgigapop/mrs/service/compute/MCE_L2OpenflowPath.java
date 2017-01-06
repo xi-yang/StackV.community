@@ -42,6 +42,7 @@ import javax.ejb.EJBException;
 import javax.ejb.Stateless;
 import net.maxgigapop.mrs.bean.DeltaBase;
 import net.maxgigapop.mrs.bean.ModelBase;
+import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
@@ -52,6 +53,11 @@ import net.maxgigapop.mrs.common.Sna;
 import static net.maxgigapop.mrs.service.compute.MCETools.evaluateStatement_AnyTrue;
 import java.lang.Math;
 import net.maxgigapop.mrs.driver.onosystem.*;
+import org.apache.commons.codec.binary.Base64;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 /**
  *
@@ -59,6 +65,8 @@ import net.maxgigapop.mrs.driver.onosystem.*;
  */
 @Stateless
 public class MCE_L2OpenflowPath implements IModelComputationElement {
+    public int link_count=0;
+    String[] bandwidth = new String[1000];
 
     private static final Logger log = Logger.getLogger(MCE_L2OpenflowPath.class.getName());
     /*
@@ -68,6 +76,17 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
     @Override
     @Asynchronous
     public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
+
+/*	try{
+		URL url = new URL("http://206.196.179.134:8181/onos/v1" + "/network/configuration/links");
+
+        	HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+	String response=this.postJsonLinks(url, conn, "GET", null, "karaf", "karaf");
+	} catch (IOException ex) {
+                        Logger.getLogger(MCE_L2OpenflowPath.class.getName()).log(Level.SEVERE, null, ex);
+	}
+*/
+
         try {
             log.log(Level.INFO, "\n>>>MCE_L2OpenflowPath--DeltaAddModel Input=\n{0}", ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
             log.log(Level.INFO, "Entering L2OpenflowPath process!");
@@ -77,17 +96,18 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
 
         // importPolicyData : Link->Connection->List<PolicyData> of terminal Node/Topology
                 
-        String sparql = "SELECT ?link ?type ?value ?data ?policyData ?spaType ?spaValue WHERE {"
+        String sparql = "SELECT ?link ?type ?value ?load ?data ?policyData ?spaType ?spaValue WHERE {"
                 + "?link a spa:PolicyAction . "
                 + "?link spa:type ?type . "
                 + "?link spa:value ?value . "
+                + "?link spa:load ?load . "
                 + "?link spa:importFrom ?data . "
                 + "?link spa:exportTo ?policyData . "
                 + "?data spa:type ?spaType . ?data spa:value ?spaValue . "
                 + "}";
-
         ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);
 
+	String load="";
         Map<Resource, List> linkMap = new HashMap<>();
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
@@ -100,26 +120,29 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
             Resource resPolicyData = querySolution.getResource("policyData").asResource();
             RDFNode resType = querySolution.get("type");
             RDFNode resValue = querySolution.get("value");
-
+            RDFNode resLoad = querySolution.get("load");
+            
             RDFNode resDataType = querySolution.get("spaType");
             RDFNode resDataValue = querySolution.get("spaValue");
-
-            System.out.format("data: %s, type: %s, protection: %s, policyData: %s, spaType: %s, spaValue: %s\n",
-                    resData.toString(), resType.toString(), resValue.toString(), resPolicyData.toString(), resDataType.toString(), resDataValue.toString());
-
+            
+            //System.out.format("data: %s, type: %s, protection: %s, policyData: %s, spaType: %s, spaValue: %s\n", 
+            System.out.format("data: %s, type: %s, protection: %s, policyData: %s, spaType: %s, spaValue: %s, load: %s\n", 
+                    resData.toString(), resType.toString(), resValue.toString(), resPolicyData.toString(), resDataType.toString(), resDataValue.toString(), resLoad.toString());
 
             if (resType.toString().equals("MCE_L2OpenflowPath")) {
-                Map linkData = new HashMap<>();
+                Map linkData = new HashMap<>();                
                 //linkData.put("port", resPort);
                 linkData.put("dataValue", resDataValue.toString());
                 linkData.put("dataType", resDataType.toString());
                 linkData.put("policyData", resPolicyData);
                 linkData.put("type", resType.toString());
                 linkData.put("protection", resValue.toString());
+                linkData.put("load", resLoad.toString());
                 linkMap.get(resLink).add(linkData);
+		load=resLoad.toString();
             }
         }
-
+        
         Map<Resource, List> srrgMap = this.getSrrgInfo(systemModel.getOntModel());
 
         //test printout
@@ -161,7 +184,8 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
             
             switch (protectionType) {
                 case "SRRG Path": {
-                    l2path = this.doSrrgPathFinding(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), resLink, linkMap.get(resLink), srrgMap);
+                            
+                            l2path = this.doSrrgPathFinding(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), resLink, linkMap.get(resLink), srrgMap, load);
                     try {
                         //flow_model = generateFlowsPathModel(l2path, topologyURI, ETH_SRC_MAC, ETH_DST_MAC);
                         flow_model = generateFlowsPathModel_new(l2path, ETH_SRC_MAC, ETH_DST_MAC);
@@ -180,9 +204,10 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                     break;
                 }
                 case "SRRG Path Pair": {
+                    System.out.println("In SRRG Path Pair Computation, testing...");
                     List<MCETools.Path> l2pathList = this.doSrrgPairPathFinding(
                             systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(),
-                            resLink, linkMap.get(resLink), srrgMap);
+                            resLink, linkMap.get(resLink), srrgMap, load);
                     if (l2pathList == null) {
                         throw new EJBException(String.format("%s::process cannot find a path pair for %s", this.getClass().getName(), resLink));
                     } else if (l2pathList.size() != 2) {
@@ -190,6 +215,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                     } else {
                         l2path = l2pathList.get(0);
                         l2path_back = l2pathList.get(1);
+			updateLinkReservation(l2pathList,load);
                         try {
                             //flow_model = generateFlowsPathModel(l2path, topologyURI, ETH_SRC_MAC, ETH_DST_MAC);
                             flow_model = generateFlowsPathModel_new(l2path, ETH_SRC_MAC, ETH_DST_MAC);
@@ -204,12 +230,14 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                         
                         try {
                             OntModel modelAddition = ModelUtil.unmarshalOntModel(flow_model);
-                            System.out.format("modelAddition: %s\n", modelAddition.getBaseModel().toString());
-                            outputDelta.getModelAddition().getOntModel().add(modelAddition.getBaseModel());
-                            
                             OntModel modelReduction = ModelUtil.unmarshalOntModel(flow_model_back);
-                            System.out.format("modelReduction: %s\n", modelReduction.getBaseModel().toString());
-                            outputDelta.getModelReduction().getOntModel().add(modelReduction.getBaseModel());
+                            modelReduction.add(outputDelta.getModelAddition().getOntModel().getBaseModel());
+                            outputDelta.getModelAddition().getOntModel().add(modelAddition.getBaseModel());
+                            DeltaModel dmReduction = new DeltaModel();
+                            dmReduction.setCommitted(false);
+                            dmReduction.setIsAddition(false);
+                            dmReduction.setOntModel(modelReduction);
+                            outputDelta.setModelReduction(dmReduction);
                         } catch (Exception ex){
                             Logger.getLogger(MCE_L2OpenflowPath.class.getName()).log(Level.SEVERE, null, ex);
                         }
@@ -246,14 +274,15 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
             //outputDelta.getModelAddition().getOntModel().add(outputDelta.getModelAddition().getOntModel().createStatement(resLink, RdfOwl.type, Spa.Abstraction));
         }
 
-        try {
-            log.log(Level.FINE, "\n>>>MCE_L2OpenflowPath--DeltaAddModel Output=\n{0}", ModelUtil.marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()));
-        } catch (Exception ex) {
-            Logger.getLogger(MCE_L2OpenflowPath.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        //try {
+        //    log.log(Level.FINE, "\n>>>MCE_L2OpenflowPath--DeltaAddModel Output=\n{0}", ModelUtil.marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()));
+        //} catch (Exception ex) {
+        //    Logger.getLogger(MCE_L2OpenflowPath.class.getName()).log(Level.SEVERE, null, ex);
+        //}
         
 //        System.out.println("\n\nDone with MCE");
         return new AsyncResult(outputDelta);
+	
     }
 
     private Map<Resource, List> getSrrgInfo(OntModel systemModel) {
@@ -369,11 +398,29 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         return macAddress;
     }
 
-    private MCETools.Path doSrrgPathFinding(OntModel systemModel, OntModel spaModel, Resource resLink, List<Map> connTerminalData, Map<Resource, List> srrgMap) {
+    private MCETools.Path doSrrgPathFinding(OntModel systemModel, OntModel spaModel, Resource resLink, List<Map> connTerminalData, Map<Resource, List> srrgMap, String load) {
+	String linkname="";
 
         System.out.println("In doSrrgPathFinding");
+        //String[] bandwidth = new String[1000];
+
+	try {
+		URL url = new URL("http://206.196.179.134:8181/onos/v1" + "/network/configuration/links");
+
+        	HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+		bandwidth=this.executeHttpMethod(url, conn, "GET", null, "karaf", "karaf");
+
+	} catch (IOException ex) {
+                        Logger.getLogger(MCE_L2OpenflowPath.class.getName()).log(Level.SEVERE, null, ex);
+	}
         //return one shortest path with minimum SRRG probability
         //filter out irrelevant statements (based on property type, label type, has switchingService etc.)
+
+	String [] json_links=new String[link_count];
+	for(int i=0;i<link_count;i++){
+       		json_links[i] = bandwidth[i];
+	}
+
         OntModel transformedModel = MCETools.transformL2OpenflowPathModel(systemModel);
 
         //verify is transformedModel is bidirectional connectsTo
@@ -385,6 +432,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         List<Resource> terminals = new ArrayList<>();
         Resource terminal = null;
         for (Map entry : connTerminalData) {
+
             if (!entry.containsKey("policyData") || !entry.containsKey("type") || !entry.containsKey("protection")) {
                 continue;
             }
@@ -412,14 +460,64 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         List<MCETools.Path> KSP = MCETools.computeKShortestPaths(transformedModel, nodeA, nodeZ, MCETools.KSP_K_DEFAULT, connFilters);
 
         log.log(Level.INFO, "Found {0} shortest path before verify", KSP.size());
-        //MCETools.printKSP(KSP);
+
+
+
+
+        int counting;
+	int bwreq=Integer.parseInt(load);
+	int bwfree=0;
+	int[] unsetPath = new int[MCETools.KSP_K_DEFAULT];
+	for(counting=0;counting<MCETools.KSP_K_DEFAULT;counting++){
+		unsetPath[counting]=0;
+	}
+	counting=0;
+        for (MCETools.Path eachPath : KSP) {
+	    String[] srcdstlink = new String[2];
+	    srcdstlink[0]="";
+	    srcdstlink[1]="";
+            //System.out.format("path[%d]: %d\n", counting, (int) (eachPath.size()+1)/3);
+            for (Statement stmtLink : eachPath) {
+		if(stmtLink.toString().contains("connectsTo")){
+                	//System.out.println(stmtLink.toString());
+            		srcdstlink[0] = stmtLink.toString().split(":of:")[1].split(",")[0];
+            		srcdstlink[1] = stmtLink.toString().split(":of:")[2].split("}")[0];
+			if(srcdstlink[0].contains("port-") && srcdstlink[1].contains("port-")){
+				srcdstlink[0]="of:"+srcdstlink[0].replaceAll(":port-","/");
+				srcdstlink[1]="of:"+srcdstlink[1].replaceAll(":port-","/");
+				linkname=srcdstlink[0]+"-"+srcdstlink[1];
+				linkname=linkname.split("]")[0];
+				for(int k=0;k<link_count;k++){
+					if(json_links[k].contains(linkname)){
+						if(json_links[k].contains("bandwidth")){
+							String stringfreeload=json_links[k].split("bandwidth\":")[1].split("}}")[0];
+							bwfree=Integer.parseInt(stringfreeload);
+							if(bwreq>bwfree){
+								unsetPath[counting]=1;
+							}
+						}	
+					}
+				}
+			}	
+	    	}
+                	
+            }
+            counting = counting + 1;
+        }
+
+//MCETools.printKSP(KSP);
+
+
+
         if (KSP == null || KSP.isEmpty()) {
             throw new EJBException(String.format("%s::process doSrrgPathFinding cannot find any feasible path for <%s>", this.getClass().getName(), resLink));
         }
 
         Iterator<MCETools.Path> itP = KSP.iterator();
+	counting=0;
         while (itP.hasNext()) {
             MCETools.Path candidatePath = itP.next();
+
 
             //verifyOpenflowPath: filter out useless ones
             if (!MCETools.verifyOpenFlowPath(transformedModel, candidatePath)) {
@@ -430,9 +528,14 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                 if (l2PathModel == null) {
                     itP.remove();
                 } else {
+	    		if(unsetPath[counting]==1) {
+			itP.remove();
+	    		}
                     candidatePath.setOntModel(l2PathModel);
+	    	//    System.out.println("\n\n\n"+candidatePath.getOntModel().toString()+"\n\n\n");
                 }
             }
+	    counting++;
         }
 
         if (KSP.isEmpty()) {
@@ -495,7 +598,32 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         return true;
     }
 
-    private List<MCETools.Path> doSrrgPairPathFinding(OntModel systemModel, OntModel spaModel, Resource resLink, List<Map> connTerminalData, Map<Resource, List> srrgMap) {
+    private List<MCETools.Path> doSrrgPairPathFinding(OntModel systemModel, OntModel spaModel, Resource resLink, List<Map> connTerminalData, Map<Resource, List> srrgMap, String load) {
+
+	String linkname="";
+
+        //String[] bandwidth = new String[1000];
+
+        try {
+                URL url = new URL("http://206.196.179.134:8181/onos/v1" + "/network/configuration/links");
+
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                bandwidth=this.executeHttpMethod(url, conn, "GET", null, "karaf", "karaf");
+
+        } catch (IOException ex) {
+                        Logger.getLogger(MCE_L2OpenflowPath.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+
+
+        //return one shortest path with minimum SRRG probability
+        //        //filter out irrelevant statements (based on property type, label type, has switchingService etc.)
+        
+        String [] json_links=new String[link_count];
+        for(int i=0;i<link_count;i++){
+                json_links[i] = bandwidth[i];
+        }
+
 
         //return a list that has two elements, one is primary path, the other is backup path
         List<MCETools.Path> solutionList = new ArrayList<>();
@@ -513,6 +641,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         List<Resource> terminals = new ArrayList<>();
         Resource terminal = null;
         for (Map entry : connTerminalData) {
+
             if (!entry.containsKey("policyData") || !entry.containsKey("type") || !entry.containsKey("protection")) {
                 continue;
             }
@@ -547,15 +676,64 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
 
         Property[] filterProperties = {Nml.connectsTo};
         Filter<Statement> connFilters = new PredicatesFilter(filterProperties);
-
         List<MCETools.Path> KSP = MCETools.computeKShortestPaths(transformedModel, nodeA, nodeZ, MCETools.KSP_K_DEFAULT, connFilters);
 
-        //log.log(Level.INFO, "Find {0} KSP (working) before verify", KSP.size());
+        log.log(Level.INFO, "Find {0} KSP (working) before verify", KSP.size());
+
+
+	int qtyUnset=0;
+	int flagunset=0;
+        int counting;
+        int bwreq=Integer.parseInt(load);
+        int bwfree=0;
+        int[] unsetPath = new int[MCETools.KSP_K_DEFAULT];
+        for(counting=0;counting<MCETools.KSP_K_DEFAULT;counting++){
+                unsetPath[counting]=0;
+        }
+        counting=0;
+        for (MCETools.Path eachPath : KSP) {
+	    flagunset=0;
+            String[] srcdstlink = new String[2];
+            srcdstlink[0]="";
+            srcdstlink[1]="";
+            //System.out.format("path[%d]: %d\n", counting, (int) (eachPath.size()+1)/3);
+            for (Statement stmtLink : eachPath) {
+                if(stmtLink.toString().contains("connectsTo")){
+                        srcdstlink[0] = stmtLink.toString().split(":of:")[1].split(",")[0];
+                        srcdstlink[1] = stmtLink.toString().split(":of:")[2].split("}")[0];
+                        if(srcdstlink[0].contains("port-") && srcdstlink[1].contains("port-")){
+
+                                srcdstlink[0]="of:"+srcdstlink[0].replaceAll(":port-","/");
+                                srcdstlink[1]="of:"+srcdstlink[1].replaceAll(":port-","/");
+                                linkname=srcdstlink[0]+"-"+srcdstlink[1];
+                                linkname=linkname.split("]")[0];
+                                for(int k=0;k<link_count;k++){
+                                        if(json_links[k].contains(linkname)){
+                                                if(json_links[k].contains("bandwidth")){
+                                                        String stringfreeload=json_links[k].split("bandwidth\":")[1].split("}}")[0];
+                                                        bwfree=Integer.parseInt(stringfreeload);
+                                                        if(bwreq>bwfree){
+                                                                unsetPath[counting]=1;
+								qtyUnset++;
+								flagunset=1;
+								break;
+                                                        }
+                                                }
+                                        }
+                                }
+                        }
+                }
+		if(flagunset==1) break;
+            }
+            counting = counting + 1;
+	}
+
         if (KSP == null || KSP.isEmpty()) {
             throw new EJBException(String.format("%s::process doSrrgPairPathFinding cannot find any working feasible path for <%s>", this.getClass().getName(), resLink));
         }
 
         Iterator<MCETools.Path> itP = KSP.iterator();
+        counting=0;
         while (itP.hasNext()) {
             MCETools.Path candidatePath = itP.next();
 
@@ -568,9 +746,14 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                 if (l2PathModel == null) {
                     itP.remove();
                 } else {
+			if(qtyUnset<KSP.size()){
+                        if(unsetPath[counting]==1) {
+                        itP.remove();
+                        }}
                     candidatePath.setOntModel(l2PathModel);
                 }
             }
+            counting++;
         }
 
         if (KSP.isEmpty()) {
@@ -584,8 +767,10 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         double cost = 100000.0;
         int flag = -1;
         MCETools.Path solutionBack = null;
-
-        for (int i = 0; i < KSP.size(); i++) {
+	
+	MCETools.Path path = getLeastSrrgCostPath(KSP, systemModel, srrgMap);
+	solutionBack = this.getLinkDisjointPath(transformedModel, path, resLink, terminals, srrgMap, load, json_links,unsetPath);
+/*        for (int i = 0; i < KSP.size(); i++) {
 
             //log.log(Level.INFO, "for working path {0}:", i);
             MCETools.Path path = KSP.get(i);
@@ -621,13 +806,22 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         if (flag >= KSP.size()) {
             throw new EJBException(String.format("%s::process doPathPairFinding encounter an error when finding backup paths <%s>", this.getClass().getName(), resLink));
         }
-
+*/
         log.log(Level.INFO, "Successfully find path pair");
 
-        solutionList.add(KSP.get(flag));
-        solutionList.add(solutionBack);
+        //solutionList.add(KSP.get(flag));
+        //solutionList.add(solutionBack);
+	
+	solutionList.add(path);
+	solutionList.add(solutionBack);
+        
+	MCETools.printKSP(solutionList);
 
-        MCETools.printKSP(solutionList);
+
+
+        //log.log(Level.INFO, "Successfully find path with fail prob: {0}", String.valueOf(solutionList.get(1).failureProb));
+        //MCETools.printMCEToolsPath(solutionList.get(1));
+
 
         return solutionList;
     }
@@ -654,23 +848,57 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                 }
             }
         }
+	System.out.format("Find path with failure prob: %f\n", solution.failureProb);
         return solution;
     }
 
-    private MCETools.Path getLinkDisjointPath(OntModel systemModel, MCETools.Path primaryPath, Resource resLink, List<Resource> terminals, Map<Resource, List> srrgMap) {
+    private MCETools.Path getLinkDisjointPath(OntModel systemModel, MCETools.Path primaryPath, Resource resLink, List<Resource> terminals, Map<Resource, List> srrgMap, String load, String[] json_links, int[] unsetPath) {
+
+	String linkname="";
         //return one path with min srrg probability that is link disjoint to primary path
 
         //MCETools.printMCEToolsPath(primaryPath);
+        String[] toNodeConstraint = {
+	    "SELECT $s $p $o WHERE {$s a nml:Node. $o a nml:BidirectionalPort FILTER($s = <$$s> && $o = <$$o>)}",};
         String[] isAliasConstraint = {
             "SELECT $s $p $o WHERE {$s a nml:BidirectionalPort. $o a nml:BidirectionalPort FILTER($s = <$$s> && $o = <$$o>)}",};
         //first mask the link(isAlias) of primaryPath
         Iterator<Statement> itS = primaryPath.iterator();
+	int i=0;
+	System.out.format("path size = %d\n",primaryPath.size());
         while (itS.hasNext()) {
             Statement stmt = itS.next();
+	    /*
+	    //debug to run node+link disjoint
+	    if (MCETools.evaluateStatement_AnyTrue(systemModel, stmt, toNodeConstraint) && i!=1 && i!=primaryPath.size()-1) {
+		System.out.format("i=%d\n", i);
+		//Resource node = stmt.getSubject();
+		Property connFilters = Nml.connectsTo;
+		StmtIterator itStmt = systemModel.listStatements(stmt.getSubject(), connFilters, (Resource) null);
+		ArrayList<Statement> stmtList = new ArrayList<Statement>();
+		while (itStmt.hasNext()){
+		    Statement stmtTemp = itStmt.next();
+		    System.out.format("remove stmt: %s%n", stmtTemp.toString());
+		    stmtList.add(stmtTemp);
+		}
+
+		itStmt = systemModel.listStatements(null, connFilters, stmt.getSubject());
+		while (itStmt.hasNext()){
+		    Statement stmtTemp = itStmt.next();
+		    System.out.format("remove stmt: %s%n", stmtTemp.toString());
+		    stmtList.add(stmtTemp);
+		}
+
+		systemModel = (OntModel) systemModel.remove(stmtList);
+	    }
+	    //debug to run node+link disjoint
+	    */
             if (MCETools.evaluateStatement_AnyTrue(systemModel, stmt, isAliasConstraint)) {
                 //System.out.format("remove this stmt: \n%s\n", stmt.toString());
                 systemModel = (OntModel) systemModel.remove(stmt);
             }
+	    i=i+1;
+	    //Statement stmt = itS.next();
         }
 
         Resource nodeA = terminals.get(0);
@@ -680,13 +908,70 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         Filter<Statement> connFilters = new PredicatesFilter(filterProperties);
         List<MCETools.Path> backupKSP = MCETools.computeKShortestPaths(systemModel, nodeA, nodeZ, MCETools.KSP_K_DEFAULT, connFilters);
 
-        //log.log(Level.INFO, "Find {0} KSP (backup) before verify", backupKSP.size());
+        log.log(Level.INFO, "Find {0} KSP (backup) before verify", backupKSP.size());
+
+
+
+
+	int qtyUnset=0;
+	int flagunset=0;
+        int counting;
+        int bwreq=Integer.parseInt(load);
+        int bwfree=0;
+	int reservation_flag=0;
+        //int[] unsetPath = new int[MCETools.KSP_K_DEFAULT];
+        //for(counting=0;counting<MCETools.KSP_K_DEFAULT;counting++){
+	//	if(unsetPath[counting]==1) reservation_flag=1; 
+        //        unsetPath[counting]=0;
+        //}
+        counting=0;
+	//if(reservation_flag==0){
+        for (MCETools.Path eachPath : backupKSP) {
+	    flagunset=0;
+            String[] srcdstlink = new String[2];
+            srcdstlink[0]="";
+            srcdstlink[1]="";
+            //System.out.format("path[%d]: %d\n", counting, (int) (eachPath.size()+1)/3);
+            for (Statement stmtLink : eachPath) {
+                if(stmtLink.toString().contains("connectsTo")){
+                        srcdstlink[0] = stmtLink.toString().split(":of:")[1].split(",")[0];
+                        srcdstlink[1] = stmtLink.toString().split(":of:")[2].split("}")[0];
+                        if(srcdstlink[0].contains("port-") && srcdstlink[1].contains("port-")){
+                                srcdstlink[0]="of:"+srcdstlink[0].replaceAll(":port-","/");
+                                srcdstlink[1]="of:"+srcdstlink[1].replaceAll(":port-","/");
+                                linkname=srcdstlink[0]+"-"+srcdstlink[1];
+                                linkname=linkname.split("]")[0];
+                                for(int k=0;k<link_count;k++){
+                                        if(json_links[k].contains(linkname)){
+                                                if(json_links[k].contains("bandwidth")){
+                                                        String stringfreeload=json_links[k].split("bandwidth\":")[1].split("}}")[0];
+                                                        bwfree=Integer.parseInt(stringfreeload);
+                                                        if(bwreq>bwfree){
+                                                                unsetPath[counting]=1;
+								qtyUnset++;
+								flagunset=1;
+								break;
+                                                        }
+                                                }
+                                        }
+                                }
+                        }
+                }
+		
+		if(flagunset==1) break;
+            }
+        //}
+            counting = counting + 1;
+        }
+
+
         if (backupKSP == null || backupKSP.isEmpty()) {
             //throw new EJBException(String.format("%s::process doPathFinding cannot find feasible path for <%s>", resLink));
             return null;
         }
 
         Iterator<MCETools.Path> itP = backupKSP.iterator();
+	counting=0;
         while (itP.hasNext()) {
             MCETools.Path candidatePath = itP.next();
 
@@ -698,9 +983,14 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                 if (l2PathModel == null) {
                     itP.remove();
                 } else {
+			if(qtyUnset<backupKSP.size()){
+                        if(unsetPath[counting]==1) {
+                        itP.remove();
+                        }}
                     candidatePath.setOntModel(l2PathModel);
                 }
             }
+	    counting++;
         }
         if (backupKSP.isEmpty()) {
             return null;
@@ -787,8 +1077,8 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
          throw new EJBException(String.format("%s::process cannot doPathFinding for %s which provides fewer than 2 terminals", this.getClass().getName(), resLink));
          }
          */
-        String src = "urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000001:port-s1-eth1";
-        String dst = "urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000003:port-s3-eth1";
+        String src = "urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000001:port-1";
+        String dst = "urn:ogf:network:onos.maxgigapop.net:network:of:0000000000000003:port-1";
 
         Resource nodeA = transformedModel.getResource(src);
         Resource nodeZ = transformedModel.getResource(dst);
@@ -919,8 +1209,21 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
             Resource resOutport = nextStmt.getObject().asResource();
             
             device[j] = resDevice.toString();
-            inport[j] = resInport.toString().split("-eth")[1];
-            outport[j] = resOutport.toString().split("-eth")[1];
+            if(resInport.toString().split("-eth").length > 1) {
+            	inport[j] = resInport.toString().split("-eth")[1];
+	    }
+	    else {
+                inport[j] = resInport.toString().split("port-")[1];	
+	    }
+            //inport[j] = resInport.toString().split("-eth")[1];
+            
+            if(resOutport.toString().split("-eth").length > 1) {
+            	outport[j] = resOutport.toString().split("-eth")[1];
+	    }
+	    else {
+                outport[j] = resOutport.toString().split("port-")[1];	
+	    }
+            //outport[j] = resOutport.toString().split("-eth")[1];
             
             j++;
         }
@@ -1070,8 +1373,11 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                 src_dev[j] = auxsplit[0];
                 src_port_name[j] = auxsplit[1];
             }
-            if (src_path[j].contains("-eth")) {
-                src_port[j] = src_path[j].split("-eth")[1];
+            //if (src_path[j].contains("-eth")) {
+            //    src_port[j] = src_path[j].split("-eth")[1];
+            //}
+            if (src_path[j].contains("port-")) {
+                src_port[j] = src_path[j].split("port-")[1];
             }
 
             if (dst_path[j].contains(topologyURI + ":")) {
@@ -1082,8 +1388,11 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                 dst_dev[j] = auxsplit[0];
                 dst_port_name[j] = auxsplit[1];
             }
-            if (dst_path[j].contains("-eth")) {
-                dst_port[j] = dst_path[j].split("-eth")[1];
+            //if (dst_path[j].contains("-eth")) {
+            //    dst_port[j] = dst_path[j].split("-eth")[1];
+            //}
+            if (dst_path[j].contains("port-")) {
+                dst_port[j] = dst_path[j].split("port-")[1];
             }
 
             j++;
@@ -1136,8 +1445,11 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                 src_dev[j] = auxsplit[0];
                 src_port_name[j] = auxsplit[1];
             }
-            if (src_path[j].contains("-eth")) {
-                src_port[j] = src_path[j].split("-eth")[1];
+            //if (src_path[j].contains("-eth")) {
+            //    src_port[j] = src_path[j].split("-eth")[1];
+            //}
+            if (src_path[j].contains("port-")) {
+                src_port[j] = src_path[j].split("port-")[1];
             }
 
             if (dst_path[j].contains(topologyURI + ":")) {
@@ -1148,8 +1460,11 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                 dst_dev[j] = auxsplit[0];
                 dst_port_name[j] = auxsplit[1];
             }
-            if (dst_path[j].contains("-eth")) {
-                dst_port[j] = dst_path[j].split("-eth")[1];
+            //if (dst_path[j].contains("-eth")) {
+            //    dst_port[j] = dst_path[j].split("-eth")[1];
+            //}
+            if (dst_path[j].contains("port-")) {
+                dst_port[j] = dst_path[j].split("port-")[1];
             }
 
             j++;
@@ -1196,8 +1511,11 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                     src_port_name_back[j] = auxsplit[1];
 
                 }
-                if (src_path_back[j].contains("-eth")) {
-                    src_port_back[j] = src_path_back[j].split("-eth")[1];
+                //if (src_path_back[j].contains("-eth")) {
+                //    src_port_back[j] = src_path_back[j].split("-eth")[1];
+                //}
+                if (src_path_back[j].contains("port-")) {
+                    src_port_back[j] = src_path_back[j].split("port-")[1];
                 }
 
                 if (dst_path_back[j].contains(topologyURI + ":")) {
@@ -1208,8 +1526,11 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                     dst_dev_back[j] = auxsplit[0];
                     dst_port_name_back[j] = auxsplit[1];
                 }
-                if (dst_path_back[j].contains("-eth")) {
-                    dst_port_back[j] = dst_path_back[j].split("-eth")[1];
+                //if (dst_path_back[j].contains("-eth")) {
+                //    dst_port_back[j] = dst_path_back[j].split("-eth")[1];
+                //}
+                if (dst_path_back[j].contains("port-")) {
+                    dst_port_back[j] = dst_path_back[j].split("port-")[1];
                 }
 
                 j++;
@@ -1297,31 +1618,140 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         return flowModelString;
     }
 
-    private String executeHttpMethod(URL url, HttpURLConnection conn, String method, String body) throws IOException {
+
+    //send GET to HTTP server and retrieve response
+    private String[] executeHttpMethod(URL url, HttpURLConnection conn, String method, String body, String access_key_id, String secret_access_key) throws IOException {
+        String username = access_key_id;
+        String password = secret_access_key;
+        String userPassword = username + ":" + password;
+        byte[] encoded = Base64.encodeBase64(userPassword.getBytes());
+        String stringEncoded = new String(encoded);
         conn.setRequestMethod(method);
-        conn.setRequestProperty("Content-type", "application/xml");
-        conn.setRequestProperty("Accept", "application/xml");
+        conn.setRequestProperty("Authorization", "Basic " + stringEncoded);
+        conn.setRequestProperty("Content-type", "application/json");
+        conn.setRequestProperty("Accept-coding", "gzip");
+        conn.setRequestProperty("Accept", "application/json");
         if (body != null && !body.isEmpty()) {
-            conn.setDoOutput(true);
-            try (DataOutputStream wr = new DataOutputStream(conn.getOutputStream())) {
-                wr.writeBytes(body);
-                wr.flush();
+        	conn.setDoOutput(true);
+        	try (DataOutputStream wr = new DataOutputStream(conn.getOutputStream())) {
+        		wr.writeBytes(body);
+        		wr.flush();
+                }
+	}
+     	int responseCode = conn.getResponseCode();
+        StringBuilder responseStr;
+	//int count = 0;
+	String findStr = "}}";
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+       		String inputLine;
+		link_count=0;
+       		responseStr = new StringBuilder();
+       		while ((inputLine = in.readLine()) != null) {
+       			responseStr.append(inputLine);
+                }
+		int firstIndex,lastIndex = 0;
+
+		while(lastIndex != -1){
+		  firstIndex = lastIndex;
+  		  lastIndex = responseStr.indexOf(findStr,lastIndex);
+   		  if(lastIndex != -1){
+       			 link_count ++;
+     			   lastIndex += findStr.length();
+    		  }
+		}
+         }
+	bandwidth = new String[link_count];
+	bandwidth=responseStr.toString().split(findStr);
+
+	return(bandwidth);
+
+    }
+
+
+
+
+    private void updateLinkReservation(List<MCETools.Path> l2pathList, String load) {
+
+        int bwreq=Integer.parseInt(load);
+	int newvalue=0;
+	//for(int i=0;i<link_count;i++){
+	//	System.out.println("link info: "+bandwidth[i]);
+	//}
+	String jsonUpdate="{\"links\":{";
+        for (MCETools.Path eachPath : l2pathList) {
+            String[] srcdstlink = new String[2];
+	    String linkname="";
+            srcdstlink[0]="";
+            srcdstlink[1]="";
+            for (Statement stmtLink : eachPath) {
+                if(stmtLink.toString().contains("connectsTo")){
+                        srcdstlink[0] = stmtLink.toString().split(":of:")[1].split(",")[0];
+                        srcdstlink[1] = stmtLink.toString().split(":of:")[2].split("}")[0];
+                        if(srcdstlink[0].contains("port-") && srcdstlink[1].contains("port-")){
+
+                                srcdstlink[0]="of:"+srcdstlink[0].replaceAll(":port-","/");
+                                srcdstlink[1]="of:"+srcdstlink[1].replaceAll(":port-","/");
+                                linkname=srcdstlink[0]+"-"+srcdstlink[1];
+                                linkname=linkname.split("]")[0];
+
+
+				for(int k=0;k<link_count;k++){
+                                        if(bandwidth[k].contains(linkname)){
+                                                if(bandwidth[k].contains("bandwidth")){
+                                                        String stringfreeload=bandwidth[k].split("bandwidth\":")[1];
+                                                        int bwfree=Integer.parseInt(stringfreeload);
+							newvalue=bwfree-bwreq;
+                                                }
+                                        }
+                                }
+
+				jsonUpdate=jsonUpdate+"\""+linkname+"\":{\"basic\":{\"bandwidth\":"+newvalue+"}},";
+                        }
+                }
+
             }
         }
-        log.log(Level.INFO, "Sending {0} request to URL : {1}", new Object[]{method, url});
-        int responseCode = conn.getResponseCode();
-        log.log(Level.INFO, "Response Code : {0}", responseCode);
+	jsonUpdate=jsonUpdate+"}}";
+	jsonUpdate=jsonUpdate.replaceAll("},}}","}}}");
+	try{
+		URL url = new URL("http://206.196.179.134:8181/onos/v1" + "/network/configuration/");
 
+        	HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+	String response=this.postJsonLinks(url, conn, "POST", jsonUpdate, "karaf", "karaf");
+	} catch (IOException ex) {
+                        Logger.getLogger(MCE_L2OpenflowPath.class.getName()).log(Level.SEVERE, null, ex);
+	}
+
+    }
+
+    private String postJsonLinks(URL url, HttpURLConnection conn, String method, String body, String access_key_id, String secret_access_key) throws IOException {
+        String username = access_key_id;
+        String password = secret_access_key;
+        String userPassword = username + ":" + password;
+        byte[] encoded = Base64.encodeBase64(userPassword.getBytes());
+        String stringEncoded = new String(encoded);
+        conn.setRequestMethod(method);
+        conn.setRequestProperty("Authorization", "Basic " + stringEncoded);
+        conn.setRequestProperty("Content-type", "application/json");
+        conn.setRequestProperty("Accept-coding", "gzip");
+        conn.setRequestProperty("Accept", "application/json");
+        if (body != null && !body.isEmpty()) {
+        	conn.setDoOutput(true);
+        	try (DataOutputStream wr = new DataOutputStream(conn.getOutputStream())) {
+        		wr.writeBytes(body);
+        		wr.flush();
+                }
+	}
+     	int responseCode = conn.getResponseCode();
         StringBuilder responseStr;
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+	try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
             String inputLine;
             responseStr = new StringBuilder();
             while ((inputLine = in.readLine()) != null) {
                 responseStr.append(inputLine);
             }
         }
-        return responseStr.toString();
-
+        return(responseStr.toString());
     }
 
 }

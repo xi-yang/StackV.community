@@ -1,27 +1,8 @@
 /*
-/*
- * Copyright (c) 2013-2016 University of Maryland
- * Created by: Xi Yang 2014
-
- * Permission is hereby granted, free of charge, to any person obtaining a copy 
- * of this software and/or hardware specification (the “Work”) to deal in the 
- * Work without restriction, including without limitation the rights to use, 
- * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
- * the Work, and to permit persons to whom the Work is furnished to do so, 
- * subject to the following conditions:
-
- * The above copyright notice and this permission notice shall be included in 
- * all copies or substantial portions of the Work.
-
- * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
- * IN THE WORK.
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
  */
-
 package net.maxgigapop.mrs.service.compute;
 
 import com.hp.hpl.jena.ontology.OntModel;
@@ -141,7 +122,7 @@ public class MCETools {
         return new MCETools.Path(path);
     }
 
-    final public static int KSP_K_DEFAULT = 50;
+    final public static int KSP_K_DEFAULT = 10;
 
     public static List<Path> computeKShortestPaths(Model model, Resource nodeA, Resource nodeZ, int K, Filter<Statement> filters) {
         final HashSet<Statement> maskedLinks = new HashSet<>();
@@ -451,6 +432,9 @@ public class MCETools {
 
     public static void printMCEToolsPath(MCETools.Path path) {
 
+	int count = 0;
+	System.out.format("path[%d]: %d\n", count, (int) (path.size()+1)/3);
+
         for (Statement stmtLink : path) {
             System.out.println(stmtLink.toString());
         }
@@ -461,7 +445,7 @@ public class MCETools {
         int count = 0;
 
         for (MCETools.Path candidatePath : KSP) {
-            System.out.format("path[%d]: \n", count);
+            System.out.format("path[%d]: %d\n", count, (int) (candidatePath.size()+1)/3);
             for (Statement stmtLink : candidatePath) {
                 System.out.println(stmtLink.toString());
             }
@@ -647,27 +631,11 @@ public class MCETools {
         }
         TagSet allowedVlanRange = null;
         HashMap<String, Object> paramMap = new HashMap<>();
-        if (portTeMap != null) {
-            if (portTeMap.containsKey(currentHop.toString())) {
-                JSONObject jsonTe = (JSONObject) portTeMap.get(currentHop.toString());
-                if (jsonTe.containsKey("vlan_tag")) {
-                    allowedVlanRange = new TagSet((String) jsonTe.get("vlan_tag"));
-                    paramMap.put("allowedVlanRange", allowedVlanRange);
-                }
-            }
-            if (allowedVlanRange == null && prevHop != null && portTeMap.containsKey(prevHop.toString())) {
-                JSONObject jsonTe = (JSONObject) portTeMap.get(prevHop.toString());
-                if (jsonTe.containsKey("vlan_tag")) {
-                    allowedVlanRange = new TagSet((String) jsonTe.get("vlan_tag"));
-                    paramMap.put("allowedVlanRange", allowedVlanRange);
-                }
-            }
-            if (allowedVlanRange == null && nextHop != null && portTeMap.containsKey(nextHop.toString())) {
-                JSONObject jsonTe = (JSONObject) portTeMap.get(nextHop.toString());
-                if (jsonTe.containsKey("vlan_tag")) {
-                    allowedVlanRange = new TagSet((String) jsonTe.get("vlan_tag"));
-                    paramMap.put("allowedVlanRange", allowedVlanRange);
-                }
+        if (portTeMap != null && portTeMap.containsKey(currentHop.toString())) {
+            JSONObject jsonTe = (JSONObject) portTeMap.get(currentHop.toString());
+            if (jsonTe.containsKey("vlan_tag")) {
+                allowedVlanRange = new TagSet((String)jsonTe.get("vlan_tag"));
+                paramMap.put("allowedVlanRange", allowedVlanRange);
             }
         }
         HashMap<String, Object> lastParamMap = null;
@@ -683,7 +651,7 @@ public class MCETools {
         // interception with input availableVlanRange 
         Boolean vlanTranslation = true;
         Resource egressSwitchingService = null;
-        if (prevHop != null) {
+        if (prevHop != null && !vlanRange.isEmpty()) {
             // check vlan translation
             String sparql = String.format("SELECT ?swapping WHERE {<%s> a nml:SwitchingService. <%s> nml:labelSwapping ?swapping.}", prevHop, prevHop);
             ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
@@ -694,33 +662,21 @@ public class MCETools {
                 // non-translation
                 vlanTranslation = false;
             }
-        } else if (nextHop != null) {
-            // check vlan translation
-            String sparql = String.format("SELECT ?swapping WHERE {<%s> a nml:SwitchingService. <%s> nml:labelSwapping ?swapping.}", nextHop, nextHop);
-            ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
-            if (rs.hasNext()) {
-                egressSwitchingService = nextHop;
+            // vlan translation
+            TagSet lastVlanRange = TagSet.VlanRangeANY;
+            // no vlan translation
+            if (!vlanTranslation && lastParamMap != null && lastParamMap.containsKey("vlanRange")) {
+                lastVlanRange = (TagSet) lastParamMap.get("vlanRange");
             }
-            if (!rs.hasNext() || !rs.next().getLiteral("swapping").getBoolean()) {
-                // non-translation
-                vlanTranslation = false;
+            if (allowedVlanRange != null && !allowedVlanRange.isEmpty()) {
+                vlanRange.intersect(allowedVlanRange);
             }
+            vlanRange.intersect(lastVlanRange);
         }
-        // vlan translation
-        TagSet lastVlanRange = TagSet.VlanRangeANY;
-        // no vlan translation
-        if (!vlanTranslation && lastParamMap != null && lastParamMap.containsKey("vlanRange")) {
-            lastVlanRange = (TagSet) lastParamMap.get("vlanRange");
-        }
-        if (allowedVlanRange != null && !allowedVlanRange.isEmpty()) {
-            vlanRange.intersect(allowedVlanRange);
-        }
-        vlanRange.intersect(lastVlanRange);
         // exception if empty        
         if (vlanRange.isEmpty()) {
             throw new TagSet.EmptyTagSetExeption();
         }
-        // store non-empty vlanRange
         paramMap.put("vlanRange", vlanRange);
         if (egressSwitchingService != null) {
             paramMap.put("egressSwitchingService", egressSwitchingService);
@@ -759,8 +715,8 @@ public class MCETools {
             suggestedVlan = vlanRange.getRandom();
         }
         paramMap.put("suggestedVlan", suggestedVlan);
-        
-        // create port and subnet statements into vlanSubnetModel
+
+        // create port and subnet statements
         OntModel vlanSubnetModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         
         // special handling for port with subport which both has the suggestedVlan and belongs to a shared subnet
@@ -841,8 +797,6 @@ public class MCETools {
             String vlanSubnetUrn = ingressSwitchingService.toString() + ":vlan+" + suggestedVlan;
             Resource ingressSwitchingSubnet = RdfOwl.createResource(vlanSubnetModel, vlanSubnetUrn, Mrs.SwitchingSubnet);
             vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingService, Mrs.providesSubnet, ingressSwitchingSubnet));
-            vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.encoding, RdfOwl.labelTypeVLAN));
-            vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.labelSwapping, "false"));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.belongsTo, ingressSwitchingService));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.hasBidirectionalPort, resVlanPort));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.belongsTo, ingressSwitchingSubnet));
@@ -854,8 +808,6 @@ public class MCETools {
             String vlanSubnetUrn = egressSwitchingService.toString() + ":vlan+" + suggestedVlan;
             Resource egressSwitchingSubnet = RdfOwl.createResource(vlanSubnetModel, vlanSubnetUrn, Mrs.SwitchingSubnet);
             vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingService, Mrs.providesSubnet, egressSwitchingSubnet));
-            vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.encoding, RdfOwl.labelTypeVLAN));
-            vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.labelSwapping, "false"));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.belongsTo, egressSwitchingService));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.hasBidirectionalPort, resVlanPort));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.belongsTo, egressSwitchingSubnet));
@@ -883,20 +835,9 @@ public class MCETools {
         if (rs.hasNext()) {
             vlanRange = new TagSet(rs.next().getLiteral("range").toString());
         } else {
-            sparql = String.format("SELECT ?range WHERE {{"
-                    + "<%s> nml:hasBidirectionalPort ?vlan_port. "
-                    + "?vlan_port nml:hasLabelGroup ?lg. "
-                    + "?lg nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
-                    + "?lg nml:values ?range."
-                    + "} UNION {"
-                    + "<%s> nml:hasBidirectionalPort ?vlan_port. "
-                    + "?subnet nml:hasBidirectionalPort ?vlan_port. "
-                    + "?subnet a mrs:SwitchingSubnet. "
-                    + "?subnet mrs:type \"shared\". "
-                    + "?vlan_port nml:hasLabel ?l. "
-                    + "?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
-                    + "?l nml:value ?range."
-                    + "}}", port, port);
+            sparql = String.format("SELECT ?range WHERE {"
+                    + "<%s> nml:hasBidirectionalPort ?sub_port. ?sub_port nml:hasLabelGroup ?lg. ?lg nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. ?lg nml:values ?range."
+                    + "}", port);
             rs = ModelUtil.sparqlQuery(model, sparql);
             while (rs.hasNext()) {
                 TagSet vlanRangeAdd = new TagSet(rs.next().getLiteral("range").toString());
@@ -911,14 +852,8 @@ public class MCETools {
             return null;
         }
         sparql = String.format("SELECT ?vlan WHERE {"
-                + "<%s> nml:hasBidirectionalPort ?vlan_port. "
-                + "?vlan_port nml:hasLabel ?l. ?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
-                + "?l nml:value ?vlan."
-                + "FILTER not exists {"
-                + "?subnet nml:hasBidirectionalPort ?vlan_port. "
-                + "?subnet a mrs:SwitchingSubnet. "
-                + "?subnet mrs:type \"shared\". "
-                + "} }", port);
+                + "<%s> nml:hasBidirectionalPort ?vlan_port. ?vlan_port nml:hasLabel ?l. ?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. ?l nml:value ?vlan."
+                + "}", port);
         rs = ModelUtil.sparqlQuery(model, sparql);
         while (rs.hasNext()) {
             String vlanStr = rs.next().getLiteral("?vlan").toString();

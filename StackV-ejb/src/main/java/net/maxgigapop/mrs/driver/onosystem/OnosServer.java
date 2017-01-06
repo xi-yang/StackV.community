@@ -164,7 +164,7 @@ public class OnosServer {
             hosts[i][2] = (String) hostObj.get("vlan");
 
             JSONArray ipArray = (JSONArray) hostObj.get("ipAddresses");
-            hosts[i][3] = String.valueOf(ipArray.get(0));
+            hosts[i][3] = (ipArray.isEmpty() ? "" : String.valueOf(ipArray.get(0)));
 
             JSONObject locObj = (JSONObject) hostObj.get("location");
             hosts[i][4] = (String) locObj.get("elementId");
@@ -259,6 +259,8 @@ public class OnosServer {
         conn.setRequestMethod(method);
         conn.setRequestProperty("Authorization", "Basic " + stringEncoded);
         conn.setRequestProperty("Content-type", "application/json");
+        //conn.setRequestProperty("Accept", "*/*");
+        conn.setRequestProperty("Accept-coding", "gzip");
         conn.setRequestProperty("Accept", "application/json");
         if (body != null && !body.isEmpty()) {
             conn.setDoOutput(true);
@@ -267,9 +269,9 @@ public class OnosServer {
                 wr.flush();
             }
         }
-        logger.log(Level.INFO, "Sending {0} request to URL : {1}", new Object[]{method, url});
+        //logger.log(Level.INFO, "Sending {0} request to URL : {1}", new Object[]{method, url});
         int responseCode = conn.getResponseCode();
-        logger.log(Level.INFO, "Response Code : {0}", responseCode);
+        //logger.log(Level.INFO, "Response Code : {0}", responseCode);
 
         StringBuilder responseStr;
         try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
