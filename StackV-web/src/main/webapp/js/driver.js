@@ -191,7 +191,7 @@ function changeNameDet() {
 }
 function myTest() {
     var userId = keycloak.subject;
-     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/test';
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/test';
     $.ajax({
         url: apiUrl,
         type: 'PUT'

@@ -163,6 +163,7 @@
                     <div id="install-content" class="tab-pane fadeIn">
                         <div id='install-type'></div>
                         <button style="width: 50px;" onclick="clearPanel(); closeSide();" class="install" id="close-button">Close</button>
+                        <button onclick='myTest();'>mysql</button>
                     </div>
                     
                 </div>
