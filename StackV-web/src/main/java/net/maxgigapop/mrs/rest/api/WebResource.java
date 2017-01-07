@@ -188,7 +188,47 @@ public class WebResource {
             return null;
         }
     }
+    @PUT
+    @Path("/driver/test")
+    public void mysqlUpdateTest () {
+         try {
 
+            Properties prop = new Properties();
+            prop.put("user", front_db_user);
+            prop.put("password", front_db_pass);
+            Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    prop);
+
+            PreparedStatement prep = conn.prepareStatement("INSERT INTO `frontend`.`driver_wizard` (`username`, `description`, `data`) VALUES (`test`, `test`, `test`");
+            prep.executeUpdate();
+        } catch (SQLException e) {
+        }
+    }
+    
+    @PUT
+    @Path("driver/{user}/input")
+    @Consumes("application/xml")
+    public void addDriver (@PathParam("user") String username, String xmlInput){
+        try {
+            String desc="";
+            String data="";
+            
+            Properties prop = new Properties();
+            prop.put("user", front_db_user);
+            prop.put("password", front_db_pass);
+            Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", prop);
+            
+            PreparedStatement prep = conn.prepareStatement("INSERT INTO `frontend`.`driver_wizard` (`username`, `description`, `data`) VALUES (?, ?, ?)");
+            prep.setString(1, username);
+            prep.setString(2, desc);
+            prep.setString(3, data);
+            prep.executeUpdate();
+        } catch (SQLException e) {
+        }
+    }
+    
+    
+    
     @PUT
     @Path(value = "/label")
     @Consumes(value = {"application/json", "application/xml"})

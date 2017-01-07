@@ -191,9 +191,12 @@ function changeNameDet() {
 }
 function myTest() {
     var userId = keycloak.subject;
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/test';
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/test';
     $.ajax({
         url: apiUrl,
-        type: 'PUT'
+        type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        }
     });
 }

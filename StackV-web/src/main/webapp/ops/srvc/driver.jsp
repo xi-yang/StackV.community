@@ -164,6 +164,7 @@
                         <div id='install-type'></div>
                         <button style="width: 50px;" onclick="clearPanel(); closeSide();" class="install" id="close-button">Close</button>
                         <button onclick='myTest();'>mysql</button>
+                         <button onclick='myTest();'>test</button>
                     </div>
                     
                 </div>
