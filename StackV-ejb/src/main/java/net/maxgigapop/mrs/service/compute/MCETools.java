@@ -475,16 +475,30 @@ public class MCETools {
     }
 
     public static OntModel transformL2NetworkModel(Model inputModel) {
-        //Query query = QueryFactory.create(l2NetworkConstructSparql);
-        //QueryExecution qexec = QueryExecutionFactory.create(query, inputModel);
-        //inputModel = qexec.execConstruct();
-
         Reasoner reasoner = new GenericRuleReasoner(Rule.parseRules(l2NetworkReasonerRules));
         reasoner.setDerivationLogging(true);
         InfModel infModel = ModelFactory.createInfModel(reasoner, inputModel);
-
+        // remove transit [node/topology connectsTo bidirectoinalPort) if they have switching or openflow services
+        String sparql = "SELECT ?node ?port WHERE {"
+                + "?node a ?type. "
+                + "?port a nml:BidirectionalPort."
+                + "?node nml:hasService ?svc. "
+                + "?node nml:connectsTo ?port. "
+                + "?svc nml:connectsTo ?port."
+                + "FILTER (?type in (nml:Node, nml:Topology))"
+                + "}";
+        ResultSet rs = ModelUtil.sparqlQuery(infModel, sparql);
+        List<Statement> stmtList = new ArrayList();
+        while (rs.hasNext()) {
+            QuerySolution qs = rs.next();
+            Resource resNode = qs.getResource("node");
+            Resource resPort = qs.getResource("port");
+            stmtList.add(infModel.createLiteralStatement(resNode, Nml.connectsTo, resPort));
+            stmtList.add(infModel.createLiteralStatement(resPort, Nml.connectsTo, resNode));
+        }
         OntModel outputModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         outputModel.add(infModel);
+        outputModel.remove(stmtList);
         return outputModel;
     }
 
@@ -1047,13 +1061,13 @@ public class MCETools {
     }
 
     private static boolean isSameNodePorts(Model model, Resource port1, Resource port2) {
-        String sparql = String.format("SELECT ?node WHERE {"
+        String sparql = String.format("SELECT ?node WHERE {{"
                 + "?node nml:hasBidirectionalPort <%s>. "
                 + "?node nml:hasBidirectionalPort <%s>. "
                 + "} UNION {"
                 + "?node nml:hasService ?svc. ?svc nml:hasBidirectionalPort <%s>. "
                 + "?node nml:hasService ?svc. ?svc nml:hasBidirectionalPort <%s>. "
-                + "}", port1, port2, port1, port2);
+                + "}}", port1, port2, port1, port2);
         ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
         return rs.hasNext();
     }
