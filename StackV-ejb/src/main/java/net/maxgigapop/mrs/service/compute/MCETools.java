@@ -37,6 +37,7 @@ import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.InfModel;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.rdf.model.StmtIterator;
@@ -241,6 +242,33 @@ public class MCETools {
         return KSP;
     }
 
+    public static List<MCETools.Path> computeFeasibleL2KSP(OntModel transformedModel, Resource nodeA, Resource nodeZ, JSONObject jsonConnReq) {
+            Property[] filterProperties = {Nml.connectsTo};
+            Filter<Statement> connFilters = new OntTools.PredicatesFilter(filterProperties);
+            List<MCETools.Path> KSP = MCETools.computeKShortestPaths(transformedModel, nodeA, nodeZ, MCETools.KSP_K_DEFAULT, connFilters);
+            if (KSP == null || KSP.isEmpty()) {
+                return KSP;
+            }
+            // Verify TE constraints (switching label and ?adaptation?), 
+            Iterator<MCETools.Path> itP = KSP.iterator();
+            while (itP.hasNext()) {
+                MCETools.Path candidatePath = itP.next();
+                // verify path
+                if (!MCETools.verifyL2Path(transformedModel, candidatePath)) {
+                    itP.remove();
+                } else {
+                    // generating connection subnets (statements added to candidatePath) while verifying VLAN availability
+                    OntModel l2PathModel = MCETools.createL2PathVlanSubnets(transformedModel, candidatePath, jsonConnReq);
+                    if (l2PathModel == null) {
+                        itP.remove();
+                    } else {
+                        candidatePath.setOntModel(l2PathModel);
+                    }
+                }
+            }
+            return KSP;
+    }
+    
     private static String l2NetworkConstructSparql
             = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
             + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n"
@@ -678,7 +706,7 @@ public class MCETools {
     private static void handleL2PathHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, Resource lastPort, HashMap portParamMap, JSONObject portTeMap)
             throws TagSet.NoneVlanExeption, TagSet.EmptyTagSetExeption {
         if (prevHop != null && ModelUtil.isResourceOfType(model, prevHop, Nml.BidirectionalPort)) {
-            //TODO: handling adaptation?
+            //@TODO: handling adaptation?
         }
         TagSet allowedVlanRange = null;
         HashMap<String, Object> paramMap = new HashMap<>();
@@ -916,6 +944,22 @@ public class MCETools {
         return vlanSubnetModel;
     }
 
+
+    public static List<QuerySolution> getTerminalVlanLabels(MCETools.Path l2path) {
+        OntModel model = l2path.getOntModel();
+        String sparql = String.format("SELECT ?bp ?vlan ?tag WHERE {"
+                + " ?bp a nml:BidirectionalPort. "
+                + " ?bp nml:hasLabel ?vlan."
+                + " ?vlan nml:value ?tag."
+                + " ?vlan nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>}");
+        ResultSet r = ModelUtil.sparqlQuery(model, sparql);
+        List<QuerySolution> solutions = new ArrayList<>();
+        while (r.hasNext()) {
+            solutions.add(r.next());
+        }
+        return solutions;
+    }
+    
     private static OntModel createVlanFlowsOnHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, Resource lastPort, HashMap portParamMap) {
         HashMap paramMap = (HashMap) portParamMap.get(currentHop);
         if (!paramMap.containsKey("vlanRange")) {
@@ -1129,9 +1173,36 @@ public class MCETools {
 
     // get VLAN range for the port plus all the available ranges in sub-ports (LabelGroup) and remove allocated vlans (Label)
     private static TagSet getVlanRangeForOpenFlowPort(Model model, Resource port) {
+        String portName = getNameForPort(model, port);
         TagSet vlanRange = TagSet.VlanRangeANY.clone();
-        //@@ TODO look for flows on the switch that refer to this port as in_port (in match) or out_port (in action)
-        // Then look for dl_vlan in either match of action and remove that vlan from vlanRange. 
+        String sparql = String.format("SELECT ?vlan WHERE {{"
+                + "?flow mrs:flowMatch ?match_port. "
+                + "?match_port mrs:type \"in_port\". "
+                + "?match_port mrs:value <%s>. "
+                + "?flow mrs:flowMatch ?match_vlan. "
+                + "?match_vlan mrs:type \"dl_vlan\". "
+                + "?match_vlan mrs:value ?vlan. "
+                + "} UNION {"
+                + "?flow mrs:flowAction ?action_port. "
+                + "?action_port mrs:type \"out_port\". "
+                + "?action_port mrs:value <%s>. "
+                + "?flow mrs:flowAction ?action_vlan. "
+                + "?action_vlan mrs:type \"mod_vlan_vid\". "
+                + "?action_vlan mrs:value ?vlan. "
+                + "}}", portName, portName);
+        
+        //@TODO: Switch wide VLAN exclusion: list all ports included in the same openflow service and exclude their VLANs.
+        ResultSet r = ModelUtil.sparqlQuery(model, sparql);
+        while (r.hasNext()) {
+            QuerySolution qs = r.next();
+            String vlan = qs.get("vlan").toString();
+            try {
+                int vtag = Integer.parseInt(vlan);
+                vlanRange.removeTag(vtag);
+            } catch (NumberFormatException e) {
+                log.warning(String.format("MCETools::getVlanRangeForOpenFlowPort('%s') encountered invalid vlan tag '%s' in flows.", port, vlan));
+            }
+        }
         return vlanRange;
     }
     
