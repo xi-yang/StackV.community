@@ -98,7 +98,7 @@ public class WebResource {
      */
     public WebResource() {
     }
-
+    
     @POST
     @Path("/token")
     public String getToken(final String inputString) throws MalformedURLException, IOException {
@@ -138,22 +138,6 @@ public class WebResource {
         }
 
         return (String) responseJSON.get("access_token");
-    }
-
-    @GET
-    @Path("/test")
-    @Produces("application/json")
-    public String testAuth() throws SQLException {
-        String subject;
-        try {
-            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
-            AccessToken accessToken = securityContext.getToken();
-            subject = accessToken.getSubject();
-        } catch (Exception ex) {
-            return "Exception: " + ex.getMessage();
-        }
-
-        return "Authenticated. Logged-in user id: " + subject + "\n";
     }
 
     @GET
@@ -682,6 +666,7 @@ public class WebResource {
             final AsyncResponse asyncResponse, final String inputString) {
         try {
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             Object obj = parser.parse(inputString);
             final JSONObject inputJSON = (JSONObject) obj;
             String serviceType = (String) inputJSON.get("type");
@@ -704,7 +689,7 @@ public class WebResource {
             executorService.execute(new Runnable() {
                 @Override
                 public void run() {
-                    asyncResponse.resume(doCreateService(inputJSON, auth));
+                    asyncResponse.resume(doCreateService(inputJSON, auth, refresh));
                 }
             });
 
@@ -732,7 +717,7 @@ public class WebResource {
     }
 
     // Async Methods -----------------------------------------------------------
-    private String doCreateService(JSONObject inputJSON, String auth) {
+    private String doCreateService(JSONObject inputJSON, String auth, String refresh) {
         try {
             long startTime = System.currentTimeMillis();
             System.out.println("Service API Start::Name="
@@ -808,9 +793,7 @@ public class WebResource {
             prep.setString(4, refUuid); 
             prep.setString(5, alias);
             prep.setInt(6, 1);
-            prep.executeUpdate();
-            
-            System.out.println("Past 1");
+            prep.executeUpdate();            
 
             int instanceID = servBean.getInstanceID(refUuid);
 
@@ -830,7 +813,7 @@ public class WebResource {
             prep.setString(2, refUuid);
             prep.executeUpdate();
             
-            System.out.println("Past 2");
+            System.out.println("Past Initialization");
 
             // Execute service creation.
             switch (serviceType) {
@@ -838,19 +821,23 @@ public class WebResource {
                     servBean.createNetwork(paraMap, auth);
                     break;
                 case "hybridcloud":
-                    servBean.createHybridCloud(paraMap, auth);
+                    servBean.createHybridCloud(paraMap, auth, refresh);
                     break;
                 case "omm":
                     servBean.createOperationModelModification(paraMap, auth);
                     break;
                 default:
             }
+            
+            System.out.println("Past Creation");
 
             // Verify creation.
             verify(refUuid, auth);
             if (serviceType.equals("omm")) {
                 setSuperState(refUuid, 3);
             }
+            
+            System.out.println("Past Verification");
 
             long endTime = System.currentTimeMillis();
             System.out.println("Service API End::Name="
@@ -937,7 +924,7 @@ public class WebResource {
     }
 
     @GET
-    @Path("/service/delta/{siUUID}")
+    @Path("/delta/{siUUID}")
     @Produces("application/json")
     public ArrayList<String> getDeltas(@PathParam("siUUID") String serviceUUID) {
         try {
