@@ -754,6 +754,9 @@ public class MCETools {
                 if (allowedVlanRange != null && !allowedVlanRange.isEmpty()) {
                     vlanRange.intersect(allowedVlanRange);
                 }
+                if (vlanRange.isEmpty()) {
+                    throw new TagSet.EmptyTagSetExeption();
+                }
                 paramMap.put("vlanRange", vlanRange);
                 portParamMap.put(currentHop, paramMap);
             }
@@ -1037,6 +1040,7 @@ public class MCETools {
         }
         if (nextHop != null && nextHop.equals(resFlowSvc) && lastPort != null) {
             // swap input and output flow IDs from lastPort
+            //@TODO: check input and output flows exist before swap
             String inFlowId = lastPort.getURI() + ":flow=output_vlan" + suggestedVlan;
             Resource resInFlow = RdfOwl.createResource(vlanFlowsModel, URI_flow(resFlowTable.getURI(), inFlowId), Mrs.Flow);
             //$$ add match: currentHop as in_port & suggestedVlan
@@ -1178,14 +1182,14 @@ public class MCETools {
         String sparql = String.format("SELECT ?vlan WHERE {{"
                 + "?flow mrs:flowMatch ?match_port. "
                 + "?match_port mrs:type \"in_port\". "
-                + "?match_port mrs:value <%s>. "
+                + "?match_port mrs:value \"%s\" . "
                 + "?flow mrs:flowMatch ?match_vlan. "
                 + "?match_vlan mrs:type \"dl_vlan\". "
                 + "?match_vlan mrs:value ?vlan. "
                 + "} UNION {"
                 + "?flow mrs:flowAction ?action_port. "
-                + "?action_port mrs:type \"out_port\". "
-                + "?action_port mrs:value <%s>. "
+                + "?action_port mrs:type \"output\". "
+                + "?action_port mrs:value \"%s\" . "
                 + "?flow mrs:flowAction ?action_vlan. "
                 + "?action_vlan mrs:type \"mod_vlan_vid\". "
                 + "?action_vlan mrs:value ?vlan. "
