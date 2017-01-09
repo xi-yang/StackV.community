@@ -25,6 +25,7 @@ package net.maxgigapop.mrs.service.compute;
 
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
+import com.hp.hpl.jena.ontology.OntTools;
 import com.hp.hpl.jena.ontology.OntTools.PredicatesFilter;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
@@ -212,52 +213,102 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
             }
             
             // Create init path starting from root terminaR to terminalR2 (This order could be reshuffled to disturb search)
-            Resource terminalR = terminals.get(0);
-            Resource terminalR2 = terminals.get(1);
+            Resource terminal1 = terminals.get(0);
             terminals.remove(0);
-            terminals.remove(1);
-            List<MCETools.Path> KSP = MCETools.computeFeasibleL2KSP(transformedModel, terminalR, terminalR2, jsonConnReq);
-            if (KSP == null || KSP.size() == 0) {
+            Resource terminal2 = terminals.get(0);
+            terminals.remove(0);
+            List<MCETools.Path> feasibleKSP12 = MCETools.computeFeasibleL2KSP(transformedModel, terminal1, terminal2, jsonConnReq);
+            if (feasibleKSP12 == null || feasibleKSP12.size() == 0) {
                 throw new EJBException(String.format("%s::process doMultiPathFinding cannot find initial feasible path for connection '%s' between '%s' and '%s'", 
-                        MCE_MPVlanConnection.class.getName(), connId, terminalR, terminalR2));
+                        MCE_MPVlanConnection.class.getName(), connId, terminal1, terminal2));
             }
-            MCETools.Path mpvbPath = MCETools.getLeastCostPath(KSP); //(Could also be pick 2nd and 3rd for disturbing search)
+            MCETools.Path mpvbPath = MCETools.getLeastCostPath(feasibleKSP12); //(Could also be pick 2nd and 3rd for disturbing search)
 
-            //$$ For 3rd through Tth terminals, connect them to one of openflow nodes in the path
-            for (Resource terminalX: terminals) {
-                connectTerminalToPath(transformedModel, mpvbPath, terminalX, jsonConnReq);
+            // For 3rd through Tth terminals, connect them to one of openflow nodes in the path
+            for (Resource terminalX : terminals) {
+                MCETools.Path bridgePath = connectTerminalToPath(transformedModel, mpvbPath, terminalX, jsonConnReq);
+                //@TODO: merge bridgePath to connPath | exception if null
             }
-            //@TODO: add VLAN constraints in openflow computation
-            
+
             transformedModel.add(mpvbPath.getOntModel());
             mapConnPaths.put(connId, mpvbPath);
         }
         return mapConnPaths;
     }
 
-    private void connectTerminalToPath(OntModel transformedModel, MCETools.Path connPath, Resource terminalX, JSONObject jsonConnReq) {
-        Resource openflowNode = getOpenflowNodeOnPath(transformedModel, connPath);
+    private MCETools.Path connectTerminalToPath(OntModel transformedModel, MCETools.Path connPath, Resource terminalX, JSONObject jsonConnReq) {
+        List<Resource> openflowPorts = listOpenflowPortsOnPath(transformedModel, connPath);
         //@TODO: use listOpenflowNodesOnPath to loop through the openflow nodes for feasible addedPath?
-        if (openflowNode == null) {
+        if (openflowPorts.isEmpty()) {
             throw new EJBException(String.format("%s::process connectTerminalToPath cannot getOpenflowNodeOnPath", 
                             MCE_MPVlanConnection.class.getName()));
         }
-
-        //@TODO: modify jsonConnReq to add TE spec for openflowNode? (init vlanRange in TE Params)
-
-        List<MCETools.Path> KSP = MCETools.computeFeasibleL2KSP(transformedModel, openflowNode, terminalX, jsonConnReq);
-        if (KSP == null || KSP.size() == 0) {
-            throw new EJBException(String.format("%s::process doMultiPathFinding cannot find feasible path for add connection to '%s'",
-                    MCE_MPVlanConnection.class.getName(), terminalX));
+        for (Resource openflowPort : openflowPorts) {
+            Property[] filterProperties = {Nml.connectsTo};
+            Filter<Statement> connFilters = new OntTools.PredicatesFilter(filterProperties);
+            List<MCETools.Path> KSP = MCETools.computeKShortestPaths(transformedModel, openflowPort, terminalX, MCETools.KSP_K_DEFAULT, connFilters);
+            if (KSP == null || KSP.size() == 0) {
+                continue;
+            }
+            // loop through KSP, and shorten, verify and generate path model
+            // Verify TE constraints (switching label and ?adaptation?), 
+            Iterator<MCETools.Path> itP = KSP.iterator();
+            while (itP.hasNext()) {
+                MCETools.Path bridgePath = itP.next();
+                Resource bridgeOpenflowService = shortenBridgePath(transformedModel, connPath, bridgePath);
+                Resource bridgePort = bridgePath.get(0).getSubject();
+                //@TODO: modify jsonConnReq to add TE spec for openflowNode? (init vlanRange in TE Params)
+                if (MCETools.verifyL2Path(transformedModel, bridgePath)) {
+                    // generating connection subnets (statements added to candidatePath) while verifying VLAN availability
+                    OntModel l2PathModel = MCETools.createL2PathVlanSubnets(transformedModel, bridgePath, jsonConnReq);
+                    if (l2PathModel != null) {
+                        //@TODO: create VLAN bridging flows with bridgeOpenflowService and bridgePort and add to l2PathModel
+                        //@TODO: Use optimization criteria intead of picking the first feasible?
+                        bridgePath.setOntModel(l2PathModel);
+                        return bridgePath;
+                    }
+                }
+            }
         }
-        // pick the added path as shortest of KSP
-        MCETools.Path addedPath = MCETools.getLeastCostPath(KSP); 
-        //$$ look for last common OpenFlow 'hop' in addedPath and remove all preceding hops 
-            //$$ make sure to remove the statements in addedPath.ontModel
-
-        //$$ identify the 'bridging" OpenFlow node
-                        
-        //$$ create VLAN bridging flows
+        return null;
+    }
+    
+    Resource shortenBridgePath(OntModel transformedModel, MCETools.Path connPath, MCETools.Path bridgePath) {
+        Resource bridgePort = bridgePath.get(0).getSubject();
+        Resource bridgeSvc = bridgePath.get(0).getObject().asResource();
+        Iterator<Statement> itStmt = bridgePath.iterator();
+        itStmt.next();
+        while (itStmt.hasNext()) {
+            Statement stmt = itStmt.next();
+            Resource resDiverge = stmt.getSubject();
+            Iterator<Statement> itStmt2 = connPath.iterator();
+            while (itStmt2.hasNext()) {
+                Statement stmt2 = itStmt2.next();
+                Resource resOriginal = stmt2.getSubject();
+                String sparql = "SELECT ?svc WHERE {"
+                        + "?svc a mrs:OpenflowService. "
+                        + String.format("?svc nml:hasBidirectionalPort <%s>. "
+                                + "FILTER (?svc=<%s>)", resDiverge, resOriginal)
+                        + "}";
+                ResultSet rs = ModelUtil.sparqlQuery(transformedModel, sparql);
+                if (rs.hasNext()) {
+                    bridgePort = resDiverge;
+                    bridgeSvc = rs.next().getResource("svc");
+                    break;
+                } 
+            }
+        }
+        itStmt = bridgePath.iterator();
+        while (itStmt.hasNext()) {
+            Statement stmt = itStmt.next();
+            Resource resDiverge = stmt.getSubject();
+            if (resDiverge.equals(bridgePort)) {
+                break;
+            } else {
+                itStmt.remove();
+            }
+        }
+        return bridgeSvc;
     }
     
     private Resource getOpenflowNodeOnPath(OntModel transformedModel, MCETools.Path connPath) {
@@ -300,7 +351,39 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
         }
         return listNodes;
     }
-    
+
+
+    private List<Resource> listOpenflowPortsOnPath(OntModel transformedModel, MCETools.Path connPath) {
+        List<Resource> listNodes = new ArrayList();
+        Iterator<Statement> itStmt = connPath.iterator();
+        while (itStmt.hasNext()) {
+            Statement stmt = itStmt.next();
+            Resource resObj = stmt.getSubject();
+            String sparql = "SELECT ?svc WHERE {"
+                    + "?svc a mrs:OpenflowService. "
+                    + String.format("?svc nml:hasBidirectionalPort <%s>. ",
+                            resObj)
+                    + "}";
+            ResultSet rs = ModelUtil.sparqlQuery(transformedModel, sparql);
+            if (rs.hasNext()) {
+                listNodes.add(resObj);
+            }
+            if (!itStmt.hasNext()) {
+                resObj = stmt.getObject().asResource();
+                sparql = "SELECT ?svc WHERE {"
+                        + "?svc a mrs:OpenflowService. "
+                        + String.format("?svc nml:hasBidirectionalPort <%s>. ",
+                                resObj)
+                        + "}";
+                rs = ModelUtil.sparqlQuery(transformedModel, sparql);
+                if (rs.hasNext()) {
+                    listNodes.add(resObj);
+                }
+            }
+        }
+        return listNodes;
+    }
+
     private void exportPolicyData(OntModel spaModel, Resource resPolicy, String connId, MCETools.Path l2Path) {
         // find Connection policy -> exportTo -> policyData
         String sparql = "SELECT ?data ?type ?value ?format WHERE {"
