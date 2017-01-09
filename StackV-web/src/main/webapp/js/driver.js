@@ -99,14 +99,13 @@ function installStub(){
     var first = document.createElement("p");
     var second = document.createElement("input");
     var third = document.createElement("p");
-    var fourth = document.createElement("textarea");
+    var fourth = document.createElement("input");
     first.innerHTML="Topology URI:";
     first.style.color = "white";
     second.type="text";
     third.innerHTML="TTL:";
     third.style.color = "white";
-    fourth.rows=6;
-    fourth.cols=40;
+    fourth.type="test";
     divContent.appendChild(first);
     divContent.appendChild(second);
     divContent.appendChild(third);
@@ -198,5 +197,27 @@ function myTest() {
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         }
+    });
+}
+function addDriver () {
+    var userId = keycloak.subject;
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/test';
+    var data;
+    var description = document.getElementsByTagName("textarea")[0].value;
+    var sentData;
+    
+    for(var temp of document.getElementsByTagName("input")){
+        data += temp.value + " ";
+    }
+    
+    sentData = userId + '~' + data + '~' + description;
+    
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        data: sentData
     });
 }

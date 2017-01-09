@@ -162,9 +162,8 @@
                 <div class="tab-content" id="catalog-tab-content">                                    
                     <div id="install-content" class="tab-pane fadeIn">
                         <div id='install-type'></div>
-                        <button style="width: 50px;" onclick="clearPanel(); closeSide();" class="install" id="close-button">Close</button>
+                        <button style="width: 50px;" onclick="addDriver(); clearPanel(); closeSide();" class="install" id="close-button">Close</button>
                         <button onclick='myTest();'>mysql</button>
-                         <button onclick='myTest();'>test</button>
                     </div>
                     
                 </div>
