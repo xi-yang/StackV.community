@@ -712,7 +712,7 @@ public class HandleServiceCall {
         if (serviceDelta == null) {
             //try serviceDeltaUuid as a serviceInstanceUuid and look for the latest serviceDeltaUuid in this instance
             ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceDeltaUuid);
-            if (serviceInstance != null && !serviceInstance.getServiceDeltas().isEmpty()) {
+            if (serviceInstance != null && serviceInstance.getServiceDeltas() !=null && !serviceInstance.getServiceDeltas().isEmpty()) {
                 serviceDelta = serviceInstance.getServiceDeltas().get(serviceInstance.getServiceDeltas().size()-1);
             }
         }
@@ -857,7 +857,7 @@ public class HandleServiceCall {
         if (serviceDelta == null) {
             //try serviceDeltaUuid as a serviceInstanceUuid and look for the latest serviceDeltaUuid in this instance
             ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceDeltaUuid);
-            if (serviceInstance != null && !serviceInstance.getServiceDeltas().isEmpty()) {
+            if (serviceInstance != null && serviceInstance.getServiceDeltas() !=null && !serviceInstance.getServiceDeltas().isEmpty()) {
                 serviceDelta = serviceInstance.getServiceDeltas().get(serviceInstance.getServiceDeltas().size()-1);
             }
         }
