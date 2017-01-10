@@ -115,6 +115,7 @@ function installStub(){
     descname.innerHTML="Description:";
     descname.style.color = "white";
     desc.type="text";
+    desc.id="description";
     divContent.appendChild(descname);
     divContent.appendChild(desc);
 }
@@ -146,6 +147,7 @@ function installAWS(){
     descname.innerHTML="Description:";
     descname.style.color = "white";
     desc.type="text";
+    desc.id="description";
     divContent.appendChild(descname);
     divContent.appendChild(desc);
     
@@ -180,6 +182,7 @@ function installOpenstack(){
     descname.innerHTML="Description:";
     descname.style.color = "white";
     desc.type="text";
+    desc.id="description";
     divContent.appendChild(descname);
     divContent.appendChild(desc);
 }
@@ -204,6 +207,7 @@ function installStack(){
     descname.innerHTML="Description:";
     descname.style.color = "white";
     desc.type="text";
+    desc.id="description";
     divContent.appendChild(descname);
     divContent.appendChild(desc);
 }
@@ -243,14 +247,16 @@ function myTest() {
 }
 function addDriver () {
     var userId = keycloak.subject;
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/test';
-    var settings;
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/add';
+    var settings="";
     var description = document.getElementById("description").value;
     
     for(var temp of document.getElementsByTagName("input")){
-        settings += temp.value + " ";
+        if(temp.value != description)
+            settings += temp.value + " ";
     }
-    var data = [userId, settings, description];
+    
+    var data = [userId, description, settings];
     
     $.ajax({
         url: apiUrl,
