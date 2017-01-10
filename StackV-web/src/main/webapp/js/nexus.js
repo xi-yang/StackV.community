@@ -48,7 +48,7 @@ $(function () {
     keycloak.onAuthSuccess = function () {
         // catalog
         if (window.location.pathname === "/StackV-web/ops/catalog.jsp") {
-            setTimeout(loadCatalog, 750);
+            setTimeout(loadCatalog, 500);
             setRefresh(60);
         }
         // templateDetails
@@ -1180,7 +1180,7 @@ function loadCatalog() {
     setTimeout(function () {
         $("#instance-panel").removeClass("closed");
         $("#catalog-panel").removeClass("closed");
-    }, 250);
+    }, 500);
 }
 
 function loadInstances() {

@@ -641,9 +641,9 @@ public class WebResource {
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         if (refresh != null) {
-            auth = servBean.refreshTokens(refresh)[0];
+            auth = servBean.refreshToken(refresh);
         }
-        
+
         try {
             return superStatus(svcInstanceUUID) + " - " + status(svcInstanceUUID, auth) + "\n";
         } catch (SQLException | IOException e) {
@@ -657,7 +657,7 @@ public class WebResource {
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         if (refresh != null) {
-            auth = servBean.refreshTokens(refresh)[0];
+            auth = servBean.refreshToken(refresh);
         }
 
         try {
@@ -1135,29 +1135,29 @@ public class WebResource {
                 return 1;
             }
 
-            String tokens[] = servBean.refreshTokens(refresh);
-            result = revert(refUuid, tokens[0]);
+            auth = servBean.refreshToken(refresh);
+            result = revert(refUuid, auth);
             if (!result) {
                 return 2;
             }
 
-            tokens = servBean.refreshTokens(tokens[1]);
-            result = propagate(refUuid, tokens[0]);
+            auth = servBean.refreshToken(refresh);
+            result = propagate(refUuid, auth);
             if (!result) {
                 return 3;
             }
 
-            tokens = servBean.refreshTokens(tokens[1]);
-            result = commit(refUuid, tokens[0]);
+            auth = servBean.refreshToken(refresh);
+            result = commit(refUuid, auth);
             if (!result) {
                 return 4;
             }
 
             while (true) {
-                tokens = servBean.refreshTokens(tokens[1]);
-                instanceState = status(refUuid, tokens[0]);
+                auth = servBean.refreshToken(refresh);
+                instanceState = status(refUuid, auth);
                 if (instanceState.equals("READY")) {
-                    verify(refUuid, tokens[0], tokens[1]);
+                    verify(refUuid, auth, refresh);
 
                     return 0;
                 } else if (!(instanceState.equals("COMMITTED") || instanceState.equals("FAILED"))) {
@@ -1178,17 +1178,17 @@ public class WebResource {
         try {
             forceRevert(refUuid, auth);
 
-            String tokens[] = servBean.refreshTokens(refresh);
-            forcePropagate(refUuid, tokens[0]);
+            auth = servBean.refreshToken(refresh);
+            forcePropagate(refUuid, auth);
 
-            tokens = servBean.refreshTokens(tokens[1]);
-            forceCommit(refUuid, tokens[0]);
+            auth = servBean.refreshToken(refresh);
+            forceCommit(refUuid, auth);
 
             for (int i = 0; i < 20; i++) {
-                tokens = servBean.refreshTokens(tokens[1]);
-                String instanceState = status(refUuid, tokens[0]);
+                auth = servBean.refreshToken(refresh);
+                String instanceState = status(refUuid, auth);
                 if (instanceState.equals("READY")) {
-                    verify(refUuid, tokens[0], tokens[1]);
+                    verify(refUuid, auth, refresh);
 
                     return 0;
                 } else if (!(instanceState.equals("COMMITTED") || instanceState.equals("FAILED"))) {
@@ -1210,14 +1210,14 @@ public class WebResource {
         try {
             forcePropagate(refUuid, auth);
 
-            String tokens[] = servBean.refreshTokens(refresh);
-            forceCommit(refUuid, tokens[0]);
+            auth = servBean.refreshToken(refresh);
+            forceCommit(refUuid, auth);
 
             for (int i = 0; i < 20; i++) {
-                tokens = servBean.refreshTokens(tokens[1]);
-                String instanceState = status(refUuid, tokens[0]);
+                auth = servBean.refreshToken(refresh);
+                String instanceState = status(refUuid, auth);
                 if (instanceState.equals("READY")) {
-                    verify(refUuid, tokens[0], tokens[1]);
+                    verify(refUuid, auth, refresh);
 
                     return 0;
                 } else if (!(instanceState.equals("COMMITTED") || instanceState.equals("FAILED"))) {
@@ -1581,10 +1581,8 @@ public class WebResource {
         PreparedStatement prep;
 
         for (int i = 1; i <= 5; i++) {
-            String tokens[] = servBean.refreshTokens(refresh);
-            auth = tokens[0];
-            refresh = tokens[1];
-
+            auth = servBean.refreshToken(refresh);
+            
             boolean redVerified = true, addVerified = true;
             URL url = new URL(String.format("%s/service/verify/%s", host, refUuid));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();

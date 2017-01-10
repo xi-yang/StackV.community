@@ -1855,18 +1855,18 @@ public class serviceBeans {
     private void orchestrateInstance(String refUuid, String svcDelta, int instanceID, int historyID, String refresh) {
         String result;
         try {
-            String tokens[] = refreshTokens(refresh);
-            result = initInstance(refUuid, svcDelta, tokens[0]);
+            String token = refreshToken(refresh);
+            result = initInstance(refUuid, svcDelta, token);
 
             cacheSystemDelta(instanceID, historyID, result);
 
-            tokens = refreshTokens(tokens[1]);
-            propagateInstance(refUuid, svcDelta, tokens[0]);
+            token = refreshToken(refresh);
+            propagateInstance(refUuid, svcDelta, token);
 
-            tokens = refreshTokens(tokens[1]);
-            result = commitInstance(refUuid, svcDelta, tokens[0]);
+            token = refreshToken(refresh);
+            result = commitInstance(refUuid, svcDelta, token);
 
-            checkReadyInstance(refUuid, result, tokens[1]);
+            checkReadyInstance(refUuid, result, token);
         } catch (IOException | InterruptedException e) {
             throw new EJBException("Fatal Error -- " + e.getLocalizedMessage() + "\n" + e.getStackTrace());
         }
@@ -1903,25 +1903,25 @@ public class serviceBeans {
     }
 
     private void checkReadyInstance(String refUuid, String result, String refresh) throws MalformedURLException, IOException, InterruptedException {
-        String tokens[] = refreshTokens(refresh);
+        String token = refreshToken(refresh);
         URL url = new URL(String.format("%s/service/%s/status", host, refUuid));
         int i = 1;
         while (!result.equals("READY")) {
             if (i == 10) {
-                tokens = refreshTokens(tokens[1]);
+                token = refreshToken(token);
                 i = 1;
             }
             sleep(5000);//wait for 5 seconds and check again later
             i++;
             HttpURLConnection status = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, status, "GET", null, tokens[0]);
+            result = this.executeHttpMethod(url, status, "GET", null, token);
             /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
                  throw new EJBException("Ready Check Failed!");
                  }*/
         }
     }
 
-    public String[] refreshTokens(String refresh) {
+    public String refreshToken(String refresh) {
         try {
             /*
             KC_RESPONSE=$( \
@@ -1971,7 +1971,7 @@ public class serviceBeans {
             
             System.out.println("Token Refreshed!");
             
-            return new String[]{"bearer " + (String) result.get("access_token"), (String) result.get("refresh_token")};
+            return "bearer " + (String) result.get("access_token");
         } catch (ParseException | IOException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
         }
