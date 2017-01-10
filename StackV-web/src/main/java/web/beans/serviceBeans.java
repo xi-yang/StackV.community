@@ -1935,7 +1935,11 @@ public class serviceBeans {
             URL url = new URL("https://k152.maxgigapop.net:8543/auth/realms/StackV/protocol/openid-connect/token");
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
 
-            String encode = "cmVzdGFwaTpjMTZkMjRjMS0yNjJmLTQ3ZTgtYmY1NC1hZGE5YmQ4ZjdhY2E=";
+            // restapi
+            //String encode = "cmVzdGFwaTpjMTZkMjRjMS0yNjJmLTQ3ZTgtYmY1NC1hZGE5YmQ4ZjdhY2E=";
+            // StackV
+            String encode = "U3RhY2tWOjQ4OTdlOGMzLWI4MzctNDIxMS1hOGYyLWFmM2Q2ZTM2M2RmMg==";
+            
             conn.setRequestProperty("Authorization", "Basic " + encode);
             conn.setReadTimeout(10000);
             conn.setConnectTimeout(15000);

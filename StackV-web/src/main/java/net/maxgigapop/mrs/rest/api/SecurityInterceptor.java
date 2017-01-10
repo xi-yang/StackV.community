@@ -54,7 +54,7 @@ public class SecurityInterceptor implements ContainerRequestFilter {
     public void filter(ContainerRequestContext requestContext) {        
         UriInfo uri = requestContext.getUriInfo();
         String methodName = resourceInfo.getResourceMethod().getName();
-        //if ((uri.getPath()).startsWith("/app/")) {
+        if ((uri.getPath()).startsWith("/app/")) {
             // Ban list
             List<String> supplierNames = Arrays.asList("loadWizard", "loadEditor", "loadInstances",
                     "loadInstanceDetails", "loadInstanceDelta", "loadInstanceVerification", "loadInstanceACL",
@@ -80,6 +80,6 @@ public class SecurityInterceptor implements ContainerRequestFilter {
                         .entity("User is not allowed to access the resource:" + methodName)
                         .build());
             }
-        //}
+        }
     }
 }
