@@ -51,7 +51,7 @@ public class SecurityInterceptor implements ContainerRequestFilter {
     private final String front_db_pass = "frontuser";
 
     @Override
-    public void filter(ContainerRequestContext requestContext) {
+    public void filter(ContainerRequestContext requestContext) {        
         UriInfo uri = requestContext.getUriInfo();
         String methodName = resourceInfo.getResourceMethod().getName();
         if ((uri.getPath()).startsWith("/app/")) {
@@ -70,19 +70,12 @@ public class SecurityInterceptor implements ContainerRequestFilter {
             Set<String> roleSet;
             AccessToken accessToken = securityContext.getToken();            
             roleSet = accessToken.getResourceAccess("StackV").getRoles();
-            if (!accessToken.isActive()) {
-                
-            }
-
             if (!roleSet.contains(methodName)) {
                 requestContext.abortWith(Response
                         .status(Response.Status.UNAUTHORIZED)
                         .entity("User is not allowed to access the resource:" + methodName)
                         .build());
             }
-        }
-        else {
-            System.out.println("BACKEND TRIGGER");
         }
     }
 }

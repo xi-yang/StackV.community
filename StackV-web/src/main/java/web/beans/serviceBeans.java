@@ -396,7 +396,7 @@ public class serviceBeans {
 
     }
      */
-    public int createNetwork(Map<String, String> paraMap, String auth) {
+    public int createNetwork(Map<String, String> paraMap, String auth, String refresh) {
         String topoUri = null;
         String driverType = null;
         String netCidr = null;
@@ -912,46 +912,8 @@ public class serviceBeans {
         int instanceID = results[0];
         int historyID = results[1];
 
-//        String siUuid;
-        String result;
-        try {
-            URL url = new URL(String.format("%s/service/%s", host, refUuid));
-            HttpURLConnection compile = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, compile, "POST", svcDelta, auth);
-            if (!result.contains("referenceVersion")) {
-                throw new EJBException("Service Delta Failed!");
-            }
-
-            // Cache System Delta
-            cacheSystemDelta(instanceID, historyID, result);
-
-            url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
-            HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, propagate, "PUT", null, auth);
-            if (!result.equals("PROPAGATED")) {
-                throw new EJBException("Propagate Failed!");
-            }
-            url = new URL(String.format("%s/service/%s/commit", host, refUuid));
-            HttpURLConnection commit = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, commit, "PUT", null, auth);
-            if (!result.equals("COMMITTED")) {
-                throw new EJBException("Commit Failed!");
-            }
-            url = new URL(String.format("%s/service/%s/status", host, refUuid));
-            while (!result.equals("READY")) {
-                sleep(5000);//wait for 5 seconds and check again later
-                HttpURLConnection status = (HttpURLConnection) url.openConnection();
-                result = this.executeHttpMethod(url, status, "GET", null, auth);
-                /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
-                 throw new EJBException("Ready Check Failed!");
-                 }*/
-            }
-
-            return 0;
-
-        } catch (IOException | InterruptedException e) {
-            throw new EJBException("Fatal Error -- " + e.getLocalizedMessage());
-        }
+        orchestrateInstance(refUuid, svcDelta, instanceID, historyID, refresh);
+        return 0;
     }
 
     public int createHybridCloud(Map<String, String> paraMap, String auth, String refresh) {
@@ -1959,7 +1921,7 @@ public class serviceBeans {
         }
     }
 
-    private String[] refreshTokens(String refresh) {
+    public String[] refreshTokens(String refresh) {
         try {
             /*
             KC_RESPONSE=$( \
@@ -1980,7 +1942,8 @@ public class serviceBeans {
             conn.setRequestMethod("POST");
             conn.setDoInput(true);
             conn.setDoOutput(true);
-
+                        
+            System.out.println("Init Refresh: " + refresh);
             String data = "grant_type=refresh_token&refresh_token=" + refresh;
 
             OutputStream os = conn.getOutputStream();
@@ -2005,7 +1968,10 @@ public class serviceBeans {
             JSONParser parser = new JSONParser();
             Object obj = parser.parse(responseStr.toString());
             JSONObject result = (JSONObject) obj;
-            return new String[]{(String) result.get("access_token"), (String) result.get("refresh_token")};
+            
+            System.out.println("Token Refreshed!");
+            
+            return new String[]{"bearer " + (String) result.get("access_token"), (String) result.get("refresh_token")};
         } catch (ParseException | IOException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
         }

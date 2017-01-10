@@ -622,55 +622,13 @@ function checkInstance(uuid) {
         type: 'GET',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
             var statusElement = document.getElementById("instance-status");
             statusElement.innerHTML = result;
         }
     });
-}
-
-function propagateInstance(uuid) {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/propagate';
-    $.ajax({
-        url: apiUrl,
-        type: 'PUT',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (result) {
-            window.location.reload(true);
-        }
-    });
-}
-
-function commitInstance(uuid) {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/commit';
-    $.ajax({
-        url: apiUrl,
-        type: 'PUT',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (result) {
-            window.location.reload(true);
-        }
-    });
-}
-
-function revertInstance(uuid) {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/revert';
-    $.ajax({
-        url: apiUrl,
-        type: 'PUT',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (result) {
-            window.location.reload(true);
-        }
-    });
-    //window.location.replace('/StackV-web/ops/catalog.jsp');
 }
 
 function cancelInstance(uuid) {
@@ -760,6 +718,7 @@ function modifyInstance(uuid) {
     });
     //window.location.replace('/StackV-web/ops/catalog.jsp');
 }
+
 function forceModifyInstance(uuid) {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/force_modify';
     $.ajax({
@@ -782,6 +741,7 @@ function verifyInstance(uuid) {
         type: 'PUT',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
             window.location.reload(true);
@@ -1349,6 +1309,7 @@ function loadWizard() {
                     dataType: "json",
                     beforeSend: function (xhr) {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                     },
                     success: function (result) {
 
@@ -1565,6 +1526,7 @@ function subloadInstance() {
                     type: 'PUT',
                     beforeSend: function (xhr) {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                     },
                     success: function () {
                         if (command === "delete" || command === "force_delete") {
@@ -2113,6 +2075,7 @@ function loadStatus(refUuid) {
         type: 'GET',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
             ele.innerHTML = result;
