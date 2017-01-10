@@ -29,6 +29,8 @@ import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ModelUtil;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.json.simple.JSONArray;
@@ -89,17 +91,19 @@ public class OpenflowPush {
                     resTable = qs2.getResource("table");
                 }
             }
-            query2 = "SELECT ?table ?matchtype ?matchvalue ?actiontype ?actionvalue WHERE {"
+            query2 = "SELECT ?table ?matchtype ?matchvalue ?action ?actiontype ?actionvalue WHERE {"
                     + String.format("?table mrs:hasFlow <%s>. ", flow.getURI())
                     + String.format("<%s> mrs:flowAction ?action. ?action mrs:type ?actiontype. ?action mrs:value ?actionvalue. ", flow.getURI())
                     + "}";
             r2 = ModelUtil.executeQuery(query2, null, model);
+            SortedMap<String, String> sortedActions = new TreeMap();
             while (r2.hasNext()) {
                 QuerySolution qs2 = r2.next();
                 String actionType = qs2.get("actiontype").toString();
                 String actionValue = qs2.get("actionvalue").toString();
+                String actionUri = qs2.get("action").toString();
                 String strAction = (actionType + "=" + actionValue);
-                jFlowActions.add(strAction);
+                sortedActions.put(actionUri, strAction);
                 if (resTable == null) {
                     resTable = qs2.getResource("table");
                 }
@@ -107,6 +111,7 @@ public class OpenflowPush {
             if (resTable == null) {
                 continue;
             }
+            jFlowActions.addAll(sortedActions.values());
             String query3 = "SELECT ?node_name ?table_name  WHERE {"
                     + String.format("?node nml:hasService ?openflow_svc. ?openflow_svc mrs:providesFlowTable <%s>. ", resTable.getURI())
                     + String.format("?node nml:name ?node_name. <%s> nml:name ?table_name. ", resTable.getURI())

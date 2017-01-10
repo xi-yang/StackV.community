@@ -1030,13 +1030,13 @@ public class MCETools {
 
             Resource resFlowAction2 = RdfOwl.createResource(vlanFlowsModel, URI_action(resOutFlow.getURI(), "1"), Mrs.FlowRule);
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resOutFlow, Mrs.flowAction, resFlowAction2));
-            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction2, Mrs.type, "output"));
-            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction2, Mrs.value, portName));
-            
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction2, Mrs.type, "mod_vlan_vid"));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction2, Mrs.value, suggestedVlan.toString()));            
+
             Resource resFlowAction3 = RdfOwl.createResource(vlanFlowsModel, URI_action(resOutFlow.getURI(), "2"), Mrs.FlowRule);
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resOutFlow, Mrs.flowAction, resFlowAction3));
-            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.type, "mod_vlan_vid"));
-            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.value, suggestedVlan.toString()));            
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.type, "output"));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.value, portName));
         }
         if (nextHop != null && nextHop.equals(resFlowSvc) && lastPort != null) {
             // swap input and output flow IDs from lastPort
@@ -1062,16 +1062,17 @@ public class MCETools {
 
             String outFlowId = lastPort.getURI() + ":flow=input_vlan" + suggestedVlan;
             Resource resOutFlow = RdfOwl.createResource(vlanFlowsModel, URI_flow(resFlowTable.getURI(), outFlowId), Mrs.Flow);
+
             //$$ add actions: output to currentHop + swap suggestedVlan 
             Resource resFlowAction2 = RdfOwl.createResource(vlanFlowsModel, URI_action(resOutFlow.getURI(), "1"), Mrs.FlowRule);
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resOutFlow, Mrs.flowAction, resFlowAction2));
-            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction2, Mrs.type, "output"));
-            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction2, Mrs.value, portName));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction2, Mrs.type, "mod_vlan_vid"));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction2, Mrs.value, suggestedVlan.toString()));
 
             Resource resFlowAction3 = RdfOwl.createResource(vlanFlowsModel, URI_action(resOutFlow.getURI(), "2"), Mrs.FlowRule);
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resOutFlow, Mrs.flowAction, resFlowAction3));
-            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.type, "mod_vlan_vid"));
-            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.value, suggestedVlan.toString()));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.type, "output"));
+            vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.value, portName));
         }
 
         return vlanFlowsModel;
@@ -1097,7 +1098,7 @@ public class MCETools {
         return null;
     }
 
-    private static String getNameForPort(Model model, Resource port) {
+    public static String getNameForPort(Model model, Resource port) {
         String sparql = String.format("SELECT ?name WHERE {"
                 + "<%s> nml:name ?name."
                 + "}", port);
