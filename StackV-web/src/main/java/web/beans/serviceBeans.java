@@ -25,12 +25,16 @@
 package web.beans;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import static java.lang.Thread.sleep;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -45,14 +49,24 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
+import javax.net.ssl.HttpsURLConnection;
+import javax.ws.rs.core.HttpHeaders;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.token.TokenManager;
+import org.keycloak.representations.idm.RealmRepresentation;
 
 public class serviceBeans {
 
     private static final Logger logger = Logger.getLogger(serviceBeans.class.getName());
+
+    private final String kc_url = "https://k152.maxgigapop.net:8543/auth";
+    private final String kc_user = "admin";
+    private final String kc_pass = "MAX123!";
+
     String login_db_user = "login_view";
     String login_db_pass = "loginuser";
     String front_db_user = "front_view";
@@ -381,9 +395,8 @@ public class serviceBeans {
         }
 
     }
-    */
-
-    public int createNetwork(Map<String, String> paraMap, String auth) {
+     */
+    public int createNetwork(Map<String, String> paraMap, String auth, String refresh) {
         String topoUri = null;
         String driverType = null;
         String netCidr = null;
@@ -899,49 +912,11 @@ public class serviceBeans {
         int instanceID = results[0];
         int historyID = results[1];
 
-//        String siUuid;
-        String result;
-        try {
-            URL url = new URL(String.format("%s/service/%s", host, refUuid));
-            HttpURLConnection compile = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, compile, "POST", svcDelta, auth);
-            if (!result.contains("referenceVersion")) {
-                throw new EJBException("Service Delta Failed!");
-            }
-
-            // Cache System Delta
-            cacheSystemDelta(instanceID, historyID, result);
-
-            url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
-            HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, propagate, "PUT", null, auth);
-            if (!result.equals("PROPAGATED")) {
-                throw new EJBException("Propagate Failed!");
-            }
-            url = new URL(String.format("%s/service/%s/commit", host, refUuid));
-            HttpURLConnection commit = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, commit, "PUT", null, auth);
-            if (!result.equals("COMMITTED")) {
-                throw new EJBException("Commit Failed!");
-            }
-            url = new URL(String.format("%s/service/%s/status", host, refUuid));
-            while (!result.equals("READY")) {
-                sleep(5000);//wait for 5 seconds and check again later
-                HttpURLConnection status = (HttpURLConnection) url.openConnection();
-                result = this.executeHttpMethod(url, status, "GET", null, auth);
-                /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
-                 throw new EJBException("Ready Check Failed!");
-                 }*/
-            }
-
-            return 0;
-
-        } catch (IOException | InterruptedException e) {
-            throw new EJBException("Fatal Error -- " + e.getLocalizedMessage());
-        }
+        orchestrateInstance(refUuid, svcDelta, instanceID, historyID, refresh);
+        return 0;
     }
 
-    public int createHybridCloud(Map<String, String> paraMap, String auth) {
+    public int createHybridCloud(Map<String, String> paraMap, String auth, String refresh) {
         String refUuid = null;
         JSONParser jsonParser = new JSONParser();
         JSONArray vcnArr = null;
@@ -1522,50 +1497,12 @@ public class serviceBeans {
         int instanceID = results[0];
         int historyID = results[1];
 
-        String result;
-        try {
-            URL url = new URL(String.format("%s/service/%s", host, refUuid));
-            HttpURLConnection compile = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, compile, "POST", svcDelta, auth);
-            if (!result.contains("referenceVersion")) {
-                throw new EJBException("Service Delta Failed!");
-            }
-
-            // Cache System Delta
-            cacheSystemDelta(instanceID, historyID, result);
-
-            url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
-            HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, propagate, "PUT", null, auth);
-            if (!result.equals("PROPAGATED")) {
-                throw new EJBException("Propagate Failed!");
-            }
-            url = new URL(String.format("%s/service/%s/commit", host, refUuid));
-            HttpURLConnection commit = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, commit, "PUT", null, auth);
-            if (!result.equals("COMMITTED")) {
-                throw new EJBException("Commit Failed!");
-            }
-            url = new URL(String.format("%s/service/%s/status", host, refUuid));
-            while (!result.equals("READY")) {
-                sleep(5000);//wait for 5 seconds and check again later
-                HttpURLConnection status = (HttpURLConnection) url.openConnection();
-                result = this.executeHttpMethod(url, status, "GET", null, auth);
-                /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
-                 throw new EJBException("Ready Check Failed!");
-                 }*/
-            }
-
-            return 0;
-
-        } catch (IOException | InterruptedException e) {
-            throw new EJBException("Fatal Error -- " + e.getLocalizedMessage());
-        }
+        orchestrateInstance(refUuid, svcDelta, instanceID, historyID, refresh);
+        return 0;
     }
-    
+
     public int createOperationModelModification(Map<String, String> paraMap, String auth) {
         String refUuid = paraMap.get("instanceUUID");
-
 
         String deltaUUID = UUID.randomUUID().toString();
 
@@ -1579,7 +1516,7 @@ public class serviceBeans {
                 + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
                 + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n"
                 + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n";
-        
+
         delta += "&lt;x-policy-annotation:action:apply-modifications&gt;\n"
                 + "    a            spa:PolicyAction ;\n"
                 + "    spa:type     \"MCE_OperationalModelModification\" ;\n"
@@ -1588,19 +1525,19 @@ public class serviceBeans {
                 + "    a            spa:PolicyData;\n"
                 + "    spa:type     \"JSON\";\n"
                 + "    spa:value    \"\"\"" + paraMap.get("removeResource").replace("\\", "") + "\"\"\".\n\n";
-        
+
         // need this for compilation 
-        delta += "&lt;urn:off:network:omm-abs&gt;\n" +
-                "   a  nml:Topology;\n" +
-                "   spa:type spa:Abstraction;\n" +
-                "   spa:dependOn  &lt;x-policy-annotation:action:apply-modifications&gt;.\n\n";
-       
+        delta += "&lt;urn:off:network:omm-abs&gt;\n"
+                + "   a  nml:Topology;\n"
+                + "   spa:type spa:Abstraction;\n"
+                + "   spa:dependOn  &lt;x-policy-annotation:action:apply-modifications&gt;.\n\n";
+
         delta += "</modelReduction>\n\n"
                 + "</serviceDelta>";
 
         String result;
         System.out.println(delta);
-        
+
         // Cache serviceDelta.
         int[] results = cacheServiceDelta(refUuid, deltaUUID, delta);
         int instanceID = results[0];
@@ -1642,8 +1579,10 @@ public class serviceBeans {
             return 0;
         } catch (Exception e) {
             return 1;//connection error
-        }        
+        }
     }
+
+    // ------ Operations ------
 // --------------------------- UTILITY FUNCTIONS -------------------------------    
     /**
      * Executes HTTP Request.
@@ -1913,4 +1852,129 @@ public class serviceBeans {
         }
     }
 
+    private void orchestrateInstance(String refUuid, String svcDelta, int instanceID, int historyID, String refresh) {
+        String result;
+        try {
+            String token = refreshToken(refresh);
+            result = initInstance(refUuid, svcDelta, token);
+
+            cacheSystemDelta(instanceID, historyID, result);
+
+            token = refreshToken(refresh);
+            propagateInstance(refUuid, svcDelta, token);
+
+            token = refreshToken(refresh);
+            result = commitInstance(refUuid, svcDelta, token);
+
+            checkReadyInstance(refUuid, result, token);
+        } catch (IOException | InterruptedException e) {
+            throw new EJBException("Fatal Error -- " + e.getLocalizedMessage() + "\n" + e.getStackTrace());
+        }
+    }
+
+    private String initInstance(String refUuid, String svcDelta, String auth) throws MalformedURLException, IOException {
+        URL url = new URL(String.format("%s/service/%s", host, refUuid));
+        HttpURLConnection compile = (HttpURLConnection) url.openConnection();
+        String result = this.executeHttpMethod(url, compile, "POST", svcDelta, auth);
+        if (!result.contains("referenceVersion")) {
+            throw new EJBException("Service Delta Failed!");
+        }
+        return result;
+    }
+
+    private String propagateInstance(String refUuid, String svcDelta, String auth) throws MalformedURLException, IOException {
+        URL url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
+        HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+        String result = this.executeHttpMethod(url, propagate, "PUT", null, auth);
+        if (!result.equals("PROPAGATED")) {
+            throw new EJBException("Propagate Failed!");
+        }
+        return result;
+    }
+
+    private String commitInstance(String refUuid, String svcDelta, String auth) throws MalformedURLException, IOException {
+        URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
+        HttpURLConnection commit = (HttpURLConnection) url.openConnection();
+        String result = this.executeHttpMethod(url, commit, "PUT", null, auth);
+        if (!result.equals("COMMITTED")) {
+            throw new EJBException("Commit Failed!");
+        }
+        return result;
+    }
+
+    private void checkReadyInstance(String refUuid, String result, String refresh) throws MalformedURLException, IOException, InterruptedException {
+        String token = refreshToken(refresh);
+        URL url = new URL(String.format("%s/service/%s/status", host, refUuid));
+        int i = 1;
+        while (!result.equals("READY")) {
+            if (i == 10) {
+                token = refreshToken(token);
+                i = 1;
+            }
+            sleep(5000);//wait for 5 seconds and check again later
+            i++;
+            HttpURLConnection status = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, status, "GET", null, token);
+            /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
+                 throw new EJBException("Ready Check Failed!");
+                 }*/
+        }
+    }
+
+    public String refreshToken(String refresh) {
+        try {
+            /*
+            KC_RESPONSE=$( \
+            curl -k -v -X POST \
+            -u "$KC_CLIENT:$KC_CLIENT_SECRET" \
+            -d "grant_type=refresh_token" \
+            -d "refresh_token=$KC_REFRESH_TOKEN" \
+            "https://$KC_SERVER/$KC_CONTEXT/realms/$KC_REALM/protocol/openid-connect/token")
+             */
+
+            URL url = new URL("https://k152.maxgigapop.net:8543/auth/realms/StackV/protocol/openid-connect/token");
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+
+            String encode = "cmVzdGFwaTpjMTZkMjRjMS0yNjJmLTQ3ZTgtYmY1NC1hZGE5YmQ4ZjdhY2E=";
+            conn.setRequestProperty("Authorization", "Basic " + encode);
+            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(15000);
+            conn.setRequestMethod("POST");
+            conn.setDoInput(true);
+            conn.setDoOutput(true);
+                        
+            System.out.println("Init Refresh: " + refresh);
+            String data = "grant_type=refresh_token&refresh_token=" + refresh;
+
+            OutputStream os = conn.getOutputStream();
+            BufferedWriter writer = new BufferedWriter(
+                    new OutputStreamWriter(os, "UTF-8"));
+            writer.write(data);
+            writer.flush();
+            writer.close();
+            os.close();
+
+            conn.connect();
+            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
+            StringBuilder responseStr;
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String inputLine;
+                responseStr = new StringBuilder();
+                while ((inputLine = in.readLine()) != null) {
+                    responseStr.append(inputLine);
+                }
+            }
+
+            JSONParser parser = new JSONParser();
+            Object obj = parser.parse(responseStr.toString());
+            JSONObject result = (JSONObject) obj;
+            
+            System.out.println("Token Refreshed!");
+            
+            return "bearer " + (String) result.get("access_token");
+        } catch (ParseException | IOException ex) {
+            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
+    }
 }

@@ -141,22 +141,6 @@ public class WebResource {
     }
 
     @GET
-    @Path("/test")
-    @Produces("application/json")
-    public String testAuth() throws SQLException {
-        String subject;
-        try {
-            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
-            AccessToken accessToken = securityContext.getToken();
-            subject = accessToken.getSubject();
-        } catch (Exception ex) {
-            return "Exception: " + ex.getMessage();
-        }
-
-        return "Authenticated. Logged-in user id: " + subject + "\n";
-    }
-
-    @GET
     @Path("/label/{user}")
     @Produces("application/json")
     public ArrayList<ArrayList<String>> getLabels(@PathParam("user") String username) {
@@ -655,7 +639,11 @@ public class WebResource {
     @Path("/service/{siUUID}/status")
     public String checkStatus(@PathParam("siUUID") String svcInstanceUUID) {
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-        String retString = "";
+        final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+        if (refresh != null) {
+            auth = servBean.refreshToken(refresh);
+        }
+
         try {
             return superStatus(svcInstanceUUID) + " - " + status(svcInstanceUUID, auth) + "\n";
         } catch (SQLException | IOException e) {
@@ -666,8 +654,13 @@ public class WebResource {
     @GET
     @Path("/service/{siUUID}/substatus")
     public String subStatus(@PathParam("siUUID") String svcInstanceUUID) {
+        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+        final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+        if (refresh != null) {
+            auth = servBean.refreshToken(refresh);
+        }
+
         try {
-            String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             return status(svcInstanceUUID, auth);
         } catch (IOException ex) {
             Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
@@ -682,6 +675,7 @@ public class WebResource {
             final AsyncResponse asyncResponse, final String inputString) {
         try {
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             Object obj = parser.parse(inputString);
             final JSONObject inputJSON = (JSONObject) obj;
             String serviceType = (String) inputJSON.get("type");
@@ -694,7 +688,7 @@ public class WebResource {
             if (!roleSet.contains(serviceType)) {
                 throw new IOException("Unauthorized to use " + serviceType + "!\n");
             }
-            
+
             String username = accessToken.getPreferredUsername();
             System.out.println("User:" + username);
             inputJSON.remove("username");
@@ -704,7 +698,7 @@ public class WebResource {
             executorService.execute(new Runnable() {
                 @Override
                 public void run() {
-                    asyncResponse.resume(doCreateService(inputJSON, auth));
+                    asyncResponse.resume(doCreateService(inputJSON, auth, refresh));
                 }
             });
 
@@ -721,18 +715,19 @@ public class WebResource {
             final AsyncResponse asyncResponse, @PathParam(value = "siUUID")
             final String refUuid, @PathParam(value = "action")
             final String action) {
-        final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");                
+        final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+        final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
 
         executorService.execute(new Runnable() {
             @Override
             public void run() {
-                asyncResponse.resume(doOperate(refUuid, action, auth));
+                asyncResponse.resume(doOperate(refUuid, action, auth, refresh));
             }
         });
     }
 
     // Async Methods -----------------------------------------------------------
-    private String doCreateService(JSONObject inputJSON, String auth) {
+    private String doCreateService(JSONObject inputJSON, String auth, String refresh) {
         try {
             long startTime = System.currentTimeMillis();
             System.out.println("Service API Start::Name="
@@ -805,12 +800,10 @@ public class WebResource {
             prep.setInt(1, serviceID);
             prep.setString(2, username);
             prep.setTimestamp(3, timeStamp);
-            prep.setString(4, refUuid); 
+            prep.setString(4, refUuid);
             prep.setString(5, alias);
             prep.setInt(6, 1);
             prep.executeUpdate();
-            
-            System.out.println("Past 1");
 
             int instanceID = servBean.getInstanceID(refUuid);
 
@@ -829,16 +822,16 @@ public class WebResource {
             prep.setString(1, username);
             prep.setString(2, refUuid);
             prep.executeUpdate();
-            
-            System.out.println("Past 2");
+
+            System.out.println("Past Initialization");
 
             // Execute service creation.
             switch (serviceType) {
                 case "netcreate":
-                    servBean.createNetwork(paraMap, auth);
+                    servBean.createNetwork(paraMap, auth, refresh);
                     break;
                 case "hybridcloud":
-                    servBean.createHybridCloud(paraMap, auth);
+                    servBean.createHybridCloud(paraMap, auth, refresh);
                     break;
                 case "omm":
                     servBean.createOperationModelModification(paraMap, auth);
@@ -846,11 +839,15 @@ public class WebResource {
                 default:
             }
 
+            System.out.println("Past Creation");
+
             // Verify creation.
-            verify(refUuid, auth);
+            verify(refUuid, auth, refresh);
             if (serviceType.equals("omm")) {
                 setSuperState(refUuid, 3);
             }
+
+            System.out.println("Past Verification");
 
             long endTime = System.currentTimeMillis();
             System.out.println("Service API End::Name="
@@ -867,7 +864,7 @@ public class WebResource {
         }
     }
 
-    private String doOperate(@PathParam("siUUID") String refUuid, @PathParam("action") String action, String auth) {
+    private String doOperate(@PathParam("siUUID") String refUuid, @PathParam("action") String action, String auth, String refresh) {
         long startTime = System.currentTimeMillis();
         System.out.println("Async API Operate Start::Name="
                 + Thread.currentThread().getName() + "::ID="
@@ -879,24 +876,24 @@ public class WebResource {
             switch (action) {
                 case "cancel":
                     setSuperState(refUuid, 2);
-                    cancelInstance(refUuid, auth);
+                    cancelInstance(refUuid, auth, refresh);
                     break;
                 case "force_cancel":
                     setSuperState(refUuid, 2);
-                    forceCancelInstance(refUuid, auth);
+                    forceCancelInstance(refUuid, auth, refresh);
                     break;
 
                 case "reinstate":
                     setSuperState(refUuid, 4);
-                    cancelInstance(refUuid, auth);
+                    cancelInstance(refUuid, auth, refresh);
                     break;
                 case "force_reinstate":
                     setSuperState(refUuid, 4);
-                    forceCancelInstance(refUuid, auth);
+                    forceCancelInstance(refUuid, auth, refresh);
                     break;
 
                 case "force_retry":
-                    forceRetryInstance(refUuid, auth);
+                    forceRetryInstance(refUuid, auth, refresh);
                     break;
 
                 case "delete":
@@ -911,7 +908,7 @@ public class WebResource {
                     return "Deletion Complete.\r\n";
 
                 case "verify":
-                    verify(refUuid, auth);
+                    verify(refUuid, auth, refresh);
 
                     endTime = System.currentTimeMillis();
                     System.out.println("Async API Operate End::Name="
@@ -937,7 +934,7 @@ public class WebResource {
     }
 
     @GET
-    @Path("/service/delta/{siUUID}")
+    @Path("/delta/{siUUID}")
     @Produces("application/json")
     public ArrayList<String> getDeltas(@PathParam("siUUID") String serviceUUID) {
         try {
@@ -1130,7 +1127,7 @@ public class WebResource {
      * error (Failed propagate). 4: stage 4 error (Failed commit). 5: stage 5
      * error (Failed result check).
      */
-    private int cancelInstance(String refUuid, String auth) throws SQLException {
+    private int cancelInstance(String refUuid, String auth, String refresh) throws SQLException {
         boolean result;
         try {
             String instanceState = status(refUuid, auth);
@@ -1138,30 +1135,35 @@ public class WebResource {
                 return 1;
             }
 
+            auth = servBean.refreshToken(refresh);
             result = revert(refUuid, auth);
             if (!result) {
                 return 2;
             }
+
+            auth = servBean.refreshToken(refresh);
             result = propagate(refUuid, auth);
             if (!result) {
                 return 3;
             }
+
+            auth = servBean.refreshToken(refresh);
             result = commit(refUuid, auth);
             if (!result) {
                 return 4;
             }
 
             while (true) {
+                auth = servBean.refreshToken(refresh);
                 instanceState = status(refUuid, auth);
                 if (instanceState.equals("READY")) {
-                    verify(refUuid, auth);
+                    verify(refUuid, auth, refresh);
 
                     return 0;
                 } else if (!(instanceState.equals("COMMITTED") || instanceState.equals("FAILED"))) {
                     return 5;
                 }
                 Thread.sleep(5000);
-
             }
 
         } catch (IOException | InterruptedException ex) {
@@ -1171,17 +1173,22 @@ public class WebResource {
         }
     }
 
-    private int forceCancelInstance(String refUuid, String auth) throws SQLException {
+    private int forceCancelInstance(String refUuid, String auth, String refresh) throws SQLException {
         boolean result;
         try {
             forceRevert(refUuid, auth);
+
+            auth = servBean.refreshToken(refresh);
             forcePropagate(refUuid, auth);
+
+            auth = servBean.refreshToken(refresh);
             forceCommit(refUuid, auth);
 
             for (int i = 0; i < 20; i++) {
+                auth = servBean.refreshToken(refresh);
                 String instanceState = status(refUuid, auth);
                 if (instanceState.equals("READY")) {
-                    verify(refUuid, auth);
+                    verify(refUuid, auth, refresh);
 
                     return 0;
                 } else if (!(instanceState.equals("COMMITTED") || instanceState.equals("FAILED"))) {
@@ -1198,16 +1205,19 @@ public class WebResource {
         }
     }
 
-    private int forceRetryInstance(String refUuid, String auth) throws SQLException {
+    private int forceRetryInstance(String refUuid, String auth, String refresh) throws SQLException {
         boolean result;
         try {
             forcePropagate(refUuid, auth);
+
+            auth = servBean.refreshToken(refresh);
             forceCommit(refUuid, auth);
 
             for (int i = 0; i < 20; i++) {
+                auth = servBean.refreshToken(refresh);
                 String instanceState = status(refUuid, auth);
                 if (instanceState.equals("READY")) {
-                    verify(refUuid, auth);
+                    verify(refUuid, auth, refresh);
 
                     return 0;
                 } else if (!(instanceState.equals("COMMITTED") || instanceState.equals("FAILED"))) {
@@ -1560,7 +1570,7 @@ public class WebResource {
         return true;
     }
 
-    private boolean verify(String refUuid, String auth) throws MalformedURLException, IOException, InterruptedException, SQLException {
+    private boolean verify(String refUuid, String auth, String refresh) throws MalformedURLException, IOException, InterruptedException, SQLException {
         int instanceID = servBean.getInstanceID(refUuid);
         Connection front_conn;
         Properties front_connectionProps = new Properties();
@@ -1571,6 +1581,8 @@ public class WebResource {
         PreparedStatement prep;
 
         for (int i = 1; i <= 5; i++) {
+            auth = servBean.refreshToken(refresh);
+            
             boolean redVerified = true, addVerified = true;
             URL url = new URL(String.format("%s/service/verify/%s", host, refUuid));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();

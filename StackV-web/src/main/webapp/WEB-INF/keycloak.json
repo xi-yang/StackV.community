@@ -5,6 +5,5 @@
     "auth-server-url": "https://k152.maxgigapop.net:8543/auth",
     "ssl-required": "external",
     "resource": "restapi",
-    "always-refresh-token": true,
     "enable-cors": true
 }

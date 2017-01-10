@@ -25,57 +25,61 @@ package net.maxgigapop.mrs.rest.api;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.container.ResourceInfo;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.Provider;
 import org.jboss.resteasy.annotations.interception.ServerInterceptor;
 import org.jboss.resteasy.core.Headers;
-import org.jboss.resteasy.core.ResourceMethodInvoker;
 import org.jboss.resteasy.core.ServerResponse;
-import org.jboss.resteasy.spi.HttpRequest;
-import org.jboss.resteasy.spi.interception.PreProcessInterceptor;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.representations.AccessToken;
 
 @Provider
 @ServerInterceptor
-public class SecurityInterceptor implements PreProcessInterceptor {
-
+public class SecurityInterceptor implements ContainerRequestFilter {
+    
+    @Context
+    private ResourceInfo resourceInfo;
+    
     private static final ServerResponse ACCESS_DENIED = new ServerResponse("Access denied for this resource.\n", 401, new Headers<Object>());
     private static final ServerResponse SERVER_ERROR = new ServerResponse("INTERNAL SERVER ERROR\n", 500, new Headers<Object>());
     private final String front_db_user = "front_view";
     private final String front_db_pass = "frontuser";
 
     @Override
-    public ServerResponse preProcess(HttpRequest request, ResourceMethodInvoker method) {
-        if ((request.getUri().getPath()).startsWith("/app/")) {
+    public void filter(ContainerRequestContext requestContext) {        
+        UriInfo uri = requestContext.getUriInfo();
+        String methodName = resourceInfo.getResourceMethod().getName();
+        //if ((uri.getPath()).startsWith("/app/")) {
             // Ban list
             List<String> supplierNames = Arrays.asList("loadWizard", "loadEditor", "loadInstances",
-                    "loadInstanceDetails", "loadInstanceDelta", "loadInstanceVerification", "loadInstanceACL", 
+                    "loadInstanceDetails", "loadInstanceDelta", "loadInstanceVerification", "loadInstanceACL",
                     "loadObjectACL", "loadSubjectACL", "subStatus", "getProfile", "executeProfile", "deleteProfile",
                     "getLabels", "label", "deleteLabel", "clearLabels",
-                    "getVerificationResults", "getVerificationResultsUnion");
-            String methodName = method.getMethod().getName();
+                    "getVerificationResults", "getVerificationResultsUnion", "testAuth");
             if (supplierNames.contains(methodName)) {
-                return null;
+                System.out.println("Authenticated: " + methodName);
+                return;
             }
 
-            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) request.getAttribute(KeycloakSecurityContext.class.getName());
+            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) requestContext.getProperty(KeycloakSecurityContext.class.getName());
             Set<String> roleSet;
-            AccessToken accessToken = securityContext.getToken();
-            System.out.println("TOKEN ACTIVE: " + accessToken.isActive());
+            AccessToken accessToken = securityContext.getToken();            
             roleSet = accessToken.getResourceAccess("StackV").getRoles();
             if (!accessToken.isActive()) {
-
+                System.out.println("NOT ACTIVE");                
             }
 
-            System.out.println("Method: " + methodName);
-            if (roleSet.contains(methodName)) {
-                return null;
-            } else {
-                System.out.println("Not Authorized!");
-                return ACCESS_DENIED;
+            if (!roleSet.contains(methodName)) {
+                requestContext.abortWith(Response
+                        .status(Response.Status.UNAUTHORIZED)
+                        .entity("User is not allowed to access the resource:" + methodName)
+                        .build());
             }
-        } else {
-            return null;
-        }
+        //}
     }
 }
