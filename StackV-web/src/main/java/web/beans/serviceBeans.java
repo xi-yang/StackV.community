@@ -1867,9 +1867,10 @@ public class serviceBeans {
             result = commitInstance(refUuid, svcDelta, token);
 
             checkReadyInstance(refUuid, result, token);
-        } catch (IOException | InterruptedException e) {
-            throw new EJBException("Fatal Error -- " + e.getLocalizedMessage() + "\n" + e.getStackTrace());
-        }
+        } catch (EJBException | IOException | InterruptedException e) {
+            System.out.println("ERROR: " + e.getMessage() + " - " + e.getStackTrace());
+            //Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, e);
+        } 
     }
 
     private String initInstance(String refUuid, String svcDelta, String auth) throws MalformedURLException, IOException {
