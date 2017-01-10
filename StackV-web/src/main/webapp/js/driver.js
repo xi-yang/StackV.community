@@ -110,6 +110,13 @@ function installStub(){
     divContent.appendChild(second);
     divContent.appendChild(third);
     divContent.appendChild(fourth);
+    var descname = document.createElement("p");
+    var desc = document.createElement("input");
+    descname.innerHTML="Description:";
+    descname.style.color = "white";
+    desc.type="text";
+    divContent.appendChild(descname);
+    divContent.appendChild(desc);
 }
 function installAWS(){
     var divContent = document.getElementById("install-type");
@@ -134,6 +141,13 @@ function installAWS(){
     divContent.appendChild(fourth);
     divContent.appendChild(fifth);
     divContent.appendChild(sixth);
+    var descname = document.createElement("p");
+    var desc = document.createElement("input");
+    descname.innerHTML="Description:";
+    descname.style.color = "white";
+    desc.type="text";
+    divContent.appendChild(descname);
+    divContent.appendChild(desc);
     
 }
 function installOpenstack(){
@@ -161,6 +175,13 @@ function installOpenstack(){
     for (var i = 0; i < 12; i++){
         divContent.appendChild(content[i]);
     }
+    var descname = document.createElement("p");
+    var desc = document.createElement("input");
+    descname.innerHTML="Description:";
+    descname.style.color = "white";
+    desc.type="text";
+    divContent.appendChild(descname);
+    divContent.appendChild(desc);
 }
 function installStack(){
     var divContent = document.getElementById("install-type");
@@ -178,6 +199,13 @@ function installStack(){
     divContent.appendChild(second);
     divContent.appendChild(third);
     divContent.appendChild(fourth);
+    var descname = document.createElement("p");
+    var desc = document.createElement("input");
+    descname.innerHTML="Description:";
+    descname.style.color = "white";
+    desc.type="text";
+    divContent.appendChild(descname);
+    divContent.appendChild(desc);
 }
 function clearPanel(){
     $('#install-type').empty();
@@ -189,28 +217,40 @@ function changeNameDet() {
     document.getElementById('side-name').innerHTML="Details";
 }
 function myTest() {
-    var userId = keycloak.subject;
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/test';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (){
+            var divContent = document.getElementById("install-type");
+            var first = document.createElement("p");
+            first.innerHTML="SUCCESS";
+            first.style.color = "white";
+            divContent.appendChild(first);
+            
+        },
+        error: function (){
+            var divContent = document.getElementById("install-type");
+            var first = document.createElement("p");
+            first.innerHTML="FAILURE";
+            first.style.color = "white";
+            divContent.appendChild(first);
         }
     });
 }
 function addDriver () {
     var userId = keycloak.subject;
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/test';
-    var data;
-    var description = document.getElementsByTagName("textarea")[0].value;
-    var sentData;
+    var settings;
+    var description = document.getElementById("description").value;
     
     for(var temp of document.getElementsByTagName("input")){
-        data += temp.value + " ";
+        settings += temp.value + " ";
     }
-    
-    sentData = userId + '~' + data + '~' + description;
+    var data = [userId, settings, description];
     
     $.ajax({
         url: apiUrl,
@@ -218,6 +258,10 @@ function addDriver () {
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
-        data: sentData
+        data: data,
+        success: function (result){
+            //window.location.reload(true);
+            //also update table wth new info
+        }
     });
 }

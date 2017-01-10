@@ -124,7 +124,7 @@
                     <li style="width:100%;" ><a data-toggle="tab" href="#installed-tag">Installed Drivers</a></li>
                 </ul>
 
-                <div class="tab-content" id="catalog-tab-content">                    
+                <div class="tab-content" id="driver-bot-content">                    
                     <div style="display: inline-block; width: 100%; height: inherit; overflow: auto;" id="installed-tag" class="tab-pane fadeIn active">
                         <table class="management-table">
                             <thead>

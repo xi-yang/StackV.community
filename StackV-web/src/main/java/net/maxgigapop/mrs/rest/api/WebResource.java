@@ -199,7 +199,7 @@ public class WebResource {
             Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     prop);
 
-            PreparedStatement prep = conn.prepareStatement("INSERT INTO `frontend`.`driver_wizard` (`username`, `description`, `data`) VALUES (`test`, `test`, `test`");
+            PreparedStatement prep = conn.prepareStatement("INSERT INTO frontend.driver_wizard VALUES (`test`, `test`, `test`)");
             prep.executeUpdate();
         } catch (SQLException e) {
         }
