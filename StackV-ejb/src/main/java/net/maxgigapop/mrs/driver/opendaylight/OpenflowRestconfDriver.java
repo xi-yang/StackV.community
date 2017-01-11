@@ -43,6 +43,7 @@ import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
+import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 
 
@@ -120,8 +121,14 @@ public class OpenflowRestconfDriver implements IHandleDriverSystemCall{
                 throw new EJBException(String.format("%s has no property key=subsystemBaseUrl", driverInstance));
             }
 
+            String modelExtTtl = driverInstance.getProperty("modelExt");
+            OntModel modelExt = null;
+            if (modelExtTtl != null && !modelExtTtl.isEmpty()) {
+                modelExt = ModelUtil.unmarshalOntModel(modelExtTtl);
+            }
+            
             // Creates an Ontology Model from ODL controller RESTConf
-            OntModel ontModel = OpenflowModelBuilder.createOntology(topologyURI, subsystemBaseUrl, loginUser, loginPass);
+            OntModel ontModel = OpenflowModelBuilder.createOntology(topologyURI, subsystemBaseUrl, loginUser, loginPass, modelExt);
 
             if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();
