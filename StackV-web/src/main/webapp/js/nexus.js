@@ -1109,11 +1109,7 @@ function refreshCountdown() {
 
 function reloadCatalog(time) {
     enableLoading();
-<<<<<<< HEAD
-    keycloak.updateToken(30).error(function () {
-=======
     keycloak.updateToken(90).error(function () {
->>>>>>> 6bfb3dde5b47b0f85fbf2aba2c9d59217ee4aa47
         console.log("Error updating token!");
     }).success(function (refreshed) {
         if (refreshed) {
@@ -1153,11 +1149,7 @@ function reloadCatalog(time) {
 
 function reloadDetails(time) {
     enableLoading();
-<<<<<<< HEAD
-    keycloak.updateToken(30).error(function () {
-=======
     keycloak.updateToken(90).error(function () {
->>>>>>> 6bfb3dde5b47b0f85fbf2aba2c9d59217ee4aa47
         console.log("Error updating token!");
     }).success(function (refreshed) {
         if (refreshed) {
