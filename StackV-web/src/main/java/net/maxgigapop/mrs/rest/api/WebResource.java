@@ -952,21 +952,18 @@ public class WebResource {
     @Produces("application/json")
     public String getDeltaBacked(@PathParam("siUUID") String serviceUUID) {
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-        try {
-            System.out.println("Backed Delta 1");
+        try {            
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
             Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
             
             PreparedStatement prep = front_conn.prepareStatement("SELECT COUNT(*) FROM service_delta D, service_instance I WHERE D.service_instance_id = I.service_instance_id AND I.referenceUUID = ?");
             prep.setString(1, serviceUUID);
             ResultSet rs1 = prep.executeQuery();
             rs1.next();
             
-            System.out.println("Backed Delta 2 : " + rs1.getInt(1));
             if (rs1.getInt(1) > 0) {
                 URL url = new URL(String.format("%s/service/delta/%s", host, serviceUUID));
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
@@ -975,7 +972,7 @@ public class WebResource {
                 return result;
             }
             else {
-                return null;
+                return "{verified_addition: \"{ }\",verified_reduction: \"{ }\",unverified_addition: \"{ }\",unverified_reduction: \"{ }\"}";
             }
         } catch (IOException | SQLException e) {
             Logger.getLogger(WebResource.class
