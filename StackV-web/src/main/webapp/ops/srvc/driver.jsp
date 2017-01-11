@@ -4,10 +4,10 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
-<jsp:setProperty name="serv" property="*" />  
+<jsp:setProperty name="serv" property="*" />
 <!DOCTYPE html>
-<html >    
-    <head>   
+<html >
+    <head>
         <meta charset="UTF-8">
         <title>Driver Service</title>
         <script src="/StackV-web/js/keycloak.js"></script>
@@ -32,11 +32,11 @@
         <div id="nav">
         </div>
         <!-- SIDE BAR -->
-        <div id="sidebar">            
-        </div>
+        <%-- <div id="sidebar">            
+        </div> --%>
         <!-- MAIN PANEL -->
         <div id="main-pane">
-            <c:choose>                
+            <c:choose>
                 <c:when test="${empty param.ret}">
                     <div id="service-specific">
                         <div id="service-top">
@@ -50,7 +50,7 @@
                                             <th>Driver Type</th>
                                             <th>
                                                 <select form="driver-form" name="form_install" onchange="installSelect(this)">
-                                                    <option value="uninstall">Uninstall</option>                                                
+                                                    <option value="uninstall">Uninstall</option>
                                                     <c:choose>
                                                         <c:when test="${param.form_install == 'install'}">
                                                             <option value="install" selected>Install</option>
@@ -61,7 +61,7 @@
                                                     </c:choose>
                                                 </select>
                                                 <c:if test="${param.form_install == 'install'}">
-                                                    <select form="driver-form" name="driver_id" onchange="driverSelect(this)">                                                
+                                                    <select form="driver-form" name="driver_id" onchange="driverSelect(this)">
                                                         <option value="none"></option>
                                                         <option value="stubdriver">Stub</option>
                                                         <option value="awsdriver">AWS</option>
@@ -80,8 +80,8 @@
                             <div id="service-fields">
                                <form id="service-template-form" action="/StackV-web/ServiceServlet" method="post">
                                     <input type="hidden" name="username" value="${sessionStorage.username}"/>
-                                    <input type="hidden" name="driverID" value="${param.driver_id}"/>                                    
-                                    <table class="management-table" id="net-template-form" style="margin-bottom: 0px;"> 
+                                    <input type="hidden" name="driverID" value="${param.driver_id}"/>
+                                    <table class="management-table" id="net-template-form" style="margin-bottom: 0px;">
                                         <thead>
                                             <tr>
                                                 <th>Templates</th>
@@ -92,7 +92,7 @@
                                             <tr>
                                                 <td>OpenStack Driver</td>
                                                 <td><input type="submit" name="template1" value="Select" /></td>
-                                            </tr>                                            
+                                            </tr>
                                             <tr>
                                                 <td>Stack Driver</td>
                                                 <td><input type="submit" name="template2" value="Select" /></td>
@@ -100,24 +100,24 @@
                                              <tr>
                                                 <td>Stub Driver</td>
                                                 <td><input type="submit" name="template3" value="Select" /></td>
-                                            </tr>  
+                                            </tr>
                                               <tr>
                                                 <td>Generic Driver</td>
                                                 <td><input type="submit" name="template4" value="Select" /></td>
-                                            </tr>                                               
-                                           
+                                            </tr>
+
                                         </tbody>
-                                    </table>    
-                                </form>  
+                                    </table>
+                                </form>
 
                                 <form id="driver-form" action="/StackV-web/ServiceServlet" method="post">
                                     <input type="hidden" name="username" value="${sessionStorage.username}"/>
                                     <input type="hidden" name="driverID" value="${param.driver_id}"/>
-                                    <table class="management-table" id="service-form">                                        
+                                    <table class="management-table" id="service-form">
                                         <thead>
                                             <tr>
                                                 <th>Driver Details</th>
-                                                <th style="text-align: right"></th>                            
+                                                <th style="text-align: right"></th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -132,10 +132,10 @@
                                                         <td>TTL</td>
                                                         <td>
                                                             <textarea rows="6" cols="50" name="ttlmodel">
-                                                                
+
                                                             </textarea>
                                                         </td>
-                                                    </tr> 
+                                                    </tr>
                                                 </c:if>
                                                 <c:if test="${param.driver_id == 'awsdriver'}">
                                                     <tr>
@@ -145,11 +145,11 @@
                                                     <tr>
                                                         <td>Amazon Access ID</td>
                                                         <td><input type="text" name="aws_access_key_id" required></td>
-                                                    </tr>   
+                                                    </tr>
                                                     <tr>
                                                         <td>Amazon Secret Key</td>
                                                         <td><input type="text" name="aws_secret_access_key" required></td>
-                                                    </tr>   
+                                                    </tr>
                                                     <tr>
                                                         <td>Region</td>
                                                         <td>
@@ -166,7 +166,7 @@
                                                                 <option value="us-west-2">US West (Oregon)</option>
                                                             </select>
                                                         </td>
-                                                    </tr>                                            
+                                                    </tr>
                                                 </c:if>
                                                 <c:if test="${param.driver_id == 'versaNSDriver'}">
                                                     <tr>
@@ -196,7 +196,7 @@
                                                     <tr>
                                                         <td>OpenStack Username</td>
                                                         <td><input type="text" name="username" required></td>
-                                                    </tr>   
+                                                    </tr>
                                                     <tr>
                                                         <td>OpenStack Password</td>
                                                         <td><input type="password" name="password" required></td>
@@ -215,16 +215,16 @@
                                                     </tr>
                                                 </c:if>
 
-                                                <c:if test="${not empty param.driver_id}">                                                                                                        
+                                                <c:if test="${not empty param.driver_id}">
                                                     <tr>
                                                         <td></td>
                                                         <td>
                                                             <input class="button-register" name="install" type="submit" value="Install" />
-                                                            <input class="button-register" type="button" 
+                                                            <input class="button-register" type="button"
                                                                    value="Add Additional Properties" onClick="addPropField()">
                                                         </td>
                                                     </tr>
-                                                </c:if> 
+                                                </c:if>
                                             </c:if>
                                             <!-- Uninstall Form -->
                                             <c:if test="${param.form_install != 'install'}">
@@ -273,25 +273,25 @@
                                 <c:when test="${param.ret == '3'}">
                                     Connection Error
                                 </c:when>
-                            </c:choose>                        
+                            </c:choose>
 
-                            <br><a href="/StackV-web/ops/srvc/driver.jsp?self=true">(Un)Install Another Driver.</a>                                
+                            <br><a href="/StackV-web/ops/srvc/driver.jsp?self=true">(Un)Install Another Driver.</a>
                             <br><a href="/StackV-web/ops/catalog.jsp">Return to Services.</a>
                             <br><a href="/StackV-web/orch/graphTest.jsp">Return to Graphic Orchestration.</a>
 
                         </div>
                     </c:otherwise>
                 </c:choose>
-            </div>       
+            </div>
         </div>
         <!-- TAG PANEL -->
-        <div id="tag-panel"> 
-        </div>              
+        <div id="tag-panel">
+        </div>
         <!-- JS -->
         <script>
             $(function () {
                 $("#tag-panel").load("/StackV-web/tagPanel.jsp", null);
             });
-        </script>        
+        </script>
     </body>
 </html>

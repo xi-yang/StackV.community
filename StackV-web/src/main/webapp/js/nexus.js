@@ -58,7 +58,7 @@ $(function () {
         }
     };
     keycloak.onTokenExpire = function () {
-        keycloak.updateToken(63).success(function () {
+        keycloak.updateToken(20).success(function () {
             console.log("Token automatically updated!");
         }).error(function () {
             console.log("Automatic token update failed!");
@@ -68,6 +68,15 @@ $(function () {
 
 
     $("#nav").load("/StackV-web/navbar.html", function () {
+        // set the active link - get everything after StackV-web
+        var url = $(location).attr('href').split(/\/StackV-web\//)[1];
+        if (/driver.jsp/.test(url))
+          $("li#driver-tab").addClass("active");
+        else if (/catalog.jsp/.test(url))
+          $("li#catalog-tab").addClass("active");
+        else if (/graphTest.jsp/.test(url))
+          $("li#visualization-tab").addClass("active");
+
         $("#logout-button").click(function (evt) {
             keycloak.logout();
 
@@ -79,17 +88,17 @@ $(function () {
             evt.preventDefault();
         });
     });
-    $("#sidebar").load("/StackV-web/sidebar.html", function () {
-        $("#sidebar-toggle").click(function (evt) {
-            $("#sidebar-toggle-1").toggleClass("img-off");
-            $("#sidebar-toggle-2").toggleClass("img-off");
-
-            $("#sidebar-contents").toggleClass("sidebar-open");
-            $("#main-pane").toggleClass("sidebar-open");
-
-            evt.preventDefault();
-        });
-    });
+    // $("#sidebar").load("/StackV-web/sidebar.html", function () {
+    //     $("#sidebar-toggle").click(function (evt) {
+    //         $("#sidebar-toggle-1").toggleClass("img-off");
+    //         $("#sidebar-toggle-2").toggleClass("img-off");
+    //
+    //         $("#sidebar-contents").toggleClass("sidebar-open");
+    //         $("#main-pane").toggleClass("sidebar-open");
+    //
+    //         evt.preventDefault();
+    //     });
+    // });
 
     $("#button-service-cancel").click(function (evt) {
         $("#service-specific").empty();
@@ -1100,7 +1109,7 @@ function refreshCountdown() {
 
 function reloadCatalog(time) {
     enableLoading();
-    keycloak.updateToken(63).error(function () {
+    keycloak.updateToken(30).error(function () {
         console.log("Error updating token!");
     }).success(function () {
         var manual = false;
@@ -1136,7 +1145,7 @@ function reloadCatalog(time) {
 
 function reloadDetails(time) {
     enableLoading();
-    keycloak.updateToken(63).error(function () {
+    keycloak.updateToken(30).error(function () {
         console.log("Error updating token!");
     }).success(function () {
         var uuid = getURLParameter("uuid");
@@ -1248,7 +1257,7 @@ function loadWizard() {
                 var cell1_2 = document.createElement("td");
                 cell1_2.innerHTML = profile[1];
                 var cell1_3 = document.createElement("td");
-                cell1_3.innerHTML = "<button class='button-profile-select btn btn-default' id='" + profile[2] + "'>Select</button><button class='button-profile-delete btn btn-default' id='" + profile[2] + "'>Delete</button>";
+                cell1_3.innerHTML = "<button class='button-profile-select btn btn-default' id='" + profile[2] + "'>Select</button><button class='button-profile-delete btn btn' id='" + profile[2] + "'>Delete</button>";
                 row.appendChild(cell1_1);
                 row.appendChild(cell1_2);
                 row.appendChild(cell1_3);

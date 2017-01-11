@@ -28,8 +28,8 @@
         <div id="nav">
         </div>
         <!-- SIDE BAR -->
-        <div id="sidebar">
-        </div>
+        <%-- <div id="sidebar">
+        </div> --%>
         <!-- MAIN PANEL -->
         <div id="black-screen" class="off"></div>
         <div id="main-pane">

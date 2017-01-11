@@ -47,7 +47,6 @@ html {
 a {
     color: white;
     text-decoration:none;
-    cursor: pointer;
 }
 
 a.hover {
@@ -361,7 +360,13 @@ body {
     cursor: pointer;
 }
 
-#nav {
+/* Navbar Styling - hover styles*/
+nav.navbar ul li:hover {
+  background-color: #000;
+  color: rgb(51,51,51);
+}
+
+/*#nav {
     position: fixed;
     z-index: 6;
     width: 100%;
@@ -404,12 +409,12 @@ body {
 }
 #nav li a:hover {
     color: #637E9C;
-}
+}*/
 
 .arrow-icon {
     padding-right: 16px;
 }
-
+/*Main Pane Styles */
 #main-pane {
     position: absolute;
     height: 100%;
@@ -420,6 +425,17 @@ body {
 
     -webkit-transition: all 400ms ease-in-out;
     transition: all 400ms ease-in-out;
+}
+#main-pane.sidebar-open {
+    opacity: .25;
+    margin-left: 0px;
+}
+
+#main-pane.loading {
+    opacity: .4;
+}
+#main-pane.loading #loading-panel {
+    opacity: 1;
 }
 
 #verification-pane {
@@ -699,12 +715,6 @@ select#refresh-timer {
     margin-right: 5px;
 }
 
-#main-pane.loading {
-    opacity: .4;
-}
-#main-pane.loading #loading-panel {
-    opacity: 1;
-}
 
 #details-panel {
     padding: 10px 10px;
@@ -715,7 +725,6 @@ select#refresh-timer {
 #instance-panel {
     left: 40px;
     padding: 5px 5px;
-    top: 10%;
     height: calc(90% - 42px);
     width: calc(100% - 80px);
     position: absolute;
@@ -895,10 +904,6 @@ select#refresh-timer {
     margin-top: 82px;
 }
 
-#main-pane.sidebar-open {
-    opacity: .25;
-    margin-left: 0px;
-}
 
 /************
 ## Toggler - Credit PureDrawer ##
