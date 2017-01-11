@@ -51,7 +51,7 @@ public class SecurityInterceptor implements PreProcessInterceptor {
             List<String> supplierNames = Arrays.asList("loadWizard", "loadEditor", "loadInstances",
                     "loadInstanceDetails", "loadInstanceDelta", "loadInstanceVerification", "loadInstanceACL", 
                     "loadObjectACL", "loadSubjectACL", "subStatus", "getProfile", "getLabels", 
-                    "executeProfile", "deleteProfile", "mysqlUpdateTest", "addDriver");
+                    "executeProfile", "deleteProfile", "mysqlUpdateTest", "addDriver","getDriver");
             String methodName = method.getMethod().getName();
             if (supplierNames.contains(methodName)) {
                 return null;

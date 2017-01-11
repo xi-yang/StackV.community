@@ -96,6 +96,14 @@ function closeSide(){
 }
 function installStub(){
     var divContent = document.getElementById("install-type");
+    var drivername = document.createElement("p");
+    var driver = document.createElement("input");
+    drivername.innerHTML="Driver Name:";
+    drivername.style.color = "white";
+    driver.type="text";
+    driver.id="drivername";
+    divContent.appendChild(drivername);
+    divContent.appendChild(driver);
     var first = document.createElement("p");
     var second = document.createElement("input");
     var third = document.createElement("p");
@@ -121,6 +129,14 @@ function installStub(){
 }
 function installAWS(){
     var divContent = document.getElementById("install-type");
+    var drivername = document.createElement("p");
+    var driver = document.createElement("input");
+    drivername.innerHTML="Driver Name:";
+    drivername.style.color = "white";
+    driver.type="text";
+    driver.id="drivername";
+    divContent.appendChild(drivername);
+    divContent.appendChild(driver);
     var first = document.createElement("p");
     var second = document.createElement("input");
     var third = document.createElement("p");
@@ -154,6 +170,14 @@ function installAWS(){
 }
 function installOpenstack(){
     var divContent = document.getElementById("install-type");
+    var drivername = document.createElement("p");
+    var driver = document.createElement("input");
+    drivername.innerHTML="Driver Name:";
+    drivername.style.color = "white";
+    driver.type="text";
+    driver.id="drivername";
+    divContent.appendChild(drivername);
+    divContent.appendChild(driver);
     var content = [];
     for (var i = 0; i < 12; i+=2){
         var textbox = document.createElement("p");
@@ -188,6 +212,14 @@ function installOpenstack(){
 }
 function installStack(){
     var divContent = document.getElementById("install-type");
+    var drivername = document.createElement("p");
+    var driver = document.createElement("input");
+    drivername.innerHTML="Driver Name:";
+    drivername.style.color = "white";
+    driver.type="text";
+    driver.id="drivername";
+    divContent.appendChild(drivername);
+    divContent.appendChild(driver);
     var first = document.createElement("p");
     var second = document.createElement("input");
     var third = document.createElement("p");
@@ -210,9 +242,14 @@ function installStack(){
     desc.id="description";
     divContent.appendChild(descname);
     divContent.appendChild(desc);
-}
+}    
 function clearPanel(){
     $('#install-type').empty();
+}
+function clearText(){
+      for(var temp of document.getElementsByTagName("input")){
+          temp.value = "";
+    }
 }
 function changeNameInst() {
     document.getElementById('side-name').innerHTML="Install";
@@ -220,44 +257,25 @@ function changeNameInst() {
 function changeNameDet() {
     document.getElementById('side-name').innerHTML="Details";
 }
-function myTest() {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/test';
-    $.ajax({
-        url: apiUrl,
-        type: 'PUT',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (){
-            var divContent = document.getElementById("install-type");
-            var first = document.createElement("p");
-            first.innerHTML="SUCCESS";
-            first.style.color = "white";
-            divContent.appendChild(first);
-            
-        },
-        error: function (){
-            var divContent = document.getElementById("install-type");
-            var first = document.createElement("p");
-            first.innerHTML="FAILURE";
-            first.style.color = "white";
-            divContent.appendChild(first);
-        }
-    });
-}
 
 function addDriver() {
     var userId = keycloak.subject;
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/add';
     var settings="";
     var description = document.getElementById("description").value;
+    var driver = document.getElementById("drivername").value;
     
     for(var temp of document.getElementsByTagName("input")){
-        if(temp.value !== description)
+        if(temp.value !== description && temp.value !== driver)
             settings += temp.value + " ";
     }
     
-    var sentData = [userId, description, settings];
+    var sentData = JSON.stringify({
+        username: userId,
+        drivername: driver,
+        driverDescription: description, 
+        data: settings
+    });
     
     $.ajax({
         url: apiUrl,
@@ -265,8 +283,8 @@ function addDriver() {
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
-        dataType: "json",
-        data: { sentData : sentData },
+        contentType: 'application/json',
+        data: sentData,
         success: function() {
             updateDrivers();
         }
@@ -274,7 +292,7 @@ function addDriver() {
 }
 function updateDrivers() {
     var userId = keycloak.subject;
-    var table = document.getElementById("installed-body");
+    var table = document.getElementById("saved-table");
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/get';
     $.ajax({
         url: apiUrl,
@@ -283,29 +301,27 @@ function updateDrivers() {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (result){
-            $('#installed-body').empty();
-            for (var i = 0; i > result.length; i += 3){
-                if (result[i] === userId){
-                    var row = document.createElement("tr");
-                    var username = document.createElement("td");
-                    var description = document.createElement("td");
-                    var cell3 = document.createElement("td");
-                    
-                    username.innerHTML = result[i];
-                    description.innerHTML = result[i+1];
-                    cell3.innerHTML = "<button style='width: 50px;' onclick='activateDetails();'>Details</button>";
-                    cell3.innerHTML += "<div class='divider'/>";
-                    cell3.innerHTML += "<button style ='width: 50px;'>Delete</button>";
-                    cell3.style.width = "160px";
-                    
-                    row.appendChild(username);
-                    row.appendChild(description);
-                    row.appendChild(cell3);
-                    table.appendChild(row);
-                }
+            $('#saved-table').empty();
+            for (var i = 0; i < result.length; i += 3){
+                var row = document.createElement("tr");
+                var drivername = document.createElement("td");
+                var description = document.createElement("td");
+                var cell3 = document.createElement("td");
+                
+                drivername.innerHTML = result[i];
+                description.innerHTML = result[i+1];
+                cell3.innerHTML = "<button style='width: 50px;' onclick='activateDetails();'>Details</button>";
+                cell3.innerHTML += "<div class='divider'/>";
+                cell3.innerHTML += "<button style ='width: 50px;'>Install</button>";
+                cell3.style.width = "170px";
+                
+                row.appendChild(drivername);
+                row.appendChild(description);
+                row.appendChild(cell3);
+                table.appendChild(row);
             }
         },
-        error: function (){
-        }
+                error: function (){
+                }
     });
 }
