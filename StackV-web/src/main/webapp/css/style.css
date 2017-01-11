@@ -62,8 +62,8 @@ a.hover {
     height: 100%;
     width: 100%;
     padding: 40px;
-    padding-top: 77px; 
-    z-index: 3;    
+    padding-top: 77px;
+    z-index: 3;
     background-color: rgba(0,0,0,0.4);
 
     transition: opacity 1s ease;
@@ -372,17 +372,17 @@ body {
     list-style: none;
     width: 100%;
     margin: 0 auto;
-    padding: 0; 
+    padding: 0;
 }
 #nav li {
-    float: left; 
+    float: left;
     padding: 6px 12px;
 }
-#nav li.center-item {    
-    margin-left: 42%; 
+#nav li.center-item {
+    margin-left: 42%;
 }
 #nav li.left-item {
-    float: left; 
+    float: left;
 }
 #nav li.right-item {
     float: right;
@@ -391,9 +391,9 @@ body {
     display: block;
     text-decoration: none;
     font-weight: bold;
-    color: #eee; 
+    color: #eee;
 }
-#nav li:first-child a { 
+#nav li:first-child a {
 }
 #nav li:l-child a {
 
@@ -412,7 +412,7 @@ body {
     width: 100%;
     padding: 40px;
     padding-top: 77px;
-    overflow-x: hidden;    
+    overflow-x: hidden;
 
     -webkit-transition: all 400ms ease-in-out;
     transition: all 400ms ease-in-out;
@@ -423,11 +423,11 @@ body {
     height: 80%;
     width: 100%;
     padding: 10px;
-    margin-top: 5px;    
+    margin-top: 5px;
 }
 
 #verification-pane td {
-    float: left; 
+    float: left;
     padding: 6px 6px;
 }
 
@@ -458,7 +458,7 @@ body {
     width: 100%;
 }
 
-#group-overview-table { 
+#group-overview-table {
     width: 400px;
 }
 
@@ -541,7 +541,7 @@ body {
     font-weight: bold;
     padding: 10px 15px;
     position: relative;
-    text-shadow: 0 1px 0 #000;	
+    text-shadow: 0 1px 0 #000;
 }
 .management-table th:after {
     background: linear-gradient(rgba(255,255,255,0), rgba(255,255,255,.08));
@@ -559,7 +559,7 @@ body {
     box-shadow: inset 1px 1px 0 #a2b1c3;
 }
 .management-table th:not(:first-child) {
-    border-right: 1px solid #a2b1c3;	
+    border-right: 1px solid #a2b1c3;
     box-shadow: inset 1px 1px 0 #a2b1c3;
 }
 .management-table th:last-child {
@@ -577,26 +577,29 @@ body {
 }
 .management-table td:first-child {
     box-shadow: inset 1px 0 0 #fff;
-}	
+}
 .management-table td:last-child {
     border-right: 1px solid #e8e8e8;
     box-shadow: inset -1px 0 0 #fff;
-}	
+}
+.management-table td button {
+  margin-right: 5px;
+}
 .management-table tr {
-    background: url(/StackV-web/img/noise-diagonal.png);	
+    background: url(/StackV-web/img/noise-diagonal.png);
 }
 .management-table tr:nth-child(odd) td {
-    background: #fafafa url(/StackV-web/img/noise-diagonal.png);	
+    background: #fafafa url(/StackV-web/img/noise-diagonal.png);
 }
 .management-table tr:last-of-type td {
-    box-shadow: inset 0 -1px 0 #fff; 
+    box-shadow: inset 0 -1px 0 #fff;
 }
 .management-table tr:last-of-type td:first-child {
     box-shadow: inset 1px -1px 0 #fff;
-}	
+}
 .management-table tr:last-of-type td:last-child {
     box-shadow: inset -1px -1px 0 #fff;
-}	
+}
 
 
 
@@ -627,7 +630,7 @@ body {
 }
 
 #button-service-cancel, #button-service-return, #button-service-exit {
-    color: #B60000;    
+    color: #B60000;
     margin-left: 75%;
     position: relative;
 }
@@ -638,7 +641,7 @@ body {
 }
 
 .button-service-apply {
-    color: #B60000;    
+    color: #B60000;
     position: relative;
 }
 
@@ -704,7 +707,7 @@ body {
     height: calc(90% - 42px);
     width: calc(100% - 80px);
     position: absolute;
-    overflow-y: scroll;    
+    overflow-y: scroll;
 }
 #instance-panel.closed {
     overflow: hidden;
@@ -718,9 +721,9 @@ body {
 #catalog-panel {
     padding: 10px 10px 0 10px;
     bottom: 0;
-    left: 0;
+    left: 10%;
     height: 50%;
-    width: 85%;
+    width: 80%;
     position: absolute;
 }
 #catalog-panel.closed {
@@ -800,7 +803,7 @@ body {
 #loading-panel {
     /* Replace #333 with the background-color of your choice */
     /* Replace loading.gif with the loading image of your choice */
-    background: transparent url('/StackV-web/resources/small-loading.gif') 
+    background: transparent url('/StackV-web/resources/small-loading.gif')
         no-repeat 50% 16px;
 
     /* Ensures that the transition only runs in one direction */
@@ -847,7 +850,7 @@ body {
 #sidebar-toggle {
     position: absolute;
     left: calc(100% + 10px);
-    top: 50px;   
+    top: 50px;
     z-index: 5;
 }
 
@@ -908,7 +911,7 @@ body {
     top: 10px;
 }
 
-#info-panel {    
+#info-panel {
     top: -75%;
     width: 60%;
     left: 20%;
@@ -919,14 +922,14 @@ body {
     box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.4);
     border-radius: 5px;
     z-index: 4;
-    font-size: .9em;    
+    font-size: .9em;
 
     transition: all .5s ease-out;
 }
 #info-panel.active {
     top: 15%;
 }
-#mode-panel {        
+#mode-panel {
     top: 20%;
     left: 35%;
     width: 30%;
@@ -980,7 +983,7 @@ body {
     top: 110%;
     padding-left: 0px;
     padding-right: 0px;
-    display: block;    
+    display: block;
 }
 
 .stagediv.active-div, .stageform .active-fs {
@@ -1009,7 +1012,7 @@ body {
 
 .subfs-table .subfs-headrow {
     border-top: 1px solid #969696;
-    border-bottom: 1px solid #969696;    
+    border-bottom: 1px solid #969696;
 
     transition: background-color 0.5s ease;
     transition: color 0.5s ease;
@@ -1017,7 +1020,7 @@ body {
 
 .subfs-headrow.closed {
     color: #ffffff;
-    background-color: #50657c;        
+    background-color: #50657c;
 }
 
 /*inputs*/
@@ -1164,7 +1167,7 @@ body {
 
 #progressbar li:first-child:after {
     /*connector not needed before the first step*/
-    content: none; 
+    content: none;
 }
 /*marking active/completed steps green*/
 /*The number of the step and the connector before it = green*/

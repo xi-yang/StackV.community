@@ -1,23 +1,23 @@
-/* 
+/*
  * Copyright (c) 2013-2016 University of Maryland
  * Created by: Alberto Jimenez
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy 
- * of this software and/or hardware specification (the “Work”) to deal in the 
- * Work without restriction, including without limitation the rights to use, 
- * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
- * the Work, and to permit persons to whom the Work is furnished to do so, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and/or hardware specification (the “Work”) to deal in the
+ * Work without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Work, and to permit persons to whom the Work is furnished to do so,
  * subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in 
+ *
+ * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Work.
- * 
- * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ *
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
  */
 
@@ -895,7 +895,7 @@ function applyNetTemplate(code) {
 
 //            form.elements['subnet2-name'].value = '';
 //            form.elements['subnet2-cidr'].value = '10.1.1.0/24';
-//            
+//
             break;
 
         case 5:
@@ -1202,7 +1202,7 @@ function loadInstances() {
                 var row = document.createElement("tr");
                 row.className = "clickable-row";
                 row.setAttribute("data-href", instance[1]);
-                
+
                 var cell1_1 = document.createElement("td");
                 cell1_1.innerHTML = instance[3];
                 var cell1_2 = document.createElement("td");
@@ -1248,7 +1248,7 @@ function loadWizard() {
                 var cell1_2 = document.createElement("td");
                 cell1_2.innerHTML = profile[1];
                 var cell1_3 = document.createElement("td");
-                cell1_3.innerHTML = "<button class='button-profile-select' id='" + profile[2] + "'>Select</button><button class='button-profile-delete' id='" + profile[2] + "'>Delete</button>";
+                cell1_3.innerHTML = "<button class='button-profile-select btn btn-default' id='" + profile[2] + "'>Select</button><button class='button-profile-delete btn btn-default' id='" + profile[2] + "'>Delete</button>";
                 row.appendChild(cell1_1);
                 row.appendChild(cell1_2);
                 row.appendChild(cell1_3);
@@ -1350,7 +1350,7 @@ function loadEditor() {
                 var cell1_2 = document.createElement("td");
                 cell1_2.innerHTML = profile[1];
                 var cell1_3 = document.createElement("td");
-                cell1_3.innerHTML = "<button class='button-service-select' id='" + profile[2] + "'>Select</button";
+                cell1_3.innerHTML = "<button class='button-service-select btn btn-default' id='" + profile[2] + "'>Select</button";
                 row.appendChild(cell1_1);
                 row.appendChild(cell1_2);
                 row.appendChild(cell1_3);
@@ -1801,15 +1801,15 @@ function buildDeltaTable(type) {
         var head = document.createElement("th");
         head.innerHTML = type + " Delta";
         row.appendChild(head);
-        
+
         head = document.createElement("th");
         head.innerHTML = "Verified";
         row.appendChild(head);
-        
+
         head = document.createElement("th");
         head.innerHTML = "Unverified";
         row.appendChild(head);
-  
+
         row.appendChild(head);
 
         thead.appendChild(row);
@@ -1825,12 +1825,12 @@ function buildDeltaTable(type) {
         row.appendChild(add);
 
         add = document.createElement("td");
-        add.id = prefix + "-add";   
+        add.id = prefix + "-add";
         row.appendChild(add);
-        
+
         var red = document.createElement("td");
         red.id = prefix + "-red";
-        row.appendChild(red); 
+        row.appendChild(red);
 
         tbody.appendChild(row);
         row = document.createElement("tr");
@@ -1845,9 +1845,9 @@ function buildDeltaTable(type) {
         if (verification) {
             panel.insertBefore(table, verification[0]);
         } else {
-            panel.appendChild(table);      
+            panel.appendChild(table);
         }
-        
+
 }
 
 function loadVisualization() {
@@ -1869,16 +1869,16 @@ function loadVisualization() {
         $("#delta-Service").addClass("hide");
         buildDeltaTable("Service");
         buildDeltaTable("System");
-        
+
         $(".service-delta-table").removeClass("hide");
-        
+
         $("#serv-add").append($("#serva_viz_div"));
         $("#serv-add").find("#serva_viz_div").removeClass("hidden");
 
         $("#serv-red").append($("#servr_viz_div"));
         $("#serv-red").find("#servr_viz_div").removeClass("hidden");
 
-        // Loading System Delta visualization 
+        // Loading System Delta visualization
         var subState = document.getElementById("instance-substate").innerHTML;
         var verificationTime = document.getElementById("verification-time").innerHTML;
         if ((subState !== 'READY' && subState === 'FAILED') || verificationTime === '') {
@@ -1916,8 +1916,8 @@ function toggleTextModel(viz_table, text_table) {
         alert("Text model not found");
     } else {
         $(viz_table.toLowerCase()).toggleClass("hide");
-        // delta-Service, service verification etc must always display before 
-        // everything else. 
+        // delta-Service, service verification etc must always display before
+        // everything else.
         if (text_table.toLowerCase().indexOf("service") > 0) {
             $(text_table).insertAfter("#details-table")
         }
@@ -2004,7 +2004,7 @@ function buttonModerate() {
     var verificationState = document.getElementById("instance-verification").innerHTML;
 
     if (superState === 'Create') {
-        // State 0 - Stuck 
+        // State 0 - Stuck
         if (verificationState === "" || verificationState === "null" || subState === "INIT") {
             $("#force_delete").toggleClass("hide");
             $("#force_cancel").toggleClass("hide");
@@ -2041,7 +2041,7 @@ function buttonModerate() {
             $("#reverify").toggleClass("hide");
         }
     } else if (superState === 'Cancel') {
-        // State 0 - Stuck 
+        // State 0 - Stuck
         if (verificationState === "" || verificationState === "null" || subState === "INIT") {
             $("#force_delete").toggleClass("hide");
             $("#force_retry").toggleClass("hide");
@@ -2081,7 +2081,7 @@ function buttonModerate() {
             $("#reverify").toggleClass("hide");
         }
     } else if (superState === 'Reinstate') {
-        // State 0 - Stuck 
+        // State 0 - Stuck
         if (verificationState === "" || verificationState === "null" || subState === "INIT") {
             $("#force_delete").toggleClass("hide");
             $("#force_retry").toggleClass("hide");
