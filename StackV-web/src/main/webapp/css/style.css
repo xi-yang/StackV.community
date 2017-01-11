@@ -648,6 +648,7 @@ body {
 .button-header {
     background-color: #50657c;
     float: right;
+    border: 0
 }
 
 .view-flag {
@@ -683,8 +684,14 @@ body {
     margin-right: 10px;
     margin-left: 10px;
 }
-#refresh-timer {
+
+label[for="refresh-timer"] {
+  margin-right: 5px;
+}
+select#refresh-timer {
     color: #333;
+    height: inherit;
+    font-weight: 400;
 }
 
 #main-pane.loading {

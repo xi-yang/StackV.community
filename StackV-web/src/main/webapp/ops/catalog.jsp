@@ -2,12 +2,12 @@
 <%@page errorPage = "/StackV-web/errorPage.jsp" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>  
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
 <jsp:setProperty name="serv" property="*" />
 <!DOCTYPE html>
-<html >    
-    <head>   
+<html >
+    <head>
         <meta charset="UTF-8">
         <title>Service Catalog</title>
         <script src="/StackV-web/js/keycloak.js"></script>
@@ -22,17 +22,17 @@
         <link rel="stylesheet" href="/StackV-web/css/style.css">
         <link rel="stylesheet" href="/StackV-web/css/driver.css">
     </head>
-    
-    <body>        
+
+    <body>
         <!-- NAV BAR -->
         <div id="nav">
         </div>
-        <!-- SIDE BAR -->   
-        <div id="sidebar">            
+        <!-- SIDE BAR -->
+        <div id="sidebar">
         </div>
         <!-- MAIN PANEL -->
         <div id="black-screen" class="off"></div>
-        <div id="main-pane">                                                 
+        <div id="main-pane">
             <div class="closed" id="instance-panel">
                 <table class="management-table" id="status-table">
                     <thead>
@@ -40,22 +40,22 @@
                             <th>Instance Alias</th>
                             <th>Service Type</th>
                             <th>Instance UUID</th>
-                            <th><div style="float: left;">Instance Status</div>                           
-                                <button class="button-header" id="refresh-button" onclick="reloadCatalog()">Manually Refresh Now</button>
-                                <div id="refresh-panel">
-                                    Auto-Refresh Interval
-                                    <select id="refresh-timer" onchange="timerChange(this)">
+                            <th><div style="float: left;">Instance Status</div>
+                                <button class="button-header btn btn-sm" id="refresh-button" onclick="reloadCatalog()">Manually Refresh Now</button>
+                                <div id="refresh-panel" class="form-inline">
+                                    <label for="refresh-timer">Auto-Refresh Interval</label>
+                                    <select id="refresh-timer" onchange="timerChange(this)" class="form-control">
                                         <option value="off">Off</option>
                                         <option value="5">5 sec.</option>
                                         <option value="10">10 sec.</option>
                                         <option value="30">30 sec.</option>
                                         <option value="60" selected>60 sec.</option>
-                                    </select>                        
+                                    </select>
                                 </div>
                             </th>
                         </tr>
                     </thead>
-                    <tbody id="status-body">                        
+                    <tbody id="status-body">
                     </tbody>
                 </table>
             </div>
