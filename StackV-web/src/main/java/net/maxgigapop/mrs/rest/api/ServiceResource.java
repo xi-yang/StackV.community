@@ -390,21 +390,6 @@ public class ServiceResource {
         return apiDeltaRetrieval;
     }
     
-    @GET
-    @Produces("application/xml")
-    @Path("/delta/{svcUUID}")
-    public ApiDeltaRetrieval retrieveDelta(@PathParam("svcUUID") String svcUUID) throws Exception {
-        ApiDeltaRetrieval apiDeltaRetrieval = new ApiDeltaRetrieval();
-        ModelUtil.DeltaRetrieval deltaRetrieval = new ModelUtil.DeltaRetrieval();
-        serviceCallHandler.retrieveDelta(svcUUID, deltaRetrieval, false);
-        apiDeltaRetrieval.setReferenceUUID(deltaRetrieval.getReferenceModelUUID());
-        apiDeltaRetrieval.setServiceModelAddition(deltaRetrieval.getModelAdditionSvc());
-        apiDeltaRetrieval.setServiceModelReduction(deltaRetrieval.getModelReductionSvc());
-        apiDeltaRetrieval.setSystemModelAddition(deltaRetrieval.getModelAdditionSys());
-        apiDeltaRetrieval.setSystemModelReduction(deltaRetrieval.getModelReductionSys());
-        return apiDeltaRetrieval;
-    }
-    
     @POST
     @Path("/manifest")
     @Consumes({"application/json","application/xml"})
