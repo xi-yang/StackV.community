@@ -58,7 +58,7 @@ $(function () {
         }
     };
     keycloak.onTokenExpire = function () {
-        keycloak.updateToken(20).success(function () {
+        keycloak.updateToken(63).success(function () {
             console.log("Token automatically updated!");
         }).error(function () {
             console.log("Automatic token update failed!");
@@ -1100,7 +1100,7 @@ function refreshCountdown() {
 
 function reloadCatalog(time) {
     enableLoading();
-    keycloak.updateToken(30).error(function () {
+    keycloak.updateToken(63).error(function () {
         console.log("Error updating token!");
     }).success(function () {
         var manual = false;
@@ -1136,7 +1136,7 @@ function reloadCatalog(time) {
 
 function reloadDetails(time) {
     enableLoading();
-    keycloak.updateToken(30).error(function () {
+    keycloak.updateToken(63).error(function () {
         console.log("Error updating token!");
     }).success(function () {
         var uuid = getURLParameter("uuid");

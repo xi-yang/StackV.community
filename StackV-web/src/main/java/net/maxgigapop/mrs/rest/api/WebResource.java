@@ -645,9 +645,10 @@ public class WebResource {
         }
 
         try {
+            Thread.sleep(300);
             return superStatus(svcInstanceUUID) + " - " + status(svcInstanceUUID, auth) + "\n";
-        } catch (SQLException | IOException e) {
-            return "<<<CHECK STATUS ERROR: " + e.getMessage();
+        } catch (SQLException | IOException | InterruptedException ex) {
+            return "<<<CHECK STATUS ERROR: " + ex.getMessage();
         }
     }
 
@@ -661,8 +662,9 @@ public class WebResource {
         }
 
         try {
+            Thread.sleep(300);
             return status(svcInstanceUUID, auth);
-        } catch (IOException ex) {
+        } catch (IOException | InterruptedException ex) {
             Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
         }
         return null;
