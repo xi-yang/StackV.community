@@ -1,0 +1,101 @@
+        <defs>
+                <filter id="outline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+                    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
+                    <feMorphology operator="dilate" radius="1"/>
+                    <feColorMatrix result="a" type="matrix"
+                                   values="0 0 0 0 .7
+                                   0 0 0 0 1
+                                   0 0 0 0 0
+                                   0 0 0 1 0" />
+                    <feComposite operator="out" in="a" in2="SourceGraphic"/>
+                </filter>
+                <filter id="serviceHighlightOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+                    <feFlood flood-color="#66ff66" result="base" />
+                    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+                    <feColorMatrix result="mask" in="bigger" type="matrix"
+                                   values="0 0 0 0 0
+                                   0 0 0 0 0
+                                   0 0 0 0 0
+                                   0 0 0 1 0" />
+                    <feComposite result="drop" in="base" in2="mask" operator="in" />
+                    <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+                </filter>
+                <filter id="spaDependOnOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+                    <feFlood flood-color="#B3F131" result="base" />
+                    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+                    <feColorMatrix result="mask" in="bigger" type="matrix"
+                                   values="0 0 0 0 0
+                                   0 0 0 0 0
+                                   0 0 0 0 0
+                                   0 0 0 1 0" />
+                    <feComposite result="drop" in="base" in2="mask" operator="in" />
+                    <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+                </filter>
+                <filter id="spaExportToOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+                    <feFlood flood-color="#23ABA6" result="base" />
+                    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+                    <feColorMatrix result="mask" in="bigger" type="matrix"
+                                   values="0 0 0 0 0
+                                   0 0 0 0 0
+                                   0 0 0 0 0
+                                   0 0 0 1 0" />
+                    <feComposite result="drop" in="base" in2="mask" operator="in" />
+                    <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+                </filter>
+                <filter id="spaImportFromOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+                    <feFlood flood-color="#FD3338" result="base" />
+                    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+                    <feColorMatrix result="mask" in="bigger" type="matrix"
+                                   values="0 0 0 0 0
+                                   0 0 0 0 0
+                                   0 0 0 0 0
+                                   0 0 0 1 0" />
+                    <feComposite result="drop" in="base" in2="mask" operator="in" />
+                    <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+                </filter>    
+                <filter id="subnetHighlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+                    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
+                    <feMorphology operator="dilate" radius="1"/>
+                    <feColorMatrix result="a" type="matrix"
+                                   values="0 0 0 0 0
+                                   0 0 0 0 .8
+                                   0 0 0 0 .3
+                                   0 0 0 1 0" />
+                    <feComposite operator="out" in="a" in2="SourceGraphic"/>
+                </filter>
+                <filter id="outlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%">
+                    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
+                    <feMorphology operator="dilate" radius="1"/>
+                    <feColorMatrix result="a" type="matrix"
+                                   values="0 0 0 0 .7
+                                   0 0 0 0 1
+                                   0 0 0 0 0
+                                   0 0 0 1 0" />
+                    <feComposite operator="out" in="a" in2="SourceGraphic"/>
+                </filter>       
+                <filter id="subnetHighlightFF" width="2000000%" height="2000000%" x="-500%" y="-500%">
+                    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
+                    <feMorphology operator="dilate" radius="1"/>
+                    <feColorMatrix result="a" type="matrix"
+                                   values="0 0 0 0 0
+                                   0 0 0 0 .8
+                                   0 0 0 0 .3
+                                   0 0 0 1 0" />
+                    <feComposite operator="out" in="a" in2="SourceGraphic"/>
+                </filter>    
+                <filter id="ghost" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+                    <feColorMatrix type="saturate" values=".2"/>
+                </filter>
+                
+                <filter id="trashcanHighlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+               <feFlood flood-color="#d11b1e" result="base" />
+               <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+               <feColorMatrix result="mask" in="bigger" type="matrix"
+                  values="0 0 0 0 0
+                          0 0 0 0 0
+                          0 0 0 0 0
+                          0 0 0 1 0" />
+               <feComposite result="drop" in="base" in2="mask" operator="in" />
+               <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+            </filter>
+    </defs>
