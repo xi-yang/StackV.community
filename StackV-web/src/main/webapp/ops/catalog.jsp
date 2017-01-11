@@ -14,6 +14,30 @@
         <script src="/StackV-web/js/jquery/jquery.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
         <script src="/StackV-web/js/nexus.js"></script>
+        
+        <script>
+            //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
+            dojoConfig = {
+                has: {
+                    "dojo-firebug": true,
+                    "dojo-debug-messages": true
+                },
+                async: true,
+                parseOnLoad: true,
+                packages: [
+                    {
+                        name: "d3",
+                        location: "//d3js.org/",
+                        main: "d3.v3"
+                    },
+                    {
+                        name: "local",
+                        location: "/StackV-web/js/"
+                    }
+                ]
+            };
+        </script>  
+        <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
 
         <link rel="stylesheet" href="/StackV-web/css/animate.min.css">
         <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css">
@@ -112,6 +136,17 @@
             <div id="loading-panel"></div>
             <!-- TAG PANEL -->
             <div id="tag-panel"></div>
+            <script> 
+
+                require(["local/stackv/topology/TagPanel"],
+                  function (TagPanel) {
+                     var tagPanel =  TagPanel();
+                     tagPanel.init();
+                  }
+                );
+
+             </script>
+
         </div>
     </body>
 </html>

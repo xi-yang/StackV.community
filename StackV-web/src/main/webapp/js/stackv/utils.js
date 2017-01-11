@@ -200,6 +200,54 @@ define([], function () {
          }
         return parseString;
     }
+    
+    // VIZ2 Functions, May be stored inside module or use pubsub 
+    /**
+    * Loads a CSS file from the supplied URL
+    * @param {String} url    The URL of the CSS file, if its relative
+                             it will be to the current page's url
+    * @return {HTMLElement}  The <link> which was appended to the <head>
+    * from: http://otaqui.com/blog/1263/simple-script-to-load-css-from-javascript/
+    */
+    function loadCSS(url) {
+      var head = document.getElementsByTagName('head')[0],
+      link = document.createElement('link');
+      link.type = 'text/css';
+      link.rel = 'stylesheet';
+      link.href = url;
+      head.appendChild(link);
+      return link;
+    }
+    
+    function renderTemplate(settings, callback) {
+       $.get(settings.template_root + settings.template_filename, function(template) {
+           loadCSS(settings.css_root + settings.css_filename);
+           $("#" + settings.parent_container).append(template);
+           callback();
+       });
+    }
+    
+    function loadSettings(Settings, defaults) {
+        var settings; 
+        if (Settings === undefined ) {
+            // Settings optional  
+            settings = defaults;
+         } else {
+            // Loads specified settings, defaults otherwise unchanged 
+            settings = Object.assign({}, defaults, Settings);
+         }
+         return settings;
+    }
+
+    function getAuthentication() {
+        var auth = {
+            username : sessionStorage.getItem("username"),
+            token : sessionStorage.getItem("token"),
+            loggedIn : sessionStorage.getItem("loggedIn")
+        };
+        return auth;
+    }
+    
     /** PUBLIC INTERFACE **/
     return {
         map_: map_,
@@ -213,7 +261,12 @@ define([], function () {
         isFirefox: function() {
             return typeof InstallTrigger !== 'undefined';
         }, 
-        formatPolicyData: formatPolicyData
+        formatPolicyData: formatPolicyData,
+        // viz2 stuff
+        loadCSS: loadCSS, 
+        renderTemplate: renderTemplate, 
+        loadSettings: loadSettings,
+        getAuthentication: getAuthentication
     };
     /** END PUBLIC INTERFACE **/
 
